@@ -7,9 +7,9 @@
 (function () {
   'use strict';
 
-  // Chave de persistência de banco de dados
-  const ERP_VERSION = '5.0';
-  const STORAGE_KEY = 'texpro_erp_database_v5';
+  // Chave de persistência de banco de dados (Versão Limpa para Produção)
+  const ERP_VERSION = '6.0_PROD';
+  const STORAGE_KEY = 'texpro_erp_prod_v6';
   let db = null;
 
   try {
@@ -206,8 +206,7 @@
           </div>
           <div class="kpi-value text-primary">${formatarMoeda(faturamentoMes)}</div>
           <div class="kpi-desc">
-            <span class="text-green">+14.2%</span>
-            <span>vs. mês anterior</span>
+            <span class="${faturamentoMes > 0 ? 'text-green' : 'text-gray-500'}">${pedidosValidos.length > 0 ? '+14.2% vs. mês anterior' : 'Pronto para novas campanhas'}</span>
           </div>
         </div>
 
@@ -218,7 +217,7 @@
           </div>
           <div class="kpi-value text-primary">${formatarNumero(totalPecasProducao)} un</div>
           <div class="kpi-desc">
-            <span class="text-gray-500">${pedidosEmProducao.length} ordens ativas na oficina</span>
+            <span class="text-gray-500">${pedidosEmProducao.length > 0 ? `${pedidosEmProducao.length} ordens ativas na oficina` : 'Oficina liberada para produção'}</span>
           </div>
         </div>
 
@@ -229,7 +228,7 @@
           </div>
           <div class="kpi-value ${pedidosQuarentena.length > 0 ? 'text-red' : 'text-primary'}">${pedidosQuarentena.length} pedidos</div>
           <div class="kpi-desc">
-            <span class="${pedidosQuarentena.length > 0 ? 'text-red' : 'text-gray-500'}">Aguardando checklist rigoroso</span>
+            <span class="${pedidosQuarentena.length > 0 ? 'text-red' : 'text-gray-500'}">${pedidosQuarentena.length > 0 ? 'Aguardando checklist rigoroso' : 'Nenhuma pendência técnica'}</span>
           </div>
         </div>
 
@@ -238,9 +237,9 @@
             <span>Margem Média Bruta</span>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
           </div>
-          <div class="kpi-value text-green">${margemMediaPercentual}%</div>
+          <div class="kpi-value ${margensValidas.length > 0 ? 'text-green' : 'text-primary'}">${margensValidas.length > 0 ? margemMediaPercentual + '%' : '0.0%'}</div>
           <div class="kpi-desc">
-            <span class="text-green">Acima da média industrial têxtil</span>
+            <span class="${margensValidas.length > 0 ? 'text-green' : 'text-gray-500'}">${margensValidas.length > 0 ? 'Acima da média industrial têxtil' : 'Calculada sobre novos pedidos'}</span>
           </div>
         </div>
       </div>
@@ -355,7 +354,7 @@
             </tr>
           </thead>
           <tbody>
-            ${db.pedidos.slice(0, 5).map(p => {
+            ${db.pedidos.length ? db.pedidos.slice(0, 5).map(p => {
               const mockup = p.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(p.produtoNome, "#1e3a8a", "#ffffff", p.clienteNome.substring(0, 6));
               return `
                 <tr>
@@ -385,7 +384,22 @@
                   </td>
                 </tr>
               `;
-            }).join('')}
+            }).join('') : `
+              <tr>
+                <td colspan="9" style="text-align: center; padding: 40px 20px; color: var(--text-gray-500);">
+                  <div style="font-size: 13.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">
+                    Nenhum pedido em carteira no momento
+                  </div>
+                  <div style="font-size: 12px; margin-bottom: 14px; color: var(--text-gray-500);">
+                    O sistema está limpo e preparado para receber os pedidos reais da sua campanha.
+                  </div>
+                  <button class="btn btn-primary btn-sm" onclick="window.ERP.abrirModalNovoOrcamento()">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Cadastrar Primeiro Pedido / Orçamento
+                  </button>
+                </td>
+              </tr>
+            `}
           </tbody>
         </table>
       </div>
@@ -483,8 +497,17 @@
   function renderizarTabelaPedidosHtml(pedidos) {
     if (!pedidos.length) {
       return `
-        <div class="card" style="text-align: center; padding: 40px; color: var(--text-gray-500);">
-          Nenhum pedido ou orçamento encontrado com os filtros selecionados.
+        <div class="card" style="text-align: center; padding: 50px 20px; color: var(--text-gray-500);">
+          <div style="font-size: 15px; font-weight: 800; color: var(--text-primary); margin-bottom: 8px;">
+            Nenhum pedido ou orçamento registrado no sistema
+          </div>
+          <p style="font-size: 12.5px; max-width: 520px; margin: 0 auto 16px auto; color: var(--text-gray-600); line-height: 1.6;">
+            O sistema está limpo e 100% pronto para a operação real. Inicie uma nova negociação gerando uma proposta comercial personalizada ou registrando uma ordem oficial com sinal.
+          </p>
+          <button class="btn btn-primary" onclick="window.ERP.abrirModalNovoOrcamento()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Criar Primeiro Orçamento / Pedido Oficial
+          </button>
         </div>
       `;
     }
@@ -1987,7 +2010,7 @@
             </tr>
           </thead>
           <tbody>
-            ${db.ordensServico.map(os => {
+            ${db.ordensServico.length ? db.ordensServico.map(os => {
               const mockup = os.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(os.produto, "#1e3a8a", "#ffffff", os.cliente.substring(0, 6));
               return `
                 <tr>
@@ -2012,7 +2035,13 @@
                   </td>
                 </tr>
               `;
-            }).join('')}
+            }).join('') : `
+              <tr>
+                <td colspan="10" style="text-align: center; padding: 40px 20px; color: var(--text-gray-500);">
+                  Nenhuma Ordem de Serviço na oficina. Conforme os pedidos forem aprovados, as OS industriais com fichas técnicas A4 serão geradas automaticamente aqui.
+                </td>
+              </tr>
+            `}
           </tbody>
         </table>
       </div>
@@ -2211,7 +2240,7 @@
                 </tr>
               </thead>
               <tbody>
-                ${db.nestingFila.map((art, idx) => `
+                ${db.nestingFila.length ? db.nestingFila.map((art, idx) => `
                   <tr>
                     <td><strong>${art.cliente}</strong></td>
                     <td>${art.descricao}</td>
@@ -2221,7 +2250,13 @@
                       <button class="btn btn-red btn-sm btn-remover-arte-nesting" data-index="${idx}">Remover</button>
                     </td>
                   </tr>
-                `).join('')}
+                `).join('') : `
+                  <tr>
+                    <td colspan="5" style="text-align: center; padding: 30px 10px; color: var(--text-gray-500);">
+                      Nenhuma arte na fila de impressão DTF. Clique em "+ Adicionar Arte à Fila" ou gere orçamentos com técnicas DTF.
+                    </td>
+                  </tr>
+                `}
               </tbody>
             </table>
           </div>
@@ -2974,7 +3009,7 @@
                 </tr>
               </thead>
               <tbody>
-                ${db.lancamentosFinanceiros.map(lan => `
+                ${db.lancamentosFinanceiros.length ? db.lancamentosFinanceiros.map(lan => `
                   <tr>
                     <td class="text-mono" style="font-size: 11px;">${lan.data}</td>
                     <td>
@@ -2991,7 +3026,13 @@
                       <strong>${lan.tipo === 'Entrada' ? '+' : '-'} ${formatarMoeda(lan.valor)}</strong>
                     </td>
                   </tr>
-                `).join('')}
+                `).join('') : `
+                  <tr>
+                    <td colspan="5" style="text-align: center; padding: 30px 10px; color: var(--text-gray-500);">
+                      Nenhum lançamento no caixa ainda. Conforme pedidos receberem sinal ou compras forem lançadas, as movimentações financeiras aparecerão aqui.
+                    </td>
+                  </tr>
+                `}
               </tbody>
             </table>
           </div>
@@ -3295,7 +3336,7 @@
             </tr>
           </thead>
           <tbody>
-            ${db.compras.map(c => `
+            ${db.compras.length ? db.compras.map(c => `
               <tr>
                 <td class="text-mono"><strong>${c.id}</strong></td>
                 <td class="text-mono">${c.data}</td>
@@ -3314,7 +3355,13 @@
                   </span>
                 </td>
               </tr>
-            `).join('')}
+            `).join('') : `
+              <tr>
+                <td colspan="8" style="text-align: center; padding: 40px 20px; color: var(--text-gray-500);">
+                  Nenhum pedido de compra registrado. Clique em "+ Nova Compra / Lançamento Avulso" para registrar entradas de materiais ou insumos da fábrica.
+                </td>
+              </tr>
+            `}
           </tbody>
         </table>
       </div>
@@ -3472,10 +3519,10 @@
             </tr>
           </thead>
           <tbody>
-            ${db.clientes.map(cli => `
+            ${db.clientes.length ? db.clientes.map(cli => `
               <tr>
                 <td>
-                  <strong>${cli.nomeFantasia}</strong>
+                  <strong>${cli.nomeFantasia || cli.razaoSocial}</strong>
                   <span style="display: block; font-size: 11px; color: var(--text-gray-500);">${cli.razaoSocial}</span>
                 </td>
                 <td class="text-mono">${cli.cnpj}</td>
@@ -3490,8 +3537,8 @@
                 </td>
                 <td>${cli.cidade} - ${cli.uf}</td>
                 <td>${cli.ramoAtividade || 'Geral'}</td>
-                <td class="text-mono">${cli.totalPedidosFeitos} pedidos</td>
-                <td class="text-mono"><strong>${formatarMoeda(cli.faturamentoAcumulado)}</strong></td>
+                <td class="text-mono">${cli.totalPedidosFeitos || 0} pedidos</td>
+                <td class="text-mono"><strong>${formatarMoeda(cli.faturamentoAcumulado || 0)}</strong></td>
                 <td>
                   <span class="status-pill ${cli.precisaRecompraAlerta ? 'status-red' : 'status-green'}">
                     ${cli.precisaRecompraAlerta ? 'RENOVAR UNIFORMES' : 'EM DIA'}
@@ -3501,13 +3548,28 @@
                   <button class="btn btn-secondary btn-sm btn-ver-historico-cliente" data-id="${cli.id}">Histórico</button>
                 </td>
               </tr>
-            `).join('')}
+            `).join('') : `
+              <tr>
+                <td colspan="10" style="text-align: center; padding: 40px 20px; color: var(--text-gray-500);">
+                  <div style="font-size: 13.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Nenhum cliente cadastrado no CRM</div>
+                  <div style="font-size: 12px; margin-bottom: 14px; color: var(--text-gray-500);">Cadastre seus clientes diretamente aqui ou de forma instantânea na criação de novos orçamentos.</div>
+                  <button class="btn btn-primary btn-sm" id="btnCadastrarPrimeiroCliente">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Cadastrar Primeiro Cliente
+                  </button>
+                </td>
+              </tr>
+            `}
           </tbody>
         </table>
       </div>
     `;
 
     document.getElementById('btnCadastrarClientePrincipal')?.addEventListener('click', () => {
+      abrirModalNovoClienteInline(() => renderizarClientes());
+    });
+
+    document.getElementById('btnCadastrarPrimeiroCliente')?.addEventListener('click', () => {
       abrirModalNovoClienteInline(() => renderizarClientes());
     });
 
@@ -4151,7 +4213,7 @@
             </tr>
           </thead>
           <tbody>
-            ${db.notasFiscais.map(nf => `
+            ${db.notasFiscais.length ? db.notasFiscais.map(nf => `
               <tr>
                 <td class="text-mono"><strong>#${nf.numero}</strong></td>
                 <td class="text-mono">${nf.serie}</td>
@@ -4170,7 +4232,13 @@
                   </button>
                 </td>
               </tr>
-            `).join('')}
+            `).join('') : `
+              <tr>
+                <td colspan="10" style="text-align: center; padding: 40px 20px; color: var(--text-gray-500);">
+                  Nenhuma Nota Fiscal emitida. Conforme os pedidos forem concluídos, as NF-e modelo 55 autorizadas pela SEFAZ serão listadas aqui.
+                </td>
+              </tr>
+            `}
           </tbody>
         </table>
       </div>
@@ -4507,13 +4575,16 @@
         localStorage.removeItem('texpro_erp_database_v1');
         localStorage.removeItem('texpro_erp_database_v2');
         localStorage.removeItem('texpro_erp_database_v3');
+        localStorage.removeItem('texpro_erp_database_v4');
+        localStorage.removeItem('texpro_erp_database_v5');
+        localStorage.removeItem('texpro_erp_prod_v6');
       } catch (e) {}
       db = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA));
       db.versao = ERP_VERSION;
       salvarEstado();
       atualizarBadges();
       navegarPara(abaAtiva);
-      mostrarToast('Banco de dados e cache redefinidos com sucesso! Dados industriais completos carregados.', 'green');
+      mostrarToast('Sistema limpo com sucesso! Pronto para operação real da campanha.', 'green');
     }
   };
 

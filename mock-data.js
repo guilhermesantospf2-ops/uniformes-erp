@@ -264,317 +264,35 @@ window.ERP_INITIAL_DATA = {
     { id: "COST-05", nome: "Facção Ponto de Ouro (Acessórios e Bonés)", responsavel: "Silvana Ramos", telefone: "19971008899", especialidade: "Aventais, Bonés, Coletes e Faixas Refletivas", capacidadeDiaPecas: 100, valorMedioPorPeca: 8.50, status: "Disponível" }
   ],
 
-  // ESTOQUE ATUAL DE MATÉRIA-PRIMA E INSUMOS
+  // ESTOQUE INICIAL DE MATÉRIA-PRIMA E INSUMOS (CADASTRO PRONTO • SALDO ZERADO PARA PRODUÇÃO)
   estoque: [
-    { id: "EST-01", codigo: "MAL-PIQ-AZUL", descricao: "Malha Piquet PA Azul Marinho", categoria: "Malhas e Tecidos", unidade: "kg", saldoAtual: 280, estoqueMinimo: 80, custoMedioUnitario: 48.50, fornecedorUltimo: "Malharia Textil Sul" },
-    { id: "EST-02", codigo: "MAL-PIQ-BRANCO", descricao: "Malha Piquet PA Branco Alvejado", categoria: "Malhas e Tecidos", unidade: "kg", saldoAtual: 195, estoqueMinimo: 60, custoMedioUnitario: 46.00, fornecedorUltimo: "Malharia Textil Sul" },
-    { id: "EST-03", codigo: "MAL-PIQ-PRETO", descricao: "Malha Piquet PA Preto Reativo", categoria: "Malhas e Tecidos", unidade: "kg", saldoAtual: 42, estoqueMinimo: 70, custoMedioUnitario: 50.00, fornecedorUltimo: "Malharia Textil Sul" },
-    { id: "EST-04", codigo: "MAL-301-BRANCO", descricao: "Meia Malha 30.1 Penteada Algodão Branco", categoria: "Malhas e Tecidos", unidade: "kg", saldoAtual: 310, estoqueMinimo: 100, custoMedioUnitario: 44.00, fornecedorUltimo: "Fiação Vale do Itajaí" },
-    { id: "EST-05", codigo: "MAL-DRY-AZUL", descricao: "Malha Dry Fit Poliéster Azul Royal", categoria: "Malhas e Tecidos", unidade: "kg", saldoAtual: 140, estoqueMinimo: 50, custoMedioUnitario: 38.00, fornecedorUltimo: "Tecelagem Paulista" },
-    { id: "EST-06", codigo: "TEC-BRIM-CINZA", descricao: "Tecido Brim Pesado 100% Algodão Cinza", categoria: "Malhas e Tecidos", unidade: "m", saldoAtual: 520, estoqueMinimo: 150, custoMedioUnitario: 22.80, fornecedorUltimo: "Santista Têxtil" },
-    { id: "EST-07", codigo: "TEC-OXFORD-BRANCO", descricao: "Tecido Oxford Branco 100% Poliéster", categoria: "Malhas e Tecidos", unidade: "m", saldoAtual: 280, estoqueMinimo: 100, custoMedioUnitario: 14.50, fornecedorUltimo: "Tecidos Aliança" },
-    { id: "EST-08", codigo: "AVI-GOLA-AZUL", descricao: "Gola Polo Retilínea Azul Marinho c/ Friso Branco", categoria: "Aviamentos", unidade: "un", saldoAtual: 850, estoqueMinimo: 200, custoMedioUnitario: 3.20, fornecedorUltimo: "Golas & Punhos BR" },
-    { id: "EST-09", codigo: "AVI-PUNHO-AZUL", descricao: "Punho Retilíneo Manga Azul Marinho", categoria: "Aviamentos", unidade: "par", saldoAtual: 790, estoqueMinimo: 200, custoMedioUnitario: 2.20, fornecedorUltimo: "Golas & Punhos BR" },
-    { id: "EST-10", codigo: "AVI-BOT-POLO", descricao: "Botão Poliéster 2 Furos 18mm", categoria: "Aviamentos", unidade: "grosa", saldoAtual: 18, estoqueMinimo: 10, custoMedioUnitario: 14.00, fornecedorUltimo: "Aviamentos Central" },
-    { id: "EST-11", codigo: "DTF-FILME-60", descricao: "Filme DTF Rolo 60cm x 100m", categoria: "Insumos DTF", unidade: "m", saldoAtual: 185, estoqueMinimo: 50, custoMedioUnitario: 12.00, fornecedorUltimo: "DTF Pro Suprimentos" },
-    { id: "EST-12", codigo: "DTF-PO-POLIAM", descricao: "Poliamida Termofusível Branca Especial DTF", categoria: "Insumos DTF", unidade: "kg", saldoAtual: 24, estoqueMinimo: 10, custoMedioUnitario: 95.00, fornecedorUltimo: "DTF Pro Suprimentos" },
-    { id: "EST-13", codigo: "LINHA-120-MAR", descricao: "Cone Linha Reta 120 10.000m Azul Marinho", categoria: "Aviamentos", unidade: "un", saldoAtual: 14, estoqueMinimo: 5, custoMedioUnitario: 18.50, fornecedorUltimo: "Fios & Linhas Brasil" },
-    { id: "EST-14", codigo: "TINTA-DTF-BRANCA", descricao: "Tinta DTF Textil Pigmentada Branca 1L", categoria: "Insumos DTF", unidade: "litro", saldoAtual: 6, estoqueMinimo: 3, custoMedioUnitario: 210.00, fornecedorUltimo: "DTF Pro Suprimentos" },
-    { id: "EST-15", codigo: "REFLETIVO-50MM", descricao: "Faixa Refletiva Termocolante Alta Visibilidade 50mm", categoria: "Aviamentos", unidade: "m", saldoAtual: 140, estoqueMinimo: 40, custoMedioUnitario: 5.50, fornecedorUltimo: "Segurança & Fitas Ltda" }
+    { id: "EST-01", codigo: "MAL-PIQ-AZUL", descricao: "Malha Piquet PA Azul Marinho", categoria: "Malhas e Tecidos", unidade: "kg", saldoAtual: 0, estoqueMinimo: 50, custoMedioUnitario: 48.50, fornecedorUltimo: "Malharia Textil Sul" },
+    { id: "EST-02", codigo: "MAL-PIQ-BRANCO", descricao: "Malha Piquet PA Branco Alvejado", categoria: "Malhas e Tecidos", unidade: "kg", saldoAtual: 0, estoqueMinimo: 40, custoMedioUnitario: 46.00, fornecedorUltimo: "Malharia Textil Sul" },
+    { id: "EST-03", codigo: "MAL-PIQ-PRETO", descricao: "Malha Piquet PA Preto Reativo", categoria: "Malhas e Tecidos", unidade: "kg", saldoAtual: 0, estoqueMinimo: 40, custoMedioUnitario: 50.00, fornecedorUltimo: "Malharia Textil Sul" },
+    { id: "EST-04", codigo: "MAL-301-BRANCO", descricao: "Meia Malha 30.1 Penteada Algodão Branco", categoria: "Malhas e Tecidos", unidade: "kg", saldoAtual: 0, estoqueMinimo: 50, custoMedioUnitario: 44.00, fornecedorUltimo: "Fiação Vale do Itajaí" },
+    { id: "EST-05", codigo: "MAL-DRY-AZUL", descricao: "Malha Dry Fit Poliéster Azul Royal", categoria: "Malhas e Tecidos", unidade: "kg", saldoAtual: 0, estoqueMinimo: 30, custoMedioUnitario: 38.00, fornecedorUltimo: "Tecelagem Paulista" },
+    { id: "EST-06", codigo: "TEC-BRIM-CINZA", descricao: "Tecido Brim Pesado 100% Algodão Cinza", categoria: "Malhas e Tecidos", unidade: "m", saldoAtual: 0, estoqueMinimo: 80, custoMedioUnitario: 22.80, fornecedorUltimo: "Santista Têxtil" },
+    { id: "EST-07", codigo: "TEC-OXFORD-BRANCO", descricao: "Tecido Oxford Branco 100% Poliéster", categoria: "Malhas e Tecidos", unidade: "m", saldoAtual: 0, estoqueMinimo: 50, custoMedioUnitario: 14.50, fornecedorUltimo: "Tecidos Aliança" },
+    { id: "EST-08", codigo: "AVI-GOLA-AZUL", descricao: "Gola Polo Retilínea Azul Marinho c/ Friso Branco", categoria: "Aviamentos", unidade: "un", saldoAtual: 0, estoqueMinimo: 100, custoMedioUnitario: 3.20, fornecedorUltimo: "Golas & Punhos BR" },
+    { id: "EST-09", codigo: "AVI-PUNHO-AZUL", descricao: "Punho Retilíneo Manga Azul Marinho", categoria: "Aviamentos", unidade: "par", saldoAtual: 0, estoqueMinimo: 100, custoMedioUnitario: 2.20, fornecedorUltimo: "Golas & Punhos BR" },
+    { id: "EST-10", codigo: "AVI-BOT-POLO", descricao: "Botão Poliéster 2 Furos 18mm", categoria: "Aviamentos", unidade: "grosa", saldoAtual: 0, estoqueMinimo: 5, custoMedioUnitario: 14.00, fornecedorUltimo: "Aviamentos Central" },
+    { id: "EST-11", codigo: "DTF-FILME-60", descricao: "Filme DTF Rolo 60cm x 100m", categoria: "Insumos DTF", unidade: "m", saldoAtual: 0, estoqueMinimo: 20, custoMedioUnitario: 12.00, fornecedorUltimo: "DTF Pro Suprimentos" },
+    { id: "EST-12", codigo: "DTF-PO-POLIAM", descricao: "Poliamida Termofusível Branca Especial DTF", categoria: "Insumos DTF", unidade: "kg", saldoAtual: 0, estoqueMinimo: 5, custoMedioUnitario: 95.00, fornecedorUltimo: "DTF Pro Suprimentos" },
+    { id: "EST-13", codigo: "LINHA-120-MAR", descricao: "Cone Linha Reta 120 10.000m Azul Marinho", categoria: "Aviamentos", unidade: "un", saldoAtual: 0, estoqueMinimo: 3, custoMedioUnitario: 18.50, fornecedorUltimo: "Fios & Linhas Brasil" },
+    { id: "EST-14", codigo: "TINTA-DTF-BRANCA", descricao: "Tinta DTF Textil Pigmentada Branca 1L", categoria: "Insumos DTF", unidade: "litro", saldoAtual: 0, estoqueMinimo: 2, custoMedioUnitario: 210.00, fornecedorUltimo: "DTF Pro Suprimentos" },
+    { id: "EST-15", codigo: "REFLETIVO-50MM", descricao: "Faixa Refletiva Termocolante Alta Visibilidade 50mm", categoria: "Aviamentos", unidade: "m", saldoAtual: 0, estoqueMinimo: 20, custoMedioUnitario: 5.50, fornecedorUltimo: "Segurança & Fitas Ltda" }
   ],
 
-  // CLIENTES CADASTRADOS (CRM COMPLETO COM DADOS OBRIGATÓRIOS)
-  clientes: [
-    {
-      id: "CLI-101",
-      razaoSocial: "Transportadora Rápido Paulista S.A.",
-      nomeFantasia: "Expresso Paulista",
-      cnpj: "18.394.819/0001-92",
-      ie: "244.891.002.114",
-      contatoNome: "Roberto Medeiros",
-      cargoContato: "Gerente de RH e Operações",
-      telefone: "11984210091",
-      email: "rh@expressopaulista.com.br",
-      endereco: "Av. dos Bandeirantes, 1200",
-      bairro: "Vila Industrial",
-      cidade: "Campinas",
-      uf: "SP",
-      cep: "13035-000",
-      ramoAtividade: "Transporte e Logística",
-      totalPedidosFeitos: 6,
-      faturamentoAcumulado: 48500.00,
-      dataUltimaCompra: "2026-03-15",
-      intervaloRecompraMeses: 6,
-      precisaRecompraAlerta: true
-    },
-    {
-      id: "CLI-102",
-      razaoSocial: "Clínica Integrada Odonto Vida Ltda",
-      nomeFantasia: "Odonto Vida",
-      cnpj: "29.114.731/0001-05",
-      ie: "104.992.312.001",
-      contatoNome: "Dra. Carolina Vaz",
-      cargoContato: "Diretora Clínica",
-      telefone: "11971203344",
-      email: "adm@odontovida.com.br",
-      endereco: "Rua Vergueiro, 340 - Conj 52",
-      bairro: "Paraíso",
-      cidade: "São Paulo",
-      uf: "SP",
-      cep: "04101-000",
-      ramoAtividade: "Saúde e Odontologia",
-      totalPedidosFeitos: 3,
-      faturamentoAcumulado: 14200.00,
-      dataUltimaCompra: "2026-07-20",
-      intervaloRecompraMeses: 6,
-      precisaRecompraAlerta: false
-    },
-    {
-      id: "CLI-103",
-      razaoSocial: "Metalúrgica Nova Era Indústria e Comércio Ltda",
-      nomeFantasia: "Nova Era Metalúrgica",
-      cnpj: "52.889.012/0001-63",
-      ie: "535.109.844.210",
-      contatoNome: "Cláudio Sampaio",
-      cargoContato: "Comprador Técnico",
-      telefone: "19992348877",
-      email: "compras@novaerametal.com.br",
-      endereco: "Rodovia SP-304, Km 140",
-      bairro: "Distrito Unileste",
-      cidade: "Piracicaba",
-      uf: "SP",
-      cep: "13422-000",
-      ramoAtividade: "Metalmecânica e Indústria Pesada",
-      totalPedidosFeitos: 8,
-      faturamentoAcumulado: 76300.00,
-      dataUltimaCompra: "2026-08-10",
-      intervaloRecompraMeses: 6,
-      precisaRecompraAlerta: false
-    },
-    {
-      id: "CLI-104",
-      razaoSocial: "Colégio Santa Helena Educação Básica Ltda",
-      nomeFantasia: "Colégio Santa Helena",
-      cnpj: "44.102.948/0001-71",
-      ie: "671.009.281.332",
-      contatoNome: "Marta Guimarães",
-      cargoContato: "Diretora Geral",
-      telefone: "19988112244",
-      email: "diretoria@colegiosantahelena.com.br",
-      endereco: "Rua das Flores, 88",
-      bairro: "Centro",
-      cidade: "Sumaré",
-      uf: "SP",
-      cep: "13170-000",
-      ramoAtividade: "Educação Infantil e Fundamental",
-      totalPedidosFeitos: 5,
-      faturamentoAcumulado: 62000.00,
-      dataUltimaCompra: "2026-02-05",
-      intervaloRecompraMeses: 6,
-      precisaRecompraAlerta: true
-    }
-  ],
+  // CLIENTES CADASTRADOS (CRM COMPLETO - LIMPO PARA OPERAÇÃO REAL)
+  clientes: [],
 
-  // PEDIDOS E ORÇAMENTOS COM MOCKUPS 3x4 E ARTES ANEXADAS
-  pedidos: [
-    {
-      id: "PED-1084",
-      numero: 1084,
-      tipoRegistro: "Pedido",
-      dataCriacao: "2026-09-24",
-      clienteId: "CLI-101",
-      clienteNome: "Expresso Paulista",
-      clienteTelefone: "11984210091",
-      status: "Em Producao",
-      etapaProducao: "Costura",
-      produtoId: "PROD-001",
-      produtoNome: "Camisa Polo Tradicional Piquet",
-      corTecido: "Azul Marinho c/ Friso Branco",
-      tecidoEspecificacao: "Piquet PA 50/50",
-      tipoPersonalizacao: "Bordado Peito + DTF Costas",
-      costureiraId: "COST-01",
-      costureiraNome: "Oficina Interna - Linha 1 (Polos e Sociais)",
-      mockupUrl: window.ERP_MOCKUPS.gerarMockupSvg("polo", "#1e3a8a", "#ffffff", "EXPRESSO"),
-      artesAnexadas: [
-        { local: "Peito Esquerdo", tecnica: "Bordado Computadorizado", dimensoes: "8.5 x 7.0 cm", arquivoNome: "logo_peito_expresso.pes" },
-        { local: "Costas", tecnica: "DTF Digital", dimensoes: "26.0 x 8.0 cm", arquivoNome: "costas_expresso_vetor.png" }
-      ],
-      grade: { pp: 0, p: 15, m: 35, g: 30, gg: 15, xg: 5, total: 100 },
-      precoUnitarioVenda: 54.00,
-      valorTotalVenda: 5400.00,
-      custoTotalEstimado: 3420.00,
-      lucroLiquidoEstimado: 1980.00,
-      margemLucroPercentual: 36.67,
-      condicaoPagamento: "50% Sinal + 50% na Retirada",
-      sinalPago: true,
-      valorSinalPago: 2700.00,
-      saldoPendente: 2700.00,
-      dataPrevisaoEntrega: "2026-10-06",
-      notaFiscalEmitida: false,
-      vendedorResponsavel: "Marcos Paulo"
-    },
-    {
-      id: "PED-1085",
-      numero: 1085,
-      tipoRegistro: "Pedido",
-      dataCriacao: "2026-09-25",
-      clienteId: "CLI-103",
-      clienteNome: "Nova Era Metalúrgica",
-      clienteTelefone: "19992348877",
-      status: "Em Producao",
-      etapaProducao: "Corte",
-      produtoId: "PROD-009",
-      produtoNome: "Camisa Operacional Brim c/ Faixa Refletiva",
-      corTecido: "Cinza Chumbo",
-      tecidoEspecificacao: "Tecido Brim Pesado 100% Algodão",
-      tipoPersonalizacao: "Bordado Bolso + Silk Costas",
-      costureiraId: "COST-02",
-      costureiraNome: "Facção São Jorge (Linha Pesada e Brim)",
-      mockupUrl: window.ERP_MOCKUPS.gerarMockupSvg("brim", "#475569", "#eab308", "NOVA ERA"),
-      artesAnexadas: [
-        { local: "Bolso Peito", tecnica: "Bordado Computadorizado", dimensoes: "8.0 x 5.0 cm", arquivoNome: "logo_bolso_novaera.dst" },
-        { local: "Costas", tecnica: "Silk Screen 2 Cores", dimensoes: "28.0 x 14.0 cm", arquivoNome: "silk_costas_novaera.pdf" },
-        { local: "Manga Direita", tecnica: "Faixa Refletiva", dimensoes: "10.0 x 5.0 cm", arquivoNome: "faixa_braco.pdf" }
-      ],
-      grade: { pp: 0, p: 10, m: 25, g: 25, gg: 10, xg: 0, total: 70 },
-      precoUnitarioVenda: 68.00,
-      valorTotalVenda: 4760.00,
-      custoTotalEstimado: 3150.00,
-      lucroLiquidoEstimado: 1610.00,
-      margemLucroPercentual: 33.82,
-      condicaoPagamento: "50% Sinal + 50% Faturamento 15dd",
-      sinalPago: true,
-      valorSinalPago: 2380.00,
-      saldoPendente: 2380.00,
-      dataPrevisaoEntrega: "2026-10-08",
-      notaFiscalEmitida: false,
-      vendedorResponsavel: "Fabiana Toledo"
-    },
-    {
-      id: "PED-1086",
-      numero: 1086,
-      tipoRegistro: "Pedido",
-      dataCriacao: "2026-09-26",
-      clienteId: "CLI-102",
-      clienteNome: "Odonto Vida",
-      clienteTelefone: "11971203344",
-      status: "Quarentena",
-      etapaProducao: "Aguardando Aprovacao",
-      produtoId: "PROD-015",
-      produtoNome: "Jaleco Hospitalar Manga Longa Oxford",
-      corTecido: "Branco Neve",
-      tecidoEspecificacao: "Oxford 100% Poliéster",
-      tipoPersonalizacao: "Bordado Nome Individual + Brasão Peito",
-      costureiraId: "COST-03",
-      costureiraNome: "Costuraria D. Neusa (Linha Saúde e Jalecos)",
-      mockupUrl: window.ERP_MOCKUPS.gerarMockupSvg("jaleco", "#ffffff", "#047857", "ODONTO"),
-      artesAnexadas: [
-        { local: "Peito Esquerdo", tecnica: "Bordado Computadorizado", dimensoes: "9.0 x 7.5 cm", arquivoNome: "escudo_odontovida.pes" },
-        { local: "Peito Direito", tecnica: "Bordado Nome Dra", dimensoes: "10.0 x 2.0 cm", arquivoNome: "nomes_dentistas.pdf" }
-      ],
-      grade: { pp: 5, p: 12, m: 10, g: 3, gg: 0, xg: 0, total: 30 },
-      precoUnitarioVenda: 89.00,
-      valorTotalVenda: 2670.00,
-      custoTotalEstimado: 1710.00,
-      lucroLiquidoEstimado: 960.00,
-      margemLucroPercentual: 35.95,
-      condicaoPagamento: "50% Sinal + 50% na Entrega",
-      sinalPago: true,
-      valorSinalPago: 1335.00,
-      saldoPendente: 1335.00,
-      dataPrevisaoEntrega: "2026-10-12",
-      notaFiscalEmitida: false,
-      vendedorResponsavel: "Marcos Paulo"
-    },
-    {
-      id: "ORC-904",
-      numero: 904,
-      tipoRegistro: "Orcamento",
-      dataCriacao: "2026-09-26",
-      clienteId: "CLI-104",
-      clienteNome: "Colégio Santa Helena",
-      clienteTelefone: "19988112244",
-      status: "Orcamento",
-      etapaProducao: "Em Negociação",
-      produtoId: "PROD-018",
-      produtoNome: "Camisa Esportiva Dry Fit Sublimada",
-      corTecido: "Azul Royal c/ Amarelo",
-      tecidoEspecificacao: "Dry Fit Microfibra",
-      tipoPersonalizacao: "Sublimação Total Digital",
-      costureiraId: "COST-04",
-      costureiraNome: "Oficina Interna - Linha 2 (Básicas, Dry e Moletom)",
-      mockupUrl: window.ERP_MOCKUPS.gerarMockupSvg("camiseta", "#1d4ed8", "#facc15", "STA HELENA"),
-      artesAnexadas: [
-        { local: "Frente Total", tecnica: "Sublimação Total", dimensoes: "50.0 x 70.0 cm", arquivoNome: "arte_intercolegial.ai" }
-      ],
-      grade: { pp: 30, p: 50, m: 70, g: 40, gg: 10, xg: 0, total: 200 },
-      precoUnitarioVenda: 36.00,
-      valorTotalVenda: 7200.00,
-      custoTotalEstimado: 4800.00,
-      lucroLiquidoEstimado: 2400.00,
-      margemLucroPercentual: 33.33,
-      condicaoPagamento: "50% Sinal + 50% na Entrega",
-      sinalPago: false,
-      valorSinalPago: 0,
-      saldoPendente: 7200.00,
-      dataPrevisaoEntrega: "2026-10-18",
-      notaFiscalEmitida: false,
-      vendedorResponsavel: "Fabiana Toledo"
-    }
-  ],
+  // PEDIDOS E ORÇAMENTOS (LIMPO PARA OPERAÇÃO REAL)
+  pedidos: [],
 
-  // ORDENS DE SERVIÇO TÉCNICAS SINCRONIZADAS COM OS PEDIDOS
-  ordensServico: [
-    {
-      id: "OS-8401",
-      pedidoNumero: 1084,
-      cliente: "Expresso Paulista",
-      produto: "Camisa Polo Tradicional Piquet",
-      mockupUrl: window.ERP_MOCKUPS.gerarMockupSvg("polo", "#1e3a8a", "#ffffff", "EXPRESSO"),
-      quantidadeTotal: 100,
-      grade: { pp: 0, p: 15, m: 35, g: 30, gg: 15, xg: 5 },
-      etapaAtual: "Costura",
-      costureiraDesignada: "Oficina Interna - Linha 1 (Polos e Sociais)",
-      responsavelCorte: "Vanderlei Souza",
-      dataEntradaCorte: "2026-09-25",
-      tecidoConsumidoKg: 28.4,
-      artesAplicacao: [
-        { local: "Peito Esquerdo", dimensao: "8.5 x 7.0 cm", tecnica: "Bordado" },
-        { local: "Costas", dimensao: "26.0 x 8.0 cm", tecnica: "DTF" }
-      ],
-      instrucoesCorte: "Gola e punho retilíneo cor marinho c/ friso branco. Reforço de ombro a ombro obrigatório. Fio reto com 1.5% de descanso de malha.",
-      instrucoesCostura: "Costura dupla reforçada nas cavas e barra. Pesponto fino no peitilho.",
-      statusBordado: "Concluido",
-      statusCostura: "Em Andamento (62/100 costuradas)",
-      statusAcabamento: "Pendente"
-    },
-    {
-      id: "OS-8402",
-      pedidoNumero: 1085,
-      cliente: "Nova Era Metalúrgica",
-      produto: "Camisa Operacional Brim c/ Faixa Refletiva",
-      mockupUrl: window.ERP_MOCKUPS.gerarMockupSvg("brim", "#475569", "#eab308", "NOVA ERA"),
-      quantidadeTotal: 70,
-      grade: { pp: 0, p: 10, m: 25, g: 25, gg: 10, xg: 0 },
-      etapaAtual: "Corte",
-      costureiraDesignada: "Facção São Jorge (Linha Pesada e Brim)",
-      responsavelCorte: "Vanderlei Souza",
-      dataEntradaCorte: "2026-09-26",
-      tecidoConsumidoKg: 94.5,
-      artesAplicacao: [
-        { local: "Bolso Peito", dimensao: "8.0 x 5.0 cm", tecnica: "Bordado Branco" },
-        { local: "Costas", dimensao: "28.0 x 14.0 cm", tecnica: "Silk Screen 2 Cores" },
-        { local: "Manga Direita", dimensao: "10.0 x 5.0 cm", tecnica: "Faixa Refletiva" }
-      ],
-      instrucoesCorte: "Brim pesado cinza chumbo. Fio reto milimétrico para não torcer no encolhimento industrial.",
-      instrucoesCostura: "Linha de pesponto reforçada 100% poliéster. Travetes em todos os cantos dos bolsos.",
-      statusBordado: "Pendente",
-      statusCostura: "Pendente",
-      statusAcabamento: "Pendente"
-    }
-  ],
+  // ORDENS DE SERVIÇO TÉCNICAS (LIMPO PARA OPERAÇÃO REAL)
+  ordensServico: [],
 
-  // DESPESAS FIXAS MENSAIS (PARA DRE E BALANÇO FINANCEIRO)
+  // DESPESAS FIXAS MENSAIS (PARA DRE E BALANÇO FINANCEIRO REAL DA FÁBRICA)
   despesasFixas: [
     { id: "DESP-01", descricao: "Aluguel Galpão Industrial e IPTU", categoria: "Instalações", valorMensal: 6500.00 },
     { id: "DESP-02", descricao: "Energia Elétrica Industrial (Enel Fábrica)", categoria: "Utilidades", valorMensal: 2850.00 },
@@ -585,38 +303,19 @@ window.ERP_INITIAL_DATA = {
     { id: "DESP-07", descricao: "Água, Limpeza e Descartáveis de Oficina", categoria: "Utilidades", valorMensal: 620.00 }
   ],
 
-  // LANÇAMENTOS FINANCEIROS (FLUXO DE CAIXA: ENTRADAS E SAÍDAS)
-  lancamentosFinanceiros: [
-    { id: "LAN-01", data: "2026-09-24", tipo: "Entrada", descricao: "Sinal 50% Pedido #1084", cliente: "Expresso Paulista", valor: 2700.00, formaPagamento: "PIX", categoria: "Vendas de Uniformes" },
-    { id: "LAN-02", data: "2026-09-25", tipo: "Entrada", descricao: "Sinal 50% Pedido #1085", cliente: "Nova Era Metalúrgica", valor: 2380.00, formaPagamento: "PIX", categoria: "Vendas de Uniformes" },
-    { id: "LAN-03", data: "2026-09-26", tipo: "Entrada", descricao: "Sinal 50% Pedido #1086", cliente: "Odonto Vida", valor: 1335.00, formaPagamento: "PIX", categoria: "Vendas de Uniformes" },
-    { id: "LAN-04", data: "2026-09-22", tipo: "Saida", descricao: "Compra Tecidos Malharia Textil Sul (NF 1290)", cliente: "Malharia Textil Sul", valor: 14450.00, formaPagamento: "Boleto 30dd", categoria: "Matéria-Prima" },
-    { id: "LAN-05", data: "2026-09-24", tipo: "Saida", descricao: "Compra Fios e Linhas 120 (NF 884)", cliente: "Fios & Linhas Brasil", valor: 925.00, formaPagamento: "PIX", categoria: "Aviamentos" },
-    { id: "LAN-06", data: "2026-09-25", tipo: "Saida", descricao: "Compra Fita Isolante e Suprimentos Mecânicos", cliente: "Eletro Ferragens Americana", valor: 185.00, formaPagamento: "Dinheiro", categoria: "Manutenção Fábrica" }
-  ],
+  // LANÇAMENTOS FINANCEIROS (FLUXO DE CAIXA: ENTRADAS E SAÍDAS - LIMPO)
+  lancamentosFinanceiros: [],
 
-  // FILA DE NESTING DTF (OTIMIZADOR DE ROLO 58CM)
-  nestingFila: [
-    { id: "ART-01", pedidoNumero: 1084, cliente: "Expresso Paulista", descricao: "Logo Costas Expresso", larguraCm: 26.0, alturaCm: 8.0, copias: 100, roloLarguraCm: 58.0 },
-    { id: "ART-02", pedidoNumero: 1086, cliente: "Odonto Vida", descricao: "Escudo Peito Odonto", larguraCm: 9.0, alturaCm: 7.5, copias: 30, roloLarguraCm: 58.0 },
-    { id: "ART-03", pedidoNumero: 1085, cliente: "Nova Era Metalúrgica", descricao: "Logo Bolso Operacional", larguraCm: 8.0, alturaCm: 5.0, copias: 70, roloLarguraCm: 58.0 },
-    { id: "ART-04", pedidoNumero: 1084, cliente: "Expresso Paulista", descricao: "Bordado Peito Teste", larguraCm: 8.5, alturaCm: 7.0, copias: 100, roloLarguraCm: 58.0 }
-  ],
+  // FILA DE NESTING DTF (OTIMIZADOR DE ROLO 58CM - LIMPO)
+  nestingFila: [],
 
-  // NOTAS FISCAIS ELETRÔNICAS (SEFAZ)
-  notasFiscais: [
-    { id: "NFE-00981", numero: 981, serie: "1", dataEmissao: "2026-09-20", cliente: "Transportadora Rápido Paulista S.A.", cnpj: "18.394.819/0001-92", cfop: "5101", naturezaOperacao: "Venda de Produção Têxtil", valorTotal: 8400.00, valorImpostos: 546.00, statusSefaz: "Autorizada", chaveAcesso: "35260934582910000144550010000009811098234710", protocolo: "135260098124512" },
-    { id: "NFE-00980", numero: 980, serie: "1", dataEmissao: "2026-09-18", cliente: "Metalúrgica Nova Era Indústria e Comércio", cnpj: "52.889.012/0001-63", cfop: "5101", naturezaOperacao: "Venda de Produção Têxtil", valorTotal: 5920.00, valorImpostos: 384.80, statusSefaz: "Autorizada", chaveAcesso: "35260934582910000144550010000009801098234709", protocolo: "135260098011284" }
-  ],
+  // NOTAS FISCAIS ELETRÔNICAS SEFAZ (LIMPO)
+  notasFiscais: [],
 
-  // COMPRAS DE INSUMOS E LANÇAMENTOS AVULSOS
-  compras: [
-    { id: "COM-501", data: "2026-09-22", fornecedor: "Malharia Textil Sul S.A.", categoria: "Matéria-Prima", itens: "300kg Malha Piquet PA Azul Marinho e Preto", valorTotal: 14450.00, status: "Entregue", previsaoChegada: "2026-09-24", lancadoEstoque: true },
-    { id: "COM-502", data: "2026-09-24", fornecedor: "Fios & Linhas Brasil", categoria: "Aviamentos", itens: "50 cones Linha Reta 120 e Fio Overlock", valorTotal: 925.00, status: "A Caminho", previsaoChegada: "2026-09-28", lancadoEstoque: false },
-    { id: "COM-503", data: "2026-09-25", fornecedor: "Eletro Ferragens Americana", categoria: "Manutenção Fábrica", itens: "Fita isolante industrial, óleo singer 1L e chave allen", valorTotal: 185.00, status: "Entregue", previsaoChegada: "2026-09-25", lancadoEstoque: false }
-  ],
+  // COMPRAS DE INSUMOS E LANÇAMENTOS AVULSOS (LIMPO)
+  compras: [],
 
-  // EQUIPE E COLABORADORES
+  // EQUIPE E COLABORADORES DA FÁBRICA
   equipe: [
     { id: "USR-01", nome: "Carlos Eduardo Mendes", email: "carlos@texpro.com.br", cargo: "Administrador Geral / Diretor", nivelAcesso: "Admin", status: "Ativo", capacidadeDiaPecas: 0, valorRemuneracao: 9500.00 },
     { id: "USR-02", nome: "Marcos Paulo Silva", email: "marcos@texpro.com.br", cargo: "Vendedor Técnico Corporativo", nivelAcesso: "Comercial", status: "Ativo", capacidadeDiaPecas: 0, valorRemuneracao: 4200.00 },
