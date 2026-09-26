@@ -8,7 +8,8 @@
   'use strict';
 
   // Chave de persistência de banco de dados
-  const STORAGE_KEY = 'texpro_erp_database_v2';
+  const ERP_VERSION = '5.0';
+  const STORAGE_KEY = 'texpro_erp_database_v5';
   let db = null;
 
   try {
@@ -20,8 +21,9 @@
     console.error('Erro ao ler localStorage', e);
   }
 
-  if (!db || !db.produtosBase || db.produtosBase.length < 20 || !db.insumosCatalogoMestre) {
-    db = window.ERP_INITIAL_DATA;
+  if (!db || db.versao !== ERP_VERSION || !db.produtosBase || db.produtosBase.length < 20 || !db.insumosCatalogoMestre) {
+    db = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA));
+    db.versao = ERP_VERSION;
     salvarEstado();
   }
 
@@ -4241,7 +4243,21 @@
     abrirModalNovoModeloInline,
     abrirModalPropostaComercial,
     abrirModalInspecaoQuarentena,
-    abrirModalEntradaEstoque
+    abrirModalEntradaEstoque,
+    forcarResetarBanco: function() {
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem('texpro_erp_database_v1');
+        localStorage.removeItem('texpro_erp_database_v2');
+        localStorage.removeItem('texpro_erp_database_v3');
+      } catch (e) {}
+      db = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA));
+      db.versao = ERP_VERSION;
+      salvarEstado();
+      atualizarBadges();
+      navegarPara(abaAtiva);
+      mostrarToast('Banco de dados e cache redefinidos com sucesso! Dados industriais completos carregados.', 'green');
+    }
   };
 
   // Inicialização no DOM Ready
