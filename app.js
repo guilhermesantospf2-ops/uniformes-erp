@@ -284,8 +284,8 @@
                 <span>Mesa de Corte (Capacidade: 400 peças/dia)</span>
                 <span class="text-mono text-white">280 peças cortadas (70%)</span>
               </div>
-              <div style="width: 100%; height: 6px; background: #1c2130; border-radius: 3px;">
-                <div style="width: 70%; height: 100%; background: #ffffff; border-radius: 3px;"></div>
+              <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px;">
+                <div style="width: 70%; height: 100%; background: #0f172a; border-radius: 3px;"></div>
               </div>
             </div>
 
@@ -294,7 +294,7 @@
                 <span>Bordado Computadorizado (Capacidade: 250 peças/dia)</span>
                 <span class="text-mono text-white">215 peças produzidas (86%)</span>
               </div>
-              <div style="width: 100%; height: 6px; background: #1c2130; border-radius: 3px;">
+              <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px;">
                 <div style="width: 86%; height: 100%; background: var(--color-green); border-radius: 3px;"></div>
               </div>
             </div>
@@ -304,8 +304,8 @@
                 <span>Impressão DTF Digital (Capacidade: 40m/dia)</span>
                 <span class="text-mono text-white">24 metros lineares (60%)</span>
               </div>
-              <div style="width: 100%; height: 6px; background: #1c2130; border-radius: 3px;">
-                <div style="width: 60%; height: 100%; background: #ffffff; border-radius: 3px;"></div>
+              <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px;">
+                <div style="width: 60%; height: 100%; background: #0f172a; border-radius: 3px;"></div>
               </div>
             </div>
 
@@ -314,8 +314,8 @@
                 <span>Linha de Costura & Fechamento (Capacidade: 300 peças/dia)</span>
                 <span class="text-mono text-white">240 peças costuradas (80%)</span>
               </div>
-              <div style="width: 100%; height: 6px; background: #1c2130; border-radius: 3px;">
-                <div style="width: 80%; height: 100%; background: #ffffff; border-radius: 3px;"></div>
+              <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px;">
+                <div style="width: 80%; height: 100%; background: #0f172a; border-radius: 3px;"></div>
               </div>
             </div>
           </div>
@@ -1314,8 +1314,8 @@
             </div>
 
             <!-- Painel de Inserção de Custos da Fábrica -->
-            <div style="background: #0d101a; padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); margin-bottom: 16px;">
-              <span class="form-label" style="color: var(--text-white); margin-bottom: 10px;">Custos Reais de Produção desta Confecção:</span>
+            <div style="background: #f8fafc; padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); margin-bottom: 16px;">
+              <span class="form-label" style="color: var(--text-primary); margin-bottom: 10px;">Custos Reais de Produção desta Confecção:</span>
               <div class="form-row">
                 <div class="form-group">
                   <label class="form-label">Custo Malha/Tecido (R$/kg ou m)</label>
@@ -1446,10 +1446,10 @@
           <span style="font-size: 10px; color: var(--text-gray-600);">Guerra de preço predatória</span>
         </div>
 
-        <div class="benchmark-stat-box" style="border-color: #3b82f6;">
-          <div class="benchmark-stat-label" style="color: #60a5fa;">Média Geral no Brasil</div>
+        <div class="benchmark-stat-box" style="border-color: #0f172a; border-width: 1.5px;">
+          <div class="benchmark-stat-label" style="color: #0f172a;">Média Geral no Brasil</div>
           <div class="benchmark-stat-val text-white">${formatarMoeda(analise.mercado.precoMedioBrasil)}</div>
-          <span style="font-size: 10px; color: var(--text-gray-400);">Preço de equilíbrio nacional</span>
+          <span style="font-size: 10px; color: var(--text-gray-500);">Preço de equilíbrio nacional</span>
         </div>
 
         <div class="benchmark-stat-box">
@@ -1691,9 +1691,9 @@
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
           <div class="modal-body" style="font-size: 12.5px;">
-            <div style="border-bottom: 2px solid #ffffff; padding-bottom: 10px; margin-bottom: 14px; display: flex; justify-content: space-between;">
+            <div style="border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 14px; display: flex; justify-content: space-between;">
               <div>
-                <h2 style="font-size: 16px; color: white;">${db.empresa.nomeFantasia}</h2>
+                <h2 style="font-size: 16px; color: #0f172a;">${db.empresa.nomeFantasia}</h2>
                 <span class="text-mono" style="color: var(--text-gray-500);">ORDEM DE PRODUÇÃO: ${os.id} • PEDIDO #${os.pedidoNumero}</span>
               </div>
               <div class="text-mono text-white" style="text-align: right;">
@@ -1708,8 +1708,8 @@
               <div><strong>Setor Responsável:</strong> ${os.setorResponsavel}</div>
             </div>
 
-            <div style="background: #0b0d13; padding: 12px; border-radius: var(--radius-sm); margin-bottom: 14px;">
-              <strong style="color: white; display: block; margin-bottom: 6px;">Grade de Corte Oficial:</strong>
+            <div style="background: #f8fafc; border: 1px solid var(--border-subtle); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 14px;">
+              <strong style="color: #0f172a; display: block; margin-bottom: 6px;">Grade de Corte Oficial:</strong>
               <div class="text-mono text-white" style="display: flex; gap: 14px;">
                 <span>PP: ${os.grade.pp || 0}</span>
                 <span>P: ${os.grade.p || 0}</span>
@@ -1721,13 +1721,13 @@
             </div>
 
             <div style="margin-bottom: 14px;">
-              <strong style="color: white; display: block; margin-bottom: 4px;">Instruções de Corte & Tecido:</strong>
-              <p style="color: var(--text-gray-400);">${os.instrucoesCorte}</p>
+              <strong style="color: #0f172a; display: block; margin-bottom: 4px;">Instruções de Corte & Tecido:</strong>
+              <p style="color: var(--text-gray-600);">${os.instrucoesCorte}</p>
             </div>
 
             <div style="margin-bottom: 14px;">
-              <strong style="color: white; display: block; margin-bottom: 4px;">Instruções de Estamparia / Bordado:</strong>
-              <p style="color: var(--text-gray-400);">${os.instrucoesBordado}</p>
+              <strong style="color: #0f172a; display: block; margin-bottom: 4px;">Instruções de Estamparia / Bordado:</strong>
+              <p style="color: var(--text-gray-600);">${os.instrucoesBordado}</p>
             </div>
           </div>
           <div class="modal-footer">
@@ -1757,7 +1757,7 @@
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
           <div class="modal-body">
-            <div style="background: #0b0d13; padding: 12px; border-radius: var(--radius-sm); margin-bottom: 16px;">
+            <div style="background: #f8fafc; border: 1px solid var(--border-subtle); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 16px;">
               <div style="font-size: 11px; color: var(--text-gray-500); text-transform: uppercase;">Emitente:</div>
               <strong class="text-white">${db.empresa.razaoSocial}</strong> • CNPJ: <span class="text-mono">${db.empresa.cnpj}</span>
             </div>
