@@ -323,5 +323,23 @@ window.ERP_INITIAL_DATA = {
     { id: "USR-04", nome: "Vanderlei Souza", email: "vanderlei@texpro.com.br", cargo: "Encarregado de Corte & PCP", nivelAcesso: "Producao", status: "Ativo", capacidadeDiaPecas: 400, valorRemuneracao: 3800.00 },
     { id: "USR-05", nome: "Ana Paula Guedes", email: "financeiro@texpro.com.br", cargo: "Analista Financeiro e Fiscal", nivelAcesso: "Financeiro", status: "Ativo", capacidadeDiaPecas: 0, valorRemuneracao: 3500.00 },
     { id: "USR-06", nome: "Lúcia Ferreira", email: "costura1@texpro.com.br", cargo: "Costureira Chefe Linha Polos", nivelAcesso: "Producao", status: "Ativo", capacidadeDiaPecas: 120, valorRemuneracao: 2800.00 }
+  ],
+
+  // HISTÓRICO FINANCEIRO SEMESTRAL (ENTRADAS E SAÍDAS REAIS DA FÁBRICA • TOTALMENTE EDITÁVEL)
+  historicoFinanceiroMensal: [
+    { mes: "MAI", mesCompleto: "Maio/2026", entradas: 38000, saidas: 24500, isAtual: false, isPrevisto: false, sincronizarComCaixa: false },
+    { mes: "JUN", mesCompleto: "Junho/2026", entradas: 44000, saidas: 28200, isAtual: false, isPrevisto: false, sincronizarComCaixa: false },
+    { mes: "JUL", mesCompleto: "Julho/2026", entradas: 41000, saidas: 26000, isAtual: false, isPrevisto: false, sincronizarComCaixa: false },
+    { mes: "AGO", mesCompleto: "Agosto/2026", entradas: 52000, saidas: 31800, isAtual: false, isPrevisto: false, sincronizarComCaixa: false },
+    { mes: "SET", mesCompleto: "Setembro/2026", entradas: 68000, saidas: 41200, isAtual: true, isPrevisto: false, sincronizarComCaixa: true },
+    { mes: "OUT", mesCompleto: "Outubro/2026", entradas: 75000, saidas: 45000, isAtual: false, isPrevisto: true, sincronizarComCaixa: false }
+  ],
+
+  // CAPACIDADE DE PRODUÇÃO POR SETOR (CONFIGURÁVEL E EDITÁVEL PELO PCP)
+  capacidadesProducao: [
+    { id: "corte", nome: "Mesa de Corte", capacidadeDiaria: 400, unidade: "peças/dia", atualProduzido: 280, modoCalculo: "auto" },
+    { id: "bordado", nome: "Bordado Computadorizado", capacidadeDiaria: 250, unidade: "peças/dia", atualProduzido: 215, modoCalculo: "auto" },
+    { id: "dtf", nome: "Impressão DTF Digital", capacidadeDiaria: 40, unidade: "metros lineares/dia", atualProduzido: 24, modoCalculo: "auto" },
+    { id: "costura", nome: "Linha de Costura & Fechamento", capacidadeDiaria: 300, unidade: "peças/dia", atualProduzido: 240, modoCalculo: "auto" }
   ]
 };

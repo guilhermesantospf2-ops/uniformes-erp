@@ -7,9 +7,9 @@
 (function () {
   'use strict';
 
-  // Chave de persistência de banco de dados (Versão Limpa para Produção)
-  const ERP_VERSION = '6.0_PROD';
-  const STORAGE_KEY = 'texpro_erp_prod_v6';
+  // Chave de persistência de banco de dados (Versão com Performance Real e Capacidades Editáveis)
+  const ERP_VERSION = '7.0_PROD';
+  const STORAGE_KEY = 'texpro_erp_prod_v7';
   let db = null;
 
   try {
@@ -24,6 +24,16 @@
   if (!db || db.versao !== ERP_VERSION || !db.produtosBase || db.produtosBase.length < 20 || !db.insumosCatalogoMestre) {
     db = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA));
     db.versao = ERP_VERSION;
+    salvarEstado();
+  }
+
+  // Garantir integridade de arrays novos de métricas e capacidades
+  if (!db.capacidadesProducao || !Array.isArray(db.capacidadesProducao) || db.capacidadesProducao.length === 0) {
+    db.capacidadesProducao = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA.capacidadesProducao || []));
+    salvarEstado();
+  }
+  if (!db.historicoFinanceiroMensal || !Array.isArray(db.historicoFinanceiroMensal) || db.historicoFinanceiroMensal.length === 0) {
+    db.historicoFinanceiroMensal = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA.historicoFinanceiroMensal || []));
     salvarEstado();
   }
 
@@ -78,6 +88,19 @@
 
   function formatarNumero(valor) {
     return new Intl.NumberFormat('pt-BR').format(valor || 0);
+  }
+
+  function formatarK(valor) {
+    if (valor === undefined || valor === null || isNaN(valor)) return 'R$ 0';
+    const num = Number(valor);
+    const absVal = Math.abs(num);
+    if (absVal === 0) return 'R$ 0';
+    const prefix = num < 0 ? '-' : '';
+    if (absVal >= 1000) {
+      const milhar = (absVal / 1000).toFixed(absVal % 1000 === 0 ? 0 : 1).replace('.0', '');
+      return `${prefix}R$ ${milhar}k`;
+    }
+    return `${prefix}R$ ${absVal.toFixed(0)}`;
   }
 
   function formatarTelefone(tel) {
@@ -197,6 +220,83 @@
       margensValidas.reduce((acc, p) => acc + p.margemLucroPercentual, 0) / (margensValidas.length || 1)
     ).toFixed(1);
 
+    // 1. Cálculo Dinâmico de Performance Financeira (Entradas e Saídas Reais)
+    const entradasReaisLivroCaixa = (db.lancamentosFinanceiros || [])
+      .filter(l => (l.tipo === 'Receita' || l.tipo === 'Entrada') && l.status !== 'Cancelado')
+      .reduce((acc, l) => acc + (Number(l.valor) || 0), 0);
+    const saidasReaisLivroCaixa = (db.lancamentosFinanceiros || [])
+      .filter(l => (l.tipo === 'Despesa' || l.tipo === 'Saida') && l.status !== 'Cancelado')
+      .reduce((acc, l) => acc + (Number(l.valor) || 0), 0);
+
+    const historicoMensal = (db.historicoFinanceiroMensal || []).map(h => {
+      if (h.isAtual && (h.sincronizarComCaixa || entradasReaisLivroCaixa > 0 || saidasReaisLivroCaixa > 0)) {
+        return {
+          ...h,
+          entradas: entradasReaisLivroCaixa > 0 ? entradasReaisLivroCaixa : h.entradas,
+          saidas: saidasReaisLivroCaixa > 0 ? saidasReaisLivroCaixa : h.saidas
+        };
+      }
+      return h;
+    });
+
+    const maxValorFinanceiro = Math.max(
+      ...historicoMensal.flatMap(h => [Number(h.entradas) || 0, Number(h.saidas) || 0]),
+      1000
+    );
+
+    // 2. Cálculo Dinâmico de Capacidade de Produção por Setor
+    const ordensAtivas = (db.ordensServico || []).filter(os => os.status !== 'Entregue' && os.status !== 'Cancelado');
+    const pecasCorteAtivas = ordensAtivas
+      .filter(os => (os.etapaAtual || '').toLowerCase().includes('corte') || (os.status || '').toLowerCase().includes('corte'))
+      .reduce((acc, os) => acc + (os.grade?.total || 0), 0);
+    const pecasBordadoAtivas = ordensAtivas
+      .filter(os => (os.personalizacao || '').toLowerCase().includes('bordado'))
+      .reduce((acc, os) => acc + (os.grade?.total || 0), 0);
+    const metrosDtfAtivos = (db.nestingFila || [])
+      .reduce((acc, item) => acc + (Number(item.comprimentoLinearMetros) || 1), 0);
+    const pecasCosturaAtivas = ordensAtivas
+      .filter(os => (os.etapaAtual || '').toLowerCase().includes('costura'))
+      .reduce((acc, os) => acc + (os.grade?.total || 0), 0);
+
+    const capacidadesProcessadas = (db.capacidadesProducao || []).map(setor => {
+      let producaoReal = Number(setor.atualProduzido) || 0;
+      if (setor.modoCalculo === 'auto') {
+        const idLow = (setor.id || '').toLowerCase();
+        const nomeLow = (setor.nome || '').toLowerCase();
+        if (idLow.includes('corte') || nomeLow.includes('corte')) {
+          if (pecasCorteAtivas > 0) producaoReal = pecasCorteAtivas;
+        } else if (idLow.includes('bordado') || nomeLow.includes('bordado')) {
+          if (pecasBordadoAtivas > 0) producaoReal = pecasBordadoAtivas;
+        } else if (idLow.includes('dtf') || nomeLow.includes('dtf')) {
+          if (metrosDtfAtivos > 0) producaoReal = Math.round(metrosDtfAtivos);
+        } else if (idLow.includes('costura') || nomeLow.includes('costura')) {
+          if (pecasCosturaAtivas > 0) producaoReal = pecasCosturaAtivas;
+        }
+      }
+      const capDiaria = Number(setor.capacidadeDiaria) || 1;
+      const perc = Math.min(Math.round((producaoReal / capDiaria) * 100), 100);
+      return {
+        ...setor,
+        producaoReal,
+        perc
+      };
+    });
+
+    const mediaOcupacao = capacidadesProcessadas.length > 0
+      ? Math.round(capacidadesProcessadas.reduce((acc, s) => acc + s.perc, 0) / capacidadesProcessadas.length)
+      : 0;
+
+    let badgeCapacidadeHtml = '';
+    if (mediaOcupacao === 0) {
+      badgeCapacidadeHtml = `<span class="status-pill status-gray">Capacidade Livre (0% Ocupação)</span>`;
+    } else if (mediaOcupacao <= 75) {
+      badgeCapacidadeHtml = `<span class="status-pill status-green">Oficina em Ritmo Normal (${mediaOcupacao}%)</span>`;
+    } else if (mediaOcupacao <= 90) {
+      badgeCapacidadeHtml = `<span class="status-pill" style="color: #b45309; background: #fef3c7; border: 1px solid #fde68a;">Carga Moderada/Alta (${mediaOcupacao}%)</span>`;
+    } else {
+      badgeCapacidadeHtml = `<span class="status-pill status-red">Atenção: Sobrecarga (${mediaOcupacao}%)</span>`;
+    }
+
     contentArea.innerHTML = `
       <div class="grid-cards-4">
         <div class="card">
@@ -245,90 +345,91 @@
       </div>
 
       <div class="grid-cards-2">
+        <!-- 1. Performance Financeira Semestral (Entradas e Saídas Reais) -->
         <div class="card">
-          <div class="table-header-bar" style="padding: 0 0 12px 0;">
-            <div class="table-title">Performance Financeira Semestral (R$)</div>
-            <span class="status-pill status-gray">Valores em Milhares</span>
+          <div class="table-header-bar" style="padding: 0 0 10px 0; align-items: flex-start;">
+            <div>
+              <div class="table-title">Performance Financeira Semestral (R$)</div>
+              <div style="display: flex; gap: 12px; font-size: 11px; margin-top: 5px; font-weight: 600;">
+                <span style="display: inline-flex; align-items: center; gap: 4px; color: #047857;">
+                  <span style="width: 8px; height: 8px; background: #047857; border-radius: 2px;"></span> Entradas
+                </span>
+                <span style="display: inline-flex; align-items: center; gap: 4px; color: #dc2626;">
+                  <span style="width: 8px; height: 8px; background: #dc2626; border-radius: 2px;"></span> Saídas
+                </span>
+                <span style="display: inline-flex; align-items: center; gap: 4px; color: var(--text-primary);">
+                  <span style="width: 8px; height: 8px; background: #94a3b8; border-radius: 2px;"></span> Saldo Líquido
+                </span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <span class="status-pill status-gray">Valores em Milhares</span>
+              <button class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalEditarFinanceiro()" title="Editar faturamento e despesas de cada mês">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                Editar Gráfico
+              </button>
+            </div>
           </div>
+
           <div class="chart-container">
-            <div class="bar-col">
-              <span class="bar-val text-mono">R$ 38k</span>
-              <div class="bar-fill" style="height: 60%;"></div>
-              <span class="bar-label">MAI</span>
-            </div>
-            <div class="bar-col">
-              <span class="bar-val text-mono">R$ 44k</span>
-              <div class="bar-fill" style="height: 70%;"></div>
-              <span class="bar-label">JUN</span>
-            </div>
-            <div class="bar-col">
-              <span class="bar-val text-mono">R$ 41k</span>
-              <div class="bar-fill" style="height: 65%;"></div>
-              <span class="bar-label">JUL</span>
-            </div>
-            <div class="bar-col">
-              <span class="bar-val text-mono">R$ 52k</span>
-              <div class="bar-fill" style="height: 82%;"></div>
-              <span class="bar-label">AGO</span>
-            </div>
-            <div class="bar-col">
-              <span class="bar-val text-mono text-green">R$ 68k</span>
-              <div class="bar-fill bar-green" style="height: 100%;"></div>
-              <span class="bar-label text-green">SET (ATUAL)</span>
-            </div>
-            <div class="bar-col">
-              <span class="bar-val text-mono">R$ 75k</span>
-              <div class="bar-fill" style="height: 90%; border-style: dashed;"></div>
-              <span class="bar-label">OUT (PREV)</span>
-            </div>
+            ${historicoMensal.map(h => {
+              const altIn = maxValorFinanceiro > 0 ? Math.max(Math.round((h.entradas / maxValorFinanceiro) * 100), h.entradas > 0 ? 3 : 0) : 0;
+              const altOut = maxValorFinanceiro > 0 ? Math.max(Math.round((h.saidas / maxValorFinanceiro) * 100), h.saidas > 0 ? 3 : 0) : 0;
+              const saldo = (Number(h.entradas) || 0) - (Number(h.saidas) || 0);
+              const kIn = formatarK(h.entradas);
+              const kOut = formatarK(h.saidas);
+              const kSaldo = formatarK(saldo);
+              const isAtual = h.isAtual;
+              const isPrev = h.isPrevisto;
+              return `
+                <div class="bar-col">
+                  <div class="bar-dual-vals">
+                    <span class="bar-sub-val" style="color: #047857;" title="Entradas: ${formatarMoeda(h.entradas)}">${kIn}</span>
+                    <span class="bar-sub-val" style="color: #dc2626;" title="Saídas: ${formatarMoeda(h.saidas)}">${kOut}</span>
+                  </div>
+                  <div class="bar-paired-group">
+                    <div class="bar-fill-paired ${isPrev ? 'bar-prev' : 'bar-in'}" style="height: ${altIn}%;" title="${h.mesCompleto} • Entrada: ${formatarMoeda(h.entradas)}"></div>
+                    <div class="bar-fill-paired ${isPrev ? 'bar-prev-out' : 'bar-out'}" style="height: ${altOut}%;" title="${h.mesCompleto} • Saída: ${formatarMoeda(h.saidas)}"></div>
+                  </div>
+                  <span class="bar-label ${isAtual ? 'text-green' : ''}">${h.mes}${isAtual ? ' (ATUAL)' : (isPrev ? ' (PREV)' : '')}</span>
+                  <span class="saldo-badge-col ${saldo >= 0 ? 'text-green' : 'text-red'}" title="Saldo Líquido">${saldo >= 0 ? '+' : ''}${kSaldo}</span>
+                </div>
+              `;
+            }).join('')}
           </div>
         </div>
 
+        <!-- 2. Capacidade de Produção por Setor (Editável & Monitorado) -->
         <div class="card">
           <div class="table-header-bar" style="padding: 0 0 12px 0;">
-            <div class="table-title">Capacidade de Produção por Setor</div>
-            <span class="status-pill status-green">Oficina em Ritmo Normal</span>
+            <div>
+              <div class="table-title">Capacidade de Produção por Setor</div>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              ${badgeCapacidadeHtml}
+              <button class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalEditarCapacidades()" title="Configurar capacidade diária de cada setor">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                Editar Capacidades
+              </button>
+            </div>
           </div>
-          <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 14px;">
-            <div>
-              <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;">
-                <span>Mesa de Corte (Capacidade: 400 peças/dia)</span>
-                <span class="text-mono">280 peças cortadas (70%)</span>
-              </div>
-              <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px;">
-                <div style="width: 70%; height: 100%; background: #0f172a; border-radius: 3px;"></div>
-              </div>
-            </div>
-
-            <div>
-              <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;">
-                <span>Bordado Computadorizado (Capacidade: 250 peças/dia)</span>
-                <span class="text-mono">215 peças produzidas (86%)</span>
-              </div>
-              <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px;">
-                <div style="width: 86%; height: 100%; background: var(--color-green); border-radius: 3px;"></div>
-              </div>
-            </div>
-
-            <div>
-              <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;">
-                <span>Impressão DTF Digital (Capacidade: 40m/dia)</span>
-                <span class="text-mono">24 metros lineares (60%)</span>
-              </div>
-              <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px;">
-                <div style="width: 60%; height: 100%; background: #0f172a; border-radius: 3px;"></div>
-              </div>
-            </div>
-
-            <div>
-              <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;">
-                <span>Linha de Costura & Fechamento (Capacidade: 300 peças/dia)</span>
-                <span class="text-mono">240 peças costuradas (80%)</span>
-              </div>
-              <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px;">
-                <div style="width: 80%; height: 100%; background: #0f172a; border-radius: 3px;"></div>
-              </div>
-            </div>
+          <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 10px;">
+            ${capacidadesProcessadas.map(s => {
+              let corBarra = '#0f172a';
+              if (s.perc > 90) corBarra = '#dc2626';
+              else if (s.perc >= 75) corBarra = 'var(--color-green)';
+              return `
+                <div class="capacity-item">
+                  <div class="capacity-header">
+                    <span><strong>${s.nome}</strong> (Capacidade: ${s.capacidadeDiaria} ${s.unidade})</span>
+                    <span class="text-mono"><strong>${s.producaoReal}</strong> ${s.unidade.replace('/dia', '')} (${s.perc}%)</span>
+                  </div>
+                  <div class="capacity-bar-track">
+                    <div class="capacity-bar-fill" style="width: ${s.perc}%; background: ${corBarra};"></div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
           </div>
         </div>
       </div>
@@ -4556,6 +4657,318 @@
     }
   }
 
+  /* ==========================================================================
+     MODAIS DE CONFIGURAÇÃO E DADOS REAIS DO DASHBOARD
+     ========================================================================== */
+
+  // Modal 1: Edição da Performance Financeira Semestral (Entradas e Saídas)
+  function abrirModalEditarFinanceiro() {
+    const historico = JSON.parse(JSON.stringify(db.historicoFinanceiroMensal || []));
+    
+    modalContainer.innerHTML = `
+      <div class="modal-overlay" id="modalEditarFinOverlay">
+        <div class="modal-box" style="max-width: 820px;">
+          <div class="modal-header">
+            <div>
+              <div class="modal-title">Editar Performance Financeira Semestral</div>
+              <div style="font-size: 12px; color: var(--text-gray-500); margin-top: 2px;">
+                Ajuste os valores reais de Entradas (Faturamento) e Saídas (Despesas/Custos) para análise executiva
+              </div>
+            </div>
+            <button class="modal-close-btn" onclick="document.getElementById('modalEditarFinOverlay').remove()">&times;</button>
+          </div>
+
+          <div class="modal-body" style="padding: 20px;">
+            <div style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="font-size: 13px; color: var(--text-primary);">Sincronização com o Livro Caixa Real:</strong>
+                <div style="font-size: 11.5px; color: var(--text-gray-500); margin-top: 2px;">
+                  Ao manter ativo, o mês atual somará automaticamente as receitas e despesas registradas nos Lançamentos Financeiros do ERP.
+                </div>
+              </div>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="chkSincronizarCaixa" ${historico.some(h => h.isAtual && h.sincronizarComCaixa) ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer;">
+                <span style="font-size: 12px; font-weight: 700; color: #047857;">Sincronizar Caixa</span>
+              </label>
+            </div>
+
+            <div class="table-wrapper" style="margin-bottom: 14px; max-height: 380px; overflow-y: auto;">
+              <table class="erp-table">
+                <thead>
+                  <tr>
+                    <th>Mês</th>
+                    <th>Rótulo / Descrição</th>
+                    <th>Entradas / Receitas (R$)</th>
+                    <th>Saídas / Custos (R$)</th>
+                    <th>Saldo Líquido (R$)</th>
+                    <th>Tipo</th>
+                  </tr>
+                </thead>
+                <tbody id="corpoTabelaMeses">
+                  ${historico.map((m, idx) => {
+                    const saldo = (Number(m.entradas) || 0) - (Number(m.saidas) || 0);
+                    return `
+                      <tr>
+                        <td>
+                          <input type="text" class="input-cell text-mono" style="width: 60px; font-weight: 700;" value="${m.mes}" data-idx="${idx}" data-campo="mes">
+                        </td>
+                        <td>
+                          <input type="text" class="input-cell" style="width: 140px;" value="${m.mesCompleto}" data-idx="${idx}" data-campo="mesCompleto">
+                        </td>
+                        <td>
+                          <div style="position: relative;">
+                            <span style="position: absolute; left: 8px; top: 7px; font-size: 11px; color: #047857; font-weight: 700;">R$</span>
+                            <input type="number" step="100" class="input-cell text-mono inp-entradas" style="width: 125px; padding-left: 28px; font-weight: 700; color: #047857;" value="${m.entradas}" data-idx="${idx}" data-campo="entradas">
+                          </div>
+                        </td>
+                        <td>
+                          <div style="position: relative;">
+                            <span style="position: absolute; left: 8px; top: 7px; font-size: 11px; color: #dc2626; font-weight: 700;">R$</span>
+                            <input type="number" step="100" class="input-cell text-mono inp-saidas" style="width: 125px; padding-left: 28px; font-weight: 700; color: #dc2626;" value="${m.saidas}" data-idx="${idx}" data-campo="saidas">
+                          </div>
+                        </td>
+                        <td class="text-mono" style="font-weight: 700; font-size: 12px; white-space: nowrap;">
+                          <span id="saldoLinha_${idx}" class="${saldo >= 0 ? 'text-green' : 'text-red'}">
+                            ${saldo >= 0 ? '+' : ''}${formatarMoeda(saldo)}
+                          </span>
+                        </td>
+                        <td>
+                          ${m.isAtual ? '<span class="status-pill status-green">Mês Atual</span>' : (m.isPrevisto ? '<span class="status-pill status-gray">Previsão</span>' : '<span class="status-pill status-gray">Histórico</span>')}
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+
+            <div style="font-size: 11.5px; color: var(--text-gray-500); display: flex; justify-content: space-between; align-items: center; padding-top: 4px;">
+              <span>💡 Os números são formatados automaticamente em milhares (k) no gráfico para proporcionar leitura limpa.</span>
+              <button class="btn btn-secondary btn-xs" id="btnRestaurarFinPadrao">Restaurar Médias Padrão</button>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button class="btn btn-secondary" onclick="document.getElementById('modalEditarFinOverlay').remove()">Cancelar</button>
+            <button class="btn btn-primary" id="btnSalvarDadosFinanceiros">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Salvar Alterações
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Recalcular saldo dinamicamente ao digitar nas inputs
+    const inputsValor = modalContainer.querySelectorAll('.inp-entradas, .inp-saidas');
+    inputsValor.forEach(inp => {
+      inp.addEventListener('input', () => {
+        const idx = inp.getAttribute('data-idx');
+        const inVal = Number(modalContainer.querySelector(`.inp-entradas[data-idx="${idx}"]`)?.value) || 0;
+        const outVal = Number(modalContainer.querySelector(`.inp-saidas[data-idx="${idx}"]`)?.value) || 0;
+        const saldo = inVal - outVal;
+        const spanSaldo = document.getElementById(`saldoLinha_${idx}`);
+        if (spanSaldo) {
+          spanSaldo.className = saldo >= 0 ? 'text-green' : 'text-red';
+          spanSaldo.textContent = (saldo >= 0 ? '+' : '') + formatarMoeda(saldo);
+        }
+      });
+    });
+
+    // Salvar
+    document.getElementById('btnSalvarDadosFinanceiros')?.addEventListener('click', () => {
+      const inputs = modalContainer.querySelectorAll('#corpoTabelaMeses input[data-campo]');
+      const sincCaixa = document.getElementById('chkSincronizarCaixa')?.checked || false;
+
+      inputs.forEach(inp => {
+        const idx = Number(inp.getAttribute('data-idx'));
+        const campo = inp.getAttribute('data-campo');
+        if (historico[idx]) {
+          if (campo === 'entradas' || campo === 'saidas') {
+            historico[idx][campo] = Math.max(0, Number(inp.value) || 0);
+          } else {
+            historico[idx][campo] = inp.value;
+          }
+        }
+      });
+
+      historico.forEach(h => {
+        if (h.isAtual) {
+          h.sincronizarComCaixa = sincCaixa;
+        }
+      });
+
+      db.historicoFinanceiroMensal = historico;
+      salvarEstado();
+      document.getElementById('modalEditarFinOverlay')?.remove();
+      mostrarToast('Performance financeira semestral atualizada com sucesso!', 'green');
+      renderizarAbertura();
+    });
+
+    // Restaurar Padrão
+    document.getElementById('btnRestaurarFinPadrao')?.addEventListener('click', () => {
+      if (confirm('Deseja restaurar as médias históricas padrão do gráfico financeiro?')) {
+        db.historicoFinanceiroMensal = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA.historicoFinanceiroMensal || []));
+        salvarEstado();
+        document.getElementById('modalEditarFinOverlay')?.remove();
+        mostrarToast('Valores padrão restaurados com sucesso!', 'green');
+        renderizarAbertura();
+      }
+    });
+  }
+
+  // Modal 2: Edição das Capacidades de Produção por Setor
+  function abrirModalEditarCapacidades() {
+    const setores = JSON.parse(JSON.stringify(db.capacidadesProducao || []));
+
+    function renderizarLinhasModal() {
+      const tbody = document.getElementById('corpoTabelaCapacidades');
+      if (!tbody) return;
+      tbody.innerHTML = setores.map((s, idx) => `
+        <tr>
+          <td>
+            <input type="text" class="input-cell" style="font-weight: 600;" value="${s.nome}" data-idx="${idx}" data-campo="nome">
+          </td>
+          <td>
+            <input type="number" step="1" min="1" class="input-cell text-mono" style="width: 90px; font-weight: 700;" value="${s.capacidadeDiaria}" data-idx="${idx}" data-campo="capacidadeDiaria">
+          </td>
+          <td>
+            <input type="text" class="input-cell" style="width: 130px;" value="${s.unidade}" data-idx="${idx}" data-campo="unidade" placeholder="ex: peças/dia">
+          </td>
+          <td>
+            <input type="number" step="1" min="0" class="input-cell text-mono" style="width: 90px; font-weight: 700;" value="${s.atualProduzido}" data-idx="${idx}" data-campo="atualProduzido">
+          </td>
+          <td>
+            <select class="form-control" style="font-size: 11.5px; padding: 4px 6px;" data-idx="${idx}" data-campo="modoCalculo">
+              <option value="auto" ${s.modoCalculo === 'auto' ? 'selected' : ''}>Auto (Pelas OS ativas)</option>
+              <option value="manual" ${s.modoCalculo === 'manual' ? 'selected' : ''}>Manual (Valor fixo)</option>
+            </select>
+          </td>
+          <td style="text-align: center;">
+            <button class="btn btn-secondary btn-xs btn-excluir-setor" data-idx="${idx}" title="Excluir este setor" style="color: #dc2626;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      tbody.querySelectorAll('.btn-excluir-setor').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = Number(btn.getAttribute('data-idx'));
+          if (setores.length <= 1) {
+            mostrarToast('É necessário manter ao menos um setor produtivo.', 'red');
+            return;
+          }
+          setores.splice(idx, 1);
+          renderizarLinhasModal();
+        });
+      });
+    }
+
+    modalContainer.innerHTML = `
+      <div class="modal-overlay" id="modalEditarCapOverlay">
+        <div class="modal-box" style="max-width: 860px;">
+          <div class="modal-header">
+            <div>
+              <div class="modal-title">Capacidade de Produção por Setor</div>
+              <div style="font-size: 12px; color: var(--text-gray-500); margin-top: 2px;">
+                Configure os limites de produtividade diária de corte, bordado, DTF, costura e outros processos
+              </div>
+            </div>
+            <button class="modal-close-btn" onclick="document.getElementById('modalEditarCapOverlay').remove()">&times;</button>
+          </div>
+
+          <div class="modal-body" style="padding: 20px;">
+            <div style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 16px; font-size: 12px; color: var(--text-gray-600); line-height: 1.5;">
+              💡 <strong>Monitoramento da Capacidade:</strong> Quando o modo for <em>"Auto (Pelas OS ativas)"</em>, a ocupação é calculada dinamicamente com base nas ordens em andamento em cada setor (Corte, Bordado, DTF ou Costura). Caso queira fixar o apontamento do turno manualmente, selecione <em>"Manual"</em>.
+            </div>
+
+            <div class="table-wrapper" style="margin-bottom: 14px; max-height: 380px; overflow-y: auto;">
+              <table class="erp-table">
+                <thead>
+                  <tr>
+                    <th>Nome do Setor / Processo</th>
+                    <th>Capacidade Diária</th>
+                    <th>Unidade</th>
+                    <th>Produção Real / Apontada</th>
+                    <th>Modo de Cálculo</th>
+                    <th style="width: 50px; text-align: center;">Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="corpoTabelaCapacidades">
+                </tbody>
+              </table>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 4px;">
+              <button class="btn btn-secondary btn-sm" id="btnAdicionarNovoSetor">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                + Adicionar Outro Setor (ex: Silk, Sublimação)
+              </button>
+              <button class="btn btn-secondary btn-xs" id="btnRestaurarCapPadrao">Restaurar 4 Setores Padrão</button>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button class="btn btn-secondary" onclick="document.getElementById('modalEditarCapOverlay').remove()">Cancelar</button>
+            <button class="btn btn-primary" id="btnSalvarCapacidades">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Salvar Capacidades
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    renderizarLinhasModal();
+
+    // Adicionar novo setor
+    document.getElementById('btnAdicionarNovoSetor')?.addEventListener('click', () => {
+      setores.push({
+        id: `setor_${Date.now()}`,
+        nome: "Novo Setor de Produção",
+        capacidadeDiaria: 200,
+        unidade: "peças/dia",
+        atualProduzido: 0,
+        modoCalculo: "auto"
+      });
+      renderizarLinhasModal();
+    });
+
+    // Salvar
+    document.getElementById('btnSalvarCapacidades')?.addEventListener('click', () => {
+      const inputs = modalContainer.querySelectorAll('#corpoTabelaCapacidades input[data-campo], #corpoTabelaCapacidades select[data-campo]');
+      inputs.forEach(el => {
+        const idx = Number(el.getAttribute('data-idx'));
+        const campo = el.getAttribute('data-campo');
+        if (setores[idx]) {
+          if (campo === 'capacidadeDiaria' || campo === 'atualProduzido') {
+            setores[idx][campo] = Math.max(0, Number(el.value) || 0);
+          } else {
+            setores[idx][campo] = el.value.trim();
+          }
+        }
+      });
+
+      db.capacidadesProducao = setores;
+      salvarEstado();
+      document.getElementById('modalEditarCapOverlay')?.remove();
+      mostrarToast('Capacidades produtivas atualizadas com sucesso!', 'green');
+      renderizarAbertura();
+    });
+
+    // Restaurar Padrão
+    document.getElementById('btnRestaurarCapPadrao')?.addEventListener('click', () => {
+      if (confirm('Deseja restaurar as capacidades padrão de fábrica (Mesa de Corte, Bordado, DTF, Costura)?')) {
+        db.capacidadesProducao = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA.capacidadesProducao || []));
+        salvarEstado();
+        document.getElementById('modalEditarCapOverlay')?.remove();
+        mostrarToast('Capacidades padrão restauradas!', 'green');
+        renderizarAbertura();
+      }
+    });
+  }
+
   // Exposição Global das Funções Públicas da API TexPro ERP
   window.ERP = {
     navegarPara,
@@ -4569,6 +4982,8 @@
     abrirModalPropostaComercial,
     abrirModalInspecaoQuarentena,
     abrirModalEntradaEstoque,
+    abrirModalEditarFinanceiro,
+    abrirModalEditarCapacidades,
     forcarResetarBanco: function() {
       try {
         localStorage.removeItem(STORAGE_KEY);
@@ -4578,6 +4993,7 @@
         localStorage.removeItem('texpro_erp_database_v4');
         localStorage.removeItem('texpro_erp_database_v5');
         localStorage.removeItem('texpro_erp_prod_v6');
+        localStorage.removeItem('texpro_erp_prod_v7');
       } catch (e) {}
       db = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA));
       db.versao = ERP_VERSION;
