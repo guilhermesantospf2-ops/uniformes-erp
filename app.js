@@ -61,6 +61,7 @@
     configurarMenuNavegacao();
     atualizarBadges();
     configurarCliqueGlobalMockups();
+    configurarFechamentoModaisGlobal();
     navegarPara(abaAtiva);
   }
 
@@ -199,6 +200,23 @@
 
   function fecharModal() {
     if (modalContainer) modalContainer.innerHTML = '';
+    document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+  }
+
+  function configurarFechamentoModaisGlobal() {
+    // 1. Fechar ao clicar fora da caixa (no overlay cinza/escuro)
+    document.addEventListener('click', (e) => {
+      if (e.target && e.target.classList && e.target.classList.contains('modal-overlay')) {
+        fecharModal();
+      }
+    });
+
+    // 2. Fechar instantaneamente ao pressionar ESC
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        fecharModal();
+      }
+    });
   }
 
   /* ==========================================================================
@@ -4666,7 +4684,7 @@
     const historico = JSON.parse(JSON.stringify(db.historicoFinanceiroMensal || []));
     
     modalContainer.innerHTML = `
-      <div class="modal-overlay" id="modalEditarFinOverlay">
+      <div class="modal-overlay active" id="modalEditarFinOverlay">
         <div class="modal-box" style="max-width: 820px;">
           <div class="modal-header">
             <div>
@@ -4675,7 +4693,7 @@
                 Ajuste os valores reais de Entradas (Faturamento) e Saídas (Despesas/Custos) para análise executiva
               </div>
             </div>
-            <button class="modal-close-btn" onclick="document.getElementById('modalEditarFinOverlay').remove()">&times;</button>
+            <button class="modal-close-btn" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
 
           <div class="modal-body" style="padding: 20px;">
@@ -4749,7 +4767,7 @@
           </div>
 
           <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
-            <button class="btn btn-secondary" onclick="document.getElementById('modalEditarFinOverlay').remove()">Cancelar</button>
+            <button class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
             <button class="btn btn-primary" id="btnSalvarDadosFinanceiros">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
               Salvar Alterações
@@ -4800,7 +4818,7 @@
 
       db.historicoFinanceiroMensal = historico;
       salvarEstado();
-      document.getElementById('modalEditarFinOverlay')?.remove();
+      fecharModal();
       mostrarToast('Performance financeira semestral atualizada com sucesso!', 'green');
       renderizarAbertura();
     });
@@ -4810,7 +4828,7 @@
       if (confirm('Deseja restaurar as médias históricas padrão do gráfico financeiro?')) {
         db.historicoFinanceiroMensal = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA.historicoFinanceiroMensal || []));
         salvarEstado();
-        document.getElementById('modalEditarFinOverlay')?.remove();
+        fecharModal();
         mostrarToast('Valores padrão restaurados com sucesso!', 'green');
         renderizarAbertura();
       }
@@ -4866,7 +4884,7 @@
     }
 
     modalContainer.innerHTML = `
-      <div class="modal-overlay" id="modalEditarCapOverlay">
+      <div class="modal-overlay active" id="modalEditarCapOverlay">
         <div class="modal-box" style="max-width: 860px;">
           <div class="modal-header">
             <div>
@@ -4875,7 +4893,7 @@
                 Configure os limites de produtividade diária de corte, bordado, DTF, costura e outros processos
               </div>
             </div>
-            <button class="modal-close-btn" onclick="document.getElementById('modalEditarCapOverlay').remove()">&times;</button>
+            <button class="modal-close-btn" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
 
           <div class="modal-body" style="padding: 20px;">
@@ -4910,7 +4928,7 @@
           </div>
 
           <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
-            <button class="btn btn-secondary" onclick="document.getElementById('modalEditarCapOverlay').remove()">Cancelar</button>
+            <button class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
             <button class="btn btn-primary" id="btnSalvarCapacidades">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
               Salvar Capacidades
@@ -4952,7 +4970,7 @@
 
       db.capacidadesProducao = setores;
       salvarEstado();
-      document.getElementById('modalEditarCapOverlay')?.remove();
+      fecharModal();
       mostrarToast('Capacidades produtivas atualizadas com sucesso!', 'green');
       renderizarAbertura();
     });
@@ -4962,7 +4980,7 @@
       if (confirm('Deseja restaurar as capacidades padrão de fábrica (Mesa de Corte, Bordado, DTF, Costura)?')) {
         db.capacidadesProducao = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA.capacidadesProducao || []));
         salvarEstado();
-        document.getElementById('modalEditarCapOverlay')?.remove();
+        fecharModal();
         mostrarToast('Capacidades padrão restauradas!', 'green');
         renderizarAbertura();
       }

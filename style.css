@@ -719,21 +719,21 @@ body {
   border-radius: var(--radius-sm);
 }
 
-/* Modais de Operação */
+/* ==========================================================================
+   MODAIS INDUSTRIAIS: HEADER E FOOTER SEMPRE FIXOS E VISÍVEIS (ZERO CORTE)
+   ========================================================================== */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(4px);
-  z-index: 100;
-  display: none;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(5px);
+  z-index: 9999;
+  display: flex !important;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-}
-
-.modal-overlay.active {
-  display: flex;
+  padding: 12px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-box {
@@ -741,56 +741,99 @@ body {
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-lg);
   width: 100%;
-  max-width: 820px;
-  max-height: 90vh;
-  overflow-y: auto;
-  overflow-x: auto;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
-  scrollbar-width: thin;
-  scrollbar-color: #64748b #e2e8f0;
+  max-width: 860px;
+  max-height: calc(100vh - 24px) !important;
+  height: auto;
+  display: flex !important;
+  flex-direction: column !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.32);
+  position: relative;
+  overflow: hidden !important;
+  margin: auto;
 }
 
 .modal-header {
-  padding: 16px 20px;
+  flex-shrink: 0 !important;
+  padding: 12px 20px !important;
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
   background-color: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 30;
 }
 
 .modal-title {
   font-size: 15px;
   font-weight: 800;
   color: var(--text-primary);
+  line-height: 1.25;
 }
 
-.modal-close {
+.modal-close,
+.modal-close-btn {
   background: none;
-  border: none;
-  color: var(--text-gray-500);
+  border: 1px solid transparent;
+  color: var(--text-gray-600);
   cursor: pointer;
-  font-size: 20px;
-  padding: 4px;
+  font-size: 26px;
+  line-height: 1;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+  user-select: none;
+  padding: 0;
+  margin-left: 10px;
 }
 
-.modal-close:hover {
-  color: var(--text-primary);
+.modal-close:hover,
+.modal-close-btn:hover {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
 }
 
 .modal-body {
-  padding: 20px;
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  padding: 18px 20px !important;
   background-color: #ffffff;
+  scrollbar-width: thin;
+  scrollbar-color: #64748b #e2e8f0;
+  min-height: 80px;
 }
 
 .modal-footer {
-  padding: 14px 20px;
-  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0 !important;
+  padding: 12px 20px !important;
+  border-top: 1px solid var(--border-medium);
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
+  flex-wrap: wrap;
   background-color: #f8fafc;
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.05);
+}
+
+.modal-footer .btn {
+  flex-shrink: 0;
+  min-height: 38px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 /* Painel de Comparativo de Benchmark Têxtil Brasil */
