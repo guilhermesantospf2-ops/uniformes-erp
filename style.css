@@ -771,6 +771,28 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Modais Aninhados em Camada Superior (Submodais) */
+.modal-camada-filha {
+  background-color: rgba(15, 23, 42, 0.78) !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+.modal-camada-filha .modal-box {
+  box-shadow: 0 35px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
+  animation: animSubmodalEntrada 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes animSubmodalEntrada {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .modal-box {
   background-color: #ffffff;
   border: 1px solid var(--border-medium);

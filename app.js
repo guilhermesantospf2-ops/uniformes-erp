@@ -233,6 +233,7 @@
   // Roteador de Abas
   function navegarPara(aba) {
     abaAtiva = aba;
+    fecharTodosModais();
 
     document.querySelectorAll('.menu-item[data-aba]').forEach(item => {
       if (item.getAttribute('data-aba') === aba) {
@@ -302,23 +303,102 @@
     }
   }
 
-  function fecharModal() {
+  /* ==========================================================================
+     GERENCIADOR UNIVERSAL DE MODAIS EM PILHA (MODAL STACK ARCHITECTURE)
+     - Suporta múltiplos modais aninhados/sobrepostos sem fechar ou destruir os pais.
+     - Fechamento inteligente: 'X', 'Cancelar', backdrop ou ESC fecham APENAS o modal ativo no topo.
+     - Preserva 100% dos dados preenchidos nos formulários anteriores (ex: rascunho de pedido).
+     ========================================================================== */
+  const modalPilha = [];
+
+  function criarModalCamada(htmlConteudo, options = {}) {
+    if (!modalContainer) return null;
+
+    if (options.fecharAnteriores) {
+      fecharTodosModais();
+    }
+
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlConteudo.trim();
+    const modalEl = tempDiv.firstElementChild;
+    if (!modalEl) return null;
+
+    // Nível de profundidade atual na pilha
+    const nivel = modalPilha.length;
+    const baseZ = 10000 + (nivel * 40);
+    modalEl.style.zIndex = baseZ;
+
+    // Se for camada filha (sub-modal sobreposto a outro modal), destaca com backdrop escurecido
+    if (nivel > 0) {
+      modalEl.classList.add('modal-camada-filha');
+    }
+
+    // Registra na pilha e adiciona ao container no DOM
+    modalPilha.push(modalEl);
+    modalContainer.appendChild(modalEl);
+
+    // 1. Fechar este modal específico ao clicar no backdrop (fora da caixa de diálogo)
+    modalEl.addEventListener('click', (e) => {
+      if (e.target === modalEl) {
+        fecharModal(modalEl);
+      }
+    });
+
+    // 2. Mapeia e vincula todos os botões de fechar e cancelar internos deste modal
+    modalEl.querySelectorAll('.modal-close, .modal-close-btn, button[onclick*="fecharModal"]').forEach(btn => {
+      btn.removeAttribute('onclick');
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        fecharModal(modalEl);
+      });
+    });
+
+    return modalEl;
+  }
+
+  function fecharModal(elementoEspecifico = null) {
+    let el = null;
+
+    if (elementoEspecifico && elementoEspecifico instanceof HTMLElement) {
+      el = elementoEspecifico;
+      const idx = modalPilha.indexOf(el);
+      if (idx !== -1) {
+        modalPilha.splice(idx, 1);
+      }
+    } else if (modalPilha.length > 0) {
+      el = modalPilha.pop();
+    } else {
+      const overlays = document.querySelectorAll('.modal-overlay');
+      if (overlays.length > 0) {
+        el = overlays[overlays.length - 1];
+      }
+    }
+
+    if (el) {
+      if (el.parentNode) {
+        el.parentNode.removeChild(el);
+      }
+    }
+
+    if (modalPilha.length === 0 && modalContainer) {
+      modalContainer.innerHTML = '';
+    }
+  }
+
+  function fecharTodosModais() {
+    modalPilha.length = 0;
     if (modalContainer) modalContainer.innerHTML = '';
     document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
   }
 
   function configurarFechamentoModaisGlobal() {
-    // 1. Fechar ao clicar fora da caixa (no overlay cinza/escuro)
-    document.addEventListener('click', (e) => {
-      if (e.target && e.target.classList && e.target.classList.contains('modal-overlay')) {
-        fecharModal();
-      }
-    });
-
-    // 2. Fechar instantaneamente ao pressionar ESC
+    // 1. Fechar o modal do topo ao pressionar ESC
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' || e.key === 'Esc') {
-        fecharModal();
+        if (modalPilha.length > 0 || document.querySelector('.modal-overlay')) {
+          fecharModal(); // Fecha apenas a camada do topo!
+        }
       }
     });
   }
@@ -1070,11 +1150,12 @@
      ========================================================================== */
   function abrirModalNovoOrcamento() {
     if (!modalContainer) return;
+    fecharTodosModais();
 
     // Estado da técnica de estampa atual no modal
     let tecnicaSelecionada = 'DTF';
 
-    modalContainer.innerHTML = `
+    const modalEl = criarModalCamada(`
       <div class="modal-overlay active" id="modalNovoOrcamentoOverlay">
         <div class="modal-box" style="max-width: 860px;">
           <div class="modal-header">
@@ -1217,7 +1298,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
 
     // Atualiza o painel específico da técnica de estampa
     function atualizarPainelTecnica(tec) {
@@ -1677,7 +1758,7 @@
     const totalVenda = dadosBase.valorTotal || dadosBase.valorTotalVenda;
     const sinalSugerido = totalVenda * 0.5;
 
-    modalContainer.innerHTML = `
+    const modalEl = criarModalCamada(`
       <div class="modal-overlay active" id="modalAvancarPedidoOverlay">
         <div class="modal-box" style="max-width: 820px;">
           <div class="modal-header">
@@ -1835,7 +1916,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
 
     // Leitor de Mockup do Usuário
     const inputUpload = document.getElementById('inputUploadMockupReal');
@@ -2085,7 +2166,7 @@
 
       salvarEstado();
       atualizarBadges();
-      fecharModal();
+      fecharTodosModais();
       renderizarPedidos();
 
       mostrarToast(`Pedido Oficial #${pedidoOficial.numero} salvo com sucesso! Sinal lançado no Financeiro.`, 'green');
@@ -2102,7 +2183,7 @@
     const p = db.pedidos.find(x => x.id === pedidoId);
     if (!p || !modalContainer) return;
 
-    modalContainer.innerHTML = `
+    const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
         <div class="modal-box a4-print-sheet" style="max-width: 760px;">
           <div class="modal-header">
@@ -2210,7 +2291,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
   }
 
   /* ==========================================================================
@@ -2292,7 +2373,7 @@
     const os = db.ordensServico.find(o => o.id === osId);
     if (!os || !modalContainer) return;
 
-    modalContainer.innerHTML = `
+    const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
         <div class="modal-box a4-print-sheet" style="max-width: 780px;">
           <div class="modal-header">
@@ -2386,7 +2467,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
   }
 
   function abrirFichaTecnicaPorPedido(p) {
@@ -2562,7 +2643,7 @@
       }
     });
 
-    modalContainer.innerHTML = `
+    const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
         <div class="modal-box" style="max-width: 580px;">
           <div class="modal-header">
@@ -2636,7 +2717,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
 
     const selOrigem = document.getElementById('nestOrigemSelect');
     selOrigem?.addEventListener('change', () => {
@@ -2763,7 +2844,7 @@
 
     const itemPreselecionado = itemEstoqueId ? db.estoque.find(e => e.id === itemEstoqueId) : null;
 
-    modalContainer.innerHTML = `
+    const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
         <div class="modal-box" style="max-width: 680px;">
           <div class="modal-header">
@@ -2844,7 +2925,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
 
     document.getElementById('btnSalvarEntradaEstoque')?.addEventListener('click', () => {
       const insumoId = document.getElementById('selInsumoCatalogo')?.value;
@@ -2970,8 +3051,8 @@
   function abrirModalNovoModeloInline(callback) {
     if (!modalContainer) return;
 
-    modalContainer.innerHTML = `
-      <div class="modal-overlay active">
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active" id="modalNovoModeloInlineOverlay">
         <div class="modal-box" style="max-width: 580px;">
           <div class="modal-header">
             <div class="modal-title">Cadastrar Nova Modelagem Têxtil</div>
@@ -3026,7 +3107,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
 
     document.getElementById('btnSalvarNovoModelo')?.addEventListener('click', () => {
       const nome = document.getElementById('cadModNome')?.value;
@@ -3048,7 +3129,7 @@
 
       db.produtosBase.unshift(novoMod);
       salvarEstado();
-      fecharModal();
+      fecharModal(modalEl);
       mostrarToast(`Modelo "${novoMod.nome}" cadastrado com sucesso!`, 'green');
       if (callback) callback(novoMod);
     });
@@ -3495,7 +3576,7 @@
       observacoes: ''
     };
 
-    modalContainer.innerHTML = `
+    const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
         <div class="modal-box" style="max-width: 580px;">
           <div class="modal-header">
@@ -3584,7 +3665,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
 
     document.getElementById('btnSalvarDespesaModal')?.addEventListener('click', () => {
       const desc = document.getElementById('despDescricao')?.value.trim();
@@ -3645,7 +3726,7 @@
       }
 
       salvarEstado();
-      fecharModal();
+      fecharModal(modalEl);
       renderizarFinanceiro();
     });
   }
@@ -3658,7 +3739,7 @@
     const hojeIso = new Date().toISOString().split('T')[0];
     const valorOriginal = Number(desp.valor !== undefined ? desp.valor : desp.valorMensal) || 0;
 
-    modalContainer.innerHTML = `
+    const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
         <div class="modal-box" style="max-width: 520px;">
           <div class="modal-header">
@@ -3722,7 +3803,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
 
     document.getElementById('btnConfirmarBaixa')?.addEventListener('click', () => {
       const dataPagto = document.getElementById('baixaData')?.value || hojeIso;
@@ -3767,7 +3848,7 @@
       }
 
       salvarEstado();
-      fecharModal();
+      fecharModal(modalEl);
       renderizarFinanceiro();
       mostrarToast(`Pagamento de ${formatarMoeda(valorPago)} ("${desp.descricao}") baixado e debitado do Caixa!`, 'green');
     });
@@ -3848,7 +3929,7 @@
   function abrirModalNovoLancamentoManual() {
     if (!modalContainer) return;
 
-    modalContainer.innerHTML = `
+    const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
         <div class="modal-box" style="max-width: 520px;">
           <div class="modal-header">
@@ -3896,7 +3977,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
 
     document.getElementById('btnSalvarLancamentoManual')?.addEventListener('click', () => {
       const tipo = document.getElementById('lanTipo')?.value;
@@ -3922,7 +4003,7 @@
       });
 
       salvarEstado();
-      fecharModal();
+      fecharModal(modalEl);
       renderizarFinanceiro();
       mostrarToast(`Lançamento de ${formatarMoeda(valor)} registrado com sucesso!`, 'green');
     });
@@ -3940,7 +4021,7 @@
     const totalDespesasFixas = db.despesasFixas.reduce((acc, d) => acc + d.valorMensal, 0);
     const lucroLiquidoOperacional = margemContribuicao - totalDespesasFixas;
 
-    modalContainer.innerHTML = `
+    const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
         <div class="modal-box a4-print-sheet" style="max-width: 800px;">
           <div class="modal-header">
@@ -4016,7 +4097,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
   }
 
   /* ==========================================================================
@@ -4086,7 +4167,7 @@
   function abrirModalNovaCompraAvulsa() {
     if (!modalContainer) return;
 
-    modalContainer.innerHTML = `
+    const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
         <div class="modal-box" style="max-width: 580px;">
           <div class="modal-header">
@@ -4154,7 +4235,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
 
     document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () => {
       const fornecedor = document.getElementById('comFornecedor')?.value || "Fornecedor";
@@ -4196,7 +4277,7 @@
       });
 
       salvarEstado();
-      fecharModal();
+      fecharModal(modalEl);
       renderizarCompras();
       mostrarToast(`Compra avulsa de ${formatarMoeda(valor)} registrada e debitada no Financeiro!`, 'green');
     });
@@ -4297,8 +4378,8 @@
   function abrirModalNovoClienteInline(callback) {
     if (!modalContainer) return;
 
-    modalContainer.innerHTML = `
-      <div class="modal-overlay active">
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active" id="modalNovoClienteInlineOverlay">
         <div class="modal-box" style="max-width: 680px;">
           <div class="modal-header">
             <div>
@@ -4390,7 +4471,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
 
     document.getElementById('btnSalvarClienteCompleto')?.addEventListener('click', () => {
       const razao = document.getElementById('cadCliRazao')?.value.trim();
@@ -4442,7 +4523,7 @@
 
       db.clientes.unshift(novoCli);
       salvarEstado();
-      fecharModal();
+      fecharModal(modalEl);
       mostrarToast(`Cliente "${novoCli.nomeFantasia}" cadastrado com sucesso!`, 'green');
 
       if (callback) callback(novoCli);
@@ -4455,7 +4536,7 @@
 
     const pedidosCli = db.pedidos.filter(p => p.clienteId === cli.id || p.clienteNome === cli.nomeFantasia);
 
-    modalContainer.innerHTML = `
+    const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
         <div class="modal-box" style="max-width: 680px;">
           <div class="modal-header">
@@ -4522,7 +4603,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
   }
 
   /* ==========================================================================
@@ -4610,7 +4691,7 @@
     const p = db.pedidos.find(x => x.id === pedidoId);
     if (!p || !modalContainer) return;
 
-    modalContainer.innerHTML = `
+    const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
         <div class="modal-box" style="max-width: 680px;">
           <div class="modal-header">
@@ -4690,7 +4771,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
 
     // Validador de checklist: só habilita o botão quando TODOS OS 5 forem marcados
     const checkboxes = [
@@ -4740,7 +4821,7 @@
 
       salvarEstado();
       atualizarBadges();
-      fecharModal();
+      fecharModal(modalEl);
       renderizarQuarentena();
 
       mostrarToast(`Pedido #${p.numero} APROVADO! Enviado para a mesa de corte.`, 'green');
@@ -4857,8 +4938,8 @@
       valorRemuneracao: 2800
     };
 
-    modalContainer.innerHTML = `
-      <div class="modal-overlay active">
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active" id="modalNovoColaboradorInlineOverlay">
         <div class="modal-box" style="max-width: 580px;">
           <div class="modal-header">
             <div class="modal-title">${isEdit ? 'Editar Colaborador / Costureira' : 'Cadastrar Novo Colaborador ou Costureira'}</div>
@@ -4911,7 +4992,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
 
     document.getElementById('btnSalvarColaborador')?.addEventListener('click', () => {
       const nome = document.getElementById('cadColNome')?.value.trim();
@@ -4941,7 +5022,7 @@
         }
 
         salvarEstado();
-        fecharModal();
+        fecharModal(modalEl);
         mostrarToast(`Colaborador "${col.nome}" atualizado com sucesso!`, 'green');
         if (callback) callback(col);
       } else {
@@ -4965,7 +5046,7 @@
         db.equipe.unshift(novoCol);
         db.costureiras.unshift(novoCol);
         salvarEstado();
-        fecharModal();
+        fecharModal(modalEl);
         mostrarToast(`Colaborador "${novoCol.nome}" cadastrado com sucesso!`, 'green');
         if (callback) callback(novoCol);
       }
@@ -5046,7 +5127,7 @@
     const telNumeros = (pedido.clienteTelefone || '').toString().replace(/\D/g, '');
     const linkWhatsApp = `https://api.whatsapp.com/send?phone=55${telNumeros}&text=${mensagemEncoded}`;
 
-    modalContainer.innerHTML = `
+    const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
         <div class="modal-box" style="max-width: 580px;">
           <div class="modal-header">
@@ -5083,7 +5164,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
 
     const txtArea = document.getElementById('wppTextoMensagemEdit');
     const btnLink = document.getElementById('btnDispararWhatsAppReal');
@@ -5093,7 +5174,7 @@
     });
 
     btnLink?.addEventListener('click', () => {
-      fecharModal();
+      fecharModal(modalEl);
       mostrarToast(`Mensagem enviada com sucesso para o WhatsApp de ${pedido.clienteNome}!`, 'green');
     });
   }
@@ -5185,7 +5266,7 @@
       mockupSrc = window.ERP_MOCKUPS.gerarMockupSvg("polo", "#1e3a8a", "#ffffff", "TEXPRO");
     }
 
-    modalContainer.innerHTML = `
+    const modalEl = criarModalCamada(`
       <div class="modal-overlay active" id="modalMockupOverlay">
         <div class="modal-box" style="max-width: 820px;">
           <div class="modal-header">
@@ -5320,7 +5401,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
 
     document.getElementById('btnCopiarMockup')?.addEventListener('click', () => {
       navigator.clipboard?.writeText(mockupSrc).then(() => {
@@ -5353,7 +5434,7 @@
   function abrirModalEditarFinanceiro() {
     const historico = JSON.parse(JSON.stringify(db.historicoFinanceiroMensal || []));
     
-    modalContainer.innerHTML = `
+    const modalEl = criarModalCamada(`
       <div class="modal-overlay active" id="modalEditarFinOverlay">
         <div class="modal-box" style="max-width: 820px;">
           <div class="modal-header">
@@ -5445,15 +5526,15 @@
           </div>
         </div>
       </div>
-    `;
+    `);
 
     // Recalcular saldo dinamicamente ao digitar nas inputs
-    const inputsValor = modalContainer.querySelectorAll('.inp-entradas, .inp-saidas');
+    const inputsValor = modalEl.querySelectorAll('.inp-entradas, .inp-saidas');
     inputsValor.forEach(inp => {
       inp.addEventListener('input', () => {
         const idx = inp.getAttribute('data-idx');
-        const inVal = Number(modalContainer.querySelector(`.inp-entradas[data-idx="${idx}"]`)?.value) || 0;
-        const outVal = Number(modalContainer.querySelector(`.inp-saidas[data-idx="${idx}"]`)?.value) || 0;
+        const inVal = Number(modalEl.querySelector(`.inp-entradas[data-idx="${idx}"]`)?.value) || 0;
+        const outVal = Number(modalEl.querySelector(`.inp-saidas[data-idx="${idx}"]`)?.value) || 0;
         const saldo = inVal - outVal;
         const spanSaldo = document.getElementById(`saldoLinha_${idx}`);
         if (spanSaldo) {
@@ -5465,7 +5546,7 @@
 
     // Salvar
     document.getElementById('btnSalvarDadosFinanceiros')?.addEventListener('click', () => {
-      const inputs = modalContainer.querySelectorAll('#corpoTabelaMeses input[data-campo]');
+      const inputs = modalEl.querySelectorAll('#corpoTabelaMeses input[data-campo]');
       const sincCaixa = document.getElementById('chkSincronizarCaixa')?.checked || false;
 
       inputs.forEach(inp => {
@@ -5488,7 +5569,7 @@
 
       db.historicoFinanceiroMensal = historico;
       salvarEstado();
-      fecharModal();
+      fecharModal(modalEl);
       mostrarToast('Performance financeira semestral atualizada com sucesso!', 'green');
       renderizarAbertura();
     });
@@ -5498,7 +5579,7 @@
       if (confirm('Deseja restaurar as médias históricas padrão do gráfico financeiro?')) {
         db.historicoFinanceiroMensal = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA.historicoFinanceiroMensal || []));
         salvarEstado();
-        fecharModal();
+        fecharModal(modalEl);
         mostrarToast('Valores padrão restaurados com sucesso!', 'green');
         renderizarAbertura();
       }
@@ -5553,7 +5634,7 @@
       });
     }
 
-    modalContainer.innerHTML = `
+    const modalEl = criarModalCamada(`
       <div class="modal-overlay active" id="modalEditarCapOverlay">
         <div class="modal-box" style="max-width: 860px;">
           <div class="modal-header">
@@ -5606,7 +5687,7 @@
           </div>
         </div>
       </div>
-    `;
+    `);
 
     renderizarLinhasModal();
 
@@ -5625,7 +5706,7 @@
 
     // Salvar
     document.getElementById('btnSalvarCapacidades')?.addEventListener('click', () => {
-      const inputs = modalContainer.querySelectorAll('#corpoTabelaCapacidades input[data-campo], #corpoTabelaCapacidades select[data-campo]');
+      const inputs = modalEl.querySelectorAll('#corpoTabelaCapacidades input[data-campo], #corpoTabelaCapacidades select[data-campo]');
       inputs.forEach(el => {
         const idx = Number(el.getAttribute('data-idx'));
         const campo = el.getAttribute('data-campo');
@@ -5640,7 +5721,7 @@
 
       db.capacidadesProducao = setores;
       salvarEstado();
-      fecharModal();
+      fecharModal(modalEl);
       mostrarToast('Capacidades produtivas atualizadas com sucesso!', 'green');
       renderizarAbertura();
     });
@@ -5650,7 +5731,7 @@
       if (confirm('Deseja restaurar as capacidades padrão de fábrica (Mesa de Corte, Bordado, DTF, Costura)?')) {
         db.capacidadesProducao = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA.capacidadesProducao || []));
         salvarEstado();
-        fecharModal();
+        fecharModal(modalEl);
         mostrarToast('Capacidades padrão restauradas!', 'green');
         renderizarAbertura();
       }
@@ -5661,6 +5742,7 @@
   window.ERP = {
     navegarPara,
     fecharModal,
+    fecharTodosModais,
     abrirFichaTecnica,
     abrirModalWhatsApp,
     abrirModalVisualizarMockup,
