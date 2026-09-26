@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TexPro ERP - Sistema Integrado de Gestão para Confecções de Uniformes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="erp-container">
+
+    <!-- SIDEBAR DE NAVEGAÇÃO INDUSTRIAL (EXATA COMO NA REFERÊNCIA) -->
+    <aside class="erp-sidebar" aria-label="Navegação do Sistema">
+      
+      <div class="sidebar-header">
+        <div class="brand-wrapper">
+          <div class="brand-icon">TP</div>
+          <div>
+            <div class="brand-title">TEXPRO</div>
+            <div class="brand-subtitle">INDUSTRIAL ERP</div>
+          </div>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <!-- 1. Abertura -->
+        <a class="menu-item active" data-aba="abertura">
+          <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Abertura</span>
+        </a>
+
+        <!-- 2. Pedidos -->
+        <a class="menu-item" data-aba="pedidos">
+          <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <span>Pedidos</span>
+          <span class="menu-badge badge-gray" id="badgePedidos">2</span>
+        </a>
+
+        <!-- 3. OS / Fichas -->
+        <a class="menu-item" data-aba="os">
+          <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+            <line x1="9" y1="12" x2="15" y2="12"></line>
+            <line x1="9" y1="16" x2="13" y2="16"></line>
+          </svg>
+          <span>OS / Fichas</span>
+        </a>
+
+        <!-- 4. Nesting -->
+        <a class="menu-item" data-aba="nesting">
+          <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="6" cy="6" r="3"></circle>
+            <circle cx="6" cy="18" r="3"></circle>
+            <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+            <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+            <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+          </svg>
+          <span>Nesting</span>
+        </a>
+
+        <!-- 5. Estoque -->
+        <a class="menu-item" data-aba="estoque">
+          <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+          <span>Estoque</span>
+        </a>
+
+        <!-- 6. Produtos -->
+        <a class="menu-item" data-aba="produtos">
+          <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+            <line x1="7" y1="7" x2="7.01" y2="7"></line>
+          </svg>
+          <span>Produtos</span>
+        </a>
+
+        <!-- 7. Financeiro -->
+        <a class="menu-item" data-aba="financeiro">
+          <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 6v12M15 9.5a2.5 2.5 0 0 0-5 0c0 4 5 2 5 6a2.5 2.5 0 0 1-5 0"></path>
+          </svg>
+          <span>Financeiro</span>
+        </a>
+
+        <!-- 8. Compras -->
+        <a class="menu-item" data-aba="compras">
+          <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+            <line x1="1" y1="10" x2="23" y2="10"></line>
+          </svg>
+          <span>Compras</span>
+        </a>
+
+        <!-- 9. Clientes -->
+        <a class="menu-item" data-aba="clientes">
+          <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <span>Clientes</span>
+        </a>
+
+        <!-- 10. Quarentena -->
+        <a class="menu-item" data-aba="quarentena">
+          <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>Quarentena</span>
+          <span class="menu-badge badge-red" id="badgeQuarentena">2</span>
+        </a>
+
+        <!-- 11. Equipe -->
+        <a class="menu-item" data-aba="equipe">
+          <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="8.5" cy="7" r="4"></circle>
+            <line x1="20" y1="8" x2="20" y2="14"></line>
+            <line x1="23" y1="11" x2="17" y2="11"></line>
+          </svg>
+          <span>Equipe</span>
+        </a>
+
+        <!-- 12. Nota Fiscal SEFAZ -->
+        <a class="menu-item" data-aba="nfe">
+          <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          <span>Notas Fiscais</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-avatar">CM</div>
+        <div class="user-info">
+          <div class="user-name">Carlos Mendes</div>
+          <div class="user-role">Diretoria Industrial</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL DO SISTEMA -->
+    <main class="erp-main">
+      <!-- Navbar Superior Sticky -->
+      <header class="top-navbar">
+        <div class="navbar-page-title">
+          <h1 id="pageTitle">Abertura & Visão Geral da Fábrica</h1>
+          <span class="navbar-breadcrumb" id="pageBreadcrumb">SISTEMA > ABERTURA</span>
+        </div>
+
+        <div class="navbar-actions">
+          <div style="font-size: 11px; text-align: right; margin-right: 8px;">
+            <strong class="text-white" style="display: block;">TexPro Indústria Têxtil</strong>
+            <span class="text-mono" style="color: var(--text-gray-500);">CNPJ: 34.582.910/0001-44</span>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="window.ERP.navegarPara('nesting')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line></svg>
+            Nesting DTF
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="window.ERP.navegarPara('pedidos')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Novo Orçamento
+          </button>
+        </div>
+      </header>
+
+      <!-- Conteúdo Renderizado Dinamicamente -->
+      <section class="content-area" id="contentArea">
+        <!-- Inserido dinamicamente pelo app.js -->
+      </section>
+    </main>
+
+  </div>
+
+  <!-- Container de Modais -->
+  <div id="modalContainer"></div>
+
+  <!-- Toast Notification -->
+  <div id="erpToast" class="toast-msg"></div>
+
+  <!-- Scripts do ERP Têxtil -->
+  <script src="mock-data.js"></script>
+  <script src="market-benchmark.js"></script>
+  <script src="nesting-engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
