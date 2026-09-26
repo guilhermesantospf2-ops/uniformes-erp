@@ -646,6 +646,41 @@ body {
   border: 1px solid var(--border-medium);
 }
 
+.status-yellow {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.status-blue {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.filter-btn-pill {
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-medium);
+  background: #ffffff;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filter-btn-pill:hover {
+  background: var(--bg-subtle);
+  border-color: var(--border-focus);
+}
+
+.filter-btn-pill.active {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
 /* Formulários e Entradas */
 .form-group {
   margin-bottom: 16px;

@@ -255,14 +255,8 @@ window.ERP_INITIAL_DATA = {
     { id: "CAT-MAN-04", nome: "Sacos Plásticos Transparentes Embalagem Camisa (milheiro)", categoria: "Embalagem", unidade: "milheiro", coresDisponiveis: ["Transparente 30x40cm"] }
   ],
 
-  // CADASTRO DE COSTUREIRAS E FACÇÕES
-  costureiras: [
-    { id: "COST-01", nome: "Oficina Interna - Linha 1 (Polos e Sociais)", responsavel: "Lúcia Ferreira", telefone: "19987112233", especialidade: "Camisas Polo, Retilíneas e Camisaria", capacidadeDiaPecas: 120, valorMedioPorPeca: 7.50, status: "Disponível" },
-    { id: "COST-02", nome: "Facção São Jorge (Linha Pesada e Brim)", responsavel: "Jorge Alberto Soares", telefone: "19992334455", especialidade: "Brim Operacional, Pesponto Duplo, Calças Cargo e Macacões", capacidadeDiaPecas: 150, valorMedioPorPeca: 12.00, status: "Em Produção" },
-    { id: "COST-03", nome: "Costuraria D. Neusa (Linha Saúde e Jalecos)", responsavel: "Neusa Aparecida", telefone: "11977665544", especialidade: "Jalecos Hospitalares, Gabardine, Oxford e Scrubs", capacidadeDiaPecas: 60, valorMedioPorPeca: 16.00, status: "Disponível" },
-    { id: "COST-04", nome: "Oficina Interna - Linha 2 (Básicas, Dry e Moletom)", responsavel: "Elizabete Mendes", telefone: "19981223344", especialidade: "Camisetas Gola Careca, Dry Fit, Overlock e Moletom", capacidadeDiaPecas: 200, valorMedioPorPeca: 5.00, status: "Em Produção" },
-    { id: "COST-05", nome: "Facção Ponto de Ouro (Acessórios e Bonés)", responsavel: "Silvana Ramos", telefone: "19971008899", especialidade: "Aventais, Bonés, Coletes e Faixas Refletivas", capacidadeDiaPecas: 100, valorMedioPorPeca: 8.50, status: "Disponível" }
-  ],
+  // CADASTRO DE COSTUREIRAS E FACÇÕES (LIMPO • ZERADO PARA OPERAÇÃO REAL)
+  costureiras: [],
 
   // ESTOQUE INICIAL DE MATÉRIA-PRIMA E INSUMOS (CADASTRO PRONTO • SALDO ZERADO PARA PRODUÇÃO)
   estoque: [
@@ -292,16 +286,8 @@ window.ERP_INITIAL_DATA = {
   // ORDENS DE SERVIÇO TÉCNICAS (LIMPO PARA OPERAÇÃO REAL)
   ordensServico: [],
 
-  // DESPESAS FIXAS MENSAIS (PARA DRE E BALANÇO FINANCEIRO REAL DA FÁBRICA)
-  despesasFixas: [
-    { id: "DESP-01", descricao: "Aluguel Galpão Industrial e IPTU", categoria: "Instalações", valorMensal: 6500.00 },
-    { id: "DESP-02", descricao: "Energia Elétrica Industrial (Enel Fábrica)", categoria: "Utilidades", valorMensal: 2850.00 },
-    { id: "DESP-03", descricao: "Folha de Pagamento Fixa (Cortador, PCP, Admin)", categoria: "Mão de Obra Fixa", valorMensal: 14200.00 },
-    { id: "DESP-04", descricao: "Manutenção Preventiva de Máquinas e Bordadeiras", categoria: "Manutenção", valorMensal: 1100.00 },
-    { id: "DESP-05", descricao: "Internet Fibra + Telefonia Móvel Comercial", categoria: "Comunicação", valorMensal: 450.00 },
-    { id: "DESP-06", descricao: "Honorários Contabilidade e Licenças de Software", categoria: "Serviços Terceiros", valorMensal: 1350.00 },
-    { id: "DESP-07", descricao: "Água, Limpeza e Descartáveis de Oficina", categoria: "Utilidades", valorMensal: 620.00 }
-  ],
+  // DESPESAS E CONTAS A PAGAR DA FÁBRICA (LIMPO • ZERADO PARA OPERAÇÃO REAL)
+  despesasFixas: [],
 
   // LANÇAMENTOS FINANCEIROS (FLUXO DE CAIXA: ENTRADAS E SAÍDAS - LIMPO)
   lancamentosFinanceiros: [],
@@ -315,31 +301,24 @@ window.ERP_INITIAL_DATA = {
   // COMPRAS DE INSUMOS E LANÇAMENTOS AVULSOS (LIMPO)
   compras: [],
 
-  // EQUIPE E COLABORADORES DA FÁBRICA
-  equipe: [
-    { id: "USR-01", nome: "Carlos Eduardo Mendes", email: "carlos@texpro.com.br", cargo: "Administrador Geral / Diretor", nivelAcesso: "Admin", status: "Ativo", capacidadeDiaPecas: 0, valorRemuneracao: 9500.00 },
-    { id: "USR-02", nome: "Marcos Paulo Silva", email: "marcos@texpro.com.br", cargo: "Vendedor Técnico Corporativo", nivelAcesso: "Comercial", status: "Ativo", capacidadeDiaPecas: 0, valorRemuneracao: 4200.00 },
-    { id: "USR-03", nome: "Fabiana Toledo", email: "fabiana@texpro.com.br", cargo: "Vendedora Linha Operacional e Escolar", nivelAcesso: "Comercial", status: "Ativo", capacidadeDiaPecas: 0, valorRemuneracao: 4200.00 },
-    { id: "USR-04", nome: "Vanderlei Souza", email: "vanderlei@texpro.com.br", cargo: "Encarregado de Corte & PCP", nivelAcesso: "Producao", status: "Ativo", capacidadeDiaPecas: 400, valorRemuneracao: 3800.00 },
-    { id: "USR-05", nome: "Ana Paula Guedes", email: "financeiro@texpro.com.br", cargo: "Analista Financeiro e Fiscal", nivelAcesso: "Financeiro", status: "Ativo", capacidadeDiaPecas: 0, valorRemuneracao: 3500.00 },
-    { id: "USR-06", nome: "Lúcia Ferreira", email: "costura1@texpro.com.br", cargo: "Costureira Chefe Linha Polos", nivelAcesso: "Producao", status: "Ativo", capacidadeDiaPecas: 120, valorRemuneracao: 2800.00 }
-  ],
+  // EQUIPE E COLABORADORES DA FÁBRICA (LIMPO • ZERADO PARA OPERAÇÃO REAL)
+  equipe: [],
 
-  // HISTÓRICO FINANCEIRO SEMESTRAL (ENTRADAS E SAÍDAS REAIS DA FÁBRICA • TOTALMENTE EDITÁVEL)
+  // HISTÓRICO FINANCEIRO SEMESTRAL (ENTRADAS E SAÍDAS REAIS DA FÁBRICA • ZERADO PARA OPERAÇÃO REAL)
   historicoFinanceiroMensal: [
-    { mes: "MAI", mesCompleto: "Maio/2026", entradas: 38000, saidas: 24500, isAtual: false, isPrevisto: false, sincronizarComCaixa: false },
-    { mes: "JUN", mesCompleto: "Junho/2026", entradas: 44000, saidas: 28200, isAtual: false, isPrevisto: false, sincronizarComCaixa: false },
-    { mes: "JUL", mesCompleto: "Julho/2026", entradas: 41000, saidas: 26000, isAtual: false, isPrevisto: false, sincronizarComCaixa: false },
-    { mes: "AGO", mesCompleto: "Agosto/2026", entradas: 52000, saidas: 31800, isAtual: false, isPrevisto: false, sincronizarComCaixa: false },
-    { mes: "SET", mesCompleto: "Setembro/2026", entradas: 68000, saidas: 41200, isAtual: true, isPrevisto: false, sincronizarComCaixa: true },
-    { mes: "OUT", mesCompleto: "Outubro/2026", entradas: 75000, saidas: 45000, isAtual: false, isPrevisto: true, sincronizarComCaixa: false }
+    { mes: "MAI", mesCompleto: "Maio/2026", entradas: 0, saidas: 0, isAtual: false, isPrevisto: false, sincronizarComCaixa: false },
+    { mes: "JUN", mesCompleto: "Junho/2026", entradas: 0, saidas: 0, isAtual: false, isPrevisto: false, sincronizarComCaixa: false },
+    { mes: "JUL", mesCompleto: "Julho/2026", entradas: 0, saidas: 0, isAtual: false, isPrevisto: false, sincronizarComCaixa: false },
+    { mes: "AGO", mesCompleto: "Agosto/2026", entradas: 0, saidas: 0, isAtual: false, isPrevisto: false, sincronizarComCaixa: false },
+    { mes: "SET", mesCompleto: "Setembro/2026", entradas: 0, saidas: 0, isAtual: true, isPrevisto: false, sincronizarComCaixa: true },
+    { mes: "OUT", mesCompleto: "Outubro/2026", entradas: 0, saidas: 0, isAtual: false, isPrevisto: true, sincronizarComCaixa: false }
   ],
 
-  // CAPACIDADE DE PRODUÇÃO POR SETOR (CONFIGURÁVEL E EDITÁVEL PELO PCP)
+  // CAPACIDADE DE PRODUÇÃO POR SETOR (CONFIGURÁVEL E EDITÁVEL PELO PCP • SALDO PRODUZIDO ZERADO)
   capacidadesProducao: [
-    { id: "corte", nome: "Mesa de Corte", capacidadeDiaria: 400, unidade: "peças/dia", atualProduzido: 280, modoCalculo: "auto" },
-    { id: "bordado", nome: "Bordado Computadorizado", capacidadeDiaria: 250, unidade: "peças/dia", atualProduzido: 215, modoCalculo: "auto" },
-    { id: "dtf", nome: "Impressão DTF Digital", capacidadeDiaria: 40, unidade: "metros lineares/dia", atualProduzido: 24, modoCalculo: "auto" },
-    { id: "costura", nome: "Linha de Costura & Fechamento", capacidadeDiaria: 300, unidade: "peças/dia", atualProduzido: 240, modoCalculo: "auto" }
+    { id: "corte", nome: "Mesa de Corte", capacidadeDiaria: 400, unidade: "peças/dia", atualProduzido: 0, modoCalculo: "auto" },
+    { id: "bordado", nome: "Bordado Computadorizado", capacidadeDiaria: 250, unidade: "peças/dia", atualProduzido: 0, modoCalculo: "auto" },
+    { id: "dtf", nome: "Impressão DTF Digital", capacidadeDiaria: 40, unidade: "metros lineares/dia", atualProduzido: 0, modoCalculo: "auto" },
+    { id: "costura", nome: "Linha de Costura & Fechamento", capacidadeDiaria: 300, unidade: "peças/dia", atualProduzido: 0, modoCalculo: "auto" }
   ]
 };

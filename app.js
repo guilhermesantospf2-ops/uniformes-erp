@@ -7,9 +7,9 @@
 (function () {
   'use strict';
 
-  // Chave de persistência de banco de dados (Versão com Performance Real e Capacidades Editáveis)
-  const ERP_VERSION = '7.0_PROD';
-  const STORAGE_KEY = 'texpro_erp_prod_v7';
+  // Chave de persistência de banco de dados (Versão 8.0: 100% Zerado para Produção Real com Gestão Completa de Despesas)
+  const ERP_VERSION = '8.0_ZERO_PROD';
+  const STORAGE_KEY = 'texpro_erp_prod_v8';
   let db = null;
 
   try {
@@ -27,15 +27,24 @@
     salvarEstado();
   }
 
-  // Garantir integridade de arrays novos de métricas e capacidades
+  // Garantir integridade de arrays e ausência de dados fictícios
   if (!db.capacidadesProducao || !Array.isArray(db.capacidadesProducao) || db.capacidadesProducao.length === 0) {
     db.capacidadesProducao = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA.capacidadesProducao || []));
-    salvarEstado();
   }
   if (!db.historicoFinanceiroMensal || !Array.isArray(db.historicoFinanceiroMensal) || db.historicoFinanceiroMensal.length === 0) {
     db.historicoFinanceiroMensal = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA.historicoFinanceiroMensal || []));
-    salvarEstado();
   }
+  if (!Array.isArray(db.despesasFixas)) db.despesasFixas = [];
+  if (!Array.isArray(db.costureiras)) db.costureiras = [];
+  if (!Array.isArray(db.equipe)) db.equipe = [];
+  if (!Array.isArray(db.pedidos)) db.pedidos = [];
+  if (!Array.isArray(db.clientes)) db.clientes = [];
+  if (!Array.isArray(db.ordensServico)) db.ordensServico = [];
+  if (!Array.isArray(db.lancamentosFinanceiros)) db.lancamentosFinanceiros = [];
+  if (!Array.isArray(db.nestingFila)) db.nestingFila = [];
+  if (!Array.isArray(db.notasFiscais)) db.notasFiscais = [];
+  if (!Array.isArray(db.compras)) db.compras = [];
+  salvarEstado();
 
   function salvarEstado() {
     try {
@@ -111,6 +120,101 @@
     }
     return tel || '';
   }
+
+  function formatarDataBr(dataIso) {
+    if (!dataIso) return '-';
+    const clean = dataIso.split('T')[0];
+    const partes = clean.split('-');
+    if (partes.length === 3) {
+      return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
+    return dataIso;
+  }
+
+  function formatarDiaMes(dataIso) {
+    if (!dataIso) return '-';
+    const clean = dataIso.split('T')[0];
+    const partes = clean.split('-');
+    if (partes.length === 3) {
+      const dia = partes[2];
+      const mesNum = parseInt(partes[1], 10);
+      const nomesMes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      return `${dia}/${partes[1]} (${nomesMes[mesNum - 1] || ''})`;
+    }
+    return dataIso;
+  }
+
+  function calcularStatusDespesa(despesa) {
+    if (despesa.status === 'Pago') {
+      const dataPagoFmt = despesa.dataPagamento ? formatarDataBr(despesa.dataPagamento) : '';
+      return {
+        tipo: 'pago',
+        label: 'Pago',
+        badgeHtml: `<span class="status-pill status-green" style="font-weight: 700;">✓ PAGO</span>`,
+        diasTexto: dataPagoFmt ? `Pago em ${dataPagoFmt}` : 'Quitado',
+        dias: 0,
+        isAtrasado: false,
+        isPago: true
+      };
+    }
+
+    if (!despesa.dataVencimento) {
+      return {
+        tipo: 'pendente',
+        label: 'A Vencer',
+        badgeHtml: `<span class="status-pill status-gray">SEM VENCIMENTO</span>`,
+        diasTexto: 'Data não informada',
+        dias: 0,
+        isAtrasado: false,
+        isPago: false
+      };
+    }
+
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    const partes = despesa.dataVencimento.split('T')[0].split('-');
+    const venc = new Date(parseInt(partes[0], 10), parseInt(partes[1], 10) - 1, parseInt(partes[2], 10));
+    venc.setHours(0, 0, 0, 0);
+
+    const diffMs = hoje.getTime() - venc.getTime();
+    const diffDias = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDias > 0) {
+      return {
+        tipo: 'atrasado',
+        label: 'Atrasado',
+        badgeHtml: `<span class="status-pill status-red" style="font-weight: 800;">⚠️ ATRASADO (${diffDias} ${diffDias === 1 ? 'dia' : 'dias'})</span>`,
+        diasTexto: `Vencido há ${diffDias} ${diffDias === 1 ? 'dia' : 'dias'}`,
+        dias: diffDias,
+        isAtrasado: true,
+        isPago: false
+      };
+    } else if (diffDias === 0) {
+      return {
+        tipo: 'hoje',
+        label: 'Vence Hoje',
+        badgeHtml: `<span class="status-pill status-yellow" style="font-weight: 800;">⏰ VENCE HOJE</span>`,
+        diasTexto: 'Vencimento hoje',
+        dias: 0,
+        isAtrasado: false,
+        isPago: false
+      };
+    } else {
+      const diasRestantes = Math.abs(diffDias);
+      return {
+        tipo: 'a_vencer',
+        label: 'No Prazo',
+        badgeHtml: `<span class="status-pill status-blue">A VENCER (${diasRestantes}d)</span>`,
+        diasTexto: `Vence em ${diasRestantes} ${diasRestantes === 1 ? 'dia' : 'dias'}`,
+        dias: diasRestantes,
+        isAtrasado: false,
+        isPago: false
+      };
+    }
+  }
+
+  let filtroDespesas = 'todas';
 
   // Configuração dos Menus da Sidebar
   function configurarMenuNavegacao() {
@@ -1592,9 +1696,11 @@
               </label>
               <div class="inline-input-group">
                 <select id="selCostureiraAvanco" class="form-select">
-                  ${db.costureiras.map(c => `
-                    <option value="${c.id}">${c.nome} • Resp: ${c.responsavel} • Esp: ${c.especialidade} (${c.status})</option>
-                  `).join('')}
+                  ${(db.costureiras && db.costureiras.length > 0) ? db.costureiras.map(c => `
+                    <option value="${c.id}">${c.nome} • Resp: ${c.responsavel || c.nome} • Esp: ${c.especialidade || 'Costura'} (${c.status || 'Ativo'})</option>
+                  `).join('') : `
+                    <option value="" disabled selected>⚠️ Nenhuma costureira cadastrada - Cadastre no botão ao lado</option>
+                  `}
                 </select>
                 <button type="button" class="btn btn-secondary btn-inline-add" id="btnCadastrarCostureiraInline">
                   + Cadastrar Costureira
@@ -1789,7 +1895,15 @@
     document.getElementById('btnConfirmarSalvarPedidoFinal')?.addEventListener('click', () => {
       // 1. Validação da Costureira
       const costureiraId = document.getElementById('selCostureiraAvanco')?.value;
-      const costureiraObj = db.costureiras.find(c => c.id === costureiraId) || db.costureiras[0];
+      if (!costureiraId) {
+        mostrarToast('Por favor, cadastre ou selecione a Costureira / Facção que confeccionará o pedido.', 'red');
+        return;
+      }
+      const costureiraObj = (db.costureiras || []).find(c => c.id === costureiraId) || db.costureiras[0];
+      if (!costureiraObj) {
+        mostrarToast('Cadastre ao menos uma costureira no botão "+ Cadastrar Costureira".', 'red');
+        return;
+      }
 
       // 2. Validação Obrigatória das Artes
       const chkPeito = document.getElementById('chkArtePeito')?.checked;
@@ -2941,65 +3055,297 @@
   }
 
   /* ==========================================================================
-     MÓDULO 7: FINANCEIRO COMPLETO COM BALANÇO, DRE E DESPESAS FIXAS EDITÁVEIS
+     MÓDULO 7: FINANCEIRO COMPLETO COM CONTAS A PAGAR, DRE, BAIXAS E VENCIMENTOS
      ========================================================================== */
   function renderizarFinanceiro() {
-    pageTitleElem.textContent = 'Gestão Financeira, DRE & Balanço Têxtil';
+    pageTitleElem.textContent = 'Gestão Financeira, Contas a Pagar & DRE';
     pageBreadcrumbElem.textContent = 'SISTEMA > FINANCEIRO';
 
-    // Cálculos da Demonstração do Resultado do Exercício (DRE)
-    const pedidosOficiais = db.pedidos.filter(p => p.status !== 'Cancelado' && p.tipoRegistro !== 'Orcamento');
-    const receitaBruta = pedidosOficiais.reduce((acc, p) => acc + p.valorTotalVenda, 0);
+    // 1. Cálculos de Vendas e Margens
+    const pedidosOficiais = (db.pedidos || []).filter(p => p.status !== 'Cancelado' && p.tipoRegistro !== 'Orcamento');
+    const receitaBruta = pedidosOficiais.reduce((acc, p) => acc + (Number(p.valorTotalVenda) || 0), 0);
     const impostosDeducoes = receitaBruta * 0.065; // Simples Nacional médio 6.5%
     const receitaLiquida = receitaBruta - impostosDeducoes;
 
-    const cmvTotal = pedidosOficiais.reduce((acc, p) => acc + p.custoTotalEstimado, 0);
+    const cmvTotal = pedidosOficiais.reduce((acc, p) => acc + (Number(p.custoTotalEstimado) || 0), 0);
     const margemContribuicao = receitaLiquida - cmvTotal;
     const margemContribuicaoPerc = receitaLiquida > 0 ? (margemContribuicao / receitaLiquida) * 100 : 0;
 
-    const totalDespesasFixas = db.despesasFixas.reduce((acc, d) => acc + d.valorMensal, 0);
-    const lucroLiquidoOperacional = margemContribuicao - totalDespesasFixas;
+    // 2. Mapeamento Completo de Despesas com Dias de Atraso e Status
+    const despesasLista = (db.despesasFixas || []).map(d => {
+      const statusInfo = calcularStatusDespesa(d);
+      return {
+        ...d,
+        valorReal: Number(d.valor !== undefined ? d.valor : d.valorMensal) || 0,
+        statusInfo
+      };
+    });
 
-    const totalEntradasCaixa = db.lancamentosFinanceiros
-      .filter(l => l.tipo === 'Entrada')
-      .reduce((acc, l) => acc + l.valor, 0);
+    const despesasPagas = despesasLista.filter(d => d.status === 'Pago');
+    const totalDespesasPagas = despesasPagas.reduce((acc, d) => acc + (Number(d.valorPago || d.valorReal) || 0), 0);
 
-    const totalSaidasCaixa = db.lancamentosFinanceiros
-      .filter(l => l.tipo === 'Saida')
-      .reduce((acc, l) => acc + l.valor, 0);
+    const despesasPendentes = despesasLista.filter(d => d.status !== 'Pago');
+    const totalDespesasPendentes = despesasPendentes.reduce((acc, d) => acc + d.valorReal, 0);
+
+    const despesasAtrasadas = despesasPendentes.filter(d => d.statusInfo.isAtrasado);
+    const totalDespesasAtrasadas = despesasAtrasadas.reduce((acc, d) => acc + d.valorReal, 0);
+
+    // 3. Livro Caixa (Entradas e Saídas)
+    const totalEntradasCaixa = (db.lancamentosFinanceiros || [])
+      .filter(l => (l.tipo === 'Entrada' || l.tipo === 'Receita') && l.status !== 'Cancelado')
+      .reduce((acc, l) => acc + (Number(l.valor) || 0), 0);
+
+    const totalSaidasCaixa = (db.lancamentosFinanceiros || [])
+      .filter(l => (l.tipo === 'Saida' || l.tipo === 'Despesa') && l.status !== 'Cancelado')
+      .reduce((acc, l) => acc + (Number(l.valor) || 0), 0);
 
     const saldoAtualCaixa = totalEntradasCaixa - totalSaidasCaixa;
 
+    // 4. Saldo a Receber de Clientes
+    const totalAReceber = pedidosOficiais.reduce((acc, p) => {
+      const totalVenda = Number(p.valorTotalVenda) || 0;
+      const pago = Number(p.valorSinalPago) || (p.sinalPago ? totalVenda * 0.5 : 0);
+      return acc + Math.max(0, totalVenda - pago);
+    }, 0);
+
+    // 5. Lucro Líquido Operacional (DRE)
+    const totalDespesasFixasDRE = despesasLista.reduce((acc, d) => acc + d.valorReal, 0);
+    const lucroLiquidoOperacional = margemContribuicao - totalDespesasFixasDRE;
+
+    // 6. Filtragem de Contas a Pagar
+    let despesasFiltradas = despesasLista;
+    if (filtroDespesas === 'pendentes') {
+      despesasFiltradas = despesasLista.filter(d => d.status !== 'Pago');
+    } else if (filtroDespesas === 'atrasadas') {
+      despesasFiltradas = despesasLista.filter(d => d.status !== 'Pago' && d.statusInfo.isAtrasado);
+    } else if (filtroDespesas === 'pagas') {
+      despesasFiltradas = despesasLista.filter(d => d.status === 'Pago');
+    }
+
     contentArea.innerHTML = `
-      <!-- Cards Resumo Financeiro -->
+      <!-- Cards Resumo Financeiro (4 KPIs Principais) -->
       <div class="grid-cards-4">
         <div class="card">
-          <div class="kpi-title">Receita Bruta Faturada</div>
-          <div class="kpi-value text-primary">${formatarMoeda(receitaBruta)}</div>
-          <div class="kpi-desc">Total acumulado de pedidos fechados</div>
-        </div>
-
-        <div class="card">
-          <div class="kpi-title">Margem de Contribuição</div>
-          <div class="kpi-value text-green">${formatarMoeda(margemContribuicao)}</div>
-          <div class="kpi-desc">${margemContribuicaoPerc.toFixed(1)}% sobre a receita líquida</div>
-        </div>
-
-        <div class="card">
-          <div class="kpi-title">Despesas Fixas Mensais</div>
-          <div class="kpi-value text-red">${formatarMoeda(totalDespesasFixas)}</div>
-          <div class="kpi-desc">Aluguel, folha fixa, energia e software</div>
-        </div>
-
-        <div class="card">
-          <div class="kpi-title">Saldo Líquido em Caixa</div>
+          <div class="kpi-title">
+            <span>Saldo Líquido em Caixa</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v12M15 9.5a2.5 2.5 0 0 0-5 0c0 4 5 2 5 6a2.5 2.5 0 0 1-5 0"></path></svg>
+          </div>
           <div class="kpi-value ${saldoAtualCaixa >= 0 ? 'text-green' : 'text-red'}">${formatarMoeda(saldoAtualCaixa)}</div>
-          <div class="kpi-desc">Entradas (R$ ${formatarNumero(totalEntradasCaixa)}) - Saídas</div>
+          <div class="kpi-desc">
+            <span>Entradas: ${formatarMoeda(totalEntradasCaixa)} | Saídas: ${formatarMoeda(totalSaidasCaixa)}</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="kpi-title">
+            <span>Contas a Pagar (Pendentes)</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          </div>
+          <div class="kpi-value ${despesasAtrasadas.length > 0 ? 'text-red' : 'text-primary'}">${formatarMoeda(totalDespesasPendentes)}</div>
+          <div class="kpi-desc">
+            <span class="${despesasAtrasadas.length > 0 ? 'text-red' : 'text-gray-500'}">
+              ${despesasPendentes.length} pendente(s)${despesasAtrasadas.length > 0 ? ` • ${despesasAtrasadas.length} em atraso (${formatarMoeda(totalDespesasAtrasadas)})` : ' • Todas no prazo'}
+            </span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="kpi-title">
+            <span>Total a Receber (Clientes)</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <div class="kpi-value text-green">${formatarMoeda(totalAReceber)}</div>
+          <div class="kpi-desc">
+            <span>Saldos a receber de pedidos abertos</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="kpi-title">
+            <span>Lucro Líquido DRE</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          </div>
+          <div class="kpi-value ${lucroLiquidoOperacional >= 0 ? 'text-green' : 'text-red'}">${formatarMoeda(lucroLiquidoOperacional)}</div>
+          <div class="kpi-desc">
+            <span>Margem Contribuição - Despesas</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gestão Completa de Contas a Pagar & Despesas da Fábrica -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="table-header-bar" style="padding: 0 0 16px 0; flex-wrap: wrap; gap: 12px; align-items: center;">
+          <div>
+            <div class="table-title">Contas a Pagar & Gestão de Despesas</div>
+            <span style="font-size: 11.5px; color: var(--text-gray-500);">
+              Controle completo com vencimento (dia e mês), cálculo dinâmico de atraso em dias, quitação (dar baixa) e exclusão
+            </span>
+          </div>
+
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <div style="display: flex; gap: 4px; background: var(--bg-subtle); padding: 3px; border-radius: var(--radius-sm); border: 1px solid var(--border-medium);">
+              <button class="filter-btn-pill ${filtroDespesas === 'todas' ? 'active' : ''}" data-filtro="todas">
+                Todas (${despesasLista.length})
+              </button>
+              <button class="filter-btn-pill ${filtroDespesas === 'pendentes' ? 'active' : ''}" data-filtro="pendentes">
+                Pendentes (${despesasPendentes.length})
+              </button>
+              <button class="filter-btn-pill ${filtroDespesas === 'atrasadas' ? 'active' : ''}" data-filtro="atrasadas" style="${despesasAtrasadas.length > 0 ? 'color: #dc2626; font-weight: 700;' : ''}">
+                ⚠️ Atrasadas (${despesasAtrasadas.length})
+              </button>
+              <button class="filter-btn-pill ${filtroDespesas === 'pagas' ? 'active' : ''}" data-filtro="pagas">
+                ✓ Pagas (${despesasPagas.length})
+              </button>
+            </div>
+
+            <button class="btn btn-primary btn-sm" id="btnNovaDespesa">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              + Nova Despesa
+            </button>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="erp-table">
+            <thead>
+              <tr>
+                <th style="min-width: 200px;">Descrição & Favorecido</th>
+                <th>Categoria</th>
+                <th>Vencimento (Dia / Mês)</th>
+                <th>Valor (R$)</th>
+                <th>Status / Atraso</th>
+                <th>Forma / Tipo</th>
+                <th style="text-align: right; min-width: 180px;">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${despesasFiltradas.length > 0 ? despesasFiltradas.map(desp => `
+                <tr>
+                  <td>
+                    <strong>${desp.descricao}</strong>
+                    ${desp.fornecedorFavorecido ? `<div style="font-size: 11px; color: var(--text-gray-500);">Favorecido: ${desp.fornecedorFavorecido}</div>` : ''}
+                    ${desp.observacoes ? `<div style="font-size: 10.5px; color: var(--text-gray-400); font-style: italic; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${desp.observacoes}</div>` : ''}
+                  </td>
+                  <td>
+                    <span>${desp.categoria}</span>
+                    <div style="font-size: 10px; color: var(--text-gray-500); text-transform: uppercase;">${desp.recorrencia || 'Mensal'}</div>
+                  </td>
+                  <td>
+                    <strong style="font-size: 13px; color: var(--text-primary);">${formatarDiaMes(desp.dataVencimento)}</strong>
+                    <div class="text-mono" style="font-size: 11px; color: var(--text-gray-500);">${formatarDataBr(desp.dataVencimento)}</div>
+                  </td>
+                  <td class="text-mono">
+                    <strong class="${desp.status === 'Pago' ? 'text-green' : 'text-red'}" style="font-size: 13.5px;">${formatarMoeda(desp.valorReal)}</strong>
+                    ${desp.valorPago && desp.valorPago !== desp.valorReal ? `<div class="text-mono text-green" style="font-size: 10.5px;">Pago: ${formatarMoeda(desp.valorPago)}</div>` : ''}
+                  </td>
+                  <td>
+                    <div>${desp.statusInfo.badgeHtml}</div>
+                    <div style="font-size: 10.5px; color: var(--text-gray-500); margin-top: 3px;">${desp.statusInfo.diasTexto}</div>
+                  </td>
+                  <td class="text-mono" style="font-size: 11.5px;">
+                    ${desp.status === 'Pago' 
+                      ? `${desp.formaPagamentoPago || desp.formaPagamentoPrevista || 'PIX'} <span style="color:#047857; font-weight:700;">(Baixado)</span>`
+                      : (desp.formaPagamentoPrevista || 'Boleto')}
+                  </td>
+                  <td style="text-align: right;">
+                    <div style="display: flex; gap: 5px; justify-content: flex-end; align-items: center;">
+                      ${desp.status !== 'Pago' ? `
+                        <button class="btn btn-green btn-sm btn-dar-baixa" data-id="${desp.id}" title="Registrar quitação e debitar do Caixa">
+                          ✓ Dar Baixa
+                        </button>
+                      ` : `
+                        <button class="btn btn-secondary btn-sm btn-estornar-baixa" data-id="${desp.id}" title="Estornar quitação e reabrir como pendente">
+                          Estornar
+                        </button>
+                      `}
+                      <button class="btn btn-secondary btn-sm btn-editar-despesa" data-id="${desp.id}" title="Editar campos da despesa">
+                        Editar
+                      </button>
+                      <button class="btn btn-red btn-sm btn-excluir-despesa" data-id="${desp.id}" title="Excluir despesa do sistema">
+                        Excluir
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('') : `
+                <tr>
+                  <td colspan="7" style="text-align: center; padding: 45px 15px; color: var(--text-gray-500);">
+                    <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">
+                      ${filtroDespesas === 'todas' ? 'Nenhuma despesa ou conta a pagar cadastrada' : `Nenhuma despesa encontrada no filtro "${filtroDespesas}"`}
+                    </div>
+                    <p style="font-size: 12px; margin-bottom: 14px;">
+                      Cadastre as despesas e custos reais da fábrica (aluguel, energia, fornecedores, etc.) com vencimento e valor.
+                    </p>
+                    <button class="btn btn-primary btn-sm" id="btnNovaDespesaEmpty">+ Cadastrar Primeira Despesa</button>
+                  </td>
+                </tr>
+              `}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Livro Caixa: Entradas & Saídas Realizadas (Fluxo de Caixa) -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="table-header-bar" style="padding: 0 0 14px 0;">
+          <div>
+            <div class="table-title">Livro Caixa & Fluxo Financeiro (Entradas e Saídas Efetivadas)</div>
+            <span style="font-size: 11px; color: var(--text-gray-500);">
+              Movimentações em tempo real: recebimento de sinais de clientes e baixas de pagamentos
+            </span>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btnNovoLancamentoManual">+ Novo Lançamento Manual</button>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="erp-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Descrição / Favorecido</th>
+                <th>Forma de Pagamento</th>
+                <th style="text-align: right;">Valor</th>
+                <th style="text-align: right; width: 80px;">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(db.lancamentosFinanceiros || []).length > 0 ? db.lancamentosFinanceiros.map(lan => `
+                <tr>
+                  <td class="text-mono" style="font-size: 11px;">${lan.data}</td>
+                  <td>
+                    <span class="status-pill ${(lan.tipo === 'Entrada' || lan.tipo === 'Receita') ? 'status-green' : 'status-red'}" style="font-size: 9.5px;">
+                      ${lan.tipo.toUpperCase()}
+                    </span>
+                  </td>
+                  <td>
+                    <strong>${lan.cliente || lan.favorecido || 'TexPro'}</strong>
+                    <span style="display: block; font-size: 11px; color: var(--text-gray-500);">${lan.descricao}</span>
+                  </td>
+                  <td class="text-mono" style="font-size: 11px;">${lan.formaPagamento}</td>
+                  <td class="text-mono ${(lan.tipo === 'Entrada' || lan.tipo === 'Receita') ? 'text-green' : 'text-red'}" style="text-align: right; font-weight: 700;">
+                    ${(lan.tipo === 'Entrada' || lan.tipo === 'Receita') ? '+' : '-'} ${formatarMoeda(lan.valor)}
+                  </td>
+                  <td style="text-align: right;">
+                    <button class="btn btn-red btn-xs btn-excluir-lancamento" data-id="${lan.id}" title="Excluir este lançamento">
+                      Excluir
+                    </button>
+                  </td>
+                </tr>
+              `).join('') : `
+                <tr>
+                  <td colspan="6" style="text-align: center; padding: 35px 10px; color: var(--text-gray-500);">
+                    Nenhuma movimentação no caixa ainda. Conforme pedidos receberem sinal ou despesas forem baixadas, as movimentações aparecerão aqui.
+                  </td>
+                </tr>
+              `}
+            </tbody>
+          </table>
         </div>
       </div>
 
       <!-- Estrutura Formal da DRE Industrial -->
-      <div class="card" style="margin-bottom: 24px;">
+      <div class="card">
         <div class="table-header-bar" style="padding: 0 0 14px 0;">
           <div>
             <div class="table-title">DRE - Demonstração do Resultado do Exercício Têxtil</div>
@@ -3056,16 +3402,20 @@
             </tr>
             <tr class="dre-row-header">
               <td>3. (-) DESPESAS OPERACIONAIS FIXAS DA FÁBRICA</td>
-              <td class="text-mono text-red" style="text-align: right;">- ${formatarMoeda(totalDespesasFixas)}</td>
-              <td class="text-mono" style="text-align: right;">${receitaLiquida > 0 ? ((totalDespesasFixas / receitaLiquida) * 100).toFixed(1) : 0}%</td>
+              <td class="text-mono text-red" style="text-align: right;">- ${formatarMoeda(totalDespesasFixasDRE)}</td>
+              <td class="text-mono" style="text-align: right;">${receitaLiquida > 0 ? ((totalDespesasFixasDRE / receitaLiquida) * 100).toFixed(1) : 0}%</td>
             </tr>
-            ${db.despesasFixas.map(d => `
+            ${despesasLista.length > 0 ? despesasLista.map(d => `
               <tr class="dre-row-sub-2">
-                <td>• ${d.descricao} (${d.categoria})</td>
-                <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(d.valorMensal)}</td>
+                <td>• ${d.descricao} (${d.categoria}) ${d.status === 'Pago' ? '<span style="color:#047857; font-weight:bold; font-size:10px;">[QUITADO]</span>' : '<span style="color:#dc2626; font-size:10px;">[PENDENTE]</span>'}</td>
+                <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(d.valorReal)}</td>
                 <td></td>
               </tr>
-            `).join('')}
+            `).join('') : `
+              <tr class="dre-row-sub-2">
+                <td colspan="3" style="color: var(--text-gray-500); font-style: italic;">Nenhuma despesa operacional cadastrada no momento.</td>
+              </tr>
+            `}
             <tr class="dre-row-lucro">
               <td>(=) LUCRO LÍQUIDO OPERACIONAL DO EXERCÍCIO (EBITDA)</td>
               <td class="text-mono" style="text-align: right; font-size: 15px;">${formatarMoeda(lucroLiquidoOperacional)}</td>
@@ -3074,181 +3424,425 @@
           </tbody>
         </table>
       </div>
-
-      <!-- Gestão Editável de Despesas Fixas e Fluxo de Caixa -->
-      <div class="grid-cards-2">
-        <!-- Tabela de Despesas Fixas com Edição -->
-        <div class="card">
-          <div class="table-header-bar" style="padding: 0 0 12px 0;">
-            <div class="table-title">Despesas Fixas Mensais (Editáveis)</div>
-            <button class="btn btn-secondary btn-sm" id="btnNovaDespesaFixa">+ Nova Despesa Fixa</button>
-          </div>
-          <table class="erp-table">
-            <thead>
-              <tr>
-                <th>Descrição</th>
-                <th>Categoria</th>
-                <th>Valor Mensal</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${db.despesasFixas.map((desp, idx) => `
-                <tr>
-                  <td><strong>${desp.descricao}</strong></td>
-                  <td>${desp.categoria}</td>
-                  <td class="text-mono text-red"><strong>${formatarMoeda(desp.valorMensal)}</strong></td>
-                  <td>
-                    <div style="display: flex; gap: 4px;">
-                      <button class="btn btn-secondary btn-sm btn-editar-despesa" data-index="${idx}">Editar</button>
-                      <button class="btn btn-red btn-sm btn-excluir-despesa" data-index="${idx}">X</button>
-                    </div>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Lançamentos de Entradas e Saídas do Caixa -->
-        <div class="card">
-          <div class="table-header-bar" style="padding: 0 0 12px 0;">
-            <div class="table-title">Entradas & Saídas do Caixa (Sinais e Compras)</div>
-            <button class="btn btn-secondary btn-sm" id="btnNovoLancamentoManual">+ Novo Lançamento</button>
-          </div>
-          <div style="max-height: 380px; overflow-y: auto;">
-            <table class="erp-table">
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Tipo</th>
-                  <th>Descrição / Cliente</th>
-                  <th>Forma</th>
-                  <th>Valor</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${db.lancamentosFinanceiros.length ? db.lancamentosFinanceiros.map(lan => `
-                  <tr>
-                    <td class="text-mono" style="font-size: 11px;">${lan.data}</td>
-                    <td>
-                      <span class="status-pill ${lan.tipo === 'Entrada' ? 'status-green' : 'status-red'}" style="font-size: 9px;">
-                        ${lan.tipo.toUpperCase()}
-                      </span>
-                    </td>
-                    <td>
-                      <strong>${lan.cliente}</strong>
-                      <span style="display: block; font-size: 11px; color: var(--text-gray-500);">${lan.descricao}</span>
-                    </td>
-                    <td class="text-mono" style="font-size: 11px;">${lan.formaPagamento}</td>
-                    <td class="text-mono ${lan.tipo === 'Entrada' ? 'text-green' : 'text-red'}">
-                      <strong>${lan.tipo === 'Entrada' ? '+' : '-'} ${formatarMoeda(lan.valor)}</strong>
-                    </td>
-                  </tr>
-                `).join('') : `
-                  <tr>
-                    <td colspan="5" style="text-align: center; padding: 30px 10px; color: var(--text-gray-500);">
-                      Nenhum lançamento no caixa ainda. Conforme pedidos receberem sinal ou compras forem lançadas, as movimentações financeiras aparecerão aqui.
-                    </td>
-                  </tr>
-                `}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
     `;
 
+    // Listeners de Filtro
+    document.querySelectorAll('.filter-btn-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        filtroDespesas = btn.getAttribute('data-filtro') || 'todas';
+        renderizarFinanceiro();
+      });
+    });
+
+    // Listeners de Ações Gerais
+    document.getElementById('btnNovaDespesa')?.addEventListener('click', () => abrirModalDespesa());
+    document.getElementById('btnNovaDespesaEmpty')?.addEventListener('click', () => abrirModalDespesa());
     document.getElementById('btnEmitirRelatorioDRE')?.addEventListener('click', abrirModalRelatorioDRE);
-    document.getElementById('btnNovaDespesaFixa')?.addEventListener('click', abrirModalNovaDespesaFixa);
     document.getElementById('btnNovoLancamentoManual')?.addEventListener('click', abrirModalNovoLancamentoManual);
+
+    // Listeners de Cada Linha de Despesa
+    document.querySelectorAll('.btn-dar-baixa').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        abrirModalDarBaixaDespesa(id);
+      });
+    });
+
+    document.querySelectorAll('.btn-estornar-baixa').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        estornarBaixaDespesa(id);
+      });
+    });
 
     document.querySelectorAll('.btn-editar-despesa').forEach(btn => {
       btn.addEventListener('click', () => {
-        const idx = parseInt(btn.getAttribute('data-index'), 10);
-        const desp = db.despesasFixas[idx];
-        const novoValor = prompt(`Informe o novo valor mensal para "${desp.descricao}":`, desp.valorMensal);
-        if (novoValor && !isNaN(parseFloat(novoValor))) {
-          desp.valorMensal = parseFloat(novoValor);
-          salvarEstado();
-          renderizarFinanceiro();
-          mostrarToast(`Despesa "${desp.descricao}" atualizada para ${formatarMoeda(desp.valorMensal)}.`, 'green');
-        }
+        const id = btn.getAttribute('data-id');
+        const desp = (db.despesasFixas || []).find(d => d.id === id);
+        if (desp) abrirModalDespesa(desp);
       });
     });
 
     document.querySelectorAll('.btn-excluir-despesa').forEach(btn => {
       btn.addEventListener('click', () => {
-        const idx = parseInt(btn.getAttribute('data-index'), 10);
-        db.despesasFixas.splice(idx, 1);
-        salvarEstado();
-        renderizarFinanceiro();
-        mostrarToast('Despesa fixa removida.', 'green');
+        const id = btn.getAttribute('data-id');
+        excluirDespesa(id);
+      });
+    });
+
+    // Listener para Excluir Lançamento do Caixa
+    document.querySelectorAll('.btn-excluir-lancamento').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        excluirLancamentoCaixa(id);
       });
     });
   }
 
-  function abrirModalNovaDespesaFixa() {
+  // Modal: Cadastrar ou Editar Despesa com Todos os Campos
+  function abrirModalDespesa(despesaParaEditar = null) {
     if (!modalContainer) return;
+
+    const isEdit = !!despesaParaEditar;
+    const desp = despesaParaEditar || {
+      descricao: '',
+      categoria: 'Instalações',
+      valor: '',
+      dataVencimento: new Date().toISOString().split('T')[0],
+      formaPagamentoPrevista: 'Boleto Bancário',
+      recorrencia: 'Mensal',
+      fornecedorFavorecido: '',
+      observacoes: ''
+    };
 
     modalContainer.innerHTML = `
       <div class="modal-overlay active">
-        <div class="modal-box" style="max-width: 500px;">
+        <div class="modal-box" style="max-width: 580px;">
           <div class="modal-header">
-            <div class="modal-title">Adicionar Nova Despesa Fixa</div>
+            <div>
+              <div class="modal-title">${isEdit ? 'Editar Conta / Despesa' : 'Cadastrar Nova Despesa / Conta a Pagar'}</div>
+              <div style="font-size: 11.5px; color: var(--text-gray-500); margin-top: 2px;">
+                Preencha todos os dados: vencimento (dia e mês), fornecedor, categoria e valor
+              </div>
+            </div>
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
           <div class="modal-body">
             <div class="form-group">
-              <label class="form-label">Descrição da Despesa</label>
-              <input type="text" id="despDescricao" class="form-input" placeholder="Ex: Manutenção Compressores de Ar">
+              <label class="form-label">Descrição da Despesa *</label>
+              <input type="text" id="despDescricao" class="form-input" placeholder="Ex: Aluguel do Galpão, Conta de Luz (Enel), Fio de Costura" value="${desp.descricao || ''}">
             </div>
-            <div class="form-group">
-              <label class="form-label">Categoria</label>
-              <select id="despCategoria" class="form-select">
-                <option value="Instalações">Instalações</option>
-                <option value="Utilidades">Utilidades (Energia, Água)</option>
-                <option value="Mão de Obra Fixa">Mão de Obra Fixa</option>
-                <option value="Manutenção">Manutenção</option>
-                <option value="Comunicação">Comunicação / Internet</option>
-                <option value="Serviços Terceiros">Serviços Terceiros / Software</option>
-              </select>
+
+            <div class="form-row">
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">Categoria de Custo *</label>
+                <select id="despCategoria" class="form-select">
+                  <option value="Instalações" ${desp.categoria === 'Instalações' ? 'selected' : ''}>Instalações (Aluguel, IPTU, Condomínio)</option>
+                  <option value="Utilidades" ${desp.categoria === 'Utilidades' ? 'selected' : ''}>Utilidades (Energia, Água, Gás)</option>
+                  <option value="Fornecedores Malhas" ${desp.categoria === 'Fornecedores Malhas' ? 'selected' : ''}>Fornecedores (Malhas e Tecidos)</option>
+                  <option value="Aviamentos" ${desp.categoria === 'Aviamentos' ? 'selected' : ''}>Aviamentos (Zíperes, Linhas, Botões)</option>
+                  <option value="Mão de Obra Fixa" ${desp.categoria === 'Mão de Obra Fixa' ? 'selected' : ''}>Mão de Obra Fixa (Salários, Encargos)</option>
+                  <option value="Facções Externas" ${desp.categoria === 'Facções Externas' ? 'selected' : ''}>Facções Externas (Costura Terceirizada)</option>
+                  <option value="Manutenção" ${desp.categoria === 'Manutenção' ? 'selected' : ''}>Manutenção Máquinas & Equipamentos</option>
+                  <option value="Comunicação" ${desp.categoria === 'Comunicação' ? 'selected' : ''}>Comunicação / Internet / Telefonia</option>
+                  <option value="Serviços Terceiros" ${desp.categoria === 'Serviços Terceiros' ? 'selected' : ''}>Serviços Terceiros / Contabilidade / Software</option>
+                  <option value="Tributos" ${desp.categoria === 'Tributos' ? 'selected' : ''}>Tributos & Impostos (DAS Simples Nacional)</option>
+                  <option value="Outras Despesas" ${desp.categoria === 'Outras Despesas' ? 'selected' : ''}>Outras Despesas Operacionais</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">Valor (R$) *</label>
+                <input type="number" id="despValor" class="form-input text-mono" step="0.01" min="0" placeholder="0.00" value="${desp.valor !== undefined ? desp.valor : (desp.valorMensal || '')}">
+              </div>
             </div>
+
+            <div class="form-row">
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">Data de Vencimento (Dia / Mês) *</label>
+                <input type="date" id="despVencimento" class="form-input text-mono" value="${desp.dataVencimento ? desp.dataVencimento.split('T')[0] : ''}">
+                <div style="font-size: 11px; color: var(--text-gray-500); margin-top: 3px;">
+                  O sistema calculará atraso em dias e alertará automaticamente
+                </div>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">Forma Prevista de Pagamento</label>
+                <select id="despForma" class="form-select">
+                  <option value="Boleto Bancário" ${desp.formaPagamentoPrevista === 'Boleto Bancário' ? 'selected' : ''}>Boleto Bancário</option>
+                  <option value="PIX" ${desp.formaPagamentoPrevista === 'PIX' ? 'selected' : ''}>PIX</option>
+                  <option value="Cartão de Crédito" ${desp.formaPagamentoPrevista === 'Cartão de Crédito' ? 'selected' : ''}>Cartão de Crédito</option>
+                  <option value="Transferência Bancária" ${desp.formaPagamentoPrevista === 'Transferência Bancária' ? 'selected' : ''}>Transferência Bancária</option>
+                  <option value="Dinheiro" ${desp.formaPagamentoPrevista === 'Dinheiro' ? 'selected' : ''}>Dinheiro em Espécie</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">Recorrência</label>
+                <select id="despRecorrencia" class="form-select">
+                  <option value="Mensal" ${desp.recorrencia === 'Mensal' ? 'selected' : ''}>Mensal Recorrente</option>
+                  <option value="Avulsa" ${desp.recorrencia === 'Avulsa' ? 'selected' : ''}>Avulsa / Única</option>
+                  <option value="Anual" ${desp.recorrencia === 'Anual' ? 'selected' : ''}>Anual</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">Favorecido / Fornecedor (Opcional)</label>
+                <input type="text" id="despFavorecido" class="form-input" placeholder="Ex: Imobiliária, Concessionária, Fornecedor X" value="${desp.fornecedorFavorecido || ''}">
+              </div>
+            </div>
+
             <div class="form-group">
-              <label class="form-label">Valor Mensal (R$)</label>
-              <input type="number" id="despValor" class="form-input" value="500.00" step="50.00">
+              <label class="form-label">Observações / Detalhes</label>
+              <textarea id="despObs" class="form-input" rows="2" placeholder="Informações adicionais, código de barras, número da NF de compra...">${desp.observacoes || ''}</textarea>
             </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
-            <button type="button" class="btn btn-primary" id="btnSalvarDespesaFixa">Adicionar Despesa</button>
+            <button type="button" class="btn btn-primary" id="btnSalvarDespesaModal">
+              ${isEdit ? 'Salvar Alterações' : 'Cadastrar Despesa'}
+            </button>
           </div>
         </div>
       </div>
     `;
 
-    document.getElementById('btnSalvarDespesaFixa')?.addEventListener('click', () => {
-      const desc = document.getElementById('despDescricao')?.value;
+    document.getElementById('btnSalvarDespesaModal')?.addEventListener('click', () => {
+      const desc = document.getElementById('despDescricao')?.value.trim();
       const cat = document.getElementById('despCategoria')?.value;
       const val = parseFloat(document.getElementById('despValor')?.value || 0);
+      const venc = document.getElementById('despVencimento')?.value;
+      const forma = document.getElementById('despForma')?.value;
+      const rec = document.getElementById('despRecorrencia')?.value;
+      const fav = document.getElementById('despFavorecido')?.value.trim();
+      const obs = document.getElementById('despObs')?.value.trim();
 
-      if (!desc || val <= 0) {
-        mostrarToast('Preencha descrição e valor válidos.', 'red');
+      if (!desc) {
+        mostrarToast('Informe a descrição da despesa.', 'red');
+        return;
+      }
+      if (isNaN(val) || val <= 0) {
+        mostrarToast('Informe um valor monetário válido maior que zero.', 'red');
+        return;
+      }
+      if (!venc) {
+        mostrarToast('Informe a data de vencimento com dia e mês.', 'red');
         return;
       }
 
-      db.despesasFixas.push({
-        id: `DESP-${Math.floor(10 + Math.random() * 90)}`,
-        descricao: desc,
-        categoria: cat,
-        valorMensal: val
-      });
+      if (isEdit) {
+        desp.descricao = desc;
+        desp.categoria = cat;
+        desp.valor = val;
+        desp.valorMensal = val;
+        desp.dataVencimento = venc;
+        desp.formaPagamentoPrevista = forma;
+        desp.recorrencia = rec;
+        desp.fornecedorFavorecido = fav;
+        desp.observacoes = obs;
+        mostrarToast(`Despesa "${desc}" atualizada com sucesso!`, 'green');
+      } else {
+        const novaDesp = {
+          id: `DESP-${Date.now().toString().slice(-6)}`,
+          descricao: desc,
+          categoria: cat,
+          valor: val,
+          valorMensal: val,
+          dataVencimento: venc,
+          formaPagamentoPrevista: forma,
+          recorrencia: rec,
+          fornecedorFavorecido: fav,
+          observacoes: obs,
+          status: 'Pendente',
+          dataPagamento: null,
+          valorPago: null,
+          formaPagamentoPago: null,
+          comprovanteDoc: null,
+          lancamentoId: null
+        };
+        if (!Array.isArray(db.despesasFixas)) db.despesasFixas = [];
+        db.despesasFixas.unshift(novaDesp);
+        mostrarToast(`Despesa "${desc}" cadastrada com vencimento em ${formatarDiaMes(venc)}!`, 'green');
+      }
 
       salvarEstado();
       fecharModal();
       renderizarFinanceiro();
-      mostrarToast(`Despesa "${desc}" adicionada ao DRE.`, 'green');
     });
+  }
+
+  // Modal: Dar Baixa em Pagamento de Despesa
+  function abrirModalDarBaixaDespesa(despesaId) {
+    const desp = (db.despesasFixas || []).find(d => d.id === despesaId);
+    if (!desp) return;
+
+    const hojeIso = new Date().toISOString().split('T')[0];
+    const valorOriginal = Number(desp.valor !== undefined ? desp.valor : desp.valorMensal) || 0;
+
+    modalContainer.innerHTML = `
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 520px;">
+          <div class="modal-header">
+            <div>
+              <div class="modal-title">Dar Baixa em Despesa / Conta a Pagar</div>
+              <div style="font-size: 11.5px; color: var(--text-gray-500); margin-top: 2px;">
+                Quitação financeira e débito imediato no Livro Caixa
+              </div>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 16px;">
+              <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);">${desp.descricao}</div>
+              <div style="font-size: 12px; color: var(--text-gray-600); margin-top: 4px; display: flex; gap: 14px; flex-wrap: wrap;">
+                <span><strong>Categoria:</strong> ${desp.categoria}</span>
+                <span><strong>Vencimento:</strong> ${formatarDiaMes(desp.dataVencimento)} (${formatarDataBr(desp.dataVencimento)})</span>
+                ${desp.fornecedorFavorecido ? `<span><strong>Favorecido:</strong> ${desp.fornecedorFavorecido}</span>` : ''}
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">Data do Pagamento *</label>
+                <input type="date" id="baixaData" class="form-input text-mono" value="${hojeIso}">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">Valor Pago (R$) *</label>
+                <input type="number" id="baixaValor" class="form-input text-mono" step="0.01" value="${valorOriginal.toFixed(2)}">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">Forma de Pagamento *</label>
+                <select id="baixaForma" class="form-select">
+                  <option value="PIX">PIX</option>
+                  <option value="Boleto Bancário">Boleto Bancário</option>
+                  <option value="Transferência Bancária">Transferência / TED</option>
+                  <option value="Cartão de Crédito">Cartão de Crédito</option>
+                  <option value="Dinheiro">Dinheiro em Espécie</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">Comprovante / Autenticação (Opcional)</label>
+                <input type="text" id="baixaComprovante" class="form-input" placeholder="Ex: Autenticação #98214">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Observações da Quitação</label>
+              <input type="text" id="baixaObs" class="form-input" placeholder="Ex: Pago com desconto pontualidade ou juros">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnConfirmarBaixa">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Confirmar Quitação & Baixar
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('btnConfirmarBaixa')?.addEventListener('click', () => {
+      const dataPagto = document.getElementById('baixaData')?.value || hojeIso;
+      const valorPago = parseFloat(document.getElementById('baixaValor')?.value || 0);
+      const formaPagto = document.getElementById('baixaForma')?.value || 'PIX';
+      const comprovante = document.getElementById('baixaComprovante')?.value || '';
+      const obs = document.getElementById('baixaObs')?.value || '';
+
+      if (isNaN(valorPago) || valorPago <= 0) {
+        mostrarToast('Informe um valor pago válido superior a zero.', 'red');
+        return;
+      }
+
+      desp.status = 'Pago';
+      desp.dataPagamento = dataPagto;
+      desp.valorPago = valorPago;
+      desp.formaPagamentoPago = formaPagto;
+      desp.comprovanteDoc = comprovante;
+      if (obs) {
+        desp.observacoes = desp.observacoes ? `${desp.observacoes} | ${obs}` : obs;
+      }
+
+      // Sincronizar automaticamente criando lançamento de Saída no Livro Caixa
+      const novoLancamento = {
+        id: `LAN-${Date.now()}`,
+        data: formatarDataBr(dataPagto),
+        tipo: 'Saida',
+        cliente: desp.fornecedorFavorecido || desp.descricao,
+        descricao: `Baixa Despesa: ${desp.descricao} (${desp.categoria})`,
+        formaPagamento: formaPagto,
+        valor: valorPago,
+        despesaId: desp.id
+      };
+      if (!Array.isArray(db.lancamentosFinanceiros)) db.lancamentosFinanceiros = [];
+      db.lancamentosFinanceiros.unshift(novoLancamento);
+      desp.lancamentoId = novoLancamento.id;
+
+      // Sincronizar com o mês atual do histórico financeiro se existir
+      const mesAtual = db.historicoFinanceiroMensal?.find(h => h.isAtual);
+      if (mesAtual) {
+        mesAtual.saidas = (Number(mesAtual.saidas) || 0) + valorPago;
+      }
+
+      salvarEstado();
+      fecharModal();
+      renderizarFinanceiro();
+      mostrarToast(`Pagamento de ${formatarMoeda(valorPago)} ("${desp.descricao}") baixado e debitado do Caixa!`, 'green');
+    });
+  }
+
+  // Estornar Baixa
+  function estornarBaixaDespesa(despesaId) {
+    const desp = (db.despesasFixas || []).find(d => d.id === despesaId);
+    if (!desp) return;
+
+    if (confirm(`Deseja estornar a baixa de "${desp.descricao}"?\nA despesa voltará para Pendente e o débito no Caixa será removido.`)) {
+      const valorEstornado = Number(desp.valorPago || desp.valor || desp.valorMensal) || 0;
+
+      // Remover lançamento financeiro correspondente
+      if (Array.isArray(db.lancamentosFinanceiros)) {
+        db.lancamentosFinanceiros = db.lancamentosFinanceiros.filter(l => l.id !== desp.lancamentoId && l.despesaId !== desp.id);
+      }
+
+      // Reverter o mês atual do histórico se houver
+      const mesAtual = db.historicoFinanceiroMensal?.find(h => h.isAtual);
+      if (mesAtual && mesAtual.saidas >= valorEstornado) {
+        mesAtual.saidas = Math.max(0, mesAtual.saidas - valorEstornado);
+      }
+
+      desp.status = 'Pendente';
+      desp.dataPagamento = null;
+      desp.valorPago = null;
+      desp.formaPagamentoPago = null;
+      desp.comprovanteDoc = null;
+      desp.lancamentoId = null;
+
+      salvarEstado();
+      renderizarFinanceiro();
+      mostrarToast(`Baixa estornada. "${desp.descricao}" reaberta como pendente.`, 'green');
+    }
+  }
+
+  // Excluir Despesa
+  function excluirDespesa(despesaId) {
+    const desp = (db.despesasFixas || []).find(d => d.id === despesaId);
+    if (!desp) return;
+
+    if (confirm(`Deseja realmente excluir a despesa "${desp.descricao}"?\nEsta ação removerá o registro do sistema.`)) {
+      // Se estava paga, remover o lançamento do livro caixa
+      if (Array.isArray(db.lancamentosFinanceiros)) {
+        db.lancamentosFinanceiros = db.lancamentosFinanceiros.filter(l => l.id !== desp.lancamentoId && l.despesaId !== desp.id);
+      }
+
+      db.despesasFixas = db.despesasFixas.filter(d => d.id !== despesaId);
+      salvarEstado();
+      renderizarFinanceiro();
+      mostrarToast(`Despesa "${desp.descricao}" removida com sucesso.`, 'green');
+    }
+  }
+
+  // Excluir Lançamento do Caixa
+  function excluirLancamentoCaixa(lanId) {
+    const lan = (db.lancamentosFinanceiros || []).find(l => l.id === lanId);
+    if (!lan) return;
+
+    if (confirm(`Deseja remover o lançamento "${lan.descricao}" de ${formatarMoeda(lan.valor)}?`)) {
+      db.lancamentosFinanceiros = db.lancamentosFinanceiros.filter(l => l.id !== lanId);
+      if (lan.despesaId) {
+        const desp = (db.despesasFixas || []).find(d => d.id === lan.despesaId);
+        if (desp && desp.status === 'Pago') {
+          desp.status = 'Pendente';
+          desp.dataPagamento = null;
+          desp.valorPago = null;
+          desp.lancamentoId = null;
+        }
+      }
+      salvarEstado();
+      renderizarFinanceiro();
+      mostrarToast('Lançamento removido do Caixa com sucesso.', 'green');
+    }
   }
 
   function abrirModalNovoLancamentoManual() {
@@ -4164,8 +4758,8 @@
     pageBreadcrumbElem.textContent = 'SISTEMA > EQUIPE';
 
     contentArea.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <p style="color: var(--text-gray-500);">Controle de colaboradores internos, costureiras, encarregados e permissões de acesso.</p>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+        <p style="color: var(--text-gray-500); margin: 0;">Controle de colaboradores internos, costureiras, encarregados e permissões de acesso.</p>
         <button class="btn btn-primary" id="btnCadastrarColaborador">+ Cadastrar Colaborador / Costureira</button>
       </div>
 
@@ -4180,30 +4774,41 @@
               <th>Capacidade Dia</th>
               <th>Remuneração / Salário</th>
               <th>Status</th>
-              <th>Ações</th>
+              <th style="text-align: right; min-width: 140px;">Ações</th>
             </tr>
           </thead>
           <tbody>
-            ${db.equipe.map(u => `
+            ${(db.equipe || []).length > 0 ? db.equipe.map((u, idx) => `
               <tr>
                 <td><strong>${u.nome}</strong></td>
-                <td class="text-mono">${u.email}</td>
-                <td>${u.cargo}</td>
+                <td class="text-mono">${u.email || '-'}</td>
+                <td>${u.cargo || u.especialidade || '-'}</td>
                 <td>
                   <span class="status-pill ${u.nivelAcesso === 'Admin' ? 'status-green' : 'status-gray'}">
-                    ${u.nivelAcesso.toUpperCase()}
+                    ${(u.nivelAcesso || 'Producao').toUpperCase()}
                   </span>
                 </td>
                 <td class="text-mono">${u.capacidadeDiaPecas > 0 ? `${u.capacidadeDiaPecas} pçs/dia` : 'Setor Fixo'}</td>
                 <td class="text-mono">${u.valorRemuneracao ? formatarMoeda(u.valorRemuneracao) : 'Por Produção'}</td>
                 <td>
-                  <span class="status-pill status-green">${u.status}</span>
+                  <span class="status-pill status-green">${u.status || 'Ativo'}</span>
                 </td>
-                <td>
-                  <button class="btn btn-secondary btn-sm" onclick="alert('Perfil de ${u.nome} ativo.')">Detalhes</button>
+                <td style="text-align: right;">
+                  <div style="display: flex; gap: 5px; justify-content: flex-end;">
+                    <button class="btn btn-secondary btn-sm btn-editar-equipe" data-id="${u.id}">Editar</button>
+                    <button class="btn btn-red btn-sm btn-excluir-equipe" data-id="${u.id}">Excluir</button>
+                  </div>
                 </td>
               </tr>
-            `).join('')}
+            `).join('') : `
+              <tr>
+                <td colspan="8" style="text-align: center; padding: 45px 15px; color: var(--text-gray-500);">
+                  <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Nenhum colaborador ou costureira cadastrada</div>
+                  <p style="font-size: 12px; margin-bottom: 14px;">Cadastre seus costureiros, cortadores, encarregados e administradores para organizar a fábrica.</p>
+                  <button class="btn btn-primary btn-sm" id="btnCadastrarPrimeiroColaborador">+ Cadastrar Primeiro Colaborador</button>
+                </td>
+              </tr>
+            `}
           </tbody>
         </table>
       </div>
@@ -4212,42 +4817,77 @@
     document.getElementById('btnCadastrarColaborador')?.addEventListener('click', () => {
       abrirModalNovoColaboradorInline(() => renderizarEquipe());
     });
+    document.getElementById('btnCadastrarPrimeiroColaborador')?.addEventListener('click', () => {
+      abrirModalNovoColaboradorInline(() => renderizarEquipe());
+    });
+
+    document.querySelectorAll('.btn-editar-equipe').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const col = (db.equipe || []).find(u => u.id === id);
+        if (col) abrirModalNovoColaboradorInline(() => renderizarEquipe(), col);
+      });
+    });
+
+    document.querySelectorAll('.btn-excluir-equipe').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const col = (db.equipe || []).find(u => u.id === id);
+        if (!col) return;
+        if (confirm(`Deseja realmente excluir "${col.nome}" da equipe?`)) {
+          db.equipe = (db.equipe || []).filter(u => u.id !== id);
+          db.costureiras = (db.costureiras || []).filter(c => c.id !== id);
+          salvarEstado();
+          renderizarEquipe();
+          mostrarToast(`Colaborador "${col.nome}" removido.`, 'green');
+        }
+      });
+    });
   }
 
-  function abrirModalNovoColaboradorInline(callback) {
+  function abrirModalNovoColaboradorInline(callback, colaboradorParaEditar = null) {
     if (!modalContainer) return;
+    const isEdit = !!colaboradorParaEditar;
+    const col = colaboradorParaEditar || {
+      nome: '',
+      telefone: '',
+      cargo: '',
+      nivelAcesso: 'Producao',
+      capacidadeDiaPecas: 100,
+      valorRemuneracao: 2800
+    };
 
     modalContainer.innerHTML = `
       <div class="modal-overlay active">
         <div class="modal-box" style="max-width: 580px;">
           <div class="modal-header">
-            <div class="modal-title">Cadastrar Novo Colaborador ou Costureira</div>
+            <div class="modal-title">${isEdit ? 'Editar Colaborador / Costureira' : 'Cadastrar Novo Colaborador ou Costureira'}</div>
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
           <div class="modal-body">
             <div class="form-row">
               <div class="form-group" style="flex: 2;">
-                <label class="form-label">Nome Completo / Oficina</label>
-                <input type="text" id="cadColNome" class="form-input" placeholder="Ex: Maria Aparecida Santos">
+                <label class="form-label">Nome Completo / Oficina *</label>
+                <input type="text" id="cadColNome" class="form-input" placeholder="Ex: Maria Aparecida Santos" value="${col.nome || ''}">
               </div>
               <div class="form-group" style="flex: 1;">
                 <label class="form-label">Telefone / WhatsApp</label>
-                <input type="text" id="cadColTel" class="form-input text-mono" placeholder="19987654321">
+                <input type="text" id="cadColTel" class="form-input text-mono" placeholder="19987654321" value="${col.telefone || ''}">
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Cargo / Especialidade</label>
-                <input type="text" id="cadColCargo" class="form-input" placeholder="Ex: Costureira Especialista Polo e Camisaria">
+                <input type="text" id="cadColCargo" class="form-input" placeholder="Ex: Costureira Especialista Polo e Camisaria" value="${col.cargo || col.especialidade || ''}">
               </div>
               <div class="form-group">
                 <label class="form-label">Nível de Permissão</label>
                 <select id="cadColAcesso" class="form-select">
-                  <option value="Producao">Produção / Oficina</option>
-                  <option value="Comercial">Comercial / Vendas</option>
-                  <option value="Financeiro">Financeiro</option>
-                  <option value="Admin">Administrador Geral</option>
+                  <option value="Producao" ${col.nivelAcesso === 'Producao' ? 'selected' : ''}>Produção / Oficina</option>
+                  <option value="Comercial" ${col.nivelAcesso === 'Comercial' ? 'selected' : ''}>Comercial / Vendas</option>
+                  <option value="Financeiro" ${col.nivelAcesso === 'Financeiro' ? 'selected' : ''}>Financeiro</option>
+                  <option value="Admin" ${col.nivelAcesso === 'Admin' ? 'selected' : ''}>Administrador Geral</option>
                 </select>
               </div>
             </div>
@@ -4255,50 +4895,80 @@
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Capacidade Diária (Peças)</label>
-                <input type="number" id="cadColCapacidade" class="form-input" value="100" min="0">
+                <input type="number" id="cadColCapacidade" class="form-input" value="${col.capacidadeDiaPecas !== undefined ? col.capacidadeDiaPecas : 100}" min="0">
               </div>
               <div class="form-group">
                 <label class="form-label">Salário Mensal ou Custo p/ Peça (R$)</label>
-                <input type="number" id="cadColRemun" class="form-input" value="2800.00" step="100.00">
+                <input type="number" id="cadColRemun" class="form-input" value="${col.valorRemuneracao !== undefined ? col.valorRemuneracao : 2800.00}" step="100.00">
               </div>
             </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
-            <button type="button" class="btn btn-primary" id="btnSalvarColaborador">Cadastrar Colaborador</button>
+            <button type="button" class="btn btn-primary" id="btnSalvarColaborador">
+              ${isEdit ? 'Salvar Alterações' : 'Cadastrar Colaborador'}
+            </button>
           </div>
         </div>
       </div>
     `;
 
     document.getElementById('btnSalvarColaborador')?.addEventListener('click', () => {
-      const nome = document.getElementById('cadColNome')?.value;
+      const nome = document.getElementById('cadColNome')?.value.trim();
       if (!nome) {
         mostrarToast('Informe o nome do colaborador.', 'red');
         return;
       }
 
-      const novoCol = {
-        id: `COST-${Math.floor(10 + Math.random() * 90)}`,
-        nome: nome,
-        responsavel: nome,
-        email: `${nome.toLowerCase().replace(/\s+/g, '')}@texpro.com.br`,
-        telefone: document.getElementById('cadColTel')?.value || "19987654321",
-        cargo: document.getElementById('cadColCargo')?.value || "Costureira Especialista",
-        especialidade: document.getElementById('cadColCargo')?.value || "Costura Geral",
-        nivelAcesso: document.getElementById('cadColAcesso')?.value || "Producao",
-        capacidadeDiaPecas: parseInt(document.getElementById('cadColCapacidade')?.value || 100, 10),
-        valorMedioPorPeca: 8.00,
-        valorRemuneracao: parseFloat(document.getElementById('cadColRemun')?.value || 2800),
-        status: "Ativo"
-      };
+      if (isEdit) {
+        col.nome = nome;
+        col.responsavel = nome;
+        col.telefone = document.getElementById('cadColTel')?.value || '';
+        col.cargo = document.getElementById('cadColCargo')?.value || 'Colaborador';
+        col.especialidade = col.cargo;
+        col.nivelAcesso = document.getElementById('cadColAcesso')?.value || 'Producao';
+        col.capacidadeDiaPecas = parseInt(document.getElementById('cadColCapacidade')?.value || 0, 10);
+        col.valorRemuneracao = parseFloat(document.getElementById('cadColRemun')?.value || 0);
 
-      db.equipe.unshift(novoCol);
-      db.costureiras.unshift(novoCol);
-      salvarEstado();
-      fecharModal();
-      mostrarToast(`Colaborador "${novoCol.nome}" cadastrado com sucesso!`, 'green');
-      if (callback) callback(novoCol);
+        // Atualizar também na lista de costureiras se existir
+        const costMatch = (db.costureiras || []).find(c => c.id === col.id);
+        if (costMatch) {
+          costMatch.nome = col.nome;
+          costMatch.responsavel = col.responsavel;
+          costMatch.telefone = col.telefone;
+          costMatch.especialidade = col.especialidade;
+          costMatch.capacidadeDiaPecas = col.capacidadeDiaPecas;
+        }
+
+        salvarEstado();
+        fecharModal();
+        mostrarToast(`Colaborador "${col.nome}" atualizado com sucesso!`, 'green');
+        if (callback) callback(col);
+      } else {
+        const novoCol = {
+          id: `COST-${Date.now().toString().slice(-6)}`,
+          nome: nome,
+          responsavel: nome,
+          email: `${nome.toLowerCase().replace(/[^a-z0-9]/g, '')}@texpro.com.br`,
+          telefone: document.getElementById('cadColTel')?.value || '',
+          cargo: document.getElementById('cadColCargo')?.value || 'Costureira Especialista',
+          especialidade: document.getElementById('cadColCargo')?.value || 'Costura Geral',
+          nivelAcesso: document.getElementById('cadColAcesso')?.value || 'Producao',
+          capacidadeDiaPecas: parseInt(document.getElementById('cadColCapacidade')?.value || 100, 10),
+          valorMedioPorPeca: 8.00,
+          valorRemuneracao: parseFloat(document.getElementById('cadColRemun')?.value || 2800),
+          status: 'Ativo'
+        };
+
+        if (!Array.isArray(db.equipe)) db.equipe = [];
+        if (!Array.isArray(db.costureiras)) db.costureiras = [];
+        db.equipe.unshift(novoCol);
+        db.costureiras.unshift(novoCol);
+        salvarEstado();
+        fecharModal();
+        mostrarToast(`Colaborador "${novoCol.nome}" cadastrado com sucesso!`, 'green');
+        if (callback) callback(novoCol);
+      }
     });
   }
 
@@ -5005,20 +5675,21 @@
     forcarResetarBanco: function() {
       try {
         localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem('texpro_erp_database_v1');
-        localStorage.removeItem('texpro_erp_database_v2');
-        localStorage.removeItem('texpro_erp_database_v3');
-        localStorage.removeItem('texpro_erp_database_v4');
-        localStorage.removeItem('texpro_erp_database_v5');
-        localStorage.removeItem('texpro_erp_prod_v6');
+        localStorage.removeItem('texpro_erp_prod_v8');
         localStorage.removeItem('texpro_erp_prod_v7');
+        localStorage.removeItem('texpro_erp_prod_v6');
+        localStorage.removeItem('texpro_erp_database_v5');
+        localStorage.removeItem('texpro_erp_database_v4');
+        localStorage.removeItem('texpro_erp_database_v3');
+        localStorage.removeItem('texpro_erp_database_v2');
+        localStorage.removeItem('texpro_erp_database_v1');
       } catch (e) {}
       db = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA));
       db.versao = ERP_VERSION;
       salvarEstado();
       atualizarBadges();
       navegarPara(abaAtiva);
-      mostrarToast('Sistema limpo com sucesso! Pronto para operação real da campanha.', 'green');
+      mostrarToast('Sistema 100% zerado e pronto para operação real!', 'green');
     }
   };
 
