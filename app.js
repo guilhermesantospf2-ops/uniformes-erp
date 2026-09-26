@@ -50,6 +50,7 @@
   function init() {
     configurarMenuNavegacao();
     atualizarBadges();
+    configurarCliqueGlobalMockups();
     navegarPara(abaAtiva);
   }
 
@@ -359,7 +360,7 @@
               return `
                 <tr>
                   <td>
-                    <img src="${mockup}" class="mockup-thumb-3x4" alt="Mockup 3x4" title="Mockup Têxtil 3x4">
+                    <img src="${mockup}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela">
                   </td>
                   <td class="text-mono"><strong>#${p.numero}</strong></td>
                   <td><strong>${p.clienteNome}</strong></td>
@@ -521,7 +522,7 @@
               return `
                 <tr>
                   <td>
-                    <img src="${mockup}" class="mockup-thumb-3x4" alt="Mockup 3x4" title="Clique para ampliar o mockup 3x4">
+                    <img src="${mockup}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela">
                   </td>
                   <td>
                     <span class="text-mono" style="font-weight: 800; font-size: 13px;">#${p.numero}</span>
@@ -625,7 +626,7 @@
                   return `
                     <div class="kanban-card">
                       <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                        <img src="${mockup}" class="mockup-thumb-3x4" alt="Mockup 3x4">
+                        <img src="${mockup}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela">
                         <div style="flex: 1; min-width: 0;">
                           <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span class="text-mono" style="font-weight: 800; font-size: 11px;">#${p.numero}</span>
@@ -1884,7 +1885,7 @@
 
             <!-- Detalhamento do Produto & Mockup 3x4 -->
             <div style="display: flex; gap: 16px; margin-bottom: 16px; align-items: center;">
-              <img src="${p.mockupUrl}" class="mockup-thumb-3x4" style="width: 70px; height: 93px;" alt="Mockup da Peça">
+              <img src="${p.mockupUrl}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" style="width: 70px; height: 93px;" alt="Mockup da Peça" title="Clique para abrir o mockup 3x4 na tela">
               <div style="flex: 1;">
                 <h3 style="font-size: 14px; font-weight: 800; color: #0f172a;">${p.produtoNome}</h3>
                 <div style="font-size: 12px; color: var(--text-gray-600); margin-top: 3px;">
@@ -1991,7 +1992,7 @@
               return `
                 <tr>
                   <td>
-                    <img src="${mockup}" class="mockup-thumb-3x4" alt="Mockup 3x4">
+                    <img src="${mockup}" class="mockup-thumb-3x4" data-os-id="${os.id}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela">
                   </td>
                   <td class="text-mono"><strong>${os.id}</strong></td>
                   <td class="text-mono">#${os.pedidoNumero}</td>
@@ -2050,7 +2051,7 @@
             </div>
 
             <div style="display: flex; gap: 16px; margin-bottom: 14px; align-items: flex-start;">
-              <img src="${os.mockupUrl}" class="mockup-thumb-3x4" style="width: 85px; height: 113px;" alt="Mockup 3x4">
+              <img src="${os.mockupUrl}" class="mockup-thumb-3x4" data-os-id="${os.id}" style="width: 85px; height: 113px;" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela">
               
               <div style="flex: 1;">
                 <div class="grid-cards-2" style="gap: 8px; margin-bottom: 10px;">
@@ -3789,7 +3790,7 @@
               return `
                 <tr>
                   <td>
-                    <img src="${mockup}" class="mockup-thumb-3x4" alt="Mockup 3x4">
+                    <img src="${mockup}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela">
                   </td>
                   <td class="text-mono"><strong>#${p.numero}</strong></td>
                   <td><strong>${p.clienteNome}</strong></td>
@@ -3848,7 +3849,7 @@
           <div class="modal-body">
             <!-- Resumo do Pedido -->
             <div style="display: flex; gap: 14px; background: #f8fafc; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 16px; align-items: center;">
-              <img src="${p.mockupUrl}" class="mockup-thumb-3x4" style="width: 65px; height: 86px;" alt="Mockup 3x4">
+              <img src="${p.mockupUrl}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" style="width: 65px; height: 86px;" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela">
               <div style="flex: 1;">
                 <h4 style="font-size: 14px; font-weight: 800; color: #0f172a;">${p.clienteNome} • ${p.grade?.total || 0}x ${p.produtoNome}</h4>
                 <div style="font-size: 12px; color: var(--text-gray-600); margin-top: 3px;">
@@ -4240,12 +4241,260 @@
     });
   }
 
+  // Delegação Universal de Clique para Abertura de Mockups 3x4 na Tela
+  function configurarCliqueGlobalMockups() {
+    document.addEventListener('click', (e) => {
+      const thumb = e.target.closest('.mockup-thumb-3x4');
+      if (thumb) {
+        e.preventDefault();
+        e.stopPropagation();
+        const pedidoId = thumb.getAttribute('data-pedido-id');
+        const osId = thumb.getAttribute('data-os-id');
+        const src = thumb.getAttribute('src');
+        abrirModalVisualizarMockup({ pedidoId, osId, src });
+      }
+    });
+  }
+
+  // Modal de Visualização de Mockup 3x4 Ampliado na Tela do Sistema
+  function abrirModalVisualizarMockup(params) {
+    if (!modalContainer) return;
+
+    let pedido = null;
+    let os = null;
+    let mockupSrc = "";
+    let tituloModal = "Visualização Técnica de Mockup 3x4";
+    let produtoNome = "Peça Conforme Pedido";
+    let clienteNome = "Cliente Corporativo";
+    let clienteTelefone = "";
+    let costureiraNome = "Oficina Interna";
+    let tecnicaPersonalizacao = "Bordado / Estampa Conforme Arte";
+    let grade = { pp: 0, p: 0, m: 0, g: 0, gg: 0, xg: 0, total: 0 };
+    let precoUnit = 0;
+    let valorTotal = 0;
+    let margem = 0;
+    let statusEtapa = "Em Produção";
+    let numeroPedido = "---";
+    let sinalPago = false;
+    let saldoPendente = 0;
+
+    if (params) {
+      if (typeof params === 'string') {
+        pedido = db.pedidos.find(p => p.id === params || p.numero.toString() === params);
+        if (!pedido) {
+          os = db.ordensServico.find(o => o.id === params);
+        }
+      } else {
+        if (params.pedidoId) {
+          pedido = db.pedidos.find(p => p.id === params.pedidoId || p.numero.toString() === params.pedidoId);
+        }
+        if (!pedido && params.osId) {
+          os = db.ordensServico.find(o => o.id === params.osId);
+        }
+        if (params.src) {
+          mockupSrc = params.src;
+        }
+      }
+    }
+
+    if (pedido) {
+      mockupSrc = pedido.mockupUrl || mockupSrc || window.ERP_MOCKUPS.gerarMockupSvg(pedido.produtoNome, "#1e3a8a", "#ffffff", pedido.clienteNome.substring(0, 6));
+      tituloModal = `Mockup Técnico Oficial • Pedido #${pedido.numero}`;
+      produtoNome = pedido.produtoNome || produtoNome;
+      clienteNome = pedido.clienteNome || clienteNome;
+      clienteTelefone = pedido.clienteTelefone || "";
+      costureiraNome = pedido.costureiraNome || costureiraNome;
+      tecnicaPersonalizacao = pedido.tipoPersonalizacao || tecnicaPersonalizacao;
+      grade = pedido.grade || grade;
+      precoUnit = pedido.precoUnitarioVenda || 0;
+      valorTotal = pedido.valorTotalVenda || 0;
+      margem = pedido.margemLucroPercentual || 0;
+      statusEtapa = pedido.etapaAtual || pedido.status || statusEtapa;
+      numeroPedido = pedido.numero;
+      sinalPago = !!pedido.sinalPago;
+      saldoPendente = pedido.saldoPendente || 0;
+    } else if (os) {
+      mockupSrc = os.mockupUrl || mockupSrc || window.ERP_MOCKUPS.gerarMockupSvg(os.produto, "#1e3a8a", "#ffffff", os.cliente.substring(0, 6));
+      tituloModal = `Mockup Técnico Oficial • Ordem de Serviço ${os.id}`;
+      produtoNome = os.produto || produtoNome;
+      clienteNome = os.cliente || clienteNome;
+      costureiraNome = os.costureiraDesignada || costureiraNome;
+      grade = { total: os.quantidadeTotal || 0 };
+      statusEtapa = os.etapaAtual || statusEtapa;
+      numeroPedido = os.pedidoNumero || "---";
+    }
+
+    if (!mockupSrc) {
+      mockupSrc = window.ERP_MOCKUPS.gerarMockupSvg("polo", "#1e3a8a", "#ffffff", "TEXPRO");
+    }
+
+    modalContainer.innerHTML = `
+      <div class="modal-overlay active" id="modalMockupOverlay">
+        <div class="modal-box" style="max-width: 820px;">
+          <div class="modal-header">
+            <div>
+              <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                <span>${tituloModal}</span>
+              </div>
+              <span style="font-size: 11px; color: var(--text-gray-500); font-family: var(--font-mono);">
+                ENQUADRAMENTO DE PRODUÇÃO • PROPORÇÃO TÊXTIL 3:4
+              </span>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+          </div>
+
+          <div class="modal-body">
+            <div class="mockup-modal-grid">
+              <!-- Coluna 1: Mockup Ampliado 3x4 -->
+              <div>
+                <div class="mockup-large-frame">
+                  <span class="mockup-large-badge">PROPORÇÃO 3:4</span>
+                  <img src="${mockupSrc}" class="mockup-large-img" alt="Mockup Oficial 3x4">
+                </div>
+                
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                  <a href="${mockupSrc}" download="Mockup_Pedido_${numeroPedido}.svg" class="btn btn-secondary btn-sm" style="flex: 1;" title="Baixar vetor do mockup em formato SVG">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Baixar SVG
+                  </a>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btnCopiarMockup" style="flex: 1;" title="Copiar código do mockup">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    Copiar Arte
+                  </button>
+                </div>
+              </div>
+
+              <!-- Coluna 2: Especificações Técnicas e Comerciais -->
+              <div>
+                <div class="mockup-spec-card">
+                  <div class="mockup-spec-title">Dados Comerciais & Cliente</div>
+                  <div class="mockup-spec-row">
+                    <span class="mockup-spec-label">Cliente / Razão Social:</span>
+                    <span class="mockup-spec-value">${clienteNome}</span>
+                  </div>
+                  ${clienteTelefone ? `
+                    <div class="mockup-spec-row">
+                      <span class="mockup-spec-label">WhatsApp Contato:</span>
+                      <span class="mockup-spec-value text-mono">${formatarTelefone(clienteTelefone)}</span>
+                    </div>
+                  ` : ''}
+                  <div class="mockup-spec-row">
+                    <span class="mockup-spec-label">Nº do Pedido:</span>
+                    <span class="mockup-spec-value text-mono">#${numeroPedido}</span>
+                  </div>
+                  <div class="mockup-spec-row">
+                    <span class="mockup-spec-label">Etapa na Fábrica:</span>
+                    <span class="status-pill status-green" style="font-size: 10px;">${statusEtapa.toUpperCase()}</span>
+                  </div>
+                </div>
+
+                <div class="mockup-spec-card">
+                  <div class="mockup-spec-title">Ficha Técnica da Modelagem</div>
+                  <div class="mockup-spec-row">
+                    <span class="mockup-spec-label">Modelo Têxtil:</span>
+                    <span class="mockup-spec-value">${produtoNome}</span>
+                  </div>
+                  <div class="mockup-spec-row">
+                    <span class="mockup-spec-label">Técnica de Aplicação:</span>
+                    <span class="mockup-spec-value">${tecnicaPersonalizacao}</span>
+                  </div>
+                  <div class="mockup-spec-row">
+                    <span class="mockup-spec-label">Costureira / Oficina:</span>
+                    <span class="mockup-spec-value" style="color: var(--color-green);">${costureiraNome}</span>
+                  </div>
+                  <div class="mockup-spec-row">
+                    <span class="mockup-spec-label">Total de Peças:</span>
+                    <span class="mockup-spec-value text-mono" style="font-size: 13px;">${grade.total || 0} peças</span>
+                  </div>
+
+                  <!-- Grade de Tamanhos -->
+                  <div style="margin-top: 10px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 8px;">
+                    <div style="font-size: 10.5px; font-weight: 700; color: var(--text-gray-500); margin-bottom: 6px; text-transform: uppercase;">Grade de Tamanhos Programada</div>
+                    <div style="display: flex; gap: 8px; justify-content: space-between; text-align: center; font-size: 11px;">
+                      <div><span style="color: var(--text-gray-500); display: block;">PP</span><strong class="text-mono">${grade.pp || 0}</strong></div>
+                      <div><span style="color: var(--text-gray-500); display: block;">P</span><strong class="text-mono">${grade.p || 0}</strong></div>
+                      <div><span style="color: var(--text-gray-500); display: block;">M</span><strong class="text-mono">${grade.m || 0}</strong></div>
+                      <div><span style="color: var(--text-gray-500); display: block;">G</span><strong class="text-mono">${grade.g || 0}</strong></div>
+                      <div><span style="color: var(--text-gray-500); display: block;">GG</span><strong class="text-mono">${grade.gg || 0}</strong></div>
+                      <div><span style="color: var(--text-gray-500); display: block;">XG</span><strong class="text-mono">${grade.xg || 0}</strong></div>
+                      <div><span style="color: var(--text-gray-500); display: block;">TOTAL</span><strong class="text-mono text-green">${grade.total || 0}</strong></div>
+                    </div>
+                  </div>
+                </div>
+
+                ${valorTotal > 0 ? `
+                  <div class="mockup-spec-card">
+                    <div class="mockup-spec-title">Fechamento Comercial</div>
+                    <div class="mockup-spec-row">
+                      <span class="mockup-spec-label">Preço Unitário:</span>
+                      <span class="mockup-spec-value text-mono">${formatarMoeda(precoUnit)}</span>
+                    </div>
+                    <div class="mockup-spec-row">
+                      <span class="mockup-spec-label">Valor Total do Pedido:</span>
+                      <span class="mockup-spec-value text-mono" style="font-size: 13.5px; color: var(--text-primary);">${formatarMoeda(valorTotal)}</span>
+                    </div>
+                    <div class="mockup-spec-row">
+                      <span class="mockup-spec-label">Sinal Financeiro:</span>
+                      <span class="status-pill ${sinalPago ? 'status-green' : 'status-red'}" style="font-size: 10px;">
+                        ${sinalPago ? (saldoPendente <= 0 ? '100% QUITADO' : 'SINAL 50% PAGO') : 'PENDENTE DE SINAL'}
+                      </span>
+                    </div>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            ${pedido ? `
+              <button type="button" class="btn btn-secondary btn-sm" id="btnModalMockupWpp">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                Disparar Mockup no WhatsApp
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btnModalMockupFicha">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                Ver Ficha Técnica / OS
+              </button>
+            ` : ''}
+            <button type="button" class="btn btn-primary btn-sm" onclick="window.ERP.fecharModal()">
+              Fechar
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('btnCopiarMockup')?.addEventListener('click', () => {
+      navigator.clipboard?.writeText(mockupSrc).then(() => {
+        mostrarToast('Código vetorial do mockup copiado com sucesso!', 'green');
+      }).catch(() => {
+        mostrarToast('Mockup selecionado pronto para uso!', 'green');
+      });
+    });
+
+    if (pedido) {
+      document.getElementById('btnModalMockupWpp')?.addEventListener('click', () => {
+        abrirModalWhatsApp(pedido.id);
+      });
+      document.getElementById('btnModalMockupFicha')?.addEventListener('click', () => {
+        const os = db.ordensServico.find(o => o.pedidoNumero === pedido.numero);
+        if (os) {
+          abrirFichaTecnica(os.id);
+        } else {
+          abrirFichaTecnicaPorPedido(pedido);
+        }
+      });
+    }
+  }
+
   // Exposição Global das Funções Públicas da API TexPro ERP
   window.ERP = {
     navegarPara,
     fecharModal,
     abrirFichaTecnica,
     abrirModalWhatsApp,
+    abrirModalVisualizarMockup,
     abrirModalNovoOrcamento,
     abrirModalNovoClienteInline,
     abrirModalNovoModeloInline,

@@ -1087,7 +1087,7 @@ body {
    ESTILOS COMPLEMENTARES: MOCKUPS 3x4, KANBAN/TABELA, DRE & IMPRESSÃO
    ========================================================================== */
 
-/* Miniatura Mockup Proporção 3x4 (Exigência Estrita) */
+/* Miniatura Mockup Proporção 3x4 (Exigência Estrita e Clicável) */
 .mockup-thumb-3x4 {
   width: 45px;
   height: 60px;
@@ -1099,13 +1099,107 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   display: block;
   flex-shrink: 0;
-  transition: transform 0.15s ease;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  position: relative;
 }
 
 .mockup-thumb-3x4:hover {
-  transform: scale(1.15);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-  z-index: 10;
+  transform: scale(1.18);
+  border-color: #0f172a;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.2);
+  z-index: 20;
+}
+
+/* Modal de Visualização de Mockup Ampliado na Tela */
+.mockup-modal-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .mockup-modal-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mockup-large-frame {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 3 / 4;
+  background-color: #ffffff;
+  border: 2px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  padding: 10px;
+}
+
+.mockup-large-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.mockup-large-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: rgba(15, 23, 42, 0.88);
+  color: #ffffff;
+  font-size: 9.5px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(2px);
+}
+
+.mockup-spec-card {
+  background-color: #f8fafc;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.mockup-spec-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-gray-500);
+  font-weight: 700;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 4px;
+}
+
+.mockup-spec-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 12.5px;
+}
+
+.mockup-spec-label {
+  color: var(--text-gray-600);
+  font-weight: 500;
+}
+
+.mockup-spec-value {
+  color: var(--text-primary);
+  font-weight: 700;
+  text-align: right;
 }
 
 .mockup-cell {
