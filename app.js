@@ -490,6 +490,14 @@
 
     return `
       <div class="table-wrapper">
+        <div class="table-header-bar">
+          <div class="table-title">Ordens de Pedidos Oficiais & Orçamentos Ativos (${pedidos.length})</div>
+          <span class="table-scroll-hint" title="Use a barra de rolagem horizontal abaixo para navegar por todas as colunas">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline><polyline points="19 18 13 12 19 6"></polyline></svg>
+            Rolagem Lateral Ativa
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline><polyline points="5 18 11 12 5 6"></polyline></svg>
+          </span>
+        </div>
         <table class="erp-table">
           <thead>
             <tr>
