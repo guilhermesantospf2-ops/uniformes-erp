@@ -261,18 +261,29 @@ with check (true);
     return SQL_SCHEMA_SUPABASE;
   }
 
-  // --- SUPABASE CONFIG ---
+  // --- SUPABASE CONFIG (CONEXÃO NATIVA AUTOMÁTICA) ---
+  const SUPABASE_CONFIG_PADRAO = {
+    url: "https://nrhygqygcfjyniogjegq.supabase.co",
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yaHlncXlnY2ZqeW5pb2dqZWdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0NzU1MTMsImV4cCI6MjEwNjA1MTUxM30.JXAt9Ha1ni2T3G-dMvITGdH9PIPTc7_utI3H9LPrIV4"
+  };
+
   function obterSupabaseConfig() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY_SUPABASE);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.url && parsed.anonKey) {
+          parsed.url = parsed.url.replace(/\/rest\/v1\/?$/, '').trim();
+          return parsed;
+        }
+      }
     } catch (e) {
       console.warn('Erro ao carregar credenciais do Supabase:', e);
     }
     if (window.TEXPRO_SUPABASE_CONFIG) {
       return window.TEXPRO_SUPABASE_CONFIG;
     }
-    return null;
+    return Object.assign({}, SUPABASE_CONFIG_PADRAO);
   }
 
   function salvarSupabaseConfig(config) {
@@ -286,6 +297,9 @@ with check (true);
         }
         atualizarStatusNuvem();
         return true;
+      }
+      if (config.url) {
+        config.url = config.url.replace(/\/rest\/v1\/?$/, '').trim();
       }
       localStorage.setItem(STORAGE_KEY_SUPABASE, JSON.stringify(config));
       localStorage.setItem(STORAGE_KEY_PROVEDOR, 'supabase');
@@ -311,7 +325,8 @@ with check (true);
     }
 
     try {
-      supabaseClient = window.supabase.createClient(config.url.trim(), config.anonKey.trim(), {
+      const cleanUrl = config.url.replace(/\/rest\/v1\/?$/, '').trim();
+      supabaseClient = window.supabase.createClient(cleanUrl, config.anonKey.trim(), {
         auth: { persistSession: false, autoRefreshToken: false }
       });
       atualizarStatusNuvem();
