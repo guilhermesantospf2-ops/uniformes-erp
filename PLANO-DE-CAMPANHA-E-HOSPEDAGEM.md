@@ -154,9 +154,10 @@ Quando o dono da confecção clicar no anúncio e chamar no WhatsApp:
 > *Ao abrir, você pode clicar no botão **'Demonstração Showroom'** no menu superior. Ele vai preencher pedidos de exemplo com polos, camisetas dry fit e brins operacionais para você ver as fichas A4 e a contagem regressiva funcionando na prática."*
 
 ### Mensagem 4 (Apresentação dos Valores & Fechamento):
-> *"Temos dois formatos principais para atender sua fábrica:*  
+> *"Temos três formatos para atender sua fábrica:*  
 > 1. **Plano Mensal Completo:** R$ 349/mês, sem contrato de fidelidade e com suporte direto no WhatsApp.  
 > 2. **Setup VIP com Treinamento:** R$ 1.200 (configuramos seu logotipo, catálogo e treinamos sua equipe) + R$ 250/mês.  
+> 3. **Licença Perpétua Definitiva (Sem Mensalidades):** R$ 9.800 à vista (ou em até 10× no cartão da empresa), com implantação completa e 1 ano de suporte técnico.  
 > 
 > *Qual desses formatos se encaixa melhor no momento atual da sua empresa?"*
 
