@@ -52,6 +52,9 @@
     } catch (e) {
       console.error('Erro ao salvar no localStorage', e);
     }
+    if (window.ERP_CLOUD && typeof window.ERP_CLOUD.sincronizarComNuvem === 'function') {
+      window.ERP_CLOUD.sincronizarComNuvem(db);
+    }
   }
 
   // Estado da Aplicação
@@ -69,10 +72,41 @@
   function init() {
     configurarMenuNavegacao();
     configurarIdentidadeEPerfis();
+    configurarCliqueStatusNuvem();
+    configurarEscutaNuvemRealtime();
     atualizarBadges();
     configurarCliqueGlobalMockups();
     configurarFechamentoModaisGlobal();
     navegarPara(abaAtiva);
+  }
+
+  function configurarCliqueStatusNuvem() {
+    const badge = document.getElementById('cloudStatusBadge');
+    if (badge) {
+      badge.style.cursor = 'pointer';
+      badge.title = 'Clique para configurar ou ver o status do Banco na Nuvem (Firebase / Firestore)';
+      badge.addEventListener('click', () => {
+        if (window.ERP_CLOUD && typeof window.ERP_CLOUD.abrirModalConfigNuvem === 'function') {
+          window.ERP_CLOUD.abrirModalConfigNuvem();
+        }
+      });
+    }
+  }
+
+  function configurarEscutaNuvemRealtime() {
+    if (window.ERP_CLOUD && typeof window.ERP_CLOUD.iniciarEscutaRealtime === 'function') {
+      window.ERP_CLOUD.iniciarEscutaRealtime((novoDb) => {
+        if (novoDb && Array.isArray(novoDb.pedidos)) {
+          db = novoDb;
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+          } catch (e) {}
+          atualizarBadges();
+          navegarPara(abaAtiva);
+          mostrarToast('Dados atualizados em tempo real pela Nuvem!', 'green');
+        }
+      });
+    }
   }
 
   // Notificações Toast do Sistema (Zero Emojis, Puros SVGs)
@@ -7616,6 +7650,16 @@
                 </div>
               </div>
 
+              <div style="border: 1.5px solid #a7f3d0; background: #ecfdf5; border-radius: 6px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong style="color: #047857; font-size: 13px;">☁️ Banco de Dados na Nuvem (Firebase / Firestore)</strong>
+                  <div style="font-size: 11px; color: #065f46; margin-top: 2px;">Sincronização multi-dispositivo em tempo real (celular do vendedor, PC do dono e oficina).</div>
+                </div>
+                <button class="btn btn-primary btn-sm" id="btnConfigurarNuvemBackupModal" style="background: #047857; border-color: #047857; font-weight: 700;">
+                  Configurar Nuvem
+                </button>
+              </div>
+
               <div style="border: 1px solid #bae6fd; background: #f0f9ff; border-radius: 6px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
                 <div>
                   <strong style="color: #0369a1; font-size: 13px;">✨ Carregar Showroom de Vendas (Demo Completo)</strong>
@@ -7644,6 +7688,13 @@
         </div>
       </div>
     `);
+
+    document.getElementById('btnConfigurarNuvemBackupModal')?.addEventListener('click', () => {
+      fecharModal(modalEl);
+      if (window.ERP_CLOUD && typeof window.ERP_CLOUD.abrirModalConfigNuvem === 'function') {
+        window.ERP_CLOUD.abrirModalConfigNuvem();
+      }
+    });
 
     document.getElementById('btnExportarBackupModal')?.addEventListener('click', () => {
       window.ERP_CLOUD.exportarBackupJson(db);
