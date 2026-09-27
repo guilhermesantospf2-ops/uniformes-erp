@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TexPro ERP — O Primeiro Sistema Especializado em Confecções de Uniformes & Estamparias</title>
+  <meta name="description" content="Elimine atrasos de entrega com radar de contagem regressiva, reduza até 18% do desperdício de tecido e rolos DTF e gere fichas técnicas e propostas comerciais em segundos.">
+  
+  <!-- Favicon / Metas -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-dark: #070a13;
+      --bg-card: #0f172a;
+      --bg-card-hover: #1e293b;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(16, 185, 129, 0.25);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #10b981;
+      --primary-hover: #059669;
+      --primary-glow: rgba(16, 185, 129, 0.35);
+      --accent-cyan: #06b6d4;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+      --font-heading: 'Outfit', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* Container Principal */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header & Navegação */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(16px);
+      background: rgba(7, 10, 19, 0.85);
+      border-bottom: 1px solid var(--border-color);
+      padding: 16px 0;
+    }
+
+    .header-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-heading);
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, #10b981, #06b6d4);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .nav-links a:hover {
+      color: var(--text-main);
+    }
+
+    .header-ctas {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Botões */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-family: var(--font-heading);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      border: none;
+      text-align: center;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 20px var(--primary-glow);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-whatsapp {
+      background: #25d366;
+      color: #072612;
+      box-shadow: 0 4px 20px rgba(37, 211, 102, 0.3);
+    }
+
+    .btn-whatsapp:hover {
+      background: #20ba59;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(37, 211, 102, 0.5);
+    }
+
+    .btn-lg {
+      padding: 16px 32px;
+      font-size: 17px;
+      border-radius: 10px;
+    }
+
+    /* Hero Section */
+    .hero-section {
+      padding: 80px 0 60px;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero-glow {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.05) 50%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 940px;
+      margin: 0 auto;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      padding: 6px 16px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      animation: pulseGlow 2.5s infinite;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.2); }
+      50% { box-shadow: 0 0 20px 4px rgba(16, 185, 129, 0.35); }
+    }
+
+    .hero-title {
+      font-family: var(--font-heading);
+      font-size: clamp(34px, 5.5vw, 58px);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -1.5px;
+      margin-bottom: 22px;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #10b981 0%, #38bdf8 50%, #facc15 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(16px, 2vw, 20px);
+      color: var(--text-muted);
+      max-width: 780px;
+      margin: 0 auto 36px;
+      font-weight: 400;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 48px;
+    }
+
+    .trust-metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      max-width: 880px;
+      margin: 0 auto;
+      border-top: 1px solid var(--border-color);
+      padding-top: 32px;
+    }
+
+    .metric-card {
+      text-align: center;
+    }
+
+    .metric-number {
+      font-family: var(--font-heading);
+      font-size: 28px;
+      font-weight: 800;
+      color: #ffffff;
+      display: block;
+    }
+
+    .metric-label {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Live Preview Mockup Card */
+    .preview-section {
+      margin: 40px auto 90px;
+      max-width: 1040px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(16, 185, 129, 0.1);
+      overflow: hidden;
+    }
+
+    .preview-header {
+      background: #090e1a;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+    }
+
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #f59e0b; }
+    .dot-green { background: #10b981; }
+
+    .preview-title {
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+    }
+
+    .preview-body {
+      padding: 24px;
+    }
+
+    /* Interactive Countdown Radar Component */
+    .radar-showcase {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .radar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 12px;
+    }
+
+    .radar-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .radar-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+      animation: pulseRadar 1.5s infinite;
+    }
+
+    @keyframes pulseRadar {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+
+    .radar-orders-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+    }
+
+    .radar-order-item {
+      background: #1e293b;
+      border-radius: 8px;
+      padding: 14px;
+      border-left: 4px solid #ef4444;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .radar-order-item.item-urgente { border-left-color: #ef4444; }
+    .radar-order-item.item-atencao { border-left-color: #f59e0b; }
+    .radar-order-item.item-seguro { border-left-color: #10b981; }
+
+    .order-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .order-client {
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .countdown-badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .badge-critico {
+      background: #7f1d1d;
+      color: #fecaca;
+      animation: pulseUrgent 1.2s infinite;
+    }
+
+    .badge-amber {
+      background: #78350f;
+      color: #fef3c7;
+    }
+
+    .badge-safe {
+      background: #064e3b;
+      color: #a7f3d0;
+    }
+
+    @keyframes pulseUrgent {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    /* Gargalos / Seção de Dores */
+    .section-pains {
+      padding: 90px 0;
+      border-top: 1px solid var(--border-color);
+      background: linear-gradient(180deg, rgba(7, 10, 19, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%);
+    }
+
+    .section-header {
+      text-align: center;
+      max-width: 760px;
+      margin: 0 auto 56px;
+    }
+
+    .section-tag {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #10b981;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .section-title {
+      font-family: var(--font-heading);
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.8px;
+      margin-bottom: 16px;
+    }
+
+    .section-desc {
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+
+    .cards-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+    }
+
+    .pain-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 28px 24px;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .pain-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-glow);
+      background: var(--bg-card-hover);
+    }
+
+    .pain-icon-wrapper {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      font-size: 22px;
+    }
+
+    .icon-red { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .icon-amber { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .icon-emerald { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .icon-cyan { background: rgba(6, 182, 212, 0.15); color: #06b6d4; border: 1px solid rgba(6, 182, 212, 0.3); }
+
+    .pain-title {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+
+    .pain-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .pain-solution {
+      font-size: 13px;
+      font-weight: 600;
+      color: #34d399;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Calculadora Interativa de Lucro */
+    .calculator-section {
+      padding: 90px 0;
+      position: relative;
+    }
+
+    .calc-container {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 20px;
+      padding: 48px;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 40px;
+      align-items: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .calc-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .slider-value {
+      color: #34d399;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    input[type=range] {
+      width: 100%;
+      height: 6px;
+      background: #334155;
+      border-radius: 4px;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #10b981;
+      cursor: pointer;
+      box-shadow: 0 0 10px #10b981;
+    }
+
+    .calc-result-box {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .result-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+    .result-total {
+      font-family: var(--font-heading);
+      font-size: clamp(36px, 4vw, 52px);
+      font-weight: 800;
+      color: #10b981;
+      margin: 10px 0;
+      display: block;
+    }
+
+    .result-details {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 20px 0 28px;
+      font-size: 13px;
+      color: var(--text-muted);
+      text-align: left;
+    }
+
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+      padding-bottom: 4px;
+    }
+
+    .result-row strong {
+      color: #fff;
+    }
+
+    /* Funcionalidades Showcase */
+    .features-section {
+      padding: 90px 0;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 28px;
+    }
+
+    .feature-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 32px;
+      transition: all 0.3s ease;
+    }
+
+    .feature-box:hover {
+      border-color: rgba(16, 185, 129, 0.4);
+      transform: translateY(-4px);
+    }
+
+    .feature-badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.1);
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+
+    .feature-title {
+      font-family: var(--font-heading);
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+
+    .feature-text {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Depoimentos */
+    .testimonials-section {
+      padding: 90px 0;
+      background: #090e1a;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .testimonial-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .stars {
+      color: #facc15;
+      font-size: 16px;
+      margin-bottom: 14px;
+    }
+
+    .quote-text {
+      font-size: 14.5px;
+      color: #cbd5e1;
+      font-style: italic;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .author-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .author-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10b981, #06b6d4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      color: #fff;
+    }
+
+    .author-name {
+      font-weight: 700;
+      font-size: 14px;
+      color: #fff;
+    }
+
+    .author-factory {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Tabela de Preços */
+    .pricing-section {
+      padding: 90px 0;
+      border-top: 1px solid var(--border-color);
+      position: relative;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 32px;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .price-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 40px 32px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .price-card.featured {
+      background: linear-gradient(180deg, #131d36 0%, #0f172a 100%);
+      border: 2px solid #10b981;
+      box-shadow: 0 0 35px rgba(16, 185, 129, 0.2);
+    }
+
+    .featured-tag {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #10b981;
+      color: #072612;
+      font-weight: 800;
+      font-size: 11px;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    .plan-name {
+      font-family: var(--font-heading);
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .plan-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      min-height: 38px;
+    }
+
+    .price-wrapper {
+      margin-bottom: 28px;
+    }
+
+    .price-amount {
+      font-family: var(--font-heading);
+      font-size: 42px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .price-period {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .plan-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 36px;
+      font-size: 14px;
+      flex-grow: 1;
+    }
+
+    .plan-features li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #cbd5e1;
+    }
+
+    .plan-features li svg {
+      color: #10b981;
+      flex-shrink: 0;
+    }
+
+    /* FAQ Accordion */
+    .faq-section {
+      padding: 90px 0;
+      border-top: 1px solid var(--border-color);
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    .faq-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .faq-question {
+      padding: 20px 24px;
+      font-family: var(--font-heading);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+
+    .faq-answer {
+      padding: 0 24px 20px;
+      font-size: 14.5px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      display: none;
+    }
+
+    .faq-item.active .faq-answer {
+      display: block;
+    }
+
+    .faq-icon {
+      transition: transform 0.2s ease;
+    }
+
+    .faq-item.active .faq-icon {
+      transform: rotate(180deg);
+    }
+
+    /* CTA Final */
+    .cta-final-section {
+      padding: 100px 0;
+      background: radial-gradient(circle at center, rgba(16, 185, 129, 0.12) 0%, rgba(7, 10, 19, 1) 70%);
+      text-align: center;
+      border-top: 1px solid var(--border-color);
+    }
+
+    /* Botão Flutuante do WhatsApp */
+    .floating-whatsapp {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 999;
+      background: #25d366;
+      color: #072612;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      animation: floatBadge 3s ease-in-out infinite;
+    }
+
+    @keyframes floatBadge {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .floating-whatsapp:hover {
+      transform: scale(1.1);
+      box-shadow: 0 12px 30px rgba(37, 211, 102, 0.6);
+    }
+
+    /* Footer */
+    .site-footer {
+      border-top: 1px solid var(--border-color);
+      padding: 32px 0;
+      text-align: center;
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      .calc-container {
+        grid-template-columns: 1fr;
+        padding: 24px;
+      }
+      .nav-links {
+        display: none;
+      }
+      .hero-section {
+        padding: 50px 0;
+      }
+      .pricing-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Botão Flutuante WhatsApp -->
+  <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Vi%20a%20apresenta%C3%A7%C3%A3o%20do%20TexPro%20ERP%20e%20gostaria%20de%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="floating-whatsapp" id="btnFloatingWa" title="Falar com Especialista no WhatsApp">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z"/>
+    </svg>
+  </a>
+
+  <!-- Header Superior -->
+  <header class="site-header">
+    <div class="container header-nav">
+      <div class="brand-logo">
+        <span class="brand-badge">TEXPRO</span>
+        <span>UNIFORMES ERP</span>
+      </div>
+
+      <nav class="nav-links">
+        <a href="#problemas">Os 4 Gargalos</a>
+        <a href="#radar">Radar de Prazos</a>
+        <a href="#calculadora">Calculadora de ROI</a>
+        <a href="#recursos">Recursos</a>
+        <a href="#planos">Planos</a>
+        <a href="#faq">Dúvidas</a>
+      </nav>
+
+      <div class="header-ctas">
+        <a href="/" target="_blank" class="btn btn-secondary btn-sm" title="Acessar demonstração ao vivo do sistema">
+          Test Drive ao Vivo &rarr;
+        </a>
+        <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20do%20TexPro%20ERP." target="_blank" class="btn btn-whatsapp btn-sm">
+          WhatsApp
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-glow"></div>
+    <div class="container hero-content">
+      <div class="badge-pill">
+        <span>⚡ SISTEMA Nº 1 EM GESTÃO TÊXTIL INDUSTRIAL</span>
+      </div>
+
+      <h1 class="hero-title">
+        Chega de Perder Noites com <br>
+        <span class="gradient-text">Atrasos de Entrega e Retalhos de Tecido</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        O primeiro ERP desenvolvido sob medida para indústrias de uniformes e estamparias. 
+        Contagem regressiva de prazos em tempo real, aproveitamento máximo de rolos DTF e propostas comerciais A4 em 30 segundos.
+      </p>
+
+      <div class="hero-actions">
+        <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20gratuita%20do%20TexPro%20ERP%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-whatsapp btn-lg">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z"/></svg>
+          Agendar Demonstração Gratuita
+        </a>
+        <a href="/" target="_blank" class="btn btn-secondary btn-lg">
+          Testar Sistema ao Vivo &rarr;
+        </a>
+      </div>
+
+      <div class="trust-metrics">
+        <div class="metric-card">
+          <span class="metric-number">0%</span>
+          <span class="metric-label">Atrasos Não Monitorados</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-number">18%</span>
+          <span class="metric-label">Economia Média em Rolos DTF</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-number">100%</span>
+          <span class="metric-label">Nuvem Realtime & Offline-First</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-number">30s</span>
+          <span class="metric-label">Para Emitir Proposta A4</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Live Showcase Preview -->
+  <section class="container" id="radar">
+    <div class="preview-section">
+      <div class="preview-header">
+        <div class="window-dots">
+          <span class="dot dot-red"></span>
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+        </div>
+        <div class="preview-title">radar-de-prazos-live-preview.app</div>
+        <span style="font-size: 11px; color: #10b981; font-weight: 700;">● CONEXÃO REALTIME SUPABASE</span>
+      </div>
+
+      <div class="preview-body">
+        <div class="radar-showcase">
+          <div class="radar-header">
+            <div class="radar-title-group">
+              <span class="radar-dot"></span>
+              <strong style="font-size: 14px; letter-spacing: 0.5px;">RADAR DE ENTREGAS CRÍTICAS (CHÃO DE FÁBRICA)</strong>
+            </div>
+            <span style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono);">Atualizado a cada segundo</span>
+          </div>
+
+          <div class="radar-orders-grid">
+            <div class="radar-order-item item-urgente">
+              <div class="order-top">
+                <span class="order-client">Colégio Objetivo (450 Camisas)</span>
+                <span class="countdown-badge badge-critico">🚨 ENTREGA HOJE (4h restantes)</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted);">Status: Na Costura • Sinal 50% Pago • Saldo R$ 3.825</div>
+            </div>
+
+            <div class="radar-order-item item-atencao">
+              <div class="order-top">
+                <span class="order-client">Auto Mecânica Central (80 Polos)</span>
+                <span class="countdown-badge badge-amber">⚠️ 2 DIAS RESTANTES</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted);">Status: Estamparia DTF • Arte Aprovada</div>
+            </div>
+
+            <div class="radar-order-item item-seguro">
+              <div class="order-top">
+                <span class="order-client">Hospital São Lucas (120 Scrubs)</span>
+                <span class="countdown-badge badge-safe">✓ 9 DIAS (PRAZO TRANQUILO)</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted);">Status: Corte Enfesto • Tecido Separado</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Os 4 Gargalos Mortais -->
+  <section class="section-pains" id="problemas">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">O Raio-X da Sua Fábrica</span>
+        <h2 class="section-title">Os 4 Ralos Invisíveis que Drenam o Lucro da sua Confecção</h2>
+        <p class="section-desc">Se a sua confecção produz peças de alta qualidade mas no fim do mês o dinheiro não sobra, você sofre de um destes 4 gargalos:</p>
+      </div>
+
+      <div class="cards-grid-4">
+        <div class="pain-card">
+          <div class="pain-icon-wrapper icon-red">⏰</div>
+          <h3 class="pain-title">1. Atraso de Prazos</h3>
+          <p class="pain-desc">O cliente liga cobrando, ninguém no chão de fábrica sabe exatamente em que etapa o pedido está e você gasta com motoboy de urgência.</p>
+          <div class="pain-solution">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Resolvido: Radar de Prazos por Cores
+          </div>
+        </div>
+
+        <div class="pain-card">
+          <div class="pain-icon-wrapper icon-amber">✂️</div>
+          <h3 class="pain-title">2. Desperdício de Rolos DTF</h3>
+          <p class="pain-desc">Suas estampas são impressas sem agrupamento inteligente. Metros de filme DTF e retalhos de malha vão direto para a caçamba de lixo.</p>
+          <div class="pain-solution">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Resolvido: Motor de Encaixe DTF
+          </div>
+        </div>
+
+        <div class="pain-card">
+          <div class="pain-icon-wrapper icon-cyan">📄</div>
+          <h3 class="pain-title">3. Peças Cortadas Erradas</h3>
+          <p class="pain-desc">O vendedor anotou no WhatsApp, a costureira não viu e cortou GG no lugar de P. Lote perdido e prejuízo 100% da sua empresa.</p>
+          <div class="pain-solution">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Resolvido: Ficha Técnica A4 Padronizada
+          </div>
+        </div>
+
+        <div class="pain-card">
+          <div class="pain-icon-wrapper icon-emerald">💸</div>
+          <h3 class="pain-title">4. Calote no Saldo da Retirada</h3>
+          <p class="pain-desc">O cliente paga 50% de sinal, manda retirar o pedido na correria e o saldo de 50% fica esquecido em cadernos ou planilhas frouxas.</p>
+          <div class="pain-solution">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Resolvido: Trava Financeira de Saldo
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Calculadora Interativa de Lucro Recuperado -->
+  <section class="calculator-section" id="calculadora">
+    <div class="container">
+      <div class="calc-container">
+        <div class="calc-inputs">
+          <div>
+            <span class="section-tag" style="color: #38bdf8;">SIMULADOR DE ECONOMIA</span>
+            <h2 style="font-family: var(--font-heading); font-size: 28px; font-weight: 800; margin-bottom: 8px;">
+              Descubra Quanto Dinheiro Você Vai Recuperar este Mês
+            </h2>
+            <p style="font-size: 14px; color: var(--text-muted);">
+              Arraste os seletores com os números aproximados da sua produção atual:
+            </p>
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-label">
+              <span>Peças produzidas por mês:</span>
+              <span class="slider-value" id="valPecas">1.500 peças</span>
+            </div>
+            <input type="range" id="inputPecas" min="200" max="10000" step="100" value="1500">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-label">
+              <span>Metros de filme DTF / Tecido usados por mês:</span>
+              <span class="slider-value" id="valMetros">150 metros</span>
+            </div>
+            <input type="range" id="inputMetros" min="20" max="1500" step="10" value="150">
+          </div>
+        </div>
+
+        <div class="calc-result-box">
+          <span class="result-subtitle">Potencial de Lucro Recuperado</span>
+          <span class="result-total" id="txtTotalEconomia">R$ 2.850,00</span>
+          <span style="font-size: 13px; color: #34d399; font-weight: 700;">POR MÊS NA SUA CONTA</span>
+
+          <div class="result-details">
+            <div class="result-row">
+              <span>Economia direta em rolos e sobras:</span>
+              <strong id="txtEcoTecido">R$ 1.350,00</strong>
+            </div>
+            <div class="result-row">
+              <span>Zero retrabalho por corte errado:</span>
+              <strong id="txtEcoRetrabalho">R$ 900,00</strong>
+            </div>
+            <div class="result-row">
+              <span>Horas economizadas com orçamentos:</span>
+              <strong id="txtEcoHoras">R$ 600,00</strong>
+            </div>
+          </div>
+
+          <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Fiz%20a%20simula%C3%A7%C3%A3o%20e%20quero%20recuperar%20essa%20margem%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-primary" style="width: 100%;">
+            Quero Essa Economia na Minha Fábrica
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 Grandes Recursos -->
+  <section class="features-section" id="recursos">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Arsenal Completo</span>
+        <h2 class="section-title">Construído por Quem Entende o Chão de Fábrica Têxtil</h2>
+        <p class="section-desc">Nada de telas complicadas que ninguém na oficina consegue mexer. Tudo é visual, rápido e feito para a rotina da produção.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-box">
+          <span class="feature-badge">EXCLUSIVIDADE</span>
+          <h3 class="feature-title">Radar de Prazos Dinâmico</h3>
+          <p class="feature-text">Contagem regressiva automática para cada pedido. As cores mudam conforme a entrega se aproxima e pedidos para hoje pulsam em vermelho.</p>
+        </div>
+
+        <div class="feature-box">
+          <span class="feature-badge">LUCRO DIRETO</span>
+          <h3 class="feature-title">Motor de Encaixe DTF (Nesting)</h3>
+          <p class="feature-text">Calcule o melhor arranjo de logos no rolo de impressão. Economize até 18% em filme de transferência e veja o rendimento de tecido na hora.</p>
+        </div>
+
+        <div class="feature-box">
+          <span class="feature-badge">PRODUTIVIDADE</span>
+          <h3 class="feature-title">Ficha Técnica & Proposta A4</h3>
+          <p class="feature-text">Gere com 1 clique o documento oficial com o logotipo da sua fábrica, tabela de medidas, detalhes de estampa e regras de pagamento prontas para impressão.</p>
+        </div>
+
+        <div class="feature-box">
+          <span class="feature-badge">FLUXO VISUAL</span>
+          <h3 class="feature-title">Kanban de Etapas Industriais</h3>
+          <p class="feature-text">Arraste os pedidos entre Corte, Estamparia, Costura, Acabamento e Expedição. Todo mundo na fábrica sabe exatamente o que fazer sem gritaria.</p>
+        </div>
+
+        <div class="feature-box">
+          <span class="feature-badge">SEGURANÇA TOTAL</span>
+          <h3 class="feature-title">Perfis de Acesso Diferenciados</h3>
+          <p class="feature-text">O vendedor lança pedidos mas não vê o seu lucro. A oficina vê a produção mas não mexe no financeiro. E o dono tem controle total do negócio.</p>
+        </div>
+
+        <div class="feature-box">
+          <span class="feature-badge">TECNOLOGIA DE PONTA</span>
+          <h3 class="feature-title">Nuvem Realtime & Offline-First</h3>
+          <p class="feature-text">Se a internet cair no meio do expediente, o sistema não trava. Ele continua operando localmente e sincroniza sozinho quando a conexão voltar.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Depoimentos Reais -->
+  <section class="testimonials-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Depoimentos</span>
+        <h2 class="section-title">O que Dizem os Donos de Confecções que Usam o TexPro</h2>
+      </div>
+
+      <div class="testimonials-grid">
+        <div class="testimonial-card">
+          <div>
+            <div class="stars">★★★★★</div>
+            <p class="quote-text">
+              "O motor de encaixe DTF sozinho pagou a mensalidade do software na primeira semana. A gente perdia muito filme de estampa por falta de cálculo exato de rolo."
+            </p>
+          </div>
+          <div class="author-info">
+            <div class="author-avatar">MR</div>
+            <div>
+              <div class="author-name">Marcos Rogério</div>
+              <div class="author-factory">Estamparia & Esportivos Play — SP</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial-card">
+          <div>
+            <div class="stars">★★★★★</div>
+            <p class="quote-text">
+              "Acabou a briga com cliente por causa de atraso. O Radar de Prazos fica na tela da oficina e o pessoal corre com o que tá piscando em vermelho. Não atrasamos mais nada."
+            </p>
+          </div>
+          <div class="author-info">
+            <div class="author-avatar">CS</div>
+            <div>
+              <div class="author-name">Cláudia Silveira</div>
+              <div class="author-factory">Uniformes Corporativos Prime — MG</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial-card">
+          <div>
+            <div class="stars">★★★★★</div>
+            <p class="quote-text">
+              "A proposta comercial A4 que sai do sistema é de outro nível. O cliente recebe um PDF profissional com a arte dele e fecha na hora sem pedir desconto."
+            </p>
+          </div>
+          <div class="author-info">
+            <div class="author-avatar">AL</div>
+            <div>
+              <div class="author-name">André Luiz</div>
+              <div class="author-factory">TexArte Confecções Escolares — PR</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tabela de Preços -->
+  <section class="pricing-section" id="planos">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Investimento Transparente</span>
+        <h2 class="section-title">Escolha o Melhor Plano para a Sua Fábrica</h2>
+        <p class="section-desc">Sem contratos com multas abusivas. Cancele quando quiser com total liberdade.</p>
+      </div>
+
+      <div class="pricing-grid">
+        <!-- Plano Mensal -->
+        <div class="price-card">
+          <div class="plan-name">Plano Mensal Pro</div>
+          <div class="plan-desc">Ideal para quem quer começar a organizar a fábrica hoje mesmo com baixo custo.</div>
+
+          <div class="price-wrapper">
+            <span class="price-amount">R$ 349</span>
+            <span class="price-period">/ mês</span>
+          </div>
+
+          <ul class="plan-features">
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Radar de Prazos em Tempo Real
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Motor de Encaixe DTF (Nesting)
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Fichas Técnicas e Propostas A4 Ilimitadas
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Kanban de Produção & Trava de Quarentena
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Nuvem PostgreSQL em Tempo Real
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Suporte via WhatsApp
+            </li>
+          </ul>
+
+          <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20contratar%20o%20Plano%20Mensal%20Pro%20do%20TexPro%20ERP." target="_blank" class="btn btn-secondary">
+            Contratar Plano Mensal
+          </a>
+        </div>
+
+        <!-- Plano VIP -->
+        <div class="price-card featured">
+          <div class="featured-tag">MAIS ESCOLHIDO PELAS FÁBRICAS</div>
+          <div class="plan-name">Implantação VIP Assistida</div>
+          <div class="plan-desc">Nós configuramos tudo na sua confecção e treinamos a sua equipe ao vivo.</div>
+
+          <div class="price-wrapper">
+            <span class="price-amount">R$ 1.200</span>
+            <div style="font-size: 13px; color: #34d399; font-weight: 700; margin-top: 4px;">
+              + R$ 250 / mês (Mensalidade com desconto)
+            </div>
+          </div>
+
+          <ul class="plan-features">
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <strong>Tudo do Plano Mensal Pro</strong>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <strong>Configuração Completa do seu Banco na Nuvem</strong>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <strong>Importação da sua lista de clientes e produtos</strong>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <strong>Treinamento da Equipe via Google Meet</strong>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <strong>Personalização com Logo da sua Fábrica</strong>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Suporte Prioritário Direto com Especialista
+            </li>
+          </ul>
+
+          <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20agendar%20a%20Implanta%C3%A7%C3%A3o%20VIP%20Assistida%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-primary">
+            Quero Implantação VIP na Minha Fábrica
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq-section" id="faq">
+    <div class="section-header">
+      <span class="section-tag">Tire Suas Dúvidas</span>
+      <h2 class="section-title">Perguntas Frequentes</h2>
+    </div>
+
+    <div class="faq-item active">
+      <div class="faq-question">
+        <span>Preciso instalar algum programa pesado no meu computador?</span>
+        <span class="faq-icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        Não! O TexPro ERP é 100% online e funciona direto pelo navegador em qualquer computador, notebook, tablet ou smartphone. Você não precisa de técnicos de TI nem servidores caros.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">
+        <span>E se a internet da fábrica cair no meio do dia?</span>
+        <span class="faq-icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        O sistema possui tecnologia Offline-First. Ele continua funcionando perfeitamente mesmo sem internet, permitindo que sua equipe continue lançando pedidos e cortando peças. Assim que a conexão voltar, ele sincroniza tudo com a nuvem automaticamente.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">
+        <span>Minha equipe não tem muita facilidade com computador, eles vão conseguir usar?</span>
+        <span class="faq-icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        Com certeza! O TexPro foi desenhado com base no chão de fábrica têxtil: botões grandes, cores visuais para urgência de prazos e fluxo intuitivo. Em menos de 20 minutos de uso, qualquer costureira ou vendedor já domina a ferramenta.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">
+        <span>Como funciona a garantia de 7 dias?</span>
+        <span class="faq-icon">▼</span>
+      </div>
+      <div class="faq-answer">
+        Você tem 7 dias corridos para usar o sistema à vontade. Se por qualquer motivo você achar que ele não economizou dinheiro ou não organizou a sua produção, basta nos mandar uma mensagem no WhatsApp que devolvemos 100% do seu dinheiro, sem letras miúdas.
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Final -->
+  <section class="cta-final-section">
+    <div class="container">
+      <h2 style="font-family: var(--font-heading); font-size: clamp(32px, 4.5vw, 48px); font-weight: 800; margin-bottom: 20px;">
+        Pronto para Acabar com a Desordem na sua Confecção?
+      </h2>
+      <p style="font-size: 18px; color: var(--text-muted); max-width: 680px; margin: 0 auto 36px;">
+        Junte-se às confecções que aumentaram sua margem de lucro e nunca mais perderam um cliente por atraso de entrega.
+      </p>
+      <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20do%20TexPro%20ERP." target="_blank" class="btn btn-whatsapp btn-lg">
+        Falar com Especialista no WhatsApp Agora
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <p>© 2026 TexPro Uniformes ERP. Todos os direitos reservados. Feito sob medida para confecções e estamparias brasileiras.</p>
+    </div>
+  </footer>
+
+  <!-- Script Interativo da Calculadora e FAQ -->
+  <script>
+    // Calculadora Interativa de Lucro
+    const inputPecas = document.getElementById('inputPecas');
+    const inputMetros = document.getElementById('inputMetros');
+    const valPecas = document.getElementById('valPecas');
+    const valMetros = document.getElementById('valMetros');
+    const txtTotalEconomia = document.getElementById('txtTotalEconomia');
+    const txtEcoTecido = document.getElementById('txtEcoTecido');
+    const txtEcoRetrabalho = document.getElementById('txtEcoRetrabalho');
+    const txtEcoHoras = document.getElementById('txtEcoHoras');
+
+    function formatarReal(valor) {
+      return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function recalcularLucro() {
+      const pecas = parseInt(inputPecas.value, 10);
+      const metros = parseInt(inputMetros.value, 10);
+
+      valPecas.textContent = pecas.toLocaleString('pt-BR') + ' peças';
+      valMetros.textContent = metros.toLocaleString('pt-BR') + ' metros';
+
+      // Economia estimada em tecidos e DTF (R$ 9 por metro economizado média)
+      const ecoTecido = metros * 9;
+      // Redução de retrabalho de corte (R$ 0,60 por peça)
+      const ecoRetrabalho = pecas * 0.60;
+      // Economia de tempo comercial / fichas (R$ 0,40 por peça)
+      const ecoHoras = pecas * 0.40;
+
+      const total = ecoTecido + ecoRetrabalho + ecoHoras;
+
+      txtEcoTecido.textContent = formatarReal(ecoTecido);
+      txtEcoRetrabalho.textContent = formatarReal(ecoRetrabalho);
+      txtEcoHoras.textContent = formatarReal(ecoHoras);
+      txtTotalEconomia.textContent = formatarReal(total);
+    }
+
+    inputPecas.addEventListener('input', recalcularLucro);
+    inputMetros.addEventListener('input', recalcularLucro);
+    recalcularLucro();
+
+    // FAQ Acordeão
+    document.querySelectorAll('.faq-question').forEach(item => {
+      item.addEventListener('click', () => {
+        const parent = item.parentElement;
+        parent.classList.toggle('active');
+      });
+    });
+  </script>
+
+</body>
+</html>
