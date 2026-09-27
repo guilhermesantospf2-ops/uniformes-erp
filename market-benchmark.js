@@ -271,6 +271,7 @@ window.MarketBenchmark = {
       quantidade,
       custoTecidoKgOuMetro,
       consumoPorPeca,
+      margemErroTecidoPercentual,
       custoAviamentosTotal,
       custoPersonalizacaoUnitario, // Bordado / DTF / Silk
       custoMaoDeObraCostura,
@@ -280,7 +281,13 @@ window.MarketBenchmark = {
       precoVendaPretendido
     } = dados;
 
-    const custoTecidoUnitario = (custoTecidoKgOuMetro || 0) * (consumoPorPeca || 0.28);
+    const margemErro = typeof margemErroTecidoPercentual === 'number' ? margemErroTecidoPercentual : 8.0;
+    const consumoBase = consumoPorPeca || 0.28;
+    const consumoRealComPerda = consumoBase * (1 + (margemErro / 100));
+    const custoTecidoUnitario = dados.custoTecidoUnitarioCalculado !== undefined 
+      ? dados.custoTecidoUnitarioCalculado 
+      : (custoTecidoKgOuMetro || 0) * consumoRealComPerda;
+
     const custoDiretoInsumos = custoTecidoUnitario + (custoAviamentosTotal || 0) + (custoPersonalizacaoUnitario || 0) + (custoEmbalagemEtiqueta || 1.50);
     const custoProducaoUnitario = custoDiretoInsumos + (custoMaoDeObraCostura || 7.50);
 
@@ -327,6 +334,11 @@ window.MarketBenchmark = {
 
     return {
       custoTecidoUnitario,
+      consumoBase,
+      consumoRealComPerda,
+      margemErroTecidoPercentual: margemErro,
+      rendimentoBrutoPecasPorKg: consumoBase > 0 ? (1 / consumoBase) : 0,
+      rendimentoRealPecasPorKg: consumoRealComPerda > 0 ? (1 / consumoRealComPerda) : 0,
       custoProducaoUnitario,
       valorImpostoUnitario,
       lucroLiquidoUnitario,

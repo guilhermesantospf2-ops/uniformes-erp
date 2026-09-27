@@ -1126,6 +1126,38 @@ button.status-pill:hover {
   margin-bottom: 8px;
 }
 
+/* Efeitos táteis de Drag & Drop no Kanban */
+.kanban-card[draggable="true"] {
+  cursor: grab;
+  user-select: none;
+}
+
+.kanban-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.kanban-card.dragging {
+  opacity: 0.4;
+  transform: scale(0.96) rotate(1deg);
+  border: 2px dashed #2563eb !important;
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25);
+  cursor: grabbing !important;
+}
+
+.kanban-col.drag-over {
+  background-color: #e2e8f0;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  transition: all 0.15s ease;
+}
+
+.kanban-col.drag-over .kanban-items {
+  background-color: rgba(59, 130, 246, 0.05);
+  border-radius: var(--radius-sm);
+  outline: 2px dashed #3b82f6;
+  outline-offset: -3px;
+}
+
 /* Gráficos em SVG Puro */
 .chart-container {
   height: 235px;

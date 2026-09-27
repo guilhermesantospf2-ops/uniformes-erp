@@ -862,6 +862,7 @@
               const parcialPago = jaPago > 0 && saldoDevedor > 0;
               const percPago = totalVenda > 0 ? ((jaPago / totalVenda) * 100).toFixed(0) : 0;
               const isQuarentena = p.status === 'Quarentena';
+              const isOrcamento = p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento';
               return `
                 <tr>
                   <td>
@@ -870,8 +871,9 @@
                   <td>
                     <span class="text-mono" style="font-weight: 800; font-size: 13px;">#${p.numero}</span>
                     <span style="display: block; font-size: 10.5px; color: var(--text-gray-500);">${p.dataCriacao}</span>
-                    <span class="status-pill ${p.tipoRegistro === 'Orcamento' ? 'status-gray' : isQuarentena ? 'status-red' : 'status-green'}" style="font-size: 9px; margin-top: 3px;">
-                      ${isQuarentena ? 'QUARENTENA' : (p.tipoRegistro ? p.tipoRegistro.toUpperCase() : 'PEDIDO')}
+                    <span class="status-pill ${isOrcamento ? 'status-gray' : isQuarentena ? 'status-red' : 'status-green'}" 
+                          style="font-size: 9px; margin-top: 3px; ${isOrcamento ? 'background: #e0f2fe; color: #0369a1; border-color: #bae6fd; font-weight: 800;' : ''}">
+                      ${isOrcamento ? 'ORÇAMENTO' : isQuarentena ? 'QUARENTENA' : 'PEDIDO'}
                     </span>
                   </td>
                   <td>
@@ -898,7 +900,14 @@
                   </td>
                   <td>
                     <div style="display: flex; flex-direction: column; gap: 4px;">
-                      ${quitadoTotal ? `
+                      ${isOrcamento ? `
+                        <span class="status-pill status-gray" style="font-size: 9.5px; font-weight: 800; color: #475569; background: #f1f5f9; border: 1px solid #cbd5e1;" title="Orçamento em negociação comercial. Para registrar entrada financeira, use o botão 'Entrada'.">
+                          📋 AGUARDANDO ENTRADA
+                        </span>
+                        <span class="text-mono" style="font-size: 10px; color: var(--text-gray-500);">
+                          Proposta: ${formatarMoeda(totalVenda)}
+                        </span>
+                      ` : quitadoTotal ? `
                         <button class="status-pill status-green btn-gerenciar-pagamento" 
                                 data-id="${p.id}" 
                                 title="Clique para gerenciar ou ver histórico de quitação">
@@ -930,7 +939,14 @@
                     </div>
                   </td>
                   <td>
-                    ${isQuarentena ? `
+                    ${isOrcamento ? `
+                      <div style="display: flex; flex-direction: column; gap: 3px;">
+                        <span class="status-pill" style="background: #f8fafc; border: 1px solid #e2e8f0; color: #64748b; font-size: 10px; font-weight: 700;">
+                          💬 Em Proposta / Orçamento
+                        </span>
+                        <span style="font-size: 9.5px; color: var(--text-gray-400);">Requer botão "Entrada"</span>
+                      </div>
+                    ` : isQuarentena ? `
                       <div style="display: flex; flex-direction: column; gap: 4px;">
                         <button class="status-pill status-red btn-abrir-quarentena" data-id="${p.id}" 
                                 style="font-size: 10px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" 
@@ -947,7 +963,6 @@
                     ` : `
                       <!-- Seletor de Etapa liberado após passar pela quarentena -->
                       <select class="form-select select-trocar-etapa" data-id="${p.id}" style="font-size: 11.5px; padding: 4px 6px; font-weight: 700; background-color: var(--bg-green-soft); border-color: var(--border-green); color: var(--color-green);">
-                        ${p.status === 'Orcamento' ? '<option value="Orcamento" selected>Orçamento (Proposta)</option>' : ''}
                         <option value="Quarentena">🔒 Reenviar p/ Quarentena</option>
                         <option value="Corte" ${p.etapaProducao === 'Corte' ? 'selected' : ''}>Oficina: 1. Mesa de Corte</option>
                         <option value="Estamparia / DTF" ${p.etapaProducao === 'Estamparia / DTF' || p.etapaProducao === 'Bordado' ? 'selected' : ''}>Oficina: 2. Estamparia / DTF</option>
@@ -964,9 +979,12 @@
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                         WPP
                       </button>
-                      ${p.tipoRegistro === 'Orcamento' ? `
-                        <button class="btn btn-secondary btn-sm btn-baixar-proposta" data-id="${p.id}">Proposta</button>
-                        <button class="btn btn-primary btn-sm btn-converter-pedido" data-id="${p.id}">Entrada</button>
+                      ${isOrcamento ? `
+                        <button class="btn btn-secondary btn-sm btn-baixar-proposta" data-id="${p.id}" title="Ver Proposta A4">Proposta</button>
+                        <button class="btn btn-primary btn-sm btn-converter-pedido" data-id="${p.id}" style="font-weight: 800; background: var(--color-green); border-color: var(--color-green);" title="Oficializar Pedido e Registrar Entrada de Sinal">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                          Entrada
+                        </button>
                       ` : `
                         <button class="btn btn-secondary btn-sm btn-ver-os" data-id="${p.id}">OS</button>
                       `}
@@ -983,11 +1001,11 @@
 
   function renderizarKanbanPedidosHtml(pedidos) {
     const colunas = [
-      { id: "col-orcamento", titulo: "1. ORÇAMENTO & QUARENTENA", filtro: p => p.status === 'Orcamento' || p.status === 'Quarentena' },
-      { id: "col-corte", titulo: "2. MESA DE CORTE", filtro: p => p.status === 'Em Producao' && (p.etapaProducao === 'Corte' || p.etapaProducao === 'Aguardando Tecido') },
-      { id: "col-estampa", titulo: "3. ESTAMPARIA & DTF", filtro: p => p.status === 'Em Producao' && (p.etapaProducao === 'Estamparia / DTF' || p.etapaProducao === 'Bordado') },
-      { id: "col-costura", titulo: "4. COSTURA & FECHAMENTO", filtro: p => p.status === 'Em Producao' && p.etapaProducao === 'Costura' },
-      { id: "col-expedicao", titulo: "5. EXPEDIÇÃO & FINALIZADO", filtro: p => p.etapaProducao === 'Acabamento' || p.etapaProducao === 'Expedicao' || p.status === 'Finalizado' }
+      { id: "col-orcamento", etapaDestino: "Quarentena", titulo: "1. ORÇAMENTO & QUARENTENA", filtro: p => p.status === 'Orcamento' || p.status === 'Quarentena' },
+      { id: "col-corte", etapaDestino: "Corte", titulo: "2. MESA DE CORTE", filtro: p => p.status === 'Em Producao' && (p.etapaProducao === 'Corte' || p.etapaProducao === 'Aguardando Tecido') },
+      { id: "col-estampa", etapaDestino: "Estamparia / DTF", titulo: "3. ESTAMPARIA & DTF", filtro: p => p.status === 'Em Producao' && (p.etapaProducao === 'Estamparia / DTF' || p.etapaProducao === 'Bordado') },
+      { id: "col-costura", etapaDestino: "Costura", titulo: "4. COSTURA & FECHAMENTO", filtro: p => p.status === 'Em Producao' && p.etapaProducao === 'Costura' },
+      { id: "col-expedicao", etapaDestino: "Expedicao", titulo: "5. EXPEDIÇÃO & FINALIZADO", filtro: p => p.etapaProducao === 'Acabamento' || p.etapaProducao === 'Expedicao' || p.status === 'Finalizado' }
     ];
 
     return `
@@ -995,7 +1013,7 @@
         ${colunas.map(col => {
           const itens = pedidos.filter(col.filtro);
           return `
-            <div class="kanban-col">
+            <div class="kanban-col" data-col-id="${col.id}" data-etapa="${col.etapaDestino}">
               <div class="kanban-col-header">
                 <span>${col.titulo}</span>
                 <span class="kanban-col-count">${itens.length}</span>
@@ -1010,24 +1028,36 @@
                   const parcialPago = jaPago > 0 && saldoDevedor > 0;
                   const percPago = totalVenda > 0 ? ((jaPago / totalVenda) * 100).toFixed(0) : 0;
                   const isQuarentena = p.status === 'Quarentena';
+                  const isOrcamento = p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento';
                   return `
-                    <div class="kanban-card">
+                    <div class="kanban-card" draggable="true" data-id="${p.id}" title="Segure e arraste para mudar a etapa do pedido">
                       <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                         <img src="${mockup}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela">
                         <div style="flex: 1; min-width: 0;">
-                          <div style="display: flex; justify-content: space-between; align-items: center;">
+                          <div style="display: flex; justify-content: space-between; align-items: center; gap: 4px;">
                             <span class="text-mono" style="font-weight: 800; font-size: 11px;">#${p.numero}</span>
-                            <button class="status-pill ${quitadoTotal ? 'status-green' : parcialPago ? 'status-yellow' : 'status-red'} btn-gerenciar-pagamento" 
-                                    data-id="${p.id}" style="font-size: 9px; cursor: pointer; border: none; padding: 2px 6px;" title="Clique para gerenciar pagamentos">
-                              ${quitadoTotal ? 'QUITADO' : parcialPago ? `PARCIAL (${percPago}%)` : 'PENDENTE'}
-                            </button>
+                            ${isOrcamento ? `
+                              <span class="status-pill" style="font-size: 8.5px; padding: 2px 6px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 800;">
+                                ORÇAMENTO
+                              </span>
+                            ` : `
+                              <button class="status-pill ${quitadoTotal ? 'status-green' : parcialPago ? 'status-yellow' : 'status-red'} btn-gerenciar-pagamento" 
+                                      data-id="${p.id}" style="font-size: 9px; cursor: pointer; border: none; padding: 2px 6px;" title="Clique para gerenciar pagamentos">
+                                ${quitadoTotal ? 'QUITADO' : parcialPago ? `PARCIAL (${percPago}%)` : 'PENDENTE'}
+                              </button>
+                            `}
                           </div>
                           <div class="kanban-card-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.clienteNome}</div>
                           <div class="kanban-card-sub">${p.grade?.total || 0}x ${p.produtoNome}</div>
                         </div>
                       </div>
 
-                      ${isQuarentena ? `
+                      ${isOrcamento ? `
+                        <div style="font-size: 10px; color: #475569; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 6px; margin-bottom: 8px; display: flex; align-items: center; gap: 4px;">
+                          <span>📋</span>
+                          <span><strong>Apenas Orçamento</strong> • Requer Entrada</span>
+                        </div>
+                      ` : isQuarentena ? `
                         <button class="btn btn-secondary btn-sm btn-abrir-quarentena" data-id="${p.id}" 
                                 style="width: 100%; margin-bottom: 8px; font-size: 10px; font-weight: 800; color: var(--color-red); border-color: var(--border-red); background: var(--bg-red-soft); display: flex; align-items: center; justify-content: center; gap: 4px;"
                                 title="Pedido retido na Quarentena. Clique para conferir o checklist de 5 pontos">
@@ -1039,7 +1069,7 @@
                       <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px; border-top: 1px solid var(--border-subtle); padding-top: 6px;">
                         <div>
                           <span class="text-mono" style="display: block; font-weight: 700;">${formatarMoeda(p.valorTotalVenda)}</span>
-                          ${saldoDevedor > 0 ? `<span class="text-mono" style="font-size: 9.5px; color: var(--color-red); display: block;" title="Faltou dinheiro para quitação">Falta: ${formatarMoeda(saldoDevedor)}</span>` : ''}
+                          ${(!isOrcamento && saldoDevedor > 0) ? `<span class="text-mono" style="font-size: 9.5px; color: var(--color-red); display: block;" title="Faltou dinheiro para quitação">Falta: ${formatarMoeda(saldoDevedor)}</span>` : ''}
                         </div>
                         <span class="text-mono ${p.margemLucroPercentual >= 25 ? 'text-green' : 'text-red'}">
                           Margem: ${(p.margemLucroPercentual || 0).toFixed(0)}%
@@ -1047,12 +1077,21 @@
                       </div>
 
                       <div style="display: flex; gap: 6px;">
-                        <button class="btn btn-secondary btn-sm btn-disparar-wpp" data-id="${p.id}" style="flex: 1;">
+                        <button class="btn btn-secondary btn-sm btn-disparar-wpp" data-id="${p.id}" style="flex: 1;" title="Enviar WhatsApp">
                           WPP
                         </button>
-                        <button class="btn btn-primary btn-sm btn-ver-os" data-id="${p.id}" style="flex: 1;">
-                          Ficha OS
-                        </button>
+                        ${isOrcamento ? `
+                          <button class="btn btn-secondary btn-sm btn-baixar-proposta" data-id="${p.id}" style="flex: 1;" title="Baixar Proposta">
+                            Proposta
+                          </button>
+                          <button class="btn btn-primary btn-sm btn-converter-pedido" data-id="${p.id}" style="flex: 1.2; font-weight: 800; background: var(--color-green); border-color: var(--color-green);" title="Oficializar Pedido e Dar Entrada">
+                            Entrada
+                          </button>
+                        ` : `
+                          <button class="btn btn-primary btn-sm btn-ver-os" data-id="${p.id}" style="flex: 1;">
+                            Ficha OS
+                          </button>
+                        `}
                       </div>
                     </div>
                   `;
@@ -1139,6 +1178,81 @@
         atualizarEtapaPedido(id, novaEtapa);
       });
     });
+
+    // ==========================================
+    // DRAG AND DROP TÁTIL NO KANBAN DE PEDIDOS
+    // ==========================================
+    const cards = document.querySelectorAll('.kanban-card[draggable="true"]');
+    cards.forEach(card => {
+      card.addEventListener('dragstart', (e) => {
+        const pId = card.getAttribute('data-id');
+        e.dataTransfer.setData('text/plain', pId);
+        e.dataTransfer.effectAllowed = 'move';
+        card.classList.add('dragging');
+      });
+
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        document.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('drag-over'));
+      });
+    });
+
+    const colunas = document.querySelectorAll('.kanban-col');
+    colunas.forEach(col => {
+      col.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        col.classList.add('drag-over');
+      });
+
+      col.addEventListener('dragleave', (e) => {
+        if (!col.contains(e.relatedTarget)) {
+          col.classList.remove('drag-over');
+        }
+      });
+
+      col.addEventListener('drop', (e) => {
+        e.preventDefault();
+        col.classList.remove('drag-over');
+
+        const pedidoId = e.dataTransfer.getData('text/plain');
+        if (!pedidoId) return;
+
+        const p = db.pedidos.find(x => x.id === pedidoId);
+        if (!p) return;
+
+        const colId = col.getAttribute('data-col-id');
+        const etapaDestino = col.getAttribute('data-etapa');
+
+        // REGRA 1: Se for apenas orçamento, não pode ser arrastado para a produção (Corte, Estamparia, Costura, Expedição)
+        if ((p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento') && colId !== 'col-orcamento') {
+          mostrarToast(`⛔ O registro #${p.numero} é apenas um ORÇAMENTO! Para iniciar a produção (${etapaDestino}), clique no botão "Entrada" para oficializar o pedido, definir costureira, artes e sinal.`, 'yellow');
+          abrirEtapaAvancarPedido(p);
+          return;
+        }
+
+        // REGRA 2: Bloqueio estrito de Quarentena
+        if (p.status === 'Quarentena' && colId !== 'col-orcamento') {
+          mostrarToast(`⛔ Pedido #${p.numero} BLOQUEADO! O pedido está retido na Quarentena de Segurança. É obrigatório aprovar o checklist de 5 pontos na Quarentena antes de liberar para ${etapaDestino}.`, 'red');
+          abrirModalInspecaoQuarentena(p.id);
+          return;
+        }
+
+        // REGRA 3: Se arrastar de volta para a coluna de Orçamento/Quarentena
+        if (colId === 'col-orcamento') {
+          if (p.tipoRegistro === 'Orcamento') {
+            mostrarToast(`Orçamento #${p.numero} mantido em negociação.`, 'gray');
+            return;
+          }
+          // Reenvia para Quarentena
+          atualizarEtapaPedido(p.id, 'Quarentena');
+          return;
+        }
+
+        // REGRA 4: Mudança de etapa de produção regular
+        atualizarEtapaPedido(p.id, etapaDestino);
+      });
+    });
   }
 
   /* ==========================================================================
@@ -1147,6 +1261,13 @@
   function abrirModalReceberPagamento(pedidoId) {
     const p = db.pedidos.find(x => x.id === pedidoId);
     if (!p || !modalContainer) return;
+
+    // Se for apenas orçamento, não permite quitação avulsa sem antes oficializar a entrada no pedido
+    if (p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento') {
+      mostrarToast(`⚠️ O registro #${p.numero} é apenas um Orçamento! Para registrar pagamento ou entrada, clique no botão "Entrada" para oficializar o pedido e definir as especificações têxteis.`, 'yellow');
+      abrirEtapaAvancarPedido(p);
+      return;
+    }
 
     const totalVenda = Number(p.valorTotalVenda) || 0;
     const jaPago = Number(p.valorSinalPago) || 0;
@@ -1473,7 +1594,14 @@
   // Atualização de Etapa com Disparo Obrigatório e Imediato de WhatsApp
   function atualizarEtapaPedido(pedidoId, novaEtapa) {
     const p = db.pedidos.find(x => x.id === pedidoId);
-    if (!p) return;
+    // BLOQUEIO RIGOROSO DE ORÇAMENTO:
+    // Se o registro é apenas orçamento, não pode avançar para a produção sem passar pela Entrada Oficial
+    if ((p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento') && novaEtapa !== 'Orcamento') {
+      mostrarToast(`⛔ O registro #${p.numero} é apenas um ORÇAMENTO! É obrigatório oficializar a entrada no pedido antes de liberar para a fábrica (${novaEtapa}).`, 'yellow');
+      renderizarPedidos();
+      abrirEtapaAvancarPedido(p);
+      return;
+    }
 
     // BLOQUEIO RIGOROSO DE QUARENTENA:
     // Se o pedido está em quarentena, não pode mudar a etapa sem antes ter passado pelo checklist de 5 pontos na quarentena
@@ -1524,6 +1652,12 @@
 
     // Estado da técnica de estampa atual no modal
     let tecnicaSelecionada = 'DTF';
+
+    // Mockup 3x4 dinâmico para Orçamento
+    const prodInicial = db.produtosBase[0] || { nome: "Camisa Polo Tradicional Piquet", tipoMalhaPadrao: "Piquet PA", consumoMalhaKgPorPeca: 0.28, custoMaoDeObraBase: 7.50 };
+    const cliInicial = db.clientes[0] || { nomeFantasia: "TEXPRO" };
+    let mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(prodInicial.nome, "#1e3a8a", "#ffffff", cliInicial.nomeFantasia.substring(0, 6));
+    let mockupUploadPersonalizado = false;
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active" id="modalNovoOrcamentoOverlay">
@@ -1579,6 +1713,36 @@
               </div>
             </div>
 
+            <!-- MOCKUP 3x4 OFICIAL DO ORÇAMENTO -->
+            <div class="form-group" style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
+              <label class="form-label" style="font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">
+                Mockup da Peça em Proporção 3x4 (Sairá no Orçamento, Proposta Comercial e Ficha Técnica)
+              </label>
+              <div style="display: flex; gap: 14px; align-items: center;">
+                <div>
+                  <img id="previewMockup3x4Orc" src="${mockupOrcamentoUrl}" style="width: 72px; height: 96px; aspect-ratio: 3/4; object-fit: contain; border: 1px solid var(--border-medium); border-radius: 4px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.08);" alt="Preview 3x4">
+                  <span style="display: block; font-size: 9.5px; color: var(--text-gray-500); text-align: center; margin-top: 3px;">Miniatura 3x4</span>
+                </div>
+                <div style="flex: 1;">
+                  <span style="font-size: 11.5px; color: var(--text-gray-600); display: block; margin-bottom: 6px;">
+                    Anexe um arquivo de imagem fornecido pelo cliente ou utilize a renderização industrial com paletas oficiais:
+                  </span>
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <label class="btn btn-secondary btn-sm" style="cursor: pointer; font-size: 11px; padding: 4px 9px;">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                      Anexar Imagem Mockup (Arquivo)
+                      <input type="file" id="inputUploadMockupOrc" accept="image/*" style="display: none;">
+                    </label>
+                    <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="azul" style="font-size: 11px; padding: 4px 8px;">Polo Marinho</button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="cinza" style="font-size: 11px; padding: 4px 8px;">Brim Cinza</button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="branco" style="font-size: 11px; padding: 4px 8px;">Branco Neve</button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="preto" style="font-size: 11px; padding: 4px 8px;">Preto Reativo</button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="royal" style="font-size: 11px; padding: 4px 8px;">Royal Esportivo</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- 3. Seletor de Técnicas de Personalização: Bordado, DTF, SILK, Sublimação, Lisa -->
             <div class="form-group">
               <label class="form-label">Técnica de Personalização (Escolha a técnica para calcular o custo específico)</label>
@@ -1603,25 +1767,40 @@
               </span>
               
               <div class="form-row">
-                <div class="form-group">
+                <div class="form-group" style="flex: 1.2;">
                   <label class="form-label">Custo Tecido (R$/kg ou m)</label>
                   <input type="number" id="inputCustoTecido" class="form-input" value="48.50" step="0.50">
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="flex: 1;">
+                  <label class="form-label" title="Consumo têxtil padrão desta modelagem">Consumo (kg ou m/un)</label>
+                  <input type="number" id="inputConsumoTecido" class="form-input" value="${prodInicial.consumoMalhaKgPorPeca}" step="0.01" min="0.05">
+                </div>
+
+                <div class="form-group" style="flex: 1;">
+                  <label class="form-label" title="Margem de erro / perda no corte, enfesto e ourela (ex: 8%)">Margem Erro (%)</label>
+                  <input type="number" id="inputMargemErroTecido" class="form-input" value="8.0" step="0.5" min="0" max="30">
+                </div>
+
+                <div class="form-group" style="flex: 1;">
                   <label class="form-label">Aviamentos p/ Peça (R$)</label>
                   <input type="number" id="inputCustoAviamento" class="form-input" value="4.80" step="0.20">
                 </div>
 
-                <div class="form-group">
-                  <label class="form-label">Custo Estampa Calculado (R$)</label>
+                <div class="form-group" style="flex: 1;">
+                  <label class="form-label">Estampa Calculada (R$)</label>
                   <input type="number" id="inputCustoEstampa" class="form-input" value="6.50" step="0.10">
                 </div>
 
-                <div class="form-group">
-                  <label class="form-label">Mão de Obra Costura (R$)</label>
+                <div class="form-group" style="flex: 1;">
+                  <label class="form-label">Costura & MDO (R$)</label>
                   <input type="number" id="inputCustoCostura" class="form-input" value="7.50" step="0.50">
                 </div>
+              </div>
+
+              <!-- Painel Técnico de Rendimento por Peça e Custo do Tecido -->
+              <div id="boxRendimentoTecido" style="margin-top: 10px; margin-bottom: 12px; padding: 12px 14px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: var(--radius-sm);">
+                <!-- Preenchido dinamicamente via recalcularBenchmarkModal -->
               </div>
 
               <div class="form-row">
@@ -1669,6 +1848,50 @@
         </div>
       </div>
     `);
+
+    // Upload de mockup personalizado no orçamento
+    const inputUploadOrc = document.getElementById('inputUploadMockupOrc');
+    inputUploadOrc?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          mockupOrcamentoUrl = evt.target.result;
+          mockupUploadPersonalizado = true;
+          const prev = document.getElementById('previewMockup3x4Orc');
+          if (prev) prev.src = mockupOrcamentoUrl;
+          mostrarToast('Mockup do cliente carregado com sucesso para o orçamento!', 'green');
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Presets de cores de mockup no orçamento
+    document.querySelectorAll('.btn-mock-orc-preset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const preset = btn.getAttribute('data-preset');
+        const prodId = document.getElementById('orcProdutoSelect')?.value;
+        const pObj = db.produtosBase.find(pr => pr.id === prodId) || db.produtosBase[0];
+        const cliId = document.getElementById('orcClienteSelect')?.value;
+        const cObj = db.clientes.find(c => c.id === cliId) || db.clientes[0];
+        const sigla = cObj ? cObj.nomeFantasia.substring(0, 6) : "TEXPRO";
+
+        if (preset === 'azul') {
+          mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(pObj.nome, "#1e3a8a", "#ffffff", sigla);
+        } else if (preset === 'cinza') {
+          mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg("brim", "#475569", "#eab308", sigla);
+        } else if (preset === 'branco') {
+          mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg("jaleco", "#ffffff", "#047857", sigla);
+        } else if (preset === 'preto') {
+          mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg("camiseta", "#0f172a", "#ffffff", sigla);
+        } else if (preset === 'royal') {
+          mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(pObj.nome, "#2563eb", "#ffffff", sigla);
+        }
+        mockupUploadPersonalizado = false;
+        const prev = document.getElementById('previewMockup3x4Orc');
+        if (prev) prev.src = mockupOrcamentoUrl;
+      });
+    });
 
     // Atualiza o painel específico da técnica de estampa
     function atualizarPainelTecnica(tec) {
@@ -1860,6 +2083,13 @@
           opt.textContent = `${novoCli.nomeFantasia} • ${formatarTelefone(novoCli.telefone)} (${novoCli.cidade}/${novoCli.uf})`;
           opt.selected = true;
           sel.prepend(opt);
+          if (!mockupUploadPersonalizado) {
+            const prodId = document.getElementById('orcProdutoSelect')?.value;
+            const pObj = db.produtosBase.find(pr => pr.id === prodId) || db.produtosBase[0];
+            mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(pObj.nome, "#1e3a8a", "#ffffff", novoCli.nomeFantasia.substring(0, 6));
+            const prev = document.getElementById('previewMockup3x4Orc');
+            if (prev) prev.src = mockupOrcamentoUrl;
+          }
         }
       });
     });
@@ -1875,17 +2105,64 @@
           sel.prepend(opt);
           // Ajusta custos padrão
           document.getElementById('inputCustoCostura').value = novoMod.custoMaoDeObraBase.toFixed(2);
+          const inpConsumo = document.getElementById('inputConsumoTecido');
+          if (inpConsumo) inpConsumo.value = (novoMod.consumoMalhaKgPorPeca || 0.28).toFixed(2);
+          if (!mockupUploadPersonalizado) {
+            const cliId = document.getElementById('orcClienteSelect')?.value;
+            const cli = db.clientes.find(c => c.id === cliId) || db.clientes[0];
+            const sigla = cli ? cli.nomeFantasia.substring(0, 6) : "TEXPRO";
+            mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(novoMod.nome, "#1e3a8a", "#ffffff", sigla);
+            const prev = document.getElementById('previewMockup3x4Orc');
+            if (prev) prev.src = mockupOrcamentoUrl;
+          }
           recalcularBenchmarkModal();
         }
       });
     });
 
+    // Mudança de modelo textil
+    document.getElementById('orcProdutoSelect')?.addEventListener('change', () => {
+      const produtoId = document.getElementById('orcProdutoSelect')?.value;
+      const prod = db.produtosBase.find(pr => pr.id === produtoId) || db.produtosBase[0];
+      const inpConsumo = document.getElementById('inputConsumoTecido');
+      if (inpConsumo && prod) {
+        inpConsumo.value = (prod.consumoMalhaKgPorPeca || 0.28).toFixed(2);
+      }
+      const inpCostura = document.getElementById('inputCustoCostura');
+      if (inpCostura && prod && prod.custoMaoDeObraBase) {
+        inpCostura.value = prod.custoMaoDeObraBase.toFixed(2);
+      }
+      if (!mockupUploadPersonalizado) {
+        const cliId = document.getElementById('orcClienteSelect')?.value;
+        const cli = db.clientes.find(c => c.id === cliId) || db.clientes[0];
+        const sigla = cli ? cli.nomeFantasia.substring(0, 6) : "TEXPRO";
+        mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(prod.nome, "#1e3a8a", "#ffffff", sigla);
+        const prev = document.getElementById('previewMockup3x4Orc');
+        if (prev) prev.src = mockupOrcamentoUrl;
+      }
+      recalcularBenchmarkModal();
+    });
+
+    // Mudança de cliente
+    document.getElementById('orcClienteSelect')?.addEventListener('change', () => {
+      if (!mockupUploadPersonalizado) {
+        const cliId = document.getElementById('orcClienteSelect')?.value;
+        const cli = db.clientes.find(c => c.id === cliId) || db.clientes[0];
+        const sigla = cli ? cli.nomeFantasia.substring(0, 6) : "TEXPRO";
+        const prodId = document.getElementById('orcProdutoSelect')?.value;
+        const prod = db.produtosBase.find(pr => pr.id === prodId) || db.produtosBase[0];
+        mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(prod.nome, "#1e3a8a", "#ffffff", sigla);
+        const prev = document.getElementById('previewMockup3x4Orc');
+        if (prev) prev.src = mockupOrcamentoUrl;
+      }
+    });
+
     // Inputs que disparam recálculo em tempo real
     const inputsRecalculo = [
       'gradePP', 'gradeP', 'gradeM', 'gradeG', 'gradeGG', 'gradeXG',
-      'inputCustoTecido', 'inputCustoAviamento', 'inputCustoEstampa',
-      'inputCustoCostura', 'inputPrecoPretendido', 'inputMargemDesejada',
-      'inputAliquotaImposto', 'orcProdutoSelect'
+      'inputCustoTecido', 'inputConsumoTecido', 'inputMargemErroTecido',
+      'inputCustoAviamento', 'inputCustoEstampa', 'inputCustoCostura',
+      'inputPrecoPretendido', 'inputMargemDesejada', 'inputAliquotaImposto'
     ];
 
     inputsRecalculo.forEach(id => {
@@ -1929,17 +2206,25 @@
     }
 
     const precoVendaUnitario = parseFloat(document.getElementById('inputPrecoPretendido')?.value || 54.00);
-    const custoTecido = parseFloat(document.getElementById('inputCustoTecido')?.value || 48.50);
+    const custoTecidoKgOuMetro = parseFloat(document.getElementById('inputCustoTecido')?.value || 48.50);
+    const consumoBase = parseFloat(document.getElementById('inputConsumoTecido')?.value || prod.consumoMalhaKgPorPeca || 0.28);
+    const margemErroTecido = parseFloat(document.getElementById('inputMargemErroTecido')?.value || 8.0);
     const custoAviamento = parseFloat(document.getElementById('inputCustoAviamento')?.value || 4.80);
     const custoEstampa = parseFloat(document.getElementById('inputCustoEstampa')?.value || 6.50);
     const custoCostura = parseFloat(document.getElementById('inputCustoCostura')?.value || 7.50);
 
-    const custoUnitario = (custoTecido * prod.consumoMalhaKgPorPeca) + custoAviamento + custoEstampa + custoCostura + 1.50;
+    const consumoRealComPerda = consumoBase * (1 + (margemErroTecido / 100));
+    const custoTecidoPorPeca = custoTecidoKgOuMetro * consumoRealComPerda;
+
+    const custoUnitario = custoTecidoPorPeca + custoAviamento + custoEstampa + custoCostura + 1.50;
     const valorTotal = totalPecas * precoVendaUnitario;
     const custoTotal = totalPecas * custoUnitario;
     const impostos = valorTotal * 0.065;
     const lucroLiquido = valorTotal - custoTotal - impostos;
     const margem = valorTotal > 0 ? (lucroLiquido / valorTotal) * 100 : 0;
+
+    const previewMock = document.getElementById('previewMockup3x4Orc');
+    const mockupUrlFinal = previewMock ? previewMock.src : window.ERP_MOCKUPS.gerarMockupSvg(prod.nome, "#1e3a8a", "#ffffff", cliente.nomeFantasia.substring(0, 6));
 
     return {
       cliente,
@@ -1948,9 +2233,16 @@
       precoVendaUnitario,
       valorTotal,
       custoTotal,
+      custoUnitario,
+      custoTecidoKgOuMetro,
+      consumoBase,
+      margemErroTecido,
+      consumoRealComPerda,
+      custoTecidoPorPeca,
       lucroLiquido,
       margem,
-      impostos
+      impostos,
+      mockupUrl: mockupUrlFinal
     };
   }
 
@@ -1970,6 +2262,8 @@
     const prod = db.produtosBase.find(pr => pr.id === produtoId) || db.produtosBase[0];
 
     const custoTecidoKgOuMetro = parseFloat(document.getElementById('inputCustoTecido')?.value || 48.50);
+    const consumoBase = parseFloat(document.getElementById('inputConsumoTecido')?.value || prod.consumoMalhaKgPorPeca || 0.28);
+    const margemErroTecido = parseFloat(document.getElementById('inputMargemErroTecido')?.value || 8.0);
     const custoAviamentos = parseFloat(document.getElementById('inputCustoAviamento')?.value || 4.80);
     const custoPersonalizacao = parseFloat(document.getElementById('inputCustoEstampa')?.value || 6.50);
     const custoCostura = parseFloat(document.getElementById('inputCustoCostura')?.value || 7.50);
@@ -1977,11 +2271,56 @@
     const margemDesejada = parseFloat(document.getElementById('inputMargemDesejada')?.value || 30.0);
     const aliquotaImposto = parseFloat(document.getElementById('inputAliquotaImposto')?.value || 6.5);
 
+    // Cálculos detalhados de rendimento de tecido e margem de erro
+    const consumoRealComPerda = consumoBase * (1 + (margemErroTecido / 100));
+    const custoTecidoPorPeca = custoTecidoKgOuMetro * consumoRealComPerda;
+    const rendimentoTeorico = consumoBase > 0 ? (1 / consumoBase) : 0;
+    const rendimentoReal = consumoRealComPerda > 0 ? (1 / consumoRealComPerda) : 0;
+
+    const unidadeMedida = (prod.tipoMalhaPadrao || '').toLowerCase().includes('brim') || 
+                          (prod.tipoMalhaPadrao || '').toLowerCase().includes('oxford') || 
+                          (prod.tipoMalhaPadrao || '').toLowerCase().includes('tricoline') ||
+                          (prod.tipoMalhaPadrao || '').toLowerCase().includes('sarja') ||
+                          (prod.tipoMalhaPadrao || '').toLowerCase().includes('tecido') ? 'm' : 'kg';
+
+    // Atualiza o painel explicativo de rendimento têxtil
+    const boxRendimento = document.getElementById('boxRendimentoTecido');
+    if (boxRendimento) {
+      boxRendimento.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <strong style="color: #0f172a; font-size: 12.5px;">Cálculo Técnico de Rendimento Têxtil (${prod.nome}):</strong>
+              <span class="status-pill status-gray" style="font-size: 9.5px; font-weight: 700;">Tecido em ${unidadeMedida.toUpperCase()}</span>
+            </div>
+            <div style="font-size: 11.5px; color: var(--text-gray-600); margin-top: 4px; line-height: 1.5;">
+              • <strong>Consumo Base:</strong> ${consumoBase.toFixed(2)} ${unidadeMedida}/peça ➔ <strong>Rendimento Teórico:</strong> ~${rendimentoTeorico.toFixed(2)} peças por ${unidadeMedida}<br>
+              • <strong>Margem de Erro / Perda:</strong> +${margemErroTecido.toFixed(1)}% (enfesto/ourela) ➔ <strong>Consumo Efetivo:</strong> ${consumoRealComPerda.toFixed(3)} ${unidadeMedida}/peça (~${rendimentoReal.toFixed(2)} peças/${unidadeMedida})
+            </div>
+          </div>
+
+          <div style="text-align: right; background: #eff6ff; border: 1.5px solid #93c5fd; padding: 8px 14px; border-radius: 6px;">
+            <span style="font-size: 10px; color: #1e40af; font-weight: 800; text-transform: uppercase; display: block; letter-spacing: 0.5px;">Custo Tecido por Peça:</span>
+            <span class="text-mono" style="font-size: 18px; font-weight: 900; color: #1e3a8a;">
+              ${formatarMoeda(custoTecidoPorPeca)} <span style="font-size: 11px; font-weight: 600; color: #3b82f6;">/ peça</span>
+            </span>
+          </div>
+        </div>
+
+        <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e1; font-size: 11px; color: var(--text-gray-500); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+          <span>Cálculo: ${formatarMoeda(custoTecidoKgOuMetro)}/${unidadeMedida} × ${consumoRealComPerda.toFixed(3)} ${unidadeMedida} = <strong>${formatarMoeda(custoTecidoPorPeca)}/un</strong></span>
+          <span>Tecido Total p/ Lote (${totalPecas} un): <strong class="text-mono" style="color: var(--text-primary); font-size: 11.5px;">${(totalPecas * consumoRealComPerda).toFixed(1)} ${unidadeMedida} (${formatarMoeda(totalPecas * custoTecidoPorPeca)})</strong></span>
+        </div>
+      `;
+    }
+
     const analise = window.MarketBenchmark.calcularViabilidadeOrcamento({
       produtoId: produtoId,
       quantidade: totalPecas,
       custoTecidoKgOuMetro: custoTecidoKgOuMetro,
-      consumoPorPeca: prod.consumoMalhaKgPorPeca,
+      consumoPorPeca: consumoRealComPerda,
+      margemErroTecidoPercentual: margemErroTecido,
+      custoTecidoUnitarioCalculado: custoTecidoPorPeca,
       custoAviamentosTotal: custoAviamentos,
       custoPersonalizacaoUnitario: custoPersonalizacao,
       custoMaoDeObraCostura: custoCostura,
@@ -2027,11 +2366,11 @@
         <div class="benchmark-stat-box">
           <div class="benchmark-stat-label">Seu Custo Direto Unitário</div>
           <div class="benchmark-stat-val text-red">${formatarMoeda(analise.custoProducaoUnitario)} / un</div>
-          <span style="font-size: 10px; color: var(--text-gray-500);">Tecido + Costura + Aviamento + Estampa</span>
+          <span style="font-size: 10px; color: var(--text-gray-500);">Tecido (${formatarMoeda(custoTecidoPorPeca)}) + Costura + Aviamento + Estampa</span>
         </div>
 
         <div class="benchmark-stat-box">
-          <div class="benchmark-stat-label">Preço Sugerido (30% Margem)</div>
+          <div class="benchmark-stat-label">Preço Sugerido (${margemDesejada.toFixed(0)}% Margem)</div>
           <div class="benchmark-stat-val text-green">${formatarMoeda(analise.precoSugeridoCalculado)}</div>
           <span style="font-size: 10px; color: var(--text-gray-500);">Cobre impostos e lucro líquido</span>
         </div>
@@ -2081,12 +2420,15 @@
       corTecido: 'A Definir',
       tecidoEspecificacao: dados.prod.tipoMalhaPadrao,
       tipoPersonalizacao: 'Personalização Conforme Proposta',
-      mockupUrl: window.ERP_MOCKUPS.gerarMockupSvg(dados.prod.nome, "#1e3a8a", "#ffffff", dados.cliente.nomeFantasia.substring(0, 6)),
+      mockupUrl: dados.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(dados.prod.nome, "#1e3a8a", "#ffffff", dados.cliente.nomeFantasia.substring(0, 6)),
       artesAnexadas: [],
       grade: dados.grade,
       precoUnitarioVenda: dados.precoVendaUnitario,
       valorTotalVenda: dados.valorTotal,
       custoTotalEstimado: dados.custoTotal,
+      custoTecidoPorPeca: dados.custoTecidoPorPeca,
+      consumoRealComPerda: dados.consumoRealComPerda,
+      margemErroTecido: dados.margemErroTecido,
       lucroLiquidoEstimado: dados.lucroLiquido,
       margemLucroPercentual: dados.margem,
       condicaoPagamento: '50% Sinal + 50% na Entrega',
