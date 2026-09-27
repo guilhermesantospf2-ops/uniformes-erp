@@ -1395,7 +1395,19 @@
                   </td>
                   <td>
                     <strong>${p.produtoNome}</strong>
-                    <span style="display: block; font-size: 11px; color: var(--text-gray-500);">${p.tipoPersonalizacao || 'Estampa Conforme Arte'}</span>
+                    ${p.corTecido ? `
+                      <div style="margin-top: 3px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                        <span class="status-pill status-gray" style="font-size: 9.5px; padding: 1px 6px; font-weight: 700; color: #1e3a8a; background: #eff6ff; border: 1px solid #bfdbfe;">
+                          🎨 Cor: ${p.corTecido}
+                        </span>
+                      </div>
+                    ` : ''}
+                    ${p.observacoesCoresDetalhes ? `
+                      <span style="display: block; font-size: 10px; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 3px; padding: 2px 5px; margin-top: 3px; max-width: 230px; line-height: 1.25;" title="${p.observacoesCoresDetalhes}">
+                        <strong>Detalhes:</strong> ${p.observacoesCoresDetalhes}
+                      </span>
+                    ` : ''}
+                    <span style="display: block; font-size: 11px; color: var(--text-gray-500); margin-top: 2px;">${p.tipoPersonalizacao || 'Estampa Conforme Arte'}</span>
                   </td>
                   <td class="text-mono">
                     <span style="font-size: 11px;">P:${p.grade?.p || 0} M:${p.grade?.m || 0} G:${p.grade?.g || 0} GG:${p.grade?.gg || 0}</span>
@@ -2299,6 +2311,51 @@
               </div>
             </div>
 
+            <!-- 2.1 Cores do Uniforme & Especificações de Detalhes Contrastantes -->
+            <div class="form-row" style="background: #fdfbf7; border: 1.5px solid #fed7aa; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
+              <div class="form-group" style="flex: 1.2;">
+                <label class="form-label" style="font-weight: 700; color: #9a3412; display: flex; align-items: center; gap: 6px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 0 20v-20z"></path></svg>
+                  Cor Principal do Tecido / Corpo:
+                </label>
+                <input type="text" id="orcCorPrincipalTecido" class="form-input" list="listaCoresSugeridas" placeholder="Ex: Azul Marinho, Preto Reativo, Branco, Cinza Mescla..." value="Azul Marinho" style="font-weight: 600;">
+                <datalist id="listaCoresSugeridas">
+                  <option value="Azul Marinho">
+                  <option value="Preto Reativo">
+                  <option value="Branco Neve">
+                  <option value="Cinza Mescla">
+                  <option value="Cinza Chumbo">
+                  <option value="Azul Royal">
+                  <option value="Vermelho Ferrari">
+                  <option value="Verde Bandeira">
+                  <option value="Amarelo Canário">
+                  <option value="Laranja Operacional">
+                  <option value="Bordô / Vinho">
+                </datalist>
+                <div style="display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-secondary btn-sm btn-quick-cor-orc" data-cor="Azul Marinho" style="font-size: 9.5px; padding: 1px 6px;">Marinho</button>
+                  <button type="button" class="btn btn-secondary btn-sm btn-quick-cor-orc" data-cor="Preto Reativo" style="font-size: 9.5px; padding: 1px 6px;">Preto</button>
+                  <button type="button" class="btn btn-secondary btn-sm btn-quick-cor-orc" data-cor="Branco Neve" style="font-size: 9.5px; padding: 1px 6px;">Branco</button>
+                  <button type="button" class="btn btn-secondary btn-sm btn-quick-cor-orc" data-cor="Cinza Mescla" style="font-size: 9.5px; padding: 1px 6px;">Cinza</button>
+                  <button type="button" class="btn btn-secondary btn-sm btn-quick-cor-orc" data-cor="Azul Royal" style="font-size: 9.5px; padding: 1px 6px;">Royal</button>
+                </div>
+              </div>
+
+              <div class="form-group" style="flex: 2;">
+                <label class="form-label" style="font-weight: 700; color: #9a3412; display: flex; align-items: center; justify-content: space-between;">
+                  <span style="display: flex; align-items: center; gap: 6px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    Observações de Cores & Detalhes de Confecção (Gola, Punhos, Frisos, Peitilho, Recortes):
+                  </span>
+                  <span style="font-size: 10px; color: #c2410c; font-weight: 700;">Ficha Técnica A4</span>
+                </label>
+                <textarea id="orcObservacoesCoresDetalhes" class="form-textarea" rows="2" style="font-size: 12px; resize: vertical; min-height: 52px;" placeholder="Ex: Gola e punhos brancos com 2 frisos laranjas (2mm). Peitilho interno branco com 3 botões brancos. Recorte lateral respirável amarelo."></textarea>
+                <span style="font-size: 10.5px; color: #7c2d12; margin-top: 3px; display: block;">
+                  💡 Essencial para peças bicolores/tricolores, golas polo frisadas, botões contrastantes e acabamentos de costura.
+                </span>
+              </div>
+            </div>
+
             <!-- Grade de Tamanhos - ZERADA PARA PREENCHIMENTO REAL PELO USUÁRIO -->
             <div class="form-group">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
@@ -3162,6 +3219,9 @@
       const prodId = document.getElementById('orcProdutoSelect')?.value;
       const prod = db.produtosBase.find(pr => pr.id === prodId) || db.produtosBase[0];
 
+      const corPrincipal = (document.getElementById('orcCorPrincipalTecido')?.value || 'A Definir').trim();
+      const observacoesCoresDetalhes = (document.getElementById('orcObservacoesCoresDetalhes')?.value || '').trim();
+
       const custoTecido = parseFloat(document.getElementById('inputCustoTecido')?.value || 48.50);
       const consumoTecido = parseFloat(document.getElementById('inputConsumoTecido')?.value || 0.28);
       const margemErroTecido = parseFloat(document.getElementById('inputMargemErroTecido')?.value || 8.0);
@@ -3206,6 +3266,8 @@
       return {
         cliente,
         prod,
+        corPrincipal,
+        observacoesCoresDetalhes,
         grade: { pp, p, m, g, gg, xg, total: totalPecas },
         precoVendaUnitario,
         valorTotal: precoVendaUnitario * totalPecas,
@@ -3236,6 +3298,17 @@
     inputsRecalculo.forEach(id => {
       document.getElementById(id)?.addEventListener('input', recalcularBenchmarkModal);
       document.getElementById(id)?.addEventListener('change', recalcularBenchmarkModal);
+    });
+
+    // Pílulas de seleção rápida de cores
+    document.querySelectorAll('.btn-quick-cor-orc').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cor = btn.getAttribute('data-cor');
+        const inp = document.getElementById('orcCorPrincipalTecido');
+        if (inp && cor) {
+          inp.value = cor;
+        }
+      });
     });
 
     // Inicializa datas e painel DTF
@@ -3274,7 +3347,8 @@
       etapaProducao: tipoRegistro === 'Orcamento' ? 'Em Negociação' : 'Aguardando Aprovação Técnica',
       produtoId: dados.prod ? dados.prod.id : '',
       produtoNome: dados.prod ? dados.prod.nome : 'Produto',
-      corTecido: 'A Definir',
+      corTecido: dados.corPrincipal || 'A Definir',
+      observacoesCoresDetalhes: dados.observacoesCoresDetalhes || '',
       tecidoEspecificacao: dados.prod ? dados.prod.tipoMalhaPadrao : 'Padrão Têxtil',
       tipoPersonalizacao: 'Personalização Conforme Proposta',
       mockupUrl: dados.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(dados.prod ? dados.prod.nome : 'Camisa', "#1e3a8a", "#ffffff", (dados.cliente ? (dados.cliente.nomeFantasia || dados.cliente.nome || "TEXPRO") : "TEXPRO").toString().substring(0, 6)) : ''),
@@ -3359,6 +3433,23 @@
                 <button type="button" class="btn btn-secondary btn-inline-add" id="btnCadastrarCostureiraInline">
                   + Cadastrar Costureira
                 </button>
+              </div>
+            </div>
+
+            <!-- Cores do Uniforme & Especificações de Detalhes Contrastantes -->
+            <div class="form-row" style="background: #fdfbf7; border: 1.5px solid #fed7aa; border-radius: var(--radius-sm); padding: 12px; margin-top: 14px;">
+              <div class="form-group" style="flex: 1.2;">
+                <label class="form-label" style="font-weight: 700; color: #9a3412;">
+                  🎨 Cor Principal do Tecido / Corpo:
+                </label>
+                <input type="text" id="avancoCorPrincipalTecido" class="form-input" value="${dadosBase.corPrincipal || dadosBase.corTecido || 'Azul Marinho'}" style="font-weight: 700;">
+              </div>
+              <div class="form-group" style="flex: 2;">
+                <label class="form-label" style="font-weight: 700; color: #9a3412; display: flex; justify-content: space-between;">
+                  <span>🧵 Observações de Cores & Detalhes (Gola, Punhos, Frisos, Peitilho, Recortes):</span>
+                  <span style="font-size: 10px; color: #c2410c; font-weight: 700;">Ficha Técnica A4</span>
+                </label>
+                <textarea id="avancoObservacoesCoresDetalhes" class="form-textarea" rows="2" style="font-size: 12px; min-height: 48px;" placeholder="Ex: Gola e punhos brancos com 2 frisos laranjas, peitilho interno branco...">${dadosBase.observacoesCoresDetalhes || ''}</textarea>
               </div>
             </div>
 
@@ -3735,6 +3826,9 @@
       const saldoRestante = Math.max(0, totalVendaFinal - valorEfetivoPago);
       const isQuitadoNaEntrada = valorEfetivoPago >= totalVendaFinal;
 
+      const corFinal = (document.getElementById('avancoCorPrincipalTecido')?.value || dadosBase.corPrincipal || dadosBase.corTecido || 'A Definir').trim();
+      const obsCoresFinal = (document.getElementById('avancoObservacoesCoresDetalhes')?.value || dadosBase.observacoesCoresDetalhes || '').trim();
+
       // Cria ou atualiza pedido oficial
       const pedidoOficial = {
         id: novoId,
@@ -3749,7 +3843,8 @@
         quarentenaAprovada: false,
         produtoId: prodIdFinal,
         produtoNome: prodNomeFinal,
-        corTecido: "A Definir",
+        corTecido: corFinal,
+        observacoesCoresDetalhes: obsCoresFinal,
         tecidoEspecificacao: dadosBase.prod ? dadosBase.prod.tipoMalhaPadrao : "Conforme Ficha",
         tipoPersonalizacao: artesLista.map(a => a.local).join(' + '),
         costureiraId: costureiraObj.id,
@@ -3816,6 +3911,8 @@
         pedidoNumero: pedidoOficial.numero,
         cliente: clienteNomeFinal,
         produto: prodNomeFinal,
+        corTecido: corFinal,
+        observacoesCoresDetalhes: obsCoresFinal,
         mockupUrl: mockupDataUrl,
         quantidadeTotal: pedidoOficial.grade.total,
         grade: pedidoOficial.grade,
@@ -3830,8 +3927,8 @@
         dtfLarguraRolo: pedidoOficial.dtfLarguraRolo || 58,
         tecidoConsumidoKg: (pedidoOficial.grade.total * (dadosBase.consumoRealComPerda || 0.28)).toFixed(1),
         artesAplicacao: artesLista,
-        instrucoesCorte: `Corte padrão para ${pedidoOficial.grade.total} peças de ${prodNomeFinal}. Tolerância 2mm.`,
-        instrucoesCostura: `Costureira responsável: ${costureiraObj.nome}. Fechamento com fio reforçado.`,
+        instrucoesCorte: `Corte padrão para ${pedidoOficial.grade.total} peças de ${prodNomeFinal}. Cor principal: ${corFinal}.${obsCoresFinal ? ' ATENÇÃO AOS DETALHES DE COR: ' + obsCoresFinal : ''}`,
+        instrucoesCostura: `Costureira responsável: ${costureiraObj.nome}.${obsCoresFinal ? ' DETALHES DE CONFECÇÃO: ' + obsCoresFinal : ' Fechamento com fio reforçado.'}`,
         statusBordado: "Pendente",
         statusCostura: "Pendente",
         statusAcabamento: "Pendente"
@@ -4053,6 +4150,12 @@
         <div style="flex: 1;">
           <h3 style="font-size: 14px; font-weight: 800; color: #0f172a;">${p.produtoNome}</h3>
           <div style="font-size: 11.5px; color: #475569; margin-top: 3px; line-height: 1.4;">
+            <strong>Cor Principal:</strong> <span style="font-weight: 700; color: #0f172a;">${p.corTecido || 'A Definir'}</span><br>
+            ${p.observacoesCoresDetalhes ? `
+              <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 3px; padding: 4px 8px; margin: 4px 0; font-size: 11px; color: #92400e;">
+                <strong>Detalhes de Cores / Confecção:</strong> ${p.observacoesCoresDetalhes}
+              </div>
+            ` : ''}
             <strong>Especificação do Tecido:</strong> ${p.tecidoEspecificacao || 'Padrão da Indústria'}<br>
             <strong>Personalização:</strong> ${p.tipoPersonalizacao || 'Estampa/Bordado Conforme Pedido'}<br>
             <strong>Quantidade Total:</strong> ${p.grade?.total || 0} peças
@@ -4201,7 +4304,17 @@
                   <td class="text-mono"><strong>${os.id}</strong></td>
                   <td class="text-mono">#${os.pedidoNumero}</td>
                   <td><strong>${os.cliente}</strong></td>
-                  <td>${os.produto}</td>
+                  <td>
+                    <strong>${os.produto}</strong>
+                    <div style="font-size: 10.5px; color: #1e3a8a; margin-top: 2px;">
+                      🎨 Cor: <strong>${os.corTecido || pOrig.corTecido || 'A Definir'}</strong>
+                    </div>
+                    ${(os.observacoesCoresDetalhes || pOrig.observacoesCoresDetalhes) ? `
+                      <span style="display: block; font-size: 10px; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 3px; padding: 2px 5px; margin-top: 2px; max-width: 220px; line-height: 1.25;" title="${os.observacoesCoresDetalhes || pOrig.observacoesCoresDetalhes}">
+                        <strong>Detalhes:</strong> ${os.observacoesCoresDetalhes || pOrig.observacoesCoresDetalhes}
+                      </span>
+                    ` : ''}
+                  </td>
                   <td class="text-mono">${os.quantidadeTotal} peças</td>
                   <td>
                     ${countdown.badgeHtml}
@@ -4309,6 +4422,29 @@
         </div>
       </div>
 
+      <!-- ESPECIFICAÇÃO DE CORES & DETALHES DE CONFECÇÃO (DESTAQUE CHÃO DE FÁBRICA A4) -->
+      <div style="background: #fffbeb; border: 2px solid #f59e0b; border-radius: 4px; padding: 10px 12px; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; flex-wrap: wrap; gap: 6px;">
+          <strong style="color: #b45309; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 0 20v-20z"></path></svg>
+            ESPECIFICAÇÃO DE CORES & DETALHES DE CONFECÇÃO:
+          </strong>
+          <span style="font-size: 11px; background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 3px; font-weight: 800; border: 1px solid #fde68a;">
+            COR PRINCIPAL: ${(os.corTecido || pedido.corTecido || 'A DEFINIR').toUpperCase()}
+          </span>
+        </div>
+        <div style="font-size: 11.5px; color: #78350f; line-height: 1.45;">
+          ${(os.observacoesCoresDetalhes || pedido.observacoesCoresDetalhes) ? `
+            <div style="background: #ffffff; border: 1.5px solid #fde68a; border-radius: 3px; padding: 6px 10px; margin-top: 4px;">
+              <strong style="color: #b45309;">⚠️ ATENÇÃO CORTE / COSTURA / COMPRA DE MATERIAIS (DETALHES DE COR):</strong><br>
+              <span style="font-size: 12px; font-weight: 700; color: #0f172a;">${os.observacoesCoresDetalhes || pedido.observacoesCoresDetalhes}</span>
+            </div>
+          ` : `
+            <span style="color: #64748b; font-style: italic;">Peça monocromática na cor principal informada acima. Sem recortes ou frisos contrastantes adicionais.</span>
+          `}
+        </div>
+      </div>
+
       <!-- Grade Oficial de Corte -->
       <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 10px; border-radius: 4px; margin-bottom: 12px;">
         <strong style="color: #0f172a; display: block; margin-bottom: 4px; font-size: 11px;">GRADE OFICIAL DE CORTE & FECHAMENTO:</strong>
@@ -4411,11 +4547,16 @@
   }
 
   function abrirFichaTecnicaPorPedido(p) {
+    const corTec = p.corTecido || 'A Definir';
+    const obsCores = p.observacoesCoresDetalhes || '';
+
     const osTemp = {
       id: `OS-${p.numero}`,
       pedidoNumero: p.numero,
       cliente: p.clienteNome,
       produto: p.produtoNome,
+      corTecido: corTec,
+      observacoesCoresDetalhes: obsCores,
       mockupUrl: p.mockupUrl,
       quantidadeTotal: p.grade?.total || 0,
       grade: p.grade,
@@ -4430,8 +4571,8 @@
       dtfLarguraRolo: p.dtfLarguraRolo || 58,
       tecidoConsumidoKg: ((p.grade?.total || 1) * 0.28).toFixed(1),
       artesAplicacao: p.artesAnexadas || [],
-      instrucoesCorte: "Enfesto e corte conforme modelagem padrão com tolerância de 2mm.",
-      instrucoesCostura: "Costura reforçada de ombro a ombro.",
+      instrucoesCorte: `Enfesto e corte padrão para ${p.grade?.total || 0} peças de ${p.produtoNome}. Cor: ${corTec}.${obsCores ? ' ATENÇÃO AOS DETALHES DE COR: ' + obsCores : ''}`,
+      instrucoesCostura: `Costura reforçada de ombro a ombro.${obsCores ? ' DETALHES DE CONFECÇÃO: ' + obsCores : ''}`,
       statusBordado: "Pendente",
       statusCostura: "Pendente",
       statusAcabamento: "Pendente"
@@ -6595,7 +6736,17 @@
                   </td>
                   <td class="text-mono"><strong>#${p.numero}</strong></td>
                   <td><strong>${p.clienteNome}</strong></td>
-                  <td>${p.produtoNome}</td>
+                  <td>
+                    <strong>${p.produtoNome}</strong>
+                    <div style="font-size: 10px; color: #1e3a8a; margin-top: 2px;">
+                      🎨 ${p.corTecido || 'A Definir'}
+                    </div>
+                    ${p.observacoesCoresDetalhes ? `
+                      <span style="display: block; font-size: 9.5px; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 2px; padding: 1px 4px; margin-top: 2px; max-width: 180px; line-height: 1.2;" title="${p.observacoesCoresDetalhes}">
+                        ${p.observacoesCoresDetalhes}
+                      </span>
+                    ` : ''}
+                  </td>
                   <td class="text-mono">${p.grade?.total || 0} pçs</td>
                   <td class="text-mono"><strong>${formatarMoeda(p.valorTotalVenda)}</strong></td>
                   <td class="text-mono">
@@ -6660,6 +6811,8 @@
               <div style="flex: 1;">
                 <h4 style="font-size: 14px; font-weight: 800; color: #0f172a;">${p.clienteNome} • ${p.grade?.total || 0}x ${p.produtoNome}</h4>
                 <div style="font-size: 12px; color: var(--text-gray-600); margin-top: 3px;">
+                  🎨 Cor Principal: <strong>${p.corTecido || 'A Definir'}</strong>
+                  ${p.observacoesCoresDetalhes ? ` • <span style="color: #b45309; font-weight: 700;">Detalhes: ${p.observacoesCoresDetalhes}</span>` : ''}<br>
                   Valor Total: <strong>${formatarMoeda(p.valorTotalVenda)}</strong> • Margem Líquida: <strong class="${p.margemLucroPercentual >= 20 ? 'text-green' : 'text-red'}">${(p.margemLucroPercentual || 0).toFixed(1)}%</strong><br>
                   Costureira: <strong>${p.costureiraNome || 'Oficina Interna'}</strong> • Artes Anexadas: <strong>${(p.artesAnexadas || []).length} locais</strong>
                 </div>
@@ -6701,8 +6854,8 @@
               <div class="quarentena-item" id="itemCheck3">
                 <input type="checkbox" id="chkQuarentena3" class="quarentena-checkbox">
                 <div>
-                  <label for="chkQuarentena3" class="quarentena-label">3. Estoque de Malha / Tecido e Lote de Cor Reservado</label>
-                  <div class="quarentena-desc">Confirmo que as peças de tecido ou rolos de malha estão fisicamente no galpão com o mesmo lote de tingimento (sem risco de variação de cor).</div>
+                  <label for="chkQuarentena3" class="quarentena-label">3. Estoque de Malha / Tecido, Golas e Lote de Cor Reservado</label>
+                  <div class="quarentena-desc">Confirmo que as peças de tecido na cor principal e detalhes contrastantes (golas, punhos, frisos, recortes) estão fisicamente no galpão sem risco de variação de cor.</div>
                 </div>
               </div>
 
@@ -7089,7 +7242,9 @@
     const pedido = db.pedidos.find(p => p.id === pedidoId);
     if (!pedido || !modalContainer) return;
 
-    const mensagemPadrao = `Olá, *${pedido.clienteNome}*!\n\nAqui é da equipe da *${db.empresa.nomeFantasia}*.\n\nInformamos que seu pedido *#${pedido.numero}* (${pedido.grade?.total || 0} peças de ${pedido.produtoNome}) acabou de avançar para a etapa de: *${(pedido.etapaProducao || pedido.status).toUpperCase()}*.\n\n📅 *Previsão de Entrega:* ${pedido.dataPrevisaoEntrega}\n💰 *Saldo Pendente na Retirada:* ${formatarMoeda(pedido.saldoPendente)}\n\nEstamos acompanhando cada detalhe da produção do seu uniforme!`;
+    const descCor = pedido.corTecido ? `\n🎨 *Cor Principal:* ${pedido.corTecido}` : '';
+    const descDetalhes = pedido.observacoesCoresDetalhes ? `\n🧵 *Detalhes de Confecção:* ${pedido.observacoesCoresDetalhes}` : '';
+    const mensagemPadrao = `Olá, *${pedido.clienteNome}*!\n\nAqui é da equipe da *${db.empresa.nomeFantasia}*.\n\nInformamos que seu pedido *#${pedido.numero}* (${pedido.grade?.total || 0} peças de ${pedido.produtoNome}) acabou de avançar para a etapa de: *${(pedido.etapaProducao || pedido.status).toUpperCase()}*.${descCor}${descDetalhes}\n\n📅 *Previsão de Entrega:* ${pedido.dataPrevisaoEntrega}\n💰 *Saldo Pendente na Retirada:* ${formatarMoeda(pedido.saldoPendente)}\n\nEstamos acompanhando cada detalhe da produção do seu uniforme!`;
     const mensagemEncoded = encodeURIComponent(mensagemPadrao);
     const telNumeros = (pedido.clienteTelefone || '').toString().replace(/\D/g, '');
     const linkWhatsApp = `https://api.whatsapp.com/send?phone=55${telNumeros}&text=${mensagemEncoded}`;
@@ -7300,6 +7455,15 @@
                     <span class="mockup-spec-label">Modelo Têxtil:</span>
                     <span class="mockup-spec-value">${produtoNome}</span>
                   </div>
+                  <div class="mockup-spec-row">
+                    <span class="mockup-spec-label">Cor Principal:</span>
+                    <span class="mockup-spec-value" style="font-weight: 700; color: #1e3a8a;">${(pedido && pedido.corTecido) || (os && os.corTecido) || 'A Definir'}</span>
+                  </div>
+                  ${((pedido && pedido.observacoesCoresDetalhes) || (os && os.observacoesCoresDetalhes)) ? `
+                    <div style="margin-top: 6px; margin-bottom: 6px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 6px 8px; font-size: 11px; color: #92400e; line-height: 1.35;">
+                      <strong>Detalhes de Cores / Confecção:</strong> ${(pedido && pedido.observacoesCoresDetalhes) || (os && os.observacoesCoresDetalhes)}
+                    </div>
+                  ` : ''}
                   <div class="mockup-spec-row">
                     <span class="mockup-spec-label">Técnica de Aplicação:</span>
                     <span class="mockup-spec-value">${tecnicaPersonalizacao}</span>
@@ -8008,6 +8172,8 @@
         clienteNome: "TransBrasil Logística Integrada Ltda",
         clienteTelefone: "11988887777",
         produtoNome: "Camisa Polo Tradicional Piquet",
+        corTecido: "Azul Marinho",
+        observacoesCoresDetalhes: "Gola e punhos brancos com 2 frisos laranjas (2mm). Peitilho interno branco.",
         tecidoEspecificacao: "Piquet PA (50% Algodão / 50% Poliéster) Azul Marinho",
         tipoPersonalizacao: "Bordado Computadorizado Peito + DTF Costas",
         dtfLarguraRolo: 58,
@@ -8038,6 +8204,8 @@
         clienteNome: "Academia Alpha Cross & Fitness",
         clienteTelefone: "11977776666",
         produtoNome: "Camiseta Dry Fit Confort Esportiva",
+        corTecido: "Preto Reativo",
+        observacoesCoresDetalhes: "Recortes laterais e vivos em amarelo ouro dry fit.",
         tecidoEspecificacao: "Malha Dry Fit Poliéster 130g Preto com Detalhe Dourado",
         tipoPersonalizacao: "Impressão DTF Digital Frente e Costas",
         dtfLarguraRolo: 58,
@@ -8068,6 +8236,8 @@
         clienteNome: "Construtora Horizonte Engenharia",
         clienteTelefone: "11966665555",
         produtoNome: "Camisa Operacional Brim c/ Faixa Refletiva",
+        corTecido: "Cinza Chumbo",
+        observacoesCoresDetalhes: "Faixa refletiva de 50mm e gola italiana reforçada com pesponto duplo.",
         tecidoEspecificacao: "Tecido Brim Pesado Sarja 260g Cinza Chumbo com Faixa Alta Visibilidade",
         tipoPersonalizacao: "Bordado Bolso Frente + Silk Screen Costas",
         dtfLarguraRolo: 58,
@@ -8097,6 +8267,8 @@
         clienteNome: "Restaurante e Churrascaria Fogo Nobre",
         clienteTelefone: "11944443333",
         produtoNome: "Avental Master Chef Sarja Pesada",
+        corTecido: "Vinho Tinto",
+        observacoesCoresDetalhes: "Alças e detalhes dos bolsos em couro sintético marrom café.",
         tecidoEspecificacao: "Sarja Tinto Vinho Tinto com Alças em Couro Sintético",
         tipoPersonalizacao: "Bordado Central 3D Alta Definição",
         dtfLarguraRolo: 58,
@@ -8127,6 +8299,8 @@
         clienteNome: "Colégio Objetivo Sul & Esportes",
         clienteTelefone: "11933332222",
         produtoNome: "Conjunto Agasalho Helanca Escolar",
+        corTecido: "Azul Royal",
+        observacoesCoresDetalhes: "Mangas raglan com 2 listras brancas aplicadas e punho canelado azul e branco.",
         tecidoEspecificacao: "Helanca Flanelada 100% Poliéster Azul Royal com Detalhes Brancos",
         tipoPersonalizacao: "Silk Screen Peito + DTF Costas",
         dtfLarguraRolo: 58,
@@ -8157,6 +8331,8 @@
         clienteNome: "Hospital Santa Clara & Diagnósticos",
         clienteTelefone: "11955554444",
         produtoNome: "Jaleco Hospitalar Manga Longa Oxford",
+        corTecido: "Branco Neve",
+        observacoesCoresDetalhes: "Vivo azul celeste na gola e borda dos bolsos frontais.",
         tecidoEspecificacao: "Tecido Oxford 100% Poliéster Branco Alvejado",
         tipoPersonalizacao: "Bordado Especial no Bolso Superior com Brasão e Especialidade",
         dtfLarguraRolo: 28,
@@ -8197,6 +8373,8 @@
         pedidoNumero: "101",
         cliente: "TransBrasil Logística Integrada Ltda",
         produto: "Camisa Polo Tradicional Piquet",
+        corTecido: "Azul Marinho",
+        observacoesCoresDetalhes: "Gola e punhos brancos com 2 frisos laranjas (2mm). Peitilho interno branco.",
         quantidadeTotal: 150,
         grade: { pp: 10, p: 30, m: 50, g: 40, gg: 15, xg: 5 },
         dataEntradaCorte: dataRelativa(-3),
@@ -8211,8 +8389,8 @@
         prazoPedidoDias: 14,
         prazoInternoDias: 10,
         dtfLarguraRolo: 58,
-        instrucoesCorte: "Enfesto com folga de 2mm. Atenção especial ao alinhamento da gola retilínea azul com friso branco.",
-        instrucoesCostura: "Costura pespontada reforçada ombro a ombro e aplicação de botões resinados com 2 furos.",
+        instrucoesCorte: "Enfesto com folga de 2mm. Atenção especial ao alinhamento da gola retilínea branca com frisos laranjas.",
+        instrucoesCostura: "Costura pespontada reforçada ombro a ombro e aplicação de botões brancos com 2 furos.",
         artesAplicacao: [
           { local: "Peito Esquerdo", dimensao: "9x4 cm", tecnica: "Bordado Computadorizado 8.500 pontos", arquivoNome: "logo_transbrasil_peito.dst" },
           { local: "Costas", dimensao: "26x12 cm", tecnica: "DTF Têxtil Digital Termocolado", arquivoNome: "transbrasil_costas_58cm.png" }
@@ -8223,6 +8401,8 @@
         pedidoNumero: "105",
         cliente: "Restaurante e Churrascaria Fogo Nobre",
         produto: "Avental Master Chef Sarja Pesada",
+        corTecido: "Vinho Tinto",
+        observacoesCoresDetalhes: "Alças e detalhes dos bolsos em couro sintético marrom café.",
         quantidadeTotal: 80,
         grade: { pp: 0, p: 20, m: 30, g: 25, gg: 5, xg: 0 },
         dataEntradaCorte: dataRelativa(-10),
@@ -8237,7 +8417,7 @@
         prazoPedidoDias: 10,
         prazoInternoDias: 6,
         dtfLarguraRolo: 58,
-        instrucoesCorte: "Corte sarja com margem para bainha larga e tiras reforçadas.",
+        instrucoesCorte: "Corte sarja com margem para bainha larga e tiras reforçadas em couro sintético.",
         instrucoesCostura: "Costura pesada dupla com acabamento em rebites nos bolsos.",
         artesAplicacao: [
           { local: "Peito Central", dimensao: "18x12 cm", tecnica: "Bordado Computadorizado 3D", arquivoNome: "logo_fogonobre.dst" }
@@ -8248,6 +8428,8 @@
         pedidoNumero: "106",
         cliente: "Colégio Objetivo Sul & Esportes",
         produto: "Conjunto Agasalho Helanca Escolar",
+        corTecido: "Azul Royal",
+        observacoesCoresDetalhes: "Mangas raglan com 2 listras brancas aplicadas e punho canelado azul e branco.",
         quantidadeTotal: 110,
         grade: { pp: 15, p: 35, m: 40, g: 15, gg: 5, xg: 0 },
         dataEntradaCorte: dataRelativa(-14),
