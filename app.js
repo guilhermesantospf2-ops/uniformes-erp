@@ -68,6 +68,7 @@
   // Inicialização do Sistema
   function init() {
     configurarMenuNavegacao();
+    configurarIdentidadeEPerfis();
     atualizarBadges();
     configurarCliqueGlobalMockups();
     configurarFechamentoModaisGlobal();
@@ -230,8 +231,16 @@
     });
   }
 
-  // Roteador de Abas
+  // Roteador de Abas com Controle de Perfis e Permissões Industriais
   function navegarPara(aba) {
+    if (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterPerfilAtivo === 'function') {
+      const perfil = window.ERP_CLOUD.obterPerfilAtivo();
+      if (perfil && perfil.abasPermitidas && !perfil.abasPermitidas.includes(aba)) {
+        mostrarToast(`Acesso restrito: seu perfil (${perfil.nome}) não possui permissão para acessar esta área.`, 'red');
+        aba = perfil.abasPermitidas[0] || 'pedidos';
+      }
+    }
+
     abaAtiva = aba;
     fecharTodosModais();
 
@@ -281,6 +290,9 @@
         break;
       case 'nfe':
         renderizarNotasFiscais();
+        break;
+      case 'empresa':
+        renderizarConfiguracoesEmpresa();
         break;
       default:
         renderizarAbertura();
@@ -875,6 +887,12 @@
                           style="font-size: 9px; margin-top: 3px; ${isOrcamento ? 'background: #e0f2fe; color: #0369a1; border-color: #bae6fd; font-weight: 800;' : ''}">
                       ${isOrcamento ? 'ORÇAMENTO' : isQuarentena ? 'QUARENTENA' : 'PEDIDO'}
                     </span>
+                    ${(p.dataPrevisaoEntrega || p.dataMetaInterna) ? `
+                      <div style="font-size: 9.5px; margin-top: 4px; line-height: 1.25;">
+                        <span style="color: #1e40af; font-weight: 700;" title="Prazo Prometido ao Cliente">📅 Cli: ${p.dataPrevisaoEntrega || '-'}</span><br>
+                        ${p.dataMetaInterna ? `<span style="color: #0369a1; font-weight: 700;" title="Meta Interna Chão de Fábrica">🏭 Fáb: ${p.dataMetaInterna}</span>` : ''}
+                      </div>
+                    ` : ''}
                   </td>
                   <td>
                     <strong style="color: var(--text-primary); font-size: 13px;">${p.clienteNome}</strong>
@@ -1049,6 +1067,12 @@
                           </div>
                           <div class="kanban-card-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.clienteNome}</div>
                           <div class="kanban-card-sub">${p.grade?.total || 0}x ${p.produtoNome}</div>
+                          ${(p.dataPrevisaoEntrega || p.dataMetaInterna) ? `
+                            <div style="font-size: 9.5px; color: #1e40af; margin-top: 3px; font-weight: 700; display: flex; justify-content: space-between; line-height: 1.2;">
+                              <span>📅 Cli: ${p.dataPrevisaoEntrega || '-'}</span>
+                              ${p.dataMetaInterna ? `<span style="color: #0369a1;">🏭 Fáb: ${p.dataMetaInterna}</span>` : ''}
+                            </div>
+                          ` : ''}
                         </div>
                       </div>
 
@@ -1644,11 +1668,74 @@
   }
 
   /* ==========================================================================
+     GERENCIADOR DE PADRÕES INDUSTRIAIS & PRAZOS (CONFIGURÁVEL PELO USUÁRIO)
+     ========================================================================== */
+  const CONFIGURACOES_PADRAO_SISTEMA = {
+    prazoPedidoDias: 15,
+    prazoInternoDias: 10,
+    dtfLarguraRolo: 58,
+    dtfMetroLinear58: 60.00,
+    dtfMetroLinear28: 38.00,
+    dtfPrensagem: 1.50,
+    custoCostura: 7.50,
+    margemErroTecido: 8.0,
+    custoAviamento: 4.80,
+    consumoTecido: 0.28,
+    custoTecidoKg: 48.50,
+    aliquotaImposto: 6.5,
+    margemDesejada: 30.0
+  };
+
+  function carregarPadroesSistema() {
+    try {
+      const raw = localStorage.getItem('UNIFORMES_ERP_PADROES_CUSTOS');
+      if (raw) {
+        return Object.assign({}, CONFIGURACOES_PADRAO_SISTEMA, JSON.parse(raw));
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar padrões do sistema:', e);
+    }
+    return Object.assign({}, CONFIGURACOES_PADRAO_SISTEMA);
+  }
+
+  function salvarPadroesSistema(novosPadroes) {
+    try {
+      const atuais = carregarPadroesSistema();
+      const combinados = Object.assign({}, atuais, novosPadroes);
+      localStorage.setItem('UNIFORMES_ERP_PADROES_CUSTOS', JSON.stringify(combinados));
+      return combinados;
+    } catch (e) {
+      console.error('Erro ao salvar padrões do sistema:', e);
+      return null;
+    }
+  }
+
+  function calcularDataFuturaDiasUteis(diasUteis) {
+    const qtd = parseInt(diasUteis, 10) || 15;
+    const d = new Date();
+    let adicionados = 0;
+    while (adicionados < qtd) {
+      d.setDate(d.getDate() + 1);
+      const diaSemana = d.getDay();
+      if (diaSemana !== 0 && diaSemana !== 6) { // Pula sábado e domingo
+        adicionados++;
+      }
+    }
+    const dia = String(d.getDate()).padStart(2, '0');
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    const ano = d.getFullYear();
+    return `${dia}/${mes}/${ano}`;
+  }
+
+  /* ==========================================================================
      MODAL DE NOVO ORÇAMENTO COM DUPLO FLUXO & BENCHMARK BRASIL PROFUNDO
      ========================================================================== */
   function abrirModalNovoOrcamento() {
     if (!modalContainer) return;
     fecharTodosModais();
+
+    // Carrega preferências e padrões industriais salvos
+    const padroes = carregarPadroesSistema();
 
     // Estado da técnica de estampa atual no modal
     let tecnicaSelecionada = 'DTF';
@@ -1661,11 +1748,11 @@
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active" id="modalNovoOrcamentoOverlay">
-        <div class="modal-box" style="max-width: 860px;">
+        <div class="modal-box" style="max-width: 880px;">
           <div class="modal-header">
             <div>
               <div class="modal-title">Novo Orçamento & Inteligência de Preço Brasil</div>
-              <span style="font-size: 11px; color: var(--text-gray-500);">Preços reais do mercado brasileiro com viabilidade financeira em tempo real</span>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Preços reais do mercado brasileiro com viabilidade financeira e ficha em tempo real</span>
             </div>
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
@@ -1699,17 +1786,58 @@
               </div>
             </div>
 
-            <!-- Grade de Tamanhos -->
+            <!-- Grade de Tamanhos - ZERADA PARA PREENCHIMENTO REAL PELO USUÁRIO -->
             <div class="form-group">
-              <label class="form-label">Grade de Tamanhos (Distribuição de Peças)</label>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label class="form-label" style="margin: 0; font-weight: 700;">Grade de Tamanhos (Distribuição de Peças)</label>
+                <span style="font-size: 10.5px; color: var(--text-gray-500);">Grade zerada: digite as quantidades do pedido</span>
+              </div>
               <div class="grade-table-input">
                 <div class="grade-col"><div class="grade-label">PP</div><input type="number" id="gradePP" class="grade-input" value="0" min="0"></div>
-                <div class="grade-col"><div class="grade-label">P</div><input type="number" id="gradeP" class="grade-input" value="15" min="0"></div>
-                <div class="grade-col"><div class="grade-label">M</div><input type="number" id="gradeM" class="grade-input" value="35" min="0"></div>
-                <div class="grade-col"><div class="grade-label">G</div><input type="number" id="gradeG" class="grade-input" value="30" min="0"></div>
-                <div class="grade-col"><div class="grade-label">GG</div><input type="number" id="gradeGG" class="grade-input" value="15" min="0"></div>
-                <div class="grade-col"><div class="grade-label">XG</div><input type="number" id="gradeXG" class="grade-input" value="5" min="0"></div>
-                <div class="grade-col"><div class="grade-label">TOTAL</div><input type="text" id="gradeTotal" class="grade-input" style="font-weight: 800; background: #0f172a; color: #ffffff;" value="100" readonly></div>
+                <div class="grade-col"><div class="grade-label">P</div><input type="number" id="gradeP" class="grade-input" value="0" min="0"></div>
+                <div class="grade-col"><div class="grade-label">M</div><input type="number" id="gradeM" class="grade-input" value="0" min="0"></div>
+                <div class="grade-col"><div class="grade-label">G</div><input type="number" id="gradeG" class="grade-input" value="0" min="0"></div>
+                <div class="grade-col"><div class="grade-label">GG</div><input type="number" id="gradeGG" class="grade-input" value="0" min="0"></div>
+                <div class="grade-col"><div class="grade-label">XG</div><input type="number" id="gradeXG" class="grade-input" value="0" min="0"></div>
+                <div class="grade-col"><div class="grade-label">TOTAL</div><input type="text" id="gradeTotal" class="grade-input" style="font-weight: 800; background: #0f172a; color: #ffffff;" value="0" readonly></div>
+              </div>
+            </div>
+
+            <!-- Seção de Prazos de Produção & Entrega (Prometido ao Cliente vs Meta Interna) -->
+            <div class="form-group" style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label class="form-label" style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 6px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  Prazos do Pedido (Prometido ao Cliente vs Meta Interna da Fábrica):
+                </label>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnSalvarPrazosPadrao" style="font-size: 10.5px; padding: 3px 8px; font-weight: 700; color: #0369a1; border-color: #bae6fd; background: #f0f9ff;" title="Grava estes dias como padrão do sistema">
+                  ⭐ Tornar Prazos Padrão
+                </button>
+              </div>
+              <div class="form-row">
+                <div class="form-group" style="flex: 1;">
+                  <label class="form-label" style="font-size: 11px;">Prazo Prometido ao Cliente (dias úteis)</label>
+                  <input type="number" id="inputPrazoClienteDias" class="form-input" value="${padroes.prazoPedidoDias}" min="1" max="90">
+                  <div style="display: flex; gap: 4px; margin-top: 5px;">
+                    <button type="button" class="btn btn-secondary btn-sm btn-prazo-cli-pill" data-dias="7" style="font-size: 9.5px; padding: 1px 6px;">7 dias</button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-prazo-cli-pill" data-dias="10" style="font-size: 9.5px; padding: 1px 6px;">10 dias</button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-prazo-cli-pill" data-dias="15" style="font-size: 9.5px; padding: 1px 6px;">15 dias</button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-prazo-cli-pill" data-dias="20" style="font-size: 9.5px; padding: 1px 6px;">20 dias</button>
+                  </div>
+                  <span id="labelDataEntregaCliente" style="font-size: 11px; color: #1e40af; font-weight: 700; margin-top: 4px; display: block;"></span>
+                </div>
+
+                <div class="form-group" style="flex: 1;">
+                  <label class="form-label" style="font-size: 11px;">Prazo Interno da Fábrica (Meta do Chão de Fábrica em dias)</label>
+                  <input type="number" id="inputPrazoInternoDias" class="form-input" value="${padroes.prazoInternoDias}" min="1" max="90">
+                  <div style="display: flex; gap: 4px; margin-top: 5px;">
+                    <button type="button" class="btn btn-secondary btn-sm btn-prazo-int-pill" data-dias="5" style="font-size: 9.5px; padding: 1px 6px;">5 dias</button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-prazo-int-pill" data-dias="7" style="font-size: 9.5px; padding: 1px 6px;">7 dias</button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-prazo-int-pill" data-dias="10" style="font-size: 9.5px; padding: 1px 6px;">10 dias</button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-prazo-int-pill" data-dias="12" style="font-size: 9.5px; padding: 1px 6px;">12 dias</button>
+                  </div>
+                  <span id="labelDataMetaInterna" style="font-size: 11px; color: #0284c7; font-weight: 700; margin-top: 4px; display: block;"></span>
+                </div>
               </div>
             </div>
 
@@ -1762,29 +1890,39 @@
 
             <!-- 4. Painel de Custos de Produção Real da Confecção -->
             <div style="background: #ffffff; padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-medium); margin-bottom: 16px;">
-              <span class="form-label" style="font-size: 12.5px; font-weight: 800; color: var(--text-primary); margin-bottom: 10px; display: block;">
-                Custos Diretos desta Confecção para Produzir:
-              </span>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                <span class="form-label" style="font-size: 12.5px; font-weight: 800; color: var(--text-primary); margin: 0;">
+                  Custos Diretos desta Confecção para Produzir:
+                </span>
+                <div style="display: flex; gap: 6px;">
+                  <button type="button" class="btn btn-secondary btn-sm" id="btnSalvarCustosPadrao" style="font-size: 11px; padding: 4px 10px; font-weight: 700; background: #f0fdf4; color: #166534; border-color: #bbf7d0;" title="Salva os custos, consumos, margem de erro, costura e DTF atuais como seus padrões">
+                    ⭐ Salvar Valores Atuais como Meus Padrões
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btnRestaurarCustosPadrao" style="font-size: 11px; padding: 4px 8px;" title="Restaura os valores padrões salvos">
+                    🔄 Restaurar Padrões
+                  </button>
+                </div>
+              </div>
               
               <div class="form-row">
                 <div class="form-group" style="flex: 1.2;">
                   <label class="form-label">Custo Tecido (R$/kg ou m)</label>
-                  <input type="number" id="inputCustoTecido" class="form-input" value="48.50" step="0.50">
+                  <input type="number" id="inputCustoTecido" class="form-input" value="${padroes.custoTecidoKg.toFixed(2)}" step="0.50">
                 </div>
 
                 <div class="form-group" style="flex: 1;">
                   <label class="form-label" title="Consumo têxtil padrão desta modelagem">Consumo (kg ou m/un)</label>
-                  <input type="number" id="inputConsumoTecido" class="form-input" value="${prodInicial.consumoMalhaKgPorPeca}" step="0.01" min="0.05">
+                  <input type="number" id="inputConsumoTecido" class="form-input" value="${(padroes.consumoTecido || prodInicial.consumoMalhaKgPorPeca || 0.28).toFixed(2)}" step="0.01" min="0.05">
                 </div>
 
                 <div class="form-group" style="flex: 1;">
                   <label class="form-label" title="Margem de erro / perda no corte, enfesto e ourela (ex: 8%)">Margem Erro (%)</label>
-                  <input type="number" id="inputMargemErroTecido" class="form-input" value="8.0" step="0.5" min="0" max="30">
+                  <input type="number" id="inputMargemErroTecido" class="form-input" value="${(padroes.margemErroTecido || 8.0).toFixed(1)}" step="0.5" min="0" max="30">
                 </div>
 
                 <div class="form-group" style="flex: 1;">
                   <label class="form-label">Aviamentos p/ Peça (R$)</label>
-                  <input type="number" id="inputCustoAviamento" class="form-input" value="4.80" step="0.20">
+                  <input type="number" id="inputCustoAviamento" class="form-input" value="${(padroes.custoAviamento || 4.80).toFixed(2)}" step="0.20">
                 </div>
 
                 <div class="form-group" style="flex: 1;">
@@ -1794,7 +1932,7 @@
 
                 <div class="form-group" style="flex: 1;">
                   <label class="form-label">Costura & MDO (R$)</label>
-                  <input type="number" id="inputCustoCostura" class="form-input" value="7.50" step="0.50">
+                  <input type="number" id="inputCustoCostura" class="form-input" value="${(padroes.custoCostura || 7.50).toFixed(2)}" step="0.50">
                 </div>
               </div>
 
@@ -1811,12 +1949,12 @@
 
                 <div class="form-group">
                   <label class="form-label">Margem Líquida Alvo (%)</label>
-                  <input type="number" id="inputMargemDesejada" class="form-input" value="30" step="1">
+                  <input type="number" id="inputMargemDesejada" class="form-input" value="${padroes.margemDesejada || 30}" step="1">
                 </div>
 
                 <div class="form-group">
                   <label class="form-label">Imposto / Simples (%)</label>
-                  <input type="number" id="inputAliquotaImposto" class="form-input" value="6.5" step="0.1">
+                  <input type="number" id="inputAliquotaImposto" class="form-input" value="${padroes.aliquotaImposto || 6.5}" step="0.1">
                 </div>
               </div>
             </div>
@@ -1899,30 +2037,72 @@
       const painel = document.getElementById('painelParametrosTecnica');
       if (!painel) return;
 
+      const pdr = carregarPadroesSistema();
+
       if (tec === 'DTF') {
+        const larguraSalva = pdr.dtfLarguraRolo || 58;
+        const isCustom = larguraSalva != 58 && larguraSalva != 28;
+        const custoMetroSalvo = larguraSalva == 28 ? (pdr.dtfMetroLinear28 || 38.00) : (pdr.dtfMetroLinear58 || 60.00);
+
         painel.innerHTML = `
-          <div style="font-size: 11.5px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary);">
-            Cálculo DTF Digital por Área e Filme:
+          <div style="font-size: 11.5px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center;">
+            <span>Cálculo DTF Digital por Bobina e Metro Linear:</span>
+            <span style="font-size: 10px; color: var(--text-gray-500);">Bobina 58cm (Industrial) ou 28/30cm (Estreita)</span>
           </div>
           <div class="form-row">
-            <div class="form-group">
+            <div class="form-group" style="flex: 1.3;">
+              <label class="form-label" title="Largura útil da bobina de filme DTF ou do arquivo fechado">Largura da Bobina / Arquivo</label>
+              <select id="dtfParamLarguraRolo" class="form-select">
+                <option value="58" ${larguraSalva == 58 ? 'selected' : ''}>58 cm Útil (Bobina 60cm Industrial)</option>
+                <option value="28" ${larguraSalva == 28 ? 'selected' : ''}>28 cm Útil (Bobina Estreita 30cm / A3)</option>
+                <option value="custom" ${isCustom ? 'selected' : ''}>Outra Largura Personalizada (cm)...</option>
+              </select>
+            </div>
+            <div class="form-group" id="grpDtfLarguraCustom" style="display: ${isCustom ? 'block' : 'none'}; flex: 0.8;">
+              <label class="form-label">Largura Rolo (cm)</label>
+              <input type="number" id="dtfParamLarguraCustom" class="form-input" value="${larguraSalva}" step="1" min="10" max="160">
+            </div>
+            <div class="form-group" style="flex: 1;">
               <label class="form-label">Largura da Arte (cm)</label>
               <input type="number" id="dtfParamLargura" class="form-input" value="26" step="0.5">
             </div>
-            <div class="form-group">
+            <div class="form-group" style="flex: 1;">
               <label class="form-label">Altura da Arte (cm)</label>
               <input type="number" id="dtfParamAltura" class="form-input" value="8" step="0.5">
             </div>
-            <div class="form-group">
-              <label class="form-label">Custo Metro Linear Rolo DTF (R$)</label>
-              <input type="number" id="dtfParamMetro" class="form-input" value="60.00" step="5.00">
+            <div class="form-group" style="flex: 1.1;">
+              <label class="form-label" title="Preço do metro linear da bobina selecionada">Custo Metro Linear (R$)</label>
+              <input type="number" id="dtfParamMetro" class="form-input" value="${custoMetroSalvo.toFixed(2)}" step="1.00">
             </div>
-            <div class="form-group">
-              <label class="form-label">Custo Prensagem Térmica (R$)</label>
-              <input type="number" id="dtfParamPrensa" class="form-input" value="1.50" step="0.20">
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label">Prensagem Térmica (R$)</label>
+              <input type="number" id="dtfParamPrensa" class="form-input" value="${(pdr.dtfPrensagem || 1.50).toFixed(2)}" step="0.20">
             </div>
           </div>
+          <div id="boxDtfExplicativo" style="font-size: 11px; padding: 6px 10px; background: #ffffff; border: 1px dashed #cbd5e1; border-radius: 4px; color: var(--text-gray-600); margin-top: 4px; line-height: 1.4;">
+            <!-- Preenchido dinamicamente -->
+          </div>
         `;
+
+        document.getElementById('dtfParamLarguraRolo')?.addEventListener('change', (e) => {
+          const val = e.target.value;
+          const grpCustom = document.getElementById('grpDtfLarguraCustom');
+          const inpMetro = document.getElementById('dtfParamMetro');
+          const currentPdr = carregarPadroesSistema();
+          if (val === 'custom') {
+            if (grpCustom) grpCustom.style.display = 'block';
+          } else {
+            if (grpCustom) grpCustom.style.display = 'none';
+            if (inpMetro) {
+              inpMetro.value = val === '28' 
+                ? (currentPdr.dtfMetroLinear28 || 38.00).toFixed(2) 
+                : (currentPdr.dtfMetroLinear58 || 60.00).toFixed(2);
+            }
+          }
+          recalcularCustoPersonalizacaoDinamico();
+        });
+
+        document.getElementById('dtfParamLarguraCustom')?.addEventListener('input', recalcularCustoPersonalizacaoDinamico);
       } else if (tec === 'Bordado') {
         painel.innerHTML = `
           <div style="font-size: 11.5px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary);">
@@ -2022,17 +2202,31 @@
       let custoUnit = 0;
 
       if (tecnicaSelecionada === 'DTF') {
+        const selLargura = document.getElementById('dtfParamLarguraRolo')?.value || '58';
+        let larguraRolo = 58.0;
+        if (selLargura === '28') larguraRolo = 28.0;
+        else if (selLargura === 'custom') larguraRolo = parseFloat(document.getElementById('dtfParamLarguraCustom')?.value || 58.0);
+        else larguraRolo = 58.0;
+
         const w = parseFloat(document.getElementById('dtfParamLargura')?.value || 26);
         const h = parseFloat(document.getElementById('dtfParamAltura')?.value || 8);
-        const metroCusto = parseFloat(document.getElementById('dtfParamMetro')?.value || 60);
+        const metroCusto = parseFloat(document.getElementById('dtfParamMetro')?.value || (larguraRolo === 28 ? 38 : 60));
         const prensa = parseFloat(document.getElementById('dtfParamPrensa')?.value || 1.50);
         
-        // Rolo de 58cm útil: quantas artes cabem por metro linear
-        const cabemNaLinha = Math.max(1, Math.floor(58 / (w + 0.5)));
+        // Cabimento na largura útil com 5mm de margem entre artes
+        const cabemNaLinha = Math.max(1, Math.floor(larguraRolo / (w + 0.5)));
         const linhasPorMetro = 100 / (h + 0.5);
         const artesPorMetro = Math.max(1, cabemNaLinha * linhasPorMetro);
         const custoFilmePorArte = metroCusto / artesPorMetro;
         custoUnit = custoFilmePorArte + prensa;
+
+        const boxDtf = document.getElementById('boxDtfExplicativo');
+        if (boxDtf) {
+          boxDtf.innerHTML = `
+            <strong>📐 Bobina DTF ${larguraRolo}cm útil:</strong> Cabem <strong>${cabemNaLinha} arte(s)</strong> lado a lado na largura (${(cabemNaLinha * (w + 0.5)).toFixed(1)}cm ocupados de ${larguraRolo}cm) × ${linhasPorMetro.toFixed(1)} linhas/m ➔ <strong>~${artesPorMetro.toFixed(0)} artes por metro linear</strong>.<br>
+            Filme DTF: <strong>${formatarMoeda(custoFilmePorArte)}</strong> + Prensagem: <strong>${formatarMoeda(prensa)}</strong> = <strong>${formatarMoeda(custoUnit)} / estampa por peça</strong>.
+          `;
+        }
       } else if (tecnicaSelecionada === 'Bordado') {
         const pontos = parseFloat(document.getElementById('borParamPontos')?.value || 8000);
         const milPontos = parseFloat(document.getElementById('borParamMilPontos')?.value || 0.45);
@@ -2073,6 +2267,121 @@
       });
     });
 
+    // Atualização e cálculo de Prazos em tempo real
+    function atualizarLabelsPrazos() {
+      const diasCli = parseInt(document.getElementById('inputPrazoClienteDias')?.value || 15, 10);
+      const diasInt = parseInt(document.getElementById('inputPrazoInternoDias')?.value || 10, 10);
+
+      const lblCli = document.getElementById('labelDataEntregaCliente');
+      if (lblCli) {
+        lblCli.textContent = `📅 Previsão Entrega Cliente: ${calcularDataFuturaDiasUteis(diasCli)} (${diasCli} dias úteis)`;
+      }
+
+      const lblInt = document.getElementById('labelDataMetaInterna');
+      if (lblInt) {
+        const folga = diasCli - diasInt;
+        lblInt.textContent = `🏭 Meta Interna Fábrica: ${calcularDataFuturaDiasUteis(diasInt)} (${diasInt} dias úteis${folga > 0 ? ` • ${folga}d de folga` : ''})`;
+      }
+    }
+
+    document.getElementById('inputPrazoClienteDias')?.addEventListener('input', atualizarLabelsPrazos);
+    document.getElementById('inputPrazoInternoDias')?.addEventListener('input', atualizarLabelsPrazos);
+
+    document.querySelectorAll('.btn-prazo-cli-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const dias = btn.getAttribute('data-dias');
+        const inp = document.getElementById('inputPrazoClienteDias');
+        if (inp) {
+          inp.value = dias;
+          atualizarLabelsPrazos();
+        }
+      });
+    });
+
+    document.querySelectorAll('.btn-prazo-int-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const dias = btn.getAttribute('data-dias');
+        const inp = document.getElementById('inputPrazoInternoDias');
+        if (inp) {
+          inp.value = dias;
+          atualizarLabelsPrazos();
+        }
+      });
+    });
+
+    // Salvar prazos como padrão
+    document.getElementById('btnSalvarPrazosPadrao')?.addEventListener('click', () => {
+      const diasCli = parseInt(document.getElementById('inputPrazoClienteDias')?.value || 15, 10);
+      const diasInt = parseInt(document.getElementById('inputPrazoInternoDias')?.value || 10, 10);
+      salvarPadroesSistema({
+        prazoPedidoDias: diasCli,
+        prazoInternoDias: diasInt
+      });
+      mostrarToast(`⭐ Prazos padrão atualizados: ${diasCli} dias (Cliente) / ${diasInt} dias (Fábrica).`, 'green');
+    });
+
+    // Salvar todos os custos e parâmetros como padrão do usuário
+    document.getElementById('btnSalvarCustosPadrao')?.addEventListener('click', () => {
+      const custoTec = parseFloat(document.getElementById('inputCustoTecido')?.value || 48.50);
+      const consumo = parseFloat(document.getElementById('inputConsumoTecido')?.value || 0.28);
+      const margemErro = parseFloat(document.getElementById('inputMargemErroTecido')?.value || 8.0);
+      const aviamento = parseFloat(document.getElementById('inputCustoAviamento')?.value || 4.80);
+      const costura = parseFloat(document.getElementById('inputCustoCostura')?.value || 7.50);
+      const diasCli = parseInt(document.getElementById('inputPrazoClienteDias')?.value || 15, 10);
+      const diasInt = parseInt(document.getElementById('inputPrazoInternoDias')?.value || 10, 10);
+      
+      const selLargura = document.getElementById('dtfParamLarguraRolo')?.value || '58';
+      let larguraRolo = 58;
+      if (selLargura === '28') larguraRolo = 28;
+      else if (selLargura === 'custom') larguraRolo = parseFloat(document.getElementById('dtfParamLarguraCustom')?.value || 58);
+
+      const dtfMetro = parseFloat(document.getElementById('dtfParamMetro')?.value || 60.00);
+      const dtfPrensa = parseFloat(document.getElementById('dtfParamPrensa')?.value || 1.50);
+
+      const updateObj = {
+        custoTecidoKg: custoTec,
+        consumoTecido: consumo,
+        margemErroTecido: margemErro,
+        custoAviamento: aviamento,
+        custoCostura: costura,
+        prazoPedidoDias: diasCli,
+        prazoInternoDias: diasInt,
+        dtfLarguraRolo: larguraRolo,
+        dtfPrensagem: dtfPrensa
+      };
+
+      if (larguraRolo === 28) {
+        updateObj.dtfMetroLinear28 = dtfMetro;
+      } else {
+        updateObj.dtfMetroLinear58 = dtfMetro;
+      }
+
+      salvarPadroesSistema(updateObj);
+      mostrarToast('⭐ Padrões salvos com sucesso! Novos orçamentos e pedidos já carregarão automaticamente com estes custos, margem de erro, costura e DTF.', 'green');
+    });
+
+    // Restaurar padrões
+    document.getElementById('btnRestaurarCustosPadrao')?.addEventListener('click', () => {
+      const pdr = carregarPadroesSistema();
+      const inpCustoTec = document.getElementById('inputCustoTecido');
+      if (inpCustoTec) inpCustoTec.value = pdr.custoTecidoKg.toFixed(2);
+      const inpConsumo = document.getElementById('inputConsumoTecido');
+      if (inpConsumo) inpConsumo.value = pdr.consumoTecido.toFixed(2);
+      const inpMargemErro = document.getElementById('inputMargemErroTecido');
+      if (inpMargemErro) inpMargemErro.value = pdr.margemErroTecido.toFixed(1);
+      const inpAviamento = document.getElementById('inputCustoAviamento');
+      if (inpAviamento) inpAviamento.value = pdr.custoAviamento.toFixed(2);
+      const inpCostura = document.getElementById('inputCustoCostura');
+      if (inpCostura) inpCostura.value = pdr.custoCostura.toFixed(2);
+      const inpDiasCli = document.getElementById('inputPrazoClienteDias');
+      if (inpDiasCli) inpDiasCli.value = pdr.prazoPedidoDias;
+      const inpDiasInt = document.getElementById('inputPrazoInternoDias');
+      if (inpDiasInt) inpDiasInt.value = pdr.prazoInternoDias;
+      atualizarLabelsPrazos();
+      recalcularBenchmarkModal();
+      mostrarToast('Padrões restaurados nos campos.', 'blue');
+    });
+
     // Eventos de Cadastro Inline (Clientes e Modelos)
     document.getElementById('btnCadastrarClienteInline')?.addEventListener('click', () => {
       abrirModalNovoClienteInline((novoCli) => {
@@ -2103,7 +2412,6 @@
           opt.textContent = `${novoMod.nome} [${novoMod.tipoMalhaPadrao}]`;
           opt.selected = true;
           sel.prepend(opt);
-          // Ajusta custos padrão
           document.getElementById('inputCustoCostura').value = novoMod.custoMaoDeObraBase.toFixed(2);
           const inpConsumo = document.getElementById('inputConsumoTecido');
           if (inpConsumo) inpConsumo.value = (novoMod.consumoMalhaKgPorPeca || 0.28).toFixed(2);
@@ -2157,6 +2465,253 @@
       }
     });
 
+    // Recálculo da Engenharia Têxtil, Viabilidade e Rendimento em Tempo Real
+    function recalcularBenchmarkModal() {
+      const pp = parseInt(document.getElementById('gradePP')?.value || 0, 10);
+      const p = parseInt(document.getElementById('gradeP')?.value || 0, 10);
+      const m = parseInt(document.getElementById('gradeM')?.value || 0, 10);
+      const g = parseInt(document.getElementById('gradeG')?.value || 0, 10);
+      const gg = parseInt(document.getElementById('gradeGG')?.value || 0, 10);
+      const xg = parseInt(document.getElementById('gradeXG')?.value || 0, 10);
+      const totalPecas = pp + p + m + g + gg + xg;
+
+      const inpTotal = document.getElementById('gradeTotal');
+      if (inpTotal) inpTotal.value = totalPecas;
+
+      const custoTecidoKg = parseFloat(document.getElementById('inputCustoTecido')?.value || 48.50);
+      const consumoBase = parseFloat(document.getElementById('inputConsumoTecido')?.value || 0.28);
+      const margemErro = parseFloat(document.getElementById('inputMargemErroTecido')?.value || 8.0);
+      const custoAviamento = parseFloat(document.getElementById('inputCustoAviamento')?.value || 4.80);
+      const custoEstampa = parseFloat(document.getElementById('inputCustoEstampa')?.value || 0);
+      const custoCostura = parseFloat(document.getElementById('inputCustoCostura')?.value || 7.50);
+      const precoPretendido = parseFloat(document.getElementById('inputPrecoPretendido')?.value || 54.00);
+      const margemDesejada = parseFloat(document.getElementById('inputMargemDesejada')?.value || 30.0);
+      const aliquotaImposto = parseFloat(document.getElementById('inputAliquotaImposto')?.value || 6.5);
+
+      const prodId = document.getElementById('orcProdutoSelect')?.value || 'PROD-001';
+
+      // Cálculo de Rendimento e Custo de Malha com Margem de Erro
+      const consumoRealComPerda = consumoBase * (1 + (margemErro / 100));
+      const rendimentoPecasPorKg = consumoRealComPerda > 0 ? (1 / consumoRealComPerda) : 0;
+      const custoTecidoUnitario = custoTecidoKg * consumoRealComPerda;
+      const totalKgTecido = totalPecas * consumoRealComPerda;
+
+      const boxRendimento = document.getElementById('boxRendimentoTecido');
+      if (boxRendimento) {
+        boxRendimento.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <strong style="color: var(--text-primary); font-size: 12px; display: flex; align-items: center; gap: 5px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+              Engenharia Têxtil: Rendimento & Custo do Tecido por Peça:
+            </strong>
+            <span class="status-pill status-gray" style="font-size: 10px; font-weight: 700;">Margem de Perda: ${margemErro.toFixed(1)}%</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; font-size: 11.5px;">
+            <div>
+              <span style="color: var(--text-gray-500); display: block; font-size: 10px;">Consumo c/ Margem:</span>
+              <strong style="color: var(--text-primary);">${consumoRealComPerda.toFixed(3)} kg/un</strong>
+              <span style="font-size: 9.5px; color: var(--text-gray-400); display: block;">Base: ${consumoBase.toFixed(2)} + ${margemErro}%</span>
+            </div>
+            <div>
+              <span style="color: var(--text-gray-500); display: block; font-size: 10px;">Rendimento do Tecido:</span>
+              <strong style="color: var(--color-green);">${rendimentoPecasPorKg.toFixed(2)} peças / kg</strong>
+              <span style="font-size: 9.5px; color: var(--text-gray-400); display: block;">de malha acabada</span>
+            </div>
+            <div>
+              <span style="color: var(--text-gray-500); display: block; font-size: 10px;">Custo Malha por Peça:</span>
+              <strong style="color: #1e40af; font-size: 13px;">${formatarMoeda(custoTecidoUnitario)}</strong>
+              <span style="font-size: 9.5px; color: var(--text-gray-400); display: block;">@ ${formatarMoeda(custoTecidoKg)}/kg</span>
+            </div>
+            <div>
+              <span style="color: var(--text-gray-500); display: block; font-size: 10px;">Consumo Total Pedido:</span>
+              <strong style="color: var(--text-primary);">${totalPecas > 0 ? `${totalKgTecido.toFixed(2)} kg` : '0.00 kg'}</strong>
+              <span style="font-size: 9.5px; color: var(--text-gray-400); display: block;">${totalPecas} peças na grade</span>
+            </div>
+          </div>
+          ${totalPecas === 0 ? `
+            <div style="margin-top: 8px; padding: 6px 8px; background: #fffbeb; border: 1px dashed #fde68a; border-radius: 4px; font-size: 10.5px; color: #92400e;">
+              ℹ️ <strong>Grade zerada:</strong> Digite a distribuição de tamanhos (PP, P, M, G, GG, XG) acima para calcular o pedido completo.
+            </div>
+          ` : ''}
+        `;
+      }
+
+      // Benchmark e Viabilidade Financeira (usa quantidade real ou 1 para simulação de custos unitários)
+      const qtdCalculo = Math.max(1, totalPecas);
+      const viabilidade = window.MarketBenchmark ? window.MarketBenchmark.calcularViabilidadeOrcamento({
+        produtoId: prodId,
+        quantidade: qtdCalculo,
+        custoTecidoKgOuMetro: custoTecidoKg,
+        consumoPorPeca: consumoBase,
+        margemErroTecidoPercentual: margemErro,
+        custoAviamentosTotal: custoAviamento,
+        custoPersonalizacaoUnitario: custoEstampa,
+        custoMaoDeObraCostura: custoCostura,
+        custoEmbalagemEtiqueta: 1.50,
+        aliquotaImpostoPercentual: aliquotaImposto,
+        margemDesejadaPercentual: margemDesejada,
+        precoVendaPretendido: precoPretendido
+      }) : {
+        custoProducaoUnitario: custoTecidoUnitario + custoAviamento + custoEstampa + custoCostura + 1.50,
+        precoSugeridoCalculado: precoPretendido,
+        margemLiquidaReal: 25.0,
+        lucroLiquidoUnitario: precoPretendido * 0.25,
+        statusTexto: 'VIÁVEL (Padrão)',
+        classeCor: 'status-green',
+        mercado: { min: 10, max: 100, precoMedioBrasil: precoPretendido },
+        recomendacao: 'Valores calculados conforme custo direto de insumos e mão de obra.'
+      };
+
+      const painel = document.getElementById('painelBenchmarkResultado');
+      if (!painel) return;
+
+      const faturamentoTotalReal = precoPretendido * totalPecas;
+      const custoTotalReal = viabilidade.custoProducaoUnitario * totalPecas;
+      const lucroTotalReal = viabilidade.lucroLiquidoUnitario * totalPecas;
+
+      painel.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="status-pill ${viabilidade.classeCor}" style="font-size: 12px; padding: 4px 10px; font-weight: 800;">
+              ${viabilidade.statusTexto}
+            </span>
+            <span style="font-size: 11px; color: var(--text-gray-500);">
+              ${totalPecas > 0 ? `Pedido de <strong>${totalPecas} peças</strong>` : `Simulação unitária (Grade zerada)`}
+            </span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-gray-600); text-align: right;">
+            Preço Médio Brasil (Faixa ${viabilidade.mercado.min}-${viabilidade.mercado.max} pçs): <strong>${formatarMoeda(viabilidade.mercado.precoMedioBrasil)}</strong>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px;">
+          <div class="card" style="padding: 10px; margin: 0; background: #f8fafc; border: 1px solid var(--border-medium);">
+            <span style="font-size: 10px; color: var(--text-gray-500); text-transform: uppercase;">Custo Direto Produção</span>
+            <div class="text-mono" style="font-size: 14px; font-weight: 800; color: var(--text-primary); margin-top: 2px;">
+              ${formatarMoeda(viabilidade.custoProducaoUnitario)}
+            </div>
+            <span style="font-size: 9.5px; color: var(--text-gray-400);">por peça acabada</span>
+          </div>
+
+          <div class="card" style="padding: 10px; margin: 0; background: #f8fafc; border: 1px solid var(--border-medium);">
+            <span style="font-size: 10px; color: var(--text-gray-500); text-transform: uppercase;">Preço de Venda Unitário</span>
+            <div class="text-mono" style="font-size: 14px; font-weight: 800; color: #1e40af; margin-top: 2px;">
+              ${formatarMoeda(precoPretendido)}
+            </div>
+            <span style="font-size: 9.5px; color: var(--text-gray-400);">Sugerido: ${formatarMoeda(viabilidade.precoSugeridoCalculado)}</span>
+          </div>
+
+          <div class="card" style="padding: 10px; margin: 0; background: #f8fafc; border: 1px solid var(--border-medium);">
+            <span style="font-size: 10px; color: var(--text-gray-500); text-transform: uppercase;">Margem Líquida Real</span>
+            <div class="text-mono" style="font-size: 14px; font-weight: 800; color: ${viabilidade.margemLiquidaReal >= 20 ? 'var(--color-green)' : viabilidade.margemLiquidaReal >= 10 ? '#d97706' : 'var(--color-red)'}; margin-top: 2px;">
+              ${viabilidade.margemLiquidaReal.toFixed(1)}%
+            </div>
+            <span style="font-size: 9.5px; color: var(--text-gray-400);">${formatarMoeda(viabilidade.lucroLiquidoUnitario)} lucro/pç</span>
+          </div>
+
+          <div class="card" style="padding: 10px; margin: 0; background: #f0fdf4; border: 1px solid #bbf7d0;">
+            <span style="font-size: 10px; color: #166534; text-transform: uppercase; font-weight: 700;">
+              ${totalPecas > 0 ? 'Lucro Líquido do Pedido' : 'Valor Total do Pedido'}
+            </span>
+            <div class="text-mono" style="font-size: 15px; font-weight: 800; color: #166534; margin-top: 2px;">
+              ${totalPecas > 0 ? formatarMoeda(lucroTotalReal) : 'R$ 0,00'}
+            </div>
+            <span style="font-size: 9.5px; color: #15803d;">
+              ${totalPecas > 0 ? `Faturamento: ${formatarMoeda(faturamentoTotalReal)}` : 'Preencha a grade'}
+            </span>
+          </div>
+        </div>
+
+        <div style="font-size: 11px; padding: 8px 12px; background: #ffffff; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); color: var(--text-gray-600); line-height: 1.4;">
+          <strong>Diagnóstico Industrial:</strong> ${viabilidade.recomendacao}
+        </div>
+      `;
+    }
+
+    // Coleta dos dados do formulário com validações
+    function coletarDadosOrcamentoModal() {
+      const pp = parseInt(document.getElementById('gradePP')?.value || 0, 10);
+      const p = parseInt(document.getElementById('gradeP')?.value || 0, 10);
+      const m = parseInt(document.getElementById('gradeM')?.value || 0, 10);
+      const g = parseInt(document.getElementById('gradeG')?.value || 0, 10);
+      const gg = parseInt(document.getElementById('gradeGG')?.value || 0, 10);
+      const xg = parseInt(document.getElementById('gradeXG')?.value || 0, 10);
+      const totalPecas = pp + p + m + g + gg + xg;
+
+      if (totalPecas <= 0) {
+        mostrarToast('Por favor, informe ao menos 1 peça na grade de tamanhos.', 'red');
+        return null;
+      }
+
+      const clienteId = document.getElementById('orcClienteSelect')?.value;
+      const cliente = db.clientes.find(c => c.id === clienteId) || db.clientes[0];
+
+      const prodId = document.getElementById('orcProdutoSelect')?.value;
+      const prod = db.produtosBase.find(pr => pr.id === prodId) || db.produtosBase[0];
+
+      const custoTecido = parseFloat(document.getElementById('inputCustoTecido')?.value || 48.50);
+      const consumoTecido = parseFloat(document.getElementById('inputConsumoTecido')?.value || 0.28);
+      const margemErroTecido = parseFloat(document.getElementById('inputMargemErroTecido')?.value || 8.0);
+      const custoAviamento = parseFloat(document.getElementById('inputCustoAviamento')?.value || 4.80);
+      const custoEstampa = parseFloat(document.getElementById('inputCustoEstampa')?.value || 0);
+      const custoCostura = parseFloat(document.getElementById('inputCustoCostura')?.value || 7.50);
+      const precoVendaUnitario = parseFloat(document.getElementById('inputPrecoPretendido')?.value || 54.00);
+      const margemDesejada = parseFloat(document.getElementById('inputMargemDesejada')?.value || 30.0);
+      const aliquotaImposto = parseFloat(document.getElementById('inputAliquotaImposto')?.value || 6.5);
+
+      const prazoClienteDias = parseInt(document.getElementById('inputPrazoClienteDias')?.value || 15, 10);
+      const prazoInternoDias = parseInt(document.getElementById('inputPrazoInternoDias')?.value || 10, 10);
+      const dataEntregaCliente = calcularDataFuturaDiasUteis(prazoClienteDias);
+      const dataMetaInterna = calcularDataFuturaDiasUteis(prazoInternoDias);
+
+      const selLargura = document.getElementById('dtfParamLarguraRolo')?.value || '58';
+      let larguraRolo = 58;
+      if (selLargura === '28') larguraRolo = 28;
+      else if (selLargura === 'custom') larguraRolo = parseFloat(document.getElementById('dtfParamLarguraCustom')?.value || 58);
+
+      const viabilidade = window.MarketBenchmark ? window.MarketBenchmark.calcularViabilidadeOrcamento({
+        produtoId: prod.id,
+        quantidade: totalPecas,
+        custoTecidoKgOuMetro: custoTecido,
+        consumoPorPeca: consumoTecido,
+        margemErroTecidoPercentual: margemErroTecido,
+        custoAviamentosTotal: custoAviamento,
+        custoPersonalizacaoUnitario: custoEstampa,
+        custoMaoDeObraCostura: custoCostura,
+        custoEmbalagemEtiqueta: 1.50,
+        aliquotaImpostoPercentual: aliquotaImposto,
+        margemDesejadaPercentual: margemDesejada,
+        precoVendaPretendido: precoVendaUnitario
+      }) : {
+        custoProducaoUnitario: 24.50,
+        custoTecidoUnitario: custoTecido * consumoTecido * 1.08,
+        consumoRealComPerda: consumoTecido * 1.08,
+        lucroLiquidoUnitario: precoVendaUnitario * 0.25,
+        margemLiquidaReal: 25.0
+      };
+
+      return {
+        cliente,
+        prod,
+        grade: { pp, p, m, g, gg, xg, total: totalPecas },
+        precoVendaUnitario,
+        valorTotal: precoVendaUnitario * totalPecas,
+        custoTotal: viabilidade.custoProducaoUnitario * totalPecas,
+        custoUnitario: viabilidade.custoProducaoUnitario,
+        custoTecidoPorPeca: viabilidade.custoTecidoUnitario,
+        consumoRealComPerda: viabilidade.consumoRealComPerda,
+        margemErroTecido: margemErroTecido,
+        lucroLiquido: viabilidade.lucroLiquidoUnitario * totalPecas,
+        margem: viabilidade.margemLiquidaReal,
+        prazoPedidoDias: prazoClienteDias,
+        prazoInternoDias: prazoInternoDias,
+        dataPrevisaoEntrega: dataEntregaCliente,
+        dataMetaInterna: dataMetaInterna,
+        dtfLarguraRolo: larguraRolo,
+        mockupUrl: mockupOrcamentoUrl
+      };
+    }
+
     // Inputs que disparam recálculo em tempo real
     const inputsRecalculo = [
       'gradePP', 'gradeP', 'gradeM', 'gradeG', 'gradeGG', 'gradeXG',
@@ -2170,7 +2725,8 @@
       document.getElementById(id)?.addEventListener('change', recalcularBenchmarkModal);
     });
 
-    // Inicializa painel DTF
+    // Inicializa datas e painel DTF
+    atualizarLabelsPrazos();
     atualizarPainelTecnica('DTF');
 
     // Botões de ação do Duplo Fluxo
@@ -2179,222 +2735,10 @@
     });
 
     document.getElementById('btnAvancarParaPedidoOficial')?.addEventListener('click', () => {
-      // Coleta dados parciais do orçamento para passar à tela de avanço
       const dadosOrcamento = coletarDadosOrcamentoModal();
       if (!dadosOrcamento) return;
       abrirEtapaAvancarPedido(dadosOrcamento);
     });
-  }
-
-  function coletarDadosOrcamentoModal() {
-    const clienteId = document.getElementById('orcClienteSelect')?.value;
-    const cliente = db.clientes.find(c => c.id === clienteId) || db.clientes[0];
-    const produtoId = document.getElementById('orcProdutoSelect')?.value;
-    const prod = db.produtosBase.find(p => p.id === produtoId) || db.produtosBase[0];
-
-    const pp = parseInt(document.getElementById('gradePP')?.value || 0, 10);
-    const p = parseInt(document.getElementById('gradeP')?.value || 0, 10);
-    const m = parseInt(document.getElementById('gradeM')?.value || 0, 10);
-    const g = parseInt(document.getElementById('gradeG')?.value || 0, 10);
-    const gg = parseInt(document.getElementById('gradeGG')?.value || 0, 10);
-    const xg = parseInt(document.getElementById('gradeXG')?.value || 0, 10);
-    const totalPecas = pp + p + m + g + gg + xg;
-
-    if (totalPecas <= 0) {
-      mostrarToast('Por favor, informe ao menos 1 peça na grade de tamanhos.', 'red');
-      return null;
-    }
-
-    const precoVendaUnitario = parseFloat(document.getElementById('inputPrecoPretendido')?.value || 54.00);
-    const custoTecidoKgOuMetro = parseFloat(document.getElementById('inputCustoTecido')?.value || 48.50);
-    const consumoBase = parseFloat(document.getElementById('inputConsumoTecido')?.value || prod.consumoMalhaKgPorPeca || 0.28);
-    const margemErroTecido = parseFloat(document.getElementById('inputMargemErroTecido')?.value || 8.0);
-    const custoAviamento = parseFloat(document.getElementById('inputCustoAviamento')?.value || 4.80);
-    const custoEstampa = parseFloat(document.getElementById('inputCustoEstampa')?.value || 6.50);
-    const custoCostura = parseFloat(document.getElementById('inputCustoCostura')?.value || 7.50);
-
-    const consumoRealComPerda = consumoBase * (1 + (margemErroTecido / 100));
-    const custoTecidoPorPeca = custoTecidoKgOuMetro * consumoRealComPerda;
-
-    const custoUnitario = custoTecidoPorPeca + custoAviamento + custoEstampa + custoCostura + 1.50;
-    const valorTotal = totalPecas * precoVendaUnitario;
-    const custoTotal = totalPecas * custoUnitario;
-    const impostos = valorTotal * 0.065;
-    const lucroLiquido = valorTotal - custoTotal - impostos;
-    const margem = valorTotal > 0 ? (lucroLiquido / valorTotal) * 100 : 0;
-
-    const previewMock = document.getElementById('previewMockup3x4Orc');
-    const mockupUrlFinal = previewMock ? previewMock.src : window.ERP_MOCKUPS.gerarMockupSvg(prod.nome, "#1e3a8a", "#ffffff", cliente.nomeFantasia.substring(0, 6));
-
-    return {
-      cliente,
-      prod,
-      grade: { pp, p, m, g, gg, xg, total: totalPecas },
-      precoVendaUnitario,
-      valorTotal,
-      custoTotal,
-      custoUnitario,
-      custoTecidoKgOuMetro,
-      consumoBase,
-      margemErroTecido,
-      consumoRealComPerda,
-      custoTecidoPorPeca,
-      lucroLiquido,
-      margem,
-      impostos,
-      mockupUrl: mockupUrlFinal
-    };
-  }
-
-  function recalcularBenchmarkModal() {
-    const pp = parseInt(document.getElementById('gradePP')?.value || 0, 10);
-    const p = parseInt(document.getElementById('gradeP')?.value || 0, 10);
-    const m = parseInt(document.getElementById('gradeM')?.value || 0, 10);
-    const g = parseInt(document.getElementById('gradeG')?.value || 0, 10);
-    const gg = parseInt(document.getElementById('gradeGG')?.value || 0, 10);
-    const xg = parseInt(document.getElementById('gradeXG')?.value || 0, 10);
-    const totalPecas = Math.max(1, pp + p + m + g + gg + xg);
-
-    const gradeTotalInput = document.getElementById('gradeTotal');
-    if (gradeTotalInput) gradeTotalInput.value = totalPecas;
-
-    const produtoId = document.getElementById('orcProdutoSelect')?.value || 'PROD-001';
-    const prod = db.produtosBase.find(pr => pr.id === produtoId) || db.produtosBase[0];
-
-    const custoTecidoKgOuMetro = parseFloat(document.getElementById('inputCustoTecido')?.value || 48.50);
-    const consumoBase = parseFloat(document.getElementById('inputConsumoTecido')?.value || prod.consumoMalhaKgPorPeca || 0.28);
-    const margemErroTecido = parseFloat(document.getElementById('inputMargemErroTecido')?.value || 8.0);
-    const custoAviamentos = parseFloat(document.getElementById('inputCustoAviamento')?.value || 4.80);
-    const custoPersonalizacao = parseFloat(document.getElementById('inputCustoEstampa')?.value || 6.50);
-    const custoCostura = parseFloat(document.getElementById('inputCustoCostura')?.value || 7.50);
-    const precoPretendido = parseFloat(document.getElementById('inputPrecoPretendido')?.value || 54.00);
-    const margemDesejada = parseFloat(document.getElementById('inputMargemDesejada')?.value || 30.0);
-    const aliquotaImposto = parseFloat(document.getElementById('inputAliquotaImposto')?.value || 6.5);
-
-    // Cálculos detalhados de rendimento de tecido e margem de erro
-    const consumoRealComPerda = consumoBase * (1 + (margemErroTecido / 100));
-    const custoTecidoPorPeca = custoTecidoKgOuMetro * consumoRealComPerda;
-    const rendimentoTeorico = consumoBase > 0 ? (1 / consumoBase) : 0;
-    const rendimentoReal = consumoRealComPerda > 0 ? (1 / consumoRealComPerda) : 0;
-
-    const unidadeMedida = (prod.tipoMalhaPadrao || '').toLowerCase().includes('brim') || 
-                          (prod.tipoMalhaPadrao || '').toLowerCase().includes('oxford') || 
-                          (prod.tipoMalhaPadrao || '').toLowerCase().includes('tricoline') ||
-                          (prod.tipoMalhaPadrao || '').toLowerCase().includes('sarja') ||
-                          (prod.tipoMalhaPadrao || '').toLowerCase().includes('tecido') ? 'm' : 'kg';
-
-    // Atualiza o painel explicativo de rendimento têxtil
-    const boxRendimento = document.getElementById('boxRendimentoTecido');
-    if (boxRendimento) {
-      boxRendimento.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-          <div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <strong style="color: #0f172a; font-size: 12.5px;">Cálculo Técnico de Rendimento Têxtil (${prod.nome}):</strong>
-              <span class="status-pill status-gray" style="font-size: 9.5px; font-weight: 700;">Tecido em ${unidadeMedida.toUpperCase()}</span>
-            </div>
-            <div style="font-size: 11.5px; color: var(--text-gray-600); margin-top: 4px; line-height: 1.5;">
-              • <strong>Consumo Base:</strong> ${consumoBase.toFixed(2)} ${unidadeMedida}/peça ➔ <strong>Rendimento Teórico:</strong> ~${rendimentoTeorico.toFixed(2)} peças por ${unidadeMedida}<br>
-              • <strong>Margem de Erro / Perda:</strong> +${margemErroTecido.toFixed(1)}% (enfesto/ourela) ➔ <strong>Consumo Efetivo:</strong> ${consumoRealComPerda.toFixed(3)} ${unidadeMedida}/peça (~${rendimentoReal.toFixed(2)} peças/${unidadeMedida})
-            </div>
-          </div>
-
-          <div style="text-align: right; background: #eff6ff; border: 1.5px solid #93c5fd; padding: 8px 14px; border-radius: 6px;">
-            <span style="font-size: 10px; color: #1e40af; font-weight: 800; text-transform: uppercase; display: block; letter-spacing: 0.5px;">Custo Tecido por Peça:</span>
-            <span class="text-mono" style="font-size: 18px; font-weight: 900; color: #1e3a8a;">
-              ${formatarMoeda(custoTecidoPorPeca)} <span style="font-size: 11px; font-weight: 600; color: #3b82f6;">/ peça</span>
-            </span>
-          </div>
-        </div>
-
-        <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e1; font-size: 11px; color: var(--text-gray-500); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
-          <span>Cálculo: ${formatarMoeda(custoTecidoKgOuMetro)}/${unidadeMedida} × ${consumoRealComPerda.toFixed(3)} ${unidadeMedida} = <strong>${formatarMoeda(custoTecidoPorPeca)}/un</strong></span>
-          <span>Tecido Total p/ Lote (${totalPecas} un): <strong class="text-mono" style="color: var(--text-primary); font-size: 11.5px;">${(totalPecas * consumoRealComPerda).toFixed(1)} ${unidadeMedida} (${formatarMoeda(totalPecas * custoTecidoPorPeca)})</strong></span>
-        </div>
-      `;
-    }
-
-    const analise = window.MarketBenchmark.calcularViabilidadeOrcamento({
-      produtoId: produtoId,
-      quantidade: totalPecas,
-      custoTecidoKgOuMetro: custoTecidoKgOuMetro,
-      consumoPorPeca: consumoRealComPerda,
-      margemErroTecidoPercentual: margemErroTecido,
-      custoTecidoUnitarioCalculado: custoTecidoPorPeca,
-      custoAviamentosTotal: custoAviamentos,
-      custoPersonalizacaoUnitario: custoPersonalizacao,
-      custoMaoDeObraCostura: custoCostura,
-      custoEmbalagemEtiqueta: 1.50,
-      aliquotaImpostoPercentual: aliquotaImposto,
-      margemDesejadaPercentual: margemDesejada,
-      precoVendaPretendido: precoPretendido
-    });
-
-    const painel = document.getElementById('painelBenchmarkResultado');
-    if (!painel) return;
-
-    painel.innerHTML = `
-      <div class="benchmark-header">
-        <div>
-          <strong style="color: var(--text-primary); font-size: 13px;">Média Nacional Cobrada no Brasil (${totalPecas} peças de ${prod.nome}):</strong>
-          <span style="display: block; font-size: 11px; color: var(--text-gray-500);">Base de dados consolidada dos polos têxteis (Americana/SP, Brusque/SC, Maringá/PR)</span>
-        </div>
-        <span class="status-pill status-gray text-mono">Lote: ${totalPecas} un</span>
-      </div>
-
-      <div class="benchmark-grid-3">
-        <div class="benchmark-stat-box">
-          <div class="benchmark-stat-label">Mínimo Brasil</div>
-          <div class="benchmark-stat-val text-gray-500">${formatarMoeda(analise.mercado.precoMinimo)}</div>
-          <span style="font-size: 10px; color: var(--text-gray-400);">Guerra de preço predatória</span>
-        </div>
-
-        <div class="benchmark-stat-box" style="border-color: #0f172a; border-width: 1.5px; background: #ffffff;">
-          <div class="benchmark-stat-label" style="color: #0f172a;">MÉDIA REAL NO BRASIL</div>
-          <div class="benchmark-stat-val text-primary" style="font-size: 19px;">${formatarMoeda(analise.mercado.precoMedioBrasil)}</div>
-          <span style="font-size: 10.5px; color: var(--text-gray-600); font-weight: 600;">Preço de equilíbrio nacional</span>
-        </div>
-
-        <div class="benchmark-stat-box">
-          <div class="benchmark-stat-label">Topo de Mercado</div>
-          <div class="benchmark-stat-val text-gray-500">${formatarMoeda(analise.mercado.precoMaximo)}</div>
-          <span style="font-size: 10px; color: var(--text-gray-400);">Confecções de alta gama</span>
-        </div>
-      </div>
-
-      <div class="benchmark-grid-3">
-        <div class="benchmark-stat-box">
-          <div class="benchmark-stat-label">Seu Custo Direto Unitário</div>
-          <div class="benchmark-stat-val text-red">${formatarMoeda(analise.custoProducaoUnitario)} / un</div>
-          <span style="font-size: 10px; color: var(--text-gray-500);">Tecido (${formatarMoeda(custoTecidoPorPeca)}) + Costura + Aviamento + Estampa</span>
-        </div>
-
-        <div class="benchmark-stat-box">
-          <div class="benchmark-stat-label">Preço Sugerido (${margemDesejada.toFixed(0)}% Margem)</div>
-          <div class="benchmark-stat-val text-green">${formatarMoeda(analise.precoSugeridoCalculado)}</div>
-          <span style="font-size: 10px; color: var(--text-gray-500);">Cobre impostos e lucro líquido</span>
-        </div>
-
-        <div class="benchmark-stat-box">
-          <div class="benchmark-stat-label">Margem Líquida Real do Pedido</div>
-          <div class="benchmark-stat-val ${analise.margemLiquidaReal >= 20 ? 'text-green' : 'text-red'}">
-            ${analise.margemLiquidaReal.toFixed(1)}% (${formatarMoeda(analise.lucroLiquidoUnitario)}/un)
-          </div>
-          <span style="font-size: 10px; color: var(--text-gray-500);">Lucro total líquido: ${formatarMoeda(analise.totaisPedido.lucroLiquidoTotal)}</span>
-        </div>
-      </div>
-
-      <div class="viability-banner ${analise.classeCor}">
-        <div>
-          <strong style="display: block; font-size: 12.5px;">Diagnóstico de Viabilidade: ${analise.statusTexto}</strong>
-          <span style="font-size: 11.5px;">${analise.recomendacao}</span>
-        </div>
-        <div class="text-mono" style="font-size: 11px; text-align: right; white-space: nowrap;">
-          <span>Custo Teto p/ Bater Média Brasil:</span><br>
-          <strong style="font-size: 13px;">${formatarMoeda(analise.custoTetoParaMediaBrasil)} / peça</strong>
-        </div>
-      </div>
-    `;
   }
 
   // Salvar Orçamento Apenas
@@ -2435,7 +2779,11 @@
       sinalPago: false,
       valorSinalPago: 0,
       saldoPendente: dados.valorTotal,
-      dataPrevisaoEntrega: '2026-10-25',
+      prazoPedidoDias: dados.prazoPedidoDias,
+      prazoInternoDias: dados.prazoInternoDias,
+      dataPrevisaoEntrega: dados.dataPrevisaoEntrega,
+      dataMetaInterna: dados.dataMetaInterna,
+      dtfLarguraRolo: dados.dtfLarguraRolo,
       notaFiscalEmitida: false,
       vendedorResponsavel: 'Marcos Paulo'
     };
@@ -2917,7 +3265,11 @@
           valor: valorEfetivoPago,
           saldoRestante: saldoRestante
         }] : [],
-        dataPrevisaoEntrega: "2026-10-20",
+        dataPrevisaoEntrega: dadosBase.dataPrevisaoEntrega || calcularDataFuturaDiasUteis(dadosBase.prazoPedidoDias || 15),
+        dataMetaInterna: dadosBase.dataMetaInterna || calcularDataFuturaDiasUteis(dadosBase.prazoInternoDias || 10),
+        prazoPedidoDias: dadosBase.prazoPedidoDias || 15,
+        prazoInternoDias: dadosBase.prazoInternoDias || 10,
+        dtfLarguraRolo: dadosBase.dtfLarguraRolo || 58,
         notaFiscalEmitida: false,
         vendedorResponsavel: "Marcos Paulo"
       };
@@ -2945,7 +3297,7 @@
         });
       }
 
-      // 5. Geração de OS Técnica
+      // 5. Geração de OS Técnica com Prazos e Especificação de DTF
       const novaOS = {
         id: `OS-${Math.floor(8400 + db.ordensServico.length + 1)}`,
         pedidoNumero: pedidoOficial.numero,
@@ -2958,7 +3310,12 @@
         costureiraDesignada: costureiraObj.nome,
         responsavelCorte: "Vanderlei Souza",
         dataEntradaCorte: new Date().toISOString().split('T')[0],
-        tecidoConsumidoKg: (pedidoOficial.grade.total * 0.28).toFixed(1),
+        prazoPedidoDias: pedidoOficial.prazoPedidoDias,
+        prazoInternoDias: pedidoOficial.prazoInternoDias,
+        dataPrevisaoEntrega: pedidoOficial.dataPrevisaoEntrega,
+        dataMetaInterna: pedidoOficial.dataMetaInterna,
+        dtfLarguraRolo: pedidoOficial.dtfLarguraRolo || 58,
+        tecidoConsumidoKg: (pedidoOficial.grade.total * (dadosBase.consumoRealComPerda || 0.28)).toFixed(1),
         artesAplicacao: artesLista,
         instrucoesCorte: `Corte padrão para ${pedidoOficial.grade.total} peças de ${prodNomeFinal}. Tolerância 2mm.`,
         instrucoesCostura: `Costureira responsável: ${costureiraObj.nome}. Fechamento com fio reforçado.`,
@@ -2995,11 +3352,253 @@
   }
 
   /* ==========================================================================
+     MOTOR DE IMPRESSÃO ISOLADA A4 (BLINDAGEM CONTRA VAZAMENTO DE TELAS DE FUNDO)
+     ========================================================================== */
+  function imprimirDocumentoIsolado(htmlCorpo, tituloDocumento = 'Documento Industrial A4') {
+    const idIframe = 'iframeImpressaoIndustrial';
+    const iframeExistente = document.getElementById(idIframe);
+    if (iframeExistente) {
+      try { iframeExistente.remove(); } catch (e) {}
+    }
+
+    const iframe = document.createElement('iframe');
+    iframe.id = idIframe;
+    iframe.style.position = 'fixed';
+    iframe.style.top = '-9999px';
+    iframe.style.left = '-9999px';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    iframe.style.opacity = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8">
+        <title>${tituloDocumento}</title>
+        <style>
+          @page {
+            size: A4 portrait;
+            margin: 8mm 10mm;
+          }
+          * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+          }
+          body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #0f172a;
+            background: #ffffff;
+            font-size: 11.5px;
+            line-height: 1.35;
+            padding: 2mm 4mm;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .text-mono {
+            font-family: 'JetBrains Mono', Consolas, monospace;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          th, td {
+            border: 1px solid #cbd5e1;
+            padding: 5px 8px;
+            font-size: 11px;
+          }
+          th {
+            background-color: #f1f5f9;
+            font-weight: 700;
+          }
+          .status-pill {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            background: #e2e8f0;
+            color: #334155;
+          }
+          .status-green {
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+          }
+          .status-gray {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+          }
+          img.mockup-thumb-3x4 {
+            width: 78px;
+            height: 104px;
+            aspect-ratio: 3/4;
+            object-fit: contain;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            page-break-inside: avoid;
+            background: #ffffff;
+          }
+          .grid-cards-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+          .a4-sheet {
+            width: 100%;
+            max-width: 100%;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="a4-sheet">
+          ${htmlCorpo}
+        </div>
+      </body>
+      </html>
+    `);
+    doc.close();
+
+    setTimeout(() => {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } catch (err) {
+        console.error('Erro na impressão isolada:', err);
+      }
+      setTimeout(() => {
+        try { iframe.remove(); } catch (e) {}
+      }, 2500);
+    }, 350);
+  }
+
+  /* ==========================================================================
      PROPOSTA COMERCIAL FORMATADA (ORÇAMENTO IMPRESSÃO / DOWNLOAD)
      ========================================================================== */
+  function gerarHtmlCorpoPropostaComercial(p) {
+    const prazoDias = p.prazoPedidoDias || 15;
+    const dataPrev = p.dataPrevisaoEntrega || calcularDataFuturaDiasUteis(prazoDias);
+    const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
+      ? window.ERP_CLOUD.obterEmpresaConfig()
+      : (db.empresa || {});
+
+    return `
+      <!-- Cabeçalho Empresarial -->
+      <div style="border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          ${emp.logoUrl ? `<img src="${emp.logoUrl}" style="max-height: 52px; max-width: 140px; object-fit: contain;" alt="Logo">` : ''}
+          <div>
+            <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${emp.nomeFantasia || emp.razaoSocial}</h2>
+            <div style="font-size: 11px; color: #475569;">
+              ${emp.razaoSocial && emp.razaoSocial !== emp.nomeFantasia ? `${emp.razaoSocial} • ` : ''}CNPJ: ${emp.cnpj || 'Não informado'}<br>
+              ${emp.endereco ? `${emp.endereco}, ${emp.cidade || ''}/${emp.uf || ''}` : ''}<br>
+              Telefone: ${formatarTelefone(emp.telefone)} • E-mail: ${emp.email || '-'}
+            </div>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <span class="status-pill status-gray text-mono" style="font-size: 10.5px;">PROPOSTA COMERCIAL</span>
+          <div class="text-mono" style="font-weight: 800; font-size: 14px; margin-top: 4px;">Nº ${p.numero}</div>
+          <div style="font-size: 10.5px; color: #64748b;">Emissão: ${p.dataCriacao}</div>
+        </div>
+      </div>
+
+      <!-- Prazos do Pedido Prometidos ao Cliente -->
+      <div style="background: #f0f9ff; border: 1.5px solid #bae6fd; border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <span style="font-size: 10px; text-transform: uppercase; font-weight: 800; color: #0369a1; display: block;">Prazo Prometido de Produção & Entrega:</span>
+          <strong style="font-size: 13px; color: #1e40af;">📅 ${dataPrev} (${prazoDias} dias úteis)</strong>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: #64748b; display: block;">Condição de Fornecimento:</span>
+          <strong style="font-size: 11.5px; color: #0f172a;">${p.condicaoPagamento || '50% Entrada + 50% na Retirada'}</strong>
+        </div>
+      </div>
+
+      <!-- Dados do Cliente -->
+      <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px; margin-bottom: 12px;">
+        <strong style="color: #0f172a; display: block; margin-bottom: 4px; font-size: 11px;">DADOS DO CLIENTE / DESTINATÁRIO:</strong>
+        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <div><strong>Razão Social / Nome:</strong> ${p.clienteNome}</div>
+          <div><strong>WhatsApp / Telefone:</strong> ${formatarTelefone(p.clienteTelefone)}</div>
+        </div>
+      </div>
+
+      <!-- Detalhamento do Produto & Mockup 3x4 -->
+      <div style="display: flex; gap: 14px; margin-bottom: 14px; align-items: center;">
+        <img src="${p.mockupUrl || ''}" class="mockup-thumb-3x4" alt="Mockup da Peça" style="width: 78px; height: 104px;">
+        <div style="flex: 1;">
+          <h3 style="font-size: 14px; font-weight: 800; color: #0f172a;">${p.produtoNome}</h3>
+          <div style="font-size: 11.5px; color: #475569; margin-top: 3px; line-height: 1.4;">
+            <strong>Especificação do Tecido:</strong> ${p.tecidoEspecificacao || 'Padrão da Indústria'}<br>
+            <strong>Personalização:</strong> ${p.tipoPersonalizacao || 'Estampa/Bordado Conforme Pedido'}<br>
+            <strong>Quantidade Total:</strong> ${p.grade?.total || 0} peças
+          </div>
+        </div>
+      </div>
+
+      <!-- Grade de Tamanhos -->
+      <table style="margin-bottom: 12px;">
+        <thead>
+          <tr>
+            <th style="text-align: center;">PP</th>
+            <th style="text-align: center;">P</th>
+            <th style="text-align: center;">M</th>
+            <th style="text-align: center;">G</th>
+            <th style="text-align: center;">GG</th>
+            <th style="text-align: center;">XG</th>
+            <th style="text-align: center;">TOTAL</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="text-align: center;" class="text-mono">${p.grade?.pp || 0}</td>
+            <td style="text-align: center;" class="text-mono">${p.grade?.p || 0}</td>
+            <td style="text-align: center;" class="text-mono">${p.grade?.m || 0}</td>
+            <td style="text-align: center;" class="text-mono">${p.grade?.g || 0}</td>
+            <td style="text-align: center;" class="text-mono">${p.grade?.gg || 0}</td>
+            <td style="text-align: center;" class="text-mono">${p.grade?.xg || 0}</td>
+            <td style="text-align: center;" class="text-mono"><strong>${p.grade?.total || 0} peças</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Resumo de Valores -->
+      <div style="border-top: 1px solid #cbd5e1; padding-top: 8px; display: flex; justify-content: flex-end; margin-bottom: 12px;">
+        <div style="width: 260px; display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; justify-content: space-between;">
+            <span>Preço Unitário:</span>
+            <span class="text-mono">${formatarMoeda(p.precoUnitarioVenda)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 800; border-top: 1px solid #cbd5e1; padding-top: 4px;">
+            <span>VALOR TOTAL:</span>
+            <span class="text-mono" style="color: #0f172a;">${formatarMoeda(p.valorTotalVenda)}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Condições Comerciais & Pagamento PIX -->
+      <div style="padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 10.5px; color: #475569; line-height: 1.45;">
+        <strong style="color: #0f172a;">CONDIÇÕES GERAIS DE FORNECIMENTO:</strong><br>
+        • Pagamento: ${emp.rodapeProposta || '50% de sinal na aprovação do pedido e 50% restante na retirada/entrega.'}<br>
+        • Chave PIX: <strong>${emp.chavePix || 'A combinar'}</strong> (${emp.tipoChavePix || 'PIX'} - Favorecido: ${emp.nomeFantasia || emp.razaoSocial})<br>
+        • Prazo de Entrega: Prometido para <strong>${dataPrev}</strong> (${prazoDias} dias úteis após confirmação de sinal e artes).<br>
+        • Validade desta proposta: 15 dias corridos a partir da data de emissão.
+      </div>
+    `;
+  }
+
   function abrirModalPropostaComercial(pedidoId) {
     const p = db.pedidos.find(x => x.id === pedidoId);
     if (!p || !modalContainer) return;
+
+    const htmlCorpo = gerarHtmlCorpoPropostaComercial(p);
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
@@ -3007,102 +3606,18 @@
           <div class="modal-header">
             <div>
               <div class="modal-title">Proposta Comercial & Orçamento Têxtil (#${p.numero})</div>
-              <span style="font-size: 11px; color: var(--text-gray-500);">Documento oficial com validade de 15 dias</span>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Documento oficial pronto para impressão ou envio</span>
             </div>
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
 
-          <div class="modal-body" style="font-size: 12.5px; color: #0f172a;">
-            <!-- Cabeçalho Empresarial -->
-            <div style="border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${db.empresa.razaoSocial}</h2>
-                <div style="font-size: 11.5px; color: var(--text-gray-600);">
-                  CNPJ: ${db.empresa.cnpj} • ${db.empresa.endereco}, ${db.empresa.cidade}/${db.empresa.uf}<br>
-                  Telefone: ${formatarTelefone(db.empresa.telefone)} • E-mail: ${db.empresa.email}
-                </div>
-              </div>
-              <div style="text-align: right;">
-                <span class="status-pill status-gray text-mono" style="font-size: 11px;">PROPOSTA COMERCIAL</span>
-                <div class="text-mono" style="font-weight: 800; font-size: 14px; margin-top: 4px;">Nº ${p.numero}</div>
-                <div style="font-size: 11px; color: var(--text-gray-500);">Emissão: ${p.dataCriacao}</div>
-              </div>
-            </div>
-
-            <!-- Dados do Cliente -->
-            <div style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
-              <strong style="color: #0f172a; display: block; margin-bottom: 4px;">DADOS DO CLIENTE / DESTINATÁRIO:</strong>
-              <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                <div><strong>Razão Social / Nome:</strong> ${p.clienteNome}</div>
-                <div><strong>WhatsApp / Telefone:</strong> ${formatarTelefone(p.clienteTelefone)}</div>
-              </div>
-            </div>
-
-            <!-- Detalhamento do Produto & Mockup 3x4 -->
-            <div style="display: flex; gap: 16px; margin-bottom: 16px; align-items: center;">
-              <img src="${p.mockupUrl}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" style="width: 70px; height: 93px;" alt="Mockup da Peça" title="Clique para abrir o mockup 3x4 na tela">
-              <div style="flex: 1;">
-                <h3 style="font-size: 14px; font-weight: 800; color: #0f172a;">${p.produtoNome}</h3>
-                <div style="font-size: 12px; color: var(--text-gray-600); margin-top: 3px;">
-                  <strong>Especificação do Tecido:</strong> ${p.tecidoEspecificacao || 'Padrão da Indústria'}<br>
-                  <strong>Personalização:</strong> ${p.tipoPersonalizacao || 'Estampa/Bordado Conforme Pedido'}<br>
-                  <strong>Quantidade Total:</strong> ${p.grade?.total || 0} peças
-                </div>
-              </div>
-            </div>
-
-            <!-- Grade de Tamanhos -->
-            <table class="erp-table" style="margin-bottom: 14px;">
-              <thead>
-                <tr>
-                  <th style="text-align: center;">PP</th>
-                  <th style="text-align: center;">P</th>
-                  <th style="text-align: center;">M</th>
-                  <th style="text-align: center;">G</th>
-                  <th style="text-align: center;">GG</th>
-                  <th style="text-align: center;">XG</th>
-                  <th style="text-align: center;">TOTAL</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style="text-align: center;" class="text-mono">${p.grade?.pp || 0}</td>
-                  <td style="text-align: center;" class="text-mono">${p.grade?.p || 0}</td>
-                  <td style="text-align: center;" class="text-mono">${p.grade?.m || 0}</td>
-                  <td style="text-align: center;" class="text-mono">${p.grade?.g || 0}</td>
-                  <td style="text-align: center;" class="text-mono">${p.grade?.gg || 0}</td>
-                  <td style="text-align: center;" class="text-mono">${p.grade?.xg || 0}</td>
-                  <td style="text-align: center;" class="text-mono"><strong>${p.grade?.total || 0} peças</strong></td>
-                </tr>
-              </tbody>
-            </table>
-
-            <!-- Resumo de Valores -->
-            <div style="border-top: 1px solid var(--border-medium); padding-top: 10px; display: flex; justify-content: flex-end;">
-              <div style="width: 260px; display: flex; flex-direction: column; gap: 4px;">
-                <div style="display: flex; justify-content: space-between;">
-                  <span>Preço Unitário:</span>
-                  <span class="text-mono">${formatarMoeda(p.precoUnitarioVenda)}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 800; border-top: 1px solid var(--border-medium); padding-top: 4px;">
-                  <span>VALOR TOTAL:</span>
-                  <span class="text-mono text-primary">${formatarMoeda(p.valorTotalVenda)}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Condições Comerciais -->
-            <div style="margin-top: 14px; padding: 10px; background: #f8fafc; border-radius: var(--radius-sm); font-size: 11px; color: var(--text-gray-600);">
-              <strong>CONDIÇÕES GERAIS DE FORNECIMENTO:</strong><br>
-              • Condição de Pagamento: 50% de sinal na aprovação do pedido e 50% restante na retirada/entrega.<br>
-              • Prazo de Produção: 10 a 15 dias úteis após conferência e aprovação das artes.<br>
-              • Validade desta proposta: 15 dias corridos a partir da data de emissão.
-            </div>
+          <div class="modal-body" style="font-size: 12.5px; color: #0f172a;" id="corpoModalPropostaDoc">
+            ${htmlCorpo}
           </div>
 
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
-            <button type="button" class="btn btn-primary" onclick="window.print()">
+            <button type="button" class="btn btn-primary" id="btnImprimirPropostaDoc" onclick="window.ERP.imprimirPropostaComercialIsolada('${p.id}')">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
               Imprimir / Baixar Proposta em PDF
             </button>
@@ -3110,6 +3625,16 @@
         </div>
       </div>
     `);
+  }
+
+  function imprimirPropostaComercialIsolada(pedidoId) {
+    const p = db.pedidos.find(x => x.id === pedidoId);
+    if (!p) {
+      mostrarToast('Orçamento não encontrado.', 'red');
+      return;
+    }
+    const html = gerarHtmlCorpoPropostaComercial(p);
+    imprimirDocumentoIsolado(html, `Proposta_Comercial_${p.numero}`);
   }
 
   /* ==========================================================================
@@ -3187,9 +3712,127 @@
     });
   }
 
+  function gerarHtmlCorpoFichaTecnica(os) {
+    const pedido = db.pedidos.find(p => p.numero === os.pedidoNumero) || {};
+    const prazoCli = os.prazoPedidoDias || pedido.prazoPedidoDias || 15;
+    const prazoInt = os.prazoInternoDias || pedido.prazoInternoDias || 10;
+    const dataEntrega = os.dataPrevisaoEntrega || pedido.dataPrevisaoEntrega || calcularDataFuturaDiasUteis(prazoCli);
+    const dataMeta = os.dataMetaInterna || pedido.dataMetaInterna || calcularDataFuturaDiasUteis(prazoInt);
+    const larguraDTF = os.dtfLarguraRolo || pedido.dtfLarguraRolo || 58;
+    const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
+      ? window.ERP_CLOUD.obterEmpresaConfig()
+      : (db.empresa || {});
+
+    return `
+      <!-- Cabeçalho da Ordem de Produção -->
+      <div style="border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          ${emp.logoUrl ? `<img src="${emp.logoUrl}" style="max-height: 48px; max-width: 120px; object-fit: contain;" alt="Logo">` : ''}
+          <div>
+            <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${emp.nomeFantasia || emp.razaoSocial}</h2>
+            <span class="text-mono" style="color: #64748b; font-size: 11px;">ORDEM DE PRODUÇÃO: <strong>${os.id}</strong> • PEDIDO <strong>#${os.pedidoNumero}</strong></span>
+          </div>
+        </div>
+        <div class="text-mono" style="text-align: right; font-size: 11px;">
+          <strong>DATA ENTRADA: ${os.dataEntradaCorte}</strong><br>
+          <span class="status-pill status-gray" style="margin-top: 3px;">ETAPA: ${os.etapaAtual.toUpperCase()}</span>
+        </div>
+      </div>
+
+      <!-- Prazos do Pedido: Prometido ao Cliente vs Meta do Chão de Fábrica -->
+      <div style="background: #f0f9ff; border: 1.5px solid #bae6fd; border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <span style="font-size: 10px; text-transform: uppercase; font-weight: 800; color: #0369a1; display: block;">Prazo Prometido ao Cliente:</span>
+          <strong style="font-size: 13px; color: #1e40af;">📅 ${dataEntrega} (${prazoCli} dias úteis)</strong>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-size: 10px; text-transform: uppercase; font-weight: 800; color: #0284c7; display: block;">Meta Interna do Chão de Fábrica:</span>
+          <strong style="font-size: 13px; color: #0c4a6e;">🏭 ${dataMeta} (${prazoInt} dias úteis)</strong>
+        </div>
+      </div>
+
+      <!-- Detalhamento Têxtil & Mockup 3x4 -->
+      <div style="display: flex; gap: 14px; margin-bottom: 12px; align-items: flex-start;">
+        <img src="${os.mockupUrl}" class="mockup-thumb-3x4" alt="Mockup 3x4">
+        
+        <div style="flex: 1;">
+          <div class="grid-cards-2" style="gap: 8px; font-size: 11.5px;">
+            <div><strong>Cliente:</strong> ${os.cliente}</div>
+            <div><strong>Produto Têxtil:</strong> ${os.produto}</div>
+            <div><strong>Total de Peças:</strong> <span style="font-weight: 800; color: #0f172a;">${os.quantidadeTotal} un</span></div>
+            <div><strong>Costureira Designada:</strong> <span style="font-weight: 800; color: #047857;">${os.costureiraDesignada}</span></div>
+            <div><strong>Encarregado de Corte:</strong> ${os.responsavelCorte}</div>
+            <div><strong>Consumo Estimado:</strong> ${os.tecidoConsumidoKg} kg de malha</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grade Oficial de Corte -->
+      <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 10px; border-radius: 4px; margin-bottom: 12px;">
+        <strong style="color: #0f172a; display: block; margin-bottom: 4px; font-size: 11px;">GRADE OFICIAL DE CORTE & FECHAMENTO:</strong>
+        <div class="text-mono" style="display: flex; justify-content: space-around; font-size: 12.5px; font-weight: 700;">
+          <span>PP: ${os.grade?.pp || 0}</span>
+          <span>P: ${os.grade?.p || 0}</span>
+          <span>M: ${os.grade?.m || 0}</span>
+          <span>G: ${os.grade?.g || 0}</span>
+          <span>GG: ${os.grade?.gg || 0}</span>
+          <span>XG: ${os.grade?.xg || 0}</span>
+          <span style="color: #047857;">TOTAL: ${os.quantidadeTotal} pçs</span>
+        </div>
+      </div>
+
+      <!-- 1. Instruções para a Mesa de Corte -->
+      <div style="margin-bottom: 10px;">
+        <strong style="color: #0f172a; display: block; margin-bottom: 2px; font-size: 11.5px;">1. INSTRUÇÕES PARA A MESA DE CORTE:</strong>
+        <p style="color: #475569; font-size: 11px;">${os.instrucoesCorte || 'Corte conforme enfesto industrial padrão com tolerância de 2mm.'}</p>
+      </div>
+
+      <!-- 2. Especificações de Estamparia / DTF (Bobina & Arquivos) -->
+      <div style="margin-bottom: 10px; background: #fafafa; border: 1px dashed #cbd5e1; padding: 8px 10px; border-radius: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <strong style="color: #0f172a; font-size: 11.5px;">2. ESPECIFICAÇÃO DE ARTES & DTF DIGITAL:</strong>
+          <span class="status-pill status-gray" style="font-size: 10px;">
+            Bobina DTF: <strong>${larguraDTF} cm Útil</strong> ${larguraDTF == 28 ? '(Bobina Estreita 30cm/A3)' : '(Bobina Industrial 60cm)'}
+          </span>
+        </div>
+        <ul style="padding-left: 18px; color: #475569; font-size: 11px; margin-top: 4px;">
+          ${(os.artesAplicacao && os.artesAplicacao.length > 0) ? os.artesAplicacao.map(a => `
+            <li><strong>${a.local}:</strong> ${a.dimensoes || a.dimensao || 'Padrão'} • Arquivo: ${a.arquivoNome || a.tecnica || 'Vetor Fechado'}</li>
+          `).join('') : `
+            <li>Personalização padrão conforme ficha de estampa e bordado aprovada.</li>
+          `}
+        </ul>
+      </div>
+
+      <!-- 3. Instruções para Costureira / Facção -->
+      <div style="margin-bottom: 12px;">
+        <strong style="color: #0f172a; display: block; margin-bottom: 2px; font-size: 11.5px;">3. INSTRUÇÕES PARA A COSTUREIRA / FACÇÃO:</strong>
+        <p style="color: #475569; font-size: 11px;">${os.instrucoesCostura || 'Costura reforçada de ombro a ombro e pesponto duplo nas cavas e barras.'}</p>
+      </div>
+
+      <!-- Assinaturas do Chão de Fábrica -->
+      <div style="display: flex; justify-content: space-between; margin-top: 20px; padding-top: 10px; border-top: 1px dashed #cbd5e1; font-size: 10px;">
+        <div style="text-align: center; width: 170px; border-top: 1px solid #000; padding-top: 3px;">
+          Cortador Responsável
+        </div>
+        <div style="text-align: center; width: 170px; border-top: 1px solid #000; padding-top: 3px;">
+          Estampador / DTF
+        </div>
+        <div style="text-align: center; width: 170px; border-top: 1px solid #000; padding-top: 3px;">
+          Costureira / Facção
+        </div>
+      </div>
+      <div style="font-size: 9.5px; color: #64748b; margin-top: 10px; text-align: center;">
+        ${emp.rodapeFicha || 'Ordem de Produção Oficial. Tolerância de corte de 2mm. Em caso de dúvidas, contate o encarregado.'}
+      </div>
+    `;
+  }
+
   function abrirFichaTecnica(osId) {
     const os = db.ordensServico.find(o => o.id === osId);
     if (!os || !modalContainer) return;
+
+    const htmlCorpo = gerarHtmlCorpoFichaTecnica(os);
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
@@ -3199,86 +3842,13 @@
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
 
-          <div class="modal-body" style="font-size: 12.5px; color: #0f172a;">
-            <div style="border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 14px; display: flex; justify-content: space-between;">
-              <div>
-                <h2 style="font-size: 18px; font-weight: 800; color: #0f172a;">${db.empresa.nomeFantasia}</h2>
-                <span class="text-mono" style="color: var(--text-gray-500); font-size: 11px;">ORDEM DE PRODUÇÃO: ${os.id} • PEDIDO #${os.pedidoNumero}</span>
-              </div>
-              <div class="text-mono" style="text-align: right;">
-                <strong>DATA ENTRADA: ${os.dataEntradaCorte}</strong><br>
-                <span class="status-pill status-gray">ETAPA: ${os.etapaAtual.toUpperCase()}</span>
-              </div>
-            </div>
-
-            <div style="display: flex; gap: 16px; margin-bottom: 14px; align-items: flex-start;">
-              <img src="${os.mockupUrl}" class="mockup-thumb-3x4" data-os-id="${os.id}" style="width: 85px; height: 113px;" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela">
-              
-              <div style="flex: 1;">
-                <div class="grid-cards-2" style="gap: 8px; margin-bottom: 10px;">
-                  <div><strong>Cliente:</strong> ${os.cliente}</div>
-                  <div><strong>Produto Têxtil:</strong> ${os.produto}</div>
-                  <div><strong>Total de Peças:</strong> ${os.quantidadeTotal} un</div>
-                  <div><strong>Costureira Designada:</strong> <span style="font-weight: 800; color: var(--color-green);">${os.costureiraDesignada}</span></div>
-                  <div><strong>Encarregado de Corte:</strong> ${os.responsavelCorte}</div>
-                  <div><strong>Consumo Estimado:</strong> ${os.tecidoConsumidoKg} kg/metros</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Grade Oficial de Corte -->
-            <div style="background: #f8fafc; border: 1px solid var(--border-medium); padding: 10px; border-radius: var(--radius-sm); margin-bottom: 14px;">
-              <strong style="color: #0f172a; display: block; margin-bottom: 6px;">GRADE OFICIAL DE CORTE & FECHAMENTO:</strong>
-              <div class="text-mono" style="display: flex; justify-content: space-around; font-size: 13px; font-weight: 700;">
-                <span>PP: ${os.grade?.pp || 0}</span>
-                <span>P: ${os.grade?.p || 0}</span>
-                <span>M: ${os.grade?.m || 0}</span>
-                <span>G: ${os.grade?.g || 0}</span>
-                <span>GG: ${os.grade?.gg || 0}</span>
-                <span>XG: ${os.grade?.xg || 0}</span>
-                <span style="color: var(--color-green);">TOTAL: ${os.quantidadeTotal} pçs</span>
-              </div>
-            </div>
-
-            <!-- Instruções de Corte e Tecido -->
-            <div style="margin-bottom: 12px;">
-              <strong style="color: #0f172a; display: block; margin-bottom: 3px;">1. INSTRUÇÕES PARA A MESA DE CORTE:</strong>
-              <p style="color: var(--text-gray-600);">${os.instrucoesCorte || 'Corte conforme enfesto industrial padrão com tolerância de 2mm.'}</p>
-            </div>
-
-            <!-- Instruções de Estamparia e Artes -->
-            <div style="margin-bottom: 12px;">
-              <strong style="color: #0f172a; display: block; margin-bottom: 3px;">2. ESPECIFICAÇÃO DE ARTES & APLICAÇÕES:</strong>
-              <ul style="padding-left: 20px; color: var(--text-gray-600);">
-                ${(os.artesAplicacao || []).map(a => `
-                  <li><strong>${a.local}:</strong> ${a.dimensoes || a.dimensao} • Arquivo: ${a.arquivoNome || a.tecnica}</li>
-                `).join('')}
-              </ul>
-            </div>
-
-            <!-- Instruções de Costura -->
-            <div style="margin-bottom: 14px;">
-              <strong style="color: #0f172a; display: block; margin-bottom: 3px;">3. INSTRUÇÕES PARA A COSTUREIRA / FACÇÃO:</strong>
-              <p style="color: var(--text-gray-600);">${os.instrucoesCostura || 'Costura reforçada de ombro a ombro e pesponto duplo nas cavas e barras.'}</p>
-            </div>
-
-            <!-- Assinaturas do Chão de Fábrica -->
-            <div style="display: flex; justify-content: space-between; margin-top: 24px; padding-top: 14px; border-top: 1px dashed var(--border-medium); font-size: 11px;">
-              <div style="text-align: center; width: 180px; border-top: 1px solid #000; padding-top: 4px;">
-                Cortador Responsável
-              </div>
-              <div style="text-align: center; width: 180px; border-top: 1px solid #000; padding-top: 4px;">
-                Estampador / DTF
-              </div>
-              <div style="text-align: center; width: 180px; border-top: 1px solid #000; padding-top: 4px;">
-                Costureira / Facção
-              </div>
-            </div>
+          <div class="modal-body" style="font-size: 12.5px; color: #0f172a;" id="corpoModalFichaDoc">
+            ${htmlCorpo}
           </div>
 
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
-            <button type="button" class="btn btn-primary" onclick="window.print()">
+            <button type="button" class="btn btn-primary" id="btnImprimirFichaDoc" onclick="window.ERP.imprimirFichaTecnicaIsolada('${os.id}')">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
               Imprimir Ordem de Produção (A4)
             </button>
@@ -3286,6 +3856,16 @@
         </div>
       </div>
     `);
+  }
+
+  function imprimirFichaTecnicaIsolada(osId) {
+    const os = db.ordensServico.find(o => o.id === osId);
+    if (!os) {
+      mostrarToast('Ordem de serviço não encontrada.', 'red');
+      return;
+    }
+    const html = gerarHtmlCorpoFichaTecnica(os);
+    imprimirDocumentoIsolado(html, `Ficha_Tecnica_${os.id}`);
   }
 
   function abrirFichaTecnicaPorPedido(p) {
@@ -3301,6 +3881,11 @@
       costureiraDesignada: p.costureiraNome || "Oficina Interna",
       responsavelCorte: "Vanderlei Souza",
       dataEntradaCorte: p.dataCriacao,
+      prazoPedidoDias: p.prazoPedidoDias || 15,
+      prazoInternoDias: p.prazoInternoDias || 10,
+      dataPrevisaoEntrega: p.dataPrevisaoEntrega || calcularDataFuturaDiasUteis(15),
+      dataMetaInterna: p.dataMetaInterna || calcularDataFuturaDiasUteis(10),
+      dtfLarguraRolo: p.dtfLarguraRolo || 58,
       tecidoConsumidoKg: ((p.grade?.total || 1) * 0.28).toFixed(1),
       artesAplicacao: p.artesAnexadas || [],
       instrucoesCorte: "Enfesto e corte conforme modelagem padrão com tolerância de 2mm.",
@@ -6578,23 +7163,1084 @@
     });
   }
 
+  /* ==========================================================================
+     MÓDULO 13: MINHA EMPRESA, CONTROLE DE PERFIS & GESTÃO DE BACKUP
+     ========================================================================== */
+  function configurarIdentidadeEPerfis() {
+    if (!window.ERP_CLOUD) return;
+
+    const empConfig = window.ERP_CLOUD.obterEmpresaConfig();
+    window.ERP_CLOUD.atualizarElementosVisuaisEmpresa(empConfig);
+
+    const perfilAtual = window.ERP_CLOUD.obterPerfilAtivo();
+    window.ERP_CLOUD.atualizarVisuaisPerfil(perfilAtual);
+
+    const selPerfil = document.getElementById('selectPerfilUsuario');
+    if (selPerfil) {
+      selPerfil.value = perfilAtual.id;
+      selPerfil.addEventListener('change', (e) => {
+        const novoId = e.target.value;
+        const p = window.ERP_CLOUD.definirPerfilAtivo(novoId);
+        mostrarToast('Perfil ativo alterado para: ' + p.cargo, 'green');
+        if (!p.abasPermitidas.includes(abaAtiva)) {
+          navegarPara(p.abasPermitidas[0] || 'pedidos');
+        } else {
+          navegarPara(abaAtiva);
+        }
+      });
+    }
+
+    const footerUser = document.getElementById('sidebarUserFooter');
+    if (footerUser) {
+      footerUser.addEventListener('click', () => {
+        abrirModalTrocarPerfil();
+      });
+    }
+  }
+
+  function abrirModalTrocarPerfil() {
+    if (!window.ERP_CLOUD) return;
+    const perfilAtual = window.ERP_CLOUD.obterPerfilAtivo();
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 680px;">
+          <div class="modal-header">
+            <div>
+              <div class="modal-title">Alternar Perfil de Acesso Industrial</div>
+              <div style="font-size: 11.5px; color: var(--text-gray-500); margin-top: 2px;">
+                Selecione o nível de permissão operacional para simular ou operar o sistema
+              </div>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+          </div>
+
+          <div class="modal-body" style="padding: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div class="perfil-card-option ${perfilAtual.id === 'dono' ? 'selected' : ''}" data-perfil-id="dono" style="border: 2px solid ${perfilAtual.id === 'dono' ? '#0f172a' : '#cbd5e1'}; background: ${perfilAtual.id === 'dono' ? '#f8fafc' : '#ffffff'}; border-radius: 6px; padding: 14px; cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 38px; height: 38px; border-radius: 4px; background: #0f172a; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;">ADM</div>
+                    <div>
+                      <strong style="font-size: 14px; color: #0f172a;">👑 Diretoria / Dono (Acesso Total)</strong>
+                      <div style="font-size: 11.5px; color: #475569; margin-top: 2px;">Acesso irrestrito a todas as 14 áreas, DRE gerencial, margens de lucro, faturamento e parametrização.</div>
+                    </div>
+                  </div>
+                  ${perfilAtual.id === 'dono' ? '<span class="status-pill status-green" style="font-weight: 700;">ATIVO</span>' : '<button class="btn btn-secondary btn-xs">Selecionar</button>'}
+                </div>
+              </div>
+
+              <div class="perfil-card-option ${perfilAtual.id === 'vendedor' ? 'selected' : ''}" data-perfil-id="vendedor" style="border: 2px solid ${perfilAtual.id === 'vendedor' ? '#0f172a' : '#cbd5e1'}; background: ${perfilAtual.id === 'vendedor' ? '#f8fafc' : '#ffffff'}; border-radius: 6px; padding: 14px; cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 38px; height: 38px; border-radius: 4px; background: #0284c7; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;">VND</div>
+                    <div>
+                      <strong style="font-size: 14px; color: #0f172a;">💼 Vendedor / Atendimento Comercial</strong>
+                      <div style="font-size: 11.5px; color: #475569; margin-top: 2px;">Foco em orçamentos rápidos, propostas no WhatsApp e catálogo. Oculta DRE e margem interna de lucro.</div>
+                    </div>
+                  </div>
+                  ${perfilAtual.id === 'vendedor' ? '<span class="status-pill status-green" style="font-weight: 700;">ATIVO</span>' : '<button class="btn btn-secondary btn-xs">Selecionar</button>'}
+                </div>
+              </div>
+
+              <div class="perfil-card-option ${perfilAtual.id === 'oficina' ? 'selected' : ''}" data-perfil-id="oficina" style="border: 2px solid ${perfilAtual.id === 'oficina' ? '#0f172a' : '#cbd5e1'}; background: ${perfilAtual.id === 'oficina' ? '#f8fafc' : '#ffffff'}; border-radius: 6px; padding: 14px; cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 38px; height: 38px; border-radius: 4px; background: #b45309; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;">OFC</div>
+                    <div>
+                      <strong style="font-size: 14px; color: #0f172a;">✂️ Oficina / Chão de Fábrica & Corte</strong>
+                      <div style="font-size: 11.5px; color: #475569; margin-top: 2px;">Foco em Ordens de Produção, Nesting DTF e Estoque de tecidos. Oculta dados de faturamento e valores monetários.</div>
+                    </div>
+                  </div>
+                  ${perfilAtual.id === 'oficina' ? '<span class="status-pill status-green" style="font-weight: 700;">ATIVO</span>' : '<button class="btn btn-secondary btn-xs">Selecionar</button>'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    modalEl.querySelectorAll('.perfil-card-option').forEach(card => {
+      card.addEventListener('click', () => {
+        const id = card.getAttribute('data-perfil-id');
+        const p = window.ERP_CLOUD.definirPerfilAtivo(id);
+        fecharModal(modalEl);
+        mostrarToast('Perfil ativado: ' + p.cargo, 'green');
+        if (!p.abasPermitidas.includes(abaAtiva)) {
+          navegarPara(p.abasPermitidas[0] || 'pedidos');
+        } else {
+          navegarPara(abaAtiva);
+        }
+      });
+    });
+  }
+
+  function abrirModalBackup() {
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 640px;">
+          <div class="modal-header">
+            <div>
+              <div class="modal-title">Central de Backup & Nuvem</div>
+              <div style="font-size: 11.5px; color: var(--text-gray-500); margin-top: 2px;">
+                Proteja as informações da confecção com exportação e restauração segura
+              </div>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+          </div>
+
+          <div class="modal-body" style="padding: 20px;">
+            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#047857" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <div>
+                <strong style="color: #047857; font-size: 13px;">Armazenamento Seguro em Arquivo JSON</strong>
+                <div style="font-size: 11.5px; color: #065f46; margin-top: 2px;">Seus dados ficam 100% sob seu controle. Você pode baixar cópias de segurança a qualquer momento e restaurar em outro computador ou navegador.</div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong style="color: #0f172a; font-size: 13px;">1. Exportar Backup do Sistema (Download JSON)</strong>
+                  <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Salva todos os pedidos, clientes, estoque, histórico financeiro e dados cadastrais.</div>
+                </div>
+                <button class="btn btn-primary btn-sm" id="btnExportarBackupModal">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  Baixar Backup
+                </button>
+              </div>
+
+              <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong style="color: #0f172a; font-size: 13px;">2. Restaurar Backup de Arquivo</strong>
+                  <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Importe um arquivo .json gerado previamente para carregar todos os dados.</div>
+                </div>
+                <div>
+                  <input type="file" id="inpArquivoRestoreModal" accept=".json" style="display: none;">
+                  <button class="btn btn-secondary btn-sm" id="btnDispararRestoreModal">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    Restaurar JSON
+                  </button>
+                </div>
+              </div>
+
+              <div style="border: 1px solid #bae6fd; background: #f0f9ff; border-radius: 6px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong style="color: #0369a1; font-size: 13px;">✨ Carregar Showroom de Vendas (Demo Completo)</strong>
+                  <div style="font-size: 11px; color: #0284c7; margin-top: 2px;">Preenche pedidos, estoque e financeiro com dados de fábrica modelo para demonstrações.</div>
+                </div>
+                <button class="btn btn-secondary btn-sm" id="btnShowroomModal" style="border-color: #0284c7; color: #0369a1; font-weight: 700;">
+                  Carregar Demo
+                </button>
+              </div>
+
+              <div style="border: 1px solid #fecaca; background: #fff5f5; border-radius: 6px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong style="color: #b91c1c; font-size: 13px;">⚠️ Zerar Sistema para Produção Real</strong>
+                  <div style="font-size: 11px; color: #991b1b; margin-top: 2px;">Limpa todos os pedidos de teste e deixa as tabelas limpas para começar a operar.</div>
+                </div>
+                <button class="btn btn-secondary btn-sm" id="btnZerarProducaoModal" style="border-color: #b91c1c; color: #b91c1c; font-weight: 700;">
+                  Zerar Fábrica
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    document.getElementById('btnExportarBackupModal')?.addEventListener('click', () => {
+      window.ERP_CLOUD.exportarBackupJson(db);
+      mostrarToast('Arquivo de backup gerado com sucesso!', 'green');
+    });
+
+    const fileInp = document.getElementById('inpArquivoRestoreModal');
+    document.getElementById('btnDispararRestoreModal')?.addEventListener('click', () => {
+      fileInp?.click();
+    });
+
+    fileInp?.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const conteudo = evt.target.result;
+        window.ERP_CLOUD.restaurarBackupJson(conteudo, (novoBanco) => {
+          db = novoBanco;
+          salvarEstado();
+          atualizarBadges();
+          fecharModal(modalEl);
+          mostrarToast('Backup restaurado com sucesso! Dados atualizados.', 'green');
+          navegarPara(abaAtiva);
+        });
+      };
+      reader.readAsText(file);
+    });
+
+    document.getElementById('btnShowroomModal')?.addEventListener('click', () => {
+      if (confirm('Deseja carregar a demonstração completa de showroom da fábrica?')) {
+        fecharModal(modalEl);
+        carregarDemonstracaoShowroom();
+      }
+    });
+
+    document.getElementById('btnZerarProducaoModal')?.addEventListener('click', () => {
+      if (confirm('Atenção: deseja zerar todos os pedidos e dados de teste para iniciar a produção real da confecção?')) {
+        fecharModal(modalEl);
+        zerarBancoProducaoReal();
+      }
+    });
+  }
+
+  function carregarDemonstracaoShowroom() {
+    const hoje = new Date().toISOString().split('T')[0];
+    
+    const empDemo = {
+      razaoSocial: "TexPro Indústria e Comércio de Confecções Ltda",
+      nomeFantasia: "TexPro Uniformes Profissionais",
+      cnpj: "34.582.910/0001-44",
+      inscricaoEstadual: "123.456.789.110",
+      telefone: "11987654321",
+      email: "comercial@texprouniformes.com.br",
+      chavePix: "34.582.910/0001-44",
+      tipoChavePix: "CNPJ",
+      endereco: "Rua Têxtil Industrial, 450",
+      bairro: "Distrito Industrial",
+      cidade: "Americana",
+      uf: "SP",
+      cep: "13465-000",
+      logoUrl: null,
+      rodapeProposta: "Proposta válida por 15 dias corridos. 50% de sinal na aprovação e 50% na entrega.",
+      rodapeFicha: "Ordem de Produção Oficial. Tolerância industrial de 2mm. Confirme o encaixe antes do corte."
+    };
+    if (window.ERP_CLOUD) {
+      window.ERP_CLOUD.salvarEmpresaConfig(empDemo);
+    }
+
+    const mockupPolo = window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg('polo', '#1e3a8a', '#ffffff', 'TRANSBRASIL') : '';
+    const mockupDry = window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg('camiseta', '#0f172a', '#eab308', 'ALPHA') : '';
+    const mockupOp = window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg('operacional', '#334155', '#eab308', 'HORIZONTE') : '';
+    const mockupJaleco = window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg('jaleco', '#ffffff', '#0ea5e9', 'HOSPITAL') : '';
+
+    db.pedidos = [
+      {
+        id: "PED-101",
+        numero: "101",
+        clienteNome: "TransBrasil Logística Integrada Ltda",
+        clienteTelefone: "11988887777",
+        produtoNome: "Camisa Polo Tradicional Piquet",
+        tecidoEspecificacao: "Piquet PA (50% Algodão / 50% Poliéster) Azul Marinho",
+        tipoPersonalizacao: "Bordado Computadorizado Peito + DTF Costas",
+        dtfLarguraRolo: 58,
+        grade: { pp: 10, p: 30, m: 50, g: 40, gg: 15, xg: 5, total: 150 },
+        precoUnitarioVenda: 58.00,
+        valorTotalVenda: 8700.00,
+        sinalPago: true,
+        valorPago: 4350.00,
+        saldoPendente: 4350.00,
+        status: "Em Producao",
+        etapa: "Costura",
+        tipoRegistro: "Pedido",
+        prazoPedidoDias: 15,
+        prazoInternoDias: 10,
+        dataCriacao: hoje,
+        dataPrevisaoEntrega: calcularDataFuturaDiasUteis(15),
+        dataPrevisaoInterna: calcularDataFuturaDiasUteis(10),
+        mockupUrl: mockupPolo,
+        margemLucroPercentual: 42.5,
+        custoTotalProducao: 5002.50
+      },
+      {
+        id: "PED-102",
+        numero: "102",
+        clienteNome: "Academia Alpha Cross & Fitness",
+        clienteTelefone: "11977776666",
+        produtoNome: "Camiseta Dry Fit Confort Esportiva",
+        tecidoEspecificacao: "Malha Dry Fit Poliéster 130g Preto com Detalhe Dourado",
+        tipoPersonalizacao: "Impressão DTF Digital Frente e Costas",
+        dtfLarguraRolo: 58,
+        grade: { pp: 5, p: 25, m: 45, g: 35, gg: 10, xg: 0, total: 120 },
+        precoUnitarioVenda: 38.00,
+        valorTotalVenda: 4560.00,
+        sinalPago: false,
+        valorPago: 0.00,
+        saldoPendente: 4560.00,
+        status: "Quarentena",
+        etapa: "Quarentena",
+        tipoRegistro: "Pedido",
+        motivoQuarentena: "Aguardando aprovação final da arte vetorizada do cliente para impressão DTF",
+        prazoPedidoDias: 12,
+        prazoInternoDias: 8,
+        dataCriacao: hoje,
+        dataPrevisaoEntrega: calcularDataFuturaDiasUteis(12),
+        dataPrevisaoInterna: calcularDataFuturaDiasUteis(8),
+        mockupUrl: mockupDry,
+        margemLucroPercentual: 48.0,
+        custoTotalProducao: 2371.20
+      },
+      {
+        id: "PED-103",
+        numero: "103",
+        clienteNome: "Construtora Horizonte Engenharia",
+        clienteTelefone: "11966665555",
+        produtoNome: "Camisa Operacional Brim c/ Faixa Refletiva",
+        tecidoEspecificacao: "Tecido Brim Pesado Sarja 260g Cinza Chumbo com Faixa Alta Visibilidade",
+        tipoPersonalizacao: "Bordado Bolso Frente + Silk Screen Costas",
+        dtfLarguraRolo: 58,
+        grade: { pp: 0, p: 20, m: 40, g: 40, gg: 20, xg: 10, total: 130 },
+        precoUnitarioVenda: 74.50,
+        valorTotalVenda: 9685.00,
+        sinalPago: false,
+        valorPago: 0.00,
+        saldoPendente: 9685.00,
+        status: "Orcamento",
+        etapa: "Orcamento",
+        tipoRegistro: "Orcamento",
+        prazoPedidoDias: 20,
+        prazoInternoDias: 14,
+        dataCriacao: hoje,
+        dataPrevisaoEntrega: calcularDataFuturaDiasUteis(20),
+        dataPrevisaoInterna: calcularDataFuturaDiasUteis(14),
+        mockupUrl: mockupOp,
+        margemLucroPercentual: 39.0,
+        custoTotalProducao: 5907.85
+      },
+      {
+        id: "PED-104",
+        numero: "104",
+        clienteNome: "Hospital Santa Clara & Diagnósticos",
+        clienteTelefone: "11955554444",
+        produtoNome: "Jaleco Hospitalar Manga Longa Oxford",
+        tecidoEspecificacao: "Tecido Oxford 100% Poliéster Branco Alvejado",
+        tipoPersonalizacao: "Bordado Especial no Bolso Superior com Brasão e Especialidade",
+        dtfLarguraRolo: 28,
+        grade: { pp: 10, p: 25, m: 35, g: 15, gg: 5, xg: 0, total: 90 },
+        precoUnitarioVenda: 89.00,
+        valorTotalVenda: 8010.00,
+        sinalPago: true,
+        valorPago: 8010.00,
+        saldoPendente: 0.00,
+        status: "Entregue",
+        etapa: "Entregue",
+        tipoRegistro: "Pedido",
+        prazoPedidoDias: 15,
+        prazoInternoDias: 10,
+        dataCriacao: hoje,
+        dataPrevisaoEntrega: hoje,
+        dataPrevisaoInterna: hoje,
+        mockupUrl: mockupJaleco,
+        margemLucroPercentual: 52.0,
+        custoTotalProducao: 3844.80
+      }
+    ];
+
+    db.clientes = [
+      { id: "CLI-01", nome: "TransBrasil Logística Integrada Ltda", contato: "Carlos Mendes (Comprador)", telefone: "11988887777", email: "carlos@transbrasil.com.br", cnpj: "12.345.678/0001-90", totalPedidos: 1, valorGastoTotal: 8700.00 },
+      { id: "CLI-02", nome: "Academia Alpha Cross & Fitness", contato: "Juliana Ferreira", telefone: "11977776666", email: "comercial@alphacross.com.br", cnpj: "98.765.432/0001-11", totalPedidos: 1, valorGastoTotal: 4560.00 },
+      { id: "CLI-03", nome: "Construtora Horizonte Engenharia", contato: "Eng. Roberto Albuquerque", telefone: "11966665555", email: "obras@horizonte.eng.br", cnpj: "45.678.910/0001-22", totalPedidos: 1, valorGastoTotal: 9685.00 },
+      { id: "CLI-04", nome: "Hospital Santa Clara & Diagnósticos", contato: "Dra. Patrícia Silveira", telefone: "11955554444", email: "compras@santaclara.org.br", cnpj: "23.456.789/0001-33", totalPedidos: 1, valorGastoTotal: 8010.00 }
+    ];
+
+    db.ordensServico = [
+      {
+        id: "OS-101",
+        pedidoNumero: "101",
+        cliente: "TransBrasil Logística Integrada Ltda",
+        produto: "Camisa Polo Tradicional Piquet",
+        quantidadeTotal: 150,
+        grade: { pp: 10, p: 30, m: 50, g: 40, gg: 15, xg: 5 },
+        dataEntradaCorte: hoje,
+        etapaAtual: "costura",
+        costureiraDesignada: "Dona Maria Facção Especial",
+        responsavelCorte: "Mestre Antônio (Mesa 1)",
+        tecidoConsumidoKg: 42.0,
+        status: "Em Producao",
+        mockupUrl: mockupPolo,
+        prazoPedidoDias: 15,
+        prazoInternoDias: 10,
+        dtfLarguraRolo: 58,
+        instrucoesCorte: "Enfesto com folga de 2mm. Atenção especial ao alinhamento da gola retilínea azul com friso branco.",
+        instrucoesCostura: "Costura pespontada reforçada ombro a ombro e aplicação de botões resinados com 2 furos.",
+        artesAplicacao: [
+          { local: "Peito Esquerdo", dimensao: "9x4 cm", tecnica: "Bordado Computadorizado 8.500 pontos", arquivoNome: "logo_transbrasil_peito.dst" },
+          { local: "Costas", dimensao: "26x12 cm", tecnica: "DTF Têxtil Digital Termocolado", arquivoNome: "transbrasil_costas_58cm.png" }
+        ]
+      }
+    ];
+
+    if (db.estoque && db.estoque.length > 0) {
+      db.estoque.forEach(item => {
+        if (item.codigo.includes('PIQ-AZUL')) item.saldoAtual = 145;
+        else if (item.codigo.includes('PIQ-BRANCO')) item.saldoAtual = 80;
+        else if (item.codigo.includes('301')) item.saldoAtual = 95;
+        else if (item.codigo.includes('DRY')) item.saldoAtual = 110;
+        else if (item.codigo.includes('BRIM')) item.saldoAtual = 250;
+        else if (item.codigo.includes('OXFORD')) item.saldoAtual = 120;
+        else if (item.codigo.includes('GOLA')) item.saldoAtual = 220;
+        else if (item.codigo.includes('PUNHO')) item.saldoAtual = 220;
+        else if (item.codigo.includes('BOT')) item.saldoAtual = 12;
+        else if (item.codigo.includes('DTF-FILME')) item.saldoAtual = 65;
+        else if (item.codigo.includes('POLIAM')) item.saldoAtual = 15;
+        else if (item.codigo.includes('TINTA')) item.saldoAtual = 4;
+        else if (item.codigo.includes('REFLETIVO')) item.saldoAtual = 85;
+        else item.saldoAtual = Math.max(10, (item.estoqueMinimo || 10) * 2);
+      });
+    }
+
+    db.lancamentosFinanceiros = [
+      { id: "LANC-01", data: hoje, tipo: "Receita", categoria: "Venda de Uniformes", descricao: "Sinal 50% Pedido #101 - TransBrasil Logística", valor: 4350.00, formaPagamento: "PIX", status: "Confirmado" },
+      { id: "LANC-02", data: hoje, tipo: "Receita", categoria: "Venda de Uniformes", descricao: "Quitação Integral Pedido #104 - Hospital Santa Clara", valor: 8010.00, formaPagamento: "Boleto 15dd", status: "Confirmado" },
+      { id: "LANC-03", data: hoje, tipo: "Despesa", categoria: "Matéria-Prima", descricao: "Compra Malha Piquet e Dry - Malharia Sul", valor: 3800.00, formaPagamento: "PIX", status: "Confirmado" },
+      { id: "LANC-04", data: hoje, tipo: "Despesa", categoria: "Insumos DTF", descricao: "Bobinas Filme DTF 60cm e Poliamida - DTF Pro", valor: 1250.00, formaPagamento: "Cartão", status: "Confirmado" }
+    ];
+
+    db.despesasFixas = [
+      { id: "DESP-01", descricao: "Aluguel Galpão Industrial 600m²", categoria: "Aluguel & Instalações", valor: 4500.00, dataVencimento: hoje.substring(0,7) + '-10', status: "Pendente", favorecido: "Imobiliária Central" },
+      { id: "DESP-02", descricao: "Energia Elétrica Trifásica Industrial", categoria: "Utilidades", valor: 1850.00, dataVencimento: hoje.substring(0,7) + '-15', status: "Pendente", favorecido: "CPFL Energia" },
+      { id: "DESP-03", descricao: "Manutenção Preventiva das Máquinas de Costura e DTF", categoria: "Manutenção", valor: 650.00, dataVencimento: hoje.substring(0,7) + '-25', status: "Pendente", favorecido: "Técnica Têxtil Ltda" }
+    ];
+
+    db.equipe = [
+      { id: "EQ-01", nome: "Mestre Antônio Silva", cargo: "Chefe de Corte & Enfesto", setor: "Corte", telefone: "11911112222", status: "Ativo" },
+      { id: "EQ-02", nome: "Dona Maria Aparecida", cargo: "Costureira Piloto & Facção", setor: "Costura", telefone: "11922223333", status: "Ativo" },
+      { id: "EQ-03", nome: "Lucas Rodrigues", cargo: "Operador de Impressão DTF", setor: "Estamparia", telefone: "11933334444", status: "Ativo" },
+      { id: "EQ-04", nome: "Fátima Santos", cargo: "Acabamento & Embalagem", setor: "Revisão", telefone: "11944445555", status: "Ativo" }
+    ];
+
+    salvarEstado();
+    atualizarBadges();
+    navegarPara('abertura');
+    mostrarToast('✨ Showroom da Fábrica Carregado com Sucesso! Demonstração pronta para apresentação.', 'green');
+  }
+
+  function zerarBancoProducaoReal() {
+    db.pedidos = [];
+    db.ordensServico = [];
+    db.clientes = [];
+    db.lancamentosFinanceiros = [];
+    db.despesasFixas = [];
+    db.nestingFila = [];
+    db.notasFiscais = [];
+    db.compras = [];
+    if (db.estoque && db.estoque.length > 0) {
+      db.estoque.forEach(item => item.saldoAtual = 0);
+    }
+    salvarEstado();
+    atualizarBadges();
+    navegarPara('abertura');
+    mostrarToast('Sistema 100% zerado e pronto para produção real da confecção!', 'green');
+  }
+
+  function renderizarConfiguracoesEmpresa() {
+    pageTitleElem.textContent = 'Minha Empresa & Identidade Visual';
+    pageBreadcrumbElem.textContent = 'SISTEMA > MINHA EMPRESA';
+
+    const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
+      ? window.ERP_CLOUD.obterEmpresaConfig()
+      : (db.empresa || {});
+
+    contentArea.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <p style="color: var(--text-gray-500); font-size: 13px;">
+            Personalize a identidade da confecção: logotipo em alta resolução, dados cadastrais, dados para pagamento via PIX e segurança.
+          </p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary btn-sm" id="btnExportarBackupEmpresa">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Exportar Backup JSON
+          </button>
+          <button class="btn btn-primary btn-sm" id="btnSalvarEmpresaTopo">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Salvar Alterações
+          </button>
+        </div>
+      </div>
+
+      <!-- Banner de Aplicação Universal -->
+      <div style="background: #f8fafc; border: 1px solid var(--border-medium); border-left: 4px solid #0f172a; border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 12.5px; color: var(--text-gray-600); line-height: 1.5;">
+          🏛️ <strong>Parametrização Oficial da Fábrica:</strong> Os dados e o logotipo configurados nesta tela são refletidos instantaneamente no menu superior, no cabeçalho das <strong>Propostas Comerciais</strong> enviadas aos clientes via WhatsApp/PDF e nas <strong>Ordens de Produção A4</strong> impressas para o chão de fábrica.
+        </div>
+      </div>
+
+      <div class="grid-cards-2" style="gap: 20px; margin-bottom: 24px;">
+        <!-- Card 1: Logotipo & Identidade Visual -->
+        <div class="card">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="card-title">1. Logotipo & Identidade da Confecção</div>
+            <span class="status-pill status-gray">IDENTIDADE VISUAL</span>
+          </div>
+          <div class="card-body">
+            <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--border-subtle);">
+              <div id="boxPreviewLogoEmpresa" style="width: 100px; height: 100px; border: 2px dashed var(--border-medium); border-radius: 6px; display: flex; align-items: center; justify-content: center; background: #ffffff; overflow: hidden; padding: 4px;">
+                ${emp.logoUrl ? `<img src="${emp.logoUrl}" style="width: 100%; height: 100%; object-fit: contain;" alt="Logo">` : `<span style="font-weight: 800; font-size: 26px; color: #64748b;">${(emp.nomeFantasia || 'TP').substring(0, 2).toUpperCase()}</span>`}
+              </div>
+              <div style="flex: 1;">
+                <input type="file" id="inpUploadLogoEmpresa" accept="image/*" style="display: none;">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-primary btn-xs" id="btnEscolherLogoEmpresa">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    Carregar Arquivo de Logo (PNG, JPG, SVG)
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-xs" id="btnRemoverLogoEmpresa" style="color: #dc2626;">
+                    Remover Imagem
+                  </button>
+                </div>
+                <div style="font-size: 11px; color: var(--text-gray-500); margin-top: 6px;">
+                  Recomendado: Fundo transparente, formato horizontal ou quadrado (mínimo 300x300px).
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label">Nome Fantasia (Como a fábrica é conhecida comercialmente):</label>
+              <input type="text" class="form-control" id="inpEmpNomeFantasia" value="${emp.nomeFantasia || ''}" placeholder="ex: TexPro Uniformes">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label">Razão Social Completa:</label>
+              <input type="text" class="form-control" id="inpEmpRazaoSocial" value="${emp.razaoSocial || ''}" placeholder="ex: TexPro Indústria e Comércio Têxtil Ltda">
+            </div>
+
+            <div class="grid-cards-2" style="gap: 10px; margin-bottom: 12px;">
+              <div class="form-group">
+                <label class="form-label">CNPJ:</label>
+                <input type="text" class="form-control text-mono" id="inpEmpCnpj" value="${emp.cnpj || ''}" placeholder="00.000.000/0000-00">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Inscrição Estadual (IE):</label>
+                <input type="text" class="form-control text-mono" id="inpEmpIe" value="${emp.inscricaoEstadual || ''}" placeholder="ex: 123.456.789.110">
+              </div>
+            </div>
+
+            <div class="grid-cards-2" style="gap: 10px;">
+              <div class="form-group">
+                <label class="form-label">WhatsApp Comercial:</label>
+                <input type="text" class="form-control text-mono" id="inpEmpTelefone" value="${emp.telefone || ''}" placeholder="11999998888">
+              </div>
+              <div class="form-group">
+                <label class="form-label">E-mail Comercial:</label>
+                <input type="email" class="form-control" id="inpEmpEmail" value="${emp.email || ''}" placeholder="contato@minhaconfeccao.com.br">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Pagamentos PIX & Regras Comerciais -->
+        <div class="card">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="card-title">2. Chave PIX da Fábrica & Regras Comerciais</div>
+            <span class="status-pill status-green">FATURAMENTO & RECEBIMENTOS</span>
+          </div>
+          <div class="card-body">
+            <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+              <div style="font-size: 11px; font-weight: 700; color: #15803d; text-transform: uppercase; margin-bottom: 4px;">Recebimento de Sinal & Quitação via PIX</div>
+              <div style="font-size: 11.5px; color: #166534; line-height: 1.4;">
+                Esta chave PIX é impressa nas <strong>Propostas Comerciais</strong> e enviada nos textos prontos do <strong>WhatsApp</strong> para que seu cliente pague a entrada com 1 clique.
+              </div>
+            </div>
+
+            <div class="grid-cards-2" style="gap: 10px; margin-bottom: 12px;">
+              <div class="form-group">
+                <label class="form-label">Tipo de Chave PIX:</label>
+                <select class="form-select" id="inpEmpTipoChavePix">
+                  <option value="CNPJ" ${emp.tipoChavePix === 'CNPJ' ? 'selected' : ''}>CNPJ</option>
+                  <option value="Telefone/Celular" ${emp.tipoChavePix === 'Telefone/Celular' ? 'selected' : ''}>Telefone / Celular</option>
+                  <option value="E-mail" ${emp.tipoChavePix === 'E-mail' ? 'selected' : ''}>E-mail</option>
+                  <option value="Chave Aleatória (EVP)" ${emp.tipoChavePix === 'Chave Aleatória (EVP)' ? 'selected' : ''}>Chave Aleatória</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Chave PIX da Confecção:</label>
+                <input type="text" class="form-control text-mono" id="inpEmpChavePix" value="${emp.chavePix || ''}" placeholder="Insira a chave oficial">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label">Endereço da Fábrica (Rua, Bairro, Cidade/UF):</label>
+              <input type="text" class="form-control" id="inpEmpEndereco" value="${emp.endereco || ''}" placeholder="Rua das Confecções, 100 - Bairro Industrial - Americana/SP">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label">Texto Padrão de Condições na Proposta Comercial:</label>
+              <textarea class="form-control" id="inpEmpRodapeProposta" rows="2" style="font-size: 11.5px;">${emp.rodapeProposta || 'Proposta válida por 15 dias corridos. Pagamento de 50% de sinal na aprovação e saldo restante na retirada.'}</textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Instrução Geral no Rodapé da Ordem de Produção (A4):</label>
+              <textarea class="form-control" id="inpEmpRodapeFicha" rows="2" style="font-size: 11.5px;">${emp.rodapeFicha || 'Ordem de Produção Oficial. Tolerância industrial de corte de 2mm. Em caso de divergência de cor, contate a gerência.'}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Central de Backup, Restauração e Demonstração -->
+      <div class="card">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="card-title">3. Central de Backup Seguro, Nuvem & Demonstração Comercial (Showroom)</div>
+          <span class="status-pill status-blue">GESTÃO DE DADOS</span>
+        </div>
+        <div class="card-body">
+          <div class="grid-cards-2" style="gap: 16px;">
+            <div style="border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 14px; background: #ffffff;">
+              <strong style="display: block; color: var(--text-primary); font-size: 13.5px; margin-bottom: 4px;">📦 Backup Completo em Arquivo JSON</strong>
+              <p style="font-size: 11.5px; color: var(--text-gray-500); line-height: 1.4; margin-bottom: 12px;">
+                Baixe um arquivo seguro com todos os pedidos, clientes, orçamentos, estoque e finanças para seu computador ou pen drive.
+              </p>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn btn-primary btn-sm" id="btnExportarJsonCard">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  Exportar Backup Agora
+                </button>
+                <input type="file" id="inpRestaurarArquivoCard" accept=".json" style="display: none;">
+                <button type="button" class="btn btn-secondary btn-sm" id="btnRestaurarJsonCard">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                  Restaurar de Arquivo
+                </button>
+              </div>
+            </div>
+
+            <div style="border: 1.5px solid #bae6fd; background: #f0f9ff; border-radius: var(--radius-md); padding: 14px;">
+              <strong style="display: block; color: #0369a1; font-size: 13.5px; margin-bottom: 4px;">✨ Showroom de Vendas (Demonstração 1-Clique)</strong>
+              <p style="font-size: 11.5px; color: #0284c7; line-height: 1.4; margin-bottom: 12px;">
+                Vai apresentar o sistema para uma confecção ou cliente? Carregue dados modelo com polos, jalecos, camisetas, mockups 3x4 e fluxo financeiro completo.
+              </p>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" id="btnCarregarShowroomCard" style="border-color: #0284c7; color: #0369a1; font-weight: 700;">
+                  Carregar Showroom Demo
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnZerarFabricaCard" style="border-color: #f87171; color: #b91c1c; font-weight: 700;">
+                  Zerar para Produção Real
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    function salvarFormularioEmpresa() {
+      const novosDados = {
+        nomeFantasia: document.getElementById('inpEmpNomeFantasia')?.value.trim() || 'Minha Confecção',
+        razaoSocial: document.getElementById('inpEmpRazaoSocial')?.value.trim() || 'Minha Confecção Ltda',
+        cnpj: document.getElementById('inpEmpCnpj')?.value.trim() || '',
+        inscricaoEstadual: document.getElementById('inpEmpIe')?.value.trim() || '',
+        telefone: document.getElementById('inpEmpTelefone')?.value.trim() || '',
+        email: document.getElementById('inpEmpEmail')?.value.trim() || '',
+        tipoChavePix: document.getElementById('inpEmpTipoChavePix')?.value || 'CNPJ',
+        chavePix: document.getElementById('inpEmpChavePix')?.value.trim() || '',
+        endereco: document.getElementById('inpEmpEndereco')?.value.trim() || '',
+        rodapeProposta: document.getElementById('inpEmpRodapeProposta')?.value.trim() || '',
+        rodapeFicha: document.getElementById('inpEmpRodapeFicha')?.value.trim() || '',
+        logoUrl: emp.logoUrl || null
+      };
+
+      if (window.ERP_CLOUD) {
+        window.ERP_CLOUD.salvarEmpresaConfig(novosDados);
+      }
+      db.empresa = Object.assign({}, db.empresa, novosDados);
+      salvarEstado();
+      mostrarToast('Dados cadastrais da empresa atualizados com sucesso!', 'green');
+    }
+
+    document.getElementById('btnSalvarEmpresaTopo')?.addEventListener('click', salvarFormularioEmpresa);
+
+    const inpLogo = document.getElementById('inpUploadLogoEmpresa');
+    document.getElementById('btnEscolherLogoEmpresa')?.addEventListener('click', () => inpLogo?.click());
+
+    inpLogo?.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) {
+        mostrarToast('A imagem selecionada é muito pesada (máximo 2MB).', 'red');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const base64 = evt.target.result;
+        emp.logoUrl = base64;
+        salvarFormularioEmpresa();
+        renderizarConfiguracoesEmpresa();
+        mostrarToast('Logotipo atualizado e salvo com sucesso!', 'green');
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('btnRemoverLogoEmpresa')?.addEventListener('click', () => {
+      if (confirm('Deseja remover o logotipo personalizado?')) {
+        emp.logoUrl = null;
+        salvarFormularioEmpresa();
+        renderizarConfiguracoesEmpresa();
+        mostrarToast('Logotipo removido!', 'green');
+      }
+    });
+
+    document.getElementById('btnExportarBackupEmpresa')?.addEventListener('click', () => {
+      window.ERP_CLOUD.exportarBackupJson(db);
+      mostrarToast('Arquivo de backup baixado com sucesso!', 'green');
+    });
+
+    document.getElementById('btnExportarJsonCard')?.addEventListener('click', () => {
+      window.ERP_CLOUD.exportarBackupJson(db);
+      mostrarToast('Arquivo de backup baixado com sucesso!', 'green');
+    });
+
+    const fileInpCard = document.getElementById('inpRestaurarArquivoCard');
+    document.getElementById('btnRestaurarJsonCard')?.addEventListener('click', () => fileInpCard?.click());
+
+    fileInpCard?.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const conteudo = evt.target.result;
+        window.ERP_CLOUD.restaurarBackupJson(conteudo, (novoBanco) => {
+          db = novoBanco;
+          salvarEstado();
+          atualizarBadges();
+          mostrarToast('Backup restaurado com sucesso! Dados atualizados.', 'green');
+          navegarPara('empresa');
+        });
+      };
+      reader.readAsText(file);
+    });
+
+    document.getElementById('btnCarregarShowroomCard')?.addEventListener('click', () => {
+      if (confirm('Deseja carregar a demonstração completa de showroom da fábrica?')) {
+        carregarDemonstracaoShowroom();
+      }
+    });
+
+    document.getElementById('btnZerarFabricaCard')?.addEventListener('click', () => {
+      if (confirm('Atenção: deseja zerar todos os pedidos e dados de teste para iniciar a produção real da confecção?')) {
+        zerarBancoProducaoReal();
+      }
+    });
+  }
+
+  /* ==========================================================================
+     MÓDULO 14: GUIA DE VENDAS, PITCH COMERCIAL & CALCULADORA DE ROI
+     ========================================================================== */
+  function abrirModalRoteiroVendas() {
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 860px; max-height: 90vh; display: flex; flex-direction: column;">
+          <div class="modal-header" style="background: #0f172a; color: #ffffff;">
+            <div>
+              <div class="modal-title" style="color: #ffffff; display: flex; align-items: center; gap: 8px;">
+                <span>🚀 Acelerador Comercial • TexPro Uniformes ERP</span>
+                <span class="status-pill status-green" style="font-size: 10px; background: #10b981; color: #ffffff;">PRONTO P/ VENDER</span>
+              </div>
+              <div style="font-size: 11.5px; color: #94a3b8; margin-top: 2px;">
+                Roteiro de demonstração de 15 minutos, calculadora de ROI e scripts para fechar clientes em confecções
+              </div>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()" style="color: #ffffff;">&times;</button>
+          </div>
+
+          <!-- Abas Internas do Roteiro -->
+          <div style="display: flex; background: #f1f5f9; border-bottom: 1px solid #cbd5e1; padding: 6px 16px; gap: 8px; overflow-x: auto;">
+            <button class="btn btn-xs tab-btn-pitch active" data-tab-pitch="roteiro" style="font-weight: 700; padding: 6px 12px; background: #0f172a; color: #ffffff;">🎙️ Roteiro 15 Min (Script)</button>
+            <button class="btn btn-xs tab-btn-pitch" data-tab-pitch="roi" style="font-weight: 700; padding: 6px 12px; background: transparent; color: var(--text-primary);">💰 Calculadora de ROI</button>
+            <button class="btn btn-xs tab-btn-pitch" data-tab-pitch="planos" style="font-weight: 700; padding: 6px 12px; background: transparent; color: var(--text-primary);">🏷️ Modelos de Precificação</button>
+            <button class="btn btn-xs tab-btn-pitch" data-tab-pitch="objecoes" style="font-weight: 700; padding: 6px 12px; background: transparent; color: var(--text-primary);">🛡️ Quebra de Objeções</button>
+          </div>
+
+          <div class="modal-body" style="padding: 20px; overflow-y: auto; flex: 1;" id="corpoModalPitch">
+            <!-- Conteúdo da Aba Roteiro (Padrão) -->
+            <div id="painelTabPitch_roteiro">
+              <div style="background: #f8fafc; border-left: 4px solid #0284c7; padding: 12px 16px; border-radius: 4px; margin-bottom: 16px;">
+                <strong style="color: #0369a1; font-size: 13px;">O Segredo da Apresentação:</strong>
+                <p style="font-size: 12px; color: #334155; margin-top: 2px; line-height: 1.4;">
+                  Não mostre o sistema como um "software burocrático". Mostre como uma <strong>ferramenta de estancar prejuízos operacionais</strong> e fazer a confecção vender o dobro de uniformes no WhatsApp.
+                </p>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <!-- Passo 1 -->
+                <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; background: #ffffff;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <strong style="color: #0f172a; font-size: 13px;">1. Minuto 0 a 3: As 3 Maiores Dores do Dono da Fábrica</strong>
+                    <span class="status-pill status-gray">ABERTURA</span>
+                  </div>
+                  <p style="font-size: 12px; color: #475569; line-height: 1.45;">
+                    <em>"Seu [Nome do Dono], deixa eu te fazer uma pergunta rápida: quantas vezes você já cortou um lote de uniformes e o cliente demorou pra pagar ou sumiu? E quanto de retalho de tecido ou bobina DTF você joga fora todo mês sem saber o custo exato?"</em><br>
+                    <strong>Objetivo:</strong> Fazer ele admitir que perde dinheiro na gestão manual ou em planilhas soltas.
+                  </p>
+                </div>
+
+                <!-- Passo 2 -->
+                <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; background: #ffffff;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <strong style="color: #0f172a; font-size: 13px;">2. Minuto 3 a 7: Orçamento Rápido com Mockup 3x4 e WhatsApp</strong>
+                    <span class="status-pill status-blue">DEMO AO VIVO</span>
+                  </div>
+                  <p style="font-size: 12px; color: #475569; line-height: 1.45;">
+                    Abra o botão <strong>Novo Orçamento</strong>. Escolha a Polo Piquet ou Camisa Operacional com Faixa Refletiva.<br>
+                    <em>"Olha aqui: seu vendedor preenche a grade em 30 segundos, o sistema gera o mockup vetorial proporcional 3x4 automaticamente e calcula o consumo exato de tecido e DTF. Ele clica em 'Enviar Proposta no WhatsApp' com a chave PIX já preenchida!"</em>
+                  </p>
+                </div>
+
+                <!-- Passo 3 -->
+                <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; background: #ffffff;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <strong style="color: #0f172a; font-size: 13px;">3. Minuto 7 a 10: A Trava de Segurança da Quarentena</strong>
+                    <span class="status-pill status-red">SEGURANÇA FINANCEIRA</span>
+                  </div>
+                  <p style="font-size: 12px; color: #475569; line-height: 1.45;">
+                    Mostre a aba <strong>Quarentena</strong> e o Kanban.<br>
+                    <em>"Nenhum cortador toca na tesoura ou na enfestadeira se o pedido estiver em quarentena ou sem o sinal de 50%! O sistema bloqueia a alteração de etapa no Kanban. O dono só libera quando confirma o PIX na conta."</em>
+                  </p>
+                </div>
+
+                <!-- Passo 4 -->
+                <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; background: #ffffff;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <strong style="color: #0f172a; font-size: 13px;">4. Minuto 10 a 13: Bobina DTF 58cm & Ficha Técnica A4 Isolada</strong>
+                    <span class="status-pill status-green">CHÃO DE FÁBRICA</span>
+                  </div>
+                  <p style="font-size: 12px; color: #475569; line-height: 1.45;">
+                    Clique em <strong>Ver Ficha Técnica / OS</strong> e no botão de impressão isolada.<br>
+                    <em>"Olha a impressão: sai em folha A4 limpa, sem preços de venda (para a costureira não ver seus valores), com campo de assinatura para o cortador, impressor e costureira. E o Nesting organiza os logotipos para aproveitar 98% da bobina de 58cm."</em>
+                  </p>
+                </div>
+
+                <!-- Passo 5 -->
+                <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; background: #ffffff;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <strong style="color: #0f172a; font-size: 13px;">5. Minuto 13 a 15: DRE Gerencial & Fechamento da Venda</strong>
+                    <span class="status-pill status-yellow">FECHAMENTO</span>
+                  </div>
+                  <p style="font-size: 12px; color: #475569; line-height: 1.45;">
+                    Vá na aba <strong>Abertura</strong> ou <strong>Financeiro</strong>.<br>
+                    <em>"No fim do mês, você sabe sua margem média líquida por polo e por camiseta, suas despesas fixas de galpão e quanto sobrou limpo. Quanto custa você não ter esse controle hoje?"</em>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Conteúdo da Aba ROI -->
+            <div id="painelTabPitch_roi" style="display: none;">
+              <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 6px; padding: 14px; margin-bottom: 18px;">
+                <strong style="color: #15803d; font-size: 13.5px; display: block; margin-bottom: 4px;">Simulação de Retorno sobre o Investimento (ROI)</strong>
+                <p style="font-size: 12px; color: #166534; line-height: 1.4;">
+                  Preencha os dados da confecção com o cliente para demonstrar que o sistema se paga sozinho logo no primeiro mês de uso.
+                </p>
+              </div>
+
+              <div class="grid-cards-2" style="gap: 16px; margin-bottom: 20px;">
+                <div class="form-group">
+                  <label class="form-label">Quantidade Média de Peças / Mês:</label>
+                  <input type="number" id="roiInpPecas" class="form-control text-mono" value="2500" step="100" style="font-weight: 700; font-size: 14px;">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Preço Médio de Venda por Peça (R$):</label>
+                  <input type="number" id="roiInpPreco" class="form-control text-mono" value="52.00" step="1" style="font-weight: 700; font-size: 14px;">
+                </div>
+              </div>
+
+              <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 16px;">
+                <div style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 10px;">Economia Direta Estimada Mensal:</div>
+
+                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+                  <div style="display: flex; justify-content: space-between; padding-bottom: 6px; border-bottom: 1px solid #f1f5f9;">
+                    <span>1. Redução de Desperdício em Tecido e Malha (3.5%):</span>
+                    <strong class="text-mono text-green" id="roiEconTecido">R$ 4.550,00</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; padding-bottom: 6px; border-bottom: 1px solid #f1f5f9;">
+                    <span>2. Otimização de Rolo DTF 58cm & Retrabalhos (1.5%):</span>
+                    <strong class="text-mono text-green" id="roiEconDtf">R$ 1.950,00</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; padding-bottom: 6px; border-bottom: 1px solid #f1f5f9;">
+                    <span>3. Prevenção de Calotes com Trava de Sinal 50%:</span>
+                    <strong class="text-mono text-green" id="roiEconCalote">R$ 3.000,00</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 800; padding-top: 8px; border-top: 2px solid #0f172a; margin-top: 4px;">
+                    <span>ECONOMIA TOTAL MENSAL GERADA:</span>
+                    <span class="text-mono" style="color: #047857;" id="roiEconTotal">R$ 9.500,00 / mês</span>
+                  </div>
+                </div>
+
+                <div style="margin-top: 14px; background: #f8fafc; border-radius: 4px; padding: 10px; font-size: 12px; color: #334155; line-height: 1.45;">
+                  💡 <strong>Conclusão do Pitch:</strong> Se você cobrar uma mensalidade de <strong>R$ 350,00/mês</strong>, a confecção estará lucrando <strong>27x</strong> o valor investido todo mês só com a redução de perdas operacionais!
+                </div>
+              </div>
+            </div>
+
+            <!-- Conteúdo da Aba Planos -->
+            <div id="painelTabPitch_planos" style="display: none;">
+              <div style="font-size: 12.5px; color: #475569; margin-bottom: 16px;">
+                Escolha o formato comercial ideal para o perfil do cliente (fábricas menores costumam preferir mensalidade simples; fábricas maiores contratam com implantação presencial).
+              </div>
+
+              <div class="grid-cards-2" style="gap: 16px;">
+                <!-- Opção 1 -->
+                <div style="border: 2px solid #0284c7; background: #f0f9ff; border-radius: 6px; padding: 16px;">
+                  <span class="status-pill status-blue" style="font-size: 10px; font-weight: 700;">MAIS POPULAR (SAAS)</span>
+                  <h3 style="font-size: 16px; font-weight: 800; color: #0369a1; margin-top: 6px;">Plano Fábrica Mensal</h3>
+                  <div class="text-mono" style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 8px 0;">
+                    R$ 297 a R$ 490 <span style="font-size: 12px; font-weight: 400; color: #64748b;">/mês</span>
+                  </div>
+                  <ul style="font-size: 11.5px; color: #334155; line-height: 1.5; padding-left: 18px; margin-bottom: 12px;">
+                    <li>Acesso ilimitado a todas as 14 áreas</li>
+                    <li>Perfis de Dono, Vendedor e Oficina</li>
+                    <li>Gerador de Mockups e Fichas A4</li>
+                    <li>Suporte direto via WhatsApp</li>
+                    <li>Sem fidelidade ou carência</li>
+                  </ul>
+                  <div style="font-size: 11px; color: #0369a1; font-weight: 700;">Fácil adesão e receita recorrente previsível.</div>
+                </div>
+
+                <!-- Opção 2 -->
+                <div style="border: 1px solid #cbd5e1; background: #ffffff; border-radius: 6px; padding: 16px;">
+                  <span class="status-pill status-gray" style="font-size: 10px; font-weight: 700;">ALTO TICKET</span>
+                  <h3 style="font-size: 16px; font-weight: 800; color: #0f172a; margin-top: 6px;">Setup + Mensalidade</h3>
+                  <div class="text-mono" style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 8px 0;">
+                    R$ 1.200 <span style="font-size: 12px; font-weight: 400; color: #64748b;">setup</span> + R$ 250/mês
+                  </div>
+                  <ul style="font-size: 11.5px; color: #334155; line-height: 1.5; padding-left: 18px; margin-bottom: 12px;">
+                    <li>Cadastro inicial do catálogo da fábrica</li>
+                    <li>Configuração da logo e chave PIX</li>
+                    <li>Treinamento de 1h com a equipe de vendas</li>
+                    <li>Acompanhamento dos 3 primeiros pedidos</li>
+                  </ul>
+                  <div style="font-size: 11px; color: #047857; font-weight: 700;">Gera caixa imediato com a taxa de implantação.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Conteúdo da Aba Objeções -->
+            <div id="painelTabPitch_objecoes" style="display: none;">
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; background: #ffffff;">
+                  <strong style="color: #b91c1c; font-size: 13px;">❌ "Já controlo tudo pelo Excel ou caderno."</strong>
+                  <p style="font-size: 12px; color: #334155; margin-top: 4px; line-height: 1.45;">
+                    <strong>✅ O que responder:</strong> <em>"O Excel é bom para somar números, mas ele não gera mockup 3x4 em 2 minutos pro seu cliente aprovar no WhatsApp, não avisa o cortador sobre a grade e qualquer um pode apagar uma fórmula por engano. Com o sistema, você profissionaliza sua fábrica na frente dos clientes corporativos."</em>
+                  </p>
+                </div>
+
+                <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; background: #ffffff;">
+                  <strong style="color: #b91c1c; font-size: 13px;">❌ "Minha equipe de costura não sabe mexer em computador."</strong>
+                  <p style="font-size: 12px; color: #334155; margin-top: 4px; line-height: 1.45;">
+                    <strong>✅ O que responder:</strong> <em>"Elas não precisam mexer! O encarregado imprime a Ficha Técnica A4 com 1 clique. Na folha já vem tudo mastigado: tamanho, modelo, foto da polo e onde assinar. O sistema foi desenhado exatamente para quem vive no chão de fábrica."</em>
+                  </p>
+                </div>
+
+                <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; background: #ffffff;">
+                  <strong style="color: #b91c1c; font-size: 13px;">❌ "E se a internet cair aqui no galpão?"</strong>
+                  <p style="font-size: 12px; color: #334155; margin-top: 4px; line-height: 1.45;">
+                    <strong>✅ O que responder:</strong> <em>"O TexPro ERP funciona em modo Local Seguro Offline. Se a internet cair, você continua tirando pedidos e imprimindo fichas normalmente sem travar nada."</em>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-secondary btn-sm" id="btnAtivarShowroomNoPitch" style="border-color: #0284c7; color: #0369a1; font-weight: 700;">
+                ✨ Carregar Showroom de Demonstração
+              </button>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="window.ERP.fecharModal()">
+              Fechar Roteiro
+            </button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    const tabBtns = modalEl.querySelectorAll('.tab-btn-pitch');
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabBtns.forEach(b => {
+          b.classList.remove('active');
+          b.style.background = 'transparent';
+          b.style.color = 'var(--text-primary)';
+        });
+        btn.classList.add('active');
+        btn.style.background = '#0f172a';
+        btn.style.color = '#ffffff';
+
+        const tabKey = btn.getAttribute('data-tab-pitch');
+        ['roteiro', 'roi', 'planos', 'objecoes'].forEach(k => {
+          const panel = document.getElementById('painelTabPitch_' + k);
+          if (panel) panel.style.display = (k === tabKey) ? 'block' : 'none';
+        });
+      });
+    });
+
+    function recalcularRoi() {
+      const pecas = Math.max(1, Number(document.getElementById('roiInpPecas')?.value) || 2000);
+      const preco = Math.max(1, Number(document.getElementById('roiInpPreco')?.value) || 50);
+      const faturamento = pecas * preco;
+
+      const econTecido = faturamento * 0.035;
+      const econDtf = faturamento * 0.015;
+      const econCalote = Math.min(6000, faturamento * 0.025);
+      const econTotal = econTecido + econDtf + econCalote;
+
+      const spTec = document.getElementById('roiEconTecido');
+      if (spTec) spTec.textContent = formatarMoeda(econTecido);
+
+      const spDtf = document.getElementById('roiEconDtf');
+      if (spDtf) spDtf.textContent = formatarMoeda(econDtf);
+
+      const spCal = document.getElementById('roiEconCalote');
+      if (spCal) spCal.textContent = formatarMoeda(econCalote);
+
+      const spTot = document.getElementById('roiEconTotal');
+      if (spTot) spTot.textContent = formatarMoeda(econTotal) + ' / mês';
+    }
+
+    document.getElementById('roiInpPecas')?.addEventListener('input', recalcularRoi);
+    document.getElementById('roiInpPreco')?.addEventListener('input', recalcularRoi);
+
+    document.getElementById('btnAtivarShowroomNoPitch')?.addEventListener('click', () => {
+      fecharModal(modalEl);
+      carregarDemonstracaoShowroom();
+    });
+  }
+
   // Exposição Global das Funções Públicas da API TexPro ERP
   window.ERP = {
     navegarPara,
     fecharModal,
     fecharTodosModais,
     abrirFichaTecnica,
+    imprimirFichaTecnicaIsolada,
+    abrirModalPropostaComercial,
+    imprimirPropostaComercialIsolada,
+    imprimirDocumentoIsolado,
+    carregarPadroesSistema,
+    salvarPadroesSistema,
     abrirModalWhatsApp,
     abrirModalVisualizarMockup,
     abrirModalNovoOrcamento,
     abrirModalNovoClienteInline,
     abrirModalNovoModeloInline,
-    abrirModalPropostaComercial,
     abrirModalInspecaoQuarentena,
     abrirModalReceberPagamento,
     abrirModalEntradaEstoque,
     abrirModalEditarFinanceiro,
     abrirModalEditarCapacidades,
+    renderizarConfiguracoesEmpresa,
+    abrirModalBackup,
+    abrirModalTrocarPerfil,
+    abrirModalRoteiroVendas,
+    carregarDemonstracaoShowroom,
+    zerarBancoProducaoReal,
     forcarResetarBanco: function() {
       try {
         localStorage.removeItem(STORAGE_KEY);

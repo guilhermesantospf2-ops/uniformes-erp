@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proposta Comercial • TexPro Uniformes ERP Industrial</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=8.4.0">
+  <style>
+    body {
+      background-color: #f8fafc;
+      color: #0f172a;
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+    .landing-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 40px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin: 24px 0;
+    }
+    .feature-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 16px;
+      background: #f8fafc;
+    }
+    .feature-card h4 {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .feature-card p {
+      font-size: 12px;
+      color: #475569;
+      line-height: 1.5;
+    }
+    .pricing-table-wrapper {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin: 24px 0;
+    }
+    .pricing-box {
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 20px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .pricing-box.featured {
+      border: 2px solid #0284c7;
+      background: #f0f9ff;
+    }
+    @media print {
+      body {
+        padding: 0;
+        background: #ffffff;
+      }
+      .landing-container {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="landing-container">
+    <!-- Barra Superior de Ações -->
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #cbd5e1; padding-bottom: 16px; margin-bottom: 24px;" class="no-print">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-weight: 800; font-size: 16px; color: #0f172a;">TEXPRO UNIFORMES ERP</span>
+        <span class="status-pill status-gray text-mono" style="font-size: 10px;">PROPOSTA COMERCIAL</span>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <a href="index.html" class="btn btn-secondary btn-sm" style="text-decoration: none;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          Abrir Sistema / Demonstração
+        </a>
+        <button class="btn btn-primary btn-sm" onclick="window.print()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          Imprimir / Baixar em PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Cabeçalho Oficial -->
+    <div style="margin-bottom: 24px;">
+      <div class="hero-badge">Tecnologia Especializada para Indústria & Confecção Têxtil</div>
+      <h1 style="font-size: 26px; font-weight: 800; color: #0f172a; line-height: 1.25; margin-bottom: 8px;">
+        TexPro Uniformes ERP Industrial
+      </h1>
+      <p style="font-size: 14px; color: #475569;">
+        A solução definitiva de gestão para fábricas de uniformes profissionais, escolares, operacionais e hospitalares. Do primeiro orçamento no WhatsApp à entrega final no chão de fábrica.
+      </p>
+    </div>
+
+    <!-- Os 5 Maiores Problemas Resolvidos -->
+    <h3 style="font-size: 15px; font-weight: 800; color: #0f172a; text-transform: uppercase; margin-top: 30px; border-bottom: 2px solid #0f172a; padding-bottom: 6px;">
+      Por que as Confecções Escolhem o TexPro ERP?
+    </h3>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h4>⚡ Orçamento com Mockup 3x4</h4>
+        <p>Gere orçamentos com foto vetorial real da polo, camisa operacional ou jaleco em 30 segundos e envie pro cliente no WhatsApp com chave PIX pronta.</p>
+      </div>
+
+      <div class="feature-card">
+        <h4>📏 Rolo DTF 58cm & Consumo</h4>
+        <p>Cálculo exato de rendimento de tecido por kg e aproveitamento da bobina de estampa DTF (58cm e 28cm). Fim dos desperdícios e compras no escuro.</p>
+      </div>
+
+      <div class="feature-card">
+        <h4>🛑 Trava de Quarentena</h4>
+        <p>Nenhum pedido entra em produção ou corte sem pagamento de sinal (50%) ou aprovação de arte. Protege seu caixa contra calotes e retrabalhos.</p>
+      </div>
+
+      <div class="feature-card">
+        <h4>📄 Ficha Técnica A4 Isolada</h4>
+        <p>Impressão em folha limpa com grade de corte, instruções de costura e campos de assinatura para cortador e facção. Sem vazar preços de venda para a fábrica.</p>
+      </div>
+
+      <div class="feature-card">
+        <h4>📊 DRE Gerencial & Lucro Real</h4>
+        <p>Saiba quanto sobrou limpo em cada pedido e no mês da fábrica, considerando despesas fixas, matéria-prima e mão de obra de costura.</p>
+      </div>
+
+      <div class="feature-card">
+        <h4>🌐 100% Seguro Offline & Nuvem</h4>
+        <p>Seus dados salvos em arquivo seguro no computador da fábrica. Se a internet cair no galpão industrial, a confecção não para um minuto sequer.</p>
+      </div>
+    </div>
+
+    <!-- Tabela de Planos e Investimento -->
+    <h3 style="font-size: 15px; font-weight: 800; color: #0f172a; text-transform: uppercase; margin-top: 36px; border-bottom: 2px solid #0f172a; padding-bottom: 6px;">
+      Opções de Investimento & Licenciamento
+    </h3>
+
+    <div class="pricing-table-wrapper">
+      <!-- Opção 1 -->
+      <div class="pricing-box featured">
+        <div>
+          <span class="status-pill status-blue" style="font-size: 10px; font-weight: 800;">PLANO RECOMENDADO</span>
+          <h4 style="font-size: 17px; font-weight: 800; color: #0369a1; margin-top: 6px;">Fábrica Mensal (SaaS)</h4>
+          <div class="text-mono" style="font-size: 26px; font-weight: 800; color: #0f172a; margin: 10px 0;">
+            R$ 349 <span style="font-size: 13px; font-weight: 400; color: #64748b;">/mês</span>
+          </div>
+          <p style="font-size: 11.5px; color: #475569; margin-bottom: 12px;">Sem carência, sem fidelidade. Cancele quando quiser.</p>
+          <ul style="font-size: 11.5px; color: #334155; line-height: 1.6; padding-left: 18px; margin-bottom: 16px;">
+            <li>Todas as 14 abas industriais ativas</li>
+            <li>Controle de Dono, Vendedor e Oficina</li>
+            <li>Backup em 1 clique em JSON</li>
+            <li>Suporte técnico via WhatsApp</li>
+            <li>Atualizações automáticas inclusas</li>
+          </ul>
+        </div>
+        <div style="font-size: 11px; font-weight: 700; color: #047857; text-align: center; padding: 6px; background: #ecfdf5; border-radius: 4px;">
+          Retorno garantido no 1º mês
+        </div>
+      </div>
+
+      <!-- Opção 2 -->
+      <div class="pricing-box">
+        <div>
+          <span class="status-pill status-gray" style="font-size: 10px; font-weight: 800;">IMPLANTAÇÃO COMPLETA</span>
+          <h4 style="font-size: 17px; font-weight: 800; color: #0f172a; margin-top: 6px;">Setup VIP + Mensalidade</h4>
+          <div class="text-mono" style="font-size: 26px; font-weight: 800; color: #0f172a; margin: 10px 0;">
+            R$ 1.200 <span style="font-size: 12px; font-weight: 400; color: #64748b;">setup</span>
+          </div>
+          <div class="text-mono" style="font-size: 14px; font-weight: 700; color: #0284c7; margin-bottom: 10px;">
+            + R$ 250 /mês após o setup
+          </div>
+          <p style="font-size: 11.5px; color: #475569; margin-bottom: 12px;">Para quem quer a fábrica rodando pronta em 48 horas.</p>
+          <ul style="font-size: 11.5px; color: #334155; line-height: 1.6; padding-left: 18px; margin-bottom: 16px;">
+            <li>Configuração de logo, chave PIX e CNPJ</li>
+            <li>Importação do catálogo de modelagens</li>
+            <li>Treinamento de 1h com a equipe de vendas</li>
+            <li>Acompanhamento dos primeiros 5 pedidos</li>
+          </ul>
+        </div>
+        <div style="font-size: 11px; font-weight: 700; color: #0f172a; text-align: center; padding: 6px; background: #f1f5f9; border-radius: 4px;">
+          Foco total em resultado imediato
+        </div>
+      </div>
+
+      <!-- Opção 3 -->
+      <div class="pricing-box">
+        <div>
+          <span class="status-pill status-gray" style="font-size: 10px; font-weight: 800;">SEM MENSALIDADES</span>
+          <h4 style="font-size: 17px; font-weight: 800; color: #0f172a; margin-top: 6px;">Licença Perpétua</h4>
+          <div class="text-mono" style="font-size: 26px; font-weight: 800; color: #0f172a; margin: 10px 0;">
+            R$ 3.900 <span style="font-size: 12px; font-weight: 400; color: #64748b;">à vista</span>
+          </div>
+          <p style="font-size: 11.5px; color: #475569; margin-bottom: 12px;">Ou em até 6x no cartão de crédito da empresa.</p>
+          <ul style="font-size: 11.5px; color: #334155; line-height: 1.6; padding-left: 18px; margin-bottom: 16px;">
+            <li>Licença vitalícia sem recorrência</li>
+            <li>Instalação local definitiva</li>
+            <li>Backup independente da confecção</li>
+            <li>90 dias de suporte prioritário</li>
+          </ul>
+        </div>
+        <div style="font-size: 11px; font-weight: 700; color: #475569; text-align: center; padding: 6px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px;">
+          Ideal para fábricas tradicionais
+        </div>
+      </div>
+    </div>
+
+    <!-- Garantia e Fechamento -->
+    <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 20px; margin-top: 30px; text-align: center;">
+      <h4 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">Garantia Incondicional de Eficiência (30 Dias)</h4>
+      <p style="font-size: 12.5px; color: #475569; max-width: 650px; margin: 0 auto 16px auto;">
+        Se no primeiro mês de operação o TexPro ERP não comprovar redução de desperdício no corte, agilidade no envio de orçamentos e organização total da produção, devolvemos 100% do valor da mensalidade.
+      </p>
+      <div style="display: flex; justify-content: center; gap: 12px;" class="no-print">
+        <a href="index.html" class="btn btn-primary" style="text-decoration: none; padding: 10px 24px; font-size: 14px;">
+          Iniciar Demonstração Prática Agora
+        </a>
+      </div>
+    </div>
+
+    <!-- Rodapé Oficial -->
+    <div style="border-top: 1px solid #cbd5e1; margin-top: 30px; padding-top: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #64748b;">
+      <span>TexPro Uniformes ERP • Desenvolvido para a Indústria Têxtil Brasileira</span>
+      <span>Validade desta proposta: 15 dias corridos</span>
+    </div>
+  </div>
+
+</body>
+</html>

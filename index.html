@@ -20,11 +20,11 @@
     <aside class="erp-sidebar" aria-label="Navegação do Sistema">
       
       <div class="sidebar-header">
-        <div class="brand-wrapper">
-          <div class="brand-icon">TP</div>
+        <div class="brand-wrapper" id="sidebarBrandWrapper" style="cursor: pointer;" onclick="window.ERP.navegarPara('empresa')" title="Configurar Dados e Logotipo da sua Confecção">
+          <div class="brand-icon" id="sidebarBrandIcon">TP</div>
           <div>
-            <div class="brand-title">TEXPRO</div>
-            <div class="brand-subtitle">INDUSTRIAL ERP</div>
+            <div class="brand-title" id="sidebarBrandTitle">TEXPRO</div>
+            <div class="brand-subtitle" id="sidebarBrandSubtitle">CONFECÇÃO ERP</div>
           </div>
         </div>
       </div>
@@ -147,6 +147,8 @@
 
         <!-- 12. Nota Fiscal SEFAZ -->
         <a class="menu-item" data-aba="nfe">
+        <!-- 12. Nota Fiscal SEFAZ -->
+        <a class="menu-item" data-aba="nfe">
           <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
             <polyline points="14 2 14 8 20 8"></polyline>
@@ -156,13 +158,22 @@
           </svg>
           <span>Notas Fiscais</span>
         </a>
+
+        <!-- 13. Minha Empresa & Configurações da Confecção -->
+        <a class="menu-item" data-aba="empresa" id="menuItemEmpresa">
+          <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          <span>Minha Empresa</span>
+        </a>
       </nav>
 
-      <div class="sidebar-footer">
-        <div class="user-avatar">ADM</div>
+      <div class="sidebar-footer" id="sidebarUserFooter" style="cursor: pointer;" title="Clique para trocar o perfil de acesso">
+        <div class="user-avatar" id="sidebarUserAvatar">ADM</div>
         <div class="user-info">
-          <div class="user-name">Administrador</div>
-          <div class="user-role">Diretoria Industrial</div>
+          <div class="user-name" id="sidebarUserName">Administrador</div>
+          <div class="user-role" id="sidebarUserRole">👑 Dono / Gerente</div>
         </div>
       </div>
     </aside>
@@ -177,13 +188,34 @@
         </div>
 
         <div class="navbar-actions">
-          <div style="font-size: 11px; text-align: right; margin-right: 8px;">
-            <strong style="display: block; color: var(--text-primary); font-weight: 800;">TexPro Indústria Têxtil</strong>
-            <span class="text-mono" style="color: var(--text-gray-500);">CNPJ: 34.582.910/0001-44</span>
+          <!-- Indicador de Status em Nuvem -->
+          <div class="cloud-status-badge" id="cloudStatusBadge" style="display: flex; align-items: center; gap: 6px; font-size: 11px; padding: 4px 8px; border-radius: 4px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 700;">
+            <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #10b981;"></span>
+            <span id="cloudStatusText">Online • Nuvem Ativa</span>
           </div>
-          <button class="btn btn-secondary btn-sm" onclick="window.ERP.forcarResetarBanco()" title="Limpa o cache local e recarrega os dados completos da indústria">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-            Recarregar Dados
+
+          <!-- Seletor de Perfil Industrial -->
+          <div style="display: flex; align-items: center; gap: 5px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 8px;">
+            <span style="font-size: 10px; font-weight: 700; color: var(--text-gray-500); text-transform: uppercase;">Perfil:</span>
+            <select id="selectPerfilUsuario" class="form-select" style="font-size: 11px; padding: 2px 4px; height: 26px; border: none; background: transparent; font-weight: 800; color: var(--text-primary); cursor: pointer;">
+              <option value="dono">👑 Dono / Diretor (Acesso Total)</option>
+              <option value="vendedor">💼 Vendedor (Sem Financeiro/DRE)</option>
+              <option value="oficina">✂️ Oficina / Corte (Apenas Produção)</option>
+            </select>
+          </div>
+
+          <div style="font-size: 11px; text-align: right; margin-right: 4px;" id="headerEmpresaInfo">
+            <strong style="display: block; color: var(--text-primary); font-weight: 800;" id="headerEmpresaNome">TexPro Indústria Têxtil</strong>
+            <span class="text-mono" style="color: var(--text-gray-500);" id="headerEmpresaCnpj">CNPJ: 34.582.910/0001-44</span>
+          </div>
+
+          <button class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalBackup()" title="Backup de segurança e restauração dos dados">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Backup & Nuvem
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalRoteiroVendas()" style="border-color: #0284c7; color: #0369a1; font-weight: 700;" title="Roteiro de Vendas, Pitch Comercial e Calculadora de ROI para Confecções">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Pitch de Vendas & ROI
           </button>
           <button class="btn btn-secondary btn-sm" onclick="window.ERP.navegarPara('nesting')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line></svg>
@@ -211,9 +243,10 @@
   <div id="erpToast" class="toast-msg"></div>
 
   <!-- Scripts do ERP Têxtil com Versionamento Anti-Cache -->
-  <script src="mock-data.js?v=8.3.0"></script>
-  <script src="market-benchmark.js?v=8.3.0"></script>
-  <script src="nesting-engine.js?v=8.3.0"></script>
-  <script src="app.js?v=8.3.0"></script>
+  <script src="mock-data.js?v=8.4.0"></script>
+  <script src="market-benchmark.js?v=8.4.0"></script>
+  <script src="nesting-engine.js?v=8.4.0"></script>
+  <script src="cloud-sync.js?v=8.4.0"></script>
+  <script src="app.js?v=8.4.0"></script>
 </body>
 </html>
