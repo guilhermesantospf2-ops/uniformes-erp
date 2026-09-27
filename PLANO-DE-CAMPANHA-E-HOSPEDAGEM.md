@@ -157,7 +157,7 @@ Quando o dono da confecção clicar no anúncio e chamar no WhatsApp:
 > *"Temos três formatos para atender sua fábrica:*  
 > 1. **Plano Mensal Completo:** R$ 349/mês, sem contrato de fidelidade e com suporte direto no WhatsApp.  
 > 2. **Setup VIP com Treinamento:** R$ 1.200 (configuramos seu logotipo, catálogo e treinamos sua equipe) + R$ 250/mês.  
-> 3. **Licença Perpétua Definitiva (Sem Mensalidades):** R$ 9.800 à vista (ou em até 10× no cartão da empresa), com implantação completa e 1 ano de suporte técnico.  
+> 3. **Plano Anual Econômico (Mais Vantajoso):** R$ 3.490/ano à vista (você paga 10 meses e ganha 2 meses grátis, saindo a R$ 290/mês).  
 > 
 > *Qual desses formatos se encaixa melhor no momento atual da sua empresa?"*
 
