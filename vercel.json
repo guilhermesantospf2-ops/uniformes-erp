@@ -1,6 +1,10 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "rewrites": [
+    { "source": "/vendas", "destination": "/vendas.html" },
+    { "source": "/lp", "destination": "/vendas.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
