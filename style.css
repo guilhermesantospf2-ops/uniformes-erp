@@ -781,6 +781,13 @@ button.status-pill:hover {
   border: 1px solid #cbd5e1;
 }
 
+.countdown-orcamento {
+  background-color: #f8fafc;
+  color: #475569;
+  border: 1.5px dashed #94a3b8;
+  font-weight: 700;
+}
+
 @keyframes animPulseUrgente {
   0% { transform: scale(1); }
   50% { transform: scale(1.03); filter: brightness(1.12); }

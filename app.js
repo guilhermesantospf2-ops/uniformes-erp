@@ -409,6 +409,19 @@
     return isNaN(d.getTime()) ? null : d;
   }
 
+  // Valida se o registro é um Orçamento em negociação (não confirmado em produção)
+  function isPedidoOrcamento(p) {
+    if (!p) return false;
+    return p.tipoRegistro === 'Orcamento' || 
+           p.tipoRegistro === 'Orçamento' || 
+           p.status === 'Orcamento' || 
+           p.status === 'Orçamento' || 
+           p.etapaProducao === 'Orcamento' || 
+           p.etapaProducao === 'Em Negociação' || 
+           p.etapa === 'Orcamento' || 
+           (p.id && String(p.id).startsWith('ORC-'));
+  }
+
   // Motor de Contagem Regressiva e Alerta Térmico de Prazos dos Pedidos
   function calcularContagemRegressivaPedido(p) {
     if (!p) {
@@ -422,6 +435,22 @@
         corBarra: '#cbd5e1',
         percTempo: 0,
         badgeHtml: `<span class="badge-countdown countdown-finalizado">--</span>`
+      };
+    }
+
+    // Regra Têxtil Industrial: Orçamentos em negociação NÃO contam prazo de produção (não são pedidos confirmados)
+    if (isPedidoOrcamento(p)) {
+      const diasPrometidos = p.prazoPedidoDias || 15;
+      return {
+        statusPrazo: 'orcamento',
+        diffDias: 999,
+        classeCor: 'countdown-orcamento',
+        pulse: false,
+        label: 'ORÇAMENTO (NÃO CONTA PRAZO)',
+        diasTexto: `Prazo estimado de ${diasPrometidos} dias úteis (passa a contar apenas após confirmação e sinal)`,
+        corBarra: '#cbd5e1',
+        percTempo: 0,
+        badgeHtml: `<span class="badge-countdown countdown-orcamento" title="Orçamento em negociação: prazo de produção não é contabilizado antes da confirmação do pedido"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> ORÇAMENTO (NÃO CONTA)</span>`
       };
     }
 
@@ -864,8 +893,13 @@
       badgeCapacidadeHtml = `<span class="status-pill status-red">Atenção: Sobrecarga (${mediaOcupacao}%)</span>`;
     }
 
-    // 3. Cálculo Dinâmico do Radar & Termômetro de Prazos da Fábrica
-    const pedidosAtivosPrazos = db.pedidos.filter(p => p.status !== 'Finalizado' && p.status !== 'Cancelado' && p.status !== 'Entregue');
+    // 3. Cálculo Dinâmico do Radar & Termômetro de Prazos da Fábrica (Apenas Pedidos Confirmados)
+    const pedidosAtivosPrazos = db.pedidos.filter(p => 
+      p.status !== 'Finalizado' && 
+      p.status !== 'Cancelado' && 
+      p.status !== 'Entregue' && 
+      !isPedidoOrcamento(p)
+    );
     let qtdAtrasados = 0;
     let qtdHoje = 0;
     let qtdAmanha = 0;
@@ -1098,7 +1132,11 @@
                   <td class="text-mono">${p.grade?.total || 0} un</td>
                   <td>
                     ${countdown.badgeHtml}
-                    ${(p.dataPrevisaoEntrega || p.dataMetaInterna) ? `
+                    ${isPedidoOrcamento(p) ? `
+                      <span style="display: block; font-size: 9.5px; color: #64748b; margin-top: 3px; font-weight: 600;">
+                        ⏱️ ${p.prazoPedidoDias || 15}d após aprovação
+                      </span>
+                    ` : (p.dataPrevisaoEntrega || p.dataMetaInterna) ? `
                       <span style="display: block; font-size: 9.5px; color: #1e40af; margin-top: 3px; font-weight: 700;">
                         📅 ${p.dataPrevisaoEntrega || p.dataMetaInterna}
                       </span>
@@ -1314,15 +1352,21 @@
                     </div>
                     <span style="display: block; font-size: 10px; color: var(--text-gray-500); margin-top: 2px;">Criado: ${p.dataCriacao || '-'}</span>
 
-                    <!-- CONTAGEM REGRESSIVA DINÂMICA COM CORES DE URGÊNCIA -->
+                    <!-- CONTAGEM REGRESSIVA DINÂMICA COM CORES DE URGÊNCIA (APENAS PEDIDOS CONFIRMADOS) -->
                     <div style="margin-top: 6px;">
                       ${countdown.badgeHtml}
-                      <div class="countdown-bar-track" title="Tempo decorrido: ${countdown.percTempo}%">
-                        <div class="countdown-bar-fill" style="width: ${countdown.percTempo}%; background-color: ${countdown.corBarra};"></div>
-                      </div>
+                      ${!isOrcamento ? `
+                        <div class="countdown-bar-track" title="Tempo decorrido: ${countdown.percTempo}%">
+                          <div class="countdown-bar-fill" style="width: ${countdown.percTempo}%; background-color: ${countdown.corBarra};"></div>
+                        </div>
+                      ` : ''}
                     </div>
 
-                    ${(p.dataPrevisaoEntrega || p.dataMetaInterna) ? `
+                    ${isOrcamento ? `
+                      <div style="font-size: 9.5px; margin-top: 4px; color: #64748b; line-height: 1.3;">
+                        <span title="Prazo prometido que passará a contar após confirmação e sinal">⏱️ ${p.prazoPedidoDias || 15} dias úteis (após aprovação)</span>
+                      </div>
+                    ` : (p.dataPrevisaoEntrega || p.dataMetaInterna) ? `
                       <div style="font-size: 9.5px; margin-top: 5px; line-height: 1.3;">
                         <span style="color: #1e40af; font-weight: 700;" title="Prazo Prometido ao Cliente">📅 Cli: ${p.dataPrevisaoEntrega || '-'}</span>
                         ${p.dataMetaInterna ? `<br><span style="color: #0369a1; font-weight: 700;" title="Meta Interna Chão de Fábrica">🏭 Fáb: ${p.dataMetaInterna}</span>` : ''}
@@ -1507,12 +1551,18 @@
                           <!-- CONTAGEM REGRESSIVA NO CARD KANBAN -->
                           <div style="margin-top: 5px;">
                             ${countdown.badgeHtml}
-                            <div class="countdown-bar-track" style="margin-top: 3px;" title="Tempo decorrido: ${countdown.percTempo}%">
-                              <div class="countdown-bar-fill" style="width: ${countdown.percTempo}%; background-color: ${countdown.corBarra};"></div>
-                            </div>
+                            ${!isOrcamento ? `
+                              <div class="countdown-bar-track" style="margin-top: 3px;" title="Tempo decorrido: ${countdown.percTempo}%">
+                                <div class="countdown-bar-fill" style="width: ${countdown.percTempo}%; background-color: ${countdown.corBarra};"></div>
+                              </div>
+                            ` : ''}
                           </div>
 
-                          ${(p.dataPrevisaoEntrega || p.dataMetaInterna) ? `
+                          ${isOrcamento ? `
+                            <div style="font-size: 9px; color: #64748b; margin-top: 3px;">
+                              ⏱️ ${p.prazoPedidoDias || 15}d úteis após aprovação
+                            </div>
+                          ` : (p.dataPrevisaoEntrega || p.dataMetaInterna) ? `
                             <div style="font-size: 9.5px; color: #1e40af; margin-top: 4px; font-weight: 700; display: flex; justify-content: space-between; line-height: 1.2;">
                               <span>📅 Cli: ${p.dataPrevisaoEntrega || '-'}</span>
                               ${p.dataMetaInterna ? `<span style="color: #0369a1;">🏭 Fáb: ${p.dataMetaInterna}</span>` : ''}
@@ -3229,8 +3279,8 @@
       saldoPendente: dados.valorTotal,
       prazoPedidoDias: dados.prazoPedidoDias,
       prazoInternoDias: dados.prazoInternoDias,
-      dataPrevisaoEntrega: dados.dataPrevisaoEntrega,
-      dataMetaInterna: dados.dataMetaInterna,
+      dataPrevisaoEntrega: tipoRegistro === 'Orcamento' ? null : dados.dataPrevisaoEntrega,
+      dataMetaInterna: tipoRegistro === 'Orcamento' ? null : dados.dataMetaInterna,
       dtfLarguraRolo: dados.dtfLarguraRolo,
       notaFiscalEmitida: false,
       vendedorResponsavel: 'Marcos Paulo'
@@ -8020,8 +8070,8 @@
         prazoPedidoDias: 7,
         prazoInternoDias: 5,
         dataCriacao: dataRelativa(-5),
-        dataPrevisaoEntrega: dataRelativa(2),
-        dataMetaInterna: dataRelativa(1),
+        dataPrevisaoEntrega: null,
+        dataMetaInterna: null,
         mockupUrl: mockupOp,
         margemLucroPercentual: 39.0,
         custoTotalProducao: 5907.85
