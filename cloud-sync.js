@@ -212,14 +212,119 @@
   }
 
   // ==========================================================================
-  // MOTOR DE CONEXÃO FIREBASE & BANCO DE DADOS EM NUVEM (FIRESTORE REALTIME)
   // ==========================================================================
+  // MOTOR DE CONEXÃO SUPABASE (POSTGRESQL REALTIME) & FIREBASE
+  // ==========================================================================
+  const STORAGE_KEY_SUPABASE = 'TEXPRO_ERP_SUPABASE_CONFIG';
   const STORAGE_KEY_FIREBASE = 'TEXPRO_ERP_FIREBASE_CONFIG';
+  const STORAGE_KEY_PROVEDOR = 'TEXPRO_ERP_CLOUD_PROVEDOR_ATIVO';
+
+  let supabaseClient = null;
+  let supabaseChannel = null;
   let firestoreDb = null;
-  let unsubscribeRealtime = null;
+  let unsubscribeRealtimeFirebase = null;
   let syncDebounceTimer = null;
   let ultimaAtualizacaoRemota = 0;
 
+  // Script SQL Oficial para o Banco de Dados Supabase
+  const SQL_SCHEMA_SUPABASE = `-- ==============================================================
+-- TEXPRO UNIFORMES ERP - SCHEMA DO SUPABASE (POSTGRESQL REALTIME)
+-- Cole e execute este script no "SQL Editor" do seu Supabase
+-- ==============================================================
+
+-- 1. Cria a tabela principal de multi-tenants e estado operacional
+create table if not exists public.erp_tenants (
+  tenant_id text primary key,
+  db jsonb not null,
+  empresa jsonb,
+  ultima_atualizacao_ms bigint,
+  versao_erp text default '8.4.0',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 2. Habilita o canal de Realtime (WebSockets) para a tabela
+alter publication supabase_realtime add table public.erp_tenants;
+
+-- 3. Habilita Row Level Security (RLS)
+alter table public.erp_tenants enable row level security;
+
+-- 4. Cria política de acesso público para o ERP
+create policy "Acesso livre anonimo ao ERP"
+on public.erp_tenants
+for all
+using (true)
+with check (true);
+`;
+
+  function obterSqlCriacaoTabelasSupabase() {
+    return SQL_SCHEMA_SUPABASE;
+  }
+
+  // --- SUPABASE CONFIG ---
+  function obterSupabaseConfig() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_SUPABASE);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {
+      console.warn('Erro ao carregar credenciais do Supabase:', e);
+    }
+    if (window.TEXPRO_SUPABASE_CONFIG) {
+      return window.TEXPRO_SUPABASE_CONFIG;
+    }
+    return null;
+  }
+
+  function salvarSupabaseConfig(config) {
+    try {
+      if (!config) {
+        localStorage.removeItem(STORAGE_KEY_SUPABASE);
+        supabaseClient = null;
+        if (supabaseChannel) {
+          supabaseChannel.unsubscribe();
+          supabaseChannel = null;
+        }
+        atualizarStatusNuvem();
+        return true;
+      }
+      localStorage.setItem(STORAGE_KEY_SUPABASE, JSON.stringify(config));
+      localStorage.setItem(STORAGE_KEY_PROVEDOR, 'supabase');
+      return inicializarSupabase();
+    } catch (e) {
+      console.error('Erro ao salvar credenciais do Supabase:', e);
+      return false;
+    }
+  }
+
+  function inicializarSupabase() {
+    const config = obterSupabaseConfig();
+    if (!config || !config.url || !config.anonKey) {
+      supabaseClient = null;
+      atualizarStatusNuvem();
+      return false;
+    }
+
+    if (typeof window.supabase === 'undefined' || typeof window.supabase.createClient !== 'function') {
+      console.warn('SDK do Supabase ainda não carregou do CDN.');
+      atualizarStatusNuvem();
+      return false;
+    }
+
+    try {
+      supabaseClient = window.supabase.createClient(config.url.trim(), config.anonKey.trim(), {
+        auth: { persistSession: false, autoRefreshToken: false }
+      });
+      atualizarStatusNuvem();
+      return true;
+    } catch (err) {
+      console.error('Falha ao inicializar Supabase:', err);
+      supabaseClient = null;
+      atualizarStatusNuvem();
+      return false;
+    }
+  }
+
+  // --- FIREBASE CONFIG (LEGACY / FALLBACK) ---
   function obterFirebaseConfig() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY_FIREBASE);
@@ -238,29 +343,17 @@
       if (!config) {
         localStorage.removeItem(STORAGE_KEY_FIREBASE);
         firestoreDb = null;
-        if (unsubscribeRealtime) unsubscribeRealtime();
+        if (unsubscribeRealtimeFirebase) unsubscribeRealtimeFirebase();
         atualizarStatusNuvem();
         return true;
       }
       localStorage.setItem(STORAGE_KEY_FIREBASE, JSON.stringify(config));
+      localStorage.setItem(STORAGE_KEY_PROVEDOR, 'firebase');
       return inicializarFirebase();
     } catch (e) {
       console.error('Erro ao salvar credenciais do Firebase:', e);
       return false;
     }
-  }
-
-  function obterTenantId() {
-    const emp = obterEmpresaConfig();
-    if (emp && emp.cnpj) {
-      const num = emp.cnpj.replace(/\D/g, '');
-      if (num.length >= 8) return 'empresa_' + num;
-    }
-    if (emp && emp.nomeFantasia) {
-      const slug = emp.nomeFantasia.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 24);
-      if (slug.length >= 3) return 'empresa_' + slug;
-    }
-    return 'empresa_principal';
   }
 
   function inicializarFirebase() {
@@ -292,12 +385,37 @@
     }
   }
 
-  function isNuvemAtiva() {
-    return firestoreDb !== null && navigator.onLine;
+  // --- TENANT & PROVEDORES ---
+  function obterTenantId() {
+    const emp = obterEmpresaConfig();
+    if (emp && emp.cnpj) {
+      const num = emp.cnpj.replace(/\D/g, '');
+      if (num.length >= 8) return 'empresa_' + num;
+    }
+    if (emp && emp.nomeFantasia) {
+      const slug = emp.nomeFantasia.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 24);
+      if (slug.length >= 3) return 'empresa_' + slug;
+    }
+    return 'empresa_principal';
   }
 
+  function obterProvedorAtivo() {
+    const pref = localStorage.getItem(STORAGE_KEY_PROVEDOR);
+    if (pref === 'supabase' && supabaseClient) return 'supabase';
+    if (pref === 'firebase' && firestoreDb) return 'firebase';
+    if (supabaseClient) return 'supabase';
+    if (firestoreDb) return 'firebase';
+    return 'local';
+  }
+
+  function isNuvemAtiva() {
+    return (supabaseClient !== null || firestoreDb !== null) && navigator.onLine;
+  }
+
+  // --- SINCRONIZAÇÃO EM NUVEM (DEBOUNCE 1.2s) ---
   function sincronizarComNuvem(dbAtual) {
-    if (!firestoreDb || !navigator.onLine) {
+    const provedor = obterProvedorAtivo();
+    if (provedor === 'local' || !navigator.onLine) {
       atualizarStatusNuvem();
       return;
     }
@@ -307,53 +425,130 @@
     definirTextoStatusNuvem('🔄 Sincronizando...', '#dbeafe', '#1d4ed8');
 
     syncDebounceTimer = setTimeout(() => {
-      try {
-        const tenantId = obterTenantId();
-        const docRef = firestoreDb.collection('empresas_erp').doc(tenantId);
-        const agora = Date.now();
-        ultimaAtualizacaoRemota = agora;
+      const tenantId = obterTenantId();
+      const agora = Date.now();
+      ultimaAtualizacaoRemota = agora;
 
-        docRef.set({
-          db: dbAtual,
-          empresa: obterEmpresaConfig(),
-          ultimaAtualizacaoMs: agora,
-          versaoErp: "8.4.0",
-          dispositivo: navigator.userAgent.substring(0, 40)
-        }, { merge: true }).then(() => {
+      if (provedor === 'supabase' && supabaseClient) {
+        supabaseClient
+          .from('erp_tenants')
+          .upsert({
+            tenant_id: tenantId,
+            db: dbAtual,
+            empresa: obterEmpresaConfig(),
+            ultima_atualizacao_ms: agora,
+            versao_erp: "8.4.0",
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'tenant_id' })
+          .then(({ error }) => {
+            if (error) {
+              console.warn('Erro ao salvar no Supabase (mantendo local):', error);
+            }
+            atualizarStatusNuvem();
+          })
+          .catch(err => {
+            console.warn('Exceção ao sincronizar Supabase:', err);
+            atualizarStatusNuvem();
+          });
+      } else if (provedor === 'firebase' && firestoreDb) {
+        try {
+          const docRef = firestoreDb.collection('empresas_erp').doc(tenantId);
+          docRef.set({
+            db: dbAtual,
+            empresa: obterEmpresaConfig(),
+            ultimaAtualizacaoMs: agora,
+            versaoErp: "8.4.0",
+            dispositivo: navigator.userAgent.substring(0, 40)
+          }, { merge: true }).then(() => {
+            atualizarStatusNuvem();
+          }).catch(err => {
+            console.warn('Erro ao salvar no Firestore (mantendo local):', err);
+            atualizarStatusNuvem();
+          });
+        } catch (e) {
+          console.warn('Exceção ao sincronizar Firebase:', e);
           atualizarStatusNuvem();
-        }).catch(err => {
-          console.warn('Erro ao salvar no Firestore (mantendo local):', err);
-          atualizarStatusNuvem();
-        });
-      } catch (e) {
-        console.warn('Exceção ao sincronizar:', e);
-        atualizarStatusNuvem();
+        }
       }
     }, 1200);
   }
 
+  // --- ESCUTA EM TEMPO REAL ---
   function iniciarEscutaRealtime(onAtualizacaoRemota) {
-    if (!firestoreDb) return;
-    if (unsubscribeRealtime) unsubscribeRealtime();
+    const provedor = obterProvedorAtivo();
+    const tenantId = obterTenantId();
 
-    try {
-      const tenantId = obterTenantId();
-      const docRef = firestoreDb.collection('empresas_erp').doc(tenantId);
+    if (provedor === 'supabase' && supabaseClient) {
+      if (supabaseChannel) {
+        supabaseChannel.unsubscribe();
+      }
 
-      unsubscribeRealtime = docRef.onSnapshot(doc => {
-        if (!doc.exists) return;
-        const data = doc.data();
-        if (data && data.db && data.ultimaAtualizacaoMs && data.ultimaAtualizacaoMs > (ultimaAtualizacaoRemota + 500)) {
-          ultimaAtualizacaoRemota = data.ultimaAtualizacaoMs;
-          if (typeof onAtualizacaoRemota === 'function') {
-            onAtualizacaoRemota(data.db);
+      try {
+        // Carga inicial do Supabase para garantir sincronização de boot
+        supabaseClient
+          .from('erp_tenants')
+          .select('db, ultima_atualizacao_ms')
+          .eq('tenant_id', tenantId)
+          .maybeSingle()
+          .then(({ data, error }) => {
+            if (!error && data && data.db && data.ultima_atualizacao_ms) {
+              if (data.ultima_atualizacao_ms > (ultimaAtualizacaoRemota + 500)) {
+                ultimaAtualizacaoRemota = data.ultima_atualizacao_ms;
+                if (typeof onAtualizacaoRemota === 'function') {
+                  onAtualizacaoRemota(data.db);
+                }
+              }
+            }
+          })
+          .catch(e => console.warn('Aviso no fetch inicial Supabase:', e));
+
+        // Subscrição Realtime via WebSocket do Supabase
+        supabaseChannel = supabaseClient
+          .channel('realtime_erp_' + tenantId)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'erp_tenants',
+              filter: `tenant_id=eq.${tenantId}`
+            },
+            (payload) => {
+              const reg = payload.new;
+              if (reg && reg.db && reg.ultima_atualizacao_ms && reg.ultima_atualizacao_ms > (ultimaAtualizacaoRemota + 500)) {
+                ultimaAtualizacaoRemota = reg.ultima_atualizacao_ms;
+                if (typeof onAtualizacaoRemota === 'function') {
+                  onAtualizacaoRemota(reg.db);
+                }
+                definirTextoStatusNuvem('⚡ Supabase Atualizado!', '#ecfdf5', '#047857');
+                setTimeout(atualizarStatusNuvem, 2500);
+              }
+            }
+          )
+          .subscribe();
+      } catch (e) {
+        console.warn('Falha ao abrir realtime Supabase:', e);
+      }
+    } else if (provedor === 'firebase' && firestoreDb) {
+      if (unsubscribeRealtimeFirebase) unsubscribeRealtimeFirebase();
+
+      try {
+        const docRef = firestoreDb.collection('empresas_erp').doc(tenantId);
+        unsubscribeRealtimeFirebase = docRef.onSnapshot(doc => {
+          if (!doc.exists) return;
+          const data = doc.data();
+          if (data && data.db && data.ultimaAtualizacaoMs && data.ultimaAtualizacaoMs > (ultimaAtualizacaoRemota + 500)) {
+            ultimaAtualizacaoRemota = data.ultimaAtualizacaoMs;
+            if (typeof onAtualizacaoRemota === 'function') {
+              onAtualizacaoRemota(data.db);
+            }
           }
-        }
-      }, err => {
-        console.warn('Aviso no listener Firestore:', err);
-      });
-    } catch (e) {
-      console.warn('Falha ao abrir realtime Firestore:', e);
+        }, err => {
+          console.warn('Aviso no listener Firestore:', err);
+        });
+      } catch (e) {
+        console.warn('Falha ao abrir realtime Firestore:', e);
+      }
     }
   }
 
@@ -367,7 +562,7 @@
     txt.textContent = texto;
   }
 
-  // Monitoramento de Status de Rede e Nuvem
+  // --- STATUS DA BARRA SUPERIOR ---
   function atualizarStatusNuvem() {
     const badge = document.getElementById('cloudStatusBadge');
     const txt = document.getElementById('cloudStatusText');
@@ -377,41 +572,53 @@
       badge.style.background = '#fffbeb';
       badge.style.color = '#b45309';
       badge.style.borderColor = '#fde68a';
-      badge.querySelector('span:first-child').style.background = '#f59e0b';
+      const dot = badge.querySelector('span:first-child');
+      if (dot) dot.style.background = '#f59e0b';
       txt.textContent = 'Modo Local Offline Seguro';
       return;
     }
 
-    if (isNuvemAtiva()) {
+    const provedor = obterProvedorAtivo();
+    const tenantNome = obterTenantId().replace('empresa_', '');
+
+    if (provedor === 'supabase') {
       badge.style.background = '#ecfdf5';
       badge.style.color = '#047857';
       badge.style.borderColor = '#a7f3d0';
-      badge.querySelector('span:first-child').style.background = '#10b981';
-      txt.textContent = `Online • Firestore Ativo (${obterTenantId().replace('empresa_', '')})`;
+      const dot = badge.querySelector('span:first-child');
+      if (dot) dot.style.background = '#10b981';
+      txt.textContent = `Online • Supabase PostgreSQL (${tenantNome})`;
+    } else if (provedor === 'firebase') {
+      badge.style.background = '#ecfdf5';
+      badge.style.color = '#047857';
+      badge.style.borderColor = '#a7f3d0';
+      const dot = badge.querySelector('span:first-child');
+      if (dot) dot.style.background = '#10b981';
+      txt.textContent = `Online • Firestore Ativo (${tenantNome})`;
     } else {
       badge.style.background = '#f0f9ff';
       badge.style.color = '#0369a1';
       badge.style.borderColor = '#bae6fd';
-      badge.querySelector('span:first-child').style.background = '#0ea5e9';
+      const dot = badge.querySelector('span:first-child');
+      if (dot) dot.style.background = '#0ea5e9';
       txt.textContent = 'Modo Local Seguro (LocalStorage)';
     }
   }
 
   window.addEventListener('online', () => {
+    inicializarSupabase();
     inicializarFirebase();
     atualizarStatusNuvem();
   });
   window.addEventListener('offline', atualizarStatusNuvem);
 
-  // Modal para Conexão com Firebase / Banco na Nuvem
+  // --- MODAL DE CONFIGURAÇÃO DA NUVEM (SUPABASE / FIREBASE) ---
   function abrirModalConfigNuvem() {
-    const configAtual = obterFirebaseConfig() || {};
-    const tenantId = obterTenantId();
+    const supabaseCfg = obterSupabaseConfig() || {};
+    const firebaseCfg = obterFirebaseConfig() || {};
+    const provedorAtivo = obterProvedorAtivo();
     const isAtivo = isNuvemAtiva();
-
-    const configFormatada = (configAtual && configAtual.apiKey) 
-      ? JSON.stringify(configAtual, null, 2)
-      : '';
+    const tenantId = obterTenantId();
 
     const modalContainer = document.getElementById('modalContainer');
     if (!modalContainer) return;
@@ -420,47 +627,90 @@
     overlay.className = 'modal-layer';
     overlay.innerHTML = `
       <div class="modal-overlay active">
-        <div class="modal-box" style="max-width: 660px;">
+        <div class="modal-box" style="max-width: 680px;">
           <div class="modal-header">
             <div>
-              <div class="modal-title">Configurar Banco na Nuvem (Firebase / Firestore)</div>
+              <div class="modal-title">Configurar Banco de Dados na Nuvem</div>
               <div style="font-size: 11.5px; color: var(--text-gray-500); margin-top: 2px;">
-                Permite acesso multi-dispositivo (celular, tablet e computador) com sincronização em tempo real
+                Sincronize pedidos e estoque em tempo real entre celular, tablet e computador
               </div>
             </div>
             <button class="modal-close" id="btnFecharModalNuvem">&times;</button>
           </div>
 
           <div class="modal-body" style="padding: 20px;">
+            <!-- Status Card -->
             <div style="background: ${isAtivo ? '#ecfdf5' : '#f0f9ff'}; border: 1.5px solid ${isAtivo ? '#a7f3d0' : '#bae6fd'}; border-radius: 6px; padding: 12px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
               <div>
                 <strong style="color: ${isAtivo ? '#047857' : '#0369a1'}; font-size: 13px;">
-                  ${isAtivo ? '🟢 Nuvem Ativa e Conectada ao Firestore' : '🔵 Sistema em Modo Local Seguro (Offline-First)'}
+                  ${isAtivo 
+                    ? `🟢 Conectado via ${provedorAtivo === 'supabase' ? 'Supabase (PostgreSQL)' : 'Firebase Firestore'}` 
+                    : '🔵 Modo Local Offline-First Ativo (Zero Risco)'}
                 </strong>
                 <div style="font-size: 11.5px; color: ${isAtivo ? '#065f46' : '#0c4a6e'}; margin-top: 2px;">
                   ${isAtivo 
-                    ? `Identificador da Fábrica: <strong>${tenantId}</strong> • Gravando pedidos em tempo real.`
-                    : 'Cole abaixo as chaves do seu projeto Firebase para ativar o banco em nuvem multi-dispositivo.'}
+                    ? `Fábrica: <strong>${tenantId}</strong> • Atualização instantânea multi-telas ativada.`
+                    : 'Conecte seu banco de dados na nuvem para compartilhar dados com seus vendedores.'}
                 </div>
               </div>
               <span class="status-pill ${isAtivo ? 'status-green' : 'status-blue'}" style="font-size: 10px; font-weight: 800;">
-                ${isAtivo ? 'SINCRONIZADO' : 'PRONTO PARA CONECTAR'}
+                ${isAtivo ? 'SINCRONIZADO' : 'PRONTO'}
               </span>
             </div>
 
-            <div class="form-group" style="margin-bottom: 14px;">
-              <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
-                <span>Cole aqui o objeto de configuração do Firebase (firebaseConfig):</span>
-                <a href="https://console.firebase.google.com/" target="_blank" style="font-size: 11px; color: #0284c7; text-decoration: underline;">Como pegar no Firebase Console?</a>
-              </label>
-              <textarea id="txtFirebaseConfig" class="form-input" style="height: 140px; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.4;" placeholder='{\n  "apiKey": "AIzaSy...",\n  "authDomain": "seuerp.firebaseapp.com",\n  "projectId": "seuerp",\n  "storageBucket": "seuerp.appspot.com",\n  "messagingSenderId": "...",\n  "appId": "..."\n}'>${configFormatada}</textarea>
+            <!-- Abas de Seleção de Provedor -->
+            <div style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+              <button type="button" id="tabSupabase" class="btn btn-sm ${provedorAtivo === 'supabase' || provedorAtivo === 'local' ? 'btn-primary' : 'btn-secondary'}" style="display: flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                Supabase (PostgreSQL - Recomendado)
+              </button>
+              <button type="button" id="tabFirebase" class="btn btn-sm ${provedorAtivo === 'firebase' ? 'btn-primary' : 'btn-secondary'}" style="display: flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L3 19h18L12 2z"/></svg>
+                Firebase (Firestore)
+              </button>
             </div>
 
-            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; font-size: 11.5px; color: #475569; line-height: 1.5;">
-              <strong style="color: #0f172a;">Como funciona na prática:</strong><br>
-              • <strong>Zero risco:</strong> Seus dados continuam salvos no computador mesmo se a internet cair.<br>
-              • <strong>Multi-dispositivo:</strong> Vendedor lança orçamento no WhatsApp do celular e a fábrica recebe no mesmo instante.<br>
-              • <strong>Plano gratuito:</strong> O Firebase oferece 50.000 leituras e 20.000 gravações por dia sem custo.
+            <!-- PAINEL SUPABASE -->
+            <div id="painelSupabase" style="display: ${provedorAtivo === 'firebase' ? 'none' : 'block'};">
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 14px; font-size: 11.5px; color: #334155; line-height: 1.5;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <strong style="color: #0f172a; font-size: 12px;">Passo 1: Criar tabela no Supabase</strong>
+                  <a href="https://supabase.com/dashboard" target="_blank" style="color: #0284c7; text-decoration: underline; font-weight: 600;">Abrir Supabase Dashboard &rarr;</a>
+                </div>
+                Crie um projeto grátis no Supabase, abra o <strong>SQL Editor</strong> e rode o script oficial com 1 clique:
+                <div style="margin-top: 8px;">
+                  <button type="button" id="btnCopiarSqlSupabase" class="btn btn-secondary btn-sm" style="font-size: 11px;">
+                    📋 Copiar Script SQL do Supabase
+                  </button>
+                  <span id="msgSqlCopiado" style="display: none; margin-left: 8px; color: #16a34a; font-weight: 700; font-size: 11px;">✓ SQL Copiado para a Área de Transferência!</span>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label class="form-label" style="font-size: 11.5px;">Project URL (URL do Projeto Supabase):</label>
+                <input type="text" id="txtSupabaseUrl" class="form-input" style="font-family: var(--font-mono); font-size: 12px;" placeholder="https://xxxxxxxxxxxxxxxxxxxx.supabase.co" value="${supabaseCfg.url || ''}">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label" style="font-size: 11.5px;">API Key (chave anon / public):</label>
+                <input type="password" id="txtSupabaseKey" class="form-input" style="font-family: var(--font-mono); font-size: 12px;" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." value="${supabaseCfg.anonKey || ''}">
+              </div>
+            </div>
+
+            <!-- PAINEL FIREBASE -->
+            <div id="painelFirebase" style="display: ${provedorAtivo === 'firebase' ? 'block' : 'none'};">
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+                  <span>Cole aqui o objeto de configuração do Firebase (firebaseConfig):</span>
+                  <a href="https://console.firebase.google.com/" target="_blank" style="font-size: 11px; color: #0284c7; text-decoration: underline;">Console Firebase &rarr;</a>
+                </label>
+                <textarea id="txtFirebaseConfig" class="form-input" style="height: 120px; font-family: var(--font-mono); font-size: 11px; line-height: 1.4;" placeholder='{\n  "apiKey": "AIzaSy...",\n  "projectId": "seuerp"\n}'>${firebaseCfg && firebaseCfg.apiKey ? JSON.stringify(firebaseCfg, null, 2) : ''}</textarea>
+              </div>
+            </div>
+
+            <!-- Vantagens -->
+            <div style="background: #f1f5f9; border-radius: 6px; padding: 10px 12px; font-size: 11px; color: #475569; line-height: 1.4;">
+              💡 <strong>Segurança Total:</strong> Toda gravação é offline-first. Se a internet cair no meio da confecção, tudo continua funcionando no computador e sincroniza automaticamente assim que a conexão retornar.
             </div>
           </div>
 
@@ -493,51 +743,119 @@
     overlay.querySelector('#btnFecharModalNuvem')?.addEventListener('click', fechar);
     overlay.querySelector('#btnCancelarNuvem')?.addEventListener('click', fechar);
 
+    // Troca de Abas
+    const tabSupabase = overlay.querySelector('#tabSupabase');
+    const tabFirebase = overlay.querySelector('#tabFirebase');
+    const painelSupabase = overlay.querySelector('#painelSupabase');
+    const painelFirebase = overlay.querySelector('#painelFirebase');
+
+    let abaAtual = (provedorAtivo === 'firebase') ? 'firebase' : 'supabase';
+
+    tabSupabase?.addEventListener('click', () => {
+      abaAtual = 'supabase';
+      tabSupabase.className = 'btn btn-sm btn-primary';
+      tabFirebase.className = 'btn btn-sm btn-secondary';
+      painelSupabase.style.display = 'block';
+      painelFirebase.style.display = 'none';
+    });
+
+    tabFirebase?.addEventListener('click', () => {
+      abaAtual = 'firebase';
+      tabFirebase.className = 'btn btn-sm btn-primary';
+      tabSupabase.className = 'btn btn-sm btn-secondary';
+      painelFirebase.style.display = 'block';
+      painelSupabase.style.display = 'none';
+    });
+
+    // Copiar Script SQL do Supabase
+    overlay.querySelector('#btnCopiarSqlSupabase')?.addEventListener('click', () => {
+      const sql = obterSqlCriacaoTabelasSupabase();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(sql).then(() => {
+          const msg = overlay.querySelector('#msgSqlCopiado');
+          if (msg) {
+            msg.style.display = 'inline';
+            setTimeout(() => { msg.style.display = 'none'; }, 4000);
+          }
+        });
+      } else {
+        prompt('Copie o script SQL abaixo e cole no SQL Editor do Supabase:', sql);
+      }
+    });
+
+    // Desconectar Nuvem
     overlay.querySelector('#btnDesconectarNuvem')?.addEventListener('click', () => {
       if (confirm('Deseja desconectar da nuvem? O sistema voltará a salvar apenas no computador atual.')) {
+        salvarSupabaseConfig(null);
         salvarFirebaseConfig(null);
+        localStorage.setItem(STORAGE_KEY_PROVEDOR, 'local');
         fechar();
         alert('Nuvem desconectada com sucesso. Modo Local Seguro ativo.');
       }
     });
 
+    // Salvar e Conectar
     overlay.querySelector('#btnSalvarConectarNuvem')?.addEventListener('click', () => {
-      const raw = overlay.querySelector('#txtFirebaseConfig')?.value.trim();
-      if (!raw) {
-        alert('Por favor, cole as credenciais do Firebase.');
-        return;
-      }
+      if (abaAtual === 'supabase') {
+        const url = overlay.querySelector('#txtSupabaseUrl')?.value.trim();
+        const anonKey = overlay.querySelector('#txtSupabaseKey')?.value.trim();
 
-      try {
-        let configObj = null;
-        if (raw.startsWith('{') && raw.endsWith('}')) {
-          configObj = JSON.parse(raw);
-        } else {
-          // Tentativa de parsing de objeto JS colado direto
-          const cleanStr = raw.replace(/const\s+firebaseConfig\s*=\s*/, '').replace(/;\s*$/, '');
-          configObj = Function('"use strict"; return (' + cleanStr + ')')();
+        if (!url || !anonKey) {
+          alert('Por favor, informe a URL do projeto Supabase e a API Key (anon).');
+          return;
         }
 
-        if (!configObj || !configObj.apiKey || !configObj.projectId) {
-          throw new Error('As chaves apiKey e projectId são obrigatórias.');
+        if (!url.startsWith('http')) {
+          alert('A URL do Supabase deve começar com https://');
+          return;
         }
 
-        const ok = salvarFirebaseConfig(configObj);
+        const ok = salvarSupabaseConfig({ url, anonKey });
         if (ok) {
           fechar();
-          alert('Conexão com o Firebase estabelecida com sucesso! O sistema agora sincroniza em nuvem em tempo real.');
+          alert('Conexão com o Supabase estabelecida com sucesso! O sistema agora utiliza PostgreSQL com sincronização em tempo real.');
         } else {
-          alert('Não foi possível conectar ao Firebase. Verifique se o Firestore está habilitado no seu console Firebase.');
+          alert('Não foi possível conectar ao Supabase. Verifique se o script SQL foi executado e se as chaves estão corretas.');
         }
-      } catch (err) {
-        alert('Erro ao interpretar configuração do Firebase: ' + err.message);
+      } else {
+        const raw = overlay.querySelector('#txtFirebaseConfig')?.value.trim();
+        if (!raw) {
+          alert('Por favor, cole as credenciais do Firebase.');
+          return;
+        }
+
+        try {
+          let configObj = null;
+          if (raw.startsWith('{') && raw.endsWith('}')) {
+            configObj = JSON.parse(raw);
+          } else {
+            const cleanStr = raw.replace(/const\s+firebaseConfig\s*=\s*/, '').replace(/;\s*$/, '');
+            configObj = Function('"use strict"; return (' + cleanStr + ')')();
+          }
+
+          if (!configObj || !configObj.apiKey || !configObj.projectId) {
+            throw new Error('As chaves apiKey e projectId são obrigatórias.');
+          }
+
+          const ok = salvarFirebaseConfig(configObj);
+          if (ok) {
+            fechar();
+            alert('Conexão com o Firebase estabelecida com sucesso!');
+          } else {
+            alert('Não foi possível conectar ao Firebase.');
+          }
+        } catch (err) {
+          alert('Erro ao interpretar configuração do Firebase: ' + err.message);
+        }
       }
     });
   }
 
-  // Inicialização Automática da Nuvem se houver chaves salvas
+  // Inicialização Automática da Nuvem no Boot
   document.addEventListener('DOMContentLoaded', () => {
+    inicializarSupabase();
     inicializarFirebase();
+    atualizarStatusNuvem();
   });
 
   // Exposição Global do Módulo
@@ -551,9 +869,15 @@
     exportarBackupJson,
     restaurarBackupJson,
     perfis: PERFIS_PERMISSOES,
-    // Métodos de Nuvem Firebase
+    // Supabase
+    obterSupabaseConfig,
+    salvarSupabaseConfig,
+    obterSqlCriacaoTabelasSupabase,
+    // Firebase
     obterFirebaseConfig,
     salvarFirebaseConfig,
+    // Estado Geral da Nuvem
+    obterProvedorAtivo,
     isNuvemAtiva,
     sincronizarComNuvem,
     iniciarEscutaRealtime,
