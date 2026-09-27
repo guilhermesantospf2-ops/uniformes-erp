@@ -215,6 +215,180 @@
     }
   }
 
+  // Utilitário de Parsing de Datas Diversas (ISO, YYYY-MM-DD, DD/MM/YYYY)
+  function parsearDataGenerica(str) {
+    if (!str) return null;
+    if (str instanceof Date) return isNaN(str.getTime()) ? null : str;
+    if (typeof str !== 'string') return null;
+    str = str.trim();
+    if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+      const parts = str.substring(0, 10).split('-');
+      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
+      return isNaN(d.getTime()) ? null : d;
+    }
+    if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
+      const parts = str.substring(0, 10).split('/');
+      const d = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]), 12, 0, 0);
+      return isNaN(d.getTime()) ? null : d;
+    }
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // Motor de Contagem Regressiva e Alerta Térmico de Prazos dos Pedidos
+  function calcularContagemRegressivaPedido(p) {
+    if (!p) {
+      return {
+        statusPrazo: 'indefinido',
+        diffDias: 999,
+        classeCor: 'countdown-finalizado',
+        pulse: false,
+        label: 'INDEFINIDO',
+        diasTexto: 'Sem dados',
+        corBarra: '#cbd5e1',
+        percTempo: 0,
+        badgeHtml: `<span class="badge-countdown countdown-finalizado">--</span>`
+      };
+    }
+
+    const isFinalizado = p.status === 'Finalizado' || p.status === 'Entregue' || p.etapaProducao === 'Entregue' || p.etapa === 'Entregue' || p.etapaProducao === 'Expedicao';
+    if (isFinalizado) {
+      return {
+        statusPrazo: 'finalizado',
+        diffDias: 0,
+        classeCor: 'countdown-finalizado',
+        pulse: false,
+        label: p.status === 'Finalizado' || p.status === 'Entregue' ? 'ENTREGUE' : 'EXPEDIÇÃO',
+        diasTexto: 'Pedido concluído pela fábrica',
+        corBarra: '#94a3b8',
+        percTempo: 100,
+        badgeHtml: `<span class="badge-countdown countdown-finalizado" title="Pedido concluído ou em expedição"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> ${p.status === 'Finalizado' || p.status === 'Entregue' ? 'ENTREGUE' : 'PRONTO'}</span>`
+      };
+    }
+
+    const dataAlvoStr = p.dataPrevisaoEntrega || p.dataMetaInterna || p.dataPrevisaoInterna;
+    if (!dataAlvoStr) {
+      return {
+        statusPrazo: 'sem_prazo',
+        diffDias: 999,
+        classeCor: 'countdown-finalizado',
+        pulse: false,
+        label: 'SEM PRAZO',
+        diasTexto: 'Prazo a definir',
+        corBarra: '#cbd5e1',
+        percTempo: 0,
+        badgeHtml: `<span class="badge-countdown countdown-finalizado" title="Prazo de entrega não definido">SEM PRAZO</span>`
+      };
+    }
+
+    const dataAlvo = parsearDataGenerica(dataAlvoStr);
+    if (!dataAlvo) {
+      return {
+        statusPrazo: 'invalido',
+        diffDias: 999,
+        classeCor: 'countdown-finalizado',
+        pulse: false,
+        label: 'DATA INVÁLIDA',
+        diasTexto: 'Data inválida',
+        corBarra: '#cbd5e1',
+        percTempo: 0,
+        badgeHtml: `<span class="badge-countdown countdown-finalizado">PRAZO --</span>`
+      };
+    }
+
+    const hoje = new Date();
+    hoje.setHours(12, 0, 0, 0);
+
+    const diffMs = dataAlvo.getTime() - hoje.getTime();
+    const diffDias = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+    // Progresso do tempo decorrido
+    let percTempo = 50;
+    if (p.dataCriacao) {
+      const dataCriacao = parsearDataGenerica(p.dataCriacao) || new Date(hoje.getTime() - (7 * 86400000));
+      const totalMs = dataAlvo.getTime() - dataCriacao.getTime();
+      const decorridoMs = hoje.getTime() - dataCriacao.getTime();
+      if (totalMs > 0) {
+        percTempo = Math.min(100, Math.max(0, Math.round((decorridoMs / totalMs) * 100)));
+      } else {
+        percTempo = 100;
+      }
+    }
+
+    let classeCor = 'countdown-seguro';
+    let statusPrazo = 'seguro';
+    let pulse = false;
+    let label = '';
+    let diasTexto = '';
+    let corBarra = '#10b981';
+
+    if (diffDias < 0) {
+      const atraso = Math.abs(diffDias);
+      classeCor = 'countdown-atrasado';
+      statusPrazo = 'atrasado';
+      pulse = true;
+      corBarra = '#ef4444';
+      label = `ATRASADO (-${atraso}d)`;
+      diasTexto = `Prazo estourado há ${atraso} ${atraso === 1 ? 'dia' : 'dias'}`;
+    } else if (diffDias === 0) {
+      classeCor = 'countdown-hoje';
+      statusPrazo = 'hoje';
+      pulse = true;
+      corBarra = '#dc2626';
+      label = `VENCE HOJE`;
+      diasTexto = `Prazo final hoje!`;
+    } else if (diffDias === 1) {
+      classeCor = 'countdown-urgente';
+      statusPrazo = 'urgente';
+      pulse = true;
+      corBarra = '#ea580c';
+      label = `VENCE AMANHÃ (1d)`;
+      diasTexto = `Falta apenas 1 dia para o prazo final`;
+    } else if (diffDias <= 3) {
+      classeCor = 'countdown-atencao';
+      statusPrazo = 'atencao';
+      pulse = false;
+      corBarra = '#d97706';
+      label = `RESTAM ${diffDias} DIAS`;
+      diasTexto = `Faltam ${diffDias} dias para a entrega`;
+    } else if (diffDias <= 7) {
+      classeCor = 'countdown-normal';
+      statusPrazo = 'normal';
+      pulse = false;
+      corBarra = '#0284c7';
+      label = `RESTAM ${diffDias} DIAS`;
+      diasTexto = `Faltam ${diffDias} dias para a entrega`;
+    } else {
+      classeCor = 'countdown-seguro';
+      statusPrazo = 'seguro';
+      pulse = false;
+      corBarra = '#059669';
+      label = `RESTAM ${diffDias} DIAS`;
+      diasTexto = `Prazo confortável (${diffDias} dias)`;
+    }
+
+    const badgeHtml = `
+      <span class="badge-countdown ${classeCor} ${pulse ? 'prazo-urgente-pulse' : ''}" 
+            title="${diasTexto} (Data limite: ${dataAlvoStr})">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        ${label}
+      </span>
+    `;
+
+    return {
+      diffDias,
+      statusPrazo,
+      classeCor,
+      pulse,
+      label,
+      diasTexto,
+      corBarra,
+      percTempo,
+      badgeHtml,
+      dataAlvoStr
+    };
+  }
+
   let filtroDespesas = 'todas';
 
   // Configuração dos Menus da Sidebar
@@ -511,6 +685,25 @@
       badgeCapacidadeHtml = `<span class="status-pill status-red">Atenção: Sobrecarga (${mediaOcupacao}%)</span>`;
     }
 
+    // 3. Cálculo Dinâmico do Radar & Termômetro de Prazos da Fábrica
+    const pedidosAtivosPrazos = db.pedidos.filter(p => p.status !== 'Finalizado' && p.status !== 'Cancelado' && p.status !== 'Entregue');
+    let qtdAtrasados = 0;
+    let qtdHoje = 0;
+    let qtdAmanha = 0;
+    let qtdCriticos = 0;
+    let qtdNoPrazo = 0;
+    let qtdSeguros = 0;
+
+    pedidosAtivosPrazos.forEach(p => {
+      const cd = calcularContagemRegressivaPedido(p);
+      if (cd.statusPrazo === 'atrasado') qtdAtrasados++;
+      else if (cd.statusPrazo === 'hoje') qtdHoje++;
+      else if (cd.statusPrazo === 'urgente') qtdAmanha++;
+      else if (cd.statusPrazo === 'atencao') qtdCriticos++;
+      else if (cd.statusPrazo === 'normal') qtdNoPrazo++;
+      else if (cd.statusPrazo === 'seguro') qtdSeguros++;
+    });
+
     contentArea.innerHTML = `
       <div class="grid-cards-4">
         <div class="card">
@@ -558,7 +751,40 @@
         </div>
       </div>
 
+      <!-- Radar & Termômetro de Prazos dos Pedidos -->
+      <div class="radar-prazos-container">
+        <span class="radar-prazos-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          Radar de Prazos:
+        </span>
+
+        <span class="radar-chip countdown-atrasado ${qtdAtrasados > 0 ? 'prazo-urgente-pulse' : ''}" onclick="window.ERP.navegarPara('pedidos')" title="Pedidos com prazo estourado">
+          ⚠️ Atrasados: <strong class="radar-chip-count">${qtdAtrasados}</strong>
+        </span>
+
+        <span class="radar-chip countdown-hoje ${qtdHoje > 0 ? 'prazo-urgente-pulse' : ''}" onclick="window.ERP.navegarPara('pedidos')" title="Pedidos que vencem hoje">
+          🔥 Vencem Hoje: <strong class="radar-chip-count">${qtdHoje}</strong>
+        </span>
+
+        <span class="radar-chip countdown-urgente ${qtdAmanha > 0 ? 'prazo-urgente-pulse' : ''}" onclick="window.ERP.navegarPara('pedidos')" title="Pedidos que vencem amanhã">
+          ⚡ Vencem Amanhã: <strong class="radar-chip-count">${qtdAmanha}</strong>
+        </span>
+
+        <span class="radar-chip countdown-atencao" onclick="window.ERP.navegarPara('pedidos')" title="Pedidos com prazo de 2 a 3 dias">
+          ⏳ Atenção (2-3d): <strong class="radar-chip-count">${qtdCriticos}</strong>
+        </span>
+
+        <span class="radar-chip countdown-normal" onclick="window.ERP.navegarPara('pedidos')" title="Pedidos com prazo de 4 a 7 dias">
+          ⏱️ No Prazo (4-7d): <strong class="radar-chip-count">${qtdNoPrazo}</strong>
+        </span>
+
+        <span class="radar-chip countdown-seguro" onclick="window.ERP.navegarPara('pedidos')" title="Pedidos com prazo acima de 7 dias">
+          🟢 Confortável (>7d): <strong class="radar-chip-count">${qtdSeguros}</strong>
+        </span>
+      </div>
+
       <div class="grid-cards-2">
+
         <!-- 1. Performance Financeira Semestral (Entradas e Saídas Reais) -->
         <div class="card">
           <div class="table-header-bar" style="padding: 0 0 10px 0; align-items: flex-start;">
@@ -661,6 +887,7 @@
               <th>Cliente</th>
               <th>Produto Têxtil</th>
               <th>Grade</th>
+              <th>Prazo & Contagem</th>
               <th>Valor Total</th>
               <th>Sinal (50%)</th>
               <th>Status</th>
@@ -676,6 +903,7 @@
               const saldoV = Math.max(0, totalV - pagoV);
               const quitV = totalV > 0 && saldoV <= 0;
               const percV = totalV > 0 ? ((pagoV / totalV) * 100).toFixed(0) : 0;
+              const countdown = calcularContagemRegressivaPedido(p);
               return `
                 <tr>
                   <td>
@@ -685,6 +913,14 @@
                   <td><strong>${p.clienteNome}</strong></td>
                   <td>${p.produtoNome}</td>
                   <td class="text-mono">${p.grade?.total || 0} un</td>
+                  <td>
+                    ${countdown.badgeHtml}
+                    ${(p.dataPrevisaoEntrega || p.dataMetaInterna) ? `
+                      <span style="display: block; font-size: 9.5px; color: #1e40af; margin-top: 3px; font-weight: 700;">
+                        📅 ${p.dataPrevisaoEntrega || p.dataMetaInterna}
+                      </span>
+                    ` : ''}
+                  </td>
                   <td class="text-mono"><strong>${formatarMoeda(p.valorTotalVenda)}</strong></td>
                   <td>
                     ${quitV ? `
@@ -712,7 +948,7 @@
               `;
             }).join('') : `
               <tr>
-                <td colspan="9" style="text-align: center; padding: 40px 20px; color: var(--text-gray-500);">
+                <td colspan="11" style="text-align: center; padding: 40px 20px; color: var(--text-gray-500);">
                   <div style="font-size: 13.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">
                     Nenhum pedido em carteira no momento
                   </div>
@@ -875,22 +1111,34 @@
               const percPago = totalVenda > 0 ? ((jaPago / totalVenda) * 100).toFixed(0) : 0;
               const isQuarentena = p.status === 'Quarentena';
               const isOrcamento = p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento';
+              const countdown = calcularContagemRegressivaPedido(p);
               return `
                 <tr>
                   <td>
                     <img src="${mockup}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela">
                   </td>
                   <td>
-                    <span class="text-mono" style="font-weight: 800; font-size: 13px;">#${p.numero}</span>
-                    <span style="display: block; font-size: 10.5px; color: var(--text-gray-500);">${p.dataCriacao}</span>
-                    <span class="status-pill ${isOrcamento ? 'status-gray' : isQuarentena ? 'status-red' : 'status-green'}" 
-                          style="font-size: 9px; margin-top: 3px; ${isOrcamento ? 'background: #e0f2fe; color: #0369a1; border-color: #bae6fd; font-weight: 800;' : ''}">
-                      ${isOrcamento ? 'ORÇAMENTO' : isQuarentena ? 'QUARENTENA' : 'PEDIDO'}
-                    </span>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                      <span class="text-mono" style="font-weight: 800; font-size: 13px;">#${p.numero}</span>
+                      <span class="status-pill ${isOrcamento ? 'status-gray' : isQuarentena ? 'status-red' : 'status-green'}" 
+                            style="font-size: 8.5px; padding: 1.5px 5px; ${isOrcamento ? 'background: #e0f2fe; color: #0369a1; border-color: #bae6fd; font-weight: 800;' : ''}">
+                        ${isOrcamento ? 'ORÇAMENTO' : isQuarentena ? 'QUARENTENA' : 'PEDIDO'}
+                      </span>
+                    </div>
+                    <span style="display: block; font-size: 10px; color: var(--text-gray-500); margin-top: 2px;">Criado: ${p.dataCriacao || '-'}</span>
+
+                    <!-- CONTAGEM REGRESSIVA DINÂMICA COM CORES DE URGÊNCIA -->
+                    <div style="margin-top: 6px;">
+                      ${countdown.badgeHtml}
+                      <div class="countdown-bar-track" title="Tempo decorrido: ${countdown.percTempo}%">
+                        <div class="countdown-bar-fill" style="width: ${countdown.percTempo}%; background-color: ${countdown.corBarra};"></div>
+                      </div>
+                    </div>
+
                     ${(p.dataPrevisaoEntrega || p.dataMetaInterna) ? `
-                      <div style="font-size: 9.5px; margin-top: 4px; line-height: 1.25;">
-                        <span style="color: #1e40af; font-weight: 700;" title="Prazo Prometido ao Cliente">📅 Cli: ${p.dataPrevisaoEntrega || '-'}</span><br>
-                        ${p.dataMetaInterna ? `<span style="color: #0369a1; font-weight: 700;" title="Meta Interna Chão de Fábrica">🏭 Fáb: ${p.dataMetaInterna}</span>` : ''}
+                      <div style="font-size: 9.5px; margin-top: 5px; line-height: 1.3;">
+                        <span style="color: #1e40af; font-weight: 700;" title="Prazo Prometido ao Cliente">📅 Cli: ${p.dataPrevisaoEntrega || '-'}</span>
+                        ${p.dataMetaInterna ? `<br><span style="color: #0369a1; font-weight: 700;" title="Meta Interna Chão de Fábrica">🏭 Fáb: ${p.dataMetaInterna}</span>` : ''}
                       </div>
                     ` : ''}
                   </td>
@@ -1047,6 +1295,7 @@
                   const percPago = totalVenda > 0 ? ((jaPago / totalVenda) * 100).toFixed(0) : 0;
                   const isQuarentena = p.status === 'Quarentena';
                   const isOrcamento = p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento';
+                  const countdown = calcularContagemRegressivaPedido(p);
                   return `
                     <div class="kanban-card" draggable="true" data-id="${p.id}" title="Segure e arraste para mudar a etapa do pedido">
                       <div style="display: flex; gap: 8px; margin-bottom: 8px;">
@@ -1067,8 +1316,17 @@
                           </div>
                           <div class="kanban-card-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.clienteNome}</div>
                           <div class="kanban-card-sub">${p.grade?.total || 0}x ${p.produtoNome}</div>
+
+                          <!-- CONTAGEM REGRESSIVA NO CARD KANBAN -->
+                          <div style="margin-top: 5px;">
+                            ${countdown.badgeHtml}
+                            <div class="countdown-bar-track" style="margin-top: 3px;" title="Tempo decorrido: ${countdown.percTempo}%">
+                              <div class="countdown-bar-fill" style="width: ${countdown.percTempo}%; background-color: ${countdown.corBarra};"></div>
+                            </div>
+                          </div>
+
                           ${(p.dataPrevisaoEntrega || p.dataMetaInterna) ? `
-                            <div style="font-size: 9.5px; color: #1e40af; margin-top: 3px; font-weight: 700; display: flex; justify-content: space-between; line-height: 1.2;">
+                            <div style="font-size: 9.5px; color: #1e40af; margin-top: 4px; font-weight: 700; display: flex; justify-content: space-between; line-height: 1.2;">
                               <span>📅 Cli: ${p.dataPrevisaoEntrega || '-'}</span>
                               ${p.dataMetaInterna ? `<span style="color: #0369a1;">🏭 Fáb: ${p.dataMetaInterna}</span>` : ''}
                             </div>
@@ -3487,6 +3745,7 @@
     const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
       ? window.ERP_CLOUD.obterEmpresaConfig()
       : (db.empresa || {});
+    const countdown = calcularContagemRegressivaPedido(p);
 
     return `
       <!-- Cabeçalho Empresarial -->
@@ -3514,6 +3773,9 @@
         <div>
           <span style="font-size: 10px; text-transform: uppercase; font-weight: 800; color: #0369a1; display: block;">Prazo Prometido de Produção & Entrega:</span>
           <strong style="font-size: 13px; color: #1e40af;">📅 ${dataPrev} (${prazoDias} dias úteis)</strong>
+        </div>
+        <div style="text-align: center;">
+          ${countdown.badgeHtml}
         </div>
         <div style="text-align: right;">
           <span style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: #64748b; display: block;">Condição de Fornecimento:</span>
@@ -3660,6 +3922,7 @@
               <th>Cliente</th>
               <th>Produto Têxtil</th>
               <th>Grade</th>
+              <th>Prazo & Contagem</th>
               <th>Costureira / Facção</th>
               <th>Etapa Atual</th>
               <th>Consumo Tecido</th>
@@ -3669,6 +3932,12 @@
           <tbody>
             ${db.ordensServico.length ? db.ordensServico.map(os => {
               const mockup = os.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(os.produto, "#1e3a8a", "#ffffff", os.cliente.substring(0, 6));
+              const pOrig = db.pedidos.find(x => x.numero === os.pedidoNumero) || {};
+              const countdown = calcularContagemRegressivaPedido(pOrig.id ? pOrig : {
+                dataPrevisaoEntrega: os.dataPrevisaoEntrega,
+                dataMetaInterna: os.dataMetaInterna,
+                dataCriacao: os.dataEntradaCorte
+              });
               return `
                 <tr>
                   <td>
@@ -3679,6 +3948,14 @@
                   <td><strong>${os.cliente}</strong></td>
                   <td>${os.produto}</td>
                   <td class="text-mono">${os.quantidadeTotal} peças</td>
+                  <td>
+                    ${countdown.badgeHtml}
+                    ${(os.dataPrevisaoEntrega || os.dataMetaInterna) ? `
+                      <span style="display: block; font-size: 9.5px; color: #1e40af; margin-top: 3px; font-weight: 700;">
+                        📅 ${os.dataPrevisaoEntrega || os.dataMetaInterna}
+                      </span>
+                    ` : ''}
+                  </td>
                   <td><strong>${os.costureiraDesignada}</strong></td>
                   <td>
                     <span class="status-pill status-green">${os.etapaAtual.toUpperCase()}</span>
@@ -3694,7 +3971,7 @@
               `;
             }).join('') : `
               <tr>
-                <td colspan="10" style="text-align: center; padding: 40px 20px; color: var(--text-gray-500);">
+                <td colspan="11" style="text-align: center; padding: 40px 20px; color: var(--text-gray-500);">
                   Nenhuma Ordem de Serviço na oficina. Conforme os pedidos forem aprovados, as OS industriais com fichas técnicas A4 serão geradas automaticamente aqui.
                 </td>
               </tr>
@@ -3722,6 +3999,13 @@
     const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
       ? window.ERP_CLOUD.obterEmpresaConfig()
       : (db.empresa || {});
+    const countdown = calcularContagemRegressivaPedido(pedido.id ? pedido : { 
+      dataPrevisaoEntrega: dataEntrega, 
+      dataMetaInterna: dataMeta, 
+      dataCriacao: os.dataEntradaCorte, 
+      status: os.etapaAtual === 'Entregue' ? 'Entregue' : 'Em Producao',
+      etapaProducao: os.etapaAtual
+    });
 
     return `
       <!-- Cabeçalho da Ordem de Produção -->
@@ -3744,6 +4028,9 @@
         <div>
           <span style="font-size: 10px; text-transform: uppercase; font-weight: 800; color: #0369a1; display: block;">Prazo Prometido ao Cliente:</span>
           <strong style="font-size: 13px; color: #1e40af;">📅 ${dataEntrega} (${prazoCli} dias úteis)</strong>
+        </div>
+        <div style="text-align: center;">
+          ${countdown.badgeHtml}
         </div>
         <div style="text-align: right;">
           <span style="font-size: 10px; text-transform: uppercase; font-weight: 800; color: #0284c7; display: block;">Meta Interna do Chão de Fábrica:</span>
@@ -7426,10 +7713,21 @@
       window.ERP_CLOUD.salvarEmpresaConfig(empDemo);
     }
 
+    function dataRelativa(diasOffset) {
+      const d = new Date();
+      d.setDate(d.getDate() + diasOffset);
+      const dia = String(d.getDate()).padStart(2, '0');
+      const mes = String(d.getMonth() + 1).padStart(2, '0');
+      const ano = d.getFullYear();
+      return `${dia}/${mes}/${ano}`;
+    }
+
     const mockupPolo = window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg('polo', '#1e3a8a', '#ffffff', 'TRANSBRASIL') : '';
     const mockupDry = window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg('camiseta', '#0f172a', '#eab308', 'ALPHA') : '';
     const mockupOp = window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg('operacional', '#334155', '#eab308', 'HORIZONTE') : '';
     const mockupJaleco = window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg('jaleco', '#ffffff', '#0ea5e9', 'HOSPITAL') : '';
+    const mockupAvental = window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg('avental', '#991b1b', '#f59e0b', 'FOGO') : '';
+    const mockupAgasalho = window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg('agasalho', '#1e3a8a', '#ffffff', 'OBJETIVO') : '';
 
     db.pedidos = [
       {
@@ -7445,16 +7743,19 @@
         precoUnitarioVenda: 58.00,
         valorTotalVenda: 8700.00,
         sinalPago: true,
+        valorSinalPago: 4350.00,
         valorPago: 4350.00,
         saldoPendente: 4350.00,
         status: "Em Producao",
         etapa: "Costura",
+        etapaProducao: "Costura",
+        costureiraNome: "Dona Maria Facção Especial",
         tipoRegistro: "Pedido",
-        prazoPedidoDias: 15,
+        prazoPedidoDias: 14,
         prazoInternoDias: 10,
-        dataCriacao: hoje,
-        dataPrevisaoEntrega: calcularDataFuturaDiasUteis(15),
-        dataPrevisaoInterna: calcularDataFuturaDiasUteis(10),
+        dataCriacao: dataRelativa(-3),
+        dataPrevisaoEntrega: dataRelativa(12),
+        dataMetaInterna: dataRelativa(8),
         mockupUrl: mockupPolo,
         margemLucroPercentual: 42.5,
         custoTotalProducao: 5002.50
@@ -7472,17 +7773,19 @@
         precoUnitarioVenda: 38.00,
         valorTotalVenda: 4560.00,
         sinalPago: false,
+        valorSinalPago: 0.00,
         valorPago: 0.00,
         saldoPendente: 4560.00,
         status: "Quarentena",
         etapa: "Quarentena",
+        etapaProducao: "Quarentena",
         tipoRegistro: "Pedido",
         motivoQuarentena: "Aguardando aprovação final da arte vetorizada do cliente para impressão DTF",
-        prazoPedidoDias: 12,
-        prazoInternoDias: 8,
-        dataCriacao: hoje,
-        dataPrevisaoEntrega: calcularDataFuturaDiasUteis(12),
-        dataPrevisaoInterna: calcularDataFuturaDiasUteis(8),
+        prazoPedidoDias: 8,
+        prazoInternoDias: 5,
+        dataCriacao: dataRelativa(-3),
+        dataPrevisaoEntrega: dataRelativa(5),
+        dataMetaInterna: dataRelativa(3),
         mockupUrl: mockupDry,
         margemLucroPercentual: 48.0,
         custoTotalProducao: 2371.20
@@ -7500,19 +7803,81 @@
         precoUnitarioVenda: 74.50,
         valorTotalVenda: 9685.00,
         sinalPago: false,
+        valorSinalPago: 0.00,
         valorPago: 0.00,
         saldoPendente: 9685.00,
         status: "Orcamento",
         etapa: "Orcamento",
+        etapaProducao: "Orcamento",
         tipoRegistro: "Orcamento",
-        prazoPedidoDias: 20,
-        prazoInternoDias: 14,
-        dataCriacao: hoje,
-        dataPrevisaoEntrega: calcularDataFuturaDiasUteis(20),
-        dataPrevisaoInterna: calcularDataFuturaDiasUteis(14),
+        prazoPedidoDias: 7,
+        prazoInternoDias: 5,
+        dataCriacao: dataRelativa(-5),
+        dataPrevisaoEntrega: dataRelativa(2),
+        dataMetaInterna: dataRelativa(1),
         mockupUrl: mockupOp,
         margemLucroPercentual: 39.0,
         custoTotalProducao: 5907.85
+      },
+      {
+        id: "PED-105",
+        numero: "105",
+        clienteNome: "Restaurante e Churrascaria Fogo Nobre",
+        clienteTelefone: "11944443333",
+        produtoNome: "Avental Master Chef Sarja Pesada",
+        tecidoEspecificacao: "Sarja Tinto Vinho Tinto com Alças em Couro Sintético",
+        tipoPersonalizacao: "Bordado Central 3D Alta Definição",
+        dtfLarguraRolo: 58,
+        grade: { pp: 0, p: 20, m: 30, g: 25, gg: 5, xg: 0, total: 80 },
+        precoUnitarioVenda: 45.00,
+        valorTotalVenda: 3600.00,
+        sinalPago: true,
+        valorSinalPago: 1800.00,
+        valorPago: 1800.00,
+        saldoPendente: 1800.00,
+        status: "Em Producao",
+        etapa: "Estamparia / DTF",
+        etapaProducao: "Estamparia / DTF",
+        costureiraNome: "Oficina Interna",
+        tipoRegistro: "Pedido",
+        prazoPedidoDias: 10,
+        prazoInternoDias: 6,
+        dataCriacao: dataRelativa(-10),
+        dataPrevisaoEntrega: dataRelativa(0),
+        dataMetaInterna: dataRelativa(-1),
+        mockupUrl: mockupAvental,
+        margemLucroPercentual: 46.5,
+        custoTotalProducao: 1926.00
+      },
+      {
+        id: "PED-106",
+        numero: "106",
+        clienteNome: "Colégio Objetivo Sul & Esportes",
+        clienteTelefone: "11933332222",
+        produtoNome: "Conjunto Agasalho Helanca Escolar",
+        tecidoEspecificacao: "Helanca Flanelada 100% Poliéster Azul Royal com Detalhes Brancos",
+        tipoPersonalizacao: "Silk Screen Peito + DTF Costas",
+        dtfLarguraRolo: 58,
+        grade: { pp: 15, p: 35, m: 40, g: 15, gg: 5, xg: 0, total: 110 },
+        precoUnitarioVenda: 95.00,
+        valorTotalVenda: 10450.00,
+        sinalPago: true,
+        valorSinalPago: 5225.00,
+        valorPago: 5225.00,
+        saldoPendente: 5225.00,
+        status: "Em Producao",
+        etapa: "Corte",
+        etapaProducao: "Corte",
+        costureiraNome: "Oficina Interna",
+        tipoRegistro: "Pedido",
+        prazoPedidoDias: 12,
+        prazoInternoDias: 8,
+        dataCriacao: dataRelativa(-14),
+        dataPrevisaoEntrega: dataRelativa(-2),
+        dataMetaInterna: dataRelativa(-4),
+        mockupUrl: mockupAgasalho,
+        margemLucroPercentual: 44.0,
+        custoTotalProducao: 5852.00
       },
       {
         id: "PED-104",
@@ -7527,16 +7892,18 @@
         precoUnitarioVenda: 89.00,
         valorTotalVenda: 8010.00,
         sinalPago: true,
+        valorSinalPago: 8010.00,
         valorPago: 8010.00,
         saldoPendente: 0.00,
         status: "Entregue",
         etapa: "Entregue",
+        etapaProducao: "Entregue",
         tipoRegistro: "Pedido",
         prazoPedidoDias: 15,
         prazoInternoDias: 10,
-        dataCriacao: hoje,
-        dataPrevisaoEntrega: hoje,
-        dataPrevisaoInterna: hoje,
+        dataCriacao: dataRelativa(-20),
+        dataPrevisaoEntrega: dataRelativa(-5),
+        dataMetaInterna: dataRelativa(-8),
         mockupUrl: mockupJaleco,
         margemLucroPercentual: 52.0,
         custoTotalProducao: 3844.80
@@ -7547,7 +7914,9 @@
       { id: "CLI-01", nome: "TransBrasil Logística Integrada Ltda", contato: "Carlos Mendes (Comprador)", telefone: "11988887777", email: "carlos@transbrasil.com.br", cnpj: "12.345.678/0001-90", totalPedidos: 1, valorGastoTotal: 8700.00 },
       { id: "CLI-02", nome: "Academia Alpha Cross & Fitness", contato: "Juliana Ferreira", telefone: "11977776666", email: "comercial@alphacross.com.br", cnpj: "98.765.432/0001-11", totalPedidos: 1, valorGastoTotal: 4560.00 },
       { id: "CLI-03", nome: "Construtora Horizonte Engenharia", contato: "Eng. Roberto Albuquerque", telefone: "11966665555", email: "obras@horizonte.eng.br", cnpj: "45.678.910/0001-22", totalPedidos: 1, valorGastoTotal: 9685.00 },
-      { id: "CLI-04", nome: "Hospital Santa Clara & Diagnósticos", contato: "Dra. Patrícia Silveira", telefone: "11955554444", email: "compras@santaclara.org.br", cnpj: "23.456.789/0001-33", totalPedidos: 1, valorGastoTotal: 8010.00 }
+      { id: "CLI-04", nome: "Hospital Santa Clara & Diagnósticos", contato: "Dra. Patrícia Silveira", telefone: "11955554444", email: "compras@santaclara.org.br", cnpj: "23.456.789/0001-33", totalPedidos: 1, valorGastoTotal: 8010.00 },
+      { id: "CLI-05", nome: "Restaurante e Churrascaria Fogo Nobre", contato: "Chef Marcelo Alcantara", telefone: "11944443333", email: "marcelo@fogonobre.com.br", cnpj: "67.890.123/0001-44", totalPedidos: 1, valorGastoTotal: 3600.00 },
+      { id: "CLI-06", nome: "Colégio Objetivo Sul & Esportes", contato: "Diretora Helena Ramos", telefone: "11933332222", email: "secretaria@objetivosul.com.br", cnpj: "78.901.234/0001-55", totalPedidos: 1, valorGastoTotal: 10450.00 }
     ];
 
     db.ordensServico = [
@@ -7558,14 +7927,16 @@
         produto: "Camisa Polo Tradicional Piquet",
         quantidadeTotal: 150,
         grade: { pp: 10, p: 30, m: 50, g: 40, gg: 15, xg: 5 },
-        dataEntradaCorte: hoje,
-        etapaAtual: "costura",
+        dataEntradaCorte: dataRelativa(-3),
+        dataPrevisaoEntrega: dataRelativa(12),
+        dataMetaInterna: dataRelativa(8),
+        etapaAtual: "Costura",
         costureiraDesignada: "Dona Maria Facção Especial",
         responsavelCorte: "Mestre Antônio (Mesa 1)",
         tecidoConsumidoKg: 42.0,
         status: "Em Producao",
         mockupUrl: mockupPolo,
-        prazoPedidoDias: 15,
+        prazoPedidoDias: 14,
         prazoInternoDias: 10,
         dtfLarguraRolo: 58,
         instrucoesCorte: "Enfesto com folga de 2mm. Atenção especial ao alinhamento da gola retilínea azul com friso branco.",
@@ -7573,6 +7944,57 @@
         artesAplicacao: [
           { local: "Peito Esquerdo", dimensao: "9x4 cm", tecnica: "Bordado Computadorizado 8.500 pontos", arquivoNome: "logo_transbrasil_peito.dst" },
           { local: "Costas", dimensao: "26x12 cm", tecnica: "DTF Têxtil Digital Termocolado", arquivoNome: "transbrasil_costas_58cm.png" }
+        ]
+      },
+      {
+        id: "OS-105",
+        pedidoNumero: "105",
+        cliente: "Restaurante e Churrascaria Fogo Nobre",
+        produto: "Avental Master Chef Sarja Pesada",
+        quantidadeTotal: 80,
+        grade: { pp: 0, p: 20, m: 30, g: 25, gg: 5, xg: 0 },
+        dataEntradaCorte: dataRelativa(-10),
+        dataPrevisaoEntrega: dataRelativa(0),
+        dataMetaInterna: dataRelativa(-1),
+        etapaAtual: "Estamparia / DTF",
+        costureiraDesignada: "Oficina Interna",
+        responsavelCorte: "Mestre Antônio (Mesa 1)",
+        tecidoConsumidoKg: 28.0,
+        status: "Em Producao",
+        mockupUrl: mockupAvental,
+        prazoPedidoDias: 10,
+        prazoInternoDias: 6,
+        dtfLarguraRolo: 58,
+        instrucoesCorte: "Corte sarja com margem para bainha larga e tiras reforçadas.",
+        instrucoesCostura: "Costura pesada dupla com acabamento em rebites nos bolsos.",
+        artesAplicacao: [
+          { local: "Peito Central", dimensao: "18x12 cm", tecnica: "Bordado Computadorizado 3D", arquivoNome: "logo_fogonobre.dst" }
+        ]
+      },
+      {
+        id: "OS-106",
+        pedidoNumero: "106",
+        cliente: "Colégio Objetivo Sul & Esportes",
+        produto: "Conjunto Agasalho Helanca Escolar",
+        quantidadeTotal: 110,
+        grade: { pp: 15, p: 35, m: 40, g: 15, gg: 5, xg: 0 },
+        dataEntradaCorte: dataRelativa(-14),
+        dataPrevisaoEntrega: dataRelativa(-2),
+        dataMetaInterna: dataRelativa(-4),
+        etapaAtual: "Corte",
+        costureiraDesignada: "Oficina Interna",
+        responsavelCorte: "Mestre Antônio (Mesa 1)",
+        tecidoConsumidoKg: 55.0,
+        status: "Em Producao",
+        mockupUrl: mockupAgasalho,
+        prazoPedidoDias: 12,
+        prazoInternoDias: 8,
+        dtfLarguraRolo: 58,
+        instrucoesCorte: "Corte com alinhamento das faixas laterais brancas.",
+        instrucoesCostura: "Inserção de elástico 4cm no cós e zíper destacável na jaqueta.",
+        artesAplicacao: [
+          { local: "Peito Esquerdo", dimensao: "8x8 cm", tecnica: "Silk Screen 2 Cores", arquivoNome: "brasao_objetivo.ai" },
+          { local: "Costas", dimensao: "28x10 cm", tecnica: "DTF Digital", arquivoNome: "objetivo_costas.png" }
         ]
       }
     ];
@@ -8216,6 +8638,7 @@
   // Exposição Global das Funções Públicas da API TexPro ERP
   window.ERP = {
     navegarPara,
+    calcularContagemRegressivaPedido,
     fecharModal,
     fecharTodosModais,
     abrirFichaTecnica,

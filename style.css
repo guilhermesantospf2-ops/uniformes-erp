@@ -671,6 +671,148 @@ button.status-pill:hover {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
+/* ==========================================================================
+   CONTAGEM REGRESSIVA E TERMÔMETRO DE PRAZOS DOS PEDIDOS
+   ========================================================================== */
+.badge-countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2.5px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  letter-spacing: -0.2px;
+  line-height: 1.2;
+}
+
+.countdown-seguro {
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.countdown-normal {
+  background-color: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.countdown-atencao {
+  background-color: #fffbeb;
+  color: #b45309;
+  border: 1.5px solid #fde68a;
+}
+
+.countdown-urgente {
+  background-color: #fff7ed;
+  color: #c2410c;
+  border: 1.5px solid #fdba74;
+}
+
+.countdown-hoje {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1.5px solid #f87171;
+}
+
+.countdown-atrasado {
+  background-color: #450a0a;
+  color: #fecaca;
+  border: 1.5px solid #ef4444;
+}
+
+.countdown-finalizado {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+@keyframes animPulseUrgente {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.03); filter: brightness(1.12); }
+  100% { transform: scale(1); }
+}
+
+.prazo-urgente-pulse {
+  animation: animPulseUrgente 1.8s infinite ease-in-out;
+  display: inline-flex;
+}
+
+.countdown-bar-track {
+  width: 100%;
+  height: 4px;
+  background-color: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.countdown-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Radar & Termômetro de Prazos */
+.radar-prazos-container {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: #ffffff;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  margin-bottom: 18px;
+}
+
+.radar-prazos-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-right: 6px;
+}
+
+.radar-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.radar-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+}
+
+.radar-chip-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 800;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+
 .btn-quick-pay,
 .btn-quick-entrada {
   font-size: 11px;
