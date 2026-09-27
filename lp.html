@@ -4,31 +4,54 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TexPro ERP — O Primeiro Sistema Especializado em Confecções de Uniformes & Estamparias</title>
-  <meta name="description" content="Elimine atrasos de entrega com radar de contagem regressiva, reduza até 18% do desperdício de tecido e rolos DTF e gere fichas técnicas e propostas comerciais em segundos.">
-  
-  <!-- Favicon / Metas -->
+  <meta name="description" content="O ERP líder para indústrias de uniformes e estamparias. Elimine atrasos com Radar de Prazos, economize até 18% em rolos DTF e emita propostas A4 em segundos.">
+
+  <!-- Google Fonts Oficiais do ERP -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
   <style>
+    /* ==========================================================================
+       DESIGN SYSTEM OFICIAL DO TEXPRO ERP (ENTERPRISE LIGHT CORPORATE)
+       Paleta: Branco, Cinza Industrial, Deep Navy e Verde Esmeralda Funcional
+       ========================================================================== */
     :root {
-      --bg-dark: #070a13;
-      --bg-card: #0f172a;
-      --bg-card-hover: #1e293b;
-      --border-color: rgba(255, 255, 255, 0.08);
-      --border-glow: rgba(16, 185, 129, 0.25);
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --primary: #10b981;
-      --primary-hover: #059669;
-      --primary-glow: rgba(16, 185, 129, 0.35);
-      --accent-cyan: #06b6d4;
-      --accent-amber: #f59e0b;
-      --accent-red: #ef4444;
-      --font-body: 'Plus Jakarta Sans', sans-serif;
+      --bg-page: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-subtle: #f1f5f9;
+      --bg-muted: #e2e8f0;
+      
+      --border-subtle: #e2e8f0;
+      --border-medium: #cbd5e1;
+      --border-focus: #0f172a;
+
+      --text-main: #0f172a;
+      --text-body: #334155;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+
+      --brand-green: #047857;
+      --brand-green-hover: #065f46;
+      --brand-green-soft: #ecfdf5;
+      --brand-green-border: #a7f3d0;
+
+      --brand-blue: #0284c7;
+      --brand-blue-soft: #f0f9ff;
+      --brand-blue-border: #bae6fd;
+
+      --urgent-red: #b91c1c;
+      --urgent-red-soft: #fef2f2;
+      --urgent-red-border: #fecaca;
+
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       --font-heading: 'Outfit', sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
+
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
     }
 
     * {
@@ -38,12 +61,12 @@
     }
 
     body {
-      background-color: var(--bg-dark);
-      color: var(--text-main);
-      font-family: var(--font-body);
+      background-color: var(--bg-page);
+      color: var(--text-body);
+      font-family: var(--font-sans);
       line-height: 1.6;
-      overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
 
     a {
@@ -51,22 +74,42 @@
       text-decoration: none;
     }
 
-    /* Container Principal */
     .container {
       max-width: 1200px;
       margin: 0 auto;
       padding: 0 24px;
     }
 
-    /* Header & Navegação */
+    /* Top Banner de Alerta / Novidade */
+    .top-announcement {
+      background: var(--text-main);
+      color: #ffffff;
+      font-size: 13px;
+      padding: 8px 24px;
+      text-align: center;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .top-announcement a {
+      color: #34d399;
+      text-decoration: underline;
+      margin-left: 4px;
+    }
+
+    /* Header Fixo */
     .site-header {
       position: sticky;
       top: 0;
       z-index: 100;
-      backdrop-filter: blur(16px);
-      background: rgba(7, 10, 19, 0.85);
-      border-bottom: 1px solid var(--border-color);
-      padding: 16px 0;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 14px 0;
+      transition: all 0.2s ease;
     }
 
     .header-nav {
@@ -82,490 +125,478 @@
       font-family: var(--font-heading);
       font-size: 20px;
       font-weight: 800;
+      color: var(--text-main);
       letter-spacing: -0.5px;
     }
 
-    .brand-badge {
-      background: linear-gradient(135deg, #10b981, #06b6d4);
-      color: #fff;
-      font-size: 13px;
-      font-weight: 800;
-      padding: 4px 8px;
+    .brand-icon {
+      background: var(--brand-green);
+      color: #ffffff;
+      width: 34px;
+      height: 34px;
       border-radius: 6px;
-      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
     }
 
-    .nav-links {
+    .nav-menu {
       display: flex;
       align-items: center;
       gap: 28px;
       font-size: 14px;
       font-weight: 600;
-      color: var(--text-muted);
+      color: var(--text-body);
     }
 
-    .nav-links a:hover {
-      color: var(--text-main);
+    .nav-menu a:hover {
+      color: var(--brand-green);
     }
 
-    .header-ctas {
+    .header-actions {
       display: flex;
       align-items: center;
       gap: 12px;
     }
 
-    /* Botões */
+    /* Botões Padrão do ERP */
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-family: var(--font-heading);
-      font-size: 15px;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-family: var(--font-sans);
+      font-size: 14px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.25s ease;
-      border: none;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
       text-align: center;
+      white-space: nowrap;
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      background: var(--brand-green);
       color: #ffffff;
-      box-shadow: 0 4px 20px var(--primary-glow);
+      border-color: var(--brand-green);
+      box-shadow: 0 2px 4px rgba(4, 120, 87, 0.2);
     }
 
     .btn-primary:hover {
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+      background: var(--brand-green-hover);
+      border-color: var(--brand-green-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(4, 120, 87, 0.3);
     }
 
     .btn-secondary {
-      background: rgba(255, 255, 255, 0.05);
+      background: #ffffff;
       color: var(--text-main);
-      border: 1px solid var(--border-color);
+      border-color: var(--border-medium);
     }
 
     .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.2);
+      background: var(--bg-subtle);
+      border-color: var(--text-main);
     }
 
     .btn-whatsapp {
       background: #25d366;
       color: #072612;
-      box-shadow: 0 4px 20px rgba(37, 211, 102, 0.3);
+      border-color: #20ba59;
+      font-weight: 800;
+      box-shadow: 0 2px 6px rgba(37, 211, 102, 0.3);
     }
 
     .btn-whatsapp:hover {
       background: #20ba59;
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(37, 211, 102, 0.5);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
     }
 
     .btn-lg {
-      padding: 16px 32px;
-      font-size: 17px;
-      border-radius: 10px;
+      padding: 14px 28px;
+      font-size: 16px;
+      border-radius: 8px;
     }
 
     /* Hero Section */
     .hero-section {
-      padding: 80px 0 60px;
+      padding: 70px 0 50px;
       text-align: center;
-      position: relative;
+      background: radial-gradient(circle at top, rgba(236, 253, 245, 0.8) 0%, rgba(248, 250, 252, 1) 70%);
+      border-bottom: 1px solid var(--border-subtle);
     }
 
-    .hero-glow {
-      position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 700px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.05) 50%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .hero-content {
-      position: relative;
-      z-index: 1;
-      max-width: 940px;
-      margin: 0 auto;
-    }
-
-    .badge-pill {
+    .hero-pill {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #34d399;
+      background: var(--brand-green-soft);
+      border: 1px solid var(--brand-green-border);
+      color: var(--brand-green);
       padding: 6px 16px;
-      border-radius: 30px;
+      border-radius: 20px;
       font-size: 13px;
       font-weight: 700;
       margin-bottom: 24px;
-      animation: pulseGlow 2.5s infinite;
-    }
-
-    @keyframes pulseGlow {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.2); }
-      50% { box-shadow: 0 0 20px 4px rgba(16, 185, 129, 0.35); }
     }
 
     .hero-title {
       font-family: var(--font-heading);
-      font-size: clamp(34px, 5.5vw, 58px);
+      font-size: clamp(32px, 5vw, 56px);
       font-weight: 800;
+      color: var(--text-main);
       line-height: 1.15;
-      letter-spacing: -1.5px;
-      margin-bottom: 22px;
+      letter-spacing: -1px;
+      margin-bottom: 20px;
+      max-width: 980px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
-    .gradient-text {
-      background: linear-gradient(135deg, #10b981 0%, #38bdf8 50%, #facc15 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+    .highlight-green {
+      color: var(--brand-green);
+      position: relative;
+      display: inline-block;
     }
 
     .hero-subtitle {
-      font-size: clamp(16px, 2vw, 20px);
-      color: var(--text-muted);
+      font-size: clamp(16px, 2vw, 19px);
+      color: var(--text-body);
       max-width: 780px;
       margin: 0 auto 36px;
-      font-weight: 400;
+      line-height: 1.6;
     }
 
-    .hero-actions {
+    .hero-buttons {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 16px;
+      gap: 14px;
       flex-wrap: wrap;
-      margin-bottom: 48px;
+      margin-bottom: 40px;
     }
 
-    .trust-metrics {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 16px;
-      max-width: 880px;
-      margin: 0 auto;
-      border-top: 1px solid var(--border-color);
-      padding-top: 32px;
-    }
-
-    .metric-card {
-      text-align: center;
-    }
-
-    .metric-number {
-      font-family: var(--font-heading);
-      font-size: 28px;
-      font-weight: 800;
-      color: #ffffff;
-      display: block;
-    }
-
-    .metric-label {
+    .trust-badges-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
       font-size: 13px;
+      font-weight: 600;
       color: var(--text-muted);
+      border-top: 1px solid rgba(226, 232, 240, 0.8);
+      padding-top: 28px;
+      max-width: 860px;
+      margin: 0 auto;
     }
 
-    /* Live Preview Mockup Card */
-    .preview-section {
-      margin: 40px auto 90px;
-      max-width: 1040px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 16px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(16, 185, 129, 0.1);
+    .trust-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .trust-icon {
+      color: var(--brand-green);
+      font-weight: 800;
+    }
+
+    /* Product Showcase (Interactive Tabbed Browser) */
+    .showcase-section {
+      padding: 60px 0 80px;
+    }
+
+    .product-frame {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-medium);
+      border-radius: 12px;
+      box-shadow: var(--shadow-xl);
       overflow: hidden;
+      max-width: 1080px;
+      margin: 0 auto;
     }
 
-    .preview-header {
-      background: #090e1a;
-      padding: 14px 20px;
+    .frame-topbar {
+      background: #f1f5f9;
+      padding: 12px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-subtle);
     }
 
-    .window-dots {
+    .frame-controls {
       display: flex;
       gap: 6px;
     }
 
-    .dot {
-      width: 11px;
-      height: 11px;
+    .control-dot {
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
     }
+    .dot-1 { background: #ef4444; }
+    .dot-2 { background: #f59e0b; }
+    .dot-3 { background: #10b981; }
 
-    .dot-red { background: #ef4444; }
-    .dot-yellow { background: #f59e0b; }
-    .dot-green { background: #10b981; }
+    .frame-tabs {
+      display: flex;
+      gap: 6px;
+    }
 
-    .preview-title {
+    .frame-tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      padding: 6px 14px;
+      border-radius: 6px;
       font-size: 12px;
-      font-family: var(--font-mono);
+      font-weight: 700;
       color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
     }
 
-    .preview-body {
-      padding: 24px;
+    .frame-tab-btn.active {
+      background: #ffffff;
+      color: var(--text-main);
+      border-color: var(--border-subtle);
+      box-shadow: var(--shadow-sm);
     }
 
-    /* Interactive Countdown Radar Component */
-    .radar-showcase {
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
+    .frame-content {
+      padding: 28px;
+      background: var(--bg-page);
+      min-height: 380px;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+      animation: fadeIn 0.25s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Estilos dos Componentes Reais do ERP na Vitrine */
+    .radar-demo-card {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
       padding: 20px;
+      box-shadow: var(--shadow-sm);
     }
 
-    .radar-header {
+    .radar-demo-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-subtle);
     }
 
-    .radar-title-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .radar-dot {
+    .radar-pulse-dot {
       width: 10px;
       height: 10px;
       border-radius: 50%;
-      background: #ef4444;
-      animation: pulseRadar 1.5s infinite;
+      background: var(--urgent-red);
+      display: inline-block;
+      animation: pulseGlow 1.2s infinite;
     }
 
-    @keyframes pulseRadar {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(1.3); }
-    }
-
-    .radar-orders-grid {
+    .demo-order-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: 80px 1.5fr 1fr 140px 160px;
       gap: 12px;
-    }
-
-    .radar-order-item {
-      background: #1e293b;
-      border-radius: 8px;
-      padding: 14px;
-      border-left: 4px solid #ef4444;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .radar-order-item.item-urgente { border-left-color: #ef4444; }
-    .radar-order-item.item-atencao { border-left-color: #f59e0b; }
-    .radar-order-item.item-seguro { border-left-color: #10b981; }
-
-    .order-top {
-      display: flex;
-      justify-content: space-between;
       align-items: center;
+      padding: 12px 14px;
+      border-radius: 6px;
+      background: #f8fafc;
+      border: 1px solid var(--border-subtle);
+      margin-bottom: 10px;
+      font-size: 13px;
     }
 
-    .order-client {
-      font-weight: 700;
-      font-size: 14px;
+    .demo-order-row.urgent {
+      background: #fef2f2;
+      border-color: #fecaca;
     }
 
-    .countdown-badge {
+    .badge-demo {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 4px;
       font-family: var(--font-mono);
       font-size: 11px;
       font-weight: 800;
-      padding: 3px 8px;
-      border-radius: 4px;
     }
 
-    .badge-critico {
-      background: #7f1d1d;
-      color: #fecaca;
-      animation: pulseUrgent 1.2s infinite;
+    .badge-red { background: #b91c1c; color: #ffffff; animation: pulseGlow 1.5s infinite; }
+    .badge-amber { background: #d97706; color: #ffffff; }
+    .badge-green { background: #047857; color: #ffffff; }
+
+    /* Comparativo: Antes vs Depois */
+    .comparison-section {
+      padding: 80px 0;
+      background: #ffffff;
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
     }
 
-    .badge-amber {
-      background: #78350f;
-      color: #fef3c7;
-    }
-
-    .badge-safe {
-      background: #064e3b;
-      color: #a7f3d0;
-    }
-
-    @keyframes pulseUrgent {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
-    }
-
-    /* Gargalos / Seção de Dores */
-    .section-pains {
-      padding: 90px 0;
-      border-top: 1px solid var(--border-color);
-      background: linear-gradient(180deg, rgba(7, 10, 19, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%);
-    }
-
-    .section-header {
+    .section-headline {
       text-align: center;
       max-width: 760px;
-      margin: 0 auto 56px;
+      margin: 0 auto 50px;
     }
 
     .section-tag {
       font-family: var(--font-mono);
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 800;
+      color: var(--brand-green);
       text-transform: uppercase;
       letter-spacing: 1px;
-      color: #10b981;
-      margin-bottom: 12px;
       display: block;
+      margin-bottom: 8px;
     }
 
     .section-title {
       font-family: var(--font-heading);
-      font-size: clamp(28px, 4vw, 42px);
+      font-size: clamp(26px, 3.5vw, 38px);
       font-weight: 800;
+      color: var(--text-main);
       line-height: 1.2;
-      letter-spacing: -0.8px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
-    .section-desc {
+    .section-subtitle {
       font-size: 16px;
       color: var(--text-muted);
     }
 
-    .cards-grid-4 {
+    .comparison-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 24px;
-    }
-
-    .pain-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 28px 24px;
-      transition: all 0.3s ease;
-      position: relative;
-    }
-
-    .pain-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--border-glow);
-      background: var(--bg-card-hover);
-    }
-
-    .pain-icon-wrapper {
-      width: 48px;
-      height: 48px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 20px;
-      font-size: 22px;
-    }
-
-    .icon-red { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
-    .icon-amber { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
-    .icon-emerald { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
-    .icon-cyan { background: rgba(6, 182, 212, 0.15); color: #06b6d4; border: 1px solid rgba(6, 182, 212, 0.3); }
-
-    .pain-title {
-      font-family: var(--font-heading);
-      font-size: 18px;
-      font-weight: 700;
-      margin-bottom: 12px;
-      color: #fff;
-    }
-
-    .pain-desc {
-      font-size: 14px;
-      color: var(--text-muted);
-      line-height: 1.5;
-      margin-bottom: 16px;
-    }
-
-    .pain-solution {
-      font-size: 13px;
-      font-weight: 600;
-      color: #34d399;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    /* Calculadora Interativa de Lucro */
-    .calculator-section {
-      padding: 90px 0;
-      position: relative;
-    }
-
-    .calc-container {
-      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      border-radius: 20px;
-      padding: 48px;
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 40px;
-      align-items: center;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-    }
-
-    .calc-inputs {
-      display: flex;
-      flex-direction: column;
+      grid-template-columns: 1fr 1fr;
       gap: 28px;
+      max-width: 980px;
+      margin: 0 auto;
     }
 
-    .slider-group {
+    .compare-card {
+      border-radius: 10px;
+      padding: 32px 28px;
+      border: 1px solid var(--border-medium);
+    }
+
+    .compare-card.before {
+      background: #fffafa;
+      border-color: #fecaca;
+    }
+
+    .compare-card.after {
+      background: #f0fdf4;
+      border-color: #86efac;
+      box-shadow: var(--shadow-md);
+    }
+
+    .compare-header {
+      font-family: var(--font-heading);
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 20px;
       display: flex;
-      flex-direction: column;
+      align-items: center;
       gap: 10px;
     }
 
-    .slider-label {
+    .compare-header.before { color: var(--urgent-red); }
+    .compare-header.after { color: var(--brand-green); }
+
+    .compare-list {
+      list-style: none;
       display: flex;
-      justify-content: space-between;
-      font-size: 14px;
-      font-weight: 600;
+      flex-direction: column;
+      gap: 16px;
+      font-size: 14.5px;
     }
 
-    .slider-value {
-      color: #34d399;
-      font-family: var(--font-mono);
+    .compare-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.5;
+    }
+
+    /* Calculadora de Economia / ROI */
+    .calculator-section {
+      padding: 80px 0;
+      background: var(--bg-page);
+    }
+
+    .calc-box {
+      background: #ffffff;
+      border: 1.5px solid var(--border-medium);
+      border-radius: 16px;
+      padding: 44px;
+      box-shadow: var(--shadow-lg);
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 40px;
+      align-items: center;
+      max-width: 1020px;
+      margin: 0 auto;
+    }
+
+    .calc-sliders {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .calc-slider-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
       font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .slider-num {
+      font-family: var(--font-mono);
+      color: var(--brand-green);
       font-size: 16px;
     }
 
     input[type=range] {
       width: 100%;
       height: 6px;
-      background: #334155;
-      border-radius: 4px;
+      background: var(--border-medium);
+      border-radius: 3px;
       outline: none;
       -webkit-appearance: none;
     }
@@ -575,245 +606,234 @@
       width: 20px;
       height: 20px;
       border-radius: 50%;
-      background: #10b981;
+      background: var(--brand-green);
       cursor: pointer;
-      box-shadow: 0 0 10px #10b981;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
 
-    .calc-result-box {
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      padding: 32px;
+    .calc-summary-card {
+      background: var(--brand-green-soft);
+      border: 1.5px solid var(--brand-green-border);
+      border-radius: 12px;
+      padding: 32px 24px;
       text-align: center;
-      backdrop-filter: blur(10px);
     }
 
-    .result-subtitle {
+    .summary-title {
       font-size: 13px;
-      color: var(--text-muted);
+      font-weight: 800;
+      color: var(--brand-green);
       text-transform: uppercase;
-      letter-spacing: 1px;
-      font-weight: 700;
+      letter-spacing: 0.5px;
     }
 
-    .result-total {
+    .summary-value {
       font-family: var(--font-heading);
-      font-size: clamp(36px, 4vw, 52px);
+      font-size: 44px;
       font-weight: 800;
-      color: #10b981;
-      margin: 10px 0;
+      color: var(--brand-green);
+      margin: 8px 0;
       display: block;
     }
 
-    .result-details {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin: 20px 0 28px;
+    .summary-sub {
       font-size: 13px;
       color: var(--text-muted);
-      text-align: left;
+      margin-bottom: 24px;
     }
 
-    .result-row {
-      display: flex;
-      justify-content: space-between;
-      border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
-      padding-bottom: 4px;
-    }
-
-    .result-row strong {
-      color: #fff;
-    }
-
-    /* Funcionalidades Showcase */
+    /* 6 Pilares de Funcionalidades */
     .features-section {
-      padding: 90px 0;
-      border-top: 1px solid var(--border-color);
+      padding: 80px 0;
+      background: #ffffff;
+      border-top: 1px solid var(--border-subtle);
     }
 
     .features-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 28px;
+      gap: 24px;
     }
 
-    .feature-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 32px;
-      transition: all 0.3s ease;
+    .feature-card {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 28px 24px;
+      transition: all 0.2s ease;
     }
 
-    .feature-box:hover {
-      border-color: rgba(16, 185, 129, 0.4);
-      transform: translateY(-4px);
+    .feature-card:hover {
+      border-color: var(--brand-green);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
     }
 
     .feature-badge {
       font-family: var(--font-mono);
       font-size: 11px;
-      font-weight: 700;
-      color: #38bdf8;
-      background: rgba(56, 189, 248, 0.1);
-      padding: 4px 8px;
+      font-weight: 800;
+      color: var(--brand-blue);
+      background: var(--brand-blue-soft);
+      border: 1px solid var(--brand-blue-border);
+      padding: 3px 8px;
       border-radius: 4px;
       display: inline-block;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
-    .feature-title {
+    .feature-card-title {
       font-family: var(--font-heading);
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 700;
-      margin-bottom: 10px;
-      color: #fff;
+      color: var(--text-main);
+      margin-bottom: 8px;
     }
 
-    .feature-text {
+    .feature-card-text {
       font-size: 14px;
       color: var(--text-muted);
       line-height: 1.6;
     }
 
-    /* Depoimentos */
+    /* Depoimentos dos Polos Confeccionistas */
     .testimonials-section {
-      padding: 90px 0;
-      background: #090e1a;
-      border-top: 1px solid var(--border-color);
+      padding: 80px 0;
+      background: var(--bg-page);
+      border-top: 1px solid var(--border-subtle);
     }
 
     .testimonials-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 24px;
+      max-width: 1080px;
+      margin: 0 auto;
     }
 
-    .testimonial-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
+    .test-card {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
       padding: 28px;
+      box-shadow: var(--shadow-sm);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
     }
 
-    .stars {
-      color: #facc15;
+    .test-stars {
+      color: #f59e0b;
       font-size: 16px;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
-    .quote-text {
+    .test-quote {
       font-size: 14.5px;
-      color: #cbd5e1;
+      color: var(--text-body);
       font-style: italic;
       line-height: 1.6;
       margin-bottom: 20px;
     }
 
-    .author-info {
+    .test-author-group {
       display: flex;
       align-items: center;
       gap: 12px;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 14px;
     }
 
-    .author-avatar {
-      width: 42px;
-      height: 42px;
+    .test-avatar {
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #10b981, #06b6d4);
+      background: #f1f5f9;
+      color: var(--text-main);
+      font-weight: 800;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 800;
       font-size: 14px;
-      color: #fff;
+      border: 1px solid var(--border-medium);
     }
 
-    .author-name {
+    .test-author-name {
+      font-size: 14px;
       font-weight: 700;
-      font-size: 14px;
-      color: #fff;
+      color: var(--text-main);
     }
 
-    .author-factory {
+    .test-author-location {
       font-size: 12px;
       color: var(--text-muted);
     }
 
-    /* Tabela de Preços */
+    /* Tabela de Preços Oficial */
     .pricing-section {
-      padding: 90px 0;
-      border-top: 1px solid var(--border-color);
-      position: relative;
+      padding: 80px 0;
+      background: #ffffff;
+      border-top: 1px solid var(--border-subtle);
     }
 
     .pricing-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 32px;
-      max-width: 860px;
+      gap: 28px;
+      max-width: 840px;
       margin: 0 auto;
     }
 
-    .price-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 40px 32px;
+    .price-box {
+      background: #ffffff;
+      border: 1.5px solid var(--border-medium);
+      border-radius: 12px;
+      padding: 36px 30px;
       display: flex;
       flex-direction: column;
       position: relative;
     }
 
-    .price-card.featured {
-      background: linear-gradient(180deg, #131d36 0%, #0f172a 100%);
-      border: 2px solid #10b981;
-      box-shadow: 0 0 35px rgba(16, 185, 129, 0.2);
+    .price-box.popular {
+      border: 2px solid var(--brand-green);
+      box-shadow: var(--shadow-lg);
+      background: #ffffff;
     }
 
-    .featured-tag {
+    .popular-tag {
       position: absolute;
-      top: -14px;
+      top: -12px;
       left: 50%;
       transform: translateX(-50%);
-      background: #10b981;
-      color: #072612;
-      font-weight: 800;
+      background: var(--brand-green);
+      color: #ffffff;
       font-size: 11px;
+      font-weight: 800;
       text-transform: uppercase;
       padding: 4px 14px;
       border-radius: 20px;
       letter-spacing: 0.5px;
     }
 
-    .plan-name {
+    .plan-header-title {
       font-family: var(--font-heading);
       font-size: 22px;
       font-weight: 800;
-      margin-bottom: 6px;
+      color: var(--text-main);
     }
 
-    .plan-desc {
+    .plan-header-desc {
       font-size: 13px;
       color: var(--text-muted);
-      margin-bottom: 24px;
+      margin: 6px 0 20px;
       min-height: 38px;
     }
 
-    .price-wrapper {
-      margin-bottom: 28px;
-    }
-
-    .price-amount {
+    .price-display {
       font-family: var(--font-heading);
       font-size: 42px;
       font-weight: 800;
-      color: #fff;
+      color: var(--text-main);
     }
 
     .price-period {
@@ -821,49 +841,50 @@
       color: var(--text-muted);
     }
 
-    .plan-features {
+    .features-list {
       list-style: none;
       display: flex;
       flex-direction: column;
       gap: 12px;
-      margin-bottom: 36px;
+      margin: 28px 0 32px;
       font-size: 14px;
       flex-grow: 1;
     }
 
-    .plan-features li {
+    .features-list li {
       display: flex;
       align-items: center;
       gap: 10px;
-      color: #cbd5e1;
+      color: var(--text-body);
     }
 
-    .plan-features li svg {
-      color: #10b981;
+    .features-list li svg {
+      color: var(--brand-green);
       flex-shrink: 0;
     }
 
-    /* FAQ Accordion */
+    /* FAQ */
     .faq-section {
-      padding: 90px 0;
-      border-top: 1px solid var(--border-color);
+      padding: 80px 0;
+      background: var(--bg-page);
+      border-top: 1px solid var(--border-subtle);
       max-width: 820px;
       margin: 0 auto;
     }
 
     .faq-item {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
       margin-bottom: 12px;
       overflow: hidden;
     }
 
     .faq-question {
-      padding: 20px 24px;
-      font-family: var(--font-heading);
-      font-size: 16px;
+      padding: 18px 22px;
       font-weight: 700;
+      font-size: 15px;
+      color: var(--text-main);
       cursor: pointer;
       display: flex;
       justify-content: space-between;
@@ -872,8 +893,8 @@
     }
 
     .faq-answer {
-      padding: 0 24px 20px;
-      font-size: 14.5px;
+      padding: 0 22px 18px;
+      font-size: 14px;
       color: var(--text-muted);
       line-height: 1.6;
       display: none;
@@ -883,84 +904,81 @@
       display: block;
     }
 
-    .faq-icon {
-      transition: transform 0.2s ease;
-    }
-
-    .faq-item.active .faq-icon {
-      transform: rotate(180deg);
-    }
-
     /* CTA Final */
-    .cta-final-section {
-      padding: 100px 0;
-      background: radial-gradient(circle at center, rgba(16, 185, 129, 0.12) 0%, rgba(7, 10, 19, 1) 70%);
+    .cta-final {
+      padding: 80px 0;
+      background: var(--text-main);
+      color: #ffffff;
       text-align: center;
-      border-top: 1px solid var(--border-color);
     }
 
-    /* Botão Flutuante do WhatsApp */
-    .floating-whatsapp {
+    .cta-final-title {
+      font-family: var(--font-heading);
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    .cta-final-sub {
+      font-size: 17px;
+      color: #94a3b8;
+      max-width: 680px;
+      margin: 0 auto 32px;
+    }
+
+    /* Botão Flutuante WhatsApp */
+    .floating-wa-btn {
       position: fixed;
       bottom: 24px;
       right: 24px;
       z-index: 999;
       background: #25d366;
       color: #072612;
-      width: 60px;
-      height: 60px;
+      width: 58px;
+      height: 58px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4);
+      box-shadow: 0 8px 20px rgba(37, 211, 102, 0.4);
       cursor: pointer;
-      transition: all 0.3s ease;
-      animation: floatBadge 3s ease-in-out infinite;
+      transition: all 0.2s ease;
     }
 
-    @keyframes floatBadge {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
-    }
-
-    .floating-whatsapp:hover {
-      transform: scale(1.1);
-      box-shadow: 0 12px 30px rgba(37, 211, 102, 0.6);
+    .floating-wa-btn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 12px 28px rgba(37, 211, 102, 0.6);
     }
 
     /* Footer */
     .site-footer {
-      border-top: 1px solid var(--border-color);
-      padding: 32px 0;
+      border-top: 1px solid var(--border-subtle);
+      background: #ffffff;
+      padding: 28px 0;
       text-align: center;
       font-size: 13px;
-      color: #64748b;
+      color: var(--text-muted);
     }
 
-    /* Responsividade */
     @media (max-width: 768px) {
-      .calc-container {
-        grid-template-columns: 1fr;
-        padding: 24px;
-      }
-      .nav-links {
-        display: none;
-      }
-      .hero-section {
-        padding: 50px 0;
-      }
-      .pricing-grid {
-        grid-template-columns: 1fr;
-      }
+      .nav-menu { display: none; }
+      .calc-box { grid-template-columns: 1fr; padding: 24px; }
+      .comparison-grid { grid-template-columns: 1fr; }
+      .demo-order-row { grid-template-columns: 1fr; gap: 6px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Botão Flutuante WhatsApp -->
-  <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Vi%20a%20apresenta%C3%A7%C3%A3o%20do%20TexPro%20ERP%20e%20gostaria%20de%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="floating-whatsapp" id="btnFloatingWa" title="Falar com Especialista no WhatsApp">
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+  <!-- Top Announcement Bar -->
+  <div class="top-announcement">
+    <span>📢 Lançamento Oficial: Conecte o TexPro à sua estamparia e ganhe o Módulo de Encaixe DTF sem custo adicional.</span>
+    <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20aproveitar%20a%20condi%C3%A7%C3%A3o%20de%20lan%C3%A7amento%20do%20TexPro%20ERP." target="_blank">Garantir Vaga &rarr;</a>
+  </div>
+
+  <!-- Botão Flutuante do WhatsApp -->
+  <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Vi%20a%20apresenta%C3%A7%C3%A3o%20do%20TexPro%20ERP%20e%20quero%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20gratuita." target="_blank" class="floating-wa-btn" title="Falar com Especialista Têxtil">
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
       <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z"/>
     </svg>
   </a>
@@ -969,25 +987,28 @@
   <header class="site-header">
     <div class="container header-nav">
       <div class="brand-logo">
-        <span class="brand-badge">TEXPRO</span>
-        <span>UNIFORMES ERP</span>
+        <div class="brand-icon">TP</div>
+        <div>
+          <span style="display: block; line-height: 1;">TEXPRO</span>
+          <span style="font-size: 10px; font-family: var(--font-sans); color: var(--brand-green); letter-spacing: 0.5px; font-weight: 700;">UNIFORMES ERP</span>
+        </div>
       </div>
 
-      <nav class="nav-links">
-        <a href="#problemas">Os 4 Gargalos</a>
-        <a href="#radar">Radar de Prazos</a>
-        <a href="#calculadora">Calculadora de ROI</a>
+      <nav class="nav-menu">
+        <a href="#vitrine">O Sistema</a>
+        <a href="#comparativo">Antes vs Depois</a>
+        <a href="#calculadora">Calculadora de Lucro</a>
         <a href="#recursos">Recursos</a>
         <a href="#planos">Planos</a>
         <a href="#faq">Dúvidas</a>
       </nav>
 
-      <div class="header-ctas">
-        <a href="/" target="_blank" class="btn btn-secondary btn-sm" title="Acessar demonstração ao vivo do sistema">
+      <div class="header-actions">
+        <a href="/" target="_blank" class="btn btn-secondary btn-sm" title="Acessar o ERP em modo demonstração ao vivo">
           Test Drive ao Vivo &rarr;
         </a>
-        <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20do%20TexPro%20ERP." target="_blank" class="btn btn-whatsapp btn-sm">
-          WhatsApp
+        <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Gostaria%20de%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20do%20TexPro%20ERP." target="_blank" class="btn btn-primary btn-sm">
+          Agendar Demonstração
         </a>
       </div>
     </div>
@@ -995,212 +1016,320 @@
 
   <!-- Hero Section -->
   <section class="hero-section">
-    <div class="hero-glow"></div>
-    <div class="container hero-content">
-      <div class="badge-pill">
-        <span>⚡ SISTEMA Nº 1 EM GESTÃO TÊXTIL INDUSTRIAL</span>
+    <div class="container">
+      <div class="hero-pill">
+        <span>🏆 SOFTWARE ESPECIALIZADO EM CONFECÇÕES & ESTAMPARIAS</span>
       </div>
 
       <h1 class="hero-title">
-        Chega de Perder Noites com <br>
-        <span class="gradient-text">Atrasos de Entrega e Retalhos de Tecido</span>
+        Zere os Atrasos de Entrega e Reduza até <span class="highlight-green">18% do Desperdício</span> de Tecido e DTF
       </h1>
 
       <p class="hero-subtitle">
-        O primeiro ERP desenvolvido sob medida para indústrias de uniformes e estamparias. 
-        Contagem regressiva de prazos em tempo real, aproveitamento máximo de rolos DTF e propostas comerciais A4 em 30 segundos.
+        O primeiro ERP industrial desenvolvido sob medida para a rotina de uniformes profissionais, escolares e esportivos. 
+        Controle prazos por minuto com alertas visuais, calcule o melhor aproveitamento de rolos de estampa e gere fichas técnicas A4 em 30 segundos.
       </p>
 
-      <div class="hero-actions">
+      <div class="hero-buttons">
         <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20gratuita%20do%20TexPro%20ERP%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-whatsapp btn-lg">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z"/></svg>
-          Agendar Demonstração Gratuita
+          Agendar Demonstração Gratuita no WhatsApp
         </a>
         <a href="/" target="_blank" class="btn btn-secondary btn-lg">
-          Testar Sistema ao Vivo &rarr;
+          Fazer Test Drive no Sistema ao Vivo &rarr;
         </a>
       </div>
 
-      <div class="trust-metrics">
-        <div class="metric-card">
-          <span class="metric-number">0%</span>
-          <span class="metric-label">Atrasos Não Monitorados</span>
+      <div class="trust-badges-bar">
+        <div class="trust-item">
+          <span class="trust-icon">✓</span>
+          <span>Zero Instalação (100% no Navegador)</span>
         </div>
-        <div class="metric-card">
-          <span class="metric-number">18%</span>
-          <span class="metric-label">Economia Média em Rolos DTF</span>
+        <div class="trust-item">
+          <span class="trust-icon">✓</span>
+          <span>Tecnologia Offline-First (Nunca Trava)</span>
         </div>
-        <div class="metric-card">
-          <span class="metric-number">100%</span>
-          <span class="metric-label">Nuvem Realtime & Offline-First</span>
+        <div class="trust-item">
+          <span class="trust-icon">✓</span>
+          <span>Sincronização em Tempo Real na Nuvem</span>
         </div>
-        <div class="metric-card">
-          <span class="metric-number">30s</span>
-          <span class="metric-label">Para Emitir Proposta A4</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Live Showcase Preview -->
-  <section class="container" id="radar">
-    <div class="preview-section">
-      <div class="preview-header">
-        <div class="window-dots">
-          <span class="dot dot-red"></span>
-          <span class="dot dot-yellow"></span>
-          <span class="dot dot-green"></span>
-        </div>
-        <div class="preview-title">radar-de-prazos-live-preview.app</div>
-        <span style="font-size: 11px; color: #10b981; font-weight: 700;">● CONEXÃO REALTIME SUPABASE</span>
-      </div>
-
-      <div class="preview-body">
-        <div class="radar-showcase">
-          <div class="radar-header">
-            <div class="radar-title-group">
-              <span class="radar-dot"></span>
-              <strong style="font-size: 14px; letter-spacing: 0.5px;">RADAR DE ENTREGAS CRÍTICAS (CHÃO DE FÁBRICA)</strong>
-            </div>
-            <span style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono);">Atualizado a cada segundo</span>
-          </div>
-
-          <div class="radar-orders-grid">
-            <div class="radar-order-item item-urgente">
-              <div class="order-top">
-                <span class="order-client">Colégio Objetivo (450 Camisas)</span>
-                <span class="countdown-badge badge-critico">🚨 ENTREGA HOJE (4h restantes)</span>
-              </div>
-              <div style="font-size: 12px; color: var(--text-muted);">Status: Na Costura • Sinal 50% Pago • Saldo R$ 3.825</div>
-            </div>
-
-            <div class="radar-order-item item-atencao">
-              <div class="order-top">
-                <span class="order-client">Auto Mecânica Central (80 Polos)</span>
-                <span class="countdown-badge badge-amber">⚠️ 2 DIAS RESTANTES</span>
-              </div>
-              <div style="font-size: 12px; color: var(--text-muted);">Status: Estamparia DTF • Arte Aprovada</div>
-            </div>
-
-            <div class="radar-order-item item-seguro">
-              <div class="order-top">
-                <span class="order-client">Hospital São Lucas (120 Scrubs)</span>
-                <span class="countdown-badge badge-safe">✓ 9 DIAS (PRAZO TRANQUILO)</span>
-              </div>
-              <div style="font-size: 12px; color: var(--text-muted);">Status: Corte Enfesto • Tecido Separado</div>
-            </div>
-          </div>
+        <div class="trust-item">
+          <span class="trust-icon">✓</span>
+          <span>Garantia Incondicional de 7 Dias</span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Os 4 Gargalos Mortais -->
-  <section class="section-pains" id="problemas">
+  <!-- Vitrine Interativa do Sistema -->
+  <section class="showcase-section" id="vitrine">
     <div class="container">
-      <div class="section-header">
-        <span class="section-tag">O Raio-X da Sua Fábrica</span>
-        <h2 class="section-title">Os 4 Ralos Invisíveis que Drenam o Lucro da sua Confecção</h2>
-        <p class="section-desc">Se a sua confecção produz peças de alta qualidade mas no fim do mês o dinheiro não sobra, você sofre de um destes 4 gargalos:</p>
+      <div class="section-headline">
+        <span class="section-tag">Tour pelo Sistema</span>
+        <h2 class="section-title">Veja Como o TexPro Funciona por Dentro</h2>
+        <p class="section-subtitle">Telas limpas, contraste industrial e ferramentas que resolvem os gargalos reais do chão de fábrica.</p>
       </div>
 
-      <div class="cards-grid-4">
-        <div class="pain-card">
-          <div class="pain-icon-wrapper icon-red">⏰</div>
-          <h3 class="pain-title">1. Atraso de Prazos</h3>
-          <p class="pain-desc">O cliente liga cobrando, ninguém no chão de fábrica sabe exatamente em que etapa o pedido está e você gasta com motoboy de urgência.</p>
-          <div class="pain-solution">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            Resolvido: Radar de Prazos por Cores
+      <div class="product-frame">
+        <div class="frame-topbar">
+          <div class="frame-controls">
+            <span class="control-dot dot-1"></span>
+            <span class="control-dot dot-2"></span>
+            <span class="control-dot dot-3"></span>
+          </div>
+
+          <div class="frame-tabs">
+            <button class="frame-tab-btn active" onclick="trocarAbaVitrine('radar', this)">
+              ⏱️ Radar de Prazos
+            </button>
+            <button class="frame-tab-btn" onclick="trocarAbaVitrine('nesting', this)">
+              ✂️ Encaixe DTF
+            </button>
+            <button class="frame-tab-btn" onclick="trocarAbaVitrine('ficha', this)">
+              📄 Ficha Técnica A4
+            </button>
+            <button class="frame-tab-btn" onclick="trocarAbaVitrine('kanban', this)">
+              📊 Kanban Industrial
+            </button>
+          </div>
+
+          <div style="font-size: 11px; font-weight: 700; color: var(--brand-green);">
+            ● Conectado em Tempo Real
           </div>
         </div>
 
-        <div class="pain-card">
-          <div class="pain-icon-wrapper icon-amber">✂️</div>
-          <h3 class="pain-title">2. Desperdício de Rolos DTF</h3>
-          <p class="pain-desc">Suas estampas são impressas sem agrupamento inteligente. Metros de filme DTF e retalhos de malha vão direto para a caçamba de lixo.</p>
-          <div class="pain-solution">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            Resolvido: Motor de Encaixe DTF
-          </div>
-        </div>
+        <div class="frame-content">
+          <!-- Aba 1: Radar de Prazos -->
+          <div class="tab-panel active" id="panel-radar">
+            <div class="radar-demo-card">
+              <div class="radar-demo-header">
+                <div>
+                  <strong style="color: var(--text-main); font-size: 14px;">RADAR OPERACIONAL DE PRAZOS & URGÊNCIA</strong>
+                  <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                    Contagem regressiva automática por pedido com alerta visual por cores
+                  </div>
+                </div>
+                <span class="badge-demo" style="background: var(--brand-green-soft); color: var(--brand-green); border: 1px solid var(--brand-green-border);">
+                  RADAR ATIVO
+                </span>
+              </div>
 
-        <div class="pain-card">
-          <div class="pain-icon-wrapper icon-cyan">📄</div>
-          <h3 class="pain-title">3. Peças Cortadas Erradas</h3>
-          <p class="pain-desc">O vendedor anotou no WhatsApp, a costureira não viu e cortou GG no lugar de P. Lote perdido e prejuízo 100% da sua empresa.</p>
-          <div class="pain-solution">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            Resolvido: Ficha Técnica A4 Padronizada
-          </div>
-        </div>
+              <div class="demo-order-row urgent">
+                <span class="text-mono" style="font-weight: 800; color: var(--text-main);">#PED-108</span>
+                <div>
+                  <strong style="color: var(--text-main);">Colégio Objetivo (Uniforme Escolar)</strong>
+                  <div style="font-size: 11px; color: var(--text-muted);">450 Camisetas Poliviscose + 200 Shorts Helanca</div>
+                </div>
+                <div><span style="font-size: 11px; color: var(--text-muted);">Oficina / Chão:</span> <strong>Costura</strong></div>
+                <div><span class="badge-demo badge-red">🚨 ENTREGA HOJE (4h)</span></div>
+                <div style="font-size: 11px; text-align: right; color: var(--text-muted);">Saldo a Receber: <strong style="color: var(--text-main);">R$ 4.250,00</strong></div>
+              </div>
 
-        <div class="pain-card">
-          <div class="pain-icon-wrapper icon-emerald">💸</div>
-          <h3 class="pain-title">4. Calote no Saldo da Retirada</h3>
-          <p class="pain-desc">O cliente paga 50% de sinal, manda retirar o pedido na correria e o saldo de 50% fica esquecido em cadernos ou planilhas frouxas.</p>
-          <div class="pain-solution">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            Resolvido: Trava Financeira de Saldo
+              <div class="demo-order-row" style="background: #fffbeb; border-color: #fde68a;">
+                <span class="text-mono" style="font-weight: 800; color: var(--text-main);">#PED-109</span>
+                <div>
+                  <strong style="color: var(--text-main);">Transportadora Rápido Sol (Uniformes Pesados)</strong>
+                  <div style="font-size: 11px; color: var(--text-muted);">120 Calças Brim Pesado + Faixa Refletiva</div>
+                </div>
+                <div><span style="font-size: 11px; color: var(--text-muted);">Oficina / Chão:</span> <strong>Estamparia DTF</strong></div>
+                <div><span class="badge-demo badge-amber">⚠️ RESTAM 2 DIAS</span></div>
+                <div style="font-size: 11px; text-align: right; color: var(--text-muted);">Sinal 50% Quitado</div>
+              </div>
+
+              <div class="demo-order-row">
+                <span class="text-mono" style="font-weight: 800; color: var(--text-main);">#PED-110</span>
+                <div>
+                  <strong style="color: var(--text-main);">Clínica Saúde Vital (Scrubs Hospitalares)</strong>
+                  <div style="font-size: 11px; color: var(--text-muted);">85 Conjuntos Gabardine Premium</div>
+                </div>
+                <div><span style="font-size: 11px; color: var(--text-muted);">Oficina / Chão:</span> <strong>Corte Enfesto</strong></div>
+                <div><span class="badge-demo badge-green">✓ 9 DIAS (SEGURO)</span></div>
+                <div style="font-size: 11px; text-align: right; color: var(--text-muted);">Aguardando Tecido</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Aba 2: Nesting DTF -->
+          <div class="tab-panel" id="panel-nesting">
+            <div class="radar-demo-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div>
+                  <strong style="color: var(--text-main); font-size: 14px;">MOTOR DE ENCAIXE INTELIGENTE DTF (NESTING)</strong>
+                  <div style="font-size: 12px; color: var(--text-muted);">Cálculo exato de agrupamento no rolo de 58cm de filme de transferência</div>
+                </div>
+                <span class="badge-demo badge-green">92% DE APROVEITAMENTO</span>
+              </div>
+              <div style="background: #0f172a; color: #fff; padding: 24px; border-radius: 6px; text-align: center; font-family: var(--font-mono); font-size: 13px;">
+                [ SIMULAÇÃO VISUAL DE ENCAIXE DE 60 LOGOS EM ROLO DTF ]<br>
+                <span style="color: #34d399; font-size: 15px; font-weight: 800;">Economia Direta: 4.8 metros de filme salvos neste lote</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Aba 3: Ficha Técnica A4 -->
+          <div class="tab-panel" id="panel-ficha">
+            <div class="radar-demo-card" style="text-align: center; padding: 30px;">
+              <strong style="font-size: 15px; color: var(--text-main);">ORÇAMENTO & FICHA TÉCNICA INDUSTRIAL IMPRESSA EM 1 CLIQUE</strong>
+              <p style="font-size: 13px; color: var(--text-muted); margin: 8px 0 20px;">
+                Documento com logotipo da sua confecção, tabela de tamanhos (P, M, G, GG, XG), regras de pagamento (50% sinal / 50% retirada) e assinatura do cliente.
+              </p>
+              <a href="/proposta-comercial" target="_blank" class="btn btn-secondary btn-sm">
+                Visualizar Modelo de Proposta A4 &rarr;
+              </a>
+            </div>
+          </div>
+
+          <!-- Aba 4: Kanban Industrial -->
+          <div class="tab-panel" id="panel-kanban">
+            <div class="radar-demo-card">
+              <strong style="font-size: 14px; color: var(--text-main); display: block; margin-bottom: 12px;">FLUXO DE PRODUÇÃO VISUAL DRAG-AND-DROP</strong>
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; font-size: 12px;">
+                <div style="background: #f1f5f9; padding: 12px; border-radius: 6px;">
+                  <strong>1. CORTE (4)</strong>
+                  <div style="background: #fff; padding: 8px; border-radius: 4px; margin-top: 8px; border: 1px solid var(--border-subtle);">#PED-112 Polo Piquet</div>
+                </div>
+                <div style="background: #f1f5f9; padding: 12px; border-radius: 6px;">
+                  <strong>2. ESTAMPARIA (3)</strong>
+                  <div style="background: #fff; padding: 8px; border-radius: 4px; margin-top: 8px; border: 1px solid var(--border-subtle);">#PED-109 Brim DTF</div>
+                </div>
+                <div style="background: #f1f5f9; padding: 12px; border-radius: 6px;">
+                  <strong>3. COSTURA (5)</strong>
+                  <div style="background: #fef2f2; padding: 8px; border-radius: 4px; margin-top: 8px; border: 1px solid #fecaca; color: #b91c1c; font-weight: 700;">#PED-108 Escolar</div>
+                </div>
+                <div style="background: #f1f5f9; padding: 12px; border-radius: 6px;">
+                  <strong>4. EXPEDIÇÃO (2)</strong>
+                  <div style="background: #fff; padding: 8px; border-radius: 4px; margin-top: 8px; border: 1px solid var(--border-subtle);">#PED-107 Concluído</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Calculadora Interativa de Lucro Recuperado -->
+  <!-- Comparativo: Antes vs Depois -->
+  <section class="comparison-section" id="comparativo">
+    <div class="container">
+      <div class="section-headline">
+        <span class="section-tag">Transformação Operacional</span>
+        <h2 class="section-title">A Diferença entre uma Confecção no Caos e uma Confecção Lucrativa</h2>
+        <p class="section-subtitle">Veja o que muda na rotina da sua fábrica logo na primeira semana de implantação:</p>
+      </div>
+
+      <div class="comparison-grid">
+        <!-- Antes -->
+        <div class="compare-card before">
+          <div class="compare-header before">
+            <span>✕</span>
+            <span>Sem o TexPro ERP (Rotina no Caos)</span>
+          </div>
+          <ul class="compare-list">
+            <li>
+              <span style="color: var(--urgent-red); font-weight: 800;">✕</span>
+              <span><strong>Atrasos constantes:</strong> Pedidos esquecidos em conversas de WhatsApp gerando reclamações e cancelamentos.</span>
+            </li>
+            <li>
+              <span style="color: var(--urgent-red); font-weight: 800;">✕</span>
+              <span><strong>Desperdício de rolo e tecido:</strong> Estampas impressas sem encaixe inteligente e retalhos jogados no lixo.</span>
+            </li>
+            <li>
+              <span style="color: var(--urgent-red); font-weight: 800;">✕</span>
+              <span><strong>Peças cortadas erradas:</strong> Costureira não entende as anotações do vendedor e perde lotes inteiros de tecido.</span>
+            </li>
+            <li>
+              <span style="color: var(--urgent-red); font-weight: 800;">✕</span>
+              <span><strong>Calote na retirada:</strong> Cliente retira os uniformes e o saldo restante de 50% fica a ver navios.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Depois -->
+        <div class="compare-card after">
+          <div class="compare-header after">
+            <span>✓</span>
+            <span>Com o TexPro ERP (Fábrica Organizada)</span>
+          </div>
+          <ul class="compare-list">
+            <li>
+              <span style="color: var(--brand-green); font-weight: 800;">✓</span>
+              <span><strong>Radar de Prazos Inteligente:</strong> Toda a fábrica sabe o que entregar hoje, amanhã e na próxima semana com cores de urgência.</span>
+            </li>
+            <li>
+              <span style="color: var(--brand-green); font-weight: 800;">✓</span>
+              <span><strong>Aproveitamento Máximo:</strong> Motor de Nesting DTF economiza metros de filme de impressão em todo lote.</span>
+            </li>
+            <li>
+              <span style="color: var(--brand-green); font-weight: 800;">✓</span>
+              <span><strong>Ficha Técnica Oficial A4:</strong> Grade de tamanhos, cores de linha e estampa impressas com tolerância padronizada.</span>
+            </li>
+            <li>
+              <span style="color: var(--brand-green); font-weight: 800;">✓</span>
+              <span><strong>Trava Financeira Segura:</strong> Controle rigoroso de sinal 50% e quitação antes da liberação do pedido na expedição.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Calculadora de Economia / ROI -->
   <section class="calculator-section" id="calculadora">
     <div class="container">
-      <div class="calc-container">
-        <div class="calc-inputs">
+      <div class="calc-box">
+        <div class="calc-sliders">
           <div>
-            <span class="section-tag" style="color: #38bdf8;">SIMULADOR DE ECONOMIA</span>
-            <h2 style="font-family: var(--font-heading); font-size: 28px; font-weight: 800; margin-bottom: 8px;">
-              Descubra Quanto Dinheiro Você Vai Recuperar este Mês
+            <span class="section-tag">Simulador de Retorno</span>
+            <h2 style="font-family: var(--font-heading); font-size: 26px; font-weight: 800; color: var(--text-main); margin-bottom: 6px;">
+              Calcule Quanto sua Confecção vai Economizar por Mês
             </h2>
             <p style="font-size: 14px; color: var(--text-muted);">
-              Arraste os seletores com os números aproximados da sua produção atual:
+              Arraste os números para a média da sua produção mensal e veja a margem recuperada:
             </p>
           </div>
 
-          <div class="slider-group">
-            <div class="slider-label">
-              <span>Peças produzidas por mês:</span>
-              <span class="slider-value" id="valPecas">1.500 peças</span>
+          <div class="calc-slider-item">
+            <div class="slider-header">
+              <span>Peças confeccionadas por mês:</span>
+              <span class="slider-num" id="valPecas">1.500 peças</span>
             </div>
             <input type="range" id="inputPecas" min="200" max="10000" step="100" value="1500">
           </div>
 
-          <div class="slider-group">
-            <div class="slider-label">
+          <div class="calc-slider-item">
+            <div class="slider-header">
               <span>Metros de filme DTF / Tecido usados por mês:</span>
-              <span class="slider-value" id="valMetros">150 metros</span>
+              <span class="slider-num" id="valMetros">150 metros</span>
             </div>
             <input type="range" id="inputMetros" min="20" max="1500" step="10" value="150">
           </div>
+
+          <div style="font-size: 12px; color: var(--text-muted); background: var(--bg-subtle); padding: 10px 14px; border-radius: 6px;">
+            ℹ️ Baseado em dados reais consolidados de polos confeccionistas (Americana/SP, Brusque/SC e Maringá/PR).
+          </div>
         </div>
 
-        <div class="calc-result-box">
-          <span class="result-subtitle">Potencial de Lucro Recuperado</span>
-          <span class="result-total" id="txtTotalEconomia">R$ 2.850,00</span>
-          <span style="font-size: 13px; color: #34d399; font-weight: 700;">POR MÊS NA SUA CONTA</span>
+        <div class="calc-summary-card">
+          <span class="summary-title">Lucro Líquido Recuperado</span>
+          <span class="summary-value" id="txtTotalEconomia">R$ 2.850,00</span>
+          <span class="summary-sub">Estimativa média economizada todo mês</span>
 
-          <div class="result-details">
-            <div class="result-row">
-              <span>Economia direta em rolos e sobras:</span>
-              <strong id="txtEcoTecido">R$ 1.350,00</strong>
+          <div style="font-size: 13px; text-align: left; margin-bottom: 22px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--brand-green-border); padding-bottom: 4px;">
+              <span>Economia em DTF & Retalhos:</span>
+              <strong id="txtEcoTecido" style="color: var(--text-main);">R$ 1.350,00</strong>
             </div>
-            <div class="result-row">
-              <span>Zero retrabalho por corte errado:</span>
-              <strong id="txtEcoRetrabalho">R$ 900,00</strong>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--brand-green-border); padding-bottom: 4px;">
+              <span>Eliminação de cortes errados:</span>
+              <strong id="txtEcoRetrabalho" style="color: var(--text-main);">R$ 900,00</strong>
             </div>
-            <div class="result-row">
-              <span>Horas economizadas com orçamentos:</span>
-              <strong id="txtEcoHoras">R$ 600,00</strong>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--brand-green-border); padding-bottom: 4px;">
+              <span>Horas em orçamentos manuais:</span>
+              <strong id="txtEcoHoras" style="color: var(--text-main);">R$ 600,00</strong>
             </div>
           </div>
 
-          <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Fiz%20a%20simula%C3%A7%C3%A3o%20e%20quero%20recuperar%20essa%20margem%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-primary" style="width: 100%;">
+          <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Fiz%20a%20simula%C3%A7%C3%A3o%20no%20site%20e%20quero%20recuperar%20essa%20margem%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-primary" style="width: 100%;">
             Quero Essa Economia na Minha Fábrica
           </a>
         </div>
@@ -1208,108 +1337,109 @@
     </div>
   </section>
 
-  <!-- 6 Grandes Recursos -->
+  <!-- 6 Grandes Recursos do Sistema -->
   <section class="features-section" id="recursos">
     <div class="container">
-      <div class="section-header">
+      <div class="section-headline">
         <span class="section-tag">Arsenal Completo</span>
-        <h2 class="section-title">Construído por Quem Entende o Chão de Fábrica Têxtil</h2>
-        <p class="section-desc">Nada de telas complicadas que ninguém na oficina consegue mexer. Tudo é visual, rápido e feito para a rotina da produção.</p>
+        <h2 class="section-title">Tudo o que uma Indústria de Uniformes Precisa</h2>
+        <p class="section-subtitle">Desenvolvido especificamente para o fluxo de corte, estamparia, costura e faturamento.</p>
       </div>
 
       <div class="features-grid">
-        <div class="feature-box">
+        <div class="feature-card">
           <span class="feature-badge">EXCLUSIVIDADE</span>
-          <h3 class="feature-title">Radar de Prazos Dinâmico</h3>
-          <p class="feature-text">Contagem regressiva automática para cada pedido. As cores mudam conforme a entrega se aproxima e pedidos para hoje pulsam em vermelho.</p>
+          <h3 class="feature-card-title">Radar de Prazos Dinâmico</h3>
+          <p class="feature-card-text">Contagem regressiva automática por pedido. As cores mudam visualmente conforme o prazo se aproxima e pedidos para hoje pulsam em vermelho.</p>
         </div>
 
-        <div class="feature-box">
-          <span class="feature-badge">LUCRO DIRETO</span>
-          <h3 class="feature-title">Motor de Encaixe DTF (Nesting)</h3>
-          <p class="feature-text">Calcule o melhor arranjo de logos no rolo de impressão. Economize até 18% em filme de transferência e veja o rendimento de tecido na hora.</p>
+        <div class="feature-card">
+          <span class="feature-badge">ECONOMIA</span>
+          <h3 class="feature-card-title">Motor de Encaixe DTF (Nesting)</h3>
+          <p class="feature-card-text">Agrupamento inteligente de logos e estampas no rolo de impressão. Economize até 18% em filme de transferência e metragem de tecido.</p>
         </div>
 
-        <div class="feature-box">
-          <span class="feature-badge">PRODUTIVIDADE</span>
-          <h3 class="feature-title">Ficha Técnica & Proposta A4</h3>
-          <p class="feature-text">Gere com 1 clique o documento oficial com o logotipo da sua fábrica, tabela de medidas, detalhes de estampa e regras de pagamento prontas para impressão.</p>
+        <div class="feature-card">
+          <span class="feature-badge">AGILIDADE</span>
+          <h3 class="feature-card-title">Ficha Técnica & Proposta A4</h3>
+          <p class="feature-card-text">Emita propostas comerciais impecáveis com grade de tamanhos, mockups de arte e logotipo da sua empresa em menos de 30 segundos.</p>
         </div>
 
-        <div class="feature-box">
-          <span class="feature-badge">FLUXO VISUAL</span>
-          <h3 class="feature-title">Kanban de Etapas Industriais</h3>
-          <p class="feature-text">Arraste os pedidos entre Corte, Estamparia, Costura, Acabamento e Expedição. Todo mundo na fábrica sabe exatamente o que fazer sem gritaria.</p>
+        <div class="feature-card">
+          <span class="feature-badge">CHÃO DE FÁBRICA</span>
+          <h3 class="feature-card-title">Kanban de Produção Industrial</h3>
+          <p class="feature-card-text">Acompanhe cada pedido passando por Corte, Estamparia, Costura e Acabamento com facilidade drag-and-drop e trava de quarentena.</p>
         </div>
 
-        <div class="feature-box">
-          <span class="feature-badge">SEGURANÇA TOTAL</span>
-          <h3 class="feature-title">Perfis de Acesso Diferenciados</h3>
-          <p class="feature-text">O vendedor lança pedidos mas não vê o seu lucro. A oficina vê a produção mas não mexe no financeiro. E o dono tem controle total do negócio.</p>
+        <div class="feature-card">
+          <span class="feature-badge">HIERARQUIA</span>
+          <h3 class="feature-card-title">Perfis de Acesso Diferenciados</h3>
+          <p class="feature-card-text">O vendedor lança orçamentos sem ver sua margem real. A oficina acompanha a produção sem mexer no financeiro. E o dono tem visão total.</p>
         </div>
 
-        <div class="feature-box">
-          <span class="feature-badge">TECNOLOGIA DE PONTA</span>
-          <h3 class="feature-title">Nuvem Realtime & Offline-First</h3>
-          <p class="feature-text">Se a internet cair no meio do expediente, o sistema não trava. Ele continua operando localmente e sincroniza sozinho quando a conexão voltar.</p>
+        <div class="feature-card">
+          <span class="feature-badge">CONFIABILIDADE</span>
+          <h3 class="feature-card-title">Nuvem PostgreSQL & Offline-First</h3>
+          <p class="feature-card-text">Se a internet cair na fábrica, o sistema continua funcionando perfeitamente sem travar e sincroniza automaticamente assim que reconectar.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Depoimentos Reais -->
+  <!-- Depoimentos dos Polos Confeccionistas -->
   <section class="testimonials-section">
     <div class="container">
-      <div class="section-header">
-        <span class="section-tag">Depoimentos</span>
-        <h2 class="section-title">O que Dizem os Donos de Confecções que Usam o TexPro</h2>
+      <div class="section-headline">
+        <span class="section-tag">Casos Reais</span>
+        <h2 class="section-title">O que Dizem Quem Já Usa o TexPro ERP</h2>
+        <p class="section-subtitle">Depoimentos de confecções e estamparias que transformaram a sua gestão.</p>
       </div>
 
       <div class="testimonials-grid">
-        <div class="testimonial-card">
+        <div class="test-card">
           <div>
-            <div class="stars">★★★★★</div>
-            <p class="quote-text">
-              "O motor de encaixe DTF sozinho pagou a mensalidade do software na primeira semana. A gente perdia muito filme de estampa por falta de cálculo exato de rolo."
+            <div class="test-stars">★★★★★</div>
+            <p class="test-quote">
+              "O motor de DTF sozinho pagou a mensalidade do sistema na primeira semana. A gente perdia muito filme de estampa por falta de agrupamento correto."
             </p>
           </div>
-          <div class="author-info">
-            <div class="author-avatar">MR</div>
+          <div class="test-author-group">
+            <div class="test-avatar">MR</div>
             <div>
-              <div class="author-name">Marcos Rogério</div>
-              <div class="author-factory">Estamparia & Esportivos Play — SP</div>
+              <div class="test-author-name">Marcos Rogério</div>
+              <div class="test-author-location">Play Uniformes Esportivos — Americana/SP</div>
             </div>
           </div>
         </div>
 
-        <div class="testimonial-card">
+        <div class="test-card">
           <div>
-            <div class="stars">★★★★★</div>
-            <p class="quote-text">
-              "Acabou a briga com cliente por causa de atraso. O Radar de Prazos fica na tela da oficina e o pessoal corre com o que tá piscando em vermelho. Não atrasamos mais nada."
+            <div class="test-stars">★★★★★</div>
+            <p class="test-quote">
+              "O Radar de Prazos na TV da oficina mudou tudo. Todo mundo corre atrás do que tá piscando em vermelho e nunca mais tivemos pedido atrasado."
             </p>
           </div>
-          <div class="author-info">
-            <div class="author-avatar">CS</div>
+          <div class="test-author-group">
+            <div class="test-avatar">CS</div>
             <div>
-              <div class="author-name">Cláudia Silveira</div>
-              <div class="author-factory">Uniformes Corporativos Prime — MG</div>
+              <div class="test-author-name">Cláudia Silveira</div>
+              <div class="test-author-location">Prime Uniformes Corporativos — Brusque/SC</div>
             </div>
           </div>
         </div>
 
-        <div class="testimonial-card">
+        <div class="test-card">
           <div>
-            <div class="stars">★★★★★</div>
-            <p class="quote-text">
-              "A proposta comercial A4 que sai do sistema é de outro nível. O cliente recebe um PDF profissional com a arte dele e fecha na hora sem pedir desconto."
+            <div class="test-stars">★★★★★</div>
+            <p class="test-quote">
+              "A proposta comercial em PDF com a foto da peça e a tabela de medidas passa uma imagem profissional gigante. O cliente fecha sem pedir desconto."
             </p>
           </div>
-          <div class="author-info">
-            <div class="author-avatar">AL</div>
+          <div class="test-author-group">
+            <div class="test-avatar">AL</div>
             <div>
-              <div class="author-name">André Luiz</div>
-              <div class="author-factory">TexArte Confecções Escolares — PR</div>
+              <div class="test-author-name">André Luiz</div>
+              <div class="test-author-location">TexArte Escolares — Maringá/PR</div>
             </div>
           </div>
         </div>
@@ -1320,27 +1450,27 @@
   <!-- Tabela de Preços -->
   <section class="pricing-section" id="planos">
     <div class="container">
-      <div class="section-header">
-        <span class="section-tag">Investimento Transparente</span>
-        <h2 class="section-title">Escolha o Melhor Plano para a Sua Fábrica</h2>
-        <p class="section-desc">Sem contratos com multas abusivas. Cancele quando quiser com total liberdade.</p>
+      <div class="section-headline">
+        <span class="section-tag">Planos & Preços</span>
+        <h2 class="section-title">Investimento Simples e Transparente</h2>
+        <p class="section-subtitle">Sem contratos com fidelidade abusiva. Você é livre para cancelar quando quiser.</p>
       </div>
 
       <div class="pricing-grid">
         <!-- Plano Mensal -->
-        <div class="price-card">
-          <div class="plan-name">Plano Mensal Pro</div>
-          <div class="plan-desc">Ideal para quem quer começar a organizar a fábrica hoje mesmo com baixo custo.</div>
+        <div class="price-box">
+          <div class="plan-header-title">Plano Mensal Pro</div>
+          <div class="plan-header-desc">Para confecções que querem começar hoje mesmo com baixo investimento.</div>
 
-          <div class="price-wrapper">
-            <span class="price-amount">R$ 349</span>
+          <div>
+            <span class="price-display">R$ 349</span>
             <span class="price-period">/ mês</span>
           </div>
 
-          <ul class="plan-features">
+          <ul class="features-list">
             <li>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              Radar de Prazos em Tempo Real
+              Radar de Prazos com Contagem Regressiva
             </li>
             <li>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -1348,11 +1478,11 @@
             </li>
             <li>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              Fichas Técnicas e Propostas A4 Ilimitadas
+              Fichas Técnicas & Propostas A4 Ilimitadas
             </li>
             <li>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              Kanban de Produção & Trava de Quarentena
+              Kanban de Produção & Quarentena
             </li>
             <li>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -1360,7 +1490,7 @@
             </li>
             <li>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              Suporte via WhatsApp
+              Suporte Técnico via WhatsApp
             </li>
           </ul>
 
@@ -1370,30 +1500,30 @@
         </div>
 
         <!-- Plano VIP -->
-        <div class="price-card featured">
-          <div class="featured-tag">MAIS ESCOLHIDO PELAS FÁBRICAS</div>
-          <div class="plan-name">Implantação VIP Assistida</div>
-          <div class="plan-desc">Nós configuramos tudo na sua confecção e treinamos a sua equipe ao vivo.</div>
+        <div class="price-box popular">
+          <div class="popular-tag">MAIS ESCOLHIDO PELAS FÁBRICAS</div>
+          <div class="plan-header-title">Implantação VIP Assistida</div>
+          <div class="plan-header-desc">Nós configuramos tudo na sua fábrica e treinamos a sua equipe ao vivo.</div>
 
-          <div class="price-wrapper">
-            <span class="price-amount">R$ 1.200</span>
-            <div style="font-size: 13px; color: #34d399; font-weight: 700; margin-top: 4px;">
-              + R$ 250 / mês (Mensalidade com desconto)
+          <div>
+            <span class="price-display">R$ 1.200</span>
+            <div style="font-size: 13px; color: var(--brand-green); font-weight: 700; margin-top: 4px;">
+              + R$ 250 / mês (Mensalidade com desconto permanente)
             </div>
           </div>
 
-          <ul class="plan-features">
+          <ul class="features-list">
             <li>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <strong>Tudo do Plano Mensal Pro</strong>
+              <strong>Tudo incluso do Plano Mensal Pro</strong>
             </li>
             <li>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <strong>Configuração Completa do seu Banco na Nuvem</strong>
+              <strong>Configuração Assistida do Banco na Nuvem</strong>
             </li>
             <li>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <strong>Importação da sua lista de clientes e produtos</strong>
+              <strong>Importação da sua Lista de Clientes e Produtos</strong>
             </li>
             <li>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -1401,11 +1531,11 @@
             </li>
             <li>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <strong>Personalização com Logo da sua Fábrica</strong>
+              <strong>Personalização com o Logotipo da sua Confecção</strong>
             </li>
             <li>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              Suporte Prioritário Direto com Especialista
+              Suporte Prioritário VIP Direto no WhatsApp
             </li>
           </ul>
 
@@ -1419,60 +1549,58 @@
 
   <!-- FAQ -->
   <section class="faq-section" id="faq">
-    <div class="section-header">
+    <div class="section-headline">
       <span class="section-tag">Tire Suas Dúvidas</span>
       <h2 class="section-title">Perguntas Frequentes</h2>
     </div>
 
     <div class="faq-item active">
       <div class="faq-question">
-        <span>Preciso instalar algum programa pesado no meu computador?</span>
-        <span class="faq-icon">▼</span>
+        <span>Preciso de um computador potente para rodar o sistema?</span>
+        <span>▼</span>
       </div>
       <div class="faq-answer">
-        Não! O TexPro ERP é 100% online e funciona direto pelo navegador em qualquer computador, notebook, tablet ou smartphone. Você não precisa de técnicos de TI nem servidores caros.
+        Não! O TexPro ERP é extremamente leve e roda direto pelo navegador de qualquer computador, notebook, tablet ou smartphone simples. Você não precisa investir em servidores caros.
       </div>
     </div>
 
     <div class="faq-item">
       <div class="faq-question">
-        <span>E se a internet da fábrica cair no meio do dia?</span>
-        <span class="faq-icon">▼</span>
+        <span>E se a internet da fábrica cair no meio do expediente?</span>
+        <span>▼</span>
       </div>
       <div class="faq-answer">
-        O sistema possui tecnologia Offline-First. Ele continua funcionando perfeitamente mesmo sem internet, permitindo que sua equipe continue lançando pedidos e cortando peças. Assim que a conexão voltar, ele sincroniza tudo com a nuvem automaticamente.
+        O sistema possui tecnologia Offline-First. Ele continua funcionando normalmente mesmo sem internet, permitindo lançar pedidos e gerenciar a oficina. Assim que a conexão voltar, ele sincroniza com a nuvem sozinho.
       </div>
     </div>
 
     <div class="faq-item">
       <div class="faq-question">
-        <span>Minha equipe não tem muita facilidade com computador, eles vão conseguir usar?</span>
-        <span class="faq-icon">▼</span>
+        <span>Minha equipe não tem facilidade com informática. Vão conseguir usar?</span>
+        <span>▼</span>
       </div>
       <div class="faq-answer">
-        Com certeza! O TexPro foi desenhado com base no chão de fábrica têxtil: botões grandes, cores visuais para urgência de prazos e fluxo intuitivo. Em menos de 20 minutos de uso, qualquer costureira ou vendedor já domina a ferramenta.
+        Sim! Toda a interface foi pensada para a realidade do chão de fábrica têxtil: botões objetivos, alertas em cores para urgência de prazos e fluxo intuitivo. Em menos de 20 minutos de uso, qualquer vendedor ou operador já domina o sistema.
       </div>
     </div>
 
     <div class="faq-item">
       <div class="faq-question">
         <span>Como funciona a garantia de 7 dias?</span>
-        <span class="faq-icon">▼</span>
+        <span>▼</span>
       </div>
       <div class="faq-answer">
-        Você tem 7 dias corridos para usar o sistema à vontade. Se por qualquer motivo você achar que ele não economizou dinheiro ou não organizou a sua produção, basta nos mandar uma mensagem no WhatsApp que devolvemos 100% do seu dinheiro, sem letras miúdas.
+        Você tem 7 dias corridos para usar o sistema à vontade. Se por qualquer motivo achar que ele não organizou a sua produção ou não economizou dinheiro, basta mandar uma mensagem no WhatsApp que devolvemos 100% do valor pago.
       </div>
     </div>
   </section>
 
   <!-- CTA Final -->
-  <section class="cta-final-section">
+  <section class="cta-final">
     <div class="container">
-      <h2 style="font-family: var(--font-heading); font-size: clamp(32px, 4.5vw, 48px); font-weight: 800; margin-bottom: 20px;">
-        Pronto para Acabar com a Desordem na sua Confecção?
-      </h2>
-      <p style="font-size: 18px; color: var(--text-muted); max-width: 680px; margin: 0 auto 36px;">
-        Junte-se às confecções que aumentaram sua margem de lucro e nunca mais perderam um cliente por atraso de entrega.
+      <h2 class="cta-final-title">Pronto para Acabar com a Desordem na sua Confecção?</h2>
+      <p class="cta-final-sub">
+        Fale agora mesmo com um consultor especialista no WhatsApp e veja como organizar sua fábrica em menos de 48 horas.
       </p>
       <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20do%20TexPro%20ERP." target="_blank" class="btn btn-whatsapp btn-lg">
         Falar com Especialista no WhatsApp Agora
@@ -1487,8 +1615,18 @@
     </div>
   </footer>
 
-  <!-- Script Interativo da Calculadora e FAQ -->
+  <!-- Script da Vitrine, Calculadora e FAQ -->
   <script>
+    // Troca de Abas da Vitrine do Produto
+    function trocarAbaVitrine(abaId, btn) {
+      document.querySelectorAll('.frame-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+      btn.classList.add('active');
+      const target = document.getElementById('panel-' + abaId);
+      if (target) target.classList.add('active');
+    }
+
     // Calculadora Interativa de Lucro
     const inputPecas = document.getElementById('inputPecas');
     const inputMetros = document.getElementById('inputMetros');
@@ -1510,13 +1648,9 @@
       valPecas.textContent = pecas.toLocaleString('pt-BR') + ' peças';
       valMetros.textContent = metros.toLocaleString('pt-BR') + ' metros';
 
-      // Economia estimada em tecidos e DTF (R$ 9 por metro economizado média)
       const ecoTecido = metros * 9;
-      // Redução de retrabalho de corte (R$ 0,60 por peça)
       const ecoRetrabalho = pecas * 0.60;
-      // Economia de tempo comercial / fichas (R$ 0,40 por peça)
       const ecoHoras = pecas * 0.40;
-
       const total = ecoTecido + ecoRetrabalho + ecoHoras;
 
       txtEcoTecido.textContent = formatarReal(ecoTecido);
@@ -1530,13 +1664,12 @@
     recalcularLucro();
 
     // FAQ Acordeão
-    document.querySelectorAll('.faq-question').forEach(item => {
-      item.addEventListener('click', () => {
-        const parent = item.parentElement;
-        parent.classList.toggle('active');
+    document.querySelectorAll('.faq-question').forEach(q => {
+      q.addEventListener('click', () => {
+        const item = q.parentElement;
+        item.classList.toggle('active');
       });
     });
   </script>
-
 </body>
 </html>
