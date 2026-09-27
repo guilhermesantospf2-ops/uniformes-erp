@@ -155,8 +155,7 @@
     }
 
     let tabelaAtiva = null;
-    let sincronizandoBarra = false;
-    let sincronizandoTabela = false;
+    let sincronizando = false;
 
     function atualizarBarra() {
       if (!floatingBar || !floatingInner) return;
@@ -196,27 +195,38 @@
       // Exibe e ajusta posição e tamanho
       floatingBar.style.display = 'block';
       const leftPos = Math.max(0, rect.left);
-      const widthVal = Math.min(window.innerWidth - leftPos, rect.width);
+      const widthVal = Math.max(100, Math.min(window.innerWidth - leftPos, rect.width));
       floatingBar.style.left = leftPos + 'px';
       floatingBar.style.width = widthVal + 'px';
-      floatingInner.style.width = tabelaCandidata.scrollWidth + 'px';
+      floatingInner.style.width = Math.max(tabelaCandidata.scrollWidth, widthVal + 400) + 'px';
 
-      // Sincroniza a posição de rolagem
-      if (!sincronizandoBarra) {
-        sincronizandoTabela = true;
-        floatingBar.scrollLeft = tabelaCandidata.scrollLeft;
+      // Sincroniza a posição de rolagem proporcionalmente
+      const maxTable = tabelaCandidata.scrollWidth - tabelaCandidata.clientWidth;
+      const maxFloating = floatingBar.scrollWidth - floatingBar.clientWidth;
+
+      if (!sincronizando && maxTable > 0 && maxFloating > 0) {
+        sincronizando = true;
+        const pct = Math.min(1, Math.max(0, tabelaCandidata.scrollLeft / maxTable));
+        floatingBar.scrollLeft = Math.round(pct * maxFloating);
         requestAnimationFrame(() => {
-          sincronizandoTabela = false;
+          sincronizando = false;
         });
       }
     }
 
+    // Ao arrastar a barra flutuante: calcula a porcentagem e aplica na tabela
+    // Isso garante que se o usuário arrastar até o fim, a tabela VAI até a última coluna sem truncar
     floatingBar.addEventListener('scroll', () => {
-      if (sincronizandoTabela || !tabelaAtiva) return;
-      sincronizandoBarra = true;
-      tabelaAtiva.scrollLeft = floatingBar.scrollLeft;
+      if (sincronizando || !tabelaAtiva) return;
+      const maxFloating = floatingBar.scrollWidth - floatingBar.clientWidth;
+      const maxTable = tabelaAtiva.scrollWidth - tabelaAtiva.clientWidth;
+      if (maxFloating <= 0 || maxTable <= 0) return;
+
+      sincronizando = true;
+      const pct = Math.min(1, Math.max(0, floatingBar.scrollLeft / maxFloating));
+      tabelaAtiva.scrollLeft = Math.round(pct * maxTable);
       requestAnimationFrame(() => {
-        sincronizandoBarra = false;
+        sincronizando = false;
       });
     }, { passive: true });
 
@@ -225,12 +235,17 @@
 
     document.addEventListener('scroll', (e) => {
       if (e.target && e.target.classList && e.target.classList.contains('table-wrapper')) {
-        if (e.target === tabelaAtiva && !sincronizandoBarra) {
-          sincronizandoTabela = true;
-          floatingBar.scrollLeft = e.target.scrollLeft;
-          requestAnimationFrame(() => {
-            sincronizandoTabela = false;
-          });
+        if (e.target === tabelaAtiva && !sincronizando) {
+          const maxFloating = floatingBar.scrollWidth - floatingBar.clientWidth;
+          const maxTable = e.target.scrollWidth - e.target.clientWidth;
+          if (maxFloating > 0 && maxTable > 0) {
+            sincronizando = true;
+            const pct = Math.min(1, Math.max(0, e.target.scrollLeft / maxTable));
+            floatingBar.scrollLeft = Math.round(pct * maxFloating);
+            requestAnimationFrame(() => {
+              sincronizando = false;
+            });
+          }
         }
       }
     }, true);
@@ -1091,8 +1106,8 @@
         <div class="table-header-bar">
           <div class="table-title">Últimos Pedidos & Mockups Têxteis 3x4</div>
           <div style="display: flex; gap: 8px; align-items: center;">
-            <button type="button" class="btn btn-secondary btn-sm" onclick="this.closest('.table-wrapper').scrollTo({left: 0, behavior: 'smooth'})" title="Rolar para o Início da Tabela" style="padding: 3px 8px; font-size: 11px; font-weight: 700;">◀ Início</button>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="this.closest('.table-wrapper').scrollTo({left: 9999, behavior: 'smooth'})" title="Rolar para Ações e Status" style="padding: 3px 8px; font-size: 11px; font-weight: 700;">Ações & Status ▶</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="const w=this.closest('.table-wrapper');w.scrollTo({left:0,behavior:'smooth'})" title="Rolar para o Início da Tabela" style="padding: 3px 8px; font-size: 11px; font-weight: 700;">◀ Início</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="const w=this.closest('.table-wrapper');w.scrollTo({left:w.scrollWidth,behavior:'smooth'})" title="Rolar para Ações e Status" style="padding: 3px 8px; font-size: 11px; font-weight: 700;">Ações & Status ▶</button>
             <button class="btn btn-secondary btn-sm" id="btnIrParaPedidos">Ir para Todos os Pedidos</button>
           </div>
         </div>
@@ -1300,8 +1315,8 @@
         <div class="table-header-bar">
           <div class="table-title">Ordens de Pedidos Oficiais & Orçamentos Ativos (${pedidos.length})</div>
           <div style="display: flex; gap: 8px; align-items: center;">
-            <button type="button" class="btn btn-secondary btn-sm" onclick="this.closest('.table-wrapper').scrollTo({left: 0, behavior: 'smooth'})" title="Rolar para o Início da Tabela" style="padding: 3px 8px; font-size: 11px; font-weight: 700;">◀ Início</button>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="this.closest('.table-wrapper').scrollTo({left: 9999, behavior: 'smooth'})" title="Rolar para Ações, Status e Totais" style="padding: 3px 8px; font-size: 11px; font-weight: 700;">Ações & Totais ▶</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="const w=this.closest('.table-wrapper');w.scrollTo({left:0,behavior:'smooth'})" title="Rolar para o Início da Tabela" style="padding: 3px 8px; font-size: 11px; font-weight: 700;">◀ Início</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="const w=this.closest('.table-wrapper');w.scrollTo({left:w.scrollWidth,behavior:'smooth'})" title="Rolar para Ações, Status e Totais" style="padding: 3px 8px; font-size: 11px; font-weight: 700;">Ações & Totais ▶</button>
             <span class="table-scroll-hint" title="Use a barra fixa no rodapé da tela para navegar pelas colunas sem descer a página">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline><polyline points="19 18 13 12 19 6"></polyline></svg>
               Barra Fixa Ativa

@@ -610,6 +610,9 @@ body {
   justify-content: space-between;
   background-color: #ffffff;
   gap: 12px;
+  position: sticky;
+  left: 0;
+  width: 100%;
 }
 
 .table-title {
@@ -633,7 +636,7 @@ body {
 
 .erp-table {
   width: 100%;
-  min-width: 1260px; /* Garante que todas as colunas laterais fiquem visíveis sem espremer */
+  min-width: 1440px; /* Garante que todas as 11 colunas laterais fiquem visíveis sem espremer */
   border-collapse: collapse;
   text-align: left;
   font-size: 12.5px;
@@ -657,6 +660,11 @@ body {
   color: var(--text-secondary);
   white-space: nowrap;
   vertical-align: middle;
+}
+
+.erp-table th:last-child,
+.erp-table td:last-child {
+  padding-right: 28px;
 }
 
 .erp-table tr:last-child td {
