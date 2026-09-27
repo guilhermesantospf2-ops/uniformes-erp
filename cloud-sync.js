@@ -535,8 +535,8 @@ with check (true);
                 if (typeof onAtualizacaoRemota === 'function') {
                   onAtualizacaoRemota(reg.db);
                 }
-                definirTextoStatusNuvem('⚡ Supabase Atualizado!', '#ecfdf5', '#047857');
-                setTimeout(atualizarStatusNuvem, 2500);
+                definirTextoStatusNuvem('Nuvem Sincronizada', '#ecfdf5', '#047857');
+                setTimeout(atualizarStatusNuvem, 2000);
               }
             }
           )
@@ -577,7 +577,7 @@ with check (true);
     txt.textContent = texto;
   }
 
-  // --- STATUS DA BARRA SUPERIOR ---
+  // --- STATUS DA BARRA SUPERIOR (DISCRETO & WHITE-LABEL CORPORATIVO) ---
   function atualizarStatusNuvem() {
     const badge = document.getElementById('cloudStatusBadge');
     const txt = document.getElementById('cloudStatusText');
@@ -589,34 +589,27 @@ with check (true);
       badge.style.borderColor = '#fde68a';
       const dot = badge.querySelector('span:first-child');
       if (dot) dot.style.background = '#f59e0b';
-      txt.textContent = 'Modo Local Offline Seguro';
+      txt.textContent = 'Modo Offline';
+      badge.title = 'Sem conexão com a internet. Gravando dados com segurança no dispositivo.';
       return;
     }
 
-    const provedor = obterProvedorAtivo();
-    const tenantNome = obterTenantId().replace('empresa_', '');
-
-    if (provedor === 'supabase') {
+    if (isNuvemAtiva()) {
       badge.style.background = '#ecfdf5';
       badge.style.color = '#047857';
       badge.style.borderColor = '#a7f3d0';
       const dot = badge.querySelector('span:first-child');
       if (dot) dot.style.background = '#10b981';
-      txt.textContent = `Online • Supabase PostgreSQL (${tenantNome})`;
-    } else if (provedor === 'firebase') {
-      badge.style.background = '#ecfdf5';
-      badge.style.color = '#047857';
-      badge.style.borderColor = '#a7f3d0';
-      const dot = badge.querySelector('span:first-child');
-      if (dot) dot.style.background = '#10b981';
-      txt.textContent = `Online • Firestore Ativo (${tenantNome})`;
+      txt.textContent = 'Nuvem Ativa';
+      badge.title = 'Sistema conectado à nuvem em tempo real com backup contínuo.';
     } else {
-      badge.style.background = '#f0f9ff';
-      badge.style.color = '#0369a1';
-      badge.style.borderColor = '#bae6fd';
+      badge.style.background = '#f8fafc';
+      badge.style.color = '#475569';
+      badge.style.borderColor = '#cbd5e1';
       const dot = badge.querySelector('span:first-child');
-      if (dot) dot.style.background = '#0ea5e9';
-      txt.textContent = 'Modo Local Seguro (LocalStorage)';
+      if (dot) dot.style.background = '#64748b';
+      txt.textContent = 'Modo Seguro';
+      badge.title = 'Armazenamento local seguro ativo.';
     }
   }
 

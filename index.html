@@ -188,10 +188,10 @@
         </div>
 
         <div class="navbar-actions">
-          <!-- Indicador de Status em Nuvem -->
-          <div class="cloud-status-badge" id="cloudStatusBadge" style="display: flex; align-items: center; gap: 6px; font-size: 11px; padding: 4px 8px; border-radius: 4px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 700;">
+          <!-- Indicador de Status em Nuvem White-label e Corporativo -->
+          <div class="cloud-status-badge" id="cloudStatusBadge" style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; padding: 4px 10px; border-radius: 20px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 700; cursor: default; white-space: nowrap;">
             <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #10b981;"></span>
-            <span id="cloudStatusText">Online • Nuvem Ativa</span>
+            <span id="cloudStatusText">Nuvem Ativa</span>
           </div>
 
           <!-- Seletor de Perfil Industrial -->
@@ -200,7 +200,7 @@
             <select id="selectPerfilUsuario" class="form-select" style="font-size: 11px; padding: 2px 4px; height: 26px; border: none; background: transparent; font-weight: 800; color: var(--text-primary); cursor: pointer;">
               <option value="dono">👑 Dono / Diretor (Acesso Total)</option>
               <option value="vendedor">💼 Vendedor (Sem Financeiro/DRE)</option>
-              <option value="oficina">✂️ Oficina / Corte (Apenas Produção)</option>
+              <option value="oficina">✂️ Oficina / Chão de Fábrica</option>
             </select>
           </div>
 
@@ -209,15 +209,7 @@
             <span class="text-mono" style="color: var(--text-gray-500);" id="headerEmpresaCnpj">CNPJ: 34.582.910/0001-44</span>
           </div>
 
-          <button class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalBackup()" title="Backup de segurança e restauração dos dados">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            Backup & Nuvem
-          </button>
-          <button class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalRoteiroVendas()" style="border-color: #0284c7; color: #0369a1; font-weight: 700;" title="Roteiro de Vendas, Pitch Comercial e Calculadora de ROI para Confecções">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-            Pitch de Vendas & ROI
-          </button>
-          <button class="btn btn-secondary btn-sm" onclick="window.ERP.navegarPara('nesting')">
+          <button class="btn btn-secondary btn-sm" onclick="window.ERP.navegarPara('nesting')" title="Otimização de Encaixe DTF para Impressão">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line></svg>
             Nesting DTF
           </button>
