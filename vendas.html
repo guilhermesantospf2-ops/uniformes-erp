@@ -995,7 +995,6 @@
       </div>
 
       <nav class="nav-menu">
-        <a href="#vitrine">O Sistema</a>
         <a href="#comparativo">Antes vs Depois</a>
         <a href="#calculadora">Calculadora de Lucro</a>
         <a href="#recursos">Recursos</a>
@@ -1056,153 +1055,6 @@
         <div class="trust-item">
           <span class="trust-icon">✓</span>
           <span>Garantia Incondicional de 7 Dias</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Vitrine Interativa do Sistema -->
-  <section class="showcase-section" id="vitrine">
-    <div class="container">
-      <div class="section-headline">
-        <span class="section-tag">Tour pelo Sistema</span>
-        <h2 class="section-title">Veja Como o TexPro Funciona por Dentro</h2>
-        <p class="section-subtitle">Telas limpas, contraste industrial e ferramentas que resolvem os gargalos reais do chão de fábrica.</p>
-      </div>
-
-      <div class="product-frame">
-        <div class="frame-topbar">
-          <div class="frame-controls">
-            <span class="control-dot dot-1"></span>
-            <span class="control-dot dot-2"></span>
-            <span class="control-dot dot-3"></span>
-          </div>
-
-          <div class="frame-tabs">
-            <button class="frame-tab-btn active" onclick="trocarAbaVitrine('radar', this)">
-              ⏱️ Radar de Prazos
-            </button>
-            <button class="frame-tab-btn" onclick="trocarAbaVitrine('nesting', this)">
-              ✂️ Encaixe DTF
-            </button>
-            <button class="frame-tab-btn" onclick="trocarAbaVitrine('ficha', this)">
-              📄 Ficha Técnica A4
-            </button>
-            <button class="frame-tab-btn" onclick="trocarAbaVitrine('kanban', this)">
-              📊 Kanban Industrial
-            </button>
-          </div>
-
-          <div style="font-size: 11px; font-weight: 700; color: var(--brand-green);">
-            ● Conectado em Tempo Real
-          </div>
-        </div>
-
-        <div class="frame-content">
-          <!-- Aba 1: Radar de Prazos -->
-          <div class="tab-panel active" id="panel-radar">
-            <div class="radar-demo-card">
-              <div class="radar-demo-header">
-                <div>
-                  <strong style="color: var(--text-main); font-size: 14px;">RADAR OPERACIONAL DE PRAZOS & URGÊNCIA</strong>
-                  <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-                    Contagem regressiva automática por pedido com alerta visual por cores
-                  </div>
-                </div>
-                <span class="badge-demo" style="background: var(--brand-green-soft); color: var(--brand-green); border: 1px solid var(--brand-green-border);">
-                  RADAR ATIVO
-                </span>
-              </div>
-
-              <div class="demo-order-row urgent">
-                <span class="text-mono" style="font-weight: 800; color: var(--text-main);">#PED-108</span>
-                <div>
-                  <strong style="color: var(--text-main);">Colégio Objetivo (Uniforme Escolar)</strong>
-                  <div style="font-size: 11px; color: var(--text-muted);">450 Camisetas Poliviscose + 200 Shorts Helanca</div>
-                </div>
-                <div><span style="font-size: 11px; color: var(--text-muted);">Oficina / Chão:</span> <strong>Costura</strong></div>
-                <div><span class="badge-demo badge-red">🚨 ENTREGA HOJE (4h)</span></div>
-                <div style="font-size: 11px; text-align: right; color: var(--text-muted);">Saldo a Receber: <strong style="color: var(--text-main);">R$ 4.250,00</strong></div>
-              </div>
-
-              <div class="demo-order-row" style="background: #fffbeb; border-color: #fde68a;">
-                <span class="text-mono" style="font-weight: 800; color: var(--text-main);">#PED-109</span>
-                <div>
-                  <strong style="color: var(--text-main);">Transportadora Rápido Sol (Uniformes Pesados)</strong>
-                  <div style="font-size: 11px; color: var(--text-muted);">120 Calças Brim Pesado + Faixa Refletiva</div>
-                </div>
-                <div><span style="font-size: 11px; color: var(--text-muted);">Oficina / Chão:</span> <strong>Estamparia DTF</strong></div>
-                <div><span class="badge-demo badge-amber">⚠️ RESTAM 2 DIAS</span></div>
-                <div style="font-size: 11px; text-align: right; color: var(--text-muted);">Sinal 50% Quitado</div>
-              </div>
-
-              <div class="demo-order-row">
-                <span class="text-mono" style="font-weight: 800; color: var(--text-main);">#PED-110</span>
-                <div>
-                  <strong style="color: var(--text-main);">Clínica Saúde Vital (Scrubs Hospitalares)</strong>
-                  <div style="font-size: 11px; color: var(--text-muted);">85 Conjuntos Gabardine Premium</div>
-                </div>
-                <div><span style="font-size: 11px; color: var(--text-muted);">Oficina / Chão:</span> <strong>Corte Enfesto</strong></div>
-                <div><span class="badge-demo badge-green">✓ 9 DIAS (SEGURO)</span></div>
-                <div style="font-size: 11px; text-align: right; color: var(--text-muted);">Aguardando Tecido</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Aba 2: Nesting DTF -->
-          <div class="tab-panel" id="panel-nesting">
-            <div class="radar-demo-card">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <div>
-                  <strong style="color: var(--text-main); font-size: 14px;">MOTOR DE ENCAIXE INTELIGENTE DTF (NESTING)</strong>
-                  <div style="font-size: 12px; color: var(--text-muted);">Cálculo exato de agrupamento no rolo de 58cm de filme de transferência</div>
-                </div>
-                <span class="badge-demo badge-green">92% DE APROVEITAMENTO</span>
-              </div>
-              <div style="background: #0f172a; color: #fff; padding: 24px; border-radius: 6px; text-align: center; font-family: var(--font-mono); font-size: 13px;">
-                [ SIMULAÇÃO VISUAL DE ENCAIXE DE 60 LOGOS EM ROLO DTF ]<br>
-                <span style="color: #34d399; font-size: 15px; font-weight: 800;">Economia Direta: 4.8 metros de filme salvos neste lote</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Aba 3: Ficha Técnica A4 -->
-          <div class="tab-panel" id="panel-ficha">
-            <div class="radar-demo-card" style="text-align: center; padding: 30px;">
-              <strong style="font-size: 15px; color: var(--text-main);">ORÇAMENTO & FICHA TÉCNICA INDUSTRIAL IMPRESSA EM 1 CLIQUE</strong>
-              <p style="font-size: 13px; color: var(--text-muted); margin: 8px 0 20px;">
-                Documento com logotipo da sua confecção, tabela de tamanhos (P, M, G, GG, XG), regras de pagamento (50% sinal / 50% retirada) e assinatura do cliente.
-              </p>
-              <a href="/proposta-comercial" target="_blank" class="btn btn-secondary btn-sm">
-                Visualizar Modelo de Proposta A4 &rarr;
-              </a>
-            </div>
-          </div>
-
-          <!-- Aba 4: Kanban Industrial -->
-          <div class="tab-panel" id="panel-kanban">
-            <div class="radar-demo-card">
-              <strong style="font-size: 14px; color: var(--text-main); display: block; margin-bottom: 12px;">FLUXO DE PRODUÇÃO VISUAL DRAG-AND-DROP</strong>
-              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; font-size: 12px;">
-                <div style="background: #f1f5f9; padding: 12px; border-radius: 6px;">
-                  <strong>1. CORTE (4)</strong>
-                  <div style="background: #fff; padding: 8px; border-radius: 4px; margin-top: 8px; border: 1px solid var(--border-subtle);">#PED-112 Polo Piquet</div>
-                </div>
-                <div style="background: #f1f5f9; padding: 12px; border-radius: 6px;">
-                  <strong>2. ESTAMPARIA (3)</strong>
-                  <div style="background: #fff; padding: 8px; border-radius: 4px; margin-top: 8px; border: 1px solid var(--border-subtle);">#PED-109 Brim DTF</div>
-                </div>
-                <div style="background: #f1f5f9; padding: 12px; border-radius: 6px;">
-                  <strong>3. COSTURA (5)</strong>
-                  <div style="background: #fef2f2; padding: 8px; border-radius: 4px; margin-top: 8px; border: 1px solid #fecaca; color: #b91c1c; font-weight: 700;">#PED-108 Escolar</div>
-                </div>
-                <div style="background: #f1f5f9; padding: 12px; border-radius: 6px;">
-                  <strong>4. EXPEDIÇÃO (2)</strong>
-                  <div style="background: #fff; padding: 8px; border-radius: 4px; margin-top: 8px; border: 1px solid var(--border-subtle);">#PED-107 Concluído</div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -1615,18 +1467,8 @@
     </div>
   </footer>
 
-  <!-- Script da Vitrine, Calculadora e FAQ -->
+  <!-- Script da Calculadora e FAQ -->
   <script>
-    // Troca de Abas da Vitrine do Produto
-    function trocarAbaVitrine(abaId, btn) {
-      document.querySelectorAll('.frame-tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-
-      btn.classList.add('active');
-      const target = document.getElementById('panel-' + abaId);
-      if (target) target.classList.add('active');
-    }
-
     // Calculadora Interativa de Lucro
     const inputPecas = document.getElementById('inputPecas');
     const inputMetros = document.getElementById('inputMetros');
