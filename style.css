@@ -551,6 +551,57 @@ body {
   background: #0f172a;
 }
 
+/* ==========================================================================
+   BARRA DE ROLAGEM HORIZONTAL FLUTUANTE FIXA (STICKY FLOATING SCROLLBAR)
+   Permite navegar lateralmente por qualquer tabela sem precisar descer até o fim
+   ========================================================================== */
+.erp-floating-scrollbar {
+  position: fixed;
+  bottom: 0;
+  left: var(--sidebar-width);
+  width: calc(100% - var(--sidebar-width));
+  height: 16px;
+  background: #f1f5f9;
+  border-top: 2px solid #059669;
+  overflow-x: auto;
+  overflow-y: hidden;
+  z-index: 9999;
+  box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.25);
+  display: none;
+  scrollbar-width: auto;
+  scrollbar-color: #1e293b #f1f5f9;
+}
+
+.erp-floating-scrollbar::-webkit-scrollbar {
+  height: 16px;
+}
+
+.erp-floating-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.erp-floating-scrollbar::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 8px;
+  border: 2px solid #f1f5f9;
+  cursor: pointer;
+}
+
+.erp-floating-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #047857;
+}
+
+.erp-floating-scrollbar-inner {
+  height: 1px;
+}
+
+@media (max-width: 900px) {
+  .erp-floating-scrollbar {
+    left: 0 !important;
+    width: 100% !important;
+  }
+}
+
 .table-header-bar {
   padding: 14px 18px;
   border-bottom: 1px solid var(--border-subtle);

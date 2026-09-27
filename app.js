@@ -99,6 +99,7 @@
     atualizarBadges();
     configurarCliqueGlobalMockups();
     configurarFechamentoModaisGlobal();
+    inicializarBarraRolagemFixa();
     navegarPara(abaAtiva);
   }
 
@@ -129,6 +130,123 @@
         }
       });
     }
+  }
+
+  // ==========================================================================
+  // BARRA DE ROLAGEM HORIZONTAL FIXA FLUTUANTE (SISTEMA GERAL)
+  // Permite rolar lateralmente qualquer tabela sem descer até o fim da página
+  // ==========================================================================
+  function inicializarBarraRolagemFixa() {
+    let floatingBar = document.getElementById('erpFloatingHorizontalScrollbar');
+    let floatingInner = document.getElementById('erpFloatingHorizontalScrollbarInner');
+
+    if (!floatingBar) {
+      floatingBar = document.createElement('div');
+      floatingBar.id = 'erpFloatingHorizontalScrollbar';
+      floatingBar.className = 'erp-floating-scrollbar';
+      floatingBar.setAttribute('aria-hidden', 'true');
+      floatingBar.setAttribute('title', 'Arraste para rolar a tabela lateralmente sem descer até o fim');
+      floatingInner = document.createElement('div');
+      floatingInner.id = 'erpFloatingHorizontalScrollbarInner';
+      floatingInner.className = 'erp-floating-scrollbar-inner';
+      floatingBar.appendChild(floatingInner);
+      const erpMain = document.querySelector('.erp-main') || document.body;
+      erpMain.appendChild(floatingBar);
+    }
+
+    let tabelaAtiva = null;
+    let sincronizandoBarra = false;
+    let sincronizandoTabela = false;
+
+    function atualizarBarra() {
+      if (!floatingBar || !floatingInner) return;
+      const tabelas = Array.from(document.querySelectorAll('.table-wrapper'));
+      const vh = window.innerHeight || document.documentElement.clientHeight;
+
+      let tabelaCandidata = null;
+
+      for (const t of tabelas) {
+        if (t.scrollWidth > t.clientWidth + 2) {
+          const rect = t.getBoundingClientRect();
+          // Se a tabela está na tela e seu fundo está abaixo da tela
+          if (rect.top < vh - 40 && rect.bottom > vh) {
+            tabelaCandidata = t;
+            break;
+          }
+        }
+      }
+
+      if (!tabelaCandidata) {
+        floatingBar.style.display = 'none';
+        tabelaAtiva = null;
+        return;
+      }
+
+      const rect = tabelaCandidata.getBoundingClientRect();
+
+      // Se o fundo da tabela já está visível dentro da janela, a barra nativa já está acessível
+      if (rect.bottom <= vh + 5) {
+        floatingBar.style.display = 'none';
+        tabelaAtiva = null;
+        return;
+      }
+
+      tabelaAtiva = tabelaCandidata;
+
+      // Exibe e ajusta posição e tamanho
+      floatingBar.style.display = 'block';
+      const leftPos = Math.max(0, rect.left);
+      const widthVal = Math.min(window.innerWidth - leftPos, rect.width);
+      floatingBar.style.left = leftPos + 'px';
+      floatingBar.style.width = widthVal + 'px';
+      floatingInner.style.width = tabelaCandidata.scrollWidth + 'px';
+
+      // Sincroniza a posição de rolagem
+      if (!sincronizandoBarra) {
+        sincronizandoTabela = true;
+        floatingBar.scrollLeft = tabelaCandidata.scrollLeft;
+        requestAnimationFrame(() => {
+          sincronizandoTabela = false;
+        });
+      }
+    }
+
+    floatingBar.addEventListener('scroll', () => {
+      if (sincronizandoTabela || !tabelaAtiva) return;
+      sincronizandoBarra = true;
+      tabelaAtiva.scrollLeft = floatingBar.scrollLeft;
+      requestAnimationFrame(() => {
+        sincronizandoBarra = false;
+      });
+    }, { passive: true });
+
+    window.addEventListener('scroll', atualizarBarra, { passive: true });
+    window.addEventListener('resize', atualizarBarra, { passive: true });
+
+    document.addEventListener('scroll', (e) => {
+      if (e.target && e.target.classList && e.target.classList.contains('table-wrapper')) {
+        if (e.target === tabelaAtiva && !sincronizandoBarra) {
+          sincronizandoTabela = true;
+          floatingBar.scrollLeft = e.target.scrollLeft;
+          requestAnimationFrame(() => {
+            sincronizandoTabela = false;
+          });
+        }
+      }
+    }, true);
+
+    const contentAreaElem = document.getElementById('contentArea');
+    if (contentAreaElem && window.MutationObserver) {
+      const observer = new MutationObserver(() => {
+        setTimeout(atualizarBarra, 40);
+        setTimeout(atualizarBarra, 200);
+      });
+      observer.observe(contentAreaElem, { childList: true, subtree: true });
+    }
+
+    window.ERP_ATUALIZAR_BARRA_ROLAGEM = atualizarBarra;
+    setTimeout(atualizarBarra, 100);
+    setTimeout(atualizarBarra, 400);
   }
 
   // Notificações Toast do Sistema (Zero Emojis, Puros SVGs)
@@ -526,6 +644,11 @@
         break;
       default:
         renderizarAbertura();
+    }
+
+    if (typeof window.ERP_ATUALIZAR_BARRA_ROLAGEM === 'function') {
+      setTimeout(window.ERP_ATUALIZAR_BARRA_ROLAGEM, 40);
+      setTimeout(window.ERP_ATUALIZAR_BARRA_ROLAGEM, 250);
     }
   }
 
@@ -933,7 +1056,11 @@
       <div class="table-wrapper">
         <div class="table-header-bar">
           <div class="table-title">Últimos Pedidos & Mockups Têxteis 3x4</div>
-          <button class="btn btn-secondary btn-sm" id="btnIrParaPedidos">Ir para Todos os Pedidos</button>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="this.closest('.table-wrapper').scrollTo({left: 0, behavior: 'smooth'})" title="Rolar para o Início da Tabela" style="padding: 3px 8px; font-size: 11px; font-weight: 700;">◀ Início</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="this.closest('.table-wrapper').scrollTo({left: 9999, behavior: 'smooth'})" title="Rolar para Ações e Status" style="padding: 3px 8px; font-size: 11px; font-weight: 700;">Ações & Status ▶</button>
+            <button class="btn btn-secondary btn-sm" id="btnIrParaPedidos">Ir para Todos os Pedidos</button>
+          </div>
         </div>
         <table class="erp-table">
           <thead>
@@ -1134,11 +1261,15 @@
       <div class="table-wrapper">
         <div class="table-header-bar">
           <div class="table-title">Ordens de Pedidos Oficiais & Orçamentos Ativos (${pedidos.length})</div>
-          <span class="table-scroll-hint" title="Use a barra de rolagem horizontal abaixo para navegar por todas as colunas">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline><polyline points="19 18 13 12 19 6"></polyline></svg>
-            Rolagem Lateral Ativa
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline><polyline points="5 18 11 12 5 6"></polyline></svg>
-          </span>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="this.closest('.table-wrapper').scrollTo({left: 0, behavior: 'smooth'})" title="Rolar para o Início da Tabela" style="padding: 3px 8px; font-size: 11px; font-weight: 700;">◀ Início</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="this.closest('.table-wrapper').scrollTo({left: 9999, behavior: 'smooth'})" title="Rolar para Ações, Status e Totais" style="padding: 3px 8px; font-size: 11px; font-weight: 700;">Ações & Totais ▶</button>
+            <span class="table-scroll-hint" title="Use a barra fixa no rodapé da tela para navegar pelas colunas sem descer a página">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline><polyline points="19 18 13 12 19 6"></polyline></svg>
+              Barra Fixa Ativa
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline><polyline points="5 18 11 12 5 6"></polyline></svg>
+            </span>
+          </div>
         </div>
         <table class="erp-table">
           <thead>
