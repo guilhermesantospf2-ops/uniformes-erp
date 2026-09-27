@@ -658,6 +658,46 @@ body {
   border: 1px solid #bae6fd;
 }
 
+button.status-pill {
+  border: 1px solid transparent;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+button.status-pill:hover {
+  filter: brightness(0.93);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.btn-quick-pay,
+.btn-quick-entrada {
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-medium);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: var(--font-sans);
+}
+
+.btn-quick-pay:hover,
+.btn-quick-entrada:hover {
+  background: #ffffff;
+  border-color: var(--color-green);
+  color: var(--color-green);
+}
+
+.btn-quick-entrada.active {
+  background: var(--bg-green-soft);
+  border-color: var(--border-green);
+  color: var(--color-green);
+  font-weight: 700;
+}
+
 .filter-btn-pill {
   padding: 5px 12px;
   font-size: 11.5px;

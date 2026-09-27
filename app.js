@@ -659,6 +659,11 @@
           <tbody>
             ${db.pedidos.length ? db.pedidos.slice(0, 5).map(p => {
               const mockup = p.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(p.produtoNome, "#1e3a8a", "#ffffff", p.clienteNome.substring(0, 6));
+              const totalV = Number(p.valorTotalVenda) || 0;
+              const pagoV = Number(p.valorSinalPago) || 0;
+              const saldoV = Math.max(0, totalV - pagoV);
+              const quitV = totalV > 0 && saldoV <= 0;
+              const percV = totalV > 0 ? ((pagoV / totalV) * 100).toFixed(0) : 0;
               return `
                 <tr>
                   <td>
@@ -670,13 +675,19 @@
                   <td class="text-mono">${p.grade?.total || 0} un</td>
                   <td class="text-mono"><strong>${formatarMoeda(p.valorTotalVenda)}</strong></td>
                   <td>
-                    <span class="status-pill ${p.sinalPago ? 'status-green' : 'status-red'}">
-                      ${p.sinalPago ? (p.saldoPendente <= 0 ? '100% QUITADO' : 'SINAL 50% OK') : 'PENDENTE'}
-                    </span>
+                    ${quitV ? `
+                      <span class="status-pill status-green">100% QUITADO</span>
+                    ` : pagoV > 0 ? `
+                      <span class="status-pill status-yellow" title="Saldo remanescente devedor: ${formatarMoeda(saldoV)}">
+                        PARCIAL (${percV}%)
+                      </span>
+                    ` : `
+                      <span class="status-pill status-red">PENDENTE</span>
+                    `}
                   </td>
                   <td>
                     <span class="status-pill ${p.status === 'Quarentena' ? 'status-red' : p.status === 'Em Producao' ? 'status-green' : 'status-gray'}">
-                      ${p.status.toUpperCase()}
+                      ${p.status === 'Quarentena' ? '🔒 QUARENTENA' : p.status.toUpperCase()}
                     </span>
                   </td>
                   <td class="text-mono">${p.etapaProducao}</td>
@@ -844,7 +855,13 @@
           <tbody>
             ${pedidos.map(p => {
               const mockup = p.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(p.produtoNome, "#1e3a8a", "#ffffff", p.clienteNome.substring(0, 6));
-              const quitadoTotal = p.sinalPago && (p.saldoPendente <= 0);
+              const totalVenda = Number(p.valorTotalVenda) || 0;
+              const jaPago = Number(p.valorSinalPago) || 0;
+              const saldoDevedor = Math.max(0, totalVenda - jaPago);
+              const quitadoTotal = totalVenda > 0 && saldoDevedor <= 0;
+              const parcialPago = jaPago > 0 && saldoDevedor > 0;
+              const percPago = totalVenda > 0 ? ((jaPago / totalVenda) * 100).toFixed(0) : 0;
+              const isQuarentena = p.status === 'Quarentena';
               return `
                 <tr>
                   <td>
@@ -853,8 +870,8 @@
                   <td>
                     <span class="text-mono" style="font-weight: 800; font-size: 13px;">#${p.numero}</span>
                     <span style="display: block; font-size: 10.5px; color: var(--text-gray-500);">${p.dataCriacao}</span>
-                    <span class="status-pill ${p.tipoRegistro === 'Orcamento' ? 'status-gray' : 'status-green'}" style="font-size: 9px; margin-top: 3px;">
-                      ${p.tipoRegistro ? p.tipoRegistro.toUpperCase() : 'PEDIDO'}
+                    <span class="status-pill ${p.tipoRegistro === 'Orcamento' ? 'status-gray' : isQuarentena ? 'status-red' : 'status-green'}" style="font-size: 9px; margin-top: 3px;">
+                      ${isQuarentena ? 'QUARENTENA' : (p.tipoRegistro ? p.tipoRegistro.toUpperCase() : 'PEDIDO')}
                     </span>
                   </td>
                   <td>
@@ -881,28 +898,65 @@
                   </td>
                   <td>
                     <div style="display: flex; flex-direction: column; gap: 4px;">
-                      <button class="status-pill ${quitadoTotal ? 'status-green' : p.sinalPago ? 'status-green' : 'status-red'} btn-toggle-sinal" 
-                              data-id="${p.id}" 
-                              title="Clique para alterar status do sinal ou quitar 100%">
-                        ${quitadoTotal ? '100% QUITADO' : p.sinalPago ? '50% PAGO (Mudar)' : 'PENDENTE (Pagar)'}
-                      </button>
-                      <span class="text-mono" style="font-size: 10.5px; color: var(--text-gray-600);">
-                        Recebido: ${formatarMoeda(p.valorSinalPago || 0)}
-                      </span>
+                      ${quitadoTotal ? `
+                        <button class="status-pill status-green btn-gerenciar-pagamento" 
+                                data-id="${p.id}" 
+                                title="Clique para gerenciar ou ver histórico de quitação">
+                          ✓ 100% QUITADO
+                        </button>
+                        <span class="text-mono" style="font-size: 10px; color: var(--color-green); font-weight: 700;">
+                          Total: ${formatarMoeda(jaPago)}
+                        </span>
+                      ` : parcialPago ? `
+                        <button class="status-pill status-yellow btn-gerenciar-pagamento" 
+                                data-id="${p.id}" 
+                                title="Clique para registrar recebimento de saldo devedor">
+                          ⚠️ PARCIAL (${percPago}%)
+                        </button>
+                        <div style="font-size: 10px; line-height: 1.25;">
+                          <span class="text-mono" style="color: var(--color-green); display: block;">Pago: ${formatarMoeda(jaPago)}</span>
+                          <span class="text-mono" style="color: var(--color-red); font-weight: 800; display: block;" title="Faltou dinheiro para quitação">Falta: ${formatarMoeda(saldoDevedor)}</span>
+                        </div>
+                      ` : `
+                        <button class="status-pill status-red btn-gerenciar-pagamento" 
+                                data-id="${p.id}" 
+                                title="Clique para registrar recebimento de entrada">
+                          ✕ PENDENTE (Receber)
+                        </button>
+                        <span class="text-mono" style="font-size: 10px; color: var(--color-red); font-weight: 800;">
+                          Falta: ${formatarMoeda(totalVenda)}
+                        </span>
+                      `}
                     </div>
                   </td>
                   <td>
-                    <!-- Seletor de Etapa no mesmo quadradinho verde -->
-                    <select class="form-select select-trocar-etapa" data-id="${p.id}" style="font-size: 11.5px; padding: 4px 6px; font-weight: 700; background-color: var(--bg-green-soft); border-color: var(--border-green); color: var(--color-green);">
-                      <option value="Orcamento" ${p.status === 'Orcamento' ? 'selected' : ''}>Orçamento (Proposta)</option>
-                      <option value="Quarentena" ${p.status === 'Quarentena' ? 'selected' : ''}>Quarentena (Validação)</option>
-                      <option value="Corte" ${p.etapaProducao === 'Corte' ? 'selected' : ''}>Oficina: 1. Mesa de Corte</option>
-                      <option value="Estamparia / DTF" ${p.etapaProducao === 'Estamparia / DTF' || p.etapaProducao === 'Bordado' ? 'selected' : ''}>Oficina: 2. Estamparia / DTF</option>
-                      <option value="Costura" ${p.etapaProducao === 'Costura' ? 'selected' : ''}>Oficina: 3. Costura & Fechamento</option>
-                      <option value="Acabamento" ${p.etapaProducao === 'Acabamento' ? 'selected' : ''}>Oficina: 4. Revisão & Acabamento</option>
-                      <option value="Expedicao" ${p.etapaProducao === 'Expedicao' ? 'selected' : ''}>Oficina: 5. Expedição / Pronto</option>
-                      <option value="Entregue" ${p.status === 'Finalizado' || p.etapaProducao === 'Entregue' ? 'selected' : ''}>Entregue ao Cliente</option>
-                    </select>
+                    ${isQuarentena ? `
+                      <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <button class="status-pill status-red btn-abrir-quarentena" data-id="${p.id}" 
+                                style="font-size: 10px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" 
+                                title="Pedido retido na Quarentena de Segurança. Clique para aprovar o checklist de 5 pontos e liberar para a oficina">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                          BLOQUEADO (QUARENTENA)
+                        </button>
+                        <select class="form-select select-trocar-etapa" data-id="${p.id}" disabled 
+                                style="font-size: 11px; padding: 4px 6px; font-weight: 700; opacity: 0.75; background-color: var(--bg-red-soft, #fef2f2); border-color: var(--color-red, #dc2626); color: var(--color-red, #dc2626); cursor: not-allowed;" 
+                                title="Bloqueado: É obrigatório aprovar na Quarentena antes de mudar para etapas de corte/produção">
+                          <option value="Quarentena" selected>🔒 Quarentena (Aprovação Obrigatória)</option>
+                        </select>
+                      </div>
+                    ` : `
+                      <!-- Seletor de Etapa liberado após passar pela quarentena -->
+                      <select class="form-select select-trocar-etapa" data-id="${p.id}" style="font-size: 11.5px; padding: 4px 6px; font-weight: 700; background-color: var(--bg-green-soft); border-color: var(--border-green); color: var(--color-green);">
+                        ${p.status === 'Orcamento' ? '<option value="Orcamento" selected>Orçamento (Proposta)</option>' : ''}
+                        <option value="Quarentena">🔒 Reenviar p/ Quarentena</option>
+                        <option value="Corte" ${p.etapaProducao === 'Corte' ? 'selected' : ''}>Oficina: 1. Mesa de Corte</option>
+                        <option value="Estamparia / DTF" ${p.etapaProducao === 'Estamparia / DTF' || p.etapaProducao === 'Bordado' ? 'selected' : ''}>Oficina: 2. Estamparia / DTF</option>
+                        <option value="Costura" ${p.etapaProducao === 'Costura' ? 'selected' : ''}>Oficina: 3. Costura & Fechamento</option>
+                        <option value="Acabamento" ${p.etapaProducao === 'Acabamento' ? 'selected' : ''}>Oficina: 4. Revisão & Acabamento</option>
+                        <option value="Expedicao" ${p.etapaProducao === 'Expedicao' ? 'selected' : ''}>Oficina: 5. Expedição / Pronto</option>
+                        <option value="Entregue" ${p.status === 'Finalizado' || p.etapaProducao === 'Entregue' ? 'selected' : ''}>Entregue ao Cliente</option>
+                      </select>
+                    `}
                   </td>
                   <td>
                     <div style="display: flex; gap: 5px;">
@@ -949,6 +1003,13 @@
               <div class="kanban-items">
                 ${itens.length ? itens.map(p => {
                   const mockup = p.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(p.produtoNome, "#1e3a8a", "#ffffff", p.clienteNome.substring(0, 6));
+                  const totalVenda = Number(p.valorTotalVenda) || 0;
+                  const jaPago = Number(p.valorSinalPago) || 0;
+                  const saldoDevedor = Math.max(0, totalVenda - jaPago);
+                  const quitadoTotal = totalVenda > 0 && saldoDevedor <= 0;
+                  const parcialPago = jaPago > 0 && saldoDevedor > 0;
+                  const percPago = totalVenda > 0 ? ((jaPago / totalVenda) * 100).toFixed(0) : 0;
+                  const isQuarentena = p.status === 'Quarentena';
                   return `
                     <div class="kanban-card">
                       <div style="display: flex; gap: 8px; margin-bottom: 8px;">
@@ -956,17 +1017,30 @@
                         <div style="flex: 1; min-width: 0;">
                           <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span class="text-mono" style="font-weight: 800; font-size: 11px;">#${p.numero}</span>
-                            <span class="status-pill ${p.sinalPago ? 'status-green' : 'status-red'}" style="font-size: 9px;">
-                              ${p.sinalPago ? 'SINAL OK' : 'SEM SINAL'}
-                            </span>
+                            <button class="status-pill ${quitadoTotal ? 'status-green' : parcialPago ? 'status-yellow' : 'status-red'} btn-gerenciar-pagamento" 
+                                    data-id="${p.id}" style="font-size: 9px; cursor: pointer; border: none; padding: 2px 6px;" title="Clique para gerenciar pagamentos">
+                              ${quitadoTotal ? 'QUITADO' : parcialPago ? `PARCIAL (${percPago}%)` : 'PENDENTE'}
+                            </button>
                           </div>
                           <div class="kanban-card-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.clienteNome}</div>
                           <div class="kanban-card-sub">${p.grade?.total || 0}x ${p.produtoNome}</div>
                         </div>
                       </div>
 
+                      ${isQuarentena ? `
+                        <button class="btn btn-secondary btn-sm btn-abrir-quarentena" data-id="${p.id}" 
+                                style="width: 100%; margin-bottom: 8px; font-size: 10px; font-weight: 800; color: var(--color-red); border-color: var(--border-red); background: var(--bg-red-soft); display: flex; align-items: center; justify-content: center; gap: 4px;"
+                                title="Pedido retido na Quarentena. Clique para conferir o checklist de 5 pontos">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                          BLOQUEADO (QUARENTENA)
+                        </button>
+                      ` : ''}
+
                       <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px; border-top: 1px solid var(--border-subtle); padding-top: 6px;">
-                        <span class="text-mono">${formatarMoeda(p.valorTotalVenda)}</span>
+                        <div>
+                          <span class="text-mono" style="display: block; font-weight: 700;">${formatarMoeda(p.valorTotalVenda)}</span>
+                          ${saldoDevedor > 0 ? `<span class="text-mono" style="font-size: 9.5px; color: var(--color-red); display: block;" title="Faltou dinheiro para quitação">Falta: ${formatarMoeda(saldoDevedor)}</span>` : ''}
+                        </div>
                         <span class="text-mono ${p.margemLucroPercentual >= 25 ? 'text-green' : 'text-red'}">
                           Margem: ${(p.margemLucroPercentual || 0).toFixed(0)}%
                         </span>
@@ -1039,11 +1113,21 @@
       });
     });
 
-    // Alterar Sinal / Quitar 100%
-    document.querySelectorAll('.btn-toggle-sinal').forEach(btn => {
-      btn.addEventListener('click', () => {
+    // Gerenciar Pagamento & Baixas (Substitui o alternarStatusSinalPedido de 1 clique)
+    document.querySelectorAll('.btn-gerenciar-pagamento').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         const id = btn.getAttribute('data-id');
-        alternarStatusSinalPedido(id);
+        abrirModalReceberPagamento(id);
+      });
+    });
+
+    // Abrir Quarentena direta pelo botão de bloqueio
+    document.querySelectorAll('.btn-abrir-quarentena').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        abrirModalInspecaoQuarentena(id);
       });
     });
 
@@ -1057,57 +1141,333 @@
     });
   }
 
-  // Alterna pagamento do sinal / quitação integral e lança no Financeiro
-  function alternarStatusSinalPedido(pedidoId) {
+  /* ==========================================================================
+     MODAL DE GESTÃO DE PAGAMENTOS, ENTRADAS & BAIXAS COM SALDO REMANESCENTE
+     ========================================================================== */
+  function abrirModalReceberPagamento(pedidoId) {
     const p = db.pedidos.find(x => x.id === pedidoId);
-    if (!p) return;
+    if (!p || !modalContainer) return;
 
-    if (!p.sinalPago || p.valorSinalPago === 0) {
-      // Registrar sinal de 50%
-      const valorSinal = p.valorTotalVenda * 0.5;
-      p.sinalPago = true;
-      p.valorSinalPago = valorSinal;
-      p.saldoPendente = p.valorTotalVenda - valorSinal;
+    const totalVenda = Number(p.valorTotalVenda) || 0;
+    const jaPago = Number(p.valorSinalPago) || 0;
+    const saldoDevedor = Math.max(0, totalVenda - jaPago);
+    const percPago = totalVenda > 0 ? (jaPago / totalVenda) * 100 : 0;
+    const isQuitado = saldoDevedor <= 0;
+
+    // Histórico de pagamentos
+    const historico = p.historicoPagamentos || [];
+
+    // Sugestão de valor padrão
+    const valorSugerido = saldoDevedor > 0 ? saldoDevedor : 0;
+    const percSugerido = totalVenda > 0 ? Math.min(100, Math.round((valorSugerido / totalVenda) * 100)) : 100;
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active" id="modalPagamentoOverlay">
+        <div class="modal-box" style="max-width: 680px;">
+          <div class="modal-header">
+            <div>
+              <div class="modal-title">Gestão Financeira & Baixa de Pagamento • Pedido #${p.numero}</div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Cliente: <strong>${p.clienteNome}</strong> | ${p.grade?.total || 0}x ${p.produtoNome}</span>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+          </div>
+
+          <div class="modal-body">
+            <!-- 3 Cards Resumo Financeiro do Pedido -->
+            <div class="grid-cards-3" style="gap: 10px; margin-bottom: 16px;">
+              <div class="card" style="padding: 10px 12px; background: var(--bg-subtle);">
+                <span style="font-size: 11px; color: var(--text-gray-500); display: block;">Valor Total Pedido</span>
+                <strong class="text-mono" style="font-size: 15px; color: var(--text-primary);">${formatarMoeda(totalVenda)}</strong>
+              </div>
+              <div class="card" style="padding: 10px 12px; background: var(--bg-green-soft); border-color: var(--border-green);">
+                <span style="font-size: 11px; color: var(--color-green); display: block;">Total Já Recebido</span>
+                <strong class="text-mono" style="font-size: 15px; color: var(--color-green);">${formatarMoeda(jaPago)} (${percPago.toFixed(0)}%)</strong>
+              </div>
+              <div class="card" style="padding: 10px 12px; background: ${isQuitado ? 'var(--bg-green-soft)' : '#fef2f2'}; border-color: ${isQuitado ? 'var(--border-green)' : '#fca5a5'};">
+                <span style="font-size: 11px; color: ${isQuitado ? 'var(--color-green)' : 'var(--color-red)'}; display: block;">Saldo Devedor / A Receber</span>
+                <strong class="text-mono" style="font-size: 15px; color: ${isQuitado ? 'var(--color-green)' : 'var(--color-red)'};">
+                  ${isQuitado ? '✓ R$ 0,00 (100% Quitado)' : formatarMoeda(saldoDevedor)}
+                </strong>
+              </div>
+            </div>
+
+            <!-- Histórico de Pagamentos se houver -->
+            ${(historico.length > 0 || (jaPago > 0 && historico.length === 0)) ? `
+              <div style="margin-bottom: 16px;">
+                <div style="font-size: 11.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; display: flex; justify-content: space-between;">
+                  <span>Histórico de Recebimentos Realizados:</span>
+                  <span class="text-mono" style="color: var(--color-green); font-size: 11px;">Total Baixado: ${formatarMoeda(jaPago)}</span>
+                </div>
+                <div class="table-wrapper" style="max-height: 120px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);">
+                  <table class="erp-table" style="font-size: 11px;">
+                    <thead>
+                      <tr>
+                        <th>Data</th>
+                        <th>Descrição</th>
+                        <th>Forma</th>
+                        <th>Valor Recebido</th>
+                        <th>Saldo Restante</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${historico.length > 0 ? historico.map(h => `
+                        <tr>
+                          <td class="text-mono">${h.data}</td>
+                          <td>${h.descricao || 'Recebimento de Sinal'}</td>
+                          <td><span class="status-pill status-gray" style="font-size: 9.5px;">${h.formaPagamento || 'PIX'}</span></td>
+                          <td class="text-mono" style="color: var(--color-green); font-weight: 700;">+ ${formatarMoeda(h.valor)}</td>
+                          <td class="text-mono" style="color: ${h.saldoRestante > 0 ? 'var(--color-red)' : 'var(--color-green)'};">
+                            ${h.saldoRestante > 0 ? formatarMoeda(h.saldoRestante) : '✓ Quitado'}
+                          </td>
+                        </tr>
+                      `).join('') : `
+                        <tr>
+                          <td class="text-mono">${p.dataCriacao}</td>
+                          <td>Sinal / Entrada Inicial</td>
+                          <td><span class="status-pill status-gray" style="font-size: 9.5px;">PIX</span></td>
+                          <td class="text-mono" style="color: var(--color-green); font-weight: 700;">+ ${formatarMoeda(jaPago)}</td>
+                          <td class="text-mono" style="color: ${saldoDevedor > 0 ? 'var(--color-red)' : 'var(--color-green)'};">
+                            ${saldoDevedor > 0 ? formatarMoeda(saldoDevedor) : '✓ Quitado'}
+                          </td>
+                        </tr>
+                      `}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- Formulário de Novo Pagamento -->
+            ${isQuitado ? `
+              <div style="background: var(--bg-green-soft); border: 1px solid var(--border-green); border-radius: var(--radius-sm); padding: 16px; text-align: center;">
+                <div style="font-size: 16px; font-weight: 800; color: var(--color-green); margin-bottom: 4px;">🎉 Pedido 100% Quitado!</div>
+                <div style="font-size: 12px; color: var(--text-gray-600);">Não há saldo devedor remanescente para este pedido. Todos os lançamentos foram liquidados no Financeiro.</div>
+              </div>
+            ` : `
+              <div style="background: #ffffff; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); padding: 14px;">
+                <div style="font-size: 12px; font-weight: 800; color: var(--text-primary); margin-bottom: 10px;">
+                  Registrar Pagamento do Cliente (Entrada, Parcial ou Quitação Total):
+                </div>
+
+                <!-- Atalhos rápidos de valor / porcentagem -->
+                <div style="display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap;">
+                  <span style="font-size: 11px; color: var(--text-gray-500); align-self: center; margin-right: 4px;">Atalhos:</span>
+                  <button type="button" class="btn btn-secondary btn-sm btn-quick-pay" data-val="${saldoDevedor.toFixed(2)}" style="font-weight: 700; color: var(--color-green);">
+                    Quitar Tudo (${formatarMoeda(saldoDevedor)})
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm btn-quick-pay" data-val="${(saldoDevedor * 0.5).toFixed(2)}">
+                    50% do Restante (${formatarMoeda(saldoDevedor * 0.5)})
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm btn-quick-pay" data-val="${(totalVenda * 0.3).toFixed(2)}">
+                    Sinal 30% (${formatarMoeda(totalVenda * 0.3)})
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm btn-quick-pay" data-val="${(totalVenda * 0.5).toFixed(2)}">
+                    Sinal 50% (${formatarMoeda(totalVenda * 0.5)})
+                  </button>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group" style="flex: 1;">
+                    <label class="form-label">Porcentagem a Pagar (% do Total)</label>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <input type="number" id="pagInputPorcentagem" class="form-input text-mono" min="1" max="100" step="1" value="${percSugerido}">
+                      <span style="font-size: 13px; font-weight: 700; color: var(--text-gray-500);">%</span>
+                    </div>
+                  </div>
+
+                  <div class="form-group" style="flex: 1.5;">
+                    <label class="form-label">
+                      <strong>Valor Pago pelo Cliente (R$)</strong> *
+                    </label>
+                    <input type="number" id="pagInputValor" class="form-input text-mono" style="font-size: 16px; font-weight: 800; color: var(--color-green);" min="0.01" max="${saldoDevedor}" step="5.00" value="${valorSugerido.toFixed(2)}">
+                  </div>
+
+                  <div class="form-group" style="flex: 1.5;">
+                    <label class="form-label">Forma de Pagamento</label>
+                    <select id="pagInputForma" class="form-select">
+                      <option value="PIX">PIX (Banco da Confecção)</option>
+                      <option value="Dinheiro">Dinheiro em Espécie</option>
+                      <option value="Cartão de Crédito">Cartão de Crédito</option>
+                      <option value="Cartão de Débito">Cartão de Débito</option>
+                      <option value="TED/Transferência">TED / Transferência Bancária</option>
+                      <option value="Boleto">Boleto Bancário</option>
+                      <option value="Cheque">Cheque Compensado</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row" style="margin-top: 8px;">
+                  <div class="form-group" style="flex: 1;">
+                    <label class="form-label">Data do Recebimento</label>
+                    <input type="date" id="pagInputData" class="form-input text-mono" value="${new Date().toISOString().split('T')[0]}">
+                  </div>
+                  <div class="form-group" style="flex: 2;">
+                    <label class="form-label">Observações / Comprovante (Opcional)</label>
+                    <input type="text" id="pagInputObs" class="form-input" placeholder="Ex: Entrada em dinheiro na loja, PIX CNPJ...">
+                  </div>
+                </div>
+
+                <!-- Box de Feedback Dinâmico sobre Saldo Remanescente -->
+                <div id="pagBoxSaldoFeedback" style="margin-top: 10px; padding: 10px 12px; border-radius: var(--radius-sm); font-size: 11.5px;">
+                  <!-- Inserido dinamicamente via JS -->
+                </div>
+              </div>
+            `}
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
+            ${!isQuitado ? `
+              <button type="button" class="btn btn-green" id="btnConfirmarRecebimentoPagamento" style="font-weight: 800;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Confirmar Recebimento & Baixar no Caixa
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `);
+
+    // Sincronização entre % e Valor e cálculo do Saldo Remanescente
+    const inputPerc = document.getElementById('pagInputPorcentagem');
+    const inputValor = document.getElementById('pagInputValor');
+    const boxFeedback = document.getElementById('pagBoxSaldoFeedback');
+
+    function atualizarCalculosPagamento(origem) {
+      if (!inputValor || !boxFeedback) return;
+
+      let valor = parseFloat(inputValor.value) || 0;
+      if (valor < 0) valor = 0;
+
+      if (origem === 'perc' && inputPerc) {
+        let perc = parseFloat(inputPerc.value) || 0;
+        if (perc > 100) perc = 100;
+        if (perc < 0) perc = 0;
+        valor = (totalVenda * perc) / 100;
+        if (valor > saldoDevedor) valor = saldoDevedor;
+        inputValor.value = valor.toFixed(2);
+      } else if (origem === 'valor' && inputPerc) {
+        if (valor > saldoDevedor) valor = saldoDevedor;
+        const perc = totalVenda > 0 ? (valor / totalVenda) * 100 : 0;
+        inputPerc.value = perc.toFixed(0);
+      }
+
+      const saldoRemanescente = Math.max(0, saldoDevedor - valor);
+
+      if (saldoRemanescente > 0) {
+        boxFeedback.style.backgroundColor = '#fef3c7';
+        boxFeedback.style.border = '1px solid #fde68a';
+        boxFeedback.style.color = '#92400e';
+        boxFeedback.innerHTML = `
+          <div style="font-weight: 800; display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            Pagamento Parcial • Saldo Remanescente: ${formatarMoeda(saldoRemanescente)}
+          </div>
+          <div>O cliente está pagando ${formatarMoeda(valor)}. Como é inferior ao saldo devedor, <strong>faltou dinheiro para quitação</strong>. O saldo remanescente de <strong>${formatarMoeda(saldoRemanescente)}</strong> continuará em aberto no sistema para cobrança.</div>
+        `;
+      } else {
+        boxFeedback.style.backgroundColor = 'var(--bg-green-soft)';
+        boxFeedback.style.border = '1px solid var(--border-green)';
+        boxFeedback.style.color = 'var(--color-green)';
+        boxFeedback.innerHTML = `
+          <div style="font-weight: 800; display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Quitação Integral (100%) • Sem Saldo Remanescente
+          </div>
+          <div>O valor pago de ${formatarMoeda(valor)} liquidará <strong>100% do saldo devedor</strong> deste pedido no financeiro.</div>
+        `;
+      }
+    }
+
+    inputPerc?.addEventListener('input', () => atualizarCalculosPagamento('perc'));
+    inputValor?.addEventListener('input', () => atualizarCalculosPagamento('valor'));
+    atualizarCalculosPagamento('valor');
+
+    document.querySelectorAll('.btn-quick-pay').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = parseFloat(btn.getAttribute('data-val') || 0);
+        if (inputValor) {
+          inputValor.value = Math.min(saldoDevedor, val).toFixed(2);
+          atualizarCalculosPagamento('valor');
+        }
+      });
+    });
+
+    document.getElementById('btnConfirmarRecebimentoPagamento')?.addEventListener('click', () => {
+      const valor = parseFloat(inputValor?.value || 0);
+      if (isNaN(valor) || valor <= 0) {
+        mostrarToast('Por favor, informe um valor de pagamento válido maior que R$ 0,00.', 'red');
+        return;
+      }
+
+      const formaPag = document.getElementById('pagInputForma')?.value || 'PIX';
+      const dataPag = document.getElementById('pagInputData')?.value || new Date().toISOString().split('T')[0];
+      const obsPag = document.getElementById('pagInputObs')?.value || '';
+
+      const novoTotalPago = jaPago + valor;
+      const novoSaldoPendente = Math.max(0, totalVenda - novoTotalPago);
+      const quitou = novoSaldoPendente <= 0;
+
+      p.valorSinalPago = novoTotalPago;
+      p.saldoPendente = novoSaldoPendente;
+      p.sinalPago = novoTotalPago > 0;
+      if (quitou) {
+        p.condicaoPagamento = '100% Quitado';
+      }
+
+      if (!p.historicoPagamentos) {
+        p.historicoPagamentos = [];
+        if (jaPago > 0) {
+          p.historicoPagamentos.push({
+            id: `PAG-INIT`,
+            data: p.dataCriacao || dataPag,
+            descricao: 'Entrada / Sinal Inicial',
+            formaPagamento: 'PIX',
+            valor: jaPago,
+            saldoRestante: Math.max(0, totalVenda - jaPago)
+          });
+        }
+      }
+
+      p.historicoPagamentos.push({
+        id: `PAG-${Math.floor(1000 + Math.random() * 9000)}`,
+        data: dataPag,
+        descricao: quitou ? 'Quitação Integral' : 'Recebimento Parcial',
+        formaPagamento: formaPag,
+        valor: valor,
+        observacao: obsPag,
+        saldoRestante: novoSaldoPendente
+      });
 
       // Lança no financeiro com o nome do cliente
       db.lancamentosFinanceiros.unshift({
         id: `LAN-${Math.floor(100 + Math.random() * 900)}`,
-        data: new Date().toISOString().split('T')[0],
+        data: dataPag,
         tipo: "Entrada",
-        descricao: `Sinal 50% Pedido #${p.numero}`,
+        descricao: quitou
+          ? `Quitação 100% Pedido #${p.numero} (${p.clienteNome})`
+          : `Recebimento Parcial Pedido #${p.numero} (${p.clienteNome}) - Resta ${formatarMoeda(novoSaldoPendente)}`,
         cliente: p.clienteNome,
-        valor: valorSinal,
-        formaPagamento: "PIX",
+        valor: valor,
+        formaPagamento: formaPag,
         categoria: "Vendas de Uniformes"
       });
 
       salvarEstado();
+      fecharModal(modalEl);
       renderizarPedidos();
-      mostrarToast(`Sinal de 50% (${formatarMoeda(valorSinal)}) confirmado para ${p.clienteNome} e creditado no Financeiro!`, 'green');
-    } else if (p.saldoPendente > 0) {
-      // Quitar os 50% restantes
-      const valorQuitacao = p.saldoPendente;
-      p.saldoPendente = 0;
-      p.valorSinalPago = p.valorTotalVenda;
 
-      // Lança o saldo final no financeiro
-      db.lancamentosFinanceiros.unshift({
-        id: `LAN-${Math.floor(100 + Math.random() * 900)}`,
-        data: new Date().toISOString().split('T')[0],
-        tipo: "Entrada",
-        descricao: `Quitação Final 100% Pedido #${p.numero}`,
-        cliente: p.clienteNome,
-        valor: valorQuitacao,
-        formaPagamento: "PIX",
-        categoria: "Vendas de Uniformes"
-      });
+      if (quitou) {
+        mostrarToast(`🎉 Pedido #${p.numero} 100% QUITADO! Recebimento de ${formatarMoeda(valor)} creditado no Financeiro.`, 'green');
+      } else {
+        mostrarToast(`⚠️ Recebimento de ${formatarMoeda(valor)} confirmado! Faltou dinheiro para quitar: saldo remanescente devedor de ${formatarMoeda(novoSaldoPendente)}.`, 'yellow');
+      }
+    });
+  }
 
-      salvarEstado();
-      renderizarPedidos();
-      mostrarToast(`Pedido #${p.numero} 100% QUITADO! Recebimento de ${formatarMoeda(valorQuitacao)} creditado no Financeiro.`, 'green');
-    } else {
-      mostrarToast(`Este pedido já se encontra 100% quitado e liquidado no financeiro.`, 'green');
-    }
+  // Compatibilidade Legada
+  function alternarStatusSinalPedido(pedidoId) {
+    abrirModalReceberPagamento(pedidoId);
   }
 
   // Atualização de Etapa com Disparo Obrigatório e Imediato de WhatsApp
@@ -1115,12 +1475,22 @@
     const p = db.pedidos.find(x => x.id === pedidoId);
     if (!p) return;
 
+    // BLOQUEIO RIGOROSO DE QUARENTENA:
+    // Se o pedido está em quarentena, não pode mudar a etapa sem antes ter passado pelo checklist de 5 pontos na quarentena
+    if (p.status === 'Quarentena' && novaEtapa !== 'Quarentena' && novaEtapa !== 'Orcamento') {
+      mostrarToast(`⛔ Pedido #${p.numero} BLOQUEADO! O pedido está retido na Quarentena de Segurança. É obrigatório aprovar o checklist de 5 pontos na Quarentena antes de liberar para a fábrica (${novaEtapa}).`, 'red');
+      renderizarPedidos();
+      abrirModalInspecaoQuarentena(p.id);
+      return;
+    }
+
     if (novaEtapa === 'Orcamento') {
       p.status = 'Orcamento';
       p.etapaProducao = 'Em Negociação';
     } else if (novaEtapa === 'Quarentena') {
       p.status = 'Quarentena';
       p.etapaProducao = 'Aguardando Aprovação Técnica';
+      p.quarentenaAprovada = false;
     } else if (novaEtapa === 'Entregue') {
       p.status = 'Finalizado';
       p.etapaProducao = 'Entregue ao Cliente';
@@ -1871,38 +2241,64 @@
               </div>
             </div>
 
-            <!-- 4. Dados Financeiros & Sinal Recebido (Sync Imediato com o Financeiro) -->
+            <!-- 4. Dados Financeiros & Entrada de Sinal (Valor ou Porcentagem) -->
             <div style="background: #ffffff; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); padding: 14px; margin-top: 14px;">
               <span class="form-label" style="font-weight: 800; color: var(--text-primary); margin-bottom: 8px; display: block;">
-                Valores & Entrada de Sinal no Financeiro:
+                Condições Comerciais, Entrada de Sinal & Saldo Remanescente:
               </span>
 
+              <!-- Atalhos rápidos de porcentagem -->
+              <div style="display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; align-items: center;">
+                <span style="font-size: 11px; color: var(--text-gray-500);">Atalhos de Entrada:</span>
+                <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada" data-perc="0">0% (Sem Entrada)</button>
+                <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada" data-perc="30">30% Entrada</button>
+                <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada" data-perc="40">40% Entrada</button>
+                <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada active" data-perc="50" style="font-weight: 700; color: var(--color-green);">50% Entrada (Padrão)</button>
+                <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada" data-perc="100">100% (À Vista Total)</button>
+              </div>
+
               <div class="form-row">
-                <div class="form-group">
+                <div class="form-group" style="flex: 1.2;">
                   <label class="form-label">Valor Total do Pedido (R$)</label>
                   <input type="text" id="finValorTotalPedido" class="form-input text-mono" style="font-weight: 800; font-size: 15px;" value="${formatarMoeda(totalVenda)}" readonly>
                 </div>
 
-                <div class="form-group">
-                  <label class="form-label">Valor Recebido de Sinal (R$)</label>
+                <div class="form-group" style="flex: 0.9;">
+                  <label class="form-label">Entrada (%)</label>
+                  <div style="display: flex; align-items: center; gap: 4px;">
+                    <input type="number" id="finPercEntrada" class="form-input text-mono" min="0" max="100" step="5" value="50" style="font-weight: 700; font-size: 15px;">
+                    <span style="font-size: 13px; font-weight: 700; color: var(--text-gray-500);">%</span>
+                  </div>
+                </div>
+
+                <div class="form-group" style="flex: 1.3;">
+                  <label class="form-label">Valor da Entrada (R$)</label>
                   <input type="number" id="finValorSinalRecebido" class="form-input text-mono" style="font-weight: 800; font-size: 15px; color: var(--color-green);" value="${sinalSugerido.toFixed(2)}" step="10.00">
                 </div>
 
-                <div class="form-group">
-                  <label class="form-label">Forma de Recebimento do Sinal</label>
+                <div class="form-group" style="flex: 1.4;">
+                  <label class="form-label">Forma de Pagamento</label>
                   <select id="finFormaPagamentoSinal" class="form-select">
                     <option value="PIX">PIX (Banco da Confecção)</option>
+                    <option value="Dinheiro">Dinheiro em Espécie</option>
+                    <option value="Cartão de Crédito">Cartão de Crédito</option>
+                    <option value="Cartão de Débito">Cartão de Débito</option>
                     <option value="TED/Transferência">TED / Transferência Bancária</option>
                     <option value="Boleto 50%">Boleto Bancário</option>
-                    <option value="Cartão de Crédito">Cartão de Crédito</option>
-                    <option value="Dinheiro">Dinheiro em Espécie</option>
                   </select>
                 </div>
               </div>
 
-              <div style="font-size: 11px; color: var(--color-green); display: flex; align-items: center; gap: 6px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                O valor recebido entrará automaticamente na aba do Financeiro com o nome do cliente vinculado.
+              <!-- Saldo Remanescente em tempo real -->
+              <div id="boxSaldoRemanescenteAvanco" style="margin-top: 10px; padding: 10px 12px; border-radius: var(--radius-sm); font-size: 11.5px; background: #fffbeb; border: 1px solid #fde68a; color: #92400e;">
+                <!-- Preenchido dinamicamente via JS -->
+              </div>
+
+              <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="chkSinalCompensado" class="quarentena-checkbox" checked>
+                <label for="chkSinalCompensado" style="font-size: 11.5px; font-weight: 700; cursor: pointer; color: var(--text-primary);">
+                  Confirmar sinal já recebido e lançar entrada imediata no Fluxo de Caixa (Financeiro)
+                </label>
               </div>
             </div>
           </div>
@@ -1968,6 +2364,65 @@
           opt.textContent = `${novaCost.nome} • Resp: ${novaCost.responsavel || novaCost.nome} • Esp: ${novaCost.especialidade} (Disponível)`;
           opt.selected = true;
           sel.prepend(opt);
+        }
+      });
+    });
+
+    // Sincronização Dinâmica de Entrada (% vs R$) e Saldo Remanescente no Modal de Avanço
+    const inpPercAvanco = document.getElementById('finPercEntrada');
+    const inpValorAvanco = document.getElementById('finValorSinalRecebido');
+    const boxSaldoAvanco = document.getElementById('boxSaldoRemanescenteAvanco');
+
+    function recalcularSaldoAvanco(origem) {
+      if (!inpValorAvanco || !boxSaldoAvanco) return;
+      let val = parseFloat(inpValorAvanco.value) || 0;
+      if (val < 0) val = 0;
+
+      if (origem === 'perc' && inpPercAvanco) {
+        let p = parseFloat(inpPercAvanco.value) || 0;
+        if (p < 0) p = 0;
+        if (p > 100) p = 100;
+        val = (totalVenda * p) / 100;
+        inpValorAvanco.value = val.toFixed(2);
+      } else if (origem === 'valor' && inpPercAvanco) {
+        if (val > totalVenda) val = totalVenda;
+        const p = totalVenda > 0 ? (val / totalVenda) * 100 : 0;
+        inpPercAvanco.value = p.toFixed(0);
+      }
+
+      const remanescente = Math.max(0, totalVenda - val);
+
+      if (remanescente > 0) {
+        boxSaldoAvanco.style.backgroundColor = '#fffbeb';
+        boxSaldoAvanco.style.border = '1px solid #fde68a';
+        boxSaldoAvanco.style.color = '#92400e';
+        boxSaldoAvanco.innerHTML = `
+          <strong>⚠️ Saldo Remanescente: ${formatarMoeda(remanescente)}</strong>
+          <div>Com a entrada de ${formatarMoeda(val)}, faltará <strong>${formatarMoeda(remanescente)}</strong> para quitação do pedido. Este valor continuará como saldo a receber na entrega.</div>
+        `;
+      } else {
+        boxSaldoAvanco.style.backgroundColor = 'var(--bg-green-soft)';
+        boxSaldoAvanco.style.border = '1px solid var(--border-green)';
+        boxSaldoAvanco.style.color = 'var(--color-green)';
+        boxSaldoAvanco.innerHTML = `
+          <strong>✅ Quitação Integral (100% Pago)</strong>
+          <div>O valor da entrada cobre 100% do pedido. Não haverá saldo remanescente devedor.</div>
+        `;
+      }
+    }
+
+    inpPercAvanco?.addEventListener('input', () => recalcularSaldoAvanco('perc'));
+    inpValorAvanco?.addEventListener('input', () => recalcularSaldoAvanco('valor'));
+    recalcularSaldoAvanco('perc');
+
+    document.querySelectorAll('.btn-quick-entrada').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-quick-entrada').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const perc = parseFloat(btn.getAttribute('data-perc') || 0);
+        if (inpPercAvanco) {
+          inpPercAvanco.value = perc;
+          recalcularSaldoAvanco('perc');
         }
       });
     });
@@ -2049,10 +2504,12 @@
 
       // 3. Validação dos Valores e Sinal Recebido
       const valorSinalRecebido = parseFloat(document.getElementById('finValorSinalRecebido')?.value || 0);
+      const percEntrada = parseFloat(document.getElementById('finPercEntrada')?.value || 0);
       const formaPagamento = document.getElementById('finFormaPagamentoSinal')?.value || 'PIX';
+      const sinalCompensado = document.getElementById('chkSinalCompensado')?.checked !== false;
 
       if (isNaN(valorSinalRecebido) || valorSinalRecebido < 0) {
-        mostrarToast('Por favor, informe um valor de sinal válido recebido.', 'red');
+        mostrarToast('Por favor, informe um valor de sinal válido.', 'red');
         return;
       }
 
@@ -2071,6 +2528,10 @@
       const novoNum = dadosBase.numero || Math.floor(1088 + db.pedidos.length);
       const novoId = `PED-${novoNum}`;
 
+      const valorEfetivoPago = (sinalCompensado && valorSinalRecebido > 0) ? valorSinalRecebido : 0;
+      const saldoRestante = Math.max(0, totalVendaFinal - valorEfetivoPago);
+      const isQuitadoNaEntrada = valorEfetivoPago >= totalVendaFinal;
+
       // Cria ou atualiza pedido oficial
       const pedidoOficial = {
         id: novoId,
@@ -2080,8 +2541,9 @@
         clienteId: clienteIdFinal,
         clienteNome: clienteNomeFinal,
         clienteTelefone: clienteTelFinal,
-        status: "Quarentena", // Vai para quarentena para aprovação administrativa
+        status: "Quarentena", // Vai para quarentena para aprovação administrativa obrigatória
         etapaProducao: "Aguardando Aprovação Técnica",
+        quarentenaAprovada: false,
         produtoId: prodIdFinal,
         produtoNome: prodNomeFinal,
         corTecido: "A Definir",
@@ -2097,10 +2559,22 @@
         custoTotalEstimado: custoTotalFinal,
         lucroLiquidoEstimado: lucroFinal,
         margemLucroPercentual: margemFinal,
-        condicaoPagamento: `Sinal ${valorSinalRecebido > 0 ? formatarMoeda(valorSinalRecebido) : 'Pendente'} + Saldo na Entrega`,
-        sinalPago: valorSinalRecebido > 0,
-        valorSinalPago: valorSinalRecebido,
-        saldoPendente: Math.max(0, totalVendaFinal - valorSinalRecebido),
+        condicaoPagamento: isQuitadoNaEntrada
+          ? "100% Quitado à Vista na Entrada"
+          : valorEfetivoPago > 0
+            ? `Entrada ${formatarMoeda(valorEfetivoPago)} (${percEntrada}%) + Saldo ${formatarMoeda(saldoRestante)} na Entrega`
+            : `A Faturar / Pagamento na Entrega (${formatarMoeda(totalVendaFinal)})`,
+        sinalPago: valorEfetivoPago > 0,
+        valorSinalPago: valorEfetivoPago,
+        saldoPendente: saldoRestante,
+        historicoPagamentos: valorEfetivoPago > 0 ? [{
+          id: `PAG-${Math.floor(1000 + Math.random() * 9000)}`,
+          data: new Date().toISOString().split('T')[0],
+          descricao: isQuitadoNaEntrada ? "Quitação Integral na Entrada" : `Entrada / Sinal Inicial (${percEntrada}%)`,
+          formaPagamento: formaPagamento,
+          valor: valorEfetivoPago,
+          saldoRestante: saldoRestante
+        }] : [],
         dataPrevisaoEntrega: "2026-10-20",
         notaFiscalEmitida: false,
         vendedorResponsavel: "Marcos Paulo"
@@ -2114,14 +2588,16 @@
       db.pedidos.unshift(pedidoOficial);
 
       // 4. LANÇAMENTO AUTOMÁTICO NO FINANCEIRO (COM NOME DO CLIENTE)
-      if (valorSinalRecebido > 0) {
+      if (valorEfetivoPago > 0) {
         db.lancamentosFinanceiros.unshift({
           id: `LAN-${Math.floor(100 + Math.random() * 900)}`,
           data: new Date().toISOString().split('T')[0],
           tipo: "Entrada",
-          descricao: `Sinal Entrada Pedido #${pedidoOficial.numero} (${pedidoOficial.grade.total}x ${pedidoOficial.produtoNome})`,
+          descricao: isQuitadoNaEntrada
+            ? `Quitação 100% Pedido #${pedidoOficial.numero} (${pedidoOficial.grade.total}x ${pedidoOficial.produtoNome})`
+            : `Sinal Entrada Pedido #${pedidoOficial.numero} (${pedidoOficial.grade.total}x ${pedidoOficial.produtoNome})`,
           cliente: clienteNomeFinal,
-          valor: valorSinalRecebido,
+          valor: valorEfetivoPago,
           formaPagamento: formaPagamento,
           categoria: "Vendas de Uniformes"
         });
@@ -4659,9 +5135,15 @@
                     </strong>
                   </td>
                   <td>
-                    <span class="status-pill ${p.sinalPago ? 'status-green' : 'status-red'}">
-                      ${p.sinalPago ? 'SINAL OK' : 'SEM SINAL'}
-                    </span>
+                    ${p.saldoPendente <= 0 && p.valorSinalPago >= p.valorTotalVenda ? `
+                      <span class="status-pill status-green">100% QUITADO</span>
+                    ` : p.valorSinalPago > 0 ? `
+                      <span class="status-pill status-yellow" title="Saldo remanescente devedor: ${formatarMoeda(p.saldoPendente)}">
+                        SINAL ${((p.valorSinalPago / (p.valorTotalVenda || 1)) * 100).toFixed(0)}%
+                      </span>
+                    ` : `
+                      <span class="status-pill status-red">SEM SINAL</span>
+                    `}
                   </td>
                   <td>${p.costureiraNome || 'Não atribuída'}</td>
                   <td>
@@ -4725,7 +5207,17 @@
                 <input type="checkbox" id="chkQuarentena1" class="quarentena-checkbox">
                 <div>
                   <label for="chkQuarentena1" class="quarentena-label">1. Sinal Financeiro Conferido na Conta Bancária</label>
-                  <div class="quarentena-desc">Confirmo que o sinal de 50% ou o valor acordado foi compensado na conta da confecção ou há termo formal de faturamento assinado.</div>
+                  <div class="quarentena-desc">
+                    Confirmo que a entrada ou valor acordado foi compensado na conta da confecção ou há termo formal de faturamento assinado.
+                    <div style="margin-top: 4px; font-weight: 700;">
+                      ${p.valorSinalPago > 0 ? `
+                        <span style="color: var(--color-green);">✓ Recebido: ${formatarMoeda(p.valorSinalPago)} (${((p.valorSinalPago / (p.valorTotalVenda || 1)) * 100).toFixed(0)}%)</span>
+                        ${p.saldoPendente > 0 ? ` • <span style="color: var(--color-red);">Saldo Remanescente a Receber: ${formatarMoeda(p.saldoPendente)}</span>` : ' • <span style="color: var(--color-green);">100% Quitado</span>'}
+                      ` : `
+                        <span style="color: var(--color-red);">⚠️ Atenção: Nenhum sinal financeiro consta como pago no sistema ainda (Total do Pedido: ${formatarMoeda(p.valorTotalVenda)}).</span>
+                      `}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -4812,6 +5304,8 @@
     btnAprovar?.addEventListener('click', () => {
       p.status = 'Em Producao';
       p.etapaProducao = 'Corte';
+      p.quarentenaAprovada = true;
+      p.dataQuarentenaAprovada = new Date().toISOString().split('T')[0];
 
       // Sincroniza na OS
       const os = db.ordensServico.find(o => o.pedidoNumero === p.numero);
@@ -4822,7 +5316,11 @@
       salvarEstado();
       atualizarBadges();
       fecharModal(modalEl);
-      renderizarQuarentena();
+      if (abaAtiva === 'quarentena') {
+        renderizarQuarentena();
+      } else {
+        renderizarPedidos();
+      }
 
       mostrarToast(`Pedido #${p.numero} APROVADO! Enviado para a mesa de corte.`, 'green');
 
@@ -5751,6 +6249,7 @@
     abrirModalNovoModeloInline,
     abrirModalPropostaComercial,
     abrirModalInspecaoQuarentena,
+    abrirModalReceberPagamento,
     abrirModalEntradaEstoque,
     abrirModalEditarFinanceiro,
     abrirModalEditarCapacidades,
