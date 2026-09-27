@@ -9,6 +9,12 @@
   const STORAGE_KEY_EMPRESA = 'TEXPRO_ERP_EMPRESA_CONFIG';
   const STORAGE_KEY_PERFIL = 'TEXPRO_ERP_PERFIL_ATIVO';
 
+  function isModoDemo() {
+    return (window.TEXPRO_IS_DEMO === true) || 
+           (window.location && window.location.search && window.location.search.includes('demo=1')) || 
+           (window.location && window.location.pathname && (window.location.pathname.includes('/demo') || window.location.pathname.includes('demo.html')));
+  }
+
   // Configuração Padrão Inicial da Empresa
   const EMPRESA_PADRAO = {
     razaoSocial: "TexPro Indústria e Comércio de Confecções Ltda",
@@ -67,6 +73,17 @@
   };
 
   function obterEmpresaConfig() {
+    if (isModoDemo()) {
+      return Object.assign({}, EMPRESA_PADRAO, {
+        razaoSocial: "TexPro Indústria e Comércio de Confecções Ltda",
+        nomeFantasia: "TexPro Uniformes Profissionais",
+        cnpj: "34.582.910/0001-44",
+        telefone: "11987654321",
+        email: "comercial@texprouniformes.com.br",
+        cidade: "Americana",
+        uf: "SP"
+      });
+    }
     try {
       const raw = localStorage.getItem(STORAGE_KEY_EMPRESA);
       if (raw) {
@@ -79,6 +96,12 @@
   }
 
   function salvarEmpresaConfig(dados) {
+    if (isModoDemo()) {
+      const atual = obterEmpresaConfig();
+      const novo = Object.assign({}, atual, dados);
+      atualizarElementosVisuaisEmpresa(novo);
+      return novo;
+    }
     try {
       const atual = obterEmpresaConfig();
       const novo = Object.assign({}, atual, dados);
@@ -429,6 +452,10 @@ with check (true);
 
   // --- SINCRONIZAÇÃO EM NUVEM (DEBOUNCE 1.2s) ---
   function sincronizarComNuvem(dbAtual) {
+    if (isModoDemo()) {
+      atualizarStatusNuvem();
+      return;
+    }
     const provedor = obterProvedorAtivo();
     if (provedor === 'local' || !navigator.onLine) {
       atualizarStatusNuvem();
@@ -490,6 +517,9 @@ with check (true);
 
   // --- ESCUTA EM TEMPO REAL ---
   function iniciarEscutaRealtime(onAtualizacaoRemota) {
+    if (isModoDemo()) {
+      return;
+    }
     const provedor = obterProvedorAtivo();
     const tenantId = obterTenantId();
 
@@ -582,6 +612,17 @@ with check (true);
     const badge = document.getElementById('cloudStatusBadge');
     const txt = document.getElementById('cloudStatusText');
     if (!badge || !txt) return;
+
+    if (isModoDemo()) {
+      badge.style.background = '#eff6ff';
+      badge.style.color = '#1d4ed8';
+      badge.style.borderColor = '#bfdbfe';
+      const dot = badge.querySelector('span:first-child');
+      if (dot) dot.style.background = '#3b82f6';
+      txt.textContent = '🧪 Test Drive Ativo';
+      badge.title = 'Modo de teste: dados de demonstração interativos, nenhuma alteração é salva na nuvem.';
+      return;
+    }
 
     if (!navigator.onLine) {
       badge.style.background = '#fffbeb';

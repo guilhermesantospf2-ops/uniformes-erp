@@ -3,7 +3,8 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/vendas", "destination": "/vendas.html" },
-    { "source": "/lp", "destination": "/vendas.html" }
+    { "source": "/lp", "destination": "/vendas.html" },
+    { "source": "/demo", "destination": "/demo.html" }
   ],
   "headers": [
     {

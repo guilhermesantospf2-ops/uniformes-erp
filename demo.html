@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TexPro ERP - Sistema Integrado de Gestão para Confecções de Uniformes</title>
+  <title>TexPro ERP — Demonstração Interativa ao Vivo (Test Drive)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,16 +12,31 @@
   <meta http-equiv="Expires" content="0">
   <link rel="stylesheet" href="style.css?v=8.4.1">
   <script>
-    if (window.location.search && window.location.search.includes('demo=1')) {
-      window.location.href = '/demo';
-    }
+    // Ativa explicitamente o Modo Demonstração Sandbox (sem salvar na nuvem)
+    window.TEXPRO_IS_DEMO = true;
   </script>
 </head>
-<body>
+<body style="display: flex; flex-direction: column; min-height: 100vh;">
 
-  <div class="erp-container">
+  <!-- BANNER SUPERIOR DE AVISO DO TEST DRIVE INTERATIVO -->
+  <div style="background: #0f172a; color: #ffffff; padding: 10px 18px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #059669; z-index: 10000; flex-wrap: wrap; gap: 10px; font-family: 'Plus Jakarta Sans', sans-serif;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="background: #059669; color: #ffffff; font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 4px; letter-spacing: 0.5px;">TEST DRIVE AO VIVO</span>
+      <span style="color: #e2e8f0;">Você está navegando com <strong>dados simulados da fábrica</strong>. Sinta-se livre para testar: <strong>nenhuma alteração é salva</strong>.</span>
+    </div>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <button onclick="window.ERP.carregarDemonstracaoShowroom()" class="btn btn-secondary btn-sm" style="font-size: 11.5px; padding: 5px 12px; background: #1e293b; color: #f8fafc; border: 1px solid #334155; font-weight: 600; cursor: pointer; border-radius: 4px;">
+        🔄 Recarregar Dados de Teste
+      </button>
+      <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Fiz%20o%20test%20drive%20do%20TexPro%20ERP%20e%20quero%20contratar%20para%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-primary btn-sm" style="font-size: 11.5px; padding: 5px 14px; background: #059669; color: #ffffff; text-decoration: none; font-weight: 700; border-radius: 4px; display: inline-flex; align-items: center; gap: 6px;">
+        💬 Contratar no WhatsApp &rarr;
+      </a>
+    </div>
+  </div>
 
-    <!-- SIDEBAR DE NAVEGAÇÃO INDUSTRIAL (EXATA COMO NA REFERÊNCIA) -->
+  <div class="erp-container" style="flex: 1;">
+
+    <!-- SIDEBAR DE NAVEGAÇÃO INDUSTRIAL -->
     <aside class="erp-sidebar" aria-label="Navegação do Sistema">
       
       <div class="sidebar-header">
@@ -192,9 +207,9 @@
 
         <div class="navbar-actions">
           <!-- Indicador de Status em Nuvem White-label e Corporativo -->
-          <div class="cloud-status-badge" id="cloudStatusBadge" style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; padding: 4px 10px; border-radius: 20px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 700; cursor: default; white-space: nowrap;">
-            <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #10b981;"></span>
-            <span id="cloudStatusText">Nuvem Ativa</span>
+          <div class="cloud-status-badge" id="cloudStatusBadge" style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; padding: 4px 10px; border-radius: 20px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; font-weight: 700; cursor: default; white-space: nowrap;">
+            <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #3b82f6;"></span>
+            <span id="cloudStatusText">🧪 Test Drive Ativo</span>
           </div>
 
           <!-- Seletor de Perfil Industrial -->
@@ -237,18 +252,18 @@
   <!-- Toast Notification -->
   <div id="erpToast" class="toast-msg"></div>
 
-  <!-- Firebase SDK Compatível para Sincronização em Nuvem em Tempo Real -->
+  <!-- Firebase SDK Compatível -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
-  <!-- Supabase JS Client v2 (PostgreSQL Realtime na Nuvem) -->
+  <!-- Supabase JS Client v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Scripts do ERP Têxtil com Versionamento Anti-Cache -->
-  <script src="mock-data.js?v=8.4.0"></script>
-  <script src="market-benchmark.js?v=8.4.0"></script>
-  <script src="nesting-engine.js?v=8.4.0"></script>
-  <script src="cloud-sync.js?v=8.4.0"></script>
-  <script src="app.js?v=8.4.0"></script>
+  <script src="mock-data.js?v=8.4.1"></script>
+  <script src="market-benchmark.js?v=8.4.1"></script>
+  <script src="nesting-engine.js?v=8.4.1"></script>
+  <script src="cloud-sync.js?v=8.4.1"></script>
+  <script src="app.js?v=8.4.1"></script>
 </body>
 </html>

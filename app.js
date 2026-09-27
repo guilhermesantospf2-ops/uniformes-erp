@@ -7,24 +7,32 @@
 (function () {
   'use strict';
 
-  // Chave de persistência de banco de dados (Versão 8.0: 100% Zerado para Produção Real com Gestão Completa de Despesas)
-  const ERP_VERSION = '8.0_ZERO_PROD';
-  const STORAGE_KEY = 'texpro_erp_prod_v8';
+  // Detecção de Modo Demonstração (Test Drive)
+  const isDemo = (window.TEXPRO_IS_DEMO === true) || 
+                 (window.location && window.location.search && window.location.search.includes('demo=1')) || 
+                 (window.location && window.location.pathname && (window.location.pathname.includes('/demo') || window.location.pathname.includes('demo.html')));
+  const ERP_VERSION = isDemo ? 'DEMO_SANDBOX_V1' : '8.0_ZERO_PROD';
+  const STORAGE_KEY = isDemo ? 'texpro_erp_demo_temp' : 'texpro_erp_prod_v8';
   let db = null;
 
-  try {
-    const salvo = localStorage.getItem(STORAGE_KEY);
-    if (salvo) {
-      db = JSON.parse(salvo);
-    }
-  } catch (e) {
-    console.error('Erro ao ler localStorage', e);
-  }
-
-  if (!db || db.versao !== ERP_VERSION || !db.produtosBase || db.produtosBase.length < 20 || !db.insumosCatalogoMestre) {
+  if (isDemo) {
     db = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA));
     db.versao = ERP_VERSION;
-    salvarEstado();
+  } else {
+    try {
+      const salvo = localStorage.getItem(STORAGE_KEY);
+      if (salvo) {
+        db = JSON.parse(salvo);
+      }
+    } catch (e) {
+      console.error('Erro ao ler localStorage', e);
+    }
+
+    if (!db || db.versao !== ERP_VERSION || !db.produtosBase || db.produtosBase.length < 20 || !db.insumosCatalogoMestre) {
+      db = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA));
+      db.versao = ERP_VERSION;
+      salvarEstado();
+    }
   }
 
   // Garantir integridade de arrays e ausência de dados fictícios
@@ -47,6 +55,15 @@
   salvarEstado();
 
   function salvarEstado() {
+    if (isDemo) {
+      // No modo demonstração, salva apenas na sessão temporária do navegador
+      // NUNCA salva no banco oficial de produção e NUNCA envia para a nuvem Supabase!
+      try {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      } catch (e) {}
+      return;
+    }
+
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
     } catch (e) {
@@ -73,7 +90,12 @@
     configurarMenuNavegacao();
     configurarIdentidadeEPerfis();
     configurarCliqueStatusNuvem();
-    configurarEscutaNuvemRealtime();
+    if (!isDemo) {
+      configurarEscutaNuvemRealtime();
+    }
+    if (isDemo) {
+      carregarDemonstracaoShowroom();
+    }
     atualizarBadges();
     configurarCliqueGlobalMockups();
     configurarFechamentoModaisGlobal();
@@ -7760,7 +7782,7 @@
       rodapeProposta: "Proposta válida por 15 dias corridos. 50% de sinal na aprovação e 50% na entrega.",
       rodapeFicha: "Ordem de Produção Oficial. Tolerância industrial de 2mm. Confirme o encaixe antes do corte."
     };
-    if (window.ERP_CLOUD) {
+    if (window.ERP_CLOUD && !isDemo) {
       window.ERP_CLOUD.salvarEmpresaConfig(empDemo);
     }
 
@@ -8087,6 +8109,28 @@
       { id: "EQ-02", nome: "Dona Maria Aparecida", cargo: "Costureira Piloto & Facção", setor: "Costura", telefone: "11922223333", status: "Ativo" },
       { id: "EQ-03", nome: "Lucas Rodrigues", cargo: "Operador de Impressão DTF", setor: "Estamparia", telefone: "11933334444", status: "Ativo" },
       { id: "EQ-04", nome: "Fátima Santos", cargo: "Acabamento & Embalagem", setor: "Revisão", telefone: "11944445555", status: "Ativo" }
+    ];
+
+    db.costureiras = [
+      { id: "COST-01", nome: "Dona Maria Facção Especial", tipo: "Oficina Externa", especialidade: "Polo e Camisaria", capacidadeDiariaPecas: 80, telefone: "11988881111", status: "Ativa", pecasEmProducao: 150 },
+      { id: "COST-02", nome: "Oficina Interna da Fábrica", tipo: "Interna", especialidade: "Brim Operacional e Aventais", capacidadeDiariaPecas: 120, telefone: "11988882222", status: "Ativa", pecasEmProducao: 190 },
+      { id: "COST-03", nome: "Facção Irmãos Santos", tipo: "Oficina Externa", especialidade: "Agasalhos e Helanca", capacidadeDiariaPecas: 70, telefone: "11988883333", status: "Ativa", pecasEmProducao: 0 }
+    ];
+
+    db.capacidadesProducao = [
+      { id: "corte", nome: "Mesa de Corte", capacidadeDiaria: 400, unidade: "peças/dia", atualProduzido: 260, modoCalculo: "auto" },
+      { id: "bordado", nome: "Bordado Computadorizado", capacidadeDiaria: 250, unidade: "peças/dia", atualProduzido: 180, modoCalculo: "auto" },
+      { id: "estamparia", nome: "Estamparia & Silk/DTF", capacidadeDiaria: 200, unidade: "peças/dia", atualProduzido: 140, modoCalculo: "auto" },
+      { id: "costura", nome: "Linha de Costura & Fechamento", capacidadeDiaria: 300, unidade: "peças/dia", atualProduzido: 210, modoCalculo: "auto" }
+    ];
+
+    db.historicoFinanceiroMensal = [
+      { mes: "MAI", mesCompleto: "Maio/2026", entradas: 38500, saidas: 24200, isAtual: false, isPrevisto: false, sincronizarComCaixa: false },
+      { mes: "JUN", mesCompleto: "Junho/2026", entradas: 42100, saidas: 26800, isAtual: false, isPrevisto: false, sincronizarComCaixa: false },
+      { mes: "JUL", mesCompleto: "Julho/2026", entradas: 39800, saidas: 25100, isAtual: false, isPrevisto: false, sincronizarComCaixa: false },
+      { mes: "AGO", mesCompleto: "Agosto/2026", entradas: 46500, saidas: 28900, isAtual: false, isPrevisto: false, sincronizarComCaixa: false },
+      { mes: "SET", mesCompleto: "Setembro/2026", entradas: 34405, saidas: 18050, isAtual: true, isPrevisto: false, sincronizarComCaixa: true },
+      { mes: "OUT", mesCompleto: "Outubro/2026", entradas: 48000, saidas: 29500, isAtual: false, isPrevisto: true, sincronizarComCaixa: false }
     ];
 
     salvarEstado();
