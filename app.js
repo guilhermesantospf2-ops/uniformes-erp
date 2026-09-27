@@ -2055,9 +2055,12 @@
     let tecnicaSelecionada = 'DTF';
 
     // Mockup 3x4 dinâmico para Orçamento
-    const prodInicial = db.produtosBase[0] || { nome: "Camisa Polo Tradicional Piquet", tipoMalhaPadrao: "Piquet PA", consumoMalhaKgPorPeca: 0.28, custoMaoDeObraBase: 7.50 };
-    const cliInicial = db.clientes[0] || { nomeFantasia: "TEXPRO" };
-    let mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(prodInicial.nome, "#1e3a8a", "#ffffff", cliInicial.nomeFantasia.substring(0, 6));
+    const prodInicial = (db.produtosBase && db.produtosBase[0]) || { nome: "Camisa Polo Tradicional Piquet", tipoMalhaPadrao: "Piquet PA", consumoMalhaKgPorPeca: 0.28, custoMaoDeObraBase: 7.50 };
+    const cliInicial = (db.clientes && db.clientes[0]) || { nomeFantasia: "TEXPRO", nome: "TEXPRO" };
+    const siglaInicial = (cliInicial.nomeFantasia || cliInicial.nome || cliInicial.razaoSocial || "TEXPRO").toString().substring(0, 6);
+    let mockupOrcamentoUrl = (window.ERP_MOCKUPS && typeof window.ERP_MOCKUPS.gerarMockupSvg === 'function')
+      ? window.ERP_MOCKUPS.gerarMockupSvg(prodInicial.nome, "#1e3a8a", "#ffffff", siglaInicial)
+      : "";
     let mockupUploadPersonalizado = false;
 
     const modalEl = criarModalCamada(`
@@ -2078,7 +2081,7 @@
                 <label class="form-label">Cliente / Razão Social (Selecione ou Cadastre)</label>
                 <div class="inline-input-group">
                   <select id="orcClienteSelect" class="form-select">
-                    ${db.clientes.map(c => `<option value="${c.id}">${c.nomeFantasia} • ${formatarTelefone(c.telefone)} (${c.cidade}/${c.uf})</option>`).join('')}
+                    ${(db.clientes || []).map(c => `<option value="${c.id}">${c.nomeFantasia || c.nome || c.razaoSocial || 'Cliente'} • ${formatarTelefone(c.telefone)} (${c.cidade || 'SP'}/${c.uf || 'SP'})</option>`).join('')}
                   </select>
                   <button type="button" class="btn btn-secondary btn-inline-add" id="btnCadastrarClienteInline">
                     + Novo Cliente
@@ -2325,8 +2328,8 @@
         const prodId = document.getElementById('orcProdutoSelect')?.value;
         const pObj = db.produtosBase.find(pr => pr.id === prodId) || db.produtosBase[0];
         const cliId = document.getElementById('orcClienteSelect')?.value;
-        const cObj = db.clientes.find(c => c.id === cliId) || db.clientes[0];
-        const sigla = cObj ? cObj.nomeFantasia.substring(0, 6) : "TEXPRO";
+        const cObj = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
+        const sigla = (cObj ? (cObj.nomeFantasia || cObj.nome || cObj.razaoSocial || "TEXPRO") : "TEXPRO").toString().substring(0, 6);
 
         if (preset === 'azul') {
           mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(pObj.nome, "#1e3a8a", "#ffffff", sigla);
@@ -2731,8 +2734,8 @@
           if (inpConsumo) inpConsumo.value = (novoMod.consumoMalhaKgPorPeca || 0.28).toFixed(2);
           if (!mockupUploadPersonalizado) {
             const cliId = document.getElementById('orcClienteSelect')?.value;
-            const cli = db.clientes.find(c => c.id === cliId) || db.clientes[0];
-            const sigla = cli ? cli.nomeFantasia.substring(0, 6) : "TEXPRO";
+            const cli = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
+            const sigla = (cli ? (cli.nomeFantasia || cli.nome || cli.razaoSocial || "TEXPRO") : "TEXPRO").toString().substring(0, 6);
             mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(novoMod.nome, "#1e3a8a", "#ffffff", sigla);
             const prev = document.getElementById('previewMockup3x4Orc');
             if (prev) prev.src = mockupOrcamentoUrl;
@@ -2756,8 +2759,8 @@
       }
       if (!mockupUploadPersonalizado) {
         const cliId = document.getElementById('orcClienteSelect')?.value;
-        const cli = db.clientes.find(c => c.id === cliId) || db.clientes[0];
-        const sigla = cli ? cli.nomeFantasia.substring(0, 6) : "TEXPRO";
+        const cli = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
+        const sigla = (cli ? (cli.nomeFantasia || cli.nome || cli.razaoSocial || "TEXPRO") : "TEXPRO").toString().substring(0, 6);
         mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(prod.nome, "#1e3a8a", "#ffffff", sigla);
         const prev = document.getElementById('previewMockup3x4Orc');
         if (prev) prev.src = mockupOrcamentoUrl;
@@ -2769,8 +2772,8 @@
     document.getElementById('orcClienteSelect')?.addEventListener('change', () => {
       if (!mockupUploadPersonalizado) {
         const cliId = document.getElementById('orcClienteSelect')?.value;
-        const cli = db.clientes.find(c => c.id === cliId) || db.clientes[0];
-        const sigla = cli ? cli.nomeFantasia.substring(0, 6) : "TEXPRO";
+        const cli = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
+        const sigla = (cli ? (cli.nomeFantasia || cli.nome || cli.razaoSocial || "TEXPRO") : "TEXPRO").toString().substring(0, 6);
         const prodId = document.getElementById('orcProdutoSelect')?.value;
         const prod = db.produtosBase.find(pr => pr.id === prodId) || db.produtosBase[0];
         mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(prod.nome, "#1e3a8a", "#ffffff", sigla);
@@ -3068,17 +3071,17 @@
       numero: novoNum,
       tipoRegistro: tipoRegistro,
       dataCriacao: new Date().toISOString().split('T')[0],
-      clienteId: dados.cliente.id,
-      clienteNome: dados.cliente.nomeFantasia,
-      clienteTelefone: dados.cliente.telefone,
+      clienteId: dados.cliente ? dados.cliente.id : '',
+      clienteNome: dados.cliente ? (dados.cliente.nomeFantasia || dados.cliente.nome || dados.cliente.razaoSocial || 'Cliente') : 'Cliente Avulso',
+      clienteTelefone: dados.cliente ? dados.cliente.telefone : '',
       status: tipoRegistro === 'Orcamento' ? 'Orcamento' : 'Quarentena',
       etapaProducao: tipoRegistro === 'Orcamento' ? 'Em Negociação' : 'Aguardando Aprovação Técnica',
-      produtoId: dados.prod.id,
-      produtoNome: dados.prod.nome,
+      produtoId: dados.prod ? dados.prod.id : '',
+      produtoNome: dados.prod ? dados.prod.nome : 'Produto',
       corTecido: 'A Definir',
-      tecidoEspecificacao: dados.prod.tipoMalhaPadrao,
+      tecidoEspecificacao: dados.prod ? dados.prod.tipoMalhaPadrao : 'Padrão Têxtil',
       tipoPersonalizacao: 'Personalização Conforme Proposta',
-      mockupUrl: dados.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(dados.prod.nome, "#1e3a8a", "#ffffff", dados.cliente.nomeFantasia.substring(0, 6)),
+      mockupUrl: dados.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(dados.prod ? dados.prod.nome : 'Camisa', "#1e3a8a", "#ffffff", (dados.cliente ? (dados.cliente.nomeFantasia || dados.cliente.nome || "TEXPRO") : "TEXPRO").toString().substring(0, 6)) : ''),
       artesAnexadas: [],
       grade: dados.grade,
       precoUnitarioVenda: dados.precoVendaUnitario,
@@ -7984,12 +7987,12 @@
     ];
 
     db.clientes = [
-      { id: "CLI-01", nome: "TransBrasil Logística Integrada Ltda", contato: "Carlos Mendes (Comprador)", telefone: "11988887777", email: "carlos@transbrasil.com.br", cnpj: "12.345.678/0001-90", totalPedidos: 1, valorGastoTotal: 8700.00 },
-      { id: "CLI-02", nome: "Academia Alpha Cross & Fitness", contato: "Juliana Ferreira", telefone: "11977776666", email: "comercial@alphacross.com.br", cnpj: "98.765.432/0001-11", totalPedidos: 1, valorGastoTotal: 4560.00 },
-      { id: "CLI-03", nome: "Construtora Horizonte Engenharia", contato: "Eng. Roberto Albuquerque", telefone: "11966665555", email: "obras@horizonte.eng.br", cnpj: "45.678.910/0001-22", totalPedidos: 1, valorGastoTotal: 9685.00 },
-      { id: "CLI-04", nome: "Hospital Santa Clara & Diagnósticos", contato: "Dra. Patrícia Silveira", telefone: "11955554444", email: "compras@santaclara.org.br", cnpj: "23.456.789/0001-33", totalPedidos: 1, valorGastoTotal: 8010.00 },
-      { id: "CLI-05", nome: "Restaurante e Churrascaria Fogo Nobre", contato: "Chef Marcelo Alcantara", telefone: "11944443333", email: "marcelo@fogonobre.com.br", cnpj: "67.890.123/0001-44", totalPedidos: 1, valorGastoTotal: 3600.00 },
-      { id: "CLI-06", nome: "Colégio Objetivo Sul & Esportes", contato: "Diretora Helena Ramos", telefone: "11933332222", email: "secretaria@objetivosul.com.br", cnpj: "78.901.234/0001-55", totalPedidos: 1, valorGastoTotal: 10450.00 }
+      { id: "CLI-01", razaoSocial: "TransBrasil Logística Integrada Ltda", nomeFantasia: "TransBrasil Logística", cidade: "Campinas", uf: "SP", contatoNome: "Carlos Mendes (Comprador)", telefone: "11988887777", email: "carlos@transbrasil.com.br", cnpj: "12.345.678/0001-90", totalPedidosFeitos: 1, faturamentoAcumulado: 8700.00 },
+      { id: "CLI-02", razaoSocial: "Academia Alpha Cross & Fitness Ltda", nomeFantasia: "Academia Alpha Cross", cidade: "São Paulo", uf: "SP", contatoNome: "Juliana Ferreira", telefone: "11977776666", email: "comercial@alphacross.com.br", cnpj: "98.765.432/0001-11", totalPedidosFeitos: 1, faturamentoAcumulado: 4560.00 },
+      { id: "CLI-03", razaoSocial: "Construtora Horizonte Engenharia S/A", nomeFantasia: "Construtora Horizonte", cidade: "Curitiba", uf: "PR", contatoNome: "Eng. Roberto Albuquerque", telefone: "11966665555", email: "obras@horizonte.eng.br", cnpj: "45.678.910/0001-22", totalPedidosFeitos: 1, faturamentoAcumulado: 9685.00 },
+      { id: "CLI-04", razaoSocial: "Hospital Santa Clara & Diagnósticos Ltda", nomeFantasia: "Hospital Santa Clara", cidade: "Americana", uf: "SP", contatoNome: "Dra. Patrícia Silveira", telefone: "11955554444", email: "compras@santaclara.org.br", cnpj: "23.456.789/0001-33", totalPedidosFeitos: 1, faturamentoAcumulado: 8010.00 },
+      { id: "CLI-05", razaoSocial: "Restaurante e Churrascaria Fogo Nobre Ltda", nomeFantasia: "Restaurante Fogo Nobre", cidade: "Belo Horizonte", uf: "MG", contatoNome: "Chef Marcelo Alcantara", telefone: "11944443333", email: "marcelo@fogonobre.com.br", cnpj: "67.890.123/0001-44", totalPedidosFeitos: 1, faturamentoAcumulado: 3600.00 },
+      { id: "CLI-06", razaoSocial: "Colégio Objetivo Sul & Esportes Ltda", nomeFantasia: "Colégio Objetivo Sul", cidade: "Maringá", uf: "PR", contatoNome: "Diretora Helena Ramos", telefone: "11933332222", email: "secretaria@objetivosul.com.br", cnpj: "78.901.234/0001-55", totalPedidosFeitos: 1, faturamentoAcumulado: 10450.00 }
     ];
 
     db.ordensServico = [
