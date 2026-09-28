@@ -1,5 +1,5 @@
 /**
- * UNIFORMES ERP - TEXPRO INDUSTRIAL ERP
+ * UNIFORMES ERP - BRAVVI ERP TÊXTIL
  * Controlador Principal da Aplicação Integrada
  * Sistema de Gestão Industrial e Comercial para Fábricas de Uniformes
  */
@@ -8,11 +8,12 @@
   'use strict';
 
   // Detecção de Modo Demonstração (Test Drive)
-  const isDemo = (window.TEXPRO_IS_DEMO === true) || 
+  const isDemo = (window.BRAVVI_IS_DEMO === true) ||
+                 (window.TEXPRO_IS_DEMO === true) || 
                  (window.location && window.location.search && window.location.search.includes('demo=1')) || 
                  (window.location && window.location.pathname && (window.location.pathname.includes('/demo') || window.location.pathname.includes('demo.html')));
   const ERP_VERSION = isDemo ? 'DEMO_SANDBOX_V1' : '8.0_ZERO_PROD';
-  const STORAGE_KEY = isDemo ? 'texpro_erp_demo_temp' : 'texpro_erp_prod_v8';
+  const STORAGE_KEY = isDemo ? 'bravvi_erp_demo_temp' : 'bravvi_erp_prod_v8';
   let db = null;
 
   if (isDemo) {
@@ -20,7 +21,7 @@
     db.versao = ERP_VERSION;
   } else {
     try {
-      const salvo = localStorage.getItem(STORAGE_KEY);
+      const salvo = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('texpro_erp_prod_v8');
       if (salvo) {
         db = JSON.parse(salvo);
       }
@@ -2544,10 +2545,10 @@
       : ((db.produtosBase && db.produtosBase[0]) || { nome: "Camisa Polo Tradicional Piquet", tipoMalhaPadrao: "Piquet PA", consumoMalhaKgPorPeca: 0.28, custoMaoDeObraBase: 7.50 });
 
     const cliInicial = isEdicao
-      ? ((db.clientes || []).find(c => c.id === orcamentoExistente.clienteId || c.nomeFantasia === orcamentoExistente.clienteNome || c.nome === orcamentoExistente.clienteNome) || (db.clientes && db.clientes[0]) || { nomeFantasia: "TEXPRO", nome: "TEXPRO" })
-      : ((db.clientes && db.clientes[0]) || { nomeFantasia: "TEXPRO", nome: "TEXPRO" });
+      ? ((db.clientes || []).find(c => c.id === orcamentoExistente.clienteId || c.nomeFantasia === orcamentoExistente.clienteNome || c.nome === orcamentoExistente.clienteNome) || (db.clientes && db.clientes[0]) || { nomeFantasia: "BRAVVI", nome: "BRAVVI" })
+      : ((db.clientes && db.clientes[0]) || { nomeFantasia: "BRAVVI", nome: "BRAVVI" });
 
-    const siglaInicial = (cliInicial.nomeFantasia || cliInicial.nome || cliInicial.razaoSocial || "TEXPRO").toString().substring(0, 6);
+    const siglaInicial = (cliInicial.nomeFantasia || cliInicial.nome || cliInicial.razaoSocial || "BRAVVI").toString().substring(0, 6);
 
     let mockupOrcamentoUrl = (isEdicao && orcamentoExistente.mockupUrl)
       ? orcamentoExistente.mockupUrl
@@ -2878,7 +2879,7 @@
         const pObj = db.produtosBase.find(pr => pr.id === prodId) || db.produtosBase[0];
         const cliId = document.getElementById('orcClienteSelect')?.value;
         const cObj = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
-        const sigla = (cObj ? (cObj.nomeFantasia || cObj.nome || cObj.razaoSocial || "TEXPRO") : "TEXPRO").toString().substring(0, 6);
+        const sigla = (cObj ? (cObj.nomeFantasia || cObj.nome || cObj.razaoSocial || "BRAVVI") : "BRAVVI").toString().substring(0, 6);
 
         if (preset === 'azul') {
           mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(pObj.nome, "#1e3a8a", "#ffffff", sigla);
@@ -3284,7 +3285,7 @@
           if (!mockupUploadPersonalizado) {
             const cliId = document.getElementById('orcClienteSelect')?.value;
             const cli = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
-            const sigla = (cli ? (cli.nomeFantasia || cli.nome || cli.razaoSocial || "TEXPRO") : "TEXPRO").toString().substring(0, 6);
+            const sigla = (cli ? (cli.nomeFantasia || cli.nome || cli.razaoSocial || "BRAVVI") : "BRAVVI").toString().substring(0, 6);
             mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(novoMod.nome, "#1e3a8a", "#ffffff", sigla);
             const prev = document.getElementById('previewMockup3x4Orc');
             if (prev) prev.src = mockupOrcamentoUrl;
@@ -3309,7 +3310,7 @@
       if (!mockupUploadPersonalizado) {
         const cliId = document.getElementById('orcClienteSelect')?.value;
         const cli = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
-        const sigla = (cli ? (cli.nomeFantasia || cli.nome || cli.razaoSocial || "TEXPRO") : "TEXPRO").toString().substring(0, 6);
+        const sigla = (cli ? (cli.nomeFantasia || cli.nome || cli.razaoSocial || "BRAVVI") : "BRAVVI").toString().substring(0, 6);
         mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(prod.nome, "#1e3a8a", "#ffffff", sigla);
         const prev = document.getElementById('previewMockup3x4Orc');
         if (prev) prev.src = mockupOrcamentoUrl;
@@ -3322,7 +3323,7 @@
       if (!mockupUploadPersonalizado) {
         const cliId = document.getElementById('orcClienteSelect')?.value;
         const cli = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
-        const sigla = (cli ? (cli.nomeFantasia || cli.nome || cli.razaoSocial || "TEXPRO") : "TEXPRO").toString().substring(0, 6);
+        const sigla = (cli ? (cli.nomeFantasia || cli.nome || cli.razaoSocial || "BRAVVI") : "BRAVVI").toString().substring(0, 6);
         const prodId = document.getElementById('orcProdutoSelect')?.value;
         const prod = db.produtosBase.find(pr => pr.id === prodId) || db.produtosBase[0];
         mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(prod.nome, "#1e3a8a", "#ffffff", sigla);
@@ -3616,7 +3617,7 @@
         const pObj = db.produtosBase.find(pr => pr.id === prodId) || db.produtosBase[0];
         const cliId = document.getElementById('orcClienteSelect')?.value;
         const cObj = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
-        const sigla = (cObj ? (cObj.nomeFantasia || cObj.nome || cObj.razaoSocial || "TEXPRO") : "TEXPRO").toString().substring(0, 6);
+        const sigla = (cObj ? (cObj.nomeFantasia || cObj.nome || cObj.razaoSocial || "BRAVVI") : "BRAVVI").toString().substring(0, 6);
         mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(pObj.nome, corHex, "#ffffff", sigla);
         const prev = document.getElementById('previewMockup3x4Orc');
         if (prev) prev.src = mockupOrcamentoUrl;
@@ -3773,7 +3774,7 @@
       observacoesCoresDetalhes: dados.observacoesCoresDetalhes || '',
       tecidoEspecificacao: dados.prod ? dados.prod.tipoMalhaPadrao : 'Padrão Têxtil',
       tipoPersonalizacao: 'Personalização Conforme Proposta',
-      mockupUrl: dados.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(dados.prod ? dados.prod.nome : 'Camisa', "#1e3a8a", "#ffffff", (dados.cliente ? (dados.cliente.nomeFantasia || dados.cliente.nome || "TEXPRO") : "TEXPRO").toString().substring(0, 6)) : ''),
+      mockupUrl: dados.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(dados.prod ? dados.prod.nome : 'Camisa', "#1e3a8a", "#ffffff", (dados.cliente ? (dados.cliente.nomeFantasia || dados.cliente.nome || "BRAVVI") : "BRAVVI").toString().substring(0, 6)) : ''),
       artesAnexadas: [],
       grade: dados.grade,
       precoUnitarioVenda: dados.precoVendaUnitario,
@@ -4060,7 +4061,7 @@
     configurarEventosSeletorCores('avanco', (corNome, corHex) => {
       const pNome = dadosBase.prod ? dadosBase.prod.nome : dadosBase.produtoNome;
       const cNome = (dadosBase.cliente ? (dadosBase.cliente.nomeFantasia || dadosBase.cliente.nome) : dadosBase.clienteNome);
-      mockupDataUrl = window.ERP_MOCKUPS.gerarMockupSvg(pNome, corHex, "#ffffff", (cNome || "TEXPRO").toString().substring(0, 6));
+      mockupDataUrl = window.ERP_MOCKUPS.gerarMockupSvg(pNome, corHex, "#ffffff", (cNome || "BRAVVI").toString().substring(0, 6));
       const prev = document.getElementById('previewMockup3x4');
       if (prev) prev.src = mockupDataUrl;
     });
@@ -5926,7 +5927,7 @@
                     </span>
                   </td>
                   <td>
-                    <strong>${lan.cliente || lan.favorecido || 'TexPro'}</strong>
+                    <strong>${lan.cliente || lan.favorecido || 'Bravvi'}</strong>
                     <span style="display: block; font-size: 11px; color: var(--text-gray-500);">${lan.descricao}</span>
                   </td>
                   <td class="text-mono" style="font-size: 11px;">${lan.formaPagamento}</td>
@@ -6610,7 +6611,7 @@
             </table>
 
             <div style="font-size: 11px; color: var(--text-gray-500); text-align: center; border-top: 1px dashed var(--border-medium); padding-top: 10px;">
-              Documento contábil emitido eletronicamente pelo Sistema TexPro Industrial ERP.
+              Documento contábil emitido eletronicamente pelo Sistema Bravvi ERP Têxtil.
             </div>
           </div>
 
@@ -7590,7 +7591,7 @@
           id: `COST-${Date.now().toString().slice(-6)}`,
           nome: nome,
           responsavel: nome,
-          email: `${nome.toLowerCase().replace(/[^a-z0-9]/g, '')}@texpro.com.br`,
+          email: `${nome.toLowerCase().replace(/[^a-z0-9]/g, '')}@bravvi.com.br`,
           telefone: document.getElementById('cadColTel')?.value || '',
           cargo: document.getElementById('cadColCargo')?.value || 'Costureira Especialista',
           especialidade: document.getElementById('cadColCargo')?.value || 'Costura Geral',
@@ -7825,7 +7826,7 @@
     }
 
     if (!mockupSrc) {
-      mockupSrc = window.ERP_MOCKUPS.gerarMockupSvg("polo", "#1e3a8a", "#ffffff", "TEXPRO");
+      mockupSrc = window.ERP_MOCKUPS.gerarMockupSvg("polo", "#1e3a8a", "#ffffff", "BRAVVI");
     }
 
     const modalEl = criarModalCamada(`
@@ -8568,12 +8569,12 @@
     const hoje = new Date().toISOString().split('T')[0];
     
     const empDemo = {
-      razaoSocial: "TexPro Indústria e Comércio de Confecções Ltda",
-      nomeFantasia: "TexPro Uniformes Profissionais",
+      razaoSocial: "Bravvi Confecções e Uniformes Industriais Ltda",
+      nomeFantasia: "Bravvi Indústria Têxtil",
       cnpj: "34.582.910/0001-44",
       inscricaoEstadual: "123.456.789.110",
       telefone: "11987654321",
-      email: "comercial@texprouniformes.com.br",
+      email: "contato@bravvi.com.br",
       chavePix: "34.582.910/0001-44",
       tipoChavePix: "CNPJ",
       endereco: "Rua Têxtil Industrial, 450",
@@ -9043,12 +9044,12 @@
 
             <div class="form-group" style="margin-bottom: 12px;">
               <label class="form-label">Nome Fantasia (Como a fábrica é conhecida comercialmente):</label>
-              <input type="text" class="form-control" id="inpEmpNomeFantasia" value="${emp.nomeFantasia || ''}" placeholder="ex: TexPro Uniformes">
+              <input type="text" class="form-control" id="inpEmpNomeFantasia" value="${emp.nomeFantasia || ''}" placeholder="ex: Bravvi Uniformes">
             </div>
 
             <div class="form-group" style="margin-bottom: 12px;">
               <label class="form-label">Razão Social Completa:</label>
-              <input type="text" class="form-control" id="inpEmpRazaoSocial" value="${emp.razaoSocial || ''}" placeholder="ex: TexPro Indústria e Comércio Têxtil Ltda">
+              <input type="text" class="form-control" id="inpEmpRazaoSocial" value="${emp.razaoSocial || ''}" placeholder="ex: Bravvi Confecções e Uniformes Industriais Ltda">
             </div>
 
             <div class="grid-cards-2" style="gap: 10px; margin-bottom: 12px;">
@@ -9277,7 +9278,7 @@
           <div class="modal-header" style="background: #0f172a; color: #ffffff;">
             <div>
               <div class="modal-title" style="color: #ffffff; display: flex; align-items: center; gap: 8px;">
-                <span>🚀 Acelerador Comercial • TexPro Uniformes ERP</span>
+                <span>🚀 Acelerador Comercial • Bravvi ERP Têxtil</span>
                 <span class="status-pill status-green" style="font-size: 10px; background: #10b981; color: #ffffff;">PRONTO P/ VENDER</span>
               </div>
               <div style="font-size: 11.5px; color: #94a3b8; margin-top: 2px;">
@@ -9478,7 +9479,7 @@
                 <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; background: #ffffff;">
                   <strong style="color: #b91c1c; font-size: 13px;">❌ "E se a internet cair aqui no galpão?"</strong>
                   <p style="font-size: 12px; color: #334155; margin-top: 4px; line-height: 1.45;">
-                    <strong>✅ O que responder:</strong> <em>"O TexPro ERP funciona em modo Local Seguro Offline. Se a internet cair, você continua tirando pedidos e imprimindo fichas normalmente sem travar nada."</em>
+                    <strong>✅ O que responder:</strong> <em>"O Bravvi ERP Têxtil funciona em modo Local Seguro Offline. Se a internet cair, você continua tirando pedidos e imprimindo fichas normalmente sem travar nada."</em>
                   </p>
                 </div>
               </div>
@@ -9551,7 +9552,7 @@
     });
   }
 
-  // Exposição Global das Funções Públicas da API TexPro ERP
+  // Exposição Global das Funções Públicas da API Bravvi ERP Têxtil
   window.ERP = {
     obterDb: () => db,
     salvarOrcamentoOuPedido,
@@ -9586,6 +9587,7 @@
     forcarResetarBanco: function() {
       try {
         localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem('bravvi_erp_prod_v8');
         localStorage.removeItem('texpro_erp_prod_v8');
         localStorage.removeItem('texpro_erp_prod_v7');
         localStorage.removeItem('texpro_erp_prod_v6');

@@ -1,5 +1,5 @@
 -- ============================================================================
--- TEXPRO UNIFORMES ERP - SCHEMA DO SUPABASE (POSTGRESQL REALTIME)
+-- BRAVVI ERP TÊXTIL - SCHEMA DO SUPABASE (POSTGRESQL REALTIME)
 -- ============================================================================
 -- Como rodar:
 -- 1. Acesse o seu dashboard no Supabase: https://supabase.com/dashboard

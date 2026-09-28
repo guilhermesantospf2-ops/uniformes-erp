@@ -1,5 +1,5 @@
 # 🚀 Plano Completo de Lançamento: Hospedagem, Banco na Nuvem & Campanha de Anúncios
-### TexPro Uniformes ERP Industrial • Guia Prático para Subir Amanhã
+### Bravvi ERP Têxtil Industrial • Guia Prático para Subir Amanhã
 
 Este guia contém o passo a passo exato para você colocar o sistema na internet, conectar o banco de dados em nuvem e rodar seus anúncios no Meta Ads (Instagram/Facebook) para fechar suas primeiras fábricas clientes.
 
@@ -13,8 +13,8 @@ Você tem duas opções simples e com custo R$ 0:
 1. Acesse **[vercel.com](https://vercel.com/)** e faça login com seu e-mail ou GitHub.
 2. Clique em **"Add New Project"** e arraste a pasta `uniformes-erp` (ou conecte seu repositório Git).
 3. O arquivo [`vercel.json`](file:///c:/Users/rrenx/.antigravity-ide/uniformes-erp/vercel.json) já está configurado. Basta clicar em **"Deploy"**.
-4. Em 30 segundos você terá um link seguro com HTTPS oficial (ex: `https://texpro-erp.vercel.app`).
-5. (Opcional): Você pode conectar seu próprio domínio (ex: `app.suaempresa.com.br`) na aba *Domains* da Vercel.
+4. Em 30 segundos você terá um link seguro com HTTPS oficial (ex: `https://bravvi-erp.vercel.app`).
+5. (Opcional): Você pode conectar seu próprio domínio (ex: `app.bravvi.com.br`) na aba *Domains* da Vercel.
 
 ### Opção B: Firebase Hosting (Google Cloud)
 1. Instale o Firebase CLI no seu terminal:
@@ -37,7 +37,7 @@ Você tem duas opções simples e com custo R$ 0:
 
 Para que o vendedor use no celular e a oficina veja no computador ao mesmo tempo sem perder dados:
 
-1. Acesse o **[Console do Firebase](https://console.firebase.google.com/)** e clique em **"Criar Projeto"** (ex: `texpro-erp`).
+1. Acesse o **[Console do Firebase](https://console.firebase.google.com/)** e clique em **"Criar Projeto"** (ex: `bravvi-erp`).
 2. No menu lateral esquerdo, clique em **"Firestore Database"** > **"Criar Banco de Dados"**:
    - Localização: Escolha `southamerica-east1 (São Paulo)` para ter velocidade máxima no Brasil.
    - Regras de Segurança: Escolha "Modo de Teste" ou configure leitura/escrita para usuários autorizados.
@@ -90,7 +90,7 @@ Para que o vendedor use no celular e a oficina veja no computador ao mesmo tempo
 > 
 > Cobrar no "olhômetro" ou calcular tecido em tabela de Excel antiga é o que mais drena o lucro da fábrica. Na hora de cortar 150 polos ou camisas de brim, se faltar 1 metro de tecido ou errar a metragem do DTF, o prejuízo sai direto do seu bolso.
 > 
-> O **TexPro ERP** foi feito exclusivamente para confecções e estamparias de uniformes:
+> O **Bravvi ERP Têxtil** foi feito exclusivamente para confecções e estamparias de uniformes:
 > 
 > ✅ Cálculo automático de rendimento de tecido por kg com margem de segurança  
 > ✅ Otimizador de rolo DTF (58cm e 28cm) para não desperdiçar filme  
@@ -110,7 +110,7 @@ Para que o vendedor use no celular e a oficina veja no computador ao mesmo tempo
 > 
 > Se a sua confecção vive esse fogo cruzado todos os dias, você precisa de um chão de fábrica que ande sozinho.
 > 
-> Com o **TexPro ERP**:
+> Com o **Bravvi ERP Têxtil**:
 > 1. Nenhum pedido entra em corte sem aprovação de arte e sinal de 50% pago (Trava de Quarentena).
 > 2. O painel Kanban mostra em tempo real o que está no corte, estamparia, costura e expedição.
 > 3. Alertas por cores mostram os prazos estourando antes que o cliente reclame.
@@ -142,11 +142,11 @@ Para que o vendedor use no celular e a oficina veja no computador ao mesmo tempo
 Quando o dono da confecção clicar no anúncio e chamar no WhatsApp:
 
 ### Mensagem 1 (Boas-vindas Imediata):
-> *"Olá! Tudo bem? Aqui é da equipe do **TexPro ERP Têxtil**.*  
+> *"Olá! Tudo bem? Aqui é da equipe do **Bravvi ERP Têxtil**.*  
 > *Vi que você tem confecção de uniformes. Quantas peças em média vocês produzem por mês hoje, e qual é o principal tipo de uniforme de vocês (polo, esportivo, brim operacional ou jalecos)?"*
 
 ### Mensagem 2 (Após ele responder o tipo de fábrica):
-> *"Perfeito! Essa é exatamente a especialidade do nosso sistema. Nós criamos o TexPro porque as confecções perdiam muito tempo calculando metragem de tecido e montando mockup na mão, além de ter confusão entre o vendedor e a mesa de corte.*  
+> *"Perfeito! Essa é exatamente a especialidade do nosso sistema. Nós criamos o Bravvi ERP porque as confecções perdiam muito tempo calculando metragem de tecido e montando mockup na mão, além de ter confusão entre o vendedor e a mesa de corte.*  
 > *Vou te mandar um link rápido para você ver a tela do sistema funcionando ao vivo. Você prefere testar pelo computador ou ver um vídeo de 2 minutinhos mostrando a ficha técnica e o orçamento?"*
 
 ### Mensagem 3 (Apresentando o Link da Demonstração):

@@ -3,16 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TexPro ERP — Demonstração Interativa ao Vivo (Test Drive)</title>
+  <title>Bravvi ERP Têxtil — Demonstração Interativa ao Vivo (Test Drive)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <link rel="stylesheet" href="style.css?v=8.4.8">
+  <link rel="stylesheet" href="style.css?v=8.4.9">
   <script>
     // Ativa explicitamente o Modo Demonstração Sandbox (sem salvar na nuvem)
+    window.BRAVVI_IS_DEMO = true;
     window.TEXPRO_IS_DEMO = true;
   </script>
 </head>
@@ -28,7 +29,7 @@
       <button onclick="window.ERP.carregarDemonstracaoShowroom()" class="btn btn-secondary btn-sm" style="font-size: 11.5px; padding: 5px 12px; background: #1e293b; color: #f8fafc; border: 1px solid #334155; font-weight: 600; cursor: pointer; border-radius: 4px;">
         🔄 Recarregar Dados de Teste
       </button>
-      <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Fiz%20o%20test%20drive%20do%20TexPro%20ERP%20e%20quero%20contratar%20para%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-primary btn-sm" style="font-size: 11.5px; padding: 5px 14px; background: #059669; color: #ffffff; text-decoration: none; font-weight: 700; border-radius: 4px; display: inline-flex; align-items: center; gap: 6px;">
+      <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Fiz%20o%20test%20drive%20do%20Bravvi%20ERP%20T%C3%AAxtil%20e%20quero%20contratar%20para%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-primary btn-sm" style="font-size: 11.5px; padding: 5px 14px; background: #059669; color: #ffffff; text-decoration: none; font-weight: 700; border-radius: 4px; display: inline-flex; align-items: center; gap: 6px;">
         💬 Contratar no WhatsApp &rarr;
       </a>
     </div>
@@ -41,10 +42,10 @@
       
       <div class="sidebar-header">
         <div class="brand-wrapper" id="sidebarBrandWrapper" style="cursor: pointer;" onclick="window.ERP.navegarPara('empresa')" title="Configurar Dados e Logotipo da sua Confecção">
-          <div class="brand-icon" id="sidebarBrandIcon">TP</div>
+          <div class="brand-icon" id="sidebarBrandIcon">BV</div>
           <div>
-            <div class="brand-title" id="sidebarBrandTitle">TEXPRO</div>
-            <div class="brand-subtitle" id="sidebarBrandSubtitle">CONFECÇÃO ERP</div>
+            <div class="brand-title" id="sidebarBrandTitle">BRAVVI</div>
+            <div class="brand-subtitle" id="sidebarBrandSubtitle">ERP TÊXTIL</div>
           </div>
         </div>
       </div>
@@ -249,7 +250,7 @@
           </div>
 
           <div style="font-size: 11px; text-align: right; margin-right: 4px;" id="headerEmpresaInfo">
-            <strong style="display: block; color: var(--text-primary); font-weight: 800;" id="headerEmpresaNome">TexPro Indústria Têxtil</strong>
+            <strong style="display: block; color: var(--text-primary); font-weight: 800;" id="headerEmpresaNome">Bravvi Indústria Têxtil</strong>
             <span class="text-mono" style="color: var(--text-gray-500);" id="headerEmpresaCnpj">CNPJ: 34.582.910/0001-44</span>
           </div>
 
@@ -291,10 +292,10 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Scripts do ERP Têxtil com Versionamento Anti-Cache -->
-  <script src="mock-data.js?v=8.4.8"></script>
-  <script src="market-benchmark.js?v=8.4.8"></script>
-  <script src="nesting-engine.js?v=8.4.8"></script>
-  <script src="cloud-sync.js?v=8.4.8"></script>
-  <script src="app.js?v=8.4.8"></script>
+  <script src="mock-data.js?v=8.4.9"></script>
+  <script src="market-benchmark.js?v=8.4.9"></script>
+  <script src="nesting-engine.js?v=8.4.9"></script>
+  <script src="cloud-sync.js?v=8.4.9"></script>
+  <script src="app.js?v=8.4.9"></script>
 </body>
 </html>

@@ -49,5 +49,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`TexPro Local Server rodando em http://localhost:${PORT}`);
+  console.log(`Bravvi ERP Têxtil Local Server rodando em http://localhost:${PORT}`);
 });

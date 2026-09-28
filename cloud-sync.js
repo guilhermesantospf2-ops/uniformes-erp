@@ -1,29 +1,30 @@
 /**
- * TEXPRO UNIFORMES ERP - MOTOR DE NUVEM, BACKUP & IDENTIDADE EMPRESARIAL
+ * BRAVVI ERP TÊXTIL - MOTOR DE NUVEM, BACKUP & IDENTIDADE EMPRESARIAL
  * Gerenciamento de Multi-tenant (Empresas), Sincronização e Backup Seguro
  */
 
 (function() {
   'use strict';
 
-  const STORAGE_KEY_EMPRESA = 'TEXPRO_ERP_EMPRESA_CONFIG';
-  const STORAGE_KEY_PERFIL = 'TEXPRO_ERP_PERFIL_ATIVO';
+  const STORAGE_KEY_EMPRESA = 'BRAVVI_ERP_EMPRESA_CONFIG';
+  const STORAGE_KEY_PERFIL = 'BRAVVI_ERP_PERFIL_ATIVO';
 
   function isModoDemo() {
-    return (window.TEXPRO_IS_DEMO === true) || 
+    return (window.BRAVVI_IS_DEMO === true) ||
+           (window.TEXPRO_IS_DEMO === true) || 
            (window.location && window.location.search && window.location.search.includes('demo=1')) || 
            (window.location && window.location.pathname && (window.location.pathname.includes('/demo') || window.location.pathname.includes('demo.html')));
   }
 
   // Configuração Padrão Inicial da Empresa
   const EMPRESA_PADRAO = {
-    razaoSocial: "TexPro Indústria e Comércio de Confecções Ltda",
-    nomeFantasia: "TexPro Uniformes",
+    razaoSocial: "Bravvi Confecções e Uniformes Industriais Ltda",
+    nomeFantasia: "Bravvi Indústria Têxtil",
     cnpj: "34.582.910/0001-44",
     inscricaoEstadual: "123.456.789.110",
     telefone: "11987654321",
-    email: "comercial@texprouniformes.com.br",
-    chavePix: "financeiro@texprouniformes.com.br",
+    email: "contato@bravvi.com.br",
+    chavePix: "financeiro@bravvi.com.br",
     tipoChavePix: "E-mail",
     endereco: "Rua Têxtil Industrial, 450",
     bairro: "Distrito Industrial",
@@ -75,17 +76,17 @@
   function obterEmpresaConfig() {
     if (isModoDemo()) {
       return Object.assign({}, EMPRESA_PADRAO, {
-        razaoSocial: "TexPro Indústria e Comércio de Confecções Ltda",
-        nomeFantasia: "TexPro Uniformes Profissionais",
+        razaoSocial: "Bravvi Confecções e Uniformes Industriais Ltda",
+        nomeFantasia: "Bravvi Indústria Têxtil",
         cnpj: "34.582.910/0001-44",
         telefone: "11987654321",
-        email: "comercial@texprouniformes.com.br",
+        email: "contato@bravvi.com.br",
         cidade: "Americana",
         uf: "SP"
       });
     }
     try {
-      const raw = localStorage.getItem(STORAGE_KEY_EMPRESA);
+      const raw = localStorage.getItem(STORAGE_KEY_EMPRESA) || localStorage.getItem('TEXPRO_ERP_EMPRESA_CONFIG');
       if (raw) {
         return Object.assign({}, EMPRESA_PADRAO, JSON.parse(raw));
       }
@@ -116,7 +117,7 @@
 
   function obterPerfilAtivo() {
     try {
-      const perfilId = localStorage.getItem(STORAGE_KEY_PERFIL) || 'dono';
+      const perfilId = localStorage.getItem(STORAGE_KEY_PERFIL) || localStorage.getItem('TEXPRO_ERP_PERFIL_ATIVO') || 'dono';
       return PERFIS_PERMISSOES[perfilId] || PERFIS_PERMISSOES.dono;
     } catch (e) {
       return PERFIS_PERMISSOES.dono;
@@ -161,12 +162,18 @@
   }
 
   function atualizarElementosVisuaisEmpresa(empresa) {
-    // Header da sidebar
+    // Header da sidebar (Marca Oficial do Sistema ou Marca Própria Customizada)
     const title = document.getElementById('sidebarBrandTitle');
-    if (title) title.textContent = empresa.nomeFantasia || 'CONFECÇÃO';
+    if (title) {
+      if (empresa.nomeFantasia && !empresa.nomeFantasia.toLowerCase().includes('bravvi')) {
+        title.textContent = empresa.nomeFantasia.toUpperCase();
+      } else {
+        title.textContent = 'BRAVVI';
+      }
+    }
 
     const sub = document.getElementById('sidebarBrandSubtitle');
-    if (sub) sub.textContent = 'UNIFORMES ERP';
+    if (sub) sub.textContent = 'ERP TÊXTIL';
 
     const icon = document.getElementById('sidebarBrandIcon');
     if (icon) {
@@ -174,15 +181,17 @@
         icon.innerHTML = `<img src="${empresa.logoUrl}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;" alt="Logo">`;
         icon.style.background = 'transparent';
         icon.style.padding = '0';
+      } else if (!empresa.nomeFantasia || empresa.nomeFantasia.toLowerCase().includes('bravvi')) {
+        icon.textContent = 'BV';
       } else {
-        const sigla = (empresa.nomeFantasia || 'TP').substring(0, 2).toUpperCase();
+        const sigla = empresa.nomeFantasia.substring(0, 2).toUpperCase();
         icon.textContent = sigla;
       }
     }
 
-    // Top navbar
+    // Top navbar (Identificação da Fábrica/Empresa operando no momento)
     const headerNome = document.getElementById('headerEmpresaNome');
-    if (headerNome) headerNome.textContent = empresa.nomeFantasia || empresa.razaoSocial;
+    if (headerNome) headerNome.textContent = empresa.nomeFantasia || empresa.razaoSocial || 'Bravvi Indústria Têxtil';
 
     const headerCnpj = document.getElementById('headerEmpresaCnpj');
     if (headerCnpj) headerCnpj.textContent = `CNPJ: ${empresa.cnpj || 'Não Informado'}`;
@@ -238,9 +247,9 @@
   // ==========================================================================
   // MOTOR DE CONEXÃO SUPABASE (POSTGRESQL REALTIME) & FIREBASE
   // ==========================================================================
-  const STORAGE_KEY_SUPABASE = 'TEXPRO_ERP_SUPABASE_CONFIG';
-  const STORAGE_KEY_FIREBASE = 'TEXPRO_ERP_FIREBASE_CONFIG';
-  const STORAGE_KEY_PROVEDOR = 'TEXPRO_ERP_CLOUD_PROVEDOR_ATIVO';
+  const STORAGE_KEY_SUPABASE = 'BRAVVI_ERP_SUPABASE_CONFIG';
+  const STORAGE_KEY_FIREBASE = 'BRAVVI_ERP_FIREBASE_CONFIG';
+  const STORAGE_KEY_PROVEDOR = 'BRAVVI_ERP_CLOUD_PROVEDOR_ATIVO';
 
   let supabaseClient = null;
   let supabaseChannel = null;
@@ -251,7 +260,7 @@
 
   // Script SQL Oficial para o Banco de Dados Supabase
   const SQL_SCHEMA_SUPABASE = `-- ==============================================================
--- TEXPRO UNIFORMES ERP - SCHEMA DO SUPABASE (POSTGRESQL REALTIME)
+-- BRAVVI ERP TÊXTIL - SCHEMA DO SUPABASE (POSTGRESQL REALTIME)
 -- Cole e execute este script no "SQL Editor" do seu Supabase
 -- ==============================================================
 
@@ -292,7 +301,7 @@ with check (true);
 
   function obterSupabaseConfig() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY_SUPABASE);
+      const raw = localStorage.getItem(STORAGE_KEY_SUPABASE) || localStorage.getItem('TEXPRO_ERP_SUPABASE_CONFIG');
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && parsed.url && parsed.anonKey) {
@@ -303,8 +312,8 @@ with check (true);
     } catch (e) {
       console.warn('Erro ao carregar credenciais do Supabase:', e);
     }
-    if (window.TEXPRO_SUPABASE_CONFIG) {
-      return window.TEXPRO_SUPABASE_CONFIG;
+    if (window.BRAVVI_SUPABASE_CONFIG || window.TEXPRO_SUPABASE_CONFIG) {
+      return window.BRAVVI_SUPABASE_CONFIG || window.TEXPRO_SUPABASE_CONFIG;
     }
     return Object.assign({}, SUPABASE_CONFIG_PADRAO);
   }
@@ -365,13 +374,13 @@ with check (true);
   // --- FIREBASE CONFIG (LEGACY / FALLBACK) ---
   function obterFirebaseConfig() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY_FIREBASE);
+      const raw = localStorage.getItem(STORAGE_KEY_FIREBASE) || localStorage.getItem('TEXPRO_ERP_FIREBASE_CONFIG');
       if (raw) return JSON.parse(raw);
     } catch (e) {
       console.warn('Erro ao carregar credenciais do Firebase:', e);
     }
-    if (window.TEXPRO_FIREBASE_CONFIG) {
-      return window.TEXPRO_FIREBASE_CONFIG;
+    if (window.BRAVVI_FIREBASE_CONFIG || window.TEXPRO_FIREBASE_CONFIG) {
+      return window.BRAVVI_FIREBASE_CONFIG || window.TEXPRO_FIREBASE_CONFIG;
     }
     return null;
   }

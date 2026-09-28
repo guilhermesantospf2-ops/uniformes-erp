@@ -163,12 +163,12 @@ window.ERP_MOCKUPS = {
 
 window.ERP_INITIAL_DATA = {
   empresa: {
-    razaoSocial: "TexPro Uniformes Profissionais e Industriais Ltda",
-    nomeFantasia: "TexPro Indústria Têxtil",
+    razaoSocial: "Bravvi Confecções e Uniformes Industriais Ltda",
+    nomeFantasia: "Bravvi Indústria Têxtil",
     cnpj: "34.582.910/0001-44",
     ie: "109.824.712.110",
     telefone: "11987654321",
-    email: "comercial@texprouniformes.com.br",
+    email: "contato@bravvi.com.br",
     endereco: "Rua das Indústrias Têxteis, 450 - Distrito Industrial",
     cidade: "Americana",
     uf: "SP",
