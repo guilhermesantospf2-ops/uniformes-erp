@@ -1658,7 +1658,7 @@
                       </div>
                     ` : ''}
                     ${p.observacoesCoresDetalhes ? `
-                      <span style="display: block; font-size: 10px; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 3px; padding: 2px 5px; margin-top: 3px; max-width: 230px; line-height: 1.25;" title="${p.observacoesCoresDetalhes}">
+                      <span class="badge-obs-textil" title="${p.observacoesCoresDetalhes}">
                         <strong>Detalhes:</strong> ${p.observacoesCoresDetalhes}
                       </span>
                     ` : ''}
@@ -4417,7 +4417,7 @@
           <div style="font-size: 11.5px; color: #475569; margin-top: 3px; line-height: 1.4;">
             <strong>Cor Principal:</strong> <span style="font-weight: 700; color: #0f172a;">${p.corTecido || 'A Definir'}</span><br>
             ${p.observacoesCoresDetalhes ? `
-              <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 3px; padding: 4px 8px; margin: 4px 0; font-size: 11px; color: #92400e;">
+              <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 4px 8px; margin: 4px 0; font-size: 11px; color: #92400e; line-height: 1.35; white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; box-sizing: border-box;">
                 <strong>Detalhes de Cores / Confecção:</strong> ${p.observacoesCoresDetalhes}
               </div>
             ` : ''}
@@ -4575,7 +4575,7 @@
                       🎨 Cor: <strong>${os.corTecido || pOrig.corTecido || 'A Definir'}</strong>
                     </div>
                     ${(os.observacoesCoresDetalhes || pOrig.observacoesCoresDetalhes) ? `
-                      <span style="display: block; font-size: 10px; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 3px; padding: 2px 5px; margin-top: 2px; max-width: 220px; line-height: 1.25;" title="${os.observacoesCoresDetalhes || pOrig.observacoesCoresDetalhes}">
+                      <span class="badge-obs-textil" title="${os.observacoesCoresDetalhes || pOrig.observacoesCoresDetalhes}">
                         <strong>Detalhes:</strong> ${os.observacoesCoresDetalhes || pOrig.observacoesCoresDetalhes}
                       </span>
                     ` : ''}
@@ -7007,8 +7007,8 @@
                       🎨 ${p.corTecido || 'A Definir'}
                     </div>
                     ${p.observacoesCoresDetalhes ? `
-                      <span style="display: block; font-size: 9.5px; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 2px; padding: 1px 4px; margin-top: 2px; max-width: 180px; line-height: 1.2;" title="${p.observacoesCoresDetalhes}">
-                        ${p.observacoesCoresDetalhes}
+                      <span class="badge-obs-textil" title="${p.observacoesCoresDetalhes}">
+                        <strong>Detalhes:</strong> ${p.observacoesCoresDetalhes}
                       </span>
                     ` : ''}
                   </td>
@@ -7725,7 +7725,7 @@
                     <span class="mockup-spec-value" style="font-weight: 700; color: #1e3a8a;">${(pedido && pedido.corTecido) || (os && os.corTecido) || 'A Definir'}</span>
                   </div>
                   ${((pedido && pedido.observacoesCoresDetalhes) || (os && os.observacoesCoresDetalhes)) ? `
-                    <div style="margin-top: 6px; margin-bottom: 6px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 6px 8px; font-size: 11px; color: #92400e; line-height: 1.35;">
+                    <div style="margin-top: 6px; margin-bottom: 6px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 6px 8px; font-size: 11px; color: #92400e; line-height: 1.35; white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; box-sizing: border-box;">
                       <strong>Detalhes de Cores / Confecção:</strong> ${(pedido && pedido.observacoesCoresDetalhes) || (os && os.observacoesCoresDetalhes)}
                     </div>
                   ` : ''}
