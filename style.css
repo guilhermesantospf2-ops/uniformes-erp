@@ -1959,4 +1959,79 @@ button.status-pill:hover {
   }
 }
 
+/* ==========================================================================
+   SELETOR INDUSTRIAL DE CORES E SWATCHES TÊXTEIS
+   ========================================================================== */
+.swatch-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  user-select: none;
+}
+.swatch-chip:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+.swatch-chip.active {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #1d4ed8;
+  font-weight: 800;
+  box-shadow: 0 0 0 1.5px #2563eb;
+}
+.swatch-circle {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.18);
+}
+.btn-filtro-grupo-cor {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.btn-filtro-grupo-cor:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+.btn-filtro-grupo-cor.active {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+  font-weight: 700;
+}
+.btn-quick-detalhe {
+  font-size: 10px !important;
+  padding: 2px 7px !important;
+  background: #ffffff !important;
+  border: 1px solid #fed7aa !important;
+  color: #9a3412 !important;
+  border-radius: 3px !important;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.btn-quick-detalhe:hover {
+  background: #ffedd5 !important;
+  border-color: #fdba74 !important;
+  color: #7c2d12 !important;
+}
+
+
 

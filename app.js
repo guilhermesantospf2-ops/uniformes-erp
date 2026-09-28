@@ -74,6 +74,261 @@
     }
   }
 
+  // Catálogo Oficial de Cores Têxteis Industriais (36 cores comerciais)
+  const PALETA_CORES_TEXTIL = [
+    // Azuis
+    { nome: 'Azul Marinho', hex: '#1e293b', grupo: 'Azuis' },
+    { nome: 'Azul Royal', hex: '#1d4ed8', grupo: 'Azuis' },
+    { nome: 'Azul Bic', hex: '#2563eb', grupo: 'Azuis' },
+    { nome: 'Azul Celeste', hex: '#38bdf8', grupo: 'Azuis' },
+    { nome: 'Azul Petróleo', hex: '#0f766e', grupo: 'Azuis' },
+    { nome: 'Azul Turquesa', hex: '#06b6d4', grupo: 'Azuis' },
+    { nome: 'Azul Jeans', hex: '#3b82f6', grupo: 'Azuis' },
+
+    // Neutros e Pretos
+    { nome: 'Preto Reativo', hex: '#0f172a', grupo: 'Neutros' },
+    { nome: 'Branco Neve', hex: '#ffffff', grupo: 'Neutros' },
+    { nome: 'Off-White', hex: '#f8fafc', grupo: 'Neutros' },
+    { nome: 'Cinza Mescla', hex: '#94a3b8', grupo: 'Neutros' },
+    { nome: 'Cinza Chumbo', hex: '#475569', grupo: 'Neutros' },
+    { nome: 'Grafite', hex: '#334155', grupo: 'Neutros' },
+    { nome: 'Areia / Bege', hex: '#d6d3d1', grupo: 'Neutros' },
+    { nome: 'Caqui / Camel', hex: '#a3a375', grupo: 'Neutros' },
+
+    // Vermelhos e Vinhos
+    { nome: 'Vermelho Ferrari', hex: '#dc2626', grupo: 'Vermelhos' },
+    { nome: 'Bordô / Vinho', hex: '#881337', grupo: 'Vermelhos' },
+    { nome: 'Marsala', hex: '#991b1b', grupo: 'Vermelhos' },
+    { nome: 'Coral', hex: '#f43f5e', grupo: 'Vermelhos' },
+    { nome: 'Magenta / Cereja', hex: '#be185d', grupo: 'Vermelhos' },
+
+    // Verdes
+    { nome: 'Verde Bandeira', hex: '#15803d', grupo: 'Verdes' },
+    { nome: 'Verde Musgo', hex: '#3f6212', grupo: 'Verdes' },
+    { nome: 'Verde Militar', hex: '#4d5b44', grupo: 'Verdes' },
+    { nome: 'Verde Garrafa', hex: '#14532d', grupo: 'Verdes' },
+    { nome: 'Verde Limão / Neon', hex: '#84cc16', grupo: 'Verdes' },
+    { nome: 'Verde Água', hex: '#2dd4bf', grupo: 'Verdes' },
+    { nome: 'Verde Tiffany', hex: '#0d9488', grupo: 'Verdes' },
+
+    // Amarelos e Laranjas
+    { nome: 'Amarelo Canário', hex: '#facc15', grupo: 'Amarelos' },
+    { nome: 'Amarelo Ouro', hex: '#eab308', grupo: 'Amarelos' },
+    { nome: 'Mostarda / Ocre', hex: '#d97706', grupo: 'Amarelos' },
+    { nome: 'Laranja Operacional', hex: '#ea580c', grupo: 'Amarelos' },
+    { nome: 'Laranja Cenoura', hex: '#f97316', grupo: 'Amarelos' },
+
+    // Especiais e Roxo
+    { nome: 'Roxo / Violeta', hex: '#7e22ce', grupo: 'Especiais' },
+    { nome: 'Lilás', hex: '#c084fc', grupo: 'Especiais' },
+    { nome: 'Rosa Pink', hex: '#db2777', grupo: 'Especiais' },
+    { nome: 'Rosa Bebê', hex: '#fbcfe8', grupo: 'Especiais' },
+    { nome: 'Marrom Café', hex: '#543310', grupo: 'Especiais' },
+    { nome: 'Terracota', hex: '#9a3412', grupo: 'Especiais' }
+  ];
+
+  function gerarHTMLSeletorCoresIndustrial(prefixo, corAtual = 'Azul Marinho', obsAtual = '') {
+    const corNormalizada = (corAtual || 'Azul Marinho').trim();
+    const corAtivaObj = PALETA_CORES_TEXTIL.find(c => c.nome.toLowerCase() === corNormalizada.toLowerCase());
+    const hexAtivo = corAtivaObj ? corAtivaObj.hex : '#1e293b';
+
+    return `
+      <!-- Seletor Industrial de Cores Têxteis com Busca em Tempo Real e Detalhes de Confecção -->
+      <div class="seletor-cores-industrial" id="${prefixo}ContainerSeletorCores" style="background: #fdfbf7; border: 1.5px solid #fed7aa; border-radius: var(--radius-sm); padding: 13px 14px; margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 13px; font-weight: 800; color: #9a3412; display: flex; align-items: center; gap: 6px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 0 20v-20z"></path></svg>
+              Paleta Têxtil Industrial & Detalhes da Peça:
+            </span>
+            <span class="status-pill status-orange" style="font-size: 10px; font-weight: 700; padding: 2px 8px;">36 Cores Comerciais</span>
+          </div>
+
+          <!-- Badge da Cor Ativa -->
+          <div id="${prefixo}BadgeCorSelecionada" style="display: flex; align-items: center; gap: 7px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 20px; padding: 3px 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <span style="font-size: 11px; color: var(--text-gray-500); font-weight: 600;">Cor Escolhida:</span>
+            <span id="${prefixo}CircleCorAtiva" class="swatch-circle" style="background-color: ${hexAtivo}; width: 14px; height: 14px; ${hexAtivo === '#ffffff' ? 'border: 1px solid #cbd5e1;' : ''}"></span>
+            <strong id="${prefixo}NomeCorAtiva" style="font-size: 12px; color: var(--text-primary);">${corNormalizada}</strong>
+          </div>
+        </div>
+
+        <div class="form-row" style="margin-bottom: 0; gap: 14px; align-items: flex-start;">
+          <!-- Coluna 1: Amostras de Cores com Busca e Filtros -->
+          <div class="form-group" style="flex: 1.35; margin-bottom: 0;">
+            <!-- Barra de Busca e Input Oficial da Cor -->
+            <div style="display: flex; gap: 6px; margin-bottom: 7px;">
+              <div style="position: relative; flex: 1.4;">
+                <input type="text" id="${prefixo}BuscaCor" class="form-input" placeholder="🔍 Pesquisar cor (ex: Marinho, Royal, Preto, Verde...)" style="font-size: 11.5px; padding: 5px 9px; height: 32px; border-radius: 6px;">
+              </div>
+              <div style="position: relative; flex: 1;">
+                <input type="text" id="${prefixo}CorPrincipalTecido" class="form-input" value="${corNormalizada}" placeholder="Ou digite Pantone/nome..." title="Nome oficial da cor gravado no pedido" style="font-size: 11px; font-weight: 700; height: 32px;">
+              </div>
+            </div>
+
+            <!-- Filtros de Grupos / Categorias -->
+            <div style="display: flex; gap: 3px; margin-bottom: 6px; flex-wrap: wrap;" id="${prefixo}FiltrosGruposCores">
+              <button type="button" class="btn-filtro-grupo-cor active" data-grupo="todas">Todas (36)</button>
+              <button type="button" class="btn-filtro-grupo-cor" data-grupo="Azuis">Azuis</button>
+              <button type="button" class="btn-filtro-grupo-cor" data-grupo="Neutros">Neutros/Preto</button>
+              <button type="button" class="btn-filtro-grupo-cor" data-grupo="Vermelhos">Vermelhos</button>
+              <button type="button" class="btn-filtro-grupo-cor" data-grupo="Verdes">Verdes</button>
+              <button type="button" class="btn-filtro-grupo-cor" data-grupo="Amarelos">Amarelos/Laranja</button>
+              <button type="button" class="btn-filtro-grupo-cor" data-grupo="Especiais">Especiais</button>
+            </div>
+
+            <!-- Grade de Amostras de Cores (Swatches Clicáveis) -->
+            <div id="${prefixo}ContainerSwatches" style="max-height: 125px; overflow-y: auto; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px; display: flex; flex-wrap: wrap; gap: 4px; align-content: flex-start; scrollbar-width: thin;">
+              ${PALETA_CORES_TEXTIL.map(c => `
+                <button type="button" class="swatch-chip ${c.nome.toLowerCase() === corNormalizada.toLowerCase() ? 'active' : ''}" data-cor="${c.nome}" data-hex="${c.hex}" data-grupo="${c.grupo}" title="Clique para selecionar ${c.nome} (${c.hex})">
+                  <span class="swatch-circle" style="background-color: ${c.hex}; ${c.hex === '#ffffff' ? 'border: 1px solid #cbd5e1;' : ''}"></span>
+                  <span>${c.nome}</span>
+                </button>
+              `).join('')}
+            </div>
+            <div id="${prefixo}MsgNenhumaCor" style="display: none; font-size: 11px; color: #9a3412; padding: 8px 4px; text-align: center;">
+              Nenhuma cor têxtil encontrada. O valor digitado no campo será salvo como cor personalizada.
+            </div>
+          </div>
+
+          <!-- Coluna 2: Observações e Detalhes de Confecção -->
+          <div class="form-group" style="flex: 1.15; margin-bottom: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <label class="form-label" style="font-weight: 700; color: #9a3412; margin: 0; font-size: 11.5px; display: flex; align-items: center; gap: 5px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                Detalhes de Confecção & Bicolores:
+              </label>
+              <span style="font-size: 9.5px; color: #c2410c; font-weight: 700;">Ficha Técnica A4</span>
+            </div>
+
+            <textarea id="${prefixo}ObservacoesCoresDetalhes" class="form-textarea" rows="2" style="font-size: 11px; resize: vertical; min-height: 52px; line-height: 1.35;" placeholder="Ex: Gola e punhos brancos com frisos laranjas (2mm). Peitilho interno branco. Recorte lateral dry fit amarelo...">${obsAtual || ''}</textarea>
+
+            <!-- Botões de Inserção Rápida de Detalhes -->
+            <div style="display: flex; gap: 3px; margin-top: 5px; flex-wrap: wrap;">
+              <span style="font-size: 9.5px; color: #7c2d12; font-weight: 700; align-self: center; margin-right: 2px;">+ Inserir:</span>
+              <button type="button" class="btn-quick-detalhe" data-prefixo="${prefixo}" data-texto="Gola e punhos com friso contrastante">+ Gola/Punho Friso</button>
+              <button type="button" class="btn-quick-detalhe" data-prefixo="${prefixo}" data-texto="Peitilho interno contrastante com botões combinando">+ Peitilho Interno</button>
+              <button type="button" class="btn-quick-detalhe" data-prefixo="${prefixo}" data-texto="Recortes laterais respiráveis contrastantes">+ Recortes Laterais</button>
+              <button type="button" class="btn-quick-detalhe" data-prefixo="${prefixo}" data-texto="Faixa refletiva de 5cm norma ABNT">+ Faixa Refletiva</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function configurarEventosSeletorCores(prefixo, onCorSelecionada) {
+    const container = document.getElementById(`${prefixo}ContainerSeletorCores`);
+    if (!container) return;
+
+    const inputCor = document.getElementById(`${prefixo}CorPrincipalTecido`);
+    const inputBusca = document.getElementById(`${prefixo}BuscaCor`);
+    const circleAtivo = document.getElementById(`${prefixo}CircleCorAtiva`);
+    const nomeAtivo = document.getElementById(`${prefixo}NomeCorAtiva`);
+    const msgNenhuma = document.getElementById(`${prefixo}MsgNenhumaCor`);
+    const textareaObs = document.getElementById(`${prefixo}ObservacoesCoresDetalhes`);
+
+    function selecionarCor(nome, hex, dispararCallback = true) {
+      if (inputCor) inputCor.value = nome;
+      if (circleAtivo) {
+        circleAtivo.style.backgroundColor = hex || '#1e293b';
+        if (hex === '#ffffff') {
+          circleAtivo.style.border = '1px solid #cbd5e1';
+        } else {
+          circleAtivo.style.border = 'none';
+        }
+      }
+      if (nomeAtivo) nomeAtivo.textContent = nome;
+
+      // Atualiza active nos chips
+      container.querySelectorAll('.swatch-chip').forEach(chip => {
+        if (chip.getAttribute('data-cor').toLowerCase() === nome.toLowerCase()) {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+      });
+
+      if (dispararCallback && typeof onCorSelecionada === 'function') {
+        onCorSelecionada(nome, hex);
+      }
+    }
+
+    // Clique em cada swatch chip
+    container.querySelectorAll('.swatch-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const corNome = chip.getAttribute('data-cor');
+        const corHex = chip.getAttribute('data-hex');
+        selecionarCor(corNome, corHex, true);
+      });
+    });
+
+    // Filtro por categoria
+    let grupoAtivo = 'todas';
+    container.querySelectorAll('.btn-filtro-grupo-cor').forEach(btn => {
+      btn.addEventListener('click', () => {
+        container.querySelectorAll('.btn-filtro-grupo-cor').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        grupoAtivo = btn.getAttribute('data-grupo');
+        aplicarFiltros();
+      });
+    });
+
+    // Busca em tempo real
+    function aplicarFiltros() {
+      const termo = (inputBusca?.value || '').toLowerCase().trim();
+      let totalVisiveis = 0;
+
+      container.querySelectorAll('.swatch-chip').forEach(chip => {
+        const nomeCor = chip.getAttribute('data-cor').toLowerCase();
+        const grupoCor = chip.getAttribute('data-grupo');
+
+        const coincideGrupo = (grupoAtivo === 'todas' || grupoCor === grupoAtivo);
+        const coincideTermo = (!termo || nomeCor.includes(termo) || grupoCor.toLowerCase().includes(termo));
+
+        if (coincideGrupo && coincideTermo) {
+          chip.style.display = 'inline-flex';
+          totalVisiveis++;
+        } else {
+          chip.style.display = 'none';
+        }
+      });
+
+      if (msgNenhuma) {
+        msgNenhuma.style.display = totalVisiveis === 0 ? 'block' : 'none';
+      }
+    }
+
+    inputBusca?.addEventListener('input', aplicarFiltros);
+
+    // Digitação manual no campo de cor principal
+    inputCor?.addEventListener('input', () => {
+      const val = inputCor.value.trim();
+      if (!val) return;
+      const achada = PALETA_CORES_TEXTIL.find(c => c.nome.toLowerCase() === val.toLowerCase());
+      if (achada) {
+        selecionarCor(achada.nome, achada.hex, true);
+      } else {
+        if (nomeAtivo) nomeAtivo.textContent = val;
+        if (circleAtivo) circleAtivo.style.backgroundColor = '#94a3b8';
+      }
+    });
+
+    // Botões de inserção rápida de detalhes de confecção
+    container.querySelectorAll('.btn-quick-detalhe').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const texto = btn.getAttribute('data-texto');
+        if (!textareaObs || !texto) return;
+        const atual = textareaObs.value.trim();
+        if (!atual) {
+          textareaObs.value = texto;
+        } else if (!atual.toLowerCase().includes(texto.toLowerCase())) {
+          textareaObs.value = atual + '; ' + texto;
+        }
+        textareaObs.focus();
+      });
+    });
+  }
+
   // Estado da Aplicação
   let abaAtiva = 'abertura';
   let visualizacaoPedidos = 'tabela'; // 'tabela' ou 'kanban'
@@ -2312,49 +2567,7 @@
             </div>
 
             <!-- 2.1 Cores do Uniforme & Especificações de Detalhes Contrastantes -->
-            <div class="form-row" style="background: #fdfbf7; border: 1.5px solid #fed7aa; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
-              <div class="form-group" style="flex: 1.2;">
-                <label class="form-label" style="font-weight: 700; color: #9a3412; display: flex; align-items: center; gap: 6px;">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 0 20v-20z"></path></svg>
-                  Cor Principal do Tecido / Corpo:
-                </label>
-                <input type="text" id="orcCorPrincipalTecido" class="form-input" list="listaCoresSugeridas" placeholder="Ex: Azul Marinho, Preto Reativo, Branco, Cinza Mescla..." value="Azul Marinho" style="font-weight: 600;">
-                <datalist id="listaCoresSugeridas">
-                  <option value="Azul Marinho">
-                  <option value="Preto Reativo">
-                  <option value="Branco Neve">
-                  <option value="Cinza Mescla">
-                  <option value="Cinza Chumbo">
-                  <option value="Azul Royal">
-                  <option value="Vermelho Ferrari">
-                  <option value="Verde Bandeira">
-                  <option value="Amarelo Canário">
-                  <option value="Laranja Operacional">
-                  <option value="Bordô / Vinho">
-                </datalist>
-                <div style="display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap;">
-                  <button type="button" class="btn btn-secondary btn-sm btn-quick-cor-orc" data-cor="Azul Marinho" style="font-size: 9.5px; padding: 1px 6px;">Marinho</button>
-                  <button type="button" class="btn btn-secondary btn-sm btn-quick-cor-orc" data-cor="Preto Reativo" style="font-size: 9.5px; padding: 1px 6px;">Preto</button>
-                  <button type="button" class="btn btn-secondary btn-sm btn-quick-cor-orc" data-cor="Branco Neve" style="font-size: 9.5px; padding: 1px 6px;">Branco</button>
-                  <button type="button" class="btn btn-secondary btn-sm btn-quick-cor-orc" data-cor="Cinza Mescla" style="font-size: 9.5px; padding: 1px 6px;">Cinza</button>
-                  <button type="button" class="btn btn-secondary btn-sm btn-quick-cor-orc" data-cor="Azul Royal" style="font-size: 9.5px; padding: 1px 6px;">Royal</button>
-                </div>
-              </div>
-
-              <div class="form-group" style="flex: 2;">
-                <label class="form-label" style="font-weight: 700; color: #9a3412; display: flex; align-items: center; justify-content: space-between;">
-                  <span style="display: flex; align-items: center; gap: 6px;">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                    Observações de Cores & Detalhes de Confecção (Gola, Punhos, Frisos, Peitilho, Recortes):
-                  </span>
-                  <span style="font-size: 10px; color: #c2410c; font-weight: 700;">Ficha Técnica A4</span>
-                </label>
-                <textarea id="orcObservacoesCoresDetalhes" class="form-textarea" rows="2" style="font-size: 12px; resize: vertical; min-height: 52px;" placeholder="Ex: Gola e punhos brancos com 2 frisos laranjas (2mm). Peitilho interno branco com 3 botões brancos. Recorte lateral respirável amarelo."></textarea>
-                <span style="font-size: 10.5px; color: #7c2d12; margin-top: 3px; display: block;">
-                  💡 Essencial para peças bicolores/tricolores, golas polo frisadas, botões contrastantes e acabamentos de costura.
-                </span>
-              </div>
-            </div>
+            ${gerarHTMLSeletorCoresIndustrial('orc', 'Azul Marinho')}
 
             <!-- Grade de Tamanhos - ZERADA PARA PREENCHIMENTO REAL PELO USUÁRIO -->
             <div class="form-group">
@@ -3300,15 +3513,18 @@
       document.getElementById(id)?.addEventListener('change', recalcularBenchmarkModal);
     });
 
-    // Pílulas de seleção rápida de cores
-    document.querySelectorAll('.btn-quick-cor-orc').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const cor = btn.getAttribute('data-cor');
-        const inp = document.getElementById('orcCorPrincipalTecido');
-        if (inp && cor) {
-          inp.value = cor;
-        }
-      });
+    // Configura o seletor industrial de cores e atualiza mockup em tempo real
+    configurarEventosSeletorCores('orc', (corNome, corHex) => {
+      if (!mockupUploadPersonalizado) {
+        const prodId = document.getElementById('orcProdutoSelect')?.value;
+        const pObj = db.produtosBase.find(pr => pr.id === prodId) || db.produtosBase[0];
+        const cliId = document.getElementById('orcClienteSelect')?.value;
+        const cObj = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
+        const sigla = (cObj ? (cObj.nomeFantasia || cObj.nome || cObj.razaoSocial || "TEXPRO") : "TEXPRO").toString().substring(0, 6);
+        mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(pObj.nome, corHex, "#ffffff", sigla);
+        const prev = document.getElementById('previewMockup3x4Orc');
+        if (prev) prev.src = mockupOrcamentoUrl;
+      }
     });
 
     // Inicializa datas e painel DTF
@@ -3437,21 +3653,7 @@
             </div>
 
             <!-- Cores do Uniforme & Especificações de Detalhes Contrastantes -->
-            <div class="form-row" style="background: #fdfbf7; border: 1.5px solid #fed7aa; border-radius: var(--radius-sm); padding: 12px; margin-top: 14px;">
-              <div class="form-group" style="flex: 1.2;">
-                <label class="form-label" style="font-weight: 700; color: #9a3412;">
-                  🎨 Cor Principal do Tecido / Corpo:
-                </label>
-                <input type="text" id="avancoCorPrincipalTecido" class="form-input" value="${dadosBase.corPrincipal || dadosBase.corTecido || 'Azul Marinho'}" style="font-weight: 700;">
-              </div>
-              <div class="form-group" style="flex: 2;">
-                <label class="form-label" style="font-weight: 700; color: #9a3412; display: flex; justify-content: space-between;">
-                  <span>🧵 Observações de Cores & Detalhes (Gola, Punhos, Frisos, Peitilho, Recortes):</span>
-                  <span style="font-size: 10px; color: #c2410c; font-weight: 700;">Ficha Técnica A4</span>
-                </label>
-                <textarea id="avancoObservacoesCoresDetalhes" class="form-textarea" rows="2" style="font-size: 12px; min-height: 48px;" placeholder="Ex: Gola e punhos brancos com 2 frisos laranjas, peitilho interno branco...">${dadosBase.observacoesCoresDetalhes || ''}</textarea>
-              </div>
-            </div>
+            ${gerarHTMLSeletorCoresIndustrial('avanco', dadosBase.corPrincipal || dadosBase.corTecido || 'Azul Marinho', dadosBase.observacoesCoresDetalhes || '')}
 
             <!-- 2. Artes da Camiseta em Alta Resolução (Checklist com Locais Obrigatórios) -->
             <div class="form-group" style="margin-top: 14px;">
@@ -3646,6 +3848,15 @@
     document.getElementById('btnGerarMockupPreto')?.addEventListener('click', () => {
       mockupDataUrl = window.ERP_MOCKUPS.gerarMockupSvg("camiseta", "#0f172a", "#ffffff", cliNome.substring(0, 6));
       document.getElementById('previewMockup3x4').src = mockupDataUrl;
+    });
+
+    // Configura o seletor industrial de cores e sincroniza com o mockup 3x4
+    configurarEventosSeletorCores('avanco', (corNome, corHex) => {
+      const pNome = dadosBase.prod ? dadosBase.prod.nome : dadosBase.produtoNome;
+      const cNome = (dadosBase.cliente ? (dadosBase.cliente.nomeFantasia || dadosBase.cliente.nome) : dadosBase.clienteNome);
+      mockupDataUrl = window.ERP_MOCKUPS.gerarMockupSvg(pNome, corHex, "#ffffff", (cNome || "TEXPRO").toString().substring(0, 6));
+      const prev = document.getElementById('previewMockup3x4');
+      if (prev) prev.src = mockupDataUrl;
     });
 
     // Cadastro de costureira inline
