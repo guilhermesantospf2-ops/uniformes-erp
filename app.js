@@ -2569,13 +2569,21 @@
             <!-- 2.1 Cores do Uniforme & Especificações de Detalhes Contrastantes -->
             ${gerarHTMLSeletorCoresIndustrial('orc', 'Azul Marinho')}
 
-            <!-- Grade de Tamanhos - ZERADA PARA PREENCHIMENTO REAL PELO USUÁRIO -->
+            <!-- Grade de Tamanhos - PREENCHIMENTO DIRETO OU ATALHOS RÁPIDOS -->
             <div class="form-group">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <label class="form-label" style="margin: 0; font-weight: 700;">Grade de Tamanhos (Distribuição de Peças)</label>
-                <span style="font-size: 10.5px; color: var(--text-gray-500);">Grade zerada: digite as quantidades do pedido</span>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 6px;">
+                <div>
+                  <label class="form-label" style="margin: 0; font-weight: 700;">Grade de Tamanhos (Distribuição de Peças)</label>
+                  <span style="font-size: 10px; color: var(--text-gray-500);">Digite as quantidades ou use um atalho rápido:</span>
+                </div>
+                <div style="display: flex; gap: 4px; align-items: center;">
+                  <button type="button" class="btn btn-secondary btn-sm btn-grade-rapida" data-dist="2,4,8,4,2,0" style="font-size: 10px; padding: 2px 7px; font-weight: 600;" title="Preencher grade com 20 peças">+20 Pçs</button>
+                  <button type="button" class="btn btn-secondary btn-sm btn-grade-rapida" data-dist="5,10,15,12,6,2" style="font-size: 10px; padding: 2px 7px; font-weight: 600;" title="Preencher grade com 50 peças">+50 Pçs</button>
+                  <button type="button" class="btn btn-secondary btn-sm btn-grade-rapida" data-dist="10,20,30,25,10,5" style="font-size: 10px; padding: 2px 7px; font-weight: 600;" title="Preencher grade com 100 peças">+100 Pçs</button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btnZerarGrade" style="font-size: 10px; padding: 2px 7px; color: #dc2626;" title="Zerar todas as quantidades">Zerar</button>
+                </div>
               </div>
-              <div class="grade-table-input">
+              <div class="grade-table-input" id="boxGradeTableInput">
                 <div class="grade-col"><div class="grade-label">PP</div><input type="number" id="gradePP" class="grade-input" value="0" min="0"></div>
                 <div class="grade-col"><div class="grade-label">P</div><input type="number" id="gradeP" class="grade-input" value="0" min="0"></div>
                 <div class="grade-col"><div class="grade-label">M</div><input type="number" id="gradeM" class="grade-input" value="0" min="0"></div>
@@ -3422,7 +3430,20 @@
       const totalPecas = pp + p + m + g + gg + xg;
 
       if (totalPecas <= 0) {
-        mostrarToast('Por favor, informe ao menos 1 peça na grade de tamanhos.', 'red');
+        mostrarToast('Por favor, informe a quantidade de peças na grade de tamanhos (PP a XG).', 'red');
+        const boxGrade = document.getElementById('boxGradeTableInput') || document.querySelector('.grade-table-input');
+        if (boxGrade) {
+          boxGrade.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.45)';
+          boxGrade.style.transition = 'box-shadow 0.2s ease';
+          setTimeout(() => {
+            boxGrade.style.boxShadow = '';
+          }, 3000);
+        }
+        const inpM = document.getElementById('gradeM') || document.getElementById('gradeP') || document.getElementById('gradePP');
+        if (inpM) {
+          inpM.focus();
+          inpM.select();
+        }
         return null;
       }
 
@@ -3531,9 +3552,32 @@
     atualizarLabelsPrazos();
     atualizarPainelTecnica('DTF');
 
+    // Eventos dos botões de preenchimento rápido de grade
+    document.querySelectorAll('.btn-grade-rapida').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const dist = (btn.getAttribute('data-dist') || '').split(',').map(n => parseInt(n, 10) || 0);
+        const campos = ['gradePP', 'gradeP', 'gradeM', 'gradeG', 'gradeGG', 'gradeXG'];
+        campos.forEach((id, idx) => {
+          const el = document.getElementById(id);
+          if (el) el.value = dist[idx] || 0;
+        });
+        recalcularBenchmarkModal();
+      });
+    });
+
+    document.getElementById('btnZerarGrade')?.addEventListener('click', () => {
+      ['gradePP', 'gradeP', 'gradeM', 'gradeG', 'gradeGG', 'gradeXG'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = 0;
+      });
+      recalcularBenchmarkModal();
+    });
+
     // Botões de ação do Duplo Fluxo
     document.getElementById('btnSalvarApenasOrcamento')?.addEventListener('click', () => {
-      salvarOrcamentoOuPedido('Orcamento');
+      const dadosOrcamento = coletarDadosOrcamentoModal();
+      if (!dadosOrcamento) return;
+      salvarOrcamentoOuPedido('Orcamento', dadosOrcamento);
     });
 
     document.getElementById('btnAvancarParaPedidoOficial')?.addEventListener('click', () => {
@@ -3544,9 +3588,19 @@
   }
 
   // Salvar Orçamento Apenas
-  function salvarOrcamentoOuPedido(tipoRegistro) {
-    const dados = coletarDadosOrcamentoModal();
-    if (!dados) return;
+  function salvarOrcamentoOuPedido(tipoRegistro, dadosRecebidos = null) {
+    let dados = dadosRecebidos;
+    if (!dados && typeof coletarDadosOrcamentoModal === 'function') {
+      try {
+        dados = coletarDadosOrcamentoModal();
+      } catch (e) {
+        dados = null;
+      }
+    }
+    if (!dados) {
+      mostrarToast('Não foi possível coletar os dados do orçamento. Verifique a grade e tente novamente.', 'red');
+      return;
+    }
 
     const novoNum = Math.floor(1088 + db.pedidos.length);
     const novoId = tipoRegistro === 'Orcamento' ? `ORC-${novoNum}` : `PED-${novoNum}`;
@@ -9324,6 +9378,8 @@
 
   // Exposição Global das Funções Públicas da API TexPro ERP
   window.ERP = {
+    obterDb: () => db,
+    salvarOrcamentoOuPedido,
     navegarPara,
     calcularContagemRegressivaPedido,
     fecharModal,
