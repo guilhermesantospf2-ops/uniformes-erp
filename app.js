@@ -4521,7 +4521,7 @@
       <!-- Cabeçalho Empresarial -->
       <div style="border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; align-items: center; gap: 12px;">
-          ${emp.logoUrl ? `<img src="${emp.logoUrl}" style="max-height: 52px; max-width: 140px; object-fit: contain;" alt="Logo">` : ''}
+          ${(emp.logoUrl || 'assets/bravvi-logo.png') ? `<img src="${emp.logoUrl || 'assets/bravvi-logo.png'}" style="max-height: 52px; max-width: 140px; object-fit: contain;" alt="Logo Bravvi">` : ''}
           <div>
             <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${emp.nomeFantasia || emp.razaoSocial}</h2>
             <div style="font-size: 11px; color: #475569;">
@@ -4820,7 +4820,7 @@
       <!-- Cabeçalho da Ordem de Produção -->
       <div style="border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; align-items: center; gap: 12px;">
-          ${emp.logoUrl ? `<img src="${emp.logoUrl}" style="max-height: 48px; max-width: 120px; object-fit: contain;" alt="Logo">` : ''}
+          ${(emp.logoUrl || 'assets/bravvi-logo.png') ? `<img src="${emp.logoUrl || 'assets/bravvi-logo.png'}" style="max-height: 48px; max-width: 120px; object-fit: contain;" alt="Logo Bravvi">` : ''}
           <div>
             <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${emp.nomeFantasia || emp.razaoSocial}</h2>
             <span class="text-mono" style="color: #64748b; font-size: 11px;">ORDEM DE PRODUÇÃO: <strong>${os.id}</strong> • PEDIDO <strong>#${os.pedidoNumero}</strong></span>
@@ -8582,7 +8582,7 @@
       cidade: "Americana",
       uf: "SP",
       cep: "13465-000",
-      logoUrl: null,
+      logoUrl: "assets/bravvi-logo.png",
       rodapeProposta: "Proposta válida por 15 dias corridos. 50% de sinal na aprovação e 50% na entrega.",
       rodapeFicha: "Ordem de Produção Oficial. Tolerância industrial de 2mm. Confirme o encaixe antes do corte."
     };

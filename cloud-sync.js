@@ -31,7 +31,7 @@
     cidade: "Americana",
     uf: "SP",
     cep: "13465-000",
-    logoUrl: null, // Base64 ou URL da imagem
+    logoUrl: "assets/bravvi-logo.png", // Logotipo oficial Bravvi em alta resolução
     rodapeProposta: "Proposta válida por 15 dias. Pagamento de 50% de sinal na aprovação e saldo na retirada.",
     rodapeFicha: "Ordem de Produção Oficial. Tolerância de corte de 2mm. Em caso de dúvidas, contate o encarregado."
   };
@@ -82,7 +82,8 @@
         telefone: "11987654321",
         email: "contato@bravvi.com.br",
         cidade: "Americana",
-        uf: "SP"
+        uf: "SP",
+        logoUrl: "assets/bravvi-logo.png"
       });
     }
     try {
@@ -177,12 +178,14 @@
 
     const icon = document.getElementById('sidebarBrandIcon');
     if (icon) {
-      if (empresa.logoUrl) {
+      if (empresa.logoUrl && empresa.logoUrl.startsWith('data:image')) {
         icon.innerHTML = `<img src="${empresa.logoUrl}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;" alt="Logo">`;
         icon.style.background = 'transparent';
         icon.style.padding = '0';
       } else if (!empresa.nomeFantasia || empresa.nomeFantasia.toLowerCase().includes('bravvi')) {
-        icon.textContent = 'BV';
+        icon.innerHTML = `<img src="assets/bravvi-icon.png" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;" alt="Bravvi">`;
+        icon.style.background = 'transparent';
+        icon.style.padding = '0';
       } else {
         const sigla = empresa.nomeFantasia.substring(0, 2).toUpperCase();
         icon.textContent = sigla;

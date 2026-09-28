@@ -7,10 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="shortcut icon" href="favicon.ico">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <link rel="stylesheet" href="style.css?v=8.4.9">
+  <link rel="stylesheet" href="style.css?v=8.5.0">
   <script>
     // Ativa explicitamente o Modo Demonstração Sandbox (sem salvar na nuvem)
     window.BRAVVI_IS_DEMO = true;
@@ -42,7 +44,9 @@
       
       <div class="sidebar-header">
         <div class="brand-wrapper" id="sidebarBrandWrapper" style="cursor: pointer;" onclick="window.ERP.navegarPara('empresa')" title="Configurar Dados e Logotipo da sua Confecção">
-          <div class="brand-icon" id="sidebarBrandIcon">BV</div>
+          <div class="brand-icon" id="sidebarBrandIcon" style="background: transparent; border: none; padding: 0; display: flex; align-items: center; justify-content: center;">
+            <img src="assets/bravvi-icon.png" alt="Bravvi" style="width: 32px; height: 32px; object-fit: contain;">
+          </div>
           <div>
             <div class="brand-title" id="sidebarBrandTitle">BRAVVI</div>
             <div class="brand-subtitle" id="sidebarBrandSubtitle">ERP TÊXTIL</div>
@@ -292,10 +296,10 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Scripts do ERP Têxtil com Versionamento Anti-Cache -->
-  <script src="mock-data.js?v=8.4.9"></script>
-  <script src="market-benchmark.js?v=8.4.9"></script>
-  <script src="nesting-engine.js?v=8.4.9"></script>
-  <script src="cloud-sync.js?v=8.4.9"></script>
-  <script src="app.js?v=8.4.9"></script>
+  <script src="mock-data.js?v=8.5.0"></script>
+  <script src="market-benchmark.js?v=8.5.0"></script>
+  <script src="nesting-engine.js?v=8.5.0"></script>
+  <script src="cloud-sync.js?v=8.5.0"></script>
+  <script src="app.js?v=8.5.0"></script>
 </body>
 </html>

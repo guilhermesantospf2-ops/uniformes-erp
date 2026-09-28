@@ -174,7 +174,8 @@ window.ERP_INITIAL_DATA = {
     uf: "SP",
     cep: "13470-000",
     regimeTributario: "Simples Nacional",
-    aliquotaImpostoPadrao: 6.5
+    aliquotaImpostoPadrao: 6.5,
+    logoUrl: "assets/bravvi-logo.png"
   },
 
   // CATÁLOGO COMPLETO DE MODELAGENS TÊXTEIS (28 MODELOS EXAUSTIVOS)
