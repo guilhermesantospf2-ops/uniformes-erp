@@ -1753,12 +1753,16 @@
                     `}
                   </td>
                   <td>
-                    <div style="display: flex; gap: 5px;">
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                       <button class="btn btn-secondary btn-sm btn-disparar-wpp" data-id="${p.id}" title="Enviar Notificação pelo WhatsApp">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                         WPP
                       </button>
                       ${isOrcamento ? `
+                        <button class="btn btn-secondary btn-sm btn-editar-orcamento" data-id="${p.id}" style="font-weight: 700; color: #b45309; border-color: #fde68a; background: #fffbeb;" title="Editar Orçamento (alterar grade, quantidades, modelo, cores ou preços da negociação)">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                          Editar
+                        </button>
                         <button class="btn btn-secondary btn-sm btn-baixar-proposta" data-id="${p.id}" title="Ver Proposta A4">Proposta</button>
                         <button class="btn btn-primary btn-sm btn-converter-pedido" data-id="${p.id}" style="font-weight: 800; background: var(--color-green); border-color: var(--color-green);" title="Oficializar Pedido e Registrar Entrada de Sinal">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
@@ -1877,11 +1881,14 @@
                         </span>
                       </div>
 
-                      <div style="display: flex; gap: 6px;">
+                      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                         <button class="btn btn-secondary btn-sm btn-disparar-wpp" data-id="${p.id}" style="flex: 1;" title="Enviar WhatsApp">
                           WPP
                         </button>
                         ${isOrcamento ? `
+                          <button class="btn btn-secondary btn-sm btn-editar-orcamento" data-id="${p.id}" style="padding: 3px 7px; font-weight: 700; color: #b45309; border-color: #fde68a; background: #fffbeb;" title="Editar Orçamento (renegociar grade, modelo ou valores)">
+                            ✏️ Editar
+                          </button>
                           <button class="btn btn-secondary btn-sm btn-baixar-proposta" data-id="${p.id}" style="flex: 1;" title="Baixar Proposta">
                             Proposta
                           </button>
@@ -1939,6 +1946,15 @@
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
         abrirModalPropostaComercial(id);
+      });
+    });
+
+    // Editar Orçamento / Renegociação Comercial
+    document.querySelectorAll('.btn-editar-orcamento').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        abrirModalNovoOrcamento(id);
       });
     });
 
@@ -2505,11 +2521,16 @@
   }
 
   /* ==========================================================================
-     MODAL DE NOVO ORÇAMENTO COM DUPLO FLUXO & BENCHMARK BRASIL PROFUNDO
+     MODAL DE NOVO ORÇAMENTO / EDIÇÃO COM DUPLO FLUXO & BENCHMARK BRASIL
      ========================================================================== */
-  function abrirModalNovoOrcamento() {
+  function abrirModalNovoOrcamento(orcamentoIdParam = null) {
     if (!modalContainer) return;
     fecharTodosModais();
+
+    // Garante que evento de clique acidental (MouseEvent) não seja confundido com ID
+    const idValido = (typeof orcamentoIdParam === 'string' || typeof orcamentoIdParam === 'number') ? orcamentoIdParam : null;
+    const orcamentoExistente = idValido ? (db.pedidos || []).find(x => x.id === idValido || x.numero == idValido) : null;
+    const isEdicao = !!orcamentoExistente;
 
     // Carrega preferências e padrões industriais salvos
     const padroes = carregarPadroesSistema();
@@ -2518,21 +2539,57 @@
     let tecnicaSelecionada = 'DTF';
 
     // Mockup 3x4 dinâmico para Orçamento
-    const prodInicial = (db.produtosBase && db.produtosBase[0]) || { nome: "Camisa Polo Tradicional Piquet", tipoMalhaPadrao: "Piquet PA", consumoMalhaKgPorPeca: 0.28, custoMaoDeObraBase: 7.50 };
-    const cliInicial = (db.clientes && db.clientes[0]) || { nomeFantasia: "TEXPRO", nome: "TEXPRO" };
+    const prodInicial = isEdicao
+      ? ((db.produtosBase || []).find(pr => pr.id === orcamentoExistente.produtoId || pr.nome === orcamentoExistente.produtoNome) || db.produtosBase[0])
+      : ((db.produtosBase && db.produtosBase[0]) || { nome: "Camisa Polo Tradicional Piquet", tipoMalhaPadrao: "Piquet PA", consumoMalhaKgPorPeca: 0.28, custoMaoDeObraBase: 7.50 });
+
+    const cliInicial = isEdicao
+      ? ((db.clientes || []).find(c => c.id === orcamentoExistente.clienteId || c.nomeFantasia === orcamentoExistente.clienteNome || c.nome === orcamentoExistente.clienteNome) || (db.clientes && db.clientes[0]) || { nomeFantasia: "TEXPRO", nome: "TEXPRO" })
+      : ((db.clientes && db.clientes[0]) || { nomeFantasia: "TEXPRO", nome: "TEXPRO" });
+
     const siglaInicial = (cliInicial.nomeFantasia || cliInicial.nome || cliInicial.razaoSocial || "TEXPRO").toString().substring(0, 6);
-    let mockupOrcamentoUrl = (window.ERP_MOCKUPS && typeof window.ERP_MOCKUPS.gerarMockupSvg === 'function')
-      ? window.ERP_MOCKUPS.gerarMockupSvg(prodInicial.nome, "#1e3a8a", "#ffffff", siglaInicial)
-      : "";
-    let mockupUploadPersonalizado = false;
+
+    let mockupOrcamentoUrl = (isEdicao && orcamentoExistente.mockupUrl)
+      ? orcamentoExistente.mockupUrl
+      : ((window.ERP_MOCKUPS && typeof window.ERP_MOCKUPS.gerarMockupSvg === 'function')
+          ? window.ERP_MOCKUPS.gerarMockupSvg(prodInicial.nome, "#1e3a8a", "#ffffff", siglaInicial)
+          : "");
+    let mockupUploadPersonalizado = !!(isEdicao && orcamentoExistente.mockupUrl);
+
+    const corInicial = isEdicao ? (orcamentoExistente.corTecido || 'Azul Marinho') : 'Azul Marinho';
+    const obsInicial = isEdicao ? (orcamentoExistente.observacoesCoresDetalhes || '') : '';
+
+    const gradePPInicial = isEdicao ? (orcamentoExistente.grade?.pp || 0) : 0;
+    const gradePInicial = isEdicao ? (orcamentoExistente.grade?.p || 0) : 0;
+    const gradeMInicial = isEdicao ? (orcamentoExistente.grade?.m || 0) : 0;
+    const gradeGInicial = isEdicao ? (orcamentoExistente.grade?.g || 0) : 0;
+    const gradeGGInicial = isEdicao ? (orcamentoExistente.grade?.gg || 0) : 0;
+    const gradeXGInicial = isEdicao ? (orcamentoExistente.grade?.xg || 0) : 0;
+    const gradeTotalInicial = isEdicao ? (orcamentoExistente.grade?.total || 0) : 0;
+
+    const precoPretendidoInicial = isEdicao && orcamentoExistente.precoUnitarioVenda
+      ? Number(orcamentoExistente.precoUnitarioVenda).toFixed(2)
+      : '54.00';
+
+    const prazoClienteInicial = isEdicao
+      ? (orcamentoExistente.prazoPedidoDias || padroes.prazoPedidoDias || 15)
+      : (padroes.prazoPedidoDias || 15);
+
+    const prazoInternoInicial = isEdicao
+      ? (orcamentoExistente.prazoInternoDias || padroes.prazoInternoDias || 10)
+      : (padroes.prazoInternoDias || 10);
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active" id="modalNovoOrcamentoOverlay">
         <div class="modal-box" style="max-width: 880px;">
           <div class="modal-header">
             <div>
-              <div class="modal-title">Novo Orçamento & Inteligência de Preço Brasil</div>
-              <span style="font-size: 11px; color: var(--text-gray-500);">Preços reais do mercado brasileiro com viabilidade financeira e ficha em tempo real</span>
+              <div class="modal-title">
+                ${isEdicao ? `Editar Orçamento #${orcamentoExistente.numero} & Renegociação` : 'Novo Orçamento & Inteligência de Preço Brasil'}
+              </div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">
+                ${isEdicao ? `Cliente: <strong>${orcamentoExistente.clienteNome}</strong> • Ajuste grade, modelo, cores, detalhes ou preços negociados` : 'Preços reais do mercado brasileiro com viabilidade financeira e ficha em tempo real'}
+              </span>
             </div>
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
@@ -2544,7 +2601,10 @@
                 <label class="form-label">Cliente / Razão Social (Selecione ou Cadastre)</label>
                 <div class="inline-input-group">
                   <select id="orcClienteSelect" class="form-select">
-                    ${(db.clientes || []).map(c => `<option value="${c.id}">${c.nomeFantasia || c.nome || c.razaoSocial || 'Cliente'} • ${formatarTelefone(c.telefone)} (${c.cidade || 'SP'}/${c.uf || 'SP'})</option>`).join('')}
+                    ${(db.clientes || []).map(c => {
+                      const isSel = isEdicao && (c.id === orcamentoExistente.clienteId || c.nomeFantasia === orcamentoExistente.clienteNome || c.nome === orcamentoExistente.clienteNome);
+                      return `<option value="${c.id}" ${isSel ? 'selected' : ''}>${c.nomeFantasia || c.nome || c.razaoSocial || 'Cliente'} • ${formatarTelefone(c.telefone)} (${c.cidade || 'SP'}/${c.uf || 'SP'})</option>`;
+                    }).join('')}
                   </select>
                   <button type="button" class="btn btn-secondary btn-inline-add" id="btnCadastrarClienteInline">
                     + Novo Cliente
@@ -2557,7 +2617,10 @@
                 <label class="form-label">Modelo Têxtil (Pesquise ou Cadastre)</label>
                 <div class="inline-input-group">
                   <select id="orcProdutoSelect" class="form-select">
-                    ${db.produtosBase.map(pr => `<option value="${pr.id}">${pr.nome} [${pr.tipoMalhaPadrao}]</option>`).join('')}
+                    ${db.produtosBase.map(pr => {
+                      const isSel = isEdicao && (pr.id === orcamentoExistente.produtoId || pr.nome === orcamentoExistente.produtoNome);
+                      return `<option value="${pr.id}" ${isSel ? 'selected' : ''}>${pr.nome} [${pr.tipoMalhaPadrao}]</option>`;
+                    }).join('')}
                   </select>
                   <button type="button" class="btn btn-secondary btn-inline-add" id="btnCadastrarModeloInline">
                     + Cadastrar Modelo
@@ -2567,7 +2630,7 @@
             </div>
 
             <!-- 2.1 Cores do Uniforme & Especificações de Detalhes Contrastantes -->
-            ${gerarHTMLSeletorCoresIndustrial('orc', 'Azul Marinho')}
+            ${gerarHTMLSeletorCoresIndustrial('orc', corInicial, obsInicial)}
 
             <!-- Grade de Tamanhos - PREENCHIMENTO DIRETO OU ATALHOS RÁPIDOS -->
             <div class="form-group">
@@ -2584,13 +2647,13 @@
                 </div>
               </div>
               <div class="grade-table-input" id="boxGradeTableInput">
-                <div class="grade-col"><div class="grade-label">PP</div><input type="number" id="gradePP" class="grade-input" value="0" min="0"></div>
-                <div class="grade-col"><div class="grade-label">P</div><input type="number" id="gradeP" class="grade-input" value="0" min="0"></div>
-                <div class="grade-col"><div class="grade-label">M</div><input type="number" id="gradeM" class="grade-input" value="0" min="0"></div>
-                <div class="grade-col"><div class="grade-label">G</div><input type="number" id="gradeG" class="grade-input" value="0" min="0"></div>
-                <div class="grade-col"><div class="grade-label">GG</div><input type="number" id="gradeGG" class="grade-input" value="0" min="0"></div>
-                <div class="grade-col"><div class="grade-label">XG</div><input type="number" id="gradeXG" class="grade-input" value="0" min="0"></div>
-                <div class="grade-col"><div class="grade-label">TOTAL</div><input type="text" id="gradeTotal" class="grade-input" style="font-weight: 800; background: #0f172a; color: #ffffff;" value="0" readonly></div>
+                <div class="grade-col"><div class="grade-label">PP</div><input type="number" id="gradePP" class="grade-input" value="${gradePPInicial}" min="0"></div>
+                <div class="grade-col"><div class="grade-label">P</div><input type="number" id="gradeP" class="grade-input" value="${gradePInicial}" min="0"></div>
+                <div class="grade-col"><div class="grade-label">M</div><input type="number" id="gradeM" class="grade-input" value="${gradeMInicial}" min="0"></div>
+                <div class="grade-col"><div class="grade-label">G</div><input type="number" id="gradeG" class="grade-input" value="${gradeGInicial}" min="0"></div>
+                <div class="grade-col"><div class="grade-label">GG</div><input type="number" id="gradeGG" class="grade-input" value="${gradeGGInicial}" min="0"></div>
+                <div class="grade-col"><div class="grade-label">XG</div><input type="number" id="gradeXG" class="grade-input" value="${gradeXGInicial}" min="0"></div>
+                <div class="grade-col"><div class="grade-label">TOTAL</div><input type="text" id="gradeTotal" class="grade-input" style="font-weight: 800; background: #0f172a; color: #ffffff;" value="${gradeTotalInicial}" readonly></div>
               </div>
             </div>
 
@@ -2608,7 +2671,7 @@
               <div class="form-row">
                 <div class="form-group" style="flex: 1;">
                   <label class="form-label" style="font-size: 11px;">Prazo Prometido ao Cliente (dias úteis)</label>
-                  <input type="number" id="inputPrazoClienteDias" class="form-input" value="${padroes.prazoPedidoDias}" min="1" max="90">
+                  <input type="number" id="inputPrazoClienteDias" class="form-input" value="${prazoClienteInicial}" min="1" max="90">
                   <div style="display: flex; gap: 4px; margin-top: 5px;">
                     <button type="button" class="btn btn-secondary btn-sm btn-prazo-cli-pill" data-dias="7" style="font-size: 9.5px; padding: 1px 6px;">7 dias</button>
                     <button type="button" class="btn btn-secondary btn-sm btn-prazo-cli-pill" data-dias="10" style="font-size: 9.5px; padding: 1px 6px;">10 dias</button>
@@ -2620,7 +2683,7 @@
 
                 <div class="form-group" style="flex: 1;">
                   <label class="form-label" style="font-size: 11px;">Prazo Interno da Fábrica (Meta do Chão de Fábrica em dias)</label>
-                  <input type="number" id="inputPrazoInternoDias" class="form-input" value="${padroes.prazoInternoDias}" min="1" max="90">
+                  <input type="number" id="inputPrazoInternoDias" class="form-input" value="${prazoInternoInicial}" min="1" max="90">
                   <div style="display: flex; gap: 4px; margin-top: 5px;">
                     <button type="button" class="btn btn-secondary btn-sm btn-prazo-int-pill" data-dias="5" style="font-size: 9.5px; padding: 1px 6px;">5 dias</button>
                     <button type="button" class="btn btn-secondary btn-sm btn-prazo-int-pill" data-dias="7" style="font-size: 9.5px; padding: 1px 6px;">7 dias</button>
@@ -2735,7 +2798,7 @@
               <div class="form-row">
                 <div class="form-group">
                   <label class="form-label">Preço que Pretende Cobrar (R$ un)</label>
-                  <input type="number" id="inputPrecoPretendido" class="form-input" style="font-weight: 800; font-size: 14px;" value="54.00" step="1.00">
+                  <input type="number" id="inputPrecoPretendido" class="form-input" style="font-weight: 800; font-size: 14px;" value="${precoPretendidoInicial}" step="1.00">
                 </div>
 
                 <div class="form-group">
@@ -2757,21 +2820,33 @@
           </div>
 
           <!-- Rodapé com Duplo Fluxo Conforme Exigido pelo Usuário -->
-          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
             
-            <div style="display: flex; gap: 10px;">
-              <!-- Opção 1: Salvar apenas orçamento e baixar proposta -->
-              <button type="button" class="btn btn-secondary" id="btnSalvarApenasOrcamento" style="font-weight: 700;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                Salvar Orçamento & Baixar Proposta
-              </button>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              ${isEdicao ? `
+                <!-- Modo Edição: Salvar alterações na proposta existente -->
+                <button type="button" class="btn btn-secondary" id="btnSalvarEdicaoOrcamento" style="font-weight: 700; background: #fffbeb; border-color: #fde68a; color: #b45309;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                  Salvar Alterações do Orçamento
+                </button>
+                <button type="button" class="btn btn-primary" id="btnSalvarEAvancarPedido" style="font-weight: 800; background: var(--color-green); border-color: var(--color-green);">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  Salvar & Dar Entrada no Pedido
+                </button>
+              ` : `
+                <!-- Modo Novo: Salvar apenas orçamento e baixar proposta -->
+                <button type="button" class="btn btn-secondary" id="btnSalvarApenasOrcamento" style="font-weight: 700;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  Salvar Orçamento & Baixar Proposta
+                </button>
 
-              <!-- Opção 2: Avançar e dar entrada oficial no pedido -->
-              <button type="button" class="btn btn-primary" id="btnAvancarParaPedidoOficial" style="font-weight: 800;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                Avançar & Dar Entrada no Pedido
-              </button>
+                <!-- Modo Novo: Avançar e dar entrada oficial no pedido -->
+                <button type="button" class="btn btn-primary" id="btnAvancarParaPedidoOficial" style="font-weight: 800;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  Avançar & Dar Entrada no Pedido
+                </button>
+              `}
             </div>
           </div>
         </div>
@@ -3551,6 +3626,7 @@
     // Inicializa datas e painel DTF
     atualizarLabelsPrazos();
     atualizarPainelTecnica('DTF');
+    recalcularBenchmarkModal();
 
     // Eventos dos botões de preenchimento rápido de grade
     document.querySelectorAll('.btn-grade-rapida').forEach(btn => {
@@ -3573,18 +3649,94 @@
       recalcularBenchmarkModal();
     });
 
-    // Botões de ação do Duplo Fluxo
-    document.getElementById('btnSalvarApenasOrcamento')?.addEventListener('click', () => {
-      const dadosOrcamento = coletarDadosOrcamentoModal();
-      if (!dadosOrcamento) return;
-      salvarOrcamentoOuPedido('Orcamento', dadosOrcamento);
-    });
+    // Botões de ação do Duplo Fluxo / Edição
+    if (isEdicao) {
+      document.getElementById('btnSalvarEdicaoOrcamento')?.addEventListener('click', () => {
+        const dadosOrcamento = coletarDadosOrcamentoModal();
+        if (!dadosOrcamento) return;
 
-    document.getElementById('btnAvancarParaPedidoOficial')?.addEventListener('click', () => {
-      const dadosOrcamento = coletarDadosOrcamentoModal();
-      if (!dadosOrcamento) return;
-      abrirEtapaAvancarPedido(dadosOrcamento);
-    });
+        orcamentoExistente.clienteId = dadosOrcamento.cliente ? dadosOrcamento.cliente.id : orcamentoExistente.clienteId;
+        orcamentoExistente.clienteNome = dadosOrcamento.cliente ? (dadosOrcamento.cliente.nomeFantasia || dadosOrcamento.cliente.nome || dadosOrcamento.cliente.razaoSocial || 'Cliente') : orcamentoExistente.clienteNome;
+        orcamentoExistente.clienteTelefone = dadosOrcamento.cliente ? dadosOrcamento.cliente.telefone : orcamentoExistente.clienteTelefone;
+        orcamentoExistente.produtoId = dadosOrcamento.prod ? dadosOrcamento.prod.id : orcamentoExistente.produtoId;
+        orcamentoExistente.produtoNome = dadosOrcamento.prod ? dadosOrcamento.prod.nome : orcamentoExistente.produtoNome;
+        orcamentoExistente.tecidoEspecificacao = dadosOrcamento.prod ? dadosOrcamento.prod.tipoMalhaPadrao : orcamentoExistente.tecidoEspecificacao;
+        orcamentoExistente.corTecido = dadosOrcamento.corPrincipal || 'A Definir';
+        orcamentoExistente.observacoesCoresDetalhes = dadosOrcamento.observacoesCoresDetalhes || '';
+        orcamentoExistente.grade = dadosOrcamento.grade;
+        orcamentoExistente.precoUnitarioVenda = dadosOrcamento.precoVendaUnitario;
+        orcamentoExistente.valorTotalVenda = dadosOrcamento.valorTotal;
+        orcamentoExistente.custoTotalEstimado = dadosOrcamento.custoTotal;
+        orcamentoExistente.custoTecidoPorPeca = dadosOrcamento.custoTecidoPorPeca;
+        orcamentoExistente.consumoRealComPerda = dadosOrcamento.consumoRealComPerda;
+        orcamentoExistente.margemErroTecido = dadosOrcamento.margemErroTecido;
+        orcamentoExistente.lucroLiquidoEstimado = dadosOrcamento.lucroLiquido;
+        orcamentoExistente.margemLucroPercentual = dadosOrcamento.margem;
+        orcamentoExistente.prazoPedidoDias = dadosOrcamento.prazoPedidoDias;
+        orcamentoExistente.prazoInternoDias = dadosOrcamento.prazoInternoDias;
+        orcamentoExistente.dtfLarguraRolo = dadosOrcamento.dtfLarguraRolo;
+        if (dadosOrcamento.mockupUrl) {
+          orcamentoExistente.mockupUrl = dadosOrcamento.mockupUrl;
+        }
+        const jaPago = Number(orcamentoExistente.valorSinalPago) || 0;
+        orcamentoExistente.saldoPendente = Math.max(0, dadosOrcamento.valorTotal - jaPago);
+        orcamentoExistente.dataAtualizacao = new Date().toISOString().split('T')[0];
+
+        salvarEstado();
+        atualizarBadges();
+        fecharModal();
+        renderizarPedidos();
+        mostrarToast(`Orçamento #${orcamentoExistente.numero} renegociado e atualizado com sucesso! Abrindo proposta comercial...`, 'green');
+        abrirModalPropostaComercial(orcamentoExistente.id);
+      });
+
+      document.getElementById('btnSalvarEAvancarPedido')?.addEventListener('click', () => {
+        const dadosOrcamento = coletarDadosOrcamentoModal();
+        if (!dadosOrcamento) return;
+
+        orcamentoExistente.clienteId = dadosOrcamento.cliente ? dadosOrcamento.cliente.id : orcamentoExistente.clienteId;
+        orcamentoExistente.clienteNome = dadosOrcamento.cliente ? (dadosOrcamento.cliente.nomeFantasia || dadosOrcamento.cliente.nome || dadosOrcamento.cliente.razaoSocial || 'Cliente') : orcamentoExistente.clienteNome;
+        orcamentoExistente.clienteTelefone = dadosOrcamento.cliente ? dadosOrcamento.cliente.telefone : orcamentoExistente.clienteTelefone;
+        orcamentoExistente.produtoId = dadosOrcamento.prod ? dadosOrcamento.prod.id : orcamentoExistente.produtoId;
+        orcamentoExistente.produtoNome = dadosOrcamento.prod ? dadosOrcamento.prod.nome : orcamentoExistente.produtoNome;
+        orcamentoExistente.tecidoEspecificacao = dadosOrcamento.prod ? dadosOrcamento.prod.tipoMalhaPadrao : orcamentoExistente.tecidoEspecificacao;
+        orcamentoExistente.corTecido = dadosOrcamento.corPrincipal || 'A Definir';
+        orcamentoExistente.observacoesCoresDetalhes = dadosOrcamento.observacoesCoresDetalhes || '';
+        orcamentoExistente.grade = dadosOrcamento.grade;
+        orcamentoExistente.precoUnitarioVenda = dadosOrcamento.precoVendaUnitario;
+        orcamentoExistente.valorTotalVenda = dadosOrcamento.valorTotal;
+        orcamentoExistente.custoTotalEstimado = dadosOrcamento.custoTotal;
+        orcamentoExistente.custoTecidoPorPeca = dadosOrcamento.custoTecidoPorPeca;
+        orcamentoExistente.consumoRealComPerda = dadosOrcamento.consumoRealComPerda;
+        orcamentoExistente.margemErroTecido = dadosOrcamento.margemErroTecido;
+        orcamentoExistente.lucroLiquidoEstimado = dadosOrcamento.lucroLiquido;
+        orcamentoExistente.margemLucroPercentual = dadosOrcamento.margem;
+        orcamentoExistente.prazoPedidoDias = dadosOrcamento.prazoPedidoDias;
+        orcamentoExistente.prazoInternoDias = dadosOrcamento.prazoInternoDias;
+        orcamentoExistente.dtfLarguraRolo = dadosOrcamento.dtfLarguraRolo;
+        if (dadosOrcamento.mockupUrl) {
+          orcamentoExistente.mockupUrl = dadosOrcamento.mockupUrl;
+        }
+        orcamentoExistente.dataAtualizacao = new Date().toISOString().split('T')[0];
+
+        salvarEstado();
+        atualizarBadges();
+        fecharModal();
+        abrirEtapaAvancarPedido(orcamentoExistente);
+      });
+    } else {
+      document.getElementById('btnSalvarApenasOrcamento')?.addEventListener('click', () => {
+        const dadosOrcamento = coletarDadosOrcamentoModal();
+        if (!dadosOrcamento) return;
+        salvarOrcamentoOuPedido('Orcamento', dadosOrcamento);
+      });
+
+      document.getElementById('btnAvancarParaPedidoOficial')?.addEventListener('click', () => {
+        const dadosOrcamento = coletarDadosOrcamentoModal();
+        if (!dadosOrcamento) return;
+        abrirEtapaAvancarPedido(dadosOrcamento);
+      });
+    }
   }
 
   // Salvar Orçamento Apenas
@@ -4483,6 +4635,7 @@
     const p = db.pedidos.find(x => x.id === pedidoId);
     if (!p || !modalContainer) return;
 
+    const isOrcamento = p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento' || p.status === 'Orçamento';
     const htmlCorpo = gerarHtmlCorpoPropostaComercial(p);
 
     const modalEl = criarModalCamada(`
@@ -4500,16 +4653,38 @@
             ${htmlCorpo}
           </div>
 
-          <div class="modal-footer">
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
             <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
-            <button type="button" class="btn btn-primary" id="btnImprimirPropostaDoc" onclick="window.ERP.imprimirPropostaComercialIsolada('${p.id}')">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-              Imprimir / Baixar Proposta em PDF
-            </button>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              ${isOrcamento ? `
+                <button type="button" class="btn btn-secondary" id="btnEditarOrcamentoProposta" style="font-weight: 700; color: #b45309; border-color: #fde68a; background: #fffbeb;" title="Editar valores, quantidades ou prazos desta proposta caso a negociação mude">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                  Editar Orçamento
+                </button>
+                <button type="button" class="btn btn-primary" id="btnConverterOrcamentoProposta" style="font-weight: 800; background: var(--color-green); border-color: var(--color-green);" title="Oficializar Pedido e Registrar Entrada">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  Aprovar & Dar Entrada
+                </button>
+              ` : ''}
+              <button type="button" class="btn btn-primary" id="btnImprimirPropostaDoc" onclick="window.ERP.imprimirPropostaComercialIsolada('${p.id}')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                Imprimir / Baixar Proposta em PDF
+              </button>
+            </div>
           </div>
         </div>
       </div>
     `);
+
+    document.getElementById('btnEditarOrcamentoProposta')?.addEventListener('click', () => {
+      fecharModal(modalEl);
+      abrirModalNovoOrcamento(p.id);
+    });
+
+    document.getElementById('btnConverterOrcamentoProposta')?.addEventListener('click', () => {
+      fecharModal(modalEl);
+      abrirEtapaAvancarPedido(p);
+    });
   }
 
   function imprimirPropostaComercialIsolada(pedidoId) {
@@ -9394,6 +9569,7 @@
     abrirModalWhatsApp,
     abrirModalVisualizarMockup,
     abrirModalNovoOrcamento,
+    abrirModalEditarOrcamento: (id) => abrirModalNovoOrcamento(id),
     abrirModalNovoClienteInline,
     abrirModalNovoModeloInline,
     abrirModalInspecaoQuarentena,
