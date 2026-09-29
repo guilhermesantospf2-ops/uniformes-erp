@@ -3,68 +3,72 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bravvi ERP Têxtil — O Primeiro Sistema Especializado em Confecções de Uniformes & Estamparias</title>
-  <meta name="description" content="O ERP líder para indústrias de uniformes e estamparias. Elimine atrasos com Radar de Prazos, reduza o desperdício de tecido e emita fichas técnicas e propostas A4 em segundos.">
+  <title>Bravvi ERP Têxtil — Toda a sua confecção em uma única plataforma</title>
+  <meta name="description" content="O ERP líder para indústrias de uniformes e estamparias. Elimine atrasos com Radar de Prazos, reduza o desperdício de tecido e emita fichas técnicas e propostas em segundos.">
 
   <!-- Google Fonts Oficiais do ERP -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/favicon.png">
   <link rel="shortcut icon" href="favicon.ico">
 
   <style>
     /* ==========================================================================
-       DESIGN SYSTEM OFICIAL DO BRAVVI ERP TÊXTIL (ENTERPRISE LIGHT CORPORATE)
-       Paleta: Branco, Cinza Industrial, Deep Navy e Verde Esmeralda Funcional
+       DESIGN SYSTEM BRAVVI ERP TÊXTIL — INSPIRAÇÃO ODOO (CLEAN, MODULAR & AMIGÁVEL)
        ========================================================================== */
     :root {
       --bg-page: #f8fafc;
       --bg-surface: #ffffff;
+      --bg-card: #ffffff;
       --bg-subtle: #f1f5f9;
-      --bg-muted: #e2e8f0;
+      --bg-soft-gray: #f8fafc;
+      --bg-dark: #032b35; /* Deep Petroleum Navy Bravvi */
       
       --border-subtle: #e2e8f0;
       --border-medium: #cbd5e1;
-      --border-focus: #0f172a;
+      --border-highlight: #0d9488;
 
       --text-main: #0f172a;
       --text-body: #334155;
       --text-muted: #64748b;
       --text-light: #94a3b8;
 
-      --brand-navy: #032b35; /* Navy Petróleo Oficial Bravvi */
-      --brand-teal: #0d9488; /* Teal Oficial Bravvi ERP Têxtil */
-      --brand-cyan: #2dd4bf; /* Ciano Vibrante dos Pixels */
-      --brand-gradient: linear-gradient(135deg, #032b35 0%, #0d9488 100%);
+      --brand-navy: #032b35;
+      --brand-teal: #0d9488;
+      --brand-teal-hover: #0f766e;
+      --brand-teal-light: #f0fdfa;
+      --brand-cyan: #2dd4bf;
+      --brand-yellow: #f59e0b;
+      --brand-yellow-light: #fef3c7;
+      --brand-purple: #8b5cf6;
+      --brand-blue: #3b82f6;
+      --brand-red: #ef4444;
 
-      --brand-green: #0d9488;
-      --brand-green-hover: #0f766e;
-      --brand-green-soft: #f0fdfa;
-      --brand-green-border: #99f6e4;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+      --radius-full: 9999px;
 
-      --brand-blue: #0891b2;
-      --brand-blue-soft: #ecfeff;
-      --brand-blue-border: #a5f3fc;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+      --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.08), 0 4px 10px -2px rgba(0, 0, 0, 0.04);
+      --shadow-xl: 0 20px 35px -5px rgba(3, 43, 53, 0.12);
 
-      --urgent-red: #b91c1c;
-      --urgent-red-soft: #fef2f2;
-      --urgent-red-border: #fecaca;
-
-      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       --font-heading: 'Outfit', sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
-
-      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
-      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
     }
 
     body {
@@ -82,41 +86,42 @@
     }
 
     .container {
-      max-width: 1200px;
+      max-width: 1240px;
       margin: 0 auto;
       padding: 0 24px;
     }
 
-    /* Top Banner de Alerta / Novidade */
+    /* BARRA SUPERIOR DE AVISO */
     .top-announcement {
       background: var(--brand-navy);
       color: #ffffff;
       font-size: 13px;
-      padding: 8px 24px;
-      text-align: center;
       font-weight: 600;
+      padding: 9px 18px;
+      text-align: center;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 10px;
+      letter-spacing: 0.2px;
     }
 
     .top-announcement a {
       color: var(--brand-cyan);
       text-decoration: underline;
       font-weight: 700;
-      margin-left: 4px;
     }
 
-    /* Header Fixo */
+    /* HEADER STICKY */
     .site-header {
       position: sticky;
       top: 0;
-      z-index: 100;
+      z-index: 1000;
       background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       border-bottom: 1px solid var(--border-subtle);
-      padding: 14px 0;
+      padding: 12px 0;
       transition: all 0.2s ease;
     }
 
@@ -133,27 +138,18 @@
       flex-shrink: 0;
     }
 
-    .brand-icon {
-      background: var(--brand-gradient);
-      color: #ffffff;
-      width: 34px;
-      height: 34px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: 14px;
-    }
-
     .nav-menu {
       display: flex;
       align-items: center;
-      gap: 22px;
-      font-size: 14px;
+      gap: 28px;
+      font-size: 14.5px;
       font-weight: 600;
       color: var(--text-body);
       white-space: nowrap;
+    }
+
+    .nav-menu a {
+      transition: color 0.15s ease;
     }
 
     .nav-menu a:hover {
@@ -164,845 +160,975 @@
       display: flex;
       align-items: center;
       gap: 12px;
+      flex-shrink: 0;
     }
 
-    /* Botões Padrão do ERP */
+    /* BOTÕES */
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      padding: 10px 20px;
-      border-radius: 6px;
       font-family: var(--font-sans);
-      font-size: 14px;
       font-weight: 700;
+      border-radius: var(--radius-full);
+      padding: 12px 24px;
+      font-size: 14.5px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       border: 1px solid transparent;
-      text-align: center;
       white-space: nowrap;
+      text-decoration: none;
     }
 
-    .btn-primary {
-      background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
-      color: #ffffff;
-      border-color: #0d9488;
-      box-shadow: 0 2px 6px rgba(13, 148, 136, 0.28);
-    }
-
-    .btn-primary:hover {
-      background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
-      border-color: #0f766e;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4);
-    }
-
-    .btn-secondary {
-      background: #ffffff;
-      color: var(--text-main);
-      border-color: var(--border-medium);
-    }
-
-    .btn-secondary:hover {
-      background: var(--bg-subtle);
-      border-color: var(--text-main);
-    }
-
-    .btn-whatsapp {
-      background: #25d366;
-      color: #072612;
-      border-color: #20ba59;
-      font-weight: 800;
-      box-shadow: 0 2px 6px rgba(37, 211, 102, 0.3);
-    }
-
-    .btn-whatsapp:hover {
-      background: #20ba59;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
+    .btn-sm {
+      padding: 8px 18px;
+      font-size: 13.5px;
     }
 
     .btn-lg {
-      padding: 14px 28px;
+      padding: 16px 34px;
       font-size: 16px;
-      border-radius: 8px;
+      border-radius: var(--radius-full);
     }
 
-    /* Hero Section */
+    .btn-primary {
+      background-color: var(--brand-teal);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(13, 148, 136, 0.3);
+    }
+
+    .btn-primary:hover {
+      background-color: var(--brand-teal-hover);
+      box-shadow: 0 6px 20px rgba(13, 148, 136, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background-color: #ffffff;
+      color: var(--brand-navy);
+      border-color: var(--border-medium);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--bg-subtle);
+      border-color: var(--text-muted);
+      transform: translateY(-1px);
+    }
+
+    .btn-whatsapp {
+      background-color: #25d366;
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(37, 211, 102, 0.3);
+    }
+
+    .btn-whatsapp:hover {
+      background-color: #1ebd5b;
+      box-shadow: 0 6px 20px rgba(37, 211, 102, 0.45);
+      transform: translateY(-1px);
+    }
+
+    /* HERO SECTION ESTILO ODOO */
     .hero-section {
       padding: 70px 0 50px;
       text-align: center;
-      background: radial-gradient(circle at 50% 0%, rgba(204, 251, 241, 0.55) 0%, rgba(240, 253, 250, 0.3) 45%, rgba(248, 250, 252, 1) 75%);
-      border-bottom: 1px solid var(--border-subtle);
+      background: radial-gradient(circle at 50% 10%, rgba(45, 212, 191, 0.08) 0%, transparent 60%);
+      position: relative;
     }
 
-    .hero-pill {
+    .hero-badge {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: var(--brand-green-soft);
-      border: 1px solid var(--brand-green-border);
+      background: var(--brand-teal-light);
+      border: 1px solid rgba(13, 148, 136, 0.25);
       color: var(--brand-teal);
-      padding: 6px 16px;
-      border-radius: 20px;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 700;
+      padding: 6px 16px;
+      border-radius: var(--radius-full);
       margin-bottom: 24px;
+      letter-spacing: 0.3px;
     }
 
     .hero-title {
       font-family: var(--font-heading);
-      font-size: clamp(32px, 5vw, 56px);
-      font-weight: 800;
+      font-size: 54px;
+      font-weight: 900;
+      line-height: 1.12;
       color: var(--text-main);
-      line-height: 1.15;
+      max-width: 960px;
+      margin: 0 auto 20px;
       letter-spacing: -1px;
-      margin-bottom: 20px;
-      max-width: 980px;
-      margin-left: auto;
-      margin-right: auto;
     }
 
-    .highlight-green {
-      background: linear-gradient(135deg, #032b35 0%, #0d9488 60%, #14b8a6 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+    /* DESTAQUES COM DOODLE (ESTILO ODOO) */
+    .doodle-highlight {
       position: relative;
       display: inline-block;
+      white-space: nowrap;
+    }
+
+    .doodle-brush-svg {
+      position: absolute;
+      left: -2%;
+      bottom: -10px;
+      width: 104%;
+      height: 18px;
+      z-index: -1;
+      pointer-events: none;
     }
 
     .hero-subtitle {
-      font-size: clamp(16px, 2vw, 19px);
+      font-size: 19px;
       color: var(--text-body);
-      max-width: 780px;
+      max-width: 740px;
       margin: 0 auto 36px;
-      line-height: 1.6;
+      line-height: 1.5;
     }
 
-    .hero-buttons {
-      display: flex;
+    /* DOODLE ANNOTATION BOX (CALLOUT ESTILO ODOO) */
+    .hero-doodle-wrapper {
+      position: relative;
+      display: inline-block;
+      margin-top: 10px;
+      margin-bottom: 30px;
+    }
+
+    .doodle-arrow-svg {
+      position: absolute;
+      top: -45px;
+      right: -80px;
+      width: 65px;
+      height: 55px;
+      pointer-events: none;
+    }
+
+    .doodle-pill-badge {
+      display: inline-flex;
       align-items: center;
+      gap: 8px;
+      background: #fef3c7;
+      border: 1.5px dashed #f59e0b;
+      color: #92400e;
+      padding: 6px 18px;
+      border-radius: var(--radius-full);
+      font-size: 13.5px;
+      font-weight: 700;
+      transform: rotate(-1.5deg);
+    }
+
+    .hero-actions {
+      display: flex;
       justify-content: center;
-      gap: 14px;
+      align-items: center;
+      gap: 16px;
       flex-wrap: wrap;
-      margin-bottom: 40px;
+      margin-bottom: 28px;
     }
 
-    .trust-badges-bar {
+    .hero-guarantees {
       display: flex;
-      align-items: center;
       justify-content: center;
-      gap: 32px;
+      gap: 24px;
       flex-wrap: wrap;
       font-size: 13px;
       font-weight: 600;
       color: var(--text-muted);
-      border-top: 1px solid rgba(226, 232, 240, 0.8);
-      padding-top: 28px;
-      max-width: 860px;
-      margin: 0 auto;
     }
 
-    .trust-item {
+    .hero-guarantees span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--brand-teal);
+    }
+
+    /* MOSAICO DE APPS ESTILO ODOO (A MARCA REGISTRADA) */
+    .apps-mosaic-section {
+      padding: 60px 0 80px;
+      background: #f1f5f9;
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      position: relative;
+    }
+
+    .section-header-center {
+      text-align: center;
+      max-width: 820px;
+      margin: 0 auto 40px;
+    }
+
+    .section-tag {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--brand-teal);
+      background: var(--brand-teal-light);
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: inline-block;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-family: var(--font-heading);
+      font-size: 38px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.2;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    .section-desc {
+      font-size: 16.5px;
+      color: var(--text-body);
+    }
+
+    /* SWITCHER INTERATIVO ESTILO ODOO ("Como seria sem o Bravvi") */
+    .odoo-switcher-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 36px;
+    }
+
+    .odoo-switcher-btn {
+      display: inline-flex;
+      align-items: center;
+      background: #ffffff;
+      border: 2px solid var(--border-medium);
+      border-radius: var(--radius-full);
+      padding: 4px;
+      box-shadow: var(--shadow-sm);
+      user-select: none;
+    }
+
+    .switcher-tab {
+      padding: 8px 22px;
+      border-radius: var(--radius-full);
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: var(--text-muted);
+    }
+
+    .switcher-tab.active {
+      background: var(--brand-navy);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(3, 43, 53, 0.25);
+    }
+
+    .switcher-tab.danger-active {
+      background: #dc2626 !important;
+      color: #ffffff !important;
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3) !important;
+    }
+
+    /* GRID DE ÍCONES DE APLICATIVOS */
+    .apps-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 18px;
+      transition: opacity 0.2s ease;
+    }
+
+    @media (max-width: 1024px) {
+      .apps-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      .hero-title {
+        font-size: 40px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .apps-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      .hero-title {
+        font-size: 32px;
+      }
+      .nav-menu {
+        display: none;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .apps-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .app-card {
+      background: #ffffff;
+      border-radius: var(--radius-lg);
+      padding: 22px 14px;
+      text-align: center;
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      box-shadow: var(--shadow-sm);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .app-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--brand-teal);
+    }
+
+    .app-icon-wrapper {
+      width: 68px;
+      height: 68px;
+      border-radius: 18px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: center;
+      font-size: 32px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      transition: transform 0.25s ease;
     }
 
-    .trust-icon {
-      color: var(--brand-green);
+    .app-card:hover .app-icon-wrapper {
+      transform: scale(1.08);
+    }
+
+    .app-name {
+      font-family: var(--font-heading);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+
+    .app-desc {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+
+    /* CARD DE CAOS ("SEM O BRAVVI") */
+    .app-card.chaos-card {
+      border-color: #fecaca;
+      background: #fff5f5;
+    }
+
+    .app-card.chaos-card .app-icon-wrapper {
+      background: #fee2e2 !important;
+      color: #dc2626;
+    }
+
+    .app-card.chaos-card .app-name {
+      color: #991b1b;
+    }
+
+    .app-card.chaos-card .app-desc {
+      color: #b91c1c;
+    }
+
+    /* SEÇÃO "SOFTWARE TÊXTIL DO JEITO CERTO" (CARDS GRANDES ESTILO ODOO) */
+    .features-odoo-section {
+      padding: 90px 0;
+      background: #ffffff;
+    }
+
+    .features-bento-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 24px;
+      margin-top: 40px;
+    }
+
+    .bento-card {
+      background: var(--bg-soft-gray);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 36px;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bento-card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-medium);
+    }
+
+    .bento-card.col-7 {
+      grid-column: span 7;
+    }
+
+    .bento-card.col-5 {
+      grid-column: span 5;
+    }
+
+    .bento-card.col-6 {
+      grid-column: span 6;
+    }
+
+    .bento-card.col-4 {
+      grid-column: span 4;
+    }
+
+    @media (max-width: 900px) {
+      .bento-card.col-7,
+      .bento-card.col-5,
+      .bento-card.col-6,
+      .bento-card.col-4 {
+        grid-column: span 12;
+      }
+    }
+
+    .bento-tag {
+      font-size: 11px;
       font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--brand-teal);
+      margin-bottom: 12px;
+      display: inline-block;
     }
 
-    /* Product Showcase (Interactive Tabbed Browser) */
-    .showcase-section {
-      padding: 60px 0 80px;
+    .bento-title {
+      font-family: var(--font-heading);
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      line-height: 1.25;
     }
 
-    .product-frame {
-      background: var(--bg-surface);
+    .bento-desc {
+      font-size: 14.5px;
+      color: var(--text-body);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .bento-mockup-box {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+    }
+
+    /* SEÇÃO DE DEMONSTRAÇÃO POR ABAS */
+    .tab-demo-section {
+      padding: 80px 0;
+      background: #f8fafc;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .demo-tabs-nav {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+
+    .demo-tab-btn {
+      padding: 10px 22px;
+      border-radius: var(--radius-full);
+      background: #ffffff;
       border: 1px solid var(--border-medium);
-      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-body);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .demo-tab-btn:hover {
+      background: var(--bg-subtle);
+      color: var(--brand-teal);
+    }
+
+    .demo-tab-btn.active {
+      background: var(--brand-teal);
+      color: #ffffff;
+      border-color: var(--brand-teal);
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
+    }
+
+    .demo-tab-viewport {
+      background: #ffffff;
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-xl);
       box-shadow: var(--shadow-xl);
       overflow: hidden;
       max-width: 1080px;
       margin: 0 auto;
     }
 
-    .frame-topbar {
+    .tab-window-header {
       background: #f1f5f9;
+      border-bottom: 1px solid var(--border-subtle);
       padding: 12px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid var(--border-subtle);
     }
 
-    .frame-controls {
+    .window-dots {
       display: flex;
       gap: 6px;
     }
 
-    .control-dot {
+    .window-dot {
       width: 10px;
       height: 10px;
       border-radius: 50%;
-    }
-    .dot-1 { background: #ef4444; }
-    .dot-2 { background: #f59e0b; }
-    .dot-3 { background: #10b981; }
-
-    .frame-tabs {
-      display: flex;
-      gap: 6px;
+      background: #cbd5e1;
     }
 
-    .frame-tab-btn {
-      background: transparent;
-      border: 1px solid transparent;
-      padding: 6px 14px;
-      border-radius: 6px;
+    .window-dot.red { background: #f87171; }
+    .window-dot.yellow { background: #fbbf24; }
+    .window-dot.green { background: #34d399; }
+
+    .window-title {
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 600;
       color: var(--text-muted);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.15s ease;
+      font-family: var(--font-mono);
     }
 
-    .frame-tab-btn.active {
-      background: #ffffff;
-      color: var(--text-main);
-      border-color: var(--border-subtle);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .frame-content {
-      padding: 28px;
-      background: var(--bg-page);
-      min-height: 380px;
-    }
-
-    .tab-panel {
+    .tab-content-panel {
+      padding: 32px;
       display: none;
     }
 
-    .tab-panel.active {
+    .tab-content-panel.active {
       display: block;
-      animation: fadeIn 0.25s ease-in-out;
+      animation: fadeIn 0.3s ease;
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
+      from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Estilos dos Componentes Reais do ERP na Vitrine */
-    .radar-demo-card {
-      background: #ffffff;
-      border: 1px solid var(--border-subtle);
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .radar-demo-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .radar-pulse-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--urgent-red);
-      display: inline-block;
-      animation: pulseGlow 1.2s infinite;
-    }
-
-    .demo-order-row {
-      display: grid;
-      grid-template-columns: 80px 1.5fr 1fr 140px 160px;
-      gap: 12px;
-      align-items: center;
-      padding: 12px 14px;
-      border-radius: 6px;
-      background: #f8fafc;
-      border: 1px solid var(--border-subtle);
-      margin-bottom: 10px;
-      font-size: 13px;
-    }
-
-    .demo-order-row.urgent {
-      background: #fef2f2;
-      border-color: #fecaca;
-    }
-
-    .badge-demo {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 800;
-    }
-
-    .badge-red { background: #b91c1c; color: #ffffff; animation: pulseGlow 1.5s infinite; }
-    .badge-amber { background: #d97706; color: #ffffff; }
-    .badge-green { background: var(--brand-teal); color: #ffffff; }
-
-    /* Comparativo: Antes vs Depois */
-    .comparison-section {
-      padding: 80px 0;
+    /* CALCULADORA DE ECONOMIA */
+    .calculator-section {
+      padding: 90px 0;
       background: #ffffff;
       border-top: 1px solid var(--border-subtle);
-      border-bottom: 1px solid var(--border-subtle);
     }
 
-    .section-headline {
-      text-align: center;
-      max-width: 760px;
-      margin: 0 auto 50px;
+    .calc-card {
+      background: radial-gradient(circle at 10% 10%, #f0fdfa 0%, #ffffff 80%);
+      border: 2px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 40px;
+      box-shadow: var(--shadow-lg);
     }
 
-    .section-tag {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      font-weight: 800;
-      color: var(--brand-teal);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      display: block;
-      margin-bottom: 8px;
-    }
-
-    .section-title {
-      font-family: var(--font-heading);
-      font-size: clamp(26px, 3.5vw, 38px);
-      font-weight: 800;
-      color: var(--text-main);
-      line-height: 1.2;
-      margin-bottom: 14px;
-    }
-
-    .section-subtitle {
-      font-size: 16px;
-      color: var(--text-muted);
-    }
-
-    .comparison-grid {
+    .calc-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 28px;
-      max-width: 980px;
-      margin: 0 auto;
-    }
-
-    .compare-card {
-      border-radius: 10px;
-      padding: 32px 28px;
-      border: 1px solid var(--border-medium);
-    }
-
-    .compare-card.before {
-      background: #fffafa;
-      border-color: #fecaca;
-    }
-
-    .compare-card.after {
-      background: var(--brand-green-soft);
-      border-color: var(--brand-green-border);
-      box-shadow: 0 4px 14px rgba(13, 148, 136, 0.08);
-    }
-
-    .compare-header {
-      font-family: var(--font-heading);
-      font-size: 20px;
-      font-weight: 800;
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .compare-header.before { color: var(--urgent-red); }
-    .compare-header.after { color: var(--brand-green); }
-
-    .compare-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      font-size: 14.5px;
-    }
-
-    .compare-list li {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      line-height: 1.5;
-    }
-
-    /* Calculadora de Economia / ROI */
-    .calculator-section {
-      padding: 80px 0;
-      background: var(--bg-page);
-    }
-
-    .calc-box {
-      background: #ffffff;
-      border: 1.5px solid var(--border-medium);
-      border-radius: 16px;
-      padding: 44px;
-      box-shadow: var(--shadow-lg);
-      display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
       gap: 40px;
       align-items: center;
-      max-width: 1020px;
-      margin: 0 auto;
     }
 
-    .calc-sliders {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
+    @media (max-width: 860px) {
+      .calc-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
-    .calc-slider-item {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .slider-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text-main);
-    }
-
-    .slider-num {
-      font-family: var(--font-mono);
-      color: var(--brand-green);
-      font-size: 16px;
-    }
-
-    input[type=range] {
-      width: 100%;
-      height: 6px;
-      background: var(--border-medium);
-      border-radius: 3px;
-      outline: none;
-      -webkit-appearance: none;
-    }
-
-    input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #0d9488 0%, #032b35 100%);
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(13, 148, 136, 0.4);
-    }
-
-    .calc-summary-card {
-      background: linear-gradient(180deg, #f0fdfa 0%, #e6fcf5 100%);
-      border: 1.5px solid var(--brand-green-border);
-      border-radius: 12px;
-      padding: 32px 24px;
-      text-align: center;
-    }
-
-    .summary-title {
-      font-size: 13px;
-      font-weight: 800;
-      color: var(--brand-green);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .summary-value {
-      font-family: var(--font-heading);
-      font-size: 44px;
-      font-weight: 800;
-      color: var(--brand-green);
-      margin: 8px 0;
-      display: block;
-    }
-
-    .summary-sub {
-      font-size: 13px;
-      color: var(--text-muted);
+    .calc-slider-group {
       margin-bottom: 24px;
     }
 
-    /* 6 Pilares de Funcionalidades */
-    .features-section {
-      padding: 80px 0;
-      background: #ffffff;
-      border-top: 1px solid var(--border-subtle);
-    }
-
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 24px;
-    }
-
-    .feature-card {
-      background: #ffffff;
-      border: 1px solid var(--border-subtle);
-      border-radius: 10px;
-      padding: 28px 24px;
-      transition: all 0.2s ease;
-    }
-
-    .feature-card:hover {
-      border-color: var(--brand-green);
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
-    }
-
-    .feature-badge {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 800;
-      color: var(--brand-blue);
-      background: var(--brand-blue-soft);
-      border: 1px solid var(--brand-blue-border);
-      padding: 3px 8px;
-      border-radius: 4px;
-      display: inline-block;
-      margin-bottom: 12px;
-    }
-
-    .feature-card-title {
-      font-family: var(--font-heading);
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--text-main);
-      margin-bottom: 8px;
-    }
-
-    .feature-card-text {
-      font-size: 14px;
-      color: var(--text-muted);
-      line-height: 1.6;
-    }
-
-    /* Depoimentos dos Polos Confeccionistas */
-    .testimonials-section {
-      padding: 80px 0;
-      background: var(--bg-page);
-      border-top: 1px solid var(--border-subtle);
-    }
-
-    .testimonials-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 24px;
-      max-width: 1080px;
-      margin: 0 auto;
-    }
-
-    .test-card {
-      background: #ffffff;
-      border: 1px solid var(--border-subtle);
-      border-radius: 10px;
-      padding: 28px;
-      box-shadow: var(--shadow-sm);
+    .calc-slider-header {
       display: flex;
-      flex-direction: column;
       justify-content: space-between;
+      margin-bottom: 8px;
+      font-weight: 700;
     }
 
-    .test-stars {
-      color: #f59e0b;
-      font-size: 16px;
-      margin-bottom: 12px;
+    .calc-slider {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: #e2e8f0;
+      outline: none;
+      -webkit-appearance: none;
+      accent-color: var(--brand-teal);
     }
 
-    .test-quote {
-      font-size: 14.5px;
-      color: var(--text-body);
-      font-style: italic;
-      line-height: 1.6;
-      margin-bottom: 20px;
+    .calc-result-box {
+      background: var(--brand-navy);
+      color: #ffffff;
+      border-radius: var(--radius-lg);
+      padding: 36px;
+      text-align: center;
+      box-shadow: var(--shadow-xl);
+      position: relative;
     }
 
-    .test-author-group {
-      display: flex;
-      align-items: center;
+    .calc-big-value {
+      font-family: var(--font-heading);
+      font-size: 46px;
+      font-weight: 900;
+      color: var(--brand-cyan);
+      margin: 10px 0;
+      letter-spacing: -1px;
+    }
+
+    .calc-breakdown {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
       gap: 12px;
-      border-top: 1px solid var(--border-subtle);
-      padding-top: 14px;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      font-size: 11.5px;
     }
 
-    .test-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: #f1f5f9;
-      color: var(--text-main);
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      border: 1px solid var(--border-medium);
-    }
-
-    .test-author-name {
+    .calc-breakdown-val {
       font-size: 14px;
       font-weight: 700;
-      color: var(--text-main);
+      color: #ffffff;
+      display: block;
+      margin-top: 2px;
     }
 
-    .test-author-location {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    /* Tabela de Preços Oficial */
-    .pricing-section {
+    /* TABELA DE COMPARATIVO */
+    .compare-section {
       padding: 80px 0;
-      background: #ffffff;
+      background: #f8fafc;
       border-top: 1px solid var(--border-subtle);
+    }
+
+    .compare-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: #ffffff;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-subtle);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .compare-table th,
+    .compare-table td {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .compare-table th {
+      background: #f1f5f9;
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--text-main);
+      text-align: left;
+    }
+
+    .compare-table th.col-bravvi {
+      background: var(--brand-teal-light);
+      color: var(--brand-teal);
+    }
+
+    .badge-check {
+      color: #059669;
+      font-weight: 800;
+    }
+
+    .badge-cross {
+      color: #dc2626;
+      font-weight: 700;
+    }
+
+    /* PLANOS E PREÇOS */
+    .pricing-section {
+      padding: 90px 0;
+      background: #ffffff;
     }
 
     .pricing-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       gap: 28px;
-      max-width: 1140px;
-      margin: 0 auto;
+      margin-top: 40px;
     }
 
-    .price-box {
+    @media (max-width: 960px) {
+      .pricing-grid {
+        grid-template-columns: 1fr;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
+
+    .pricing-card {
       background: #ffffff;
-      border: 1.5px solid var(--border-medium);
-      border-radius: 12px;
-      padding: 36px 30px;
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-xl);
+      padding: 36px 28px;
       display: flex;
       flex-direction: column;
       position: relative;
+      transition: all 0.25s ease;
     }
 
-    .price-box.popular {
+    .pricing-card:hover {
+      box-shadow: var(--shadow-xl);
+      border-color: var(--brand-teal);
+      transform: translateY(-4px);
+    }
+
+    .pricing-card.featured {
       border: 2px solid var(--brand-teal);
-      box-shadow: 0 12px 28px -6px rgba(13, 148, 136, 0.18);
-      background: #ffffff;
+      box-shadow: var(--shadow-lg);
     }
 
-    .popular-tag {
+    .pricing-pill {
       position: absolute;
-      top: -12px;
+      top: -14px;
       left: 50%;
       transform: translateX(-50%);
-      background: var(--brand-gradient);
+      background: var(--brand-teal);
       color: #ffffff;
       font-size: 11px;
       font-weight: 800;
-      text-transform: uppercase;
       padding: 4px 14px;
-      border-radius: 20px;
+      border-radius: var(--radius-full);
       letter-spacing: 0.5px;
-      box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
+      text-transform: uppercase;
     }
 
-    .plan-header-title {
+    .pricing-name {
       font-family: var(--font-heading);
       font-size: 22px;
       font-weight: 800;
       color: var(--text-main);
+      margin-bottom: 6px;
     }
 
-    .plan-header-desc {
-      font-size: 13px;
+    .pricing-desc {
+      font-size: 13.5px;
       color: var(--text-muted);
-      margin: 6px 0 20px;
-      min-height: 38px;
+      margin-bottom: 24px;
+      min-height: 40px;
     }
 
-    .price-display {
+    .pricing-value {
       font-family: var(--font-heading);
-      font-size: 42px;
-      font-weight: 800;
+      font-size: 44px;
+      font-weight: 900;
       color: var(--text-main);
+      line-height: 1;
+      margin-bottom: 6px;
     }
 
-    .price-period {
-      font-size: 14px;
+    .pricing-value span {
+      font-size: 16px;
+      font-weight: 600;
       color: var(--text-muted);
     }
 
-    .features-list {
+    .pricing-features {
       list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin: 28px 0 32px;
-      font-size: 14px;
-      flex-grow: 1;
+      margin: 28px 0;
+      flex: 1;
     }
 
-    .features-list li {
+    .pricing-features li {
+      font-size: 13.5px;
+      margin-bottom: 12px;
       display: flex;
       align-items: center;
       gap: 10px;
       color: var(--text-body);
     }
 
-    .features-list li svg {
-      color: var(--brand-green);
+    .pricing-features li svg {
+      color: var(--brand-teal);
       flex-shrink: 0;
     }
 
-    /* FAQ */
+    /* FAQ ACCORDION */
     .faq-section {
       padding: 80px 0;
-      background: var(--bg-page);
+      background: #f8fafc;
       border-top: 1px solid var(--border-subtle);
-      max-width: 820px;
-      margin: 0 auto;
+    }
+
+    .faq-accordion {
+      max-width: 800px;
+      margin: 40px auto 0;
     }
 
     .faq-item {
       background: #ffffff;
       border: 1px solid var(--border-subtle);
-      border-radius: 8px;
+      border-radius: var(--radius-md);
       margin-bottom: 12px;
       overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .faq-item.active {
+      border-color: var(--brand-teal);
+      box-shadow: var(--shadow-sm);
     }
 
     .faq-question {
-      padding: 18px 22px;
+      padding: 20px 24px;
       font-weight: 700;
-      font-size: 15px;
+      font-size: 15.5px;
       color: var(--text-main);
-      cursor: pointer;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      cursor: pointer;
       user-select: none;
     }
 
     .faq-answer {
-      padding: 0 22px 18px;
-      font-size: 14px;
-      color: var(--text-muted);
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      color: var(--text-body);
+      font-size: 14.5px;
       line-height: 1.6;
-      display: none;
     }
 
     .faq-item.active .faq-answer {
-      display: block;
+      max-height: 300px;
+      padding: 0 24px 20px;
     }
 
-    /* CTA Final */
-    .cta-final {
-      padding: 80px 0;
-      background: linear-gradient(180deg, #032b35 0%, #021a24 100%);
+    .faq-icon {
+      font-size: 18px;
+      transition: transform 0.2s ease;
+    }
+
+    .faq-item.active .faq-icon {
+      transform: rotate(45deg);
+    }
+
+    /* FOOTER OFICIAL ESCURO */
+    .site-footer {
+      background: var(--brand-navy);
+      color: #94a3b8;
+      padding: 60px 0 30px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 50px;
+    }
+
+    @media (max-width: 768px) {
+      .footer-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .footer-title {
       color: #ffffff;
-      text-align: center;
-      position: relative;
-    }
-
-    .cta-final-title {
-      font-family: var(--font-heading);
-      font-size: clamp(28px, 4vw, 42px);
-      font-weight: 800;
+      font-weight: 700;
+      font-size: 14px;
       margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
-    .cta-final-sub {
-      font-size: 17px;
-      color: #cbd5e1;
-      max-width: 680px;
-      margin: 0 auto 32px;
+    .footer-links {
+      list-style: none;
+      font-size: 13.5px;
     }
 
-    /* Botão Flutuante WhatsApp */
+    .footer-links li {
+      margin-bottom: 10px;
+    }
+
+    .footer-links a:hover {
+      color: #ffffff;
+    }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 12.5px;
+    }
+
+    /* BOTÃO FLUTUANTE WHATSAPP */
     .floating-wa-btn {
       position: fixed;
       bottom: 24px;
       right: 24px;
-      z-index: 999;
+      z-index: 9999;
       background: #25d366;
-      color: #072612;
+      color: #ffffff;
       width: 58px;
       height: 58px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 8px 20px rgba(37, 211, 102, 0.4);
-      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(37, 211, 102, 0.45);
       transition: all 0.2s ease;
     }
 
     .floating-wa-btn:hover {
       transform: scale(1.08);
-      box-shadow: 0 12px 28px rgba(37, 211, 102, 0.6);
-    }
-
-    /* Footer */
-    .site-footer {
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      background: #02141c;
-      padding: 36px 0;
-      text-align: center;
-      font-size: 13px;
-      color: #94a3b8;
-    }
-
-    @media (max-width: 768px) {
-      .nav-menu { display: none; }
-      .calc-box { grid-template-columns: 1fr; padding: 24px; }
-      .comparison-grid { grid-template-columns: 1fr; }
-      .demo-order-row { grid-template-columns: 1fr; gap: 6px; }
+      background: #1ebd5b;
     }
   </style>
 </head>
 <body>
 
-  <!-- Top Announcement Bar -->
+  <!-- Aviso Superior -->
   <div class="top-announcement">
-    <span>📢 Lançamento Oficial: Conecte o Bravvi ERP Têxtil à sua confecção e ganhe Implantação VIP com Treinamento da sua Equipe.</span>
-    <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20aproveitar%20a%20condi%C3%A7%C3%A3o%20de%20lan%C3%A7amento%20do%20Bravvi%20ERP%20T%C3%AAxtil." target="_blank">Garantir Vaga &rarr;</a>
+    <span>📢 <strong>Lançamento Oficial:</strong> Conecte o Bravvi ERP à sua confecção e ganhe Implantação VIP com treinamento gratuito da equipe.</span>
+    <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20aproveitar%20o%20treinamento%20VIP%20do%20Bravvi%20ERP%20T%C3%AAxtil." target="_blank">Garantir Vaga &rarr;</a>
   </div>
-
-  <!-- Botão Flutuante do WhatsApp -->
-  <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Vi%20a%20apresenta%C3%A7%C3%A3o%20do%20Bravvi%20ERP%20T%C3%AAxtil%20e%20quero%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20gratuita." target="_blank" class="floating-wa-btn" title="Falar com Especialista Têxtil">
-    <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z"/>
-    </svg>
-  </a>
 
   <!-- Header Superior -->
   <header class="site-header">
     <div class="container header-nav">
-      <a href="/" class="brand-logo" style="display: flex; align-items: center; text-decoration: none;">
+      <a href="/" class="brand-logo" title="Bravvi ERP Têxtil Industrial">
         <img src="assets/bravvi-logo.png" alt="Bravvi ERP Têxtil" style="height: 52px; width: auto; object-fit: contain;">
       </a>
 
       <nav class="nav-menu">
-        <a href="#comparativo">Antes vs Depois</a>
+        <a href="#apps">Módulos</a>
+        <a href="#demonstracao">Ver por Dentro</a>
+        <a href="#diferenciais">Como Funciona</a>
         <a href="#calculadora">Calculadora de Lucro</a>
-        <a href="#recursos">Recursos</a>
         <a href="#planos">Planos</a>
         <a href="#faq">Dúvidas</a>
       </nav>
@@ -1018,509 +1144,870 @@
     </div>
   </header>
 
-  <!-- Hero Section -->
+  <!-- HERO SECTION ESTILO ODOO (COM DOODLES E HEADLINE PUNCHY) -->
   <section class="hero-section">
     <div class="container">
-      <div class="hero-pill">
-        <span>🏆 SOFTWARE ESPECIALIZADO EM CONFECÇÕES & ESTAMPARIAS</span>
+      
+      <div class="hero-badge">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        O Primeiro ERP Especializado em Chão de Fábrica Têxtil & Uniformes
       </div>
 
       <h1 class="hero-title">
-        Zere os Atrasos de Entrega e Acabe com o <span class="highlight-green">Prejuízo de Cortes Errados</span> na sua Confecção
+        Toda a sua confecção em<br>
+        <span class="doodle-highlight">
+          uma única plataforma.
+          <!-- Traço desenhado à mão estilo Odoo -->
+          <svg class="doodle-brush-svg" viewBox="0 0 460 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 15C95 5 285 2 455 12C360 6 180 8 4 19" stroke="#0d9488" stroke-width="6" stroke-linecap="round"/>
+          </svg>
+        </span>
       </h1>
 
       <p class="hero-subtitle">
-        O primeiro ERP industrial desenvolvido sob medida para a rotina de uniformes profissionais, escolares e esportivos. 
-        Controle prazos por minuto com alertas visuais por cores, padronize tamanhos e medidas na oficina e gere fichas técnicas e propostas comerciais A4 em 30 segundos.
+        Simples, veloz e sem travar. Elimine atrasos com o Radar de Prazos, reduza o desperdício de tecido no corte e gere fichas técnicas e orçamentos com foto em segundos.
       </p>
 
-      <div class="hero-buttons">
-        <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20gratuita%20do%20Bravvi%20ERP%20T%C3%AAxtil%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-whatsapp btn-lg">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z"/></svg>
-          Agendar Demonstração Gratuita no WhatsApp
+      <!-- Doodle Callout com Seta -->
+      <div class="hero-doodle-wrapper">
+        <div class="doodle-pill-badge">
+          ✨ Sem custo por usuário adicional • Tudo incluso • 100% no navegador e offline
+        </div>
+        <!-- Seta curvada estilo Odoo -->
+        <svg class="doodle-arrow-svg" viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 10C35 2 65 15 58 45M58 45L48 37M58 45L67 39" stroke="#0d9488" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="hero-actions">
+        <a href="demo.html" target="_blank" class="btn btn-primary btn-lg">
+          Fazer Test Drive ao Vivo &rarr;
         </a>
-        <a href="demo.html" target="_blank" class="btn btn-secondary btn-lg">
-          Fazer Test Drive no Sistema ao Vivo &rarr;
+        <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Vi%20a%20p%C3%A1gina%20do%20Bravvi%20ERP%20e%20quero%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20para%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-secondary btn-lg">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#25d366"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z"/></svg>
+          Agendar no WhatsApp
         </a>
       </div>
 
-      <div class="trust-badges-bar">
-        <div class="trust-item">
-          <span class="trust-icon">✓</span>
-          <span>Zero Instalação (100% no Navegador)</span>
-        </div>
-        <div class="trust-item">
-          <span class="trust-icon">✓</span>
-          <span>Tecnologia Offline-First (Nunca Trava)</span>
-        </div>
-        <div class="trust-item">
-          <span class="trust-icon">✓</span>
-          <span>Sincronização em Tempo Real na Nuvem</span>
-        </div>
-        <div class="trust-item">
-          <span class="trust-icon">✓</span>
-          <span>Garantia Incondicional de 7 Dias</span>
-        </div>
+      <div class="hero-guarantees">
+        <div><span>✓</span> Zero Instalação de Programas</div>
+        <div><span>✓</span> Tecnologia Offline-First (Nunca Trava)</div>
+        <div><span>✓</span> Sincronização em Tempo Real na Nuvem</div>
+        <div><span>✓</span> Garantia Incondicional de 7 Dias</div>
       </div>
+
     </div>
   </section>
 
-  <!-- Comparativo: Antes vs Depois -->
-  <section class="comparison-section" id="comparativo">
+  <!-- MOSAICO DE APPS ESTILO ODOO (A MARCA REGISTRADA COM SWITCHER) -->
+  <section class="apps-mosaic-section" id="apps">
     <div class="container">
-      <div class="section-headline">
-        <span class="section-tag">Transformação Operacional</span>
-        <h2 class="section-title">A Diferença entre uma Confecção no Caos e uma Confecção Lucrativa</h2>
-        <p class="section-subtitle">Veja o que muda na rotina da sua fábrica logo na primeira semana de implantação:</p>
+      
+      <div class="section-header-center">
+        <span class="section-tag">Biblioteca de Módulos Industriais</span>
+        <h2 class="section-title">Um ecossistema completo para a rotina têxtil.</h2>
+        <p class="section-desc">Chega de pagar por 5 programas separados que não conversam entre si. No Bravvi, cada etapa do chão de fábrica está perfeitamente integrada.</p>
       </div>
 
-      <div class="comparison-grid">
-        <!-- Antes -->
-        <div class="compare-card before">
-          <div class="compare-header before">
-            <span>✕</span>
-            <span>Sem o Bravvi ERP Têxtil (Rotina no Caos)</span>
+      <!-- Switcher Interativo ("Como seria sem o Bravvi") -->
+      <div class="odoo-switcher-wrapper">
+        <div class="odoo-switcher-btn">
+          <div class="switcher-tab active" id="tabComBravvi" onclick="toggleAppsMode('com')">
+            ✨ Com o Bravvi ERP
           </div>
-          <ul class="compare-list">
-            <li>
-              <span style="color: var(--urgent-red); font-weight: 800;">✕</span>
-              <span><strong>Atrasos constantes:</strong> Pedidos esquecidos em conversas de WhatsApp gerando reclamações e cancelamentos.</span>
-            </li>
-            <li>
-              <span style="color: var(--urgent-red); font-weight: 800;">✕</span>
-              <span><strong>Desperdício no corte e enfesto:</strong> Peças cortadas sem ficha técnica gerando sobras caras, pedidos errados e retrabalho.</span>
-            </li>
-            <li>
-              <span style="color: var(--urgent-red); font-weight: 800;">✕</span>
-              <span><strong>Peças cortadas erradas:</strong> Costureira não entende as anotações do vendedor e perde lotes inteiros de tecido.</span>
-            </li>
-            <li>
-              <span style="color: var(--urgent-red); font-weight: 800;">✕</span>
-              <span><strong>Calote na retirada:</strong> Cliente retira os uniformes e o saldo restante de 50% fica a ver navios.</span>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Depois -->
-        <div class="compare-card after">
-          <div class="compare-header after">
-            <span>✓</span>
-            <span>Com o Bravvi ERP Têxtil (Fábrica Organizada)</span>
+          <div class="switcher-tab" id="tabSemBravvi" onclick="toggleAppsMode('sem')">
+            ⚠️ Como seria sem o Bravvi
           </div>
-          <ul class="compare-list">
-            <li>
-              <span style="color: var(--brand-green); font-weight: 800;">✓</span>
-              <span><strong>Radar de Prazos Inteligente:</strong> Toda a fábrica sabe o que entregar hoje, amanhã e na próxima semana com cores de urgência.</span>
-            </li>
-            <li>
-              <span style="color: var(--brand-green); font-weight: 800;">✓</span>
-              <span><strong>Padronização Industrial:</strong> Grade completa de tamanhos, cores e medidas com tolerância de corte e ficha técnica assinada.</span>
-            </li>
-            <li>
-              <span style="color: var(--brand-green); font-weight: 800;">✓</span>
-              <span><strong>Ficha Técnica Oficial A4:</strong> Grade de tamanhos, cores de linha e estampa impressas com tolerância padronizada.</span>
-            </li>
-            <li>
-              <span style="color: var(--brand-green); font-weight: 800;">✓</span>
-              <span><strong>Trava Financeira Segura:</strong> Controle rigoroso de sinal 50% e quitação antes da liberação do pedido na expedição.</span>
-            </li>
-          </ul>
         </div>
       </div>
+
+      <!-- Grade de Apps: Modo "Com Bravvi" (Oficial) -->
+      <div class="apps-grid" id="gridComBravvi">
+        
+        <!-- 1. Orçamentos -->
+        <div class="app-card" onclick="window.open('demo.html', '_blank')">
+          <div class="app-icon-wrapper" style="background: #e0f2fe; color: #0284c7;">
+            🧵
+          </div>
+          <div class="app-name">Orçamentos 3x4</div>
+          <div class="app-desc">Mockup vetorial, chave PIX e envio direto no WhatsApp.</div>
+        </div>
+
+        <!-- 2. Radar de Prazos -->
+        <div class="app-card" onclick="window.open('demo.html', '_blank')">
+          <div class="app-icon-wrapper" style="background: #fef3c7; color: #d97706;">
+            ⏱️
+          </div>
+          <div class="app-name">Radar de Prazos</div>
+          <div class="app-desc">Alertas visuais por semáforo. Zere atrasos de clientes.</div>
+        </div>
+
+        <!-- 3. Ficha Técnica A4 -->
+        <div class="app-card" onclick="window.open('demo.html', '_blank')">
+          <div class="app-icon-wrapper" style="background: #dcfce7; color: #16a34a;">
+            📋
+          </div>
+          <div class="app-name">Ficha Técnica A4</div>
+          <div class="app-desc">Grade de corte, consumo de tecido e linha para a oficina.</div>
+        </div>
+
+        <!-- 4. Otimizador DTF -->
+        <div class="app-card" onclick="window.open('demo.html', '_blank')">
+          <div class="app-icon-wrapper" style="background: #f3e8ff; color: #9333ea;">
+            🖨️
+          </div>
+          <div class="app-name">Nesting DTF</div>
+          <div class="app-desc">Cálculo de bobina 58cm e 28cm sem desperdício de metro.</div>
+        </div>
+
+        <!-- 5. PCP & Produção -->
+        <div class="app-card" onclick="window.open('demo.html', '_blank')">
+          <div class="app-icon-wrapper" style="background: #ccfbf1; color: #0d9488;">
+            ✂️
+          </div>
+          <div class="app-name">PCP Industrial</div>
+          <div class="app-desc">Rastreio por corte, estampa, bordado e costura.</div>
+        </div>
+
+        <!-- 6. Estoque de Rolos -->
+        <div class="app-card" onclick="window.open('demo.html', '_blank')">
+          <div class="app-icon-wrapper" style="background: #ffedd5; color: #ea580c;">
+            📦
+          </div>
+          <div class="app-name">Estoque de Tecidos</div>
+          <div class="app-desc">Controle por metro linear, quilos e previsão de falta.</div>
+        </div>
+
+        <!-- 7. DRE & Lucro Real -->
+        <div class="app-card" onclick="window.open('demo.html', '_blank')">
+          <div class="app-icon-wrapper" style="background: #ecfdf5; color: #059669;">
+            💰
+          </div>
+          <div class="app-name">DRE & Lucro Real</div>
+          <div class="app-desc">Saiba o lucro líquido de cada polo, camisa ou jaleco.</div>
+        </div>
+
+        <!-- 8. Gestão de Facções -->
+        <div class="app-card" onclick="window.open('demo.html', '_blank')">
+          <div class="app-icon-wrapper" style="background: #fce7f3; color: #db2777;">
+            👥
+          </div>
+          <div class="app-name">Costura & Facção</div>
+          <div class="app-desc">Remessas de peças cortadas e retorno sem peças sumidas.</div>
+        </div>
+
+        <!-- 9. Compras de Insumos -->
+        <div class="app-card" onclick="window.open('demo.html', '_blank')">
+          <div class="app-icon-wrapper" style="background: #e0e7ff; color: #4f46e5;">
+            🛒
+          </div>
+          <div class="app-name">Compras & Aviamentos</div>
+          <div class="app-desc">Reposição programada de botões, linhas e zíperes.</div>
+        </div>
+
+        <!-- 10. Catálogo Digital -->
+        <div class="app-card" onclick="window.open('demo.html', '_blank')">
+          <div class="app-icon-wrapper" style="background: #fef9c3; color: #ca8a04;">
+            🏷️
+          </div>
+          <div class="app-name">Catálogo Interativo</div>
+          <div class="app-desc">Mostruário com suas peças para o cliente navegar.</div>
+        </div>
+
+        <!-- 11. WhatsApp Automático -->
+        <div class="app-card" onclick="window.open('demo.html', '_blank')">
+          <div class="app-icon-wrapper" style="background: #dcfce7; color: #15803d;">
+            📱
+          </div>
+          <div class="app-name">WhatsApp Fábrica</div>
+          <div class="app-desc">Avisos de "Pedido em Produção" e "Pronto para Retirada".</div>
+        </div>
+
+        <!-- 12. Proposta A4 -->
+        <div class="app-card" onclick="window.open('proposta-comercial.html', '_blank')">
+          <div class="app-icon-wrapper" style="background: #e2e8f0; color: #334155;">
+            📄
+          </div>
+          <div class="app-name">Proposta Comercial</div>
+          <div class="app-desc">PDF executivo com a sua logomarca para fechar licitações.</div>
+        </div>
+
+      </div>
+
+      <!-- Grade de Caos: Modo "Sem o Bravvi" (Alternativo) -->
+      <div class="apps-grid" id="gridSemBravvi" style="display: none;">
+        
+        <div class="app-card chaos-card">
+          <div class="app-icon-wrapper">⚠️</div>
+          <div class="app-name">Planilhas Corrompidas</div>
+          <div class="app-desc">Fórmulas apagadas e valores de venda calculados no chute.</div>
+        </div>
+
+        <div class="app-card chaos-card">
+          <div class="app-icon-wrapper">📓</div>
+          <div class="app-name">Caderno de Costura</div>
+          <div class="app-desc">Anotações manchadas de óleo e pedidos perdidos na oficina.</div>
+        </div>
+
+        <div class="app-card chaos-card">
+          <div class="app-icon-wrapper">😡</div>
+          <div class="app-name">Cliente Cobrando no Zap</div>
+          <div class="app-desc">Atrasos de 10 dias porque ninguém viu a data prometida.</div>
+        </div>
+
+        <div class="app-card chaos-card">
+          <div class="app-icon-wrapper">✂️</div>
+          <div class="app-name">Corte no Metro Errado</div>
+          <div class="app-desc">Tecido caro jogado no lixo por falta de ficha com grade.</div>
+        </div>
+
+        <div class="app-card chaos-card">
+          <div class="app-icon-wrapper">📉</div>
+          <div class="app-name">Lucro Invisível</div>
+          <div class="app-desc">A fábrica fatura R$ 100 mil e o dono não vê a cor do dinheiro.</div>
+        </div>
+
+        <div class="app-card chaos-card">
+          <div class="app-icon-wrapper">🧵</div>
+          <div class="app-name">Falta de Linha e Zíper</div>
+          <div class="app-desc">Produção travada no meio porque faltou aviamento básico.</div>
+        </div>
+
+      </div>
+
+      <div style="text-align: center; margin-top: 36px;">
+        <a href="demo.html" target="_blank" class="btn btn-primary">
+          Testar Todos os Módulos Gratuitamente ao Vivo &rarr;
+        </a>
+      </div>
+
     </div>
   </section>
 
-  <!-- Calculadora de Economia / ROI -->
+  <!-- DEMONSTRAÇÃO INTERATIVA COM ABAS DINÂMICAS -->
+  <section class="tab-demo-section" id="demonstracao">
+    <div class="container">
+      
+      <div class="section-header-center">
+        <span class="section-tag">Veja o Sistema por Dentro</span>
+        <h2 class="section-title">Projetado para quem vive no chão de fábrica.</h2>
+        <p class="section-desc">Interface limpa, letras legíveis para o cortador e botões rápidos. Clique nas abas abaixo para ver as telas reais.</p>
+      </div>
+
+      <div class="demo-tabs-nav">
+        <button class="demo-tab-btn active" onclick="switchDemoTab(0, this)">1. Orçamento com Mockup</button>
+        <button class="demo-tab-btn" onclick="switchDemoTab(1, this)">2. Radar de Prazos</button>
+        <button class="demo-tab-btn" onclick="switchDemoTab(2, this)">3. Ficha Técnica A4</button>
+        <button class="demo-tab-btn" onclick="switchDemoTab(3, this)">4. Otimizador DTF</button>
+        <button class="demo-tab-btn" onclick="switchDemoTab(4, this)">5. DRE & Margem Real</button>
+      </div>
+
+      <div class="demo-tab-viewport">
+        <div class="tab-window-header">
+          <div class="window-dots">
+            <div class="window-dot red"></div>
+            <div class="window-dot yellow"></div>
+            <div class="window-dot green"></div>
+          </div>
+          <div class="window-title" id="windowTabTitle">bravvi-erp://orcamento-com-mockup.html</div>
+          <div style="width: 40px;"></div>
+        </div>
+
+        <!-- Painel 1: Orçamento -->
+        <div class="tab-content-panel active" id="tabPanel0">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 24px;">👔</span>
+              <div>
+                <strong style="font-size: 16px; color: #0f172a;">Camisa Polo Piquet Especial — Colégio & Empresa</strong>
+                <div style="font-size: 12px; color: #64748b;">Orçamento #4829 • Cliente: Grupo Metalúrgica Santos • Grade: P, M, G, GG</div>
+              </div>
+            </div>
+            <span style="background: #ecfdf5; color: #059669; font-weight: 800; font-size: 14px; padding: 6px 14px; border-radius: 9999px;">
+              Total: R$ 4.250,00 (50 peças)
+            </span>
+          </div>
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+              <div style="font-weight: 700; font-size: 13px; color: #334155; margin-bottom: 10px;">📋 Grade & Composição dos Custos:</div>
+              <div style="font-size: 13px; line-height: 1.8;">
+                • Malha Piquet PA 50/50 Azul Marinho: <strong>R$ 22,40 / peça</strong><br>
+                • Bordado Computadorizado no Peito: <strong>R$ 6,50 / peça</strong><br>
+                • Estampa DTF nas Costas (28cm): <strong>R$ 8,00 / peça</strong><br>
+                • Mão de Obra de Costura + Acabamento: <strong>R$ 15,00 / peça</strong><br>
+                • <strong>Margem Líquida da Fábrica: 38.5% (R$ 32,70 de lucro limpo por camisa)</strong>
+              </div>
+            </div>
+            <div style="background: #032b35; color: #ffffff; border-radius: 12px; padding: 18px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+              <div style="font-size: 11px; text-transform: uppercase; color: #2dd4bf; font-weight: 800; margin-bottom: 6px;">Ações Instantâneas</div>
+              <a href="demo.html" target="_blank" class="btn btn-primary btn-sm" style="margin-bottom: 8px;">Enviar WhatsApp com Mockup</a>
+              <a href="demo.html" target="_blank" class="btn btn-secondary btn-sm" style="color: #032b35;">Gerar Chave PIX de Sinal</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Painel 2: Radar de Prazos -->
+        <div class="tab-content-panel" id="tabPanel1">
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px;">
+            <div style="background: #fee2e2; border: 1px solid #fca5a5; padding: 16px; border-radius: 12px; text-align: center;">
+              <div style="font-size: 11px; font-weight: 800; color: #991b1b;">🚨 ATRASADOS</div>
+              <div style="font-size: 28px; font-weight: 900; color: #b91c1c;">0</div>
+              <div style="font-size: 11px; color: #7f1d1d;">Zere reclamações</div>
+            </div>
+            <div style="background: #fef3c7; border: 1px solid #fcd34d; padding: 16px; border-radius: 12px; text-align: center;">
+              <div style="font-size: 11px; font-weight: 800; color: #92400e;">🔥 VENCEM HOJE</div>
+              <div style="font-size: 28px; font-weight: 900; color: #d97706;">2</div>
+              <div style="font-size: 11px; color: #78350f;">Em embalagem</div>
+            </div>
+            <div style="background: #e0f2fe; border: 1px solid #7dd3fc; padding: 16px; border-radius: 12px; text-align: center;">
+              <div style="font-size: 11px; font-weight: 800; color: #075985;">⚡ VENCEM AMANHÃ</div>
+              <div style="font-size: 28px; font-weight: 900; color: #0284c7;">5</div>
+              <div style="font-size: 11px; color: #0c4a6e;">Na costura</div>
+            </div>
+            <div style="background: #dcfce7; border: 1px solid #86efac; padding: 16px; border-radius: 12px; text-align: center;">
+              <div style="font-size: 11px; font-weight: 800; color: #166534;">✅ NO PRAZO (>4 DIAS)</div>
+              <div style="font-size: 28px; font-weight: 900; color: #16a34a;">18</div>
+              <div style="font-size: 11px; color: #14532d;">Tranquilo no corte</div>
+            </div>
+          </div>
+          <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px; font-size: 13px;">
+            <strong>Semáforo Inteligente:</strong> Ao invés de checar caderno por caderno, o encarregado da fábrica olha para o painel em tela cheia e sabe exatamente qual ordem cortar primeiro para não estourar o prazo com a empresa compradora.
+          </div>
+        </div>
+
+        <!-- Painel 3: Ficha Técnica A4 -->
+        <div class="tab-content-panel" id="tabPanel2">
+          <div style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 24px; background: #ffffff;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 14px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="assets/bravvi-symbol.png" style="height: 38px; width: auto;" alt="Bravvi">
+                <div>
+                  <strong style="font-size: 15px; color: #0f172a;">FICHA TÉCNICA DE CORTE & COSTURA — PEDIDO #4829</strong>
+                  <div style="font-size: 11px; color: #64748b;">Artigo: Jaleco Brim Pesado 100% Algodão • Cortador: Carlos Alberto</div>
+                </div>
+              </div>
+              <span style="font-size: 12px; font-family: var(--font-mono); background: #e2e8f0; padding: 4px 10px; border-radius: 4px; font-weight: 700;">VIA DO CHÃO DE FÁBRICA</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; text-align: center; margin-bottom: 16px;">
+              <div style="background: #f1f5f9; padding: 10px; border-radius: 8px;"><strong>PP</strong><br>12 pçs</div>
+              <div style="background: #f1f5f9; padding: 10px; border-radius: 8px;"><strong>P</strong><br>35 pçs</div>
+              <div style="background: #f1f5f9; padding: 10px; border-radius: 8px;"><strong>M</strong><br>48 pçs</div>
+              <div style="background: #f1f5f9; padding: 10px; border-radius: 8px;"><strong>G</strong><br>40 pçs</div>
+              <div style="background: #f1f5f9; padding: 10px; border-radius: 8px;"><strong>GG</strong><br>15 pçs</div>
+            </div>
+            <div style="font-size: 12px; color: #475569; background: #f8fafc; padding: 12px; border-radius: 8px;">
+              ✂️ <strong>Instrução ao Enfestador:</strong> Risco com aproveitamento de 89.4%. Sentido do fio paralelo à ourela. Campos de assinatura para conferência de corte e envio para costura externa.
+            </div>
+          </div>
+        </div>
+
+        <!-- Painel 4: Otimizador DTF -->
+        <div class="tab-content-panel" id="tabPanel3">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center;">
+            <div>
+              <h4 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">Economize até 35% de Filme e Tinta DTF</h4>
+              <p style="font-size: 13.5px; color: #475569; line-height: 1.6; margin-bottom: 14px;">
+                O Bravvi calcula o encaixe milimétrico das logos na bobina de 58cm ou 28cm. Informe o tamanho da arte e a quantidade de peças, e o sistema entrega o metro linear exato que você precisará imprimir.
+              </p>
+              <div style="background: #f0fdfa; border: 1px solid #99f6e4; padding: 14px; border-radius: 10px; font-size: 13px;">
+                🎯 <strong>Exemplo Real:</strong> 250 logos 9x9cm no peito. No cálculo manual: 12 metros. No algoritmo de Nesting Bravvi: <strong>8,2 metros</strong>. Economia líquida de R$ 133,00 neste único pedido.
+              </div>
+            </div>
+            <div style="background: #032b35; color: #ffffff; padding: 24px; border-radius: 14px; text-align: center;">
+              <span style="font-size: 32px;">🖨️</span>
+              <div style="font-size: 20px; font-weight: 800; color: #2dd4bf; margin: 8px 0;">Calculadora de Bobina DTF</div>
+              <p style="font-size: 12px; color: #94a3b8; margin-bottom: 16px;">Integrada nativamente em cada orçamento e pedido emitido.</p>
+              <a href="demo.html" target="_blank" class="btn btn-primary btn-sm">Abrir Simulador de Bobina</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Painel 5: DRE & Margem Real -->
+        <div class="tab-content-panel" id="tabPanel4">
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 16px;">
+              <strong style="font-size: 16px; color: #0f172a;">Demonstrativo de Resultado do Mês (DRE Gerencial da Fábrica)</strong>
+              <span style="background: #ecfdf5; color: #059669; font-weight: 800; font-size: 12px; padding: 4px 10px; border-radius: 9999px;">LUCRO LÍQUIDO REAL</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; text-align: center; margin-bottom: 18px;">
+              <div style="background: #f8fafc; padding: 14px; border-radius: 10px;">
+                <div style="font-size: 11px; color: #64748b;">FATURAMENTO BRUTO</div>
+                <div style="font-size: 22px; font-weight: 900; color: #0f172a;">R$ 84.600,00</div>
+              </div>
+              <div style="background: #f8fafc; padding: 14px; border-radius: 10px;">
+                <div style="font-size: 11px; color: #64748b;">CUSTOS MATÉRIA-PRIMA + FACÇÃO</div>
+                <div style="font-size: 22px; font-weight: 900; color: #dc2626;">- R$ 42.100,00</div>
+              </div>
+              <div style="background: #f0fdfa; padding: 14px; border-radius: 10px;">
+                <div style="font-size: 11px; color: #0d9488;">LUCRO LÍQUIDO LIMPO NO BOLSO</div>
+                <div style="font-size: 22px; font-weight: 900; color: #0d9488;">R$ 28.350,00 (33.5%)</div>
+              </div>
+            </div>
+            <div style="font-size: 12.5px; color: #475569;">
+              💡 <strong>Visão Executiva:</strong> O sistema separa o dinheiro da confecção do dinheiro dos impostos e despesas fixas. Você nunca mais correrá o risco de gastar o dinheiro que deveria ser para comprar tecido da próxima remessa.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SEÇÃO "SOFTWARE TÊXTIL DO JEITO CERTO" (CARDS ESTILO ODOO) -->
+  <section class="features-odoo-section" id="diferenciais">
+    <div class="container">
+      
+      <div class="section-header-center">
+        <span class="section-tag">A Filosofia do Bravvi</span>
+        <h2 class="section-title">Software têxtil desenvolvido do jeito certo.</h2>
+        <p class="section-desc">Criado em parceria direta com proprietários de confecções, modelistas e estamparias que cansaram de sistemas engessados e caros.</p>
+      </div>
+
+      <div class="features-bento-grid">
+        
+        <!-- Card 1 (Grande 7 colunas): Offline-First -->
+        <div class="bento-card col-7">
+          <span class="bento-tag">Tecnologia Confiável</span>
+          <h3 class="bento-title">Internet caiu no galpão? A sua fábrica não para.</h3>
+          <p class="bento-desc">
+            Diferente de sistemas web genéricos que travam e impedem o cortador de abrir a ficha, o Bravvi foi arquitetado com tecnologia <strong>Offline-First</strong>. Tudo continua funcionando mesmo se a rede oscilar. Assim que a conexão volta, o sistema sincroniza com a nuvem automaticamente.
+          </p>
+          <div class="bento-mockup-box" style="background: #032b35; color: #2dd4bf;">
+            ✓ Cache local industrial ativo • 100% de disponibilidade no chão de fábrica
+          </div>
+        </div>
+
+        <!-- Card 2 (5 colunas): Sem cobrança por usuário -->
+        <div class="bento-card col-5">
+          <span class="bento-tag">Preço Justo</span>
+          <h3 class="bento-title">Sem pegadinha de preço por usuário.</h3>
+          <p class="bento-desc">
+            Contratou mais um cortador, uma costureira ou um vendedor? No Bravvi você não paga nada a mais por isso. Conecte quantos computadores, celulares e tablets quiser no mesmo plano.
+          </p>
+          <div class="bento-mockup-box" style="background: #fef3c7; color: #92400e;">
+            ✨ Usuários ilimitados inclusos em todos os planos
+          </div>
+        </div>
+
+        <!-- Card 3 (6 colunas): Zero aprisionamento -->
+        <div class="bento-card col-6">
+          <span class="bento-tag">Transparência Total</span>
+          <h3 class="bento-title">Seus dados pertencem a você.</h3>
+          <p class="bento-desc">
+            Nenhum formato de banco proprietário fechado. Exporte seus clientes, tabelas de preço, histórico de pedidos e ordens de corte para Excel, CSV e PDF quando quiser com 1 clique.
+          </p>
+          <div class="bento-mockup-box" style="background: #f1f5f9; color: #0f172a;">
+            📊 Exportação instantânea em XLS, CSV e PDF A4
+          </div>
+        </div>
+
+        <!-- Card 4 (6 colunas): Especialista têxtil -->
+        <div class="bento-card col-6">
+          <span class="bento-tag">Especialização Absoluta</span>
+          <h3 class="bento-title">Feito para tecido, não para revenda de caixa.</h3>
+          <p class="bento-desc">
+            Sistemas genéricos não sabem o que é risco de corte, bobina DTF, grade P/M/G ou remessa de facção. O Bravvi fala a língua do confeccionista do primeiro ao último botão.
+          </p>
+          <div class="bento-mockup-box" style="background: #ecfdf5; color: #065f46;">
+            🧵 Vocabulário e fluxos nativos de confecção industrial
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CALCULADORA INTERATIVA DE ECONOMIA DE LUCRO -->
   <section class="calculator-section" id="calculadora">
     <div class="container">
-      <div class="calc-box">
-        <div class="calc-sliders">
+      
+      <div class="section-header-center">
+        <span class="section-tag">Calculadora Interativa</span>
+        <h2 class="section-title">Quanto dinheiro a sua confecção está deixando na mesa?</h2>
+        <p class="section-desc">Arraste os seletores abaixo com o volume da sua produção e veja a economia média estimada ao organizar o chão de fábrica com o Bravvi.</p>
+      </div>
+
+      <div class="calc-card">
+        <div class="calc-grid">
+          
           <div>
-            <span class="section-tag">Simulador de Retorno</span>
-            <h2 style="font-family: var(--font-heading); font-size: 26px; font-weight: 800; color: var(--text-main); margin-bottom: 6px;">
-              Calcule Quanto sua Confecção vai Economizar por Mês
-            </h2>
-            <p style="font-size: 14px; color: var(--text-muted);">
-              Arraste os números para a média da sua produção mensal e veja a margem recuperada:
+            <!-- Slider 1 -->
+            <div class="calc-slider-group">
+              <div class="calc-slider-header">
+                <span>Peças produzidas por mês:</span>
+                <span id="valPecas" style="color: var(--brand-teal);">1.500 peças</span>
+              </div>
+              <input type="range" min="200" max="10000" step="100" value="1500" class="calc-slider" id="inputPecas">
+            </div>
+
+            <!-- Slider 2 -->
+            <div class="calc-slider-group">
+              <div class="calc-slider-header">
+                <span>Metros de tecido consumidos por mês:</span>
+                <span id="valMetros" style="color: var(--brand-teal);">1.800 metros</span>
+              </div>
+              <input type="range" min="300" max="15000" step="100" value="1800" class="calc-slider" id="inputMetros">
+            </div>
+
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-top: 16px;">
+              *Cálculo fundamentado em dados médios de confecções brasileiras: redução de 5% a 8% em retalhos com ficha técnica A4 e redução de retrabalho com o Radar de Prazos.
             </p>
           </div>
 
-          <div class="calc-slider-item">
-            <div class="slider-header">
-              <span>Peças confeccionadas por mês:</span>
-              <span class="slider-num" id="valPecas">1.500 peças</span>
-            </div>
-            <input type="range" id="inputPecas" min="200" max="10000" step="100" value="1500">
-          </div>
+          <div class="calc-result-box">
+            <span style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: #2dd4bf; letter-spacing: 1px;">Economia Média Estimada</span>
+            <div class="calc-big-value" id="txtTotalEconomia">R$ 17.700,00</div>
+            <div style="font-size: 13px; color: #cbd5e1;">recuperados por mês para o caixa da sua empresa</div>
 
-          <div class="calc-slider-item">
-            <div class="slider-header">
-              <span>Metros de tecido consumidos no corte por mês:</span>
-              <span class="slider-num" id="valMetros">150 metros</span>
+            <div class="calc-breakdown">
+              <div>
+                Tecido não jogado fora:
+                <span class="calc-breakdown-val" id="txtEcoTecido">R$ 16.200,00</span>
+              </div>
+              <div>
+                Retrabalhos evitados:
+                <span class="calc-breakdown-val" id="txtEcoRetrabalho">R$ 900,00</span>
+              </div>
+              <div>
+                Horas poupadas da equipe:
+                <span class="calc-breakdown-val" id="txtEcoHoras">R$ 600,00</span>
+              </div>
             </div>
-            <input type="range" id="inputMetros" min="20" max="1500" step="10" value="150">
-          </div>
 
-          <div style="font-size: 12px; color: var(--text-muted); background: var(--bg-subtle); padding: 10px 14px; border-radius: 6px;">
-            ℹ️ Baseado em dados reais consolidados de polos confeccionistas (Americana/SP, Brusque/SC e Maringá/PR).
-          </div>
-        </div>
-
-        <div class="calc-summary-card">
-          <span class="summary-title">Lucro Líquido Recuperado</span>
-          <span class="summary-value" id="txtTotalEconomia">R$ 2.850,00</span>
-          <span class="summary-sub">Estimativa média economizada todo mês</span>
-
-          <div style="font-size: 13px; text-align: left; margin-bottom: 22px; display: flex; flex-direction: column; gap: 8px;">
-            <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--brand-green-border); padding-bottom: 4px;">
-              <span>Economia em tecido & sobras de corte:</span>
-              <strong id="txtEcoTecido" style="color: var(--text-main);">R$ 1.350,00</strong>
-            </div>
-            <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--brand-green-border); padding-bottom: 4px;">
-              <span>Eliminação de cortes errados:</span>
-              <strong id="txtEcoRetrabalho" style="color: var(--text-main);">R$ 900,00</strong>
-            </div>
-            <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--brand-green-border); padding-bottom: 4px;">
-              <span>Horas em orçamentos manuais:</span>
-              <strong id="txtEcoHoras" style="color: var(--text-main);">R$ 600,00</strong>
+            <div style="margin-top: 24px;">
+              <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Fiz%20a%20simula%C3%A7%C3%A3o%20na%20calculadora%20e%20quero%20conectar%20o%20Bravvi%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-primary btn-sm" style="width: 100%;">
+                Quero Recuperar Essa Economia Agora &rarr;
+              </a>
             </div>
           </div>
 
-          <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Fiz%20a%20simula%C3%A7%C3%A3o%20no%20site%20e%20quero%20recuperar%20essa%20margem%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-primary" style="width: 100%;">
-            Quero Essa Economia na Minha Fábrica
-          </a>
         </div>
       </div>
+
     </div>
   </section>
 
-  <!-- 6 Grandes Recursos do Sistema -->
-  <section class="features-section" id="recursos">
+  <!-- COMPARATIVO LADO A LADO -->
+  <section class="compare-section" id="comparativo">
     <div class="container">
-      <div class="section-headline">
-        <span class="section-tag">Arsenal Completo</span>
-        <h2 class="section-title">Tudo o que uma Indústria de Uniformes Precisa</h2>
-        <p class="section-subtitle">Desenvolvido especificamente para o fluxo de corte, estamparia, costura e faturamento.</p>
+      
+      <div class="section-header-center">
+        <span class="section-tag">Antes vs Depois</span>
+        <h2 class="section-title">Compare e decida como quer conduzir sua confecção.</h2>
+        <p class="section-desc">A diferença entre viver apagando incêndio e ter uma fábrica previsível e lucrativa.</p>
       </div>
 
-      <div class="features-grid">
-        <div class="feature-card">
-          <span class="feature-badge">EXCLUSIVIDADE</span>
-          <h3 class="feature-card-title">Radar de Prazos Dinâmico</h3>
-          <p class="feature-card-text">Contagem regressiva automática por pedido. As cores mudam visualmente conforme o prazo se aproxima e pedidos para hoje pulsam em vermelho.</p>
-        </div>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th style="width: 40%;">Desafio da Fábrica</th>
+            <th style="width: 30%;">Sem o Bravvi (Planilha / Caderno)</th>
+            <th style="width: 30%;" class="col-bravvi">Com o Bravvi ERP Têxtil</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Prazo prometido ao cliente</strong></td>
+            <td><span class="badge-cross">✕</span> Anotado em folha avulsa; atrasos de dias</td>
+            <td><span class="badge-check">✓</span> <strong>Radar de Prazos</strong> com semáforo visual</td>
+          </tr>
+          <tr>
+            <td><strong>Ficha de corte para a oficina</strong></td>
+            <td><span class="badge-cross">✕</span> Cortador calcula grade de cabeça no risco</td>
+            <td><span class="badge-check">✓</span> <strong>Ficha Técnica A4</strong> com consumo exato</td>
+          </tr>
+          <tr>
+            <td><strong>Orçamento com foto do produto</strong></td>
+            <td><span class="badge-cross">✕</span> 2 a 3 horas montando no Corel ou Canva</td>
+            <td><span class="badge-check">✓</span> <strong>Pronto em 30 segundos</strong> com chave PIX</td>
+          </tr>
+          <tr>
+            <td><strong>Aproveitamento de rolo DTF</strong></td>
+            <td><span class="badge-cross">✕</span> Espaço em branco cobrado e jogado fora</td>
+            <td><span class="badge-check">✓</span> <strong>Otimizador de bobina</strong> de 58cm e 28cm</td>
+          </tr>
+          <tr>
+            <td><strong>Lucro real por camisa produzida</strong></td>
+            <td><span class="badge-cross">✕</span> Descobre no fim do ano se sobrou dinheiro</td>
+            <td><span class="badge-check">✓</span> <strong>Margem limpa calculada</strong> em tempo real</td>
+          </tr>
+          <tr>
+            <td><strong>Se a internet do galpão cair</strong></td>
+            <td><span class="badge-cross">✕</span> Sistemas em nuvem travam a expedição</td>
+            <td><span class="badge-check">✓</span> <strong>100% Offline-First</strong>, continua trabalhando</td>
+          </tr>
+        </tbody>
+      </table>
 
-        <div class="feature-card">
-          <span class="feature-badge">SEGURANÇA FINANCEIRA</span>
-          <h3 class="feature-card-title">Trava de Sinal 50% & Saldo na Retirada</h3>
-          <p class="feature-card-text">Acabe com calotes e inadimplência. Exija entrada mínima antes de iniciar o corte e bloqueie a liberação da mercadoria na expedição até a quitação total.</p>
-        </div>
-
-        <div class="feature-card">
-          <span class="feature-badge">AGILIDADE</span>
-          <h3 class="feature-card-title">Ficha Técnica & Proposta A4</h3>
-          <p class="feature-card-text">Emita propostas comerciais impecáveis com grade de tamanhos, mockups de arte e logotipo da sua empresa em menos de 30 segundos.</p>
-        </div>
-
-        <div class="feature-card">
-          <span class="feature-badge">CHÃO DE FÁBRICA</span>
-          <h3 class="feature-card-title">Kanban de Produção Industrial</h3>
-          <p class="feature-card-text">Acompanhe cada pedido passando por Corte, Estamparia, Costura e Acabamento com facilidade drag-and-drop e trava de quarentena.</p>
-        </div>
-
-        <div class="feature-card">
-          <span class="feature-badge">HIERARQUIA</span>
-          <h3 class="feature-card-title">Perfis de Acesso Diferenciados</h3>
-          <p class="feature-card-text">O vendedor lança orçamentos sem ver sua margem real. A oficina acompanha a produção sem mexer no financeiro. E o dono tem visão total.</p>
-        </div>
-
-        <div class="feature-card">
-          <span class="feature-badge">CONFIABILIDADE</span>
-          <h3 class="feature-card-title">Nuvem PostgreSQL & Offline-First</h3>
-          <p class="feature-card-text">Se a internet cair na fábrica, o sistema continua funcionando perfeitamente sem travar e sincroniza automaticamente assim que reconectar.</p>
-        </div>
-      </div>
     </div>
   </section>
 
-  <!-- Depoimentos dos Polos Confeccionistas -->
-  <section class="testimonials-section">
-    <div class="container">
-      <div class="section-headline">
-        <span class="section-tag">Casos Reais</span>
-        <h2 class="section-title">O que Dizem Quem Já Usa o Bravvi ERP Têxtil</h2>
-        <p class="section-subtitle">Depoimentos de confecções e estamparias que transformaram a sua gestão.</p>
-      </div>
-
-      <div class="testimonials-grid">
-        <div class="test-card">
-          <div>
-            <div class="test-stars">★★★★★</div>
-            <p class="test-quote">
-              "A ficha técnica impressa com a tabela de medidas e a trava de 50% de sinal pagaram o sistema no primeiro mês. Zeramos as peças cortadas erradas na oficina."
-            </p>
-          </div>
-          <div class="test-author-group">
-            <div class="test-avatar">MR</div>
-            <div>
-              <div class="test-author-name">Marcos Rogério</div>
-              <div class="test-author-location">Play Uniformes Esportivos — Americana/SP</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="test-card">
-          <div>
-            <div class="test-stars">★★★★★</div>
-            <p class="test-quote">
-              "O Radar de Prazos na TV da oficina mudou tudo. Todo mundo corre atrás do que tá piscando em vermelho e nunca mais tivemos pedido atrasado."
-            </p>
-          </div>
-          <div class="test-author-group">
-            <div class="test-avatar">CS</div>
-            <div>
-              <div class="test-author-name">Cláudia Silveira</div>
-              <div class="test-author-location">Prime Uniformes Corporativos — Brusque/SC</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="test-card">
-          <div>
-            <div class="test-stars">★★★★★</div>
-            <p class="test-quote">
-              "A proposta comercial em PDF com a foto da peça e a tabela de medidas passa uma imagem profissional gigante. O cliente fecha sem pedir desconto."
-            </p>
-          </div>
-          <div class="test-author-group">
-            <div class="test-avatar">AL</div>
-            <div>
-              <div class="test-author-name">André Luiz</div>
-              <div class="test-author-location">TexArte Escolares — Maringá/PR</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Tabela de Preços -->
+  <!-- PLANOS E PREÇOS -->
   <section class="pricing-section" id="planos">
     <div class="container">
-      <div class="section-headline">
-        <span class="section-tag">Planos & Preços</span>
-        <h2 class="section-title">Investimento Simples e Transparente</h2>
-        <p class="section-subtitle">Sem contratos com fidelidade abusiva. Você é livre para cancelar quando quiser.</p>
+      
+      <div class="section-header-center">
+        <span class="section-tag">Preços Transparentes</span>
+        <h2 class="section-title">Sem mensalidade por usuário. Tudo incluso.</h2>
+        <p class="section-desc">Escolha o plano ideal para o tamanho da sua confecção e comece hoje mesmo.</p>
       </div>
 
       <div class="pricing-grid">
-        <!-- Plano Mensal -->
-        <div class="price-box">
-          <div class="plan-header-title">Plano Mensal Pro</div>
-          <div class="plan-header-desc">Para confecções que querem começar hoje mesmo com baixo investimento.</div>
-
-          <div>
-            <span class="price-display">R$ 349</span>
-            <span class="price-period">/ mês</span>
-          </div>
-
-          <ul class="features-list">
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              Radar de Prazos com Contagem Regressiva
-            </li>
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              Trava de Sinal 50% & Bloqueio de Expedição
-            </li>
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              Fichas Técnicas & Propostas A4 Ilimitadas
-            </li>
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              Kanban de Produção & Quarentena
-            </li>
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              Nuvem PostgreSQL em Tempo Real
-            </li>
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              Suporte Técnico via WhatsApp
-            </li>
+        
+        <!-- Plano 1: Mensal -->
+        <div class="pricing-card">
+          <div class="pricing-name">Mensal Flexível</div>
+          <div class="pricing-desc">Para quem quer começar com flexibilidade total e sem fidelidade.</div>
+          <div class="pricing-value">R$ 147 <span>/ mês</span></div>
+          <ul class="pricing-features">
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Usuários e computadores ilimitados</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Orçamentos 3x4 com Mockups</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Fichas Técnicas A4 com Grade</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Radar de Prazos Industrial</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Suporte técnico por WhatsApp</li>
           </ul>
-
-          <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20contratar%20o%20Plano%20Mensal%20Pro%20do%20Bravvi%20ERP%20T%C3%AAxtil." target="_blank" class="btn btn-secondary">
+          <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Mensal%20do%20Bravvi%20ERP%20T%C3%AAxtil." target="_blank" class="btn btn-secondary">
             Contratar Plano Mensal
           </a>
         </div>
 
-        <!-- Plano VIP -->
-        <div class="price-box popular">
-          <div class="popular-tag">MAIS ESCOLHIDO PELAS FÁBRICAS</div>
-          <div class="plan-header-title">Implantação VIP Assistida</div>
-          <div class="plan-header-desc">Nós configuramos tudo na sua fábrica e treinamos a sua equipe ao vivo.</div>
-
-          <div>
-            <span class="price-display">R$ 1.200</span>
-            <div style="font-size: 13px; color: var(--brand-green); font-weight: 700; margin-top: 4px;">
-              + R$ 250 / mês (Mensalidade com desconto permanente)
-            </div>
-          </div>
-
-          <ul class="features-list">
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <strong>Tudo incluso do Plano Mensal Pro</strong>
-            </li>
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <strong>Configuração Assistida do Banco na Nuvem</strong>
-            </li>
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <strong>Importação da sua Lista de Clientes e Produtos</strong>
-            </li>
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <strong>Treinamento da Equipe via Google Meet</strong>
-            </li>
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <strong>Personalização com o Logotipo da sua Confecção</strong>
-            </li>
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              Suporte Prioritário VIP Direto no WhatsApp
-            </li>
+        <!-- Plano 2: Anual Pro (Destaque) -->
+        <div class="pricing-card featured">
+          <div class="pricing-pill">Mais Escolhido • Economize 34%</div>
+          <div class="pricing-name">Anual Pro Industrial</div>
+          <div class="pricing-desc">A solução completa com implantação acompanhada e desconto especial.</div>
+          <div class="pricing-value">R$ 97 <span>/ mês</span></div>
+          <div style="font-size: 12px; color: var(--brand-teal); font-weight: 700; margin-top: -4px; margin-bottom: 12px;">Cobrado anualmente (R$ 1.164/ano)</div>
+          <ul class="pricing-features">
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Tudo do Plano Mensal</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Implantação VIP com Treinamento</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Otimizador de Bobina DTF Nesting</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> DRE Gerencial & Lucro Real</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Suporte Prioritário VIP 7 dias</li>
           </ul>
-
-          <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20agendar%20a%20Implanta%C3%A7%C3%A3o%20VIP%20Assistida%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-primary">
-            Quero Implantação VIP na Minha Fábrica
+          <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20aproveitar%20a%20promo%C3%A7%C3%A3o%20do%20Plano%20Anual%20Pro%20do%20Bravvi%20ERP%20T%C3%AAxtil." target="_blank" class="btn btn-primary">
+            Garantir Desconto Anual &rarr;
           </a>
         </div>
 
-        <!-- Plano Anual Econômico -->
-        <div class="price-box">
-          <div class="plan-header-title">Plano Anual Econômico</div>
-          <div class="plan-header-desc">Para fábricas que buscam o maior desconto e preferem pagar uma única vez no ano.</div>
-
-          <div>
-            <span class="price-display">R$ 3.490</span>
-            <span class="price-period">/ ano à vista</span>
-            <div style="font-size: 13px; color: var(--brand-green); font-weight: 700; margin-top: 4px;">
-              Equivale a R$ 290 / mês (2 Meses Grátis de Bônus)
-            </div>
-          </div>
-
-          <ul class="features-list">
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <strong>12 Meses de Acesso Completo ao Bravvi ERP Têxtil</strong>
-            </li>
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <strong>Economia Real de R$ 698 no Ano</strong>
-            </li>
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              Radar de Prazos, Quarentena e Trava de Sinal 50%
-            </li>
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              Fichas Técnicas & Propostas Comerciais A4 Ilimitadas
-            </li>
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              Nuvem PostgreSQL em Tempo Real Inclusa
-            </li>
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              Suporte Técnico Prioritário via WhatsApp o Ano Todo
-            </li>
+        <!-- Plano 3: Vitalício / Sob Consulta -->
+        <div class="pricing-card">
+          <div class="pricing-name">Multi-Fábricas & Redes</div>
+          <div class="pricing-desc">Para indústrias com múltiplos galpões, facções integradas e alto volume.</div>
+          <div class="pricing-value">Sob Medida</div>
+          <ul class="pricing-features">
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Multi-CNPJ e filiais integradas</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Integração com banco PostgreSQL / Supabase</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Consultoria de processos no chão de fábrica</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Gerente de contas dedicado</li>
           </ul>
-
-          <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20aproveitar%20o%20desconto%20do%20Plano%20Anual%20do%20Bravvi%20ERP%20T%C3%AAxtil." target="_blank" class="btn btn-secondary">
-            Contratar Plano Anual (2 Meses OFF)
+          <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Gostaria%20de%20conversar%20sobre%20o%20Plano%20Multi-F%C3%A1bricas%20do%20Bravvi%20ERP." target="_blank" class="btn btn-secondary">
+            Falar com Consultor Corporativo
           </a>
         </div>
+
       </div>
+
     </div>
   </section>
 
-  <!-- FAQ -->
+  <!-- FAQ ACORDEÃO -->
   <section class="faq-section" id="faq">
-    <div class="section-headline">
-      <span class="section-tag">Tire Suas Dúvidas</span>
-      <h2 class="section-title">Perguntas Frequentes</h2>
-    </div>
-
-    <div class="faq-item active">
-      <div class="faq-question">
-        <span>Preciso de um computador potente para rodar o sistema?</span>
-        <span>▼</span>
-      </div>
-      <div class="faq-answer">
-        Não! O Bravvi ERP Têxtil é extremamente leve e roda direto pelo navegador de qualquer computador, notebook, tablet ou smartphone simples. Você não precisa investir em servidores caros.
-      </div>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question">
-        <span>E se a internet da fábrica cair no meio do expediente?</span>
-        <span>▼</span>
-      </div>
-      <div class="faq-answer">
-        O sistema possui tecnologia Offline-First. Ele continua funcionando normalmente mesmo sem internet, permitindo lançar pedidos e gerenciar a oficina. Assim que a conexão voltar, ele sincroniza com a nuvem sozinho.
-      </div>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question">
-        <span>Minha equipe não tem facilidade com informática. Vão conseguir usar?</span>
-        <span>▼</span>
-      </div>
-      <div class="faq-answer">
-        Sim! Toda a interface foi pensada para a realidade do chão de fábrica têxtil: botões objetivos, alertas em cores para urgência de prazos e fluxo intuitivo. Em menos de 20 minutos de uso, qualquer vendedor ou operador já domina o sistema.
-      </div>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question">
-        <span>Como funciona a garantia de 7 dias?</span>
-        <span>▼</span>
-      </div>
-      <div class="faq-answer">
-        Você tem 7 dias corridos para usar o sistema à vontade. Se por qualquer motivo achar que ele não organizou a sua produção ou não economizou dinheiro, basta mandar uma mensagem no WhatsApp que devolvemos 100% do valor pago.
-      </div>
-    </div>
-  </section>
-
-  <!-- CTA Final -->
-  <section class="cta-final">
     <div class="container">
-      <h2 class="cta-final-title">Pronto para Acabar com a Desordem na sua Confecção?</h2>
-      <p class="cta-final-sub">
-        Fale agora mesmo com um consultor especialista no WhatsApp e veja como organizar sua fábrica em menos de 48 horas.
-      </p>
-      <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20do%20Bravvi%20ERP%20T%C3%AAxtil." target="_blank" class="btn btn-whatsapp btn-lg">
-        Falar com Especialista no WhatsApp Agora
-      </a>
+      
+      <div class="section-header-center">
+        <span class="section-tag">Perguntas Frequentes</span>
+        <h2 class="section-title">Tire suas dúvidas antes de começar.</h2>
+        <p class="section-desc">Respostas diretas e honestas sobre o funcionamento do Bravvi ERP Têxtil.</p>
+      </div>
+
+      <div class="faq-accordion">
+        
+        <div class="faq-item active">
+          <div class="faq-question">
+            <span>Minha equipe não tem facilidade com computador. Eles vão conseguir usar?</span>
+            <span class="faq-icon">+</span>
+          </div>
+          <div class="faq-answer">
+            Sim! O Bravvi foi desenhado especificamente pensando na simplicidade do chão de fábrica. Não há termos técnicos confusos nem menus escondidos. Em menos de 20 minutos de treinamento qualquer pessoa da oficina já está emitindo orçamentos e consultando o Radar de Prazos.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Preciso instalar algum programa pesado nos computadores da fábrica?</span>
+            <span class="faq-icon">+</span>
+          </div>
+          <div class="faq-answer">
+            Não! O Bravvi roda 100% direto no navegador de internet (Google Chrome, Edge, Safari, Firefox) de qualquer computador, notebook, tablet ou celular. Não precisa de servidor caro nem técnico de TI para configurar.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>E se a internet cair durante o horário de trabalho no galpão?</span>
+            <span class="faq-icon">+</span>
+          </div>
+          <div class="faq-answer">
+            A sua fábrica não para! O Bravvi opera com tecnologia Offline-First. Você pode continuar gerando ordens de corte, consultando pedidos e abrindo fichas técnicas mesmo sem sinal de internet. Quando a conexão restabelecer, tudo é sincronizado automaticamente com a nuvem.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Como funciona a garantia incondicional de 7 dias?</span>
+            <span class="faq-icon">+</span>
+          </div>
+          <div class="faq-answer">
+            Se por qualquer motivo você achar que o Bravvi não facilitou a rotina da sua confecção ou não te fez economizar tempo e tecido nos primeiros 7 dias, basta enviar uma mensagem no nosso WhatsApp e devolvemos 100% do seu valor pago. Sem letras miúdas.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Posso colocar o logotipo e os dados da minha própria confecção nos documentos?</span>
+            <span class="faq-icon">+</span>
+          </div>
+          <div class="faq-answer">
+            Com certeza! Na aba de Configurações você insere a sua logomarca, CNPJ, telefone, endereço e chave PIX. Todos os orçamentos, propostas comerciais e fichas técnicas A4 saem personalizados com a identidade visual da sua confecção.
+          </div>
+        </div>
+
+      </div>
+
     </div>
   </section>
 
-  <!-- Footer -->
+  <!-- CTA FINAL DE CONVERSÃO -->
+  <section style="background: var(--brand-navy); color: #ffffff; padding: 80px 0; text-align: center;">
+    <div class="container" style="max-width: 780px;">
+      <h2 style="font-family: var(--font-heading); font-size: 38px; font-weight: 900; line-height: 1.2; margin-bottom: 16px;">
+        Pronto para organizar a sua confecção em menos de 48 horas?
+      </h2>
+      <p style="font-size: 16.5px; color: #94a3b8; margin-bottom: 32px;">
+        Junte-se a confecções e estamparias que zeraram os atrasos de entrega e reduziram o desperdício de tecido com o Bravvi ERP Têxtil.
+      </p>
+      <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
+        <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20do%20Bravvi%20ERP%20T%C3%AAxtil." target="_blank" class="btn btn-whatsapp btn-lg">
+          Falar com Especialista no WhatsApp Agora &rarr;
+        </a>
+        <a href="demo.html" target="_blank" class="btn btn-secondary btn-lg" style="color: var(--brand-navy);">
+          Fazer Test Drive ao Vivo
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER OFICIAL ESCURO -->
   <footer class="site-footer">
-    <div class="container" style="display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;">
-      <img src="assets/bravvi-logo-white.png" alt="Bravvi ERP Têxtil" style="height: 64px; width: auto; object-fit: contain;">
-      <p>© 2026 Bravvi ERP Têxtil. Todos os direitos reservados. Feito sob medida para confecções e estamparias brasileiras.</p>
+    <div class="container">
+      
+      <div class="footer-grid">
+        <div>
+          <img src="assets/bravvi-logo-white.png" alt="Bravvi ERP Têxtil" style="height: 56px; width: auto; object-fit: contain; margin-bottom: 16px;">
+          <p style="font-size: 13.5px; line-height: 1.6; max-width: 320px;">
+            A plataforma líder de gestão industrial desenvolvida sob medida para a rotina de confecções de uniformes, estamparias e oficinas têxteis brasileiras.
+          </p>
+        </div>
+
+        <div>
+          <div class="footer-title">Módulos</div>
+          <ul class="footer-links">
+            <li><a href="#apps">Orçamentos com Mockup</a></li>
+            <li><a href="#apps">Radar de Prazos</a></li>
+            <li><a href="#apps">Ficha Técnica A4</a></li>
+            <li><a href="#apps">Nesting Bobina DTF</a></li>
+            <li><a href="#apps">Estoque de Tecidos</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="footer-title">Acesso Rápido</div>
+          <ul class="footer-links">
+            <li><a href="demo.html" target="_blank">Test Drive ao Vivo</a></li>
+            <li><a href="proposta-comercial.html" target="_blank">Proposta Comercial A4</a></li>
+            <li><a href="#calculadora">Calculadora de Lucro</a></li>
+            <li><a href="#planos">Planos & Preços</a></li>
+            <li><a href="#faq">Dúvidas Frequentes</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="footer-title">Atendimento</div>
+          <ul class="footer-links">
+            <li><a href="https://wa.me/5511987654321" target="_blank">WhatsApp Comercial</a></li>
+            <li><span>suporte@bravvi.com.br</span></li>
+            <li><span>São Paulo / SP • Brasil</span></li>
+            <li><span style="display: inline-block; margin-top: 8px; background: rgba(45, 212, 191, 0.15); color: var(--brand-cyan); padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;">SUPORTE ATIVO</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>© 2026 Bravvi ERP Têxtil Industrial. Todos os direitos reservados. Feito com orgulho para a indústria nacional.</div>
+        <div style="display: flex; gap: 18px;">
+          <a href="#">Termos de Uso</a>
+          <a href="#">Privacidade & LGPD</a>
+          <a href="#">Segurança</a>
+        </div>
+      </div>
+
     </div>
   </footer>
 
-  <!-- Script da Calculadora e FAQ -->
+  <!-- Botão Flutuante do WhatsApp -->
+  <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Vi%20a%20p%C3%A1gina%20do%20Bravvi%20ERP%20T%C3%AAxtil%20e%20quero%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20gratuita." target="_blank" class="floating-wa-btn" title="Falar com Especialista Têxtil">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z"/>
+    </svg>
+  </a>
+
+  <!-- SCRIPTS INTERATIVOS -->
   <script>
-    // Calculadora Interativa de Lucro
+    // 1. Alternador do Mosaico de Apps (Estilo Odoo Switcher)
+    function toggleAppsMode(mode) {
+      const tabCom = document.getElementById('tabComBravvi');
+      const tabSem = document.getElementById('tabSemBravvi');
+      const gridCom = document.getElementById('gridComBravvi');
+      const gridSem = document.getElementById('gridSemBravvi');
+
+      if (mode === 'sem') {
+        tabCom.classList.remove('active');
+        tabSem.classList.add('active', 'danger-active');
+        gridCom.style.display = 'none';
+        gridSem.style.display = 'grid';
+      } else {
+        tabSem.classList.remove('active', 'danger-active');
+        tabCom.classList.add('active');
+        gridSem.style.display = 'none';
+        gridCom.style.display = 'grid';
+      }
+    }
+
+    // 2. Abas de Demonstração Interativa
+    const tabTitles = [
+      'bravvi-erp://orcamento-com-mockup.html',
+      'bravvi-erp://radar-de-prazos-industrial.html',
+      'bravvi-erp://ficha-tecnica-a4-corte.html',
+      'bravvi-erp://otimizador-bobina-dtf.html',
+      'bravvi-erp://dre-gerencial-lucro-real.html'
+    ];
+
+    function switchDemoTab(index, btn) {
+      document.querySelectorAll('.demo-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content-panel').forEach(p => p.classList.remove('active'));
+
+      btn.classList.add('active');
+      const panel = document.getElementById('tabPanel' + index);
+      if (panel) panel.classList.add('active');
+
+      const titleEl = document.getElementById('windowTabTitle');
+      if (titleEl && tabTitles[index]) titleEl.textContent = tabTitles[index];
+    }
+
+    // 3. Calculadora Interativa de Lucro Têxtil
     const inputPecas = document.getElementById('inputPecas');
     const inputMetros = document.getElementById('inputMetros');
     const valPecas = document.getElementById('valPecas');
@@ -1552,11 +2039,13 @@
       txtTotalEconomia.textContent = formatarReal(total);
     }
 
-    inputPecas.addEventListener('input', recalcularLucro);
-    inputMetros.addEventListener('input', recalcularLucro);
-    recalcularLucro();
+    if (inputPecas && inputMetros) {
+      inputPecas.addEventListener('input', recalcularLucro);
+      inputMetros.addEventListener('input', recalcularLucro);
+      recalcularLucro();
+    }
 
-    // FAQ Acordeão
+    // 4. Acordeão de FAQ
     document.querySelectorAll('.faq-question').forEach(q => {
       q.addEventListener('click', () => {
         const item = q.parentElement;
