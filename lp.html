@@ -124,17 +124,13 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 24px;
     }
 
     .brand-logo {
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-family: var(--font-heading);
-      font-size: 20px;
-      font-weight: 800;
-      color: var(--text-main);
-      letter-spacing: -0.5px;
+      flex-shrink: 0;
     }
 
     .brand-icon {
@@ -153,10 +149,11 @@
     .nav-menu {
       display: flex;
       align-items: center;
-      gap: 28px;
+      gap: 22px;
       font-size: 14px;
       font-weight: 600;
       color: var(--text-body);
+      white-space: nowrap;
     }
 
     .nav-menu a:hover {
@@ -999,7 +996,7 @@
   <header class="site-header">
     <div class="container header-nav">
       <a href="/" class="brand-logo" style="display: flex; align-items: center; text-decoration: none;">
-        <img src="assets/bravvi-logo.png" alt="Bravvi ERP Têxtil" style="height: 48px; width: auto; object-fit: contain;">
+        <img src="assets/bravvi-logo.png" alt="Bravvi ERP Têxtil" style="height: 52px; width: auto; object-fit: contain;">
       </a>
 
       <nav class="nav-menu">
@@ -1516,7 +1513,7 @@
   <!-- Footer -->
   <footer class="site-footer">
     <div class="container" style="display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;">
-      <img src="assets/bravvi-logo-white.png" alt="Bravvi ERP Têxtil" style="height: 48px; width: auto; object-fit: contain;">
+      <img src="assets/bravvi-logo-white.png" alt="Bravvi ERP Têxtil" style="height: 64px; width: auto; object-fit: contain;">
       <p>© 2026 Bravvi ERP Têxtil. Todos os direitos reservados. Feito sob medida para confecções e estamparias brasileiras.</p>
     </div>
   </footer>
