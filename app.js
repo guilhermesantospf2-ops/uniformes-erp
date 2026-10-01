@@ -1437,171 +1437,266 @@
       throw new Error('O CNPJ deve conter 14 dígitos numéricos.');
     }
 
-    // 1. Tenta ReceitaWS primeiro (contém endereço completo com rua e número, telefone, email e dados cadastrais espelhados)
+    let resultado = null;
+
+    // 1. Tenta CNPJA primeiro (CORS aberto '*', traz rua, número, telefone e e-mail completos)
     try {
-      const d = await consultarReceitaWs(limpo, 5500);
-      if (d && d.status !== 'ERROR' && d.nome) {
-        const titularMei = extrairTitularMei(d.nome);
-        const qsaNome = (d.qsa && Array.isArray(d.qsa) && d.qsa[0]) ? (d.qsa[0].nome || d.qsa[0].nome_socio || '') : '';
-        const contato = titularMei || qsaNome || '';
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5500);
+      const res = await fetch(`https://open.cnpja.com/office/${limpo}`, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (res.ok) {
+        const d = await res.json();
+        const comp = d.company || {};
+        const addr = d.address || {};
+        const razao = comp.name || '';
+        const titular = extrairTitularMei(razao);
+        const qsaNome = (comp.members && comp.members[0]) ? (comp.members[0].person?.name || comp.members[0].name || '') : '';
+        const contato = titular || qsaNome || '';
+        const fantasia = (d.alias && d.alias.trim()) || titular || razao;
 
-        let fantasia = (d.fantasia || '').trim();
-        if (!fantasia || fantasia === d.nome) {
-          fantasia = titularMei || d.nome;
-        }
-
-        const endPartes = [
-          d.logradouro,
-          d.numero ? `nº ${d.numero}` : '',
-          d.complemento ? `(${d.complemento})` : ''
+        const enderecoFormatado = [
+          addr.street,
+          addr.number ? 'nº ' + addr.number : '',
+          addr.details ? '(' + addr.details + ')' : ''
         ].filter(Boolean).join(', ');
 
-        const cnaeTexto = (d.atividade_principal && d.atividade_principal[0]) ? d.atividade_principal[0].text : '';
+        const tel = d.phones && d.phones[0] ? ((d.phones[0].area || '') + (d.phones[0].number || '')).replace(/\D/g, '') : '';
+        const email = d.emails && d.emails[0] ? (d.emails[0].address || '').toLowerCase().trim() : '';
+        const cnaeTexto = d.mainActivity ? d.mainActivity.text : '';
 
-        return {
+        resultado = {
           sucesso: true,
-          razaoSocial: d.nome || '',
+          razaoSocial: razao,
           nomeFantasia: fantasia,
           cnpjFormatado: formatarCnpj(limpo),
-          situacaoCadastral: (d.situacao || 'ATIVA').toUpperCase(),
-          dataSituacao: d.data_situacao || d.abertura || '',
+          situacaoCadastral: (d.status?.text || 'Ativa').toUpperCase(),
+          dataSituacao: d.statusDate || d.founded || '',
           cnae: cnaeTexto,
           ramoSugerido: deduzirRamoPorCnae(cnaeTexto),
-          porte: d.porte || '',
+          porte: comp.size?.text || '',
           contatoSugerido: contato,
-          capitalSocial: d.capital_social || 0,
-          cep: formatarCep(d.cep || ''),
-          endereco: endPartes,
-          bairro: d.bairro || '',
-          cidade: d.municipio || '',
-          uf: d.uf || '',
-          telefone: (d.telefone || '').replace(/\D/g, ''),
-          email: (d.email || '').toLowerCase().trim(),
+          capitalSocial: comp.equity || 0,
+          cep: formatarCep(addr.zip || ''),
+          endereco: enderecoFormatado,
+          bairro: addr.district || '',
+          cidade: addr.city || '',
+          uf: addr.state || '',
+          telefone: tel,
+          email: email,
           fonte: 'Receita Federal'
         };
       }
     } catch (e) {
-      console.warn('Tentativa ReceitaWS falhou, acionando MinhaReceita...', e);
+      console.warn('Tentativa CNPJA falhou, tentando ReceitaWS...', e);
     }
 
-    // 2. Fallback MinhaReceita (CORS Aberto e alta disponibilidade)
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 6000);
-      const res = await fetch(`https://minhareceita.org/${limpo}`, { signal: controller.signal });
-      clearTimeout(timeout);
-      if (res.ok) {
-        const d = await res.json();
-        const titularMei = extrairTitularMei(d.razao_social);
-        const qsaNome = (d.qsa && Array.isArray(d.qsa) && d.qsa[0] && d.qsa[0].nome_socio) ? d.qsa[0].nome_socio : '';
-        const contato = titularMei || qsaNome || '';
+    // 2. Fallback: ReceitaWS
+    if (!resultado) {
+      try {
+        const d = await consultarReceitaWs(limpo, 5000);
+        if (d && d.status !== 'ERROR' && d.nome) {
+          const titularMei = extrairTitularMei(d.nome);
+          const qsaNome = (d.qsa && Array.isArray(d.qsa) && d.qsa[0]) ? (d.qsa[0].nome || d.qsa[0].nome_socio || '') : '';
+          const contato = titularMei || qsaNome || '';
 
-        let fantasia = (d.nome_fantasia || '').trim();
-        if (!fantasia || fantasia === d.razao_social) {
-          fantasia = titularMei || d.razao_social;
+          let fantasia = (d.fantasia || '').trim();
+          if (!fantasia || fantasia === d.nome) {
+            fantasia = titularMei || d.nome;
+          }
+
+          const endPartes = [
+            d.logradouro,
+            d.numero ? `nº ${d.numero}` : '',
+            d.complemento ? `(${d.complemento})` : ''
+          ].filter(Boolean).join(', ');
+
+          const cnaeTexto = (d.atividade_principal && d.atividade_principal[0]) ? d.atividade_principal[0].text : '';
+
+          resultado = {
+            sucesso: true,
+            razaoSocial: d.nome || '',
+            nomeFantasia: fantasia,
+            cnpjFormatado: formatarCnpj(limpo),
+            situacaoCadastral: (d.situacao || 'ATIVA').toUpperCase(),
+            dataSituacao: d.data_situacao || d.abertura || '',
+            cnae: cnaeTexto,
+            ramoSugerido: deduzirRamoPorCnae(cnaeTexto),
+            porte: d.porte || '',
+            contatoSugerido: contato,
+            capitalSocial: d.capital_social || 0,
+            cep: formatarCep(d.cep || ''),
+            endereco: endPartes,
+            bairro: d.bairro || '',
+            cidade: d.municipio || '',
+            uf: d.uf || '',
+            telefone: (d.telefone || '').replace(/\D/g, ''),
+            email: (d.email || '').toLowerCase().trim(),
+            fonte: 'Receita Federal (ReceitaWS)'
+          };
         }
+      } catch (e) {
+        console.warn('Tentativa ReceitaWS falhou, acionando MinhaReceita...', e);
+      }
+    }
 
-        let enderecoStr = [d.descricao_tipo_de_logradouro, d.logradouro, d.numero ? 'nº ' + d.numero : '', d.complemento].filter(Boolean).join(' ').trim();
-        let bairroStr = d.bairro || '';
-        let cidadeStr = d.municipio || '';
-        let ufStr = d.uf || '';
+    // 3. Fallback: MinhaReceita
+    if (!resultado) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 6000);
+        const res = await fetch(`https://minhareceita.org/${limpo}`, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const d = await res.json();
+          const titularMei = extrairTitularMei(d.razao_social);
+          const qsaNome = (d.qsa && Array.isArray(d.qsa) && d.qsa[0] && d.qsa[0].nome_socio) ? d.qsa[0].nome_socio : '';
+          const contato = titularMei || qsaNome || '';
 
-        // Se logradouro veio vazio da RFB, enriquece via CEP
-        if ((!enderecoStr || enderecoStr.length < 3) && d.cep) {
-          const cepInfo = await consultarCepPublico(d.cep);
-          if (cepInfo) {
-            if (cepInfo.endereco) enderecoStr = cepInfo.endereco;
-            if (!bairroStr && cepInfo.bairro) bairroStr = cepInfo.bairro;
-            if (!cidadeStr && cepInfo.cidade) cidadeStr = cepInfo.cidade;
-            if (!ufStr && cepInfo.uf) ufStr = cepInfo.uf;
+          let fantasia = (d.nome_fantasia || '').trim();
+          if (!fantasia || fantasia === d.razao_social) {
+            fantasia = titularMei || d.razao_social;
+          }
+
+          let enderecoStr = [d.descricao_tipo_de_logradouro, d.logradouro, d.numero ? 'nº ' + d.numero : '', d.complemento].filter(Boolean).join(' ').trim();
+          let bairroStr = d.bairro || '';
+          let cidadeStr = d.municipio || '';
+          let ufStr = d.uf || '';
+
+          if ((!enderecoStr || enderecoStr.length < 3) && d.cep) {
+            const cepInfo = await consultarCepPublico(d.cep);
+            if (cepInfo) {
+              if (cepInfo.endereco) enderecoStr = cepInfo.endereco;
+              if (!bairroStr && cepInfo.bairro) bairroStr = cepInfo.bairro;
+              if (!cidadeStr && cepInfo.cidade) cidadeStr = cepInfo.cidade;
+              if (!ufStr && cepInfo.uf) ufStr = cepInfo.uf;
+            }
+          }
+
+          resultado = {
+            sucesso: true,
+            razaoSocial: d.razao_social || '',
+            nomeFantasia: fantasia,
+            cnpjFormatado: formatarCnpj(limpo),
+            situacaoCadastral: d.descricao_situacao_cadastral || 'ATIVA',
+            dataSituacao: d.data_situacao_cadastral || '',
+            cnae: d.cnae_fiscal_descricao || '',
+            ramoSugerido: deduzirRamoPorCnae(d.cnae_fiscal_descricao),
+            porte: d.porte || '',
+            contatoSugerido: contato,
+            capitalSocial: d.capital_social || 0,
+            cep: formatarCep(d.cep || ''),
+            endereco: enderecoStr,
+            bairro: bairroStr,
+            cidade: cidadeStr,
+            uf: ufStr,
+            telefone: (d.ddd_telefone_1 || '').replace(/\D/g, ''),
+            email: (d.email || '').toLowerCase().trim(),
+            fonte: 'Receita Federal (MinhaReceita)'
+          };
+        }
+      } catch (e) {
+        console.warn('Fallback MinhaReceita falhou, acionando BrasilAPI...', e);
+      }
+    }
+
+    // 4. Fallback: BrasilAPI
+    if (!resultado) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 6000);
+        const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${limpo}`, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const d = await res.json();
+          const titularMei = extrairTitularMei(d.razao_social);
+          const qsaNome = (d.qsa && Array.isArray(d.qsa) && d.qsa[0] && d.qsa[0].nome_socio) ? d.qsa[0].nome_socio : '';
+          const contato = titularMei || qsaNome || '';
+
+          let fantasia = (d.nome_fantasia || '').trim();
+          if (!fantasia || fantasia === d.razao_social) {
+            fantasia = titularMei || d.razao_social;
+          }
+
+          let enderecoStr = [d.descricao_tipo_de_logradouro, d.logradouro, d.numero ? 'nº ' + d.numero : '', d.complemento].filter(Boolean).join(' ').trim();
+          let bairroStr = d.bairro || '';
+          let cidadeStr = d.municipio || '';
+          let ufStr = d.uf || '';
+
+          if ((!enderecoStr || enderecoStr.length < 3) && d.cep) {
+            const cepInfo = await consultarCepPublico(d.cep);
+            if (cepInfo) {
+              if (cepInfo.endereco) enderecoStr = cepInfo.endereco;
+              if (!bairroStr && cepInfo.bairro) bairroStr = cepInfo.bairro;
+              if (!cidadeStr && cepInfo.cidade) cidadeStr = cepInfo.cidade;
+              if (!ufStr && cepInfo.uf) ufStr = cepInfo.uf;
+            }
+          }
+
+          resultado = {
+            sucesso: true,
+            razaoSocial: d.razao_social || '',
+            nomeFantasia: fantasia,
+            cnpjFormatado: formatarCnpj(limpo),
+            situacaoCadastral: d.descricao_situacao_cadastral || 'ATIVA',
+            dataSituacao: d.data_situacao_cadastral || '',
+            cnae: d.cnae_fiscal_descricao || '',
+            ramoSugerido: deduzirRamoPorCnae(d.cnae_fiscal_descricao),
+            porte: d.porte || '',
+            contatoSugerido: contato,
+            capitalSocial: d.capital_social || 0,
+            cep: formatarCep(d.cep || ''),
+            endereco: enderecoStr,
+            bairro: bairroStr,
+            cidade: cidadeStr,
+            uf: ufStr,
+            telefone: (d.ddd_telefone_1 || '').replace(/\D/g, ''),
+            email: (d.email || '').toLowerCase().trim(),
+            fonte: 'Receita Federal (BrasilAPI)'
+          };
+        }
+      } catch (e) {
+        console.warn('Fallback BrasilAPI falhou:', e);
+      }
+    }
+
+    if (!resultado) {
+      throw new Error('Não foi possível obter dados para este CNPJ na base pública da Receita Federal.');
+    }
+
+    // 5. Enriquecimento de Endereço Garantido: se rua e número estiverem em branco
+    if (!resultado.endereco || resultado.endereco.length < 5) {
+      try {
+        const cEnrich = new AbortController();
+        const tEnrich = setTimeout(() => cEnrich.abort(), 4000);
+        const rEnrich = await fetch(`https://open.cnpja.com/office/${limpo}`, { signal: cEnrich.signal });
+        clearTimeout(tEnrich);
+        if (rEnrich.ok) {
+          const dE = await rEnrich.json();
+          const addrE = dE.address || {};
+          if (addrE.street) {
+            resultado.endereco = [
+              addrE.street,
+              addrE.number ? 'nº ' + addrE.number : '',
+              addrE.details ? '(' + addrE.details + ')' : ''
+            ].filter(Boolean).join(', ');
+          }
+          if (addrE.district && !resultado.bairro) resultado.bairro = addrE.district;
+          if (addrE.city && !resultado.cidade) resultado.cidade = addrE.city;
+          if (addrE.state && !resultado.uf) resultado.uf = addrE.state;
+          if (addrE.zip && (!resultado.cep || resultado.cep === '00000-000')) resultado.cep = formatarCep(addrE.zip);
+
+          if (!resultado.telefone && dE.phones && dE.phones[0]) {
+            resultado.telefone = ((dE.phones[0].area || '') + (dE.phones[0].number || '')).replace(/\D/g, '');
+          }
+          if (!resultado.email && dE.emails && dE.emails[0]) {
+            resultado.email = (dE.emails[0].address || '').toLowerCase().trim();
           }
         }
-
-        return {
-          sucesso: true,
-          razaoSocial: d.razao_social || '',
-          nomeFantasia: fantasia,
-          cnpjFormatado: formatarCnpj(limpo),
-          situacaoCadastral: d.descricao_situacao_cadastral || 'ATIVA',
-          dataSituacao: d.data_situacao_cadastral || '',
-          cnae: d.cnae_fiscal_descricao || '',
-          ramoSugerido: deduzirRamoPorCnae(d.cnae_fiscal_descricao),
-          porte: d.porte || '',
-          contatoSugerido: contato,
-          capitalSocial: d.capital_social || 0,
-          cep: formatarCep(d.cep || ''),
-          endereco: enderecoStr,
-          bairro: bairroStr,
-          cidade: cidadeStr,
-          uf: ufStr,
-          telefone: (d.ddd_telefone_1 || '').replace(/\D/g, ''),
-          email: (d.email || '').toLowerCase().trim(),
-          fonte: 'Receita Federal (MinhaReceita)'
-        };
-      }
-    } catch (e) {
-      console.warn('Fallback MinhaReceita falhou, acionando BrasilAPI...', e);
+      } catch (e) {}
     }
 
-    // 3. Fallback BrasilAPI
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 6000);
-      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${limpo}`, { signal: controller.signal });
-      clearTimeout(timeout);
-      if (res.ok) {
-        const d = await res.json();
-        const titularMei = extrairTitularMei(d.razao_social);
-        const qsaNome = (d.qsa && Array.isArray(d.qsa) && d.qsa[0] && d.qsa[0].nome_socio) ? d.qsa[0].nome_socio : '';
-        const contato = titularMei || qsaNome || '';
-
-        let fantasia = (d.nome_fantasia || '').trim();
-        if (!fantasia || fantasia === d.razao_social) {
-          fantasia = titularMei || d.razao_social;
-        }
-
-        let enderecoStr = [d.descricao_tipo_de_logradouro, d.logradouro, d.numero ? 'nº ' + d.numero : '', d.complemento].filter(Boolean).join(' ').trim();
-        let bairroStr = d.bairro || '';
-        let cidadeStr = d.municipio || '';
-        let ufStr = d.uf || '';
-
-        if ((!enderecoStr || enderecoStr.length < 3) && d.cep) {
-          const cepInfo = await consultarCepPublico(d.cep);
-          if (cepInfo) {
-            if (cepInfo.endereco) enderecoStr = cepInfo.endereco;
-            if (!bairroStr && cepInfo.bairro) bairroStr = cepInfo.bairro;
-            if (!cidadeStr && cepInfo.cidade) cidadeStr = cepInfo.cidade;
-            if (!ufStr && cepInfo.uf) ufStr = cepInfo.uf;
-          }
-        }
-
-        return {
-          sucesso: true,
-          razaoSocial: d.razao_social || '',
-          nomeFantasia: fantasia,
-          cnpjFormatado: formatarCnpj(limpo),
-          situacaoCadastral: d.descricao_situacao_cadastral || 'ATIVA',
-          dataSituacao: d.data_situacao_cadastral || '',
-          cnae: d.cnae_fiscal_descricao || '',
-          ramoSugerido: deduzirRamoPorCnae(d.cnae_fiscal_descricao),
-          porte: d.porte || '',
-          contatoSugerido: contato,
-          capitalSocial: d.capital_social || 0,
-          cep: formatarCep(d.cep || ''),
-          endereco: enderecoStr,
-          bairro: bairroStr,
-          cidade: cidadeStr,
-          uf: ufStr,
-          telefone: (d.ddd_telefone_1 || '').replace(/\D/g, ''),
-          email: (d.email || '').toLowerCase().trim(),
-          fonte: 'Receita Federal (BrasilAPI)'
-        };
-      }
-    } catch (e) {
-      console.warn('Fallback BrasilAPI falhou:', e);
-    }
-
-    throw new Error('Não foi possível obter dados para este CNPJ na base pública da Receita Federal.');
+    return resultado;
   }
 
   function formatarDataBr(dataIso) {
