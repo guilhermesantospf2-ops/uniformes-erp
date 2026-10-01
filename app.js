@@ -2594,6 +2594,44 @@
     document.getElementById('btnIrParaPedidos')?.addEventListener('click', () => navegarPara('pedidos'));
   }
 
+  // ==========================================================================
+  // HELPERS DE GRADE DE TAMANHOS (EXIBE APENAS TAMANHOS SELECIONADOS > 0)
+  // ==========================================================================
+  function obterTamanhosSelecionadosGrade(grade) {
+    if (!grade) return [];
+    const tamOrdem = ['pp', 'p', 'm', 'g', 'gg', 'xg'];
+    const res = [];
+    tamOrdem.forEach(tam => {
+      const qtd = parseInt(grade[tam], 10) || 0;
+      if (qtd > 0) {
+        res.push({ tam: tam.toUpperCase(), qtd });
+      }
+    });
+    return res;
+  }
+
+  function formatarGradeSelecionadaHtml(grade, estilo = 'badge') {
+    const selecionados = obterTamanhosSelecionadosGrade(grade);
+    if (!selecionados.length) {
+      return '<span style="color: #64748b; font-style: italic; font-size: 11px;">Sem grade</span>';
+    }
+    if (estilo === 'badge') {
+      return selecionados.map(s => `
+        <span style="display: inline-block; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 2px 7px; border-radius: 4px; font-size: 11px; margin: 1px 3px 1px 0; border: 1px solid #bae6fd;">
+          ${s.qtd}x ${s.tam}
+        </span>
+      `).join('');
+    }
+    if (estilo === 'badge-blue') {
+      return selecionados.map(s => `
+        <span style="display: inline-block; font-weight: 800; background: #eff6ff; color: #1e40af; padding: 2px 7px; border-radius: 4px; font-size: 11px; margin: 1px 3px 1px 0; border: 1px solid #bfdbfe;">
+          ${s.qtd}x ${s.tam}
+        </span>
+      `).join('');
+    }
+    return selecionados.map(s => `<strong>${s.qtd}x</strong> ${s.tam}`).join(' • ');
+  }
+
   /* ==========================================================================
      MÓDULO 2: PEDIDOS & ORÇAMENTOS (DUPLO FLUXO + BENCHMARK BRASIL + KANBAN)
      ========================================================================== */
@@ -2810,8 +2848,10 @@
                     <span style="display: block; font-size: 10.5px; color: var(--text-gray-500); margin-top: 3px;">${p.tipoPersonalizacao || 'Estampa Conforme Arte'}</span>
                   </td>
                   <td class="text-mono">
-                    <span style="font-size: 11px;">P:${p.grade?.p || 0} M:${p.grade?.m || 0} G:${p.grade?.g || 0} GG:${p.grade?.gg || 0}</span>
-                    <strong style="display: block; color: var(--text-primary);">${p.grade?.total || 0} peças</strong>
+                    <div style="font-size: 11px; line-height: 1.3;">
+                      ${formatarGradeSelecionadaHtml(p.grade, 'badge')}
+                    </div>
+                    <strong style="display: block; color: var(--text-primary); margin-top: 3px;">${p.grade?.total || 0} peças</strong>
                   </td>
                   <td class="text-mono">${formatarMoeda(p.precoUnitarioVenda)}</td>
                   <td class="text-mono">
@@ -6283,18 +6323,13 @@
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11px;">
             <thead>
               <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1; color: #1e293b;">
-                <th style="padding: 6px 8px; text-align: left;">Item / Modelo</th>
-                <th style="padding: 6px 8px; text-align: left;">Cor / Tecido</th>
-                <th style="padding: 6px 8px; text-align: left;">Personalizações (Locais)</th>
-                <th style="padding: 6px 4px; text-align: center;">PP</th>
-                <th style="padding: 6px 4px; text-align: center;">P</th>
-                <th style="padding: 6px 4px; text-align: center;">M</th>
-                <th style="padding: 6px 4px; text-align: center;">G</th>
-                <th style="padding: 6px 4px; text-align: center;">GG</th>
-                <th style="padding: 6px 4px; text-align: center;">XG</th>
-                <th style="padding: 6px 4px; text-align: center; background: #e2e8f0;">Qtd</th>
-                <th style="padding: 6px 8px; text-align: right;">Unitário</th>
-                <th style="padding: 6px 8px; text-align: right;">Subtotal</th>
+                <th style="padding: 6px 8px; text-align: left; width: 22%;">Item / Modelo</th>
+                <th style="padding: 6px 8px; text-align: left; width: 18%;">Cor / Tecido</th>
+                <th style="padding: 6px 8px; text-align: left; width: 26%;">Personalizações (Locais)</th>
+                <th style="padding: 6px 8px; text-align: left; width: 16%;">Tamanhos Selecionados</th>
+                <th style="padding: 6px 6px; text-align: center; width: 6%; background: #e2e8f0;">Qtd</th>
+                <th style="padding: 6px 8px; text-align: right; width: 12%;">Unitário</th>
+                <th style="padding: 6px 8px; text-align: right; width: 12%;">Subtotal</th>
               </tr>
             </thead>
             <tbody>
@@ -6316,31 +6351,35 @@
                     <td style="padding: 6px 8px; vertical-align: top; font-size: 10.5px; color: #334155; line-height: 1.35;">
                       ${appsHtml}
                     </td>
-                    <td style="padding: 6px 4px; text-align: center;" class="text-mono">${it.grade?.pp || 0}</td>
-                    <td style="padding: 6px 4px; text-align: center;" class="text-mono">${it.grade?.p || 0}</td>
-                    <td style="padding: 6px 4px; text-align: center;" class="text-mono">${it.grade?.m || 0}</td>
-                    <td style="padding: 6px 4px; text-align: center;" class="text-mono">${it.grade?.g || 0}</td>
-                    <td style="padding: 6px 4px; text-align: center;" class="text-mono">${it.grade?.gg || 0}</td>
-                    <td style="padding: 6px 4px; text-align: center;" class="text-mono">${it.grade?.xg || 0}</td>
-                    <td style="padding: 6px 4px; text-align: center; font-weight: 800; background: #f8fafc;" class="text-mono">${it.grade?.total || 0}</td>
-                    <td style="padding: 6px 8px; text-align: right;" class="text-mono">${formatarMoeda(it.precoVendaUnitario)}</td>
-                    <td style="padding: 6px 8px; text-align: right; font-weight: 700;" class="text-mono">${formatarMoeda(subtotal)}</td>
+                    <td style="padding: 6px 8px; vertical-align: top;">
+                      ${formatarGradeSelecionadaHtml(it.grade, 'badge')}
+                    </td>
+                    <td style="padding: 6px 6px; text-align: center; font-weight: 800; background: #f8fafc; vertical-align: top;" class="text-mono">
+                      ${it.grade?.total || 0}
+                    </td>
+                    <td style="padding: 6px 8px; text-align: right; vertical-align: top;" class="text-mono">
+                      ${formatarMoeda(it.precoVendaUnitario)}
+                    </td>
+                    <td style="padding: 6px 8px; text-align: right; font-weight: 700; vertical-align: top;" class="text-mono">
+                      ${formatarMoeda(subtotal)}
+                    </td>
                   </tr>
                 `;
               }).join('')}
             </tbody>
             <tfoot>
               <tr style="background: #f8fafc; font-weight: 800; border-top: 2px solid #cbd5e1;">
-                <td colspan="3" style="padding: 6px 8px; text-align: right;">TOTAIS CONSOLIDADOS DO PEDIDO:</td>
-                <td style="padding: 6px 4px; text-align: center;" class="text-mono">${p.grade?.pp || 0}</td>
-                <td style="padding: 6px 4px; text-align: center;" class="text-mono">${p.grade?.p || 0}</td>
-                <td style="padding: 6px 4px; text-align: center;" class="text-mono">${p.grade?.m || 0}</td>
-                <td style="padding: 6px 4px; text-align: center;" class="text-mono">${p.grade?.g || 0}</td>
-                <td style="padding: 6px 4px; text-align: center;" class="text-mono">${p.grade?.gg || 0}</td>
-                <td style="padding: 6px 4px; text-align: center;" class="text-mono">${p.grade?.xg || 0}</td>
-                <td style="padding: 6px 4px; text-align: center; color: #047857; background: #e2e8f0;" class="text-mono">${p.grade?.total || 0} un</td>
-                <td style="padding: 6px 8px; text-align: right;">-</td>
-                <td style="padding: 6px 8px; text-align: right; color: #0f172a; font-size: 13px;" class="text-mono">${formatarMoeda(p.valorTotalVenda)}</td>
+                <td colspan="3" style="padding: 8px 8px; text-align: right; font-size: 11px;">TOTAIS CONSOLIDADOS DO PEDIDO:</td>
+                <td style="padding: 8px 8px; text-align: left;">
+                  ${formatarGradeSelecionadaHtml(p.grade, 'badge-blue')}
+                </td>
+                <td style="padding: 8px 6px; text-align: center; color: #047857; background: #e2e8f0; font-size: 12px;" class="text-mono">
+                  ${p.grade?.total || 0} un
+                </td>
+                <td style="padding: 8px 8px; text-align: right;">-</td>
+                <td style="padding: 8px 8px; text-align: right; color: #0f172a; font-size: 13px;" class="text-mono">
+                  ${formatarMoeda(p.valorTotalVenda)}
+                </td>
               </tr>
             </tfoot>
           </table>
@@ -6365,31 +6404,33 @@
           </div>
         </div>
 
-        <!-- Grade de Tamanhos -->
-        <table style="margin-bottom: 12px;">
-          <thead>
-            <tr>
-              <th style="text-align: center;">PP</th>
-              <th style="text-align: center;">P</th>
-              <th style="text-align: center;">M</th>
-              <th style="text-align: center;">G</th>
-              <th style="text-align: center;">GG</th>
-              <th style="text-align: center;">XG</th>
-              <th style="text-align: center;">TOTAL</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style="text-align: center;" class="text-mono">${p.grade?.pp || 0}</td>
-              <td style="text-align: center;" class="text-mono">${p.grade?.p || 0}</td>
-              <td style="text-align: center;" class="text-mono">${p.grade?.m || 0}</td>
-              <td style="text-align: center;" class="text-mono">${p.grade?.g || 0}</td>
-              <td style="text-align: center;" class="text-mono">${p.grade?.gg || 0}</td>
-              <td style="text-align: center;" class="text-mono">${p.grade?.xg || 0}</td>
-              <td style="text-align: center;" class="text-mono"><strong>${p.grade?.total || 0} peças</strong></td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- Grade de Tamanhos Selecionados (Sem colunas de 0) -->
+        ${(() => {
+          const tamsAtivos = obterTamanhosSelecionadosGrade(p.grade);
+          if (!tamsAtivos.length) {
+            return `
+              <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; font-size: 11px; color: #64748b;">
+                Quantidade Total: <strong>${p.grade?.total || 0} peças</strong> (Grade em definição)
+              </div>
+            `;
+          }
+          return `
+            <table style="margin-bottom: 12px; width: auto; min-width: 260px; border-collapse: collapse; font-size: 11px;">
+              <thead>
+                <tr style="background: #f1f5f9; color: #1e293b; border-bottom: 2px solid #cbd5e1;">
+                  ${tamsAtivos.map(s => `<th style="text-align: center; padding: 5px 12px; font-size: 11px;">${s.tam}</th>`).join('')}
+                  <th style="text-align: center; padding: 5px 14px; background: #e2e8f0; font-size: 11px;">TOTAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                  ${tamsAtivos.map(s => `<td style="text-align: center; padding: 6px 12px; font-weight: 800;" class="text-mono">${s.qtd}</td>`).join('')}
+                  <td style="text-align: center; padding: 6px 14px; font-weight: 800; color: #047857; background: #f8fafc;" class="text-mono">${p.grade?.total || 0} peças</td>
+                </tr>
+              </tbody>
+            </table>
+          `;
+        })()}
       `}
 
       <!-- Resumo de Valores -->
@@ -6689,58 +6730,40 @@
           <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
             <thead>
               <tr style="background: #e2e8f0; color: #1e293b;">
-                <th style="padding: 4px 6px; text-align: left;">Modelo / Especificação</th>
-                <th style="padding: 4px 6px; text-align: left;">Cor / Detalhes</th>
-                <th style="padding: 4px 4px; text-align: center;">PP</th>
-                <th style="padding: 4px 4px; text-align: center;">P</th>
-                <th style="padding: 4px 4px; text-align: center;">M</th>
-                <th style="padding: 4px 4px; text-align: center;">G</th>
-                <th style="padding: 4px 4px; text-align: center;">GG</th>
-                <th style="padding: 4px 4px; text-align: center;">XG</th>
-                <th style="padding: 4px 4px; text-align: center; background: #cbd5e1;">Total</th>
+                <th style="padding: 5px 6px; text-align: left; width: 30%;">Modelo / Especificação</th>
+                <th style="padding: 5px 6px; text-align: left; width: 25%;">Cor / Detalhes</th>
+                <th style="padding: 5px 6px; text-align: left; width: 30%;">Tamanhos para Corte</th>
+                <th style="padding: 5px 6px; text-align: center; width: 15%; background: #cbd5e1;">Total Modelo</th>
               </tr>
             </thead>
             <tbody>
               ${itensLista.map((it, idx) => `
                 <tr style="border-bottom: 1px solid #e2e8f0;">
-                  <td style="padding: 5px 6px;"><strong>${idx + 1}. ${it.produtoNome}</strong><br><span style="font-size: 10px; color: #64748b;">${it.tecidoEspecificacao || ''}</span></td>
-                  <td style="padding: 5px 6px;"><span style="color: #1e3a8a; font-weight: 700;">${it.corPrincipal || 'A Definir'}</span>${it.observacoesCoresDetalhes ? `<br><span style="font-size: 9.5px; color: #b45309;">${it.observacoesCoresDetalhes}</span>` : ''}</td>
-                  <td style="padding: 5px 4px; text-align: center;" class="text-mono">${it.grade?.pp || 0}</td>
-                  <td style="padding: 5px 4px; text-align: center;" class="text-mono">${it.grade?.p || 0}</td>
-                  <td style="padding: 5px 4px; text-align: center;" class="text-mono">${it.grade?.m || 0}</td>
-                  <td style="padding: 5px 4px; text-align: center;" class="text-mono">${it.grade?.g || 0}</td>
-                  <td style="padding: 5px 4px; text-align: center;" class="text-mono">${it.grade?.gg || 0}</td>
-                  <td style="padding: 5px 4px; text-align: center;" class="text-mono">${it.grade?.xg || 0}</td>
-                  <td style="padding: 5px 4px; text-align: center; font-weight: 800; background: #f1f5f9;" class="text-mono">${it.grade?.total || 0}</td>
+                  <td style="padding: 6px 6px;"><strong>${idx + 1}. ${it.produtoNome}</strong><br><span style="font-size: 10px; color: #64748b;">${it.tecidoEspecificacao || ''}</span></td>
+                  <td style="padding: 6px 6px;"><span style="color: #1e3a8a; font-weight: 700;">${it.corPrincipal || 'A Definir'}</span>${it.observacoesCoresDetalhes ? `<br><span style="font-size: 9.5px; color: #b45309;">${it.observacoesCoresDetalhes}</span>` : ''}</td>
+                  <td style="padding: 6px 6px;">${formatarGradeSelecionadaHtml(it.grade, 'badge')}</td>
+                  <td style="padding: 6px 6px; text-align: center; font-weight: 800; background: #f1f5f9;" class="text-mono">${it.grade?.total || 0} pçs</td>
                 </tr>
               `).join('')}
             </tbody>
             <tfoot>
               <tr style="background: #f1f5f9; font-weight: 800; border-top: 2px solid #94a3b8;">
-                <td colspan="2" style="padding: 5px 6px; text-align: right;">SOMA TOTAL DO CORTE:</td>
-                <td style="padding: 5px 4px; text-align: center;" class="text-mono">${os.grade?.pp || 0}</td>
-                <td style="padding: 5px 4px; text-align: center;" class="text-mono">${os.grade?.p || 0}</td>
-                <td style="padding: 5px 4px; text-align: center;" class="text-mono">${os.grade?.m || 0}</td>
-                <td style="padding: 5px 4px; text-align: center;" class="text-mono">${os.grade?.g || 0}</td>
-                <td style="padding: 5px 4px; text-align: center;" class="text-mono">${os.grade?.gg || 0}</td>
-                <td style="padding: 5px 4px; text-align: center;" class="text-mono">${os.grade?.xg || 0}</td>
-                <td style="padding: 5px 4px; text-align: center; color: #047857; background: #e2e8f0;" class="text-mono">${os.quantidadeTotal} pçs</td>
+                <td colspan="2" style="padding: 6px 6px; text-align: right;">SOMA TOTAL DO CORTE:</td>
+                <td style="padding: 6px 6px;">${formatarGradeSelecionadaHtml(os.grade, 'badge-blue')}</td>
+                <td style="padding: 6px 6px; text-align: center; color: #047857; background: #e2e8f0; font-size: 12px;" class="text-mono">${os.quantidadeTotal} pçs</td>
               </tr>
             </tfoot>
           </table>
         </div>
       ` : `
-        <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 10px; border-radius: 4px; margin-bottom: 12px;">
-          <strong style="color: #0f172a; display: block; margin-bottom: 4px; font-size: 11px;">GRADE OFICIAL DE CORTE & FECHAMENTO:</strong>
-          <div class="text-mono" style="display: flex; justify-content: space-around; font-size: 12.5px; font-weight: 700;">
-            <span>PP: ${os.grade?.pp || 0}</span>
-            <span>P: ${os.grade?.p || 0}</span>
-            <span>M: ${os.grade?.m || 0}</span>
-            <span>G: ${os.grade?.g || 0}</span>
-            <span>GG: ${os.grade?.gg || 0}</span>
-            <span>XG: ${os.grade?.xg || 0}</span>
-            <span style="color: #047857;">TOTAL: ${os.quantidadeTotal} pçs</span>
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px 12px; border-radius: 4px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <strong style="color: #0f172a; display: block; margin-bottom: 4px; font-size: 11px;">GRADE OFICIAL DE CORTE & FECHAMENTO (SELECIONADOS):</strong>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              ${formatarGradeSelecionadaHtml(os.grade, 'badge')}
+            </div>
           </div>
+          <span style="color: #047857; font-weight: 800; font-size: 13px;" class="text-mono">TOTAL: ${os.quantidadeTotal} pçs</span>
         </div>
       `}
 
@@ -10210,15 +10233,10 @@
 
                   <!-- Grade de Tamanhos -->
                   <div style="margin-top: 10px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 8px;">
-                    <div style="font-size: 10.5px; font-weight: 700; color: var(--text-gray-500); margin-bottom: 6px; text-transform: uppercase;">Grade de Tamanhos Programada</div>
-                    <div style="display: flex; gap: 8px; justify-content: space-between; text-align: center; font-size: 11px;">
-                      <div><span style="color: var(--text-gray-500); display: block;">PP</span><strong class="text-mono">${grade.pp || 0}</strong></div>
-                      <div><span style="color: var(--text-gray-500); display: block;">P</span><strong class="text-mono">${grade.p || 0}</strong></div>
-                      <div><span style="color: var(--text-gray-500); display: block;">M</span><strong class="text-mono">${grade.m || 0}</strong></div>
-                      <div><span style="color: var(--text-gray-500); display: block;">G</span><strong class="text-mono">${grade.g || 0}</strong></div>
-                      <div><span style="color: var(--text-gray-500); display: block;">GG</span><strong class="text-mono">${grade.gg || 0}</strong></div>
-                      <div><span style="color: var(--text-gray-500); display: block;">XG</span><strong class="text-mono">${grade.xg || 0}</strong></div>
-                      <div><span style="color: var(--text-gray-500); display: block;">TOTAL</span><strong class="text-mono text-green">${grade.total || 0}</strong></div>
+                    <div style="font-size: 10.5px; font-weight: 700; color: var(--text-gray-500); margin-bottom: 6px; text-transform: uppercase;">Tamanhos Selecionados</div>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                      ${formatarGradeSelecionadaHtml(grade, 'badge')}
+                      <span class="text-mono text-green" style="font-weight: 800; font-size: 12px; margin-left: auto;">Total: ${grade.total || 0} pçs</span>
                     </div>
                   </div>
                 </div>
