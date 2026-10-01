@@ -2782,20 +2782,32 @@
                     <span style="font-size: 10.5px; color: var(--text-gray-600);">Costureira: <strong>${p.costureiraNome || 'Não atribuída'}</strong></span>
                   </td>
                   <td>
-                    <strong>${p.produtoNome}</strong>
-                    ${p.corTecido ? `
-                      <div style="margin-top: 3px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
-                        <span class="status-pill status-gray" style="font-size: 9.5px; padding: 1px 6px; font-weight: 700; color: #1e3a8a; background: #eff6ff; border: 1px solid #bfdbfe;">
-                          🎨 Cor: ${p.corTecido}
-                        </span>
+                    ${(p.itens && p.itens.length > 1) ? `
+                      <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                        <strong style="color: #1e40af; font-size: 12px;">📦 ${p.itens.length} Modelos no Pedido</strong>
+                        <span class="status-pill status-gray" style="font-size: 8.5px; padding: 1px 5px; font-weight: 800;">COMBO</span>
                       </div>
-                    ` : ''}
-                    ${p.observacoesCoresDetalhes ? `
-                      <span class="badge-obs-textil" title="${p.observacoesCoresDetalhes}">
-                        <strong>Detalhes:</strong> ${p.observacoesCoresDetalhes}
-                      </span>
-                    ` : ''}
-                    <span style="display: block; font-size: 11px; color: var(--text-gray-500); margin-top: 2px;">${p.tipoPersonalizacao || 'Estampa Conforme Arte'}</span>
+                      <div style="font-size: 10.5px; color: #334155; line-height: 1.35;">
+                        ${p.itens.map((it) => `
+                          <div>• <strong>${it.grade?.total || 0}x</strong> ${it.produtoNome} <span style="color:#64748b; font-size:10px;">(${it.corPrincipal || 'Cor'})</span></div>
+                        `).join('')}
+                      </div>
+                    ` : `
+                      <strong>${p.produtoNome}</strong>
+                      ${p.corTecido ? `
+                        <div style="margin-top: 3px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                          <span class="status-pill status-gray" style="font-size: 9.5px; padding: 1px 6px; font-weight: 700; color: #1e3a8a; background: #eff6ff; border: 1px solid #bfdbfe;">
+                            🎨 Cor: ${p.corTecido}
+                          </span>
+                        </div>
+                      ` : ''}
+                      ${p.observacoesCoresDetalhes ? `
+                        <span class="badge-obs-textil" title="${p.observacoesCoresDetalhes}">
+                          <strong>Detalhes:</strong> ${p.observacoesCoresDetalhes}
+                        </span>
+                      ` : ''}
+                    `}
+                    <span style="display: block; font-size: 10.5px; color: var(--text-gray-500); margin-top: 3px;">${p.tipoPersonalizacao || 'Estampa Conforme Arte'}</span>
                   </td>
                   <td class="text-mono">
                     <span style="font-size: 11px;">P:${p.grade?.p || 0} M:${p.grade?.m || 0} G:${p.grade?.g || 0} GG:${p.grade?.gg || 0}</span>
@@ -2965,7 +2977,7 @@
                             `}
                           </div>
                           <div class="kanban-card-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.clienteNome}</div>
-                          <div class="kanban-card-sub">${p.grade?.total || 0}x ${p.produtoNome}</div>
+                          <div class="kanban-card-sub">${(p.itens && p.itens.length > 1) ? `<strong>📦 ${p.itens.length} Modelos:</strong> ${p.grade?.total || 0} pçs` : `${p.grade?.total || 0}x ${p.produtoNome}`}</div>
 
                           <!-- CONTAGEM REGRESSIVA NO CARD KANBAN -->
                           <div style="margin-top: 5px;">
@@ -3654,13 +3666,287 @@
   }
 
   /* ==========================================================================
-     MODAL DE NOVO ORÇAMENTO / EDIÇÃO COM DUPLO FLUXO & BENCHMARK BRASIL
+     MÓDULO DE PERSONALIZAÇÕES MÚLTIPLAS (DTF, BORDADO, SILK, SUBLIMAÇÃO, LISA)
+     E SUPORTE A MÚLTIPLOS MODELOS POR PEDIDO COM LOCALIZAÇÃO & CÁLCULOS
+     ========================================================================== */
+
+  const LOCAIS_PERSONALIZACAO = [
+    { id: 'peito_esq', rotulo: 'Peito Frente (Logo Esquerdo)', padraoW: 10, padraoH: 8, padraoPontos: 6000 },
+    { id: 'peito_centro', rotulo: 'Peito Central (Grande)', padraoW: 24, padraoH: 14, padraoPontos: 16000 },
+    { id: 'costas_sup', rotulo: 'Costas Superior (Pala / Ombro)', padraoW: 26, padraoH: 8, padraoPontos: 9000 },
+    { id: 'costas_tot', rotulo: 'Costas Total (Grande / Central)', padraoW: 28, padraoH: 18, padraoPontos: 25000 },
+    { id: 'manga_dir', rotulo: 'Manga Direita', padraoW: 8, padraoH: 5, padraoPontos: 4500 },
+    { id: 'manga_esq', rotulo: 'Manga Esquerda', padraoW: 8, padraoH: 5, padraoPontos: 4500 },
+    { id: 'barra_outro', rotulo: 'Barra / Outro Local', padraoW: 12, padraoH: 6, padraoPontos: 5000 }
+  ];
+
+  function calcularCustoUnitarioAplicacao(app, totalPecas = 1) {
+    if (!app || app.tecnica === 'Lisa') return 0;
+    const qtd = Math.max(1, totalPecas);
+
+    if (app.tecnica === 'DTF') {
+      const larguraRolo = parseFloat(app.dtfLarguraRolo) || 58.0;
+      const w = Math.max(1, parseFloat(app.dtfLarguraArte) || 10.0);
+      const h = Math.max(1, parseFloat(app.dtfAlturaArte) || 8.0);
+      const metroCusto = parseFloat(app.dtfMetroLinear) || (larguraRolo === 28 ? 38.0 : 60.0);
+      const prensa = parseFloat(app.dtfPrensagem !== undefined ? app.dtfPrensagem : 1.50);
+
+      // 5mm de margem entre artes no nesting
+      const cabemNaLinha = Math.max(1, Math.floor(larguraRolo / (w + 0.5)));
+      const linhasPorMetro = 100 / (h + 0.5);
+      const artesPorMetro = Math.max(1, cabemNaLinha * linhasPorMetro);
+      const custoFilme = metroCusto / artesPorMetro;
+      return custoFilme + prensa;
+    }
+
+    if (app.tecnica === 'Bordado') {
+      const pontos = parseFloat(app.borPontos) || 6000;
+      const milPontos = parseFloat(app.borMilPontos !== undefined ? app.borMilPontos : 0.45);
+      const taxaMatriz = parseFloat(app.borMatriz !== undefined ? app.borMatriz : 35.00);
+      const entretela = parseFloat(app.borEntretela !== undefined ? app.borEntretela : 1.00);
+
+      const custoPontos = (pontos / 1000) * milPontos;
+      const amortizacaoMatriz = taxaMatriz / qtd;
+      return custoPontos + amortizacaoMatriz + entretela;
+    }
+
+    if (app.tecnica === 'Silk') {
+      const cores = Math.max(1, parseFloat(app.silkCores) || 2);
+      const taxaTela = parseFloat(app.silkTaxaTela !== undefined ? app.silkTaxaTela : 35.00);
+      const batida = parseFloat(app.silkBatida !== undefined ? app.silkBatida : 1.80);
+      const tinta = parseFloat(app.silkTinta !== undefined ? app.silkTinta : 0.90);
+
+      const amortizacaoTelas = (cores * taxaTela) / qtd;
+      return amortizacaoTelas + (cores * batida) + tinta;
+    }
+
+    if (app.tecnica === 'Sublimacao') {
+      const area = parseFloat(app.subArea) || 0.25;
+      const custoM2 = parseFloat(app.subCustoM2 !== undefined ? app.subCustoM2 : 9.50);
+      const calandra = parseFloat(app.subCalandra !== undefined ? app.subCalandra : 2.00);
+      return (area * custoM2) + calandra;
+    }
+
+    return 0;
+  }
+
+  function criarItemModeloPadrao(idNum = 1, prodBase = null, padroes = null) {
+    const pdr = padroes || carregarPadroesSistema();
+    const prod = prodBase || (db.produtosBase && db.produtosBase[0]) || {
+      id: "PROD-001",
+      nome: "Camiseta Polo Tradicional Piquet",
+      tipoMalhaPadrao: "Piquet PA (50% Alg / 50% Pol)",
+      consumoMalhaKgPorPeca: 0.28,
+      custoMaoDeObraBase: 7.50
+    };
+
+    const dtfMetro = (pdr.dtfLarguraRolo || 58) == 28 ? (pdr.dtfMetroLinear28 || 38.00) : (pdr.dtfMetroLinear58 || 60.00);
+
+    const appInicial = {
+      id: 'APP-' + Date.now() + '-' + idNum + '-1',
+      local: 'Peito Frente (Logo Esquerdo)',
+      tecnica: 'Bordado',
+      dtfLarguraRolo: pdr.dtfLarguraRolo || 58,
+      dtfLarguraArte: 10,
+      dtfAlturaArte: 8,
+      dtfMetroLinear: dtfMetro,
+      dtfPrensagem: pdr.dtfPrensagem !== undefined ? pdr.dtfPrensagem : 1.50,
+      borPontos: 6000,
+      borMilPontos: 0.45,
+      borMatriz: 35.00,
+      borEntretela: 1.00,
+      silkCores: 2,
+      silkTaxaTela: 35.00,
+      silkBatida: 1.80,
+      silkTinta: 0.90,
+      subArea: 0.25,
+      subCustoM2: 9.50,
+      subCalandra: 2.00
+    };
+    appInicial.custoUnitario = calcularCustoUnitarioAplicacao(appInicial, 1);
+
+    const corTec = 'Azul Marinho';
+    const cliDef = (db.clientes && db.clientes[0]) || { nomeFantasia: "BRAVVI", nome: "BRAVVI" };
+    const sigla = (cliDef.nomeFantasia || cliDef.nome || "BRAVVI").toString().substring(0, 6);
+    const mockSvg = (window.ERP_MOCKUPS && typeof window.ERP_MOCKUPS.gerarMockupSvg === 'function')
+      ? window.ERP_MOCKUPS.gerarMockupSvg(prod.nome, "#1e3a8a", "#ffffff", sigla)
+      : '';
+
+    return {
+      id: 'ITEM-' + Date.now() + '-' + idNum,
+      produtoId: prod.id,
+      produtoNome: prod.nome,
+      tipoMalhaPadrao: prod.tipoMalhaPadrao,
+      corTecido: corTec,
+      observacoesCoresDetalhes: '',
+      grade: { pp: 0, p: 0, m: 0, g: 0, gg: 0, xg: 0, total: 0 },
+      aplicacoes: [appInicial],
+      custoTecidoKg: pdr.custoTecidoKg || 48.50,
+      consumoTecido: prod.consumoMalhaKgPorPeca || 0.28,
+      margemErroTecido: pdr.margemErroTecido || 8.0,
+      custoAviamento: pdr.custoAviamento || 4.80,
+      custoEstampaTotal: appInicial.custoUnitario,
+      custoCostura: prod.custoMaoDeObraBase || pdr.custoCostura || 7.50,
+      precoVendaUnitario: 58.00,
+      margemDesejada: pdr.margemDesejada || 30.0,
+      aliquotaImposto: pdr.aliquotaImposto || 6.5,
+      mockupUrl: mockSvg,
+      mockupUploadPersonalizado: false,
+      custoUnitarioProducao: 24.50,
+      valorTotalVenda: 0,
+      custoTotalProducao: 0,
+      lucroTotal: 0,
+      margemReal: 25.0
+    };
+  }
+
+  function gerarHtmlCardAplicacao(app, index, totalPecasGrade, padroes) {
+    const custoUnit = calcularCustoUnitarioAplicacao(app, totalPecasGrade);
+    const tec = app.tecnica || 'DTF';
+    const larguraRolo = app.dtfLarguraRolo || padroes.dtfLarguraRolo || 58;
+
+    return `
+      <div class="aplicacao-card" data-app-index="${index}">
+        <div class="aplicacao-card-header">
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; flex-wrap: wrap;">
+            <span style="font-weight: 800; font-size: 11px; color: var(--text-primary); background: #f1f5f9; padding: 2px 7px; border-radius: 4px; border: 1px solid #cbd5e1;">
+              #${index + 1}
+            </span>
+            
+            <div style="flex: 1.2; min-width: 170px;">
+              <select class="form-select sel-app-local" style="font-size: 11px; padding: 4px 6px; font-weight: 700; height: auto;">
+                ${LOCAIS_PERSONALIZACAO.map(loc => `
+                  <option value="${loc.rotulo}" ${app.local === loc.rotulo ? 'selected' : ''}>${loc.rotulo}</option>
+                `).join('')}
+                ${!LOCAIS_PERSONALIZACAO.some(l => l.rotulo === app.local) ? `<option value="${app.local}" selected>${app.local}</option>` : ''}
+              </select>
+            </div>
+
+            <!-- Botões Rápidos de Técnica -->
+            <div class="tecnica-tabs" style="margin: 0; gap: 4px;">
+              <button type="button" class="tecnica-pill ${tec === 'DTF' ? 'active' : ''} btn-app-tec" data-tec="DTF" style="font-size: 10px; padding: 3px 8px;">DTF Digital</button>
+              <button type="button" class="tecnica-pill ${tec === 'Bordado' ? 'active' : ''} btn-app-tec" data-tec="Bordado" style="font-size: 10px; padding: 3px 8px;">Bordado</button>
+              <button type="button" class="tecnica-pill ${tec === 'Silk' ? 'active' : ''} btn-app-tec" data-tec="Silk" style="font-size: 10px; padding: 3px 8px;">Silk Screen</button>
+              <button type="button" class="tecnica-pill ${tec === 'Sublimacao' ? 'active' : ''} btn-app-tec" data-tec="Sublimacao" style="font-size: 10px; padding: 3px 8px;">Sublimação</button>
+              <button type="button" class="tecnica-pill ${tec === 'Lisa' ? 'active' : ''} btn-app-tec" data-tec="Lisa" style="font-size: 10px; padding: 3px 8px;">Lisa</button>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="aplicacao-cost-badge">
+              Custo: <strong>${formatarMoeda(custoUnit)}/un</strong>
+            </span>
+            <button type="button" class="btn btn-secondary btn-sm btn-remover-app" style="font-size: 10px; padding: 2px 7px; color: #dc2626; border-color: #fca5a5;" title="Remover esta estampa">
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <!-- Parâmetros da Técnica da Aplicação -->
+        <div class="app-parametros-box" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 8px 10px;">
+          ${tec === 'DTF' ? `
+            <div class="form-row" style="margin-bottom: 4px;">
+              <div class="form-group" style="flex: 1.1;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Bobina DTF</label>
+                <select class="form-select inp-dtf-rolo" style="font-size: 10.5px; padding: 3px 6px;">
+                  <option value="58" ${larguraRolo == 58 ? 'selected' : ''}>58 cm Útil (60cm)</option>
+                  <option value="28" ${larguraRolo == 28 ? 'selected' : ''}>28 cm Útil (A3/30cm)</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex: 0.9;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Largura (cm)</label>
+                <input type="number" class="form-input inp-dtf-w" value="${app.dtfLarguraArte || 10}" step="0.5" style="font-size: 11px; padding: 3px 6px;">
+              </div>
+              <div class="form-group" style="flex: 0.9;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Altura (cm)</label>
+                <input type="number" class="form-input inp-dtf-h" value="${app.dtfAlturaArte || 8}" step="0.5" style="font-size: 11px; padding: 3px 6px;">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Metro Linear (R$)</label>
+                <input type="number" class="form-input inp-dtf-metro" value="${(app.dtfMetroLinear || (larguraRolo == 28 ? 38 : 60)).toFixed(2)}" step="1" style="font-size: 11px; padding: 3px 6px;">
+              </div>
+              <div class="form-group" style="flex: 0.9;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Prensa (R$)</label>
+                <input type="number" class="form-input inp-dtf-prensa" value="${(app.dtfPrensagem !== undefined ? app.dtfPrensagem : 1.50).toFixed(2)}" step="0.20" style="font-size: 11px; padding: 3px 6px;">
+              </div>
+            </div>
+            <div style="font-size: 10px; color: var(--text-gray-500); line-height: 1.3;">
+              📐 <strong>DTF ${larguraRolo}cm:</strong> ${Math.max(1, Math.floor(larguraRolo / ((app.dtfLarguraArte || 10) + 0.5)))} arte(s) na largura × ${(100 / ((app.dtfAlturaArte || 8) + 0.5)).toFixed(1)} linhas/m ➔ <strong>~${Math.max(1, Math.floor(larguraRolo / ((app.dtfLarguraArte || 10) + 0.5)) * (100 / ((app.dtfAlturaArte || 8) + 0.5))).toFixed(0)} artes/metro</strong>
+            </div>
+          ` : tec === 'Bordado' ? `
+            <div class="form-row" style="margin-bottom: 2px;">
+              <div class="form-group" style="flex: 1.2;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Pontos Matriz (ex: 6.000)</label>
+                <input type="number" class="form-input inp-bor-pts" value="${app.borPontos || 6000}" step="500" style="font-size: 11px; padding: 3px 6px;">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">R$ / 1.000 pts</label>
+                <input type="number" class="form-input inp-bor-mil" value="${(app.borMilPontos !== undefined ? app.borMilPontos : 0.45).toFixed(2)}" step="0.05" style="font-size: 11px; padding: 3px 6px;">
+              </div>
+              <div class="form-group" style="flex: 1.1;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;" title="Taxa de matriz rateada entre as peças deste modelo">Taxa Matriz (R$)</label>
+                <input type="number" class="form-input inp-bor-matriz" value="${(app.borMatriz !== undefined ? app.borMatriz : 35.00).toFixed(2)}" step="5" style="font-size: 11px; padding: 3px 6px;">
+              </div>
+              <div class="form-group" style="flex: 0.9;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Entretela (R$)</label>
+                <input type="number" class="form-input inp-bor-entretela" value="${(app.borEntretela !== undefined ? app.borEntretela : 1.00).toFixed(2)}" step="0.20" style="font-size: 11px; padding: 3px 6px;">
+              </div>
+            </div>
+            <div style="font-size: 10px; color: var(--text-gray-500);">
+              🪡 <strong>Bordado:</strong> Pontos: ${formatarMoeda(((app.borPontos || 6000) / 1000) * (app.borMilPontos || 0.45))} + Rateio Matriz (${formatarMoeda((app.borMatriz || 35) / Math.max(1, totalPecasGrade))}) + Entretela (${formatarMoeda(app.borEntretela || 1.00)})
+            </div>
+          ` : tec === 'Silk' ? `
+            <div class="form-row" style="margin-bottom: 2px;">
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Nº Cores / Telas</label>
+                <input type="number" class="form-input inp-silk-cores" value="${app.silkCores || 2}" min="1" max="8" style="font-size: 11px; padding: 3px 6px;">
+              </div>
+              <div class="form-group" style="flex: 1.1;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Gravação Tela (R$)</label>
+                <input type="number" class="form-input inp-silk-tela" value="${(app.silkTaxaTela !== undefined ? app.silkTaxaTela : 35.00).toFixed(2)}" step="5" style="font-size: 11px; padding: 3px 6px;">
+              </div>
+              <div class="form-group" style="flex: 1.1;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Puxada / Batida (R$)</label>
+                <input type="number" class="form-input inp-silk-batida" value="${(app.silkBatida !== undefined ? app.silkBatida : 1.80).toFixed(2)}" step="0.20" style="font-size: 11px; padding: 3px 6px;">
+              </div>
+              <div class="form-group" style="flex: 0.9;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Tinta (R$)</label>
+                <input type="number" class="form-input inp-silk-tinta" value="${(app.silkTinta !== undefined ? app.silkTinta : 0.90).toFixed(2)}" step="0.10" style="font-size: 11px; padding: 3px 6px;">
+              </div>
+            </div>
+          ` : tec === 'Sublimacao' ? `
+            <div class="form-row" style="margin-bottom: 2px;">
+              <div class="form-group" style="flex: 1.2;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Área Estampada (m²/pç)</label>
+                <input type="number" class="form-input inp-sub-area" value="${app.subArea || 0.25}" step="0.05" style="font-size: 11px; padding: 3px 6px;">
+              </div>
+              <div class="form-group" style="flex: 1.2;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Papel + Tinta (R$/m²)</label>
+                <input type="number" class="form-input inp-sub-custo" value="${(app.subCustoM2 !== undefined ? app.subCustoM2 : 9.50).toFixed(2)}" step="0.5" style="font-size: 11px; padding: 3px 6px;">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Calandra / Prensa (R$)</label>
+                <input type="number" class="form-input inp-sub-calandra" value="${(app.subCalandra !== undefined ? app.subCalandra : 2.00).toFixed(2)}" step="0.5" style="font-size: 11px; padding: 3px 6px;">
+              </div>
+            </div>
+          ` : `
+            <div style="font-size: 10.5px; color: var(--text-gray-500);">
+              Peça Lisa: Custo zerado nesta aplicação (R$ 0,00).
+            </div>
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  /* ==========================================================================
+     MODAL DE NOVO ORÇAMENTO / EDIÇÃO COM DUPLO FLUXO & MULTI-MODELOS BRASIL
      ========================================================================== */
   function abrirModalNovoOrcamento(orcamentoIdParam = null) {
     if (!modalContainer) return;
     fecharTodosModais();
 
-    // Garante que evento de clique acidental (MouseEvent) não seja confundido com ID
+    // Garante que evento de clique acidental não seja confundido com ID
     const idValido = (typeof orcamentoIdParam === 'string' || typeof orcamentoIdParam === 'number') ? orcamentoIdParam : null;
     const orcamentoExistente = idValido ? (db.pedidos || []).find(x => x.id === idValido || x.numero == idValido) : null;
     const isEdicao = !!orcamentoExistente;
@@ -3668,41 +3954,81 @@
     // Carrega preferências e padrões industriais salvos
     const padroes = carregarPadroesSistema();
 
-    // Estado da técnica de estampa atual no modal
-    let tecnicaSelecionada = 'DTF';
+    // Estado da lista de modelos / itens do orçamento
+    let itensOrcamento = [];
+    if (isEdicao && orcamentoExistente.itens && Array.isArray(orcamentoExistente.itens) && orcamentoExistente.itens.length > 0) {
+      itensOrcamento = JSON.parse(JSON.stringify(orcamentoExistente.itens));
+    } else if (isEdicao) {
+      // Migração de orçamento legado para modelo estruturado
+      const prodLegado = ((db.produtosBase || []).find(pr => pr.id === orcamentoExistente.produtoId || pr.nome === orcamentoExistente.produtoNome) || db.produtosBase[0]) || {
+        id: "PROD-001",
+        nome: orcamentoExistente.produtoNome || "Produto",
+        tipoMalhaPadrao: orcamentoExistente.tecidoEspecificacao || "Padrão Têxtil",
+        consumoMalhaKgPorPeca: 0.28,
+        custoMaoDeObraBase: 7.50
+      };
 
-    // Mockup 3x4 dinâmico para Orçamento
-    const prodInicial = isEdicao
-      ? ((db.produtosBase || []).find(pr => pr.id === orcamentoExistente.produtoId || pr.nome === orcamentoExistente.produtoNome) || db.produtosBase[0])
-      : ((db.produtosBase && db.produtosBase[0]) || { nome: "Camisa Polo Tradicional Piquet", tipoMalhaPadrao: "Piquet PA", consumoMalhaKgPorPeca: 0.28, custoMaoDeObraBase: 7.50 });
+      const appsLegadas = (orcamentoExistente.artesAplicacao && orcamentoExistente.artesAplicacao.length > 0)
+        ? orcamentoExistente.artesAplicacao.map((a, idx) => ({
+            id: 'APP-' + Date.now() + '-' + (idx + 1),
+            local: a.local || 'Peito Frente (Logo Esquerdo)',
+            tecnica: (a.tecnica && a.tecnica.includes('Bord')) ? 'Bordado' : (a.tecnica && a.tecnica.includes('Silk')) ? 'Silk' : 'DTF',
+            dtfLarguraRolo: orcamentoExistente.dtfLarguraRolo || 58,
+            dtfLarguraArte: 12,
+            dtfAlturaArte: 8,
+            dtfMetroLinear: 60,
+            dtfPrensagem: 1.50,
+            borPontos: 7000,
+            borMilPontos: 0.45,
+            borMatriz: 35,
+            borEntretela: 1.00,
+            custoUnitario: 4.50
+          }))
+        : [
+            {
+              id: 'APP-' + Date.now() + '-1',
+              local: 'Peito Frente (Logo Esquerdo)',
+              tecnica: 'DTF',
+              dtfLarguraRolo: orcamentoExistente.dtfLarguraRolo || 58,
+              dtfLarguraArte: 26,
+              dtfAlturaArte: 8,
+              dtfMetroLinear: 60,
+              dtfPrensagem: 1.50,
+              custoUnitario: 5.50
+            }
+          ];
 
-    const cliInicial = isEdicao
-      ? ((db.clientes || []).find(c => c.id === orcamentoExistente.clienteId || c.nomeFantasia === orcamentoExistente.clienteNome || c.nome === orcamentoExistente.clienteNome) || (db.clientes && db.clientes[0]) || { nomeFantasia: "BRAVVI", nome: "BRAVVI" })
-      : ((db.clientes && db.clientes[0]) || { nomeFantasia: "BRAVVI", nome: "BRAVVI" });
+      itensOrcamento = [{
+        id: 'ITEM-' + Date.now() + '-1',
+        produtoId: prodLegado.id,
+        produtoNome: prodLegado.nome,
+        tipoMalhaPadrao: prodLegado.tipoMalhaPadrao,
+        corTecido: orcamentoExistente.corTecido || 'Azul Marinho',
+        observacoesCoresDetalhes: orcamentoExistente.observacoesCoresDetalhes || '',
+        grade: orcamentoExistente.grade || { pp: 0, p: 0, m: 0, g: 0, gg: 0, xg: 0, total: 0 },
+        aplicacoes: appsLegadas,
+        custoTecidoKg: padroes.custoTecidoKg || 48.50,
+        consumoTecido: orcamentoExistente.consumoRealComPerda ? (orcamentoExistente.consumoRealComPerda / 1.08) : 0.28,
+        margemErroTecido: orcamentoExistente.margemErroTecido || 8.0,
+        custoAviamento: padroes.custoAviamento || 4.80,
+        custoEstampaTotal: 5.50,
+        custoCostura: padroes.custoCostura || 7.50,
+        precoVendaUnitario: orcamentoExistente.precoUnitarioVenda || 54.00,
+        margemDesejada: orcamentoExistente.margemLucroPercentual || 30.0,
+        aliquotaImposto: 6.5,
+        mockupUrl: orcamentoExistente.mockupUrl || '',
+        mockupUploadPersonalizado: !!orcamentoExistente.mockupUrl,
+        custoUnitarioProducao: 24.50,
+        valorTotalVenda: orcamentoExistente.valorTotalVenda || 0,
+        custoTotalProducao: orcamentoExistente.custoTotalEstimado || 0,
+        lucroTotal: orcamentoExistente.lucroLiquidoEstimado || 0,
+        margemReal: orcamentoExistente.margemLucroPercentual || 25.0
+      }];
+    } else {
+      itensOrcamento = [ criarItemModeloPadrao(1, null, padroes) ];
+    }
 
-    const siglaInicial = (cliInicial.nomeFantasia || cliInicial.nome || cliInicial.razaoSocial || "BRAVVI").toString().substring(0, 6);
-
-    let mockupOrcamentoUrl = (isEdicao && orcamentoExistente.mockupUrl)
-      ? orcamentoExistente.mockupUrl
-      : ((window.ERP_MOCKUPS && typeof window.ERP_MOCKUPS.gerarMockupSvg === 'function')
-          ? window.ERP_MOCKUPS.gerarMockupSvg(prodInicial.nome, "#1e3a8a", "#ffffff", siglaInicial)
-          : "");
-    let mockupUploadPersonalizado = !!(isEdicao && orcamentoExistente.mockupUrl);
-
-    const corInicial = isEdicao ? (orcamentoExistente.corTecido || 'Azul Marinho') : 'Azul Marinho';
-    const obsInicial = isEdicao ? (orcamentoExistente.observacoesCoresDetalhes || '') : '';
-
-    const gradePPInicial = isEdicao ? (orcamentoExistente.grade?.pp || 0) : 0;
-    const gradePInicial = isEdicao ? (orcamentoExistente.grade?.p || 0) : 0;
-    const gradeMInicial = isEdicao ? (orcamentoExistente.grade?.m || 0) : 0;
-    const gradeGInicial = isEdicao ? (orcamentoExistente.grade?.g || 0) : 0;
-    const gradeGGInicial = isEdicao ? (orcamentoExistente.grade?.gg || 0) : 0;
-    const gradeXGInicial = isEdicao ? (orcamentoExistente.grade?.xg || 0) : 0;
-    const gradeTotalInicial = isEdicao ? (orcamentoExistente.grade?.total || 0) : 0;
-
-    const precoPretendidoInicial = isEdicao && orcamentoExistente.precoUnitarioVenda
-      ? Number(orcamentoExistente.precoUnitarioVenda).toFixed(2)
-      : '54.00';
+    let itemAtivoIndex = 0;
 
     const prazoClienteInicial = isEdicao
       ? (orcamentoExistente.prazoPedidoDias || padroes.prazoPedidoDias || 15)
@@ -3714,21 +4040,21 @@
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active" id="modalNovoOrcamentoOverlay">
-        <div class="modal-box" style="max-width: 880px;">
+        <div class="modal-box" style="max-width: 920px;">
           <div class="modal-header">
             <div>
               <div class="modal-title">
-                ${isEdicao ? `Editar Orçamento #${orcamentoExistente.numero} & Renegociação` : 'Novo Orçamento & Inteligência de Preço Brasil'}
+                ${isEdicao ? `Editar Orçamento #${orcamentoExistente.numero} • Multimodelo & Renegociação` : 'Novo Orçamento • Múltiplos Modelos & Estampas (DTF / Bordado)'}
               </div>
               <span style="font-size: 11px; color: var(--text-gray-500);">
-                ${isEdicao ? `Cliente: <strong>${orcamentoExistente.clienteNome}</strong> • Ajuste grade, modelo, cores, detalhes ou preços negociados` : 'Preços reais do mercado brasileiro com viabilidade financeira e ficha em tempo real'}
+                ${isEdicao ? `Cliente: <strong>${orcamentoExistente.clienteNome}</strong> • Ajuste modelos, grade, bordado, DTF e preços negociados` : 'Adicione múltiplos modelos (ex: Polo + Camiseta UV) e calcule várias estampas (Peito, Costas, Mangas) no mesmo pedido'}
               </span>
             </div>
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
           
           <div class="modal-body">
-            <!-- 1. Seleção e Cadastro de Cliente -->
+            <!-- 1. Linha Superior: Cliente e Prazos do Pedido -->
             <div class="form-row">
               <div class="form-group" style="flex: 2;">
                 <label class="form-label">Cliente / Razão Social (Selecione ou Cadastre)</label>
@@ -3745,220 +4071,254 @@
                 </div>
               </div>
 
-              <!-- 2. Seleção e Pesquisa de Modelagens Têxteis com Cadastro Inline -->
-              <div class="form-group" style="flex: 2;">
-                <label class="form-label">Modelo Têxtil (Pesquise ou Cadastre)</label>
-                <div class="inline-input-group">
-                  <select id="orcProdutoSelect" class="form-select">
-                    ${db.produtosBase.map(pr => {
-                      const isSel = isEdicao && (pr.id === orcamentoExistente.produtoId || pr.nome === orcamentoExistente.produtoNome);
-                      return `<option value="${pr.id}" ${isSel ? 'selected' : ''}>${pr.nome} [${pr.tipoMalhaPadrao}]</option>`;
-                    }).join('')}
-                  </select>
-                  <button type="button" class="btn btn-secondary btn-inline-add" id="btnCadastrarModeloInline">
-                    + Cadastrar Modelo
-                  </button>
+              <!-- Prazos do Pedido -->
+              <div class="form-group" style="flex: 1.8;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                  <label class="form-label" style="margin: 0; font-size: 11.5px;">Prazos: Prometido vs Meta Fábrica</label>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btnSalvarPrazosPadrao" style="font-size: 9.5px; padding: 1px 6px; font-weight: 700; color: #0369a1;" title="Grava estes dias como padrão">⭐ Padrão</button>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <div style="flex: 1;">
+                    <input type="number" id="inputPrazoClienteDias" class="form-input" value="${prazoClienteInicial}" min="1" max="90" title="Prazo Prometido ao Cliente (dias úteis)" style="font-size: 11.5px; padding: 4px 6px;">
+                    <span id="labelDataEntregaCliente" style="font-size: 10px; color: #1e40af; font-weight: 700; margin-top: 2px; display: block;"></span>
+                  </div>
+                  <div style="flex: 1;">
+                    <input type="number" id="inputPrazoInternoDias" class="form-input" value="${prazoInternoInicial}" min="1" max="90" title="Meta Interna da Fábrica (dias úteis)" style="font-size: 11.5px; padding: 4px 6px;">
+                    <span id="labelDataMetaInterna" style="font-size: 10px; color: #0284c7; font-weight: 700; margin-top: 2px; display: block;"></span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- 2.1 Cores do Uniforme & Especificações de Detalhes Contrastantes -->
-            ${gerarHTMLSeletorCoresIndustrial('orc', corInicial, obsInicial)}
-
-            <!-- Grade de Tamanhos - PREENCHIMENTO DIRETO OU ATALHOS RÁPIDOS -->
-            <div class="form-group">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 6px;">
+            <!-- 2. BARRA DE SELEÇÃO E ADIÇÃO DE MODELOS / ITENS DO PEDIDO -->
+            <div style="background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
                 <div>
-                  <label class="form-label" style="margin: 0; font-weight: 700;">Grade de Tamanhos (Distribuição de Peças)</label>
-                  <span style="font-size: 10px; color: var(--text-gray-500);">Digite as quantidades ou use um atalho rápido:</span>
+                  <label class="form-label" style="margin: 0; font-size: 12.5px; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z"></path></svg>
+                    Modelos Têxteis deste Pedido (Multi-Itens):
+                  </label>
+                  <span style="font-size: 10px; color: var(--text-gray-500);">Clique na aba do modelo para editar sua modelagem, cor, grade e estampas</span>
                 </div>
-                <div style="display: flex; gap: 4px; align-items: center;">
-                  <button type="button" class="btn btn-secondary btn-sm btn-grade-rapida" data-dist="2,4,8,4,2,0" style="font-size: 10px; padding: 2px 7px; font-weight: 600;" title="Preencher grade com 20 peças">+20 Pçs</button>
-                  <button type="button" class="btn btn-secondary btn-sm btn-grade-rapida" data-dist="5,10,15,12,6,2" style="font-size: 10px; padding: 2px 7px; font-weight: 600;" title="Preencher grade com 50 peças">+50 Pçs</button>
-                  <button type="button" class="btn btn-secondary btn-sm btn-grade-rapida" data-dist="10,20,30,25,10,5" style="font-size: 10px; padding: 2px 7px; font-weight: 600;" title="Preencher grade com 100 peças">+100 Pçs</button>
-                  <button type="button" class="btn btn-secondary btn-sm" id="btnZerarGrade" style="font-size: 10px; padding: 2px 7px; color: #dc2626;" title="Zerar todas as quantidades">Zerar</button>
-                </div>
-              </div>
-              <div class="grade-table-input" id="boxGradeTableInput">
-                <div class="grade-col"><div class="grade-label">PP</div><input type="number" id="gradePP" class="grade-input" value="${gradePPInicial}" min="0"></div>
-                <div class="grade-col"><div class="grade-label">P</div><input type="number" id="gradeP" class="grade-input" value="${gradePInicial}" min="0"></div>
-                <div class="grade-col"><div class="grade-label">M</div><input type="number" id="gradeM" class="grade-input" value="${gradeMInicial}" min="0"></div>
-                <div class="grade-col"><div class="grade-label">G</div><input type="number" id="gradeG" class="grade-input" value="${gradeGInicial}" min="0"></div>
-                <div class="grade-col"><div class="grade-label">GG</div><input type="number" id="gradeGG" class="grade-input" value="${gradeGGInicial}" min="0"></div>
-                <div class="grade-col"><div class="grade-label">XG</div><input type="number" id="gradeXG" class="grade-input" value="${gradeXGInicial}" min="0"></div>
-                <div class="grade-col"><div class="grade-label">TOTAL</div><input type="text" id="gradeTotal" class="grade-input" style="font-weight: 800; background: #0f172a; color: #ffffff;" value="${gradeTotalInicial}" readonly></div>
-              </div>
-            </div>
-
-            <!-- Seção de Prazos de Produção & Entrega (Prometido ao Cliente vs Meta Interna) -->
-            <div class="form-group" style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <label class="form-label" style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 6px;">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                  Prazos do Pedido (Prometido ao Cliente vs Meta Interna da Fábrica):
-                </label>
-                <button type="button" class="btn btn-secondary btn-sm" id="btnSalvarPrazosPadrao" style="font-size: 10.5px; padding: 3px 8px; font-weight: 700; color: #0369a1; border-color: #bae6fd; background: #f0f9ff;" title="Grava estes dias como padrão do sistema">
-                  ⭐ Tornar Prazos Padrão
+                <button type="button" class="btn-add-modelo-tab" id="btnAddModeloTab">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  + Adicionar Outro Modelo ao Pedido
                 </button>
               </div>
-              <div class="form-row">
-                <div class="form-group" style="flex: 1;">
-                  <label class="form-label" style="font-size: 11px;">Prazo Prometido ao Cliente (dias úteis)</label>
-                  <input type="number" id="inputPrazoClienteDias" class="form-input" value="${prazoClienteInicial}" min="1" max="90">
-                  <div style="display: flex; gap: 4px; margin-top: 5px;">
-                    <button type="button" class="btn btn-secondary btn-sm btn-prazo-cli-pill" data-dias="7" style="font-size: 9.5px; padding: 1px 6px;">7 dias</button>
-                    <button type="button" class="btn btn-secondary btn-sm btn-prazo-cli-pill" data-dias="10" style="font-size: 9.5px; padding: 1px 6px;">10 dias</button>
-                    <button type="button" class="btn btn-secondary btn-sm btn-prazo-cli-pill" data-dias="15" style="font-size: 9.5px; padding: 1px 6px;">15 dias</button>
-                    <button type="button" class="btn btn-secondary btn-sm btn-prazo-cli-pill" data-dias="20" style="font-size: 9.5px; padding: 1px 6px;">20 dias</button>
-                  </div>
-                  <span id="labelDataEntregaCliente" style="font-size: 11px; color: #1e40af; font-weight: 700; margin-top: 4px; display: block;"></span>
-                </div>
 
-                <div class="form-group" style="flex: 1;">
-                  <label class="form-label" style="font-size: 11px;">Prazo Interno da Fábrica (Meta do Chão de Fábrica em dias)</label>
-                  <input type="number" id="inputPrazoInternoDias" class="form-input" value="${prazoInternoInicial}" min="1" max="90">
-                  <div style="display: flex; gap: 4px; margin-top: 5px;">
-                    <button type="button" class="btn btn-secondary btn-sm btn-prazo-int-pill" data-dias="5" style="font-size: 9.5px; padding: 1px 6px;">5 dias</button>
-                    <button type="button" class="btn btn-secondary btn-sm btn-prazo-int-pill" data-dias="7" style="font-size: 9.5px; padding: 1px 6px;">7 dias</button>
-                    <button type="button" class="btn btn-secondary btn-sm btn-prazo-int-pill" data-dias="10" style="font-size: 9.5px; padding: 1px 6px;">10 dias</button>
-                    <button type="button" class="btn btn-secondary btn-sm btn-prazo-int-pill" data-dias="12" style="font-size: 9.5px; padding: 1px 6px;">12 dias</button>
-                  </div>
-                  <span id="labelDataMetaInterna" style="font-size: 11px; color: #0284c7; font-weight: 700; margin-top: 4px; display: block;"></span>
-                </div>
+              <!-- Abas dos Modelos -->
+              <div class="modelos-tabs-bar" id="orcModelosTabsBar">
+                <!-- Inserido dinamicamente via renderizarAbasModelos() -->
               </div>
             </div>
 
-            <!-- MOCKUP 3x4 OFICIAL DO ORÇAMENTO -->
-            <div class="form-group" style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
-              <label class="form-label" style="font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">
-                Mockup da Peça em Proporção 3x4 (Sairá no Orçamento, Proposta Comercial e Ficha Técnica)
-              </label>
-              <div style="display: flex; gap: 14px; align-items: center;">
-                <div>
-                  <img id="previewMockup3x4Orc" src="${mockupOrcamentoUrl}" style="width: 72px; height: 96px; aspect-ratio: 3/4; object-fit: contain; border: 1px solid var(--border-medium); border-radius: 4px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.08);" alt="Preview 3x4">
-                  <span style="display: block; font-size: 9.5px; color: var(--text-gray-500); text-align: center; margin-top: 3px;">Miniatura 3x4</span>
+            <!-- 3. CONTAINER DO MODELO ATIVO -->
+            <div id="orcContainerModeloAtivo">
+              <!-- Linha do Modelo Têxtil Selecionado e Mockup 3x4 -->
+              <div class="form-row">
+                <div class="form-group" style="flex: 2;">
+                  <label class="form-label" style="font-weight: 700;">Modelo Têxtil / Base (Deste Modelo)</label>
+                  <div class="inline-input-group">
+                    <select id="orcProdutoSelect" class="form-select">
+                      ${db.produtosBase.map(pr => `
+                        <option value="${pr.id}">${pr.nome} [${pr.tipoMalhaPadrao}]</option>
+                      `).join('')}
+                    </select>
+                    <button type="button" class="btn btn-secondary btn-inline-add" id="btnCadastrarModeloInline">
+                      + Cadastrar Modelo
+                    </button>
+                  </div>
                 </div>
-                <div style="flex: 1;">
-                  <span style="font-size: 11.5px; color: var(--text-gray-600); display: block; margin-bottom: 6px;">
-                    Anexe um arquivo de imagem fornecido pelo cliente ou utilize a renderização industrial com paletas oficiais:
-                  </span>
-                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <label class="btn btn-secondary btn-sm" style="cursor: pointer; font-size: 11px; padding: 4px 9px;">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                      Anexar Imagem Mockup (Arquivo)
-                      <input type="file" id="inputUploadMockupOrc" accept="image/*" style="display: none;">
+
+                <!-- Mockup 3x4 do Modelo Ativo -->
+                <div class="form-group" style="flex: 1.8; background: #ffffff; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); padding: 8px 10px;">
+                  <div style="display: flex; gap: 10px; align-items: center;">
+                    <img id="previewMockup3x4Orc" src="" style="width: 52px; height: 68px; aspect-ratio: 3/4; object-fit: contain; border: 1px solid var(--border-medium); border-radius: 4px; background: #ffffff;" alt="Preview 3x4">
+                    <div style="flex: 1;">
+                      <label class="btn btn-secondary btn-sm" style="cursor: pointer; font-size: 10px; padding: 2px 7px; display: inline-block; margin-bottom: 4px;">
+                        Anexar Imagem Mockup
+                        <input type="file" id="inputUploadMockupOrc" accept="image/*" style="display: none;">
+                      </label>
+                      <div style="display: flex; gap: 3px; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="azul" style="font-size: 9px; padding: 1px 5px;">Marinho</button>
+                        <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="cinza" style="font-size: 9px; padding: 1px 5px;">Cinza</button>
+                        <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="branco" style="font-size: 9px; padding: 1px 5px;">Branco</button>
+                        <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="preto" style="font-size: 9px; padding: 1px 5px;">Preto</button>
+                        <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="royal" style="font-size: 9px; padding: 1px 5px;">Royal</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cores do Uniforme & Especificações de Detalhes -->
+              <div id="boxSeletorCoresModelo">
+                <!-- Preenchido dinamicamente via gerarHTMLSeletorCoresIndustrial -->
+              </div>
+
+              <!-- Grade de Tamanhos do Modelo Ativo -->
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 6px;">
+                  <div>
+                    <label class="form-label" style="margin: 0; font-weight: 700;">Grade de Tamanhos (Peças deste Modelo)</label>
+                    <span style="font-size: 10px; color: var(--text-gray-500);">Distribuição de peças para esta modelagem:</span>
+                  </div>
+                  <div style="display: flex; gap: 4px; align-items: center;">
+                    <button type="button" class="btn btn-secondary btn-sm btn-grade-rapida" data-dist="2,4,8,4,2,0" style="font-size: 10px; padding: 2px 7px; font-weight: 600;" title="Preencher com 20 peças">+20 Pçs</button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-grade-rapida" data-dist="5,10,15,12,6,2" style="font-size: 10px; padding: 2px 7px; font-weight: 600;" title="Preencher com 50 peças">+50 Pçs</button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-grade-rapida" data-dist="10,20,30,25,10,5" style="font-size: 10px; padding: 2px 7px; font-weight: 600;" title="Preencher com 100 peças">+100 Pçs</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnZerarGrade" style="font-size: 10px; padding: 2px 7px; color: #dc2626;" title="Zerar todas as quantidades">Zerar</button>
+                  </div>
+                </div>
+                <div class="grade-table-input" id="boxGradeTableInput">
+                  <div class="grade-col"><div class="grade-label">PP</div><input type="number" id="gradePP" class="grade-input" value="0" min="0"></div>
+                  <div class="grade-col"><div class="grade-label">P</div><input type="number" id="gradeP" class="grade-input" value="0" min="0"></div>
+                  <div class="grade-col"><div class="grade-label">M</div><input type="number" id="gradeM" class="grade-input" value="0" min="0"></div>
+                  <div class="grade-col"><div class="grade-label">G</div><input type="number" id="gradeG" class="grade-input" value="0" min="0"></div>
+                  <div class="grade-col"><div class="grade-label">GG</div><input type="number" id="gradeGG" class="grade-input" value="0" min="0"></div>
+                  <div class="grade-col"><div class="grade-label">XG</div><input type="number" id="gradeXG" class="grade-input" value="0" min="0"></div>
+                  <div class="grade-col"><div class="grade-label">TOTAL</div><input type="text" id="gradeTotal" class="grade-input" style="font-weight: 800; background: #0f172a; color: #ffffff;" value="0" readonly></div>
+                </div>
+              </div>
+
+              <!-- APLICAÇÕES DE PERSONALIZAÇÃO (BORDADO + DTF + SILK + LOCALIZAÇÃO) -->
+              <div class="form-group" style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                  <div>
+                    <label class="form-label" style="margin: 0; font-size: 12.5px; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                      Aplicações de Estampa & Bordado deste Modelo (Locais & Técnicas):
                     </label>
-                    <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="azul" style="font-size: 11px; padding: 4px 8px;">Polo Marinho</button>
-                    <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="cinza" style="font-size: 11px; padding: 4px 8px;">Brim Cinza</button>
-                    <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="branco" style="font-size: 11px; padding: 4px 8px;">Branco Neve</button>
-                    <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="preto" style="font-size: 11px; padding: 4px 8px;">Preto Reativo</button>
-                    <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="royal" style="font-size: 11px; padding: 4px 8px;">Royal Esportivo</button>
+                    <span style="font-size: 10px; color: var(--text-gray-500);">Configure mais de uma estampa na mesma peça (ex: Bordado Peito + DTF Costas)</span>
+                  </div>
+
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary btn-sm btn-quick-add-app" data-tipo="bor-peito" style="font-size: 10px; padding: 2px 7px; font-weight: 700; color: #1e40af; border-color: #bfdbfe; background: #eff6ff;" title="Adiciona bordado de peito 6k pts">
+                      + Bordado Peito
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-quick-add-app" data-tipo="dtf-costas" style="font-size: 10px; padding: 2px 7px; font-weight: 700; color: #7c3aed; border-color: #ddd6fe; background: #f5f3ff;" title="Adiciona DTF nas costas 26x9cm">
+                      + DTF Costas
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-quick-add-app" data-tipo="dtf-peito" style="font-size: 10px; padding: 2px 7px; font-weight: 700; color: #0284c7; border-color: #bae6fd; background: #f0f9ff;" title="Adiciona DTF de peito 10x8cm">
+                      + DTF Peito
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-quick-add-app" data-tipo="silk-costas" style="font-size: 10px; padding: 2px 7px; font-weight: 700; color: #b45309; border-color: #fde68a; background: #fffbeb;" title="Adiciona Silk 2 cores">
+                      + Silk 2 Cores
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnAdicionarAplicacaoVazia" style="font-size: 10px; padding: 2px 7px; font-weight: 800; background: #f0fdf4; color: #166534; border-color: #bbf7d0;">
+                      + Nova Aplicação...
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnLimparEstampasLisa" style="font-size: 10px; padding: 2px 7px; color: #64748b;" title="Define peça lisa sem cobrança de estampa">
+                      Peça Lisa
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Lista Dinâmica de Cards de Aplicações -->
+                <div id="orcListaAplicacoes">
+                  <!-- Inserido dinamicamente via renderizarAplicacoes() -->
+                </div>
+
+                <!-- Barra de Resumo das Estampas deste Modelo -->
+                <div id="boxResumoEstampaModelo" style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 4px; padding: 6px 12px; margin-top: 6px;">
+                  <span style="font-size: 11px; color: var(--text-gray-600);">
+                    Soma de personalizações deste modelo:
+                  </span>
+                  <span class="status-pill status-green" id="lblTotalEstampaModelo" style="font-size: 11.5px; font-weight: 800;">
+                    R$ 0,00 / peça
+                  </span>
+                </div>
+              </div>
+
+              <!-- Custos Diretos de Produção da Confecção -->
+              <div style="background: #ffffff; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-medium); margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                  <span class="form-label" style="font-size: 12px; font-weight: 800; color: var(--text-primary); margin: 0;">
+                    Custos Diretos para Produzir este Modelo:
+                  </span>
+                  <div style="display: flex; gap: 6px;">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnSalvarCustosPadrao" style="font-size: 10.5px; padding: 3px 8px; font-weight: 700; background: #f0fdf4; color: #166534; border-color: #bbf7d0;" title="Salva os custos atuais como padrões">
+                      ⭐ Salvar como Meus Padrões
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnRestaurarCustosPadrao" style="font-size: 10.5px; padding: 3px 8px;" title="Restaura os valores padrões salvos">
+                      🔄 Restaurar Padrões
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="form-row">
+                  <div class="form-group" style="flex: 1.2;">
+                    <label class="form-label">Custo Tecido (R$/kg ou m)</label>
+                    <input type="number" id="inputCustoTecido" class="form-input" value="${padroes.custoTecidoKg.toFixed(2)}" step="0.50">
+                  </div>
+
+                  <div class="form-group" style="flex: 1;">
+                    <label class="form-label" title="Consumo têxtil padrão desta modelagem">Consumo (kg ou m/un)</label>
+                    <input type="number" id="inputConsumoTecido" class="form-input" value="0.28" step="0.01" min="0.05">
+                  </div>
+
+                  <div class="form-group" style="flex: 1;">
+                    <label class="form-label" title="Margem de erro / perda no corte e ourela">Margem Erro (%)</label>
+                    <input type="number" id="inputMargemErroTecido" class="form-input" value="${(padroes.margemErroTecido || 8.0).toFixed(1)}" step="0.5" min="0" max="30">
+                  </div>
+
+                  <div class="form-group" style="flex: 1;">
+                    <label class="form-label">Aviamentos p/ Peça (R$)</label>
+                    <input type="number" id="inputCustoAviamento" class="form-input" value="${(padroes.custoAviamento || 4.80).toFixed(2)}" step="0.20">
+                  </div>
+
+                  <div class="form-group" style="flex: 1;">
+                    <label class="form-label">Estampa Calculada (R$)</label>
+                    <input type="number" id="inputCustoEstampa" class="form-input" value="0.00" step="0.10">
+                  </div>
+
+                  <div class="form-group" style="flex: 1;">
+                    <label class="form-label">Costura & MDO (R$)</label>
+                    <input type="number" id="inputCustoCostura" class="form-input" value="${(padroes.custoCostura || 7.50).toFixed(2)}" step="0.50">
+                  </div>
+                </div>
+
+                <!-- Painel Técnico de Rendimento por Peça e Custo do Tecido -->
+                <div id="boxRendimentoTecido" style="margin-top: 8px; margin-bottom: 10px; padding: 10px 12px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: var(--radius-sm);">
+                  <!-- Preenchido dinamicamente via recalcularBenchmarkModal -->
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Preço que Pretende Cobrar (R$ un)</label>
+                    <input type="number" id="inputPrecoPretendido" class="form-input" style="font-weight: 800; font-size: 14px;" value="58.00" step="1.00">
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Margem Líquida Alvo (%)</label>
+                    <input type="number" id="inputMargemDesejada" class="form-input" value="${padroes.margemDesejada || 30}" step="1">
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Imposto / Simples (%)</label>
+                    <input type="number" id="inputAliquotaImposto" class="form-input" value="${padroes.aliquotaImposto || 6.5}" step="0.1">
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- 3. Seletor de Técnicas de Personalização: Bordado, DTF, SILK, Sublimação, Lisa -->
-            <div class="form-group">
-              <label class="form-label">Técnica de Personalização (Escolha a técnica para calcular o custo específico)</label>
-              <div class="tecnica-tabs" id="tecnicasTabsContainer">
-                <button type="button" class="tecnica-pill active" data-tecnica="DTF">DTF Digital (Direct to Film)</button>
-                <button type="button" class="tecnica-pill" data-tecnica="Bordado">Bordado Computadorizado</button>
-                <button type="button" class="tecnica-pill" data-tecnica="Silk">Silk Screen / Serigrafia</button>
-                <button type="button" class="tecnica-pill" data-tecnica="Sublimacao">Sublimação Total</button>
-                <button type="button" class="tecnica-pill" data-tecnica="Lisa">Peça Lisa (Sem Estampa)</button>
-              </div>
-
-              <!-- Parâmetros Específicos da Técnica Escolhida -->
-              <div id="painelParametrosTecnica" style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 12px;">
-                <!-- Dinâmico via JS -->
+              <!-- Painel de Viabilidade do Modelo Ativo -->
+              <div id="painelBenchmarkResultado" class="benchmark-container">
+                <!-- Calculado dinamicamente -->
               </div>
             </div>
 
-            <!-- 4. Painel de Custos de Produção Real da Confecção -->
-            <div style="background: #ffffff; padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-medium); margin-bottom: 16px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
-                <span class="form-label" style="font-size: 12.5px; font-weight: 800; color: var(--text-primary); margin: 0;">
-                  Custos Diretos desta Confecção para Produzir:
-                </span>
-                <div style="display: flex; gap: 6px;">
-                  <button type="button" class="btn btn-secondary btn-sm" id="btnSalvarCustosPadrao" style="font-size: 11px; padding: 4px 10px; font-weight: 700; background: #f0fdf4; color: #166534; border-color: #bbf7d0;" title="Salva os custos, consumos, margem de erro, costura e DTF atuais como seus padrões">
-                    ⭐ Salvar Valores Atuais como Meus Padrões
-                  </button>
-                  <button type="button" class="btn btn-secondary btn-sm" id="btnRestaurarCustosPadrao" style="font-size: 11px; padding: 4px 8px;" title="Restaura os valores padrões salvos">
-                    🔄 Restaurar Padrões
-                  </button>
-                </div>
-              </div>
-              
-              <div class="form-row">
-                <div class="form-group" style="flex: 1.2;">
-                  <label class="form-label">Custo Tecido (R$/kg ou m)</label>
-                  <input type="number" id="inputCustoTecido" class="form-input" value="${padroes.custoTecidoKg.toFixed(2)}" step="0.50">
-                </div>
-
-                <div class="form-group" style="flex: 1;">
-                  <label class="form-label" title="Consumo têxtil padrão desta modelagem">Consumo (kg ou m/un)</label>
-                  <input type="number" id="inputConsumoTecido" class="form-input" value="${(padroes.consumoTecido || prodInicial.consumoMalhaKgPorPeca || 0.28).toFixed(2)}" step="0.01" min="0.05">
-                </div>
-
-                <div class="form-group" style="flex: 1;">
-                  <label class="form-label" title="Margem de erro / perda no corte, enfesto e ourela (ex: 8%)">Margem Erro (%)</label>
-                  <input type="number" id="inputMargemErroTecido" class="form-input" value="${(padroes.margemErroTecido || 8.0).toFixed(1)}" step="0.5" min="0" max="30">
-                </div>
-
-                <div class="form-group" style="flex: 1;">
-                  <label class="form-label">Aviamentos p/ Peça (R$)</label>
-                  <input type="number" id="inputCustoAviamento" class="form-input" value="${(padroes.custoAviamento || 4.80).toFixed(2)}" step="0.20">
-                </div>
-
-                <div class="form-group" style="flex: 1;">
-                  <label class="form-label">Estampa Calculada (R$)</label>
-                  <input type="number" id="inputCustoEstampa" class="form-input" value="6.50" step="0.10">
-                </div>
-
-                <div class="form-group" style="flex: 1;">
-                  <label class="form-label">Costura & MDO (R$)</label>
-                  <input type="number" id="inputCustoCostura" class="form-input" value="${(padroes.custoCostura || 7.50).toFixed(2)}" step="0.50">
-                </div>
-              </div>
-
-              <!-- Painel Técnico de Rendimento por Peça e Custo do Tecido -->
-              <div id="boxRendimentoTecido" style="margin-top: 10px; margin-bottom: 12px; padding: 12px 14px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: var(--radius-sm);">
-                <!-- Preenchido dinamicamente via recalcularBenchmarkModal -->
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">Preço que Pretende Cobrar (R$ un)</label>
-                  <input type="number" id="inputPrecoPretendido" class="form-input" style="font-weight: 800; font-size: 14px;" value="${precoPretendidoInicial}" step="1.00">
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">Margem Líquida Alvo (%)</label>
-                  <input type="number" id="inputMargemDesejada" class="form-input" value="${padroes.margemDesejada || 30}" step="1">
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">Imposto / Simples (%)</label>
-                  <input type="number" id="inputAliquotaImposto" class="form-input" value="${padroes.aliquotaImposto || 6.5}" step="0.1">
-                </div>
-              </div>
-            </div>
-
-            <!-- 5. Painel de Inteligência de Mercado Brasil & Viabilidade -->
-            <div id="painelBenchmarkResultado" class="benchmark-container">
-              <!-- Calculado dinamicamente -->
+            <!-- 4. PAINEL GERAL CONSOLIDADO DO PEDIDO (TODOS OS MODELOS) -->
+            <div class="resumo-geral-pedido-box" id="boxResumoGeralConsolidado">
+              <!-- Calculado dinamicamente via recalcularBenchmarkModal -->
             </div>
           </div>
 
-          <!-- Rodapé com Duplo Fluxo Conforme Exigido pelo Usuário -->
+          <!-- Rodapé de Ações com Duplo Fluxo -->
           <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
             
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
               ${isEdicao ? `
-                <!-- Modo Edição: Salvar alterações na proposta existente -->
                 <button type="button" class="btn btn-secondary" id="btnSalvarEdicaoOrcamento" style="font-weight: 700; background: #fffbeb; border-color: #fde68a; color: #b45309;">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
                   Salvar Alterações do Orçamento
@@ -3968,13 +4328,11 @@
                   Salvar & Dar Entrada no Pedido
                 </button>
               ` : `
-                <!-- Modo Novo: Salvar apenas orçamento e baixar proposta -->
                 <button type="button" class="btn btn-secondary" id="btnSalvarApenasOrcamento" style="font-weight: 700;">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                   Salvar Orçamento & Baixar Proposta
                 </button>
 
-                <!-- Modo Novo: Avançar e dar entrada oficial no pedido -->
                 <button type="button" class="btn btn-primary" id="btnAvancarParaPedidoOficial" style="font-weight: 800;">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
                   Avançar & Dar Entrada no Pedido
@@ -3986,209 +4344,25 @@
       </div>
     `);
 
-    // Upload de mockup personalizado no orçamento
-    const inputUploadOrc = document.getElementById('inputUploadMockupOrc');
-    inputUploadOrc?.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          mockupOrcamentoUrl = evt.target.result;
-          mockupUploadPersonalizado = true;
-          const prev = document.getElementById('previewMockup3x4Orc');
-          if (prev) prev.src = mockupOrcamentoUrl;
-          mostrarToast('Mockup do cliente carregado com sucesso para o orçamento!', 'green');
-        };
-        reader.readAsDataURL(file);
-      }
-    });
+    // Sincroniza dados atuais do DOM para o item ativo no array
+    function sincronizarItemAtivoDoDOM() {
+      if (!itensOrcamento[itemAtivoIndex]) return;
+      const it = itensOrcamento[itemAtivoIndex];
 
-    // Presets de cores de mockup no orçamento
-    document.querySelectorAll('.btn-mock-orc-preset').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const preset = btn.getAttribute('data-preset');
-        const prodId = document.getElementById('orcProdutoSelect')?.value;
-        const pObj = db.produtosBase.find(pr => pr.id === prodId) || db.produtosBase[0];
-        const cliId = document.getElementById('orcClienteSelect')?.value;
-        const cObj = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
-        const sigla = (cObj ? (cObj.nomeFantasia || cObj.nome || cObj.razaoSocial || "BRAVVI") : "BRAVVI").toString().substring(0, 6);
-
-        if (preset === 'azul') {
-          mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(pObj.nome, "#1e3a8a", "#ffffff", sigla);
-        } else if (preset === 'cinza') {
-          mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg("brim", "#475569", "#eab308", sigla);
-        } else if (preset === 'branco') {
-          mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg("jaleco", "#ffffff", "#047857", sigla);
-        } else if (preset === 'preto') {
-          mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg("camiseta", "#0f172a", "#ffffff", sigla);
-        } else if (preset === 'royal') {
-          mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(pObj.nome, "#2563eb", "#ffffff", sigla);
-        }
-        mockupUploadPersonalizado = false;
-        const prev = document.getElementById('previewMockup3x4Orc');
-        if (prev) prev.src = mockupOrcamentoUrl;
-      });
-    });
-
-    // Atualiza o painel específico da técnica de estampa
-    function atualizarPainelTecnica(tec) {
-      tecnicaSelecionada = tec;
-      const painel = document.getElementById('painelParametrosTecnica');
-      if (!painel) return;
-
-      const pdr = carregarPadroesSistema();
-
-      if (tec === 'DTF') {
-        const larguraSalva = pdr.dtfLarguraRolo || 58;
-        const isCustom = larguraSalva != 58 && larguraSalva != 28;
-        const custoMetroSalvo = larguraSalva == 28 ? (pdr.dtfMetroLinear28 || 38.00) : (pdr.dtfMetroLinear58 || 60.00);
-
-        painel.innerHTML = `
-          <div style="font-size: 11.5px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center;">
-            <span>Cálculo DTF Digital por Bobina e Metro Linear:</span>
-            <span style="font-size: 10px; color: var(--text-gray-500);">Bobina 58cm (Industrial) ou 28/30cm (Estreita)</span>
-          </div>
-          <div class="form-row">
-            <div class="form-group" style="flex: 1.3;">
-              <label class="form-label" title="Largura útil da bobina de filme DTF ou do arquivo fechado">Largura da Bobina / Arquivo</label>
-              <select id="dtfParamLarguraRolo" class="form-select">
-                <option value="58" ${larguraSalva == 58 ? 'selected' : ''}>58 cm Útil (Bobina 60cm Industrial)</option>
-                <option value="28" ${larguraSalva == 28 ? 'selected' : ''}>28 cm Útil (Bobina Estreita 30cm / A3)</option>
-                <option value="custom" ${isCustom ? 'selected' : ''}>Outra Largura Personalizada (cm)...</option>
-              </select>
-            </div>
-            <div class="form-group" id="grpDtfLarguraCustom" style="display: ${isCustom ? 'block' : 'none'}; flex: 0.8;">
-              <label class="form-label">Largura Rolo (cm)</label>
-              <input type="number" id="dtfParamLarguraCustom" class="form-input" value="${larguraSalva}" step="1" min="10" max="160">
-            </div>
-            <div class="form-group" style="flex: 1;">
-              <label class="form-label">Largura da Arte (cm)</label>
-              <input type="number" id="dtfParamLargura" class="form-input" value="26" step="0.5">
-            </div>
-            <div class="form-group" style="flex: 1;">
-              <label class="form-label">Altura da Arte (cm)</label>
-              <input type="number" id="dtfParamAltura" class="form-input" value="8" step="0.5">
-            </div>
-            <div class="form-group" style="flex: 1.1;">
-              <label class="form-label" title="Preço do metro linear da bobina selecionada">Custo Metro Linear (R$)</label>
-              <input type="number" id="dtfParamMetro" class="form-input" value="${custoMetroSalvo.toFixed(2)}" step="1.00">
-            </div>
-            <div class="form-group" style="flex: 1;">
-              <label class="form-label">Prensagem Térmica (R$)</label>
-              <input type="number" id="dtfParamPrensa" class="form-input" value="${(pdr.dtfPrensagem || 1.50).toFixed(2)}" step="0.20">
-            </div>
-          </div>
-          <div id="boxDtfExplicativo" style="font-size: 11px; padding: 6px 10px; background: #ffffff; border: 1px dashed #cbd5e1; border-radius: 4px; color: var(--text-gray-600); margin-top: 4px; line-height: 1.4;">
-            <!-- Preenchido dinamicamente -->
-          </div>
-        `;
-
-        document.getElementById('dtfParamLarguraRolo')?.addEventListener('change', (e) => {
-          const val = e.target.value;
-          const grpCustom = document.getElementById('grpDtfLarguraCustom');
-          const inpMetro = document.getElementById('dtfParamMetro');
-          const currentPdr = carregarPadroesSistema();
-          if (val === 'custom') {
-            if (grpCustom) grpCustom.style.display = 'block';
-          } else {
-            if (grpCustom) grpCustom.style.display = 'none';
-            if (inpMetro) {
-              inpMetro.value = val === '28' 
-                ? (currentPdr.dtfMetroLinear28 || 38.00).toFixed(2) 
-                : (currentPdr.dtfMetroLinear58 || 60.00).toFixed(2);
-            }
-          }
-          recalcularCustoPersonalizacaoDinamico();
-        });
-
-        document.getElementById('dtfParamLarguraCustom')?.addEventListener('input', recalcularCustoPersonalizacaoDinamico);
-      } else if (tec === 'Bordado') {
-        painel.innerHTML = `
-          <div style="font-size: 11.5px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary);">
-            Cálculo de Bordado Computadorizado:
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Pontos da Matriz (ex: 8.000)</label>
-              <input type="number" id="borParamPontos" class="form-input" value="8000" step="500">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Valor por Mil Pontos (R$)</label>
-              <input type="number" id="borParamMilPontos" class="form-input" value="0.45" step="0.05">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Taxa Edição Matriz/Programa (R$)</label>
-              <input type="number" id="borParamMatriz" class="form-input" value="45.00" step="5.00">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Aplicação de Entretela (R$)</label>
-              <input type="number" id="borParamEntretela" class="form-input" value="1.00" step="0.20">
-            </div>
-          </div>
-        `;
-      } else if (tec === 'Silk') {
-        painel.innerHTML = `
-          <div style="font-size: 11.5px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary);">
-            Cálculo Silk Screen (Serigrafia Têxtil):
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Número de Cores / Matrizes</label>
-              <input type="number" id="silkParamCores" class="form-input" value="2" min="1" max="8">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Custo Gravação por Tela (R$)</label>
-              <input type="number" id="silkParamTela" class="form-input" value="35.00" step="5.00">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Custo Puxada/Batida Unitária (R$)</label>
-              <input type="number" id="silkParamBatida" class="form-input" value="1.80" step="0.20">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Tinta Plastisol/Solvente (R$)</label>
-              <input type="number" id="silkParamTinta" class="form-input" value="0.90" step="0.10">
-            </div>
-          </div>
-        `;
-      } else if (tec === 'Sublimacao') {
-        painel.innerHTML = `
-          <div style="font-size: 11.5px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary);">
-            Cálculo de Sublimação Total Digital:
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Área Estampada (m² por peça)</label>
-              <input type="number" id="subParamArea" class="form-input" value="0.85" step="0.05">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Custo Papel + Tinta Sublimática m²</label>
-              <input type="number" id="subParamCustoM2" class="form-input" value="9.50" step="0.50">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Custo Calandra / Prensa (R$)</label>
-              <input type="number" id="subParamCalandra" class="form-input" value="2.50" step="0.50">
-            </div>
-          </div>
-        `;
-      } else {
-        painel.innerHTML = `
-          <div style="font-size: 11.5px; color: var(--text-gray-500); padding: 4px;">
-            Peça Lisa: Custo de personalização zerado (R$ 0,00). O valor do pedido será composto exclusivamente pela matéria-prima, corte, costura e acabamento.
-          </div>
-        `;
+      const selProd = document.getElementById('orcProdutoSelect');
+      if (selProd) {
+        it.produtoId = selProd.value;
+        const opt = selProd.options[selProd.selectedIndex];
+        it.produtoNome = opt ? opt.text.split('[')[0].trim() : it.produtoNome;
+        const prodObj = db.produtosBase.find(p => p.id === it.produtoId);
+        if (prodObj) it.tipoMalhaPadrao = prodObj.tipoMalhaPadrao;
       }
 
-      // Adiciona listeners para recalcular custo de estampa
-      painel.querySelectorAll('input').forEach(inp => {
-        inp.addEventListener('input', recalcularCustoPersonalizacaoDinamico);
-      });
+      const inpCor = document.getElementById('orcCorPrincipalTecido');
+      if (inpCor) it.corTecido = (inpCor.value || 'Azul Marinho').trim();
 
-      recalcularCustoPersonalizacaoDinamico();
-    }
-
-    function recalcularCustoPersonalizacaoDinamico() {
-      const inputCustoEstampa = document.getElementById('inputCustoEstampa');
-      if (!inputCustoEstampa) return;
+      const inpObs = document.getElementById('orcObservacoesCoresDetalhes');
+      if (inpObs) it.observacoesCoresDetalhes = (inpObs.value || '').trim();
 
       const pp = parseInt(document.getElementById('gradePP')?.value || 0, 10);
       const p = parseInt(document.getElementById('gradeP')?.value || 0, 10);
@@ -4196,73 +4370,469 @@
       const g = parseInt(document.getElementById('gradeG')?.value || 0, 10);
       const gg = parseInt(document.getElementById('gradeGG')?.value || 0, 10);
       const xg = parseInt(document.getElementById('gradeXG')?.value || 0, 10);
-      const totalPecas = Math.max(1, pp + p + m + g + gg + xg);
+      it.grade = { pp, p, m, g, gg, xg, total: pp + p + m + g + gg + xg };
 
-      let custoUnit = 0;
+      it.custoTecidoKg = parseFloat(document.getElementById('inputCustoTecido')?.value || padroes.custoTecidoKg || 48.50);
+      it.consumoTecido = parseFloat(document.getElementById('inputConsumoTecido')?.value || 0.28);
+      it.margemErroTecido = parseFloat(document.getElementById('inputMargemErroTecido')?.value || 8.0);
+      it.custoAviamento = parseFloat(document.getElementById('inputCustoAviamento')?.value || 4.80);
+      it.custoCostura = parseFloat(document.getElementById('inputCustoCostura')?.value || 7.50);
+      it.precoVendaUnitario = parseFloat(document.getElementById('inputPrecoPretendido')?.value || 58.00);
+      it.margemDesejada = parseFloat(document.getElementById('inputMargemDesejada')?.value || 30.0);
+      it.aliquotaImposto = parseFloat(document.getElementById('inputAliquotaImposto')?.value || 6.5);
 
-      if (tecnicaSelecionada === 'DTF') {
-        const selLargura = document.getElementById('dtfParamLarguraRolo')?.value || '58';
-        let larguraRolo = 58.0;
-        if (selLargura === '28') larguraRolo = 28.0;
-        else if (selLargura === 'custom') larguraRolo = parseFloat(document.getElementById('dtfParamLarguraCustom')?.value || 58.0);
-        else larguraRolo = 58.0;
-
-        const w = parseFloat(document.getElementById('dtfParamLargura')?.value || 26);
-        const h = parseFloat(document.getElementById('dtfParamAltura')?.value || 8);
-        const metroCusto = parseFloat(document.getElementById('dtfParamMetro')?.value || (larguraRolo === 28 ? 38 : 60));
-        const prensa = parseFloat(document.getElementById('dtfParamPrensa')?.value || 1.50);
-        
-        // Cabimento na largura útil com 5mm de margem entre artes
-        const cabemNaLinha = Math.max(1, Math.floor(larguraRolo / (w + 0.5)));
-        const linhasPorMetro = 100 / (h + 0.5);
-        const artesPorMetro = Math.max(1, cabemNaLinha * linhasPorMetro);
-        const custoFilmePorArte = metroCusto / artesPorMetro;
-        custoUnit = custoFilmePorArte + prensa;
-
-        const boxDtf = document.getElementById('boxDtfExplicativo');
-        if (boxDtf) {
-          boxDtf.innerHTML = `
-            <strong>📐 Bobina DTF ${larguraRolo}cm útil:</strong> Cabem <strong>${cabemNaLinha} arte(s)</strong> lado a lado na largura (${(cabemNaLinha * (w + 0.5)).toFixed(1)}cm ocupados de ${larguraRolo}cm) × ${linhasPorMetro.toFixed(1)} linhas/m ➔ <strong>~${artesPorMetro.toFixed(0)} artes por metro linear</strong>.<br>
-            Filme DTF: <strong>${formatarMoeda(custoFilmePorArte)}</strong> + Prensagem: <strong>${formatarMoeda(prensa)}</strong> = <strong>${formatarMoeda(custoUnit)} / estampa por peça</strong>.
-          `;
-        }
-      } else if (tecnicaSelecionada === 'Bordado') {
-        const pontos = parseFloat(document.getElementById('borParamPontos')?.value || 8000);
-        const milPontos = parseFloat(document.getElementById('borParamMilPontos')?.value || 0.45);
-        const taxaMatriz = parseFloat(document.getElementById('borParamMatriz')?.value || 45.00);
-        const entretela = parseFloat(document.getElementById('borParamEntretela')?.value || 1.00);
-        
-        const custoPontos = (pontos / 1000) * milPontos;
-        const amortizacaoMatriz = taxaMatriz / totalPecas;
-        custoUnit = custoPontos + amortizacaoMatriz + entretela;
-      } else if (tecnicaSelecionada === 'Silk') {
-        const cores = parseFloat(document.getElementById('silkParamCores')?.value || 2);
-        const taxaTela = parseFloat(document.getElementById('silkParamTela')?.value || 35.00);
-        const batida = parseFloat(document.getElementById('silkParamBatida')?.value || 1.80);
-        const tinta = parseFloat(document.getElementById('silkParamTinta')?.value || 0.90);
-        
-        const amortizacaoTelas = (cores * taxaTela) / totalPecas;
-        custoUnit = amortizacaoTelas + (cores * batida) + tinta;
-      } else if (tecnicaSelecionada === 'Sublimacao') {
-        const area = parseFloat(document.getElementById('subParamArea')?.value || 0.85);
-        const custoM2 = parseFloat(document.getElementById('subParamCustoM2')?.value || 9.50);
-        const calandra = parseFloat(document.getElementById('subParamCalandra')?.value || 2.50);
-        custoUnit = (area * custoM2) + calandra;
-      } else {
-        custoUnit = 0;
-      }
-
-      inputCustoEstampa.value = custoUnit.toFixed(2);
-      recalcularBenchmarkModal();
+      // Ler dados específicos das aplicações de personalização
+      lerDadosAplicacoesDoDOM();
     }
 
-    // Configuração dos tabs de técnica
-    document.querySelectorAll('.tecnica-pill').forEach(pill => {
-      pill.addEventListener('click', () => {
-        document.querySelectorAll('.tecnica-pill').forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
-        const tec = pill.getAttribute('data-tecnica');
-        atualizarPainelTecnica(tec);
+    function lerDadosAplicacoesDoDOM() {
+      const it = itensOrcamento[itemAtivoIndex];
+      if (!it || !it.aplicacoes) return;
+
+      const container = document.getElementById('orcListaAplicacoes');
+      if (!container) return;
+
+      const cards = container.querySelectorAll('.aplicacao-card');
+      cards.forEach((card, idx) => {
+        const app = it.aplicacoes[idx];
+        if (!app) return;
+
+        const selLocal = card.querySelector('.sel-app-local');
+        if (selLocal) app.local = selLocal.value;
+
+        if (app.tecnica === 'DTF') {
+          const selRolo = card.querySelector('.inp-dtf-rolo');
+          if (selRolo) app.dtfLarguraRolo = parseFloat(selRolo.value) || 58;
+          const inpW = card.querySelector('.inp-dtf-w');
+          if (inpW) app.dtfLarguraArte = parseFloat(inpW.value) || 10;
+          const inpH = card.querySelector('.inp-dtf-h');
+          if (inpH) app.dtfAlturaArte = parseFloat(inpH.value) || 8;
+          const inpMetro = card.querySelector('.inp-dtf-metro');
+          if (inpMetro) app.dtfMetroLinear = parseFloat(inpMetro.value) || 60;
+          const inpPrensa = card.querySelector('.inp-dtf-prensa');
+          if (inpPrensa) app.dtfPrensagem = parseFloat(inpPrensa.value) || 1.50;
+        } else if (app.tecnica === 'Bordado') {
+          const inpPts = card.querySelector('.inp-bor-pts');
+          if (inpPts) app.borPontos = parseFloat(inpPts.value) || 6000;
+          const inpMil = card.querySelector('.inp-bor-mil');
+          if (inpMil) app.borMilPontos = parseFloat(inpMil.value) || 0.45;
+          const inpMatriz = card.querySelector('.inp-bor-matriz');
+          if (inpMatriz) app.borMatriz = parseFloat(inpMatriz.value) || 35;
+          const inpEnt = card.querySelector('.inp-bor-entretela');
+          if (inpEnt) app.borEntretela = parseFloat(inpEnt.value) || 1.00;
+        } else if (app.tecnica === 'Silk') {
+          const inpCores = card.querySelector('.inp-silk-cores');
+          if (inpCores) app.silkCores = parseFloat(inpCores.value) || 2;
+          const inpTela = card.querySelector('.inp-silk-tela');
+          if (inpTela) app.silkTaxaTela = parseFloat(inpTela.value) || 35;
+          const inpBatida = card.querySelector('.inp-silk-batida');
+          if (inpBatida) app.silkBatida = parseFloat(inpBatida.value) || 1.80;
+          const inpTinta = card.querySelector('.inp-silk-tinta');
+          if (inpTinta) app.silkTinta = parseFloat(inpTinta.value) || 0.90;
+        } else if (app.tecnica === 'Sublimacao') {
+          const inpArea = card.querySelector('.inp-sub-area');
+          if (inpArea) app.subArea = parseFloat(inpArea.value) || 0.25;
+          const inpCusto = card.querySelector('.inp-sub-custo');
+          if (inpCusto) app.subCustoM2 = parseFloat(inpCusto.value) || 9.50;
+          const inpCal = card.querySelector('.inp-sub-calandra');
+          if (inpCal) app.subCalandra = parseFloat(inpCal.value) || 2.00;
+        }
+
+        app.custoUnitario = calcularCustoUnitarioAplicacao(app, it.grade?.total || 1);
+      });
+
+      // Total de estampa deste modelo
+      const somaEstampas = it.aplicacoes.reduce((acc, a) => acc + (a.custoUnitario || 0), 0);
+      it.custoEstampaTotal = somaEstampas;
+      const inpCustoEstampa = document.getElementById('inputCustoEstampa');
+      if (inpCustoEstampa) inpCustoEstampa.value = somaEstampas.toFixed(2);
+    }
+
+    // Renderiza as abas dos modelos no topo
+    function renderizarAbasModelos() {
+      const container = document.getElementById('orcModelosTabsBar');
+      if (!container) return;
+
+      container.innerHTML = `
+        ${itensOrcamento.map((it, idx) => `
+          <div class="modelo-tab-item ${idx === itemAtivoIndex ? 'active' : ''}" data-idx="${idx}">
+            <span>👕 ${idx + 1}. ${it.produtoNome.split(' ')[0]} ${it.produtoNome.split(' ')[1] || ''}</span>
+            <span class="modelo-tab-badge">${it.grade?.total || 0} pçs</span>
+            ${itensOrcamento.length > 1 ? `
+              <span class="modelo-tab-close" data-close-idx="${idx}" title="Excluir este modelo do pedido">&times;</span>
+            ` : ''}
+          </div>
+        `).join('')}
+      `;
+
+      // Eventos de clique nas abas
+      container.querySelectorAll('.modelo-tab-item').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          if (e.target.classList.contains('modelo-tab-close')) return;
+          const targetIdx = parseInt(tab.getAttribute('data-idx'), 10);
+          if (targetIdx !== itemAtivoIndex) {
+            sincronizarItemAtivoDoDOM();
+            itemAtivoIndex = targetIdx;
+            carregarItemAtivoNoDOM();
+            recalcularBenchmarkModal();
+          }
+        });
+      });
+
+      // Eventos de exclusão de aba
+      container.querySelectorAll('.modelo-tab-close').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const closeIdx = parseInt(btn.getAttribute('data-close-idx'), 10);
+          if (itensOrcamento.length <= 1) {
+            mostrarToast('O pedido precisa conter pelo menos 1 modelo.', 'yellow');
+            return;
+          }
+          if (confirm(`Deseja realmente remover o Modelo #${closeIdx + 1} (${itensOrcamento[closeIdx].produtoNome}) deste pedido?`)) {
+            itensOrcamento.splice(closeIdx, 1);
+            if (itemAtivoIndex >= itensOrcamento.length) {
+              itemAtivoIndex = itensOrcamento.length - 1;
+            }
+            carregarItemAtivoNoDOM();
+            recalcularBenchmarkModal();
+            mostrarToast('Modelo removido do pedido.', 'blue');
+          }
+        });
+      });
+    }
+
+    // Carrega os dados do item ativo para os inputs do DOM
+    function carregarItemAtivoNoDOM() {
+      const it = itensOrcamento[itemAtivoIndex];
+      if (!it) return;
+
+      // Select do Produto
+      const selProd = document.getElementById('orcProdutoSelect');
+      if (selProd) selProd.value = it.produtoId;
+
+      // Seletor de Cores Industrial
+      const boxCores = document.getElementById('boxSeletorCoresModelo');
+      if (boxCores) {
+        boxCores.innerHTML = gerarHTMLSeletorCoresIndustrial('orc', it.corTecido || 'Azul Marinho', it.observacoesCoresDetalhes || '');
+        configurarEventosSeletorCores('orc', (corNome, corHex) => {
+          it.corTecido = corNome;
+          if (!it.mockupUploadPersonalizado) {
+            const cliId = document.getElementById('orcClienteSelect')?.value;
+            const cli = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
+            const sigla = (cli ? (cli.nomeFantasia || cli.nome || "BRAVVI") : "BRAVVI").toString().substring(0, 6);
+            it.mockupUrl = window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, corHex, "#ffffff", sigla);
+            const prev = document.getElementById('previewMockup3x4Orc');
+            if (prev) prev.src = it.mockupUrl;
+          }
+        });
+      }
+
+      // Mockup
+      const prevMock = document.getElementById('previewMockup3x4Orc');
+      if (prevMock) {
+        prevMock.src = it.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, "#1e3a8a", "#ffffff", "BRAVVI") : '');
+      }
+
+      // Grade
+      const g = it.grade || {};
+      ['PP', 'P', 'M', 'G', 'GG', 'XG'].forEach(tam => {
+        const inp = document.getElementById(`grade${tam}`);
+        if (inp) inp.value = g[tam.toLowerCase()] || 0;
+      });
+      const inpTotal = document.getElementById('gradeTotal');
+      if (inpTotal) inpTotal.value = g.total || 0;
+
+      // Custos
+      const inpTec = document.getElementById('inputCustoTecido');
+      if (inpTec) inpTec.value = (it.custoTecidoKg || padroes.custoTecidoKg || 48.50).toFixed(2);
+      const inpCons = document.getElementById('inputConsumoTecido');
+      if (inpCons) inpCons.value = (it.consumoTecido || 0.28).toFixed(2);
+      const inpMarg = document.getElementById('inputMargemErroTecido');
+      if (inpMarg) inpMarg.value = (it.margemErroTecido || 8.0).toFixed(1);
+      const inpAv = document.getElementById('inputCustoAviamento');
+      if (inpAv) inpAv.value = (it.custoAviamento || 4.80).toFixed(2);
+      const inpCost = document.getElementById('inputCustoCostura');
+      if (inpCost) inpCost.value = (it.custoCostura || 7.50).toFixed(2);
+
+      // Preço e Margem
+      const inpPrec = document.getElementById('inputPrecoPretendido');
+      if (inpPrec) inpPrec.value = (it.precoVendaUnitario || 58.00).toFixed(2);
+      const inpMD = document.getElementById('inputMargemDesejada');
+      if (inpMD) inpMD.value = (it.margemDesejada || 30.0).toFixed(0);
+      const inpImp = document.getElementById('inputAliquotaImposto');
+      if (inpImp) inpImp.value = (it.aliquotaImposto || 6.5).toFixed(1);
+
+      // Renderiza as aplicações de personalização
+      renderizarAplicacoes();
+      renderizarAbasModelos();
+    }
+
+    // Renderiza a lista de aplicações do item ativo
+    function renderizarAplicacoes() {
+      const it = itensOrcamento[itemAtivoIndex];
+      const container = document.getElementById('orcListaAplicacoes');
+      if (!it || !container) return;
+
+      if (!it.aplicacoes || it.aplicacoes.length === 0) {
+        container.innerHTML = `
+          <div style="padding: 10px; text-align: center; color: var(--text-gray-500); font-size: 11.5px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 4px;">
+            Peça Lisa (Sem Estampa). Nenhuma personalização adicionada. Clique nos botões acima para incluir Bordado, DTF ou Silk.
+          </div>
+        `;
+      } else {
+        container.innerHTML = it.aplicacoes.map((app, idx) => 
+          gerarHtmlCardAplicacao(app, idx, it.grade?.total || 1, padroes)
+        ).join('');
+      }
+
+      // Eventos nos cards de aplicação
+      container.querySelectorAll('.aplicacao-card').forEach((card, idx) => {
+        const app = it.aplicacoes[idx];
+        if (!app) return;
+
+        // Troca de técnica via pills
+        card.querySelectorAll('.btn-app-tec').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const novaTec = btn.getAttribute('data-tec');
+            app.tecnica = novaTec;
+            // Adapta dimensões padrão se for DTF ou Bordado
+            if (novaTec === 'DTF' && (!app.dtfLarguraArte || app.dtfLarguraArte < 5)) {
+              app.dtfLarguraArte = app.local.includes('Costas') ? 26 : 10;
+              app.dtfAlturaArte = app.local.includes('Costas') ? 10 : 8;
+            } else if (novaTec === 'Bordado' && !app.borPontos) {
+              app.borPontos = app.local.includes('Costas') ? 18000 : 6000;
+            }
+            renderizarAplicacoes();
+            recalcularBenchmarkModal();
+          });
+        });
+
+        // Troca de local
+        const selLocal = card.querySelector('.sel-app-local');
+        selLocal?.addEventListener('change', (e) => {
+          app.local = e.target.value;
+          const locConfig = LOCAIS_PERSONALIZACAO.find(l => l.rotulo === app.local);
+          if (locConfig) {
+            if (app.tecnica === 'DTF') {
+              app.dtfLarguraArte = locConfig.padraoW;
+              app.dtfAlturaArte = locConfig.padraoH;
+            } else if (app.tecnica === 'Bordado') {
+              app.borPontos = locConfig.padraoPontos;
+            }
+          }
+          renderizarAplicacoes();
+          recalcularBenchmarkModal();
+        });
+
+        // Remoção da aplicação
+        const btnRemover = card.querySelector('.btn-remover-app');
+        btnRemover?.addEventListener('click', () => {
+          it.aplicacoes.splice(idx, 1);
+          renderizarAplicacoes();
+          recalcularBenchmarkModal();
+        });
+
+        // Inputs de cálculo
+        card.querySelectorAll('input, select').forEach(inp => {
+          if (!inp.classList.contains('sel-app-local')) {
+            inp.addEventListener('input', () => {
+              lerDadosAplicacoesDoDOM();
+              const cUnit = calcularCustoUnitarioAplicacao(app, it.grade?.total || 1);
+              const badge = card.querySelector('.aplicacao-cost-badge strong');
+              if (badge) badge.textContent = `${formatarMoeda(cUnit)}/un`;
+              recalcularBenchmarkModal();
+            });
+          }
+        });
+      });
+
+      // Atualiza badge de total de estampa deste modelo
+      const totalEstampa = (it.aplicacoes || []).reduce((acc, a) => acc + (a.custoUnitario || 0), 0);
+      const lbl = document.getElementById('lblTotalEstampaModelo');
+      if (lbl) lbl.textContent = `${formatarMoeda(totalEstampa)} / peça`;
+      const inpEstampa = document.getElementById('inputCustoEstampa');
+      if (inpEstampa) inpEstampa.value = totalEstampa.toFixed(2);
+    }
+
+    // Botões de Presets Rápidos de Estampa
+    document.querySelectorAll('.btn-quick-add-app').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const it = itensOrcamento[itemAtivoIndex];
+        if (!it) return;
+        if (!Array.isArray(it.aplicacoes)) it.aplicacoes = [];
+
+        const tipo = btn.getAttribute('data-tipo');
+        const pdr = carregarPadroesSistema();
+        const dtfMetro = (pdr.dtfLarguraRolo || 58) == 28 ? (pdr.dtfMetroLinear28 || 38.00) : (pdr.dtfMetroLinear58 || 60.00);
+
+        if (tipo === 'bor-peito') {
+          it.aplicacoes.push({
+            id: 'APP-' + Date.now(),
+            local: 'Peito Frente (Logo Esquerdo)',
+            tecnica: 'Bordado',
+            borPontos: 6000,
+            borMilPontos: 0.45,
+            borMatriz: 35.00,
+            borEntretela: 1.00
+          });
+        } else if (tipo === 'dtf-costas') {
+          it.aplicacoes.push({
+            id: 'APP-' + Date.now(),
+            local: 'Costas Superior (Pala / Ombro)',
+            tecnica: 'DTF',
+            dtfLarguraRolo: pdr.dtfLarguraRolo || 58,
+            dtfLarguraArte: 26,
+            dtfAlturaArte: 9,
+            dtfMetroLinear: dtfMetro,
+            dtfPrensagem: pdr.dtfPrensagem || 1.50
+          });
+        } else if (tipo === 'dtf-peito') {
+          it.aplicacoes.push({
+            id: 'APP-' + Date.now(),
+            local: 'Peito Frente (Logo Esquerdo)',
+            tecnica: 'DTF',
+            dtfLarguraRolo: pdr.dtfLarguraRolo || 58,
+            dtfLarguraArte: 10,
+            dtfAlturaArte: 8,
+            dtfMetroLinear: dtfMetro,
+            dtfPrensagem: pdr.dtfPrensagem || 1.50
+          });
+        } else if (tipo === 'silk-costas') {
+          it.aplicacoes.push({
+            id: 'APP-' + Date.now(),
+            local: 'Costas Total (Grande / Central)',
+            tecnica: 'Silk',
+            silkCores: 2,
+            silkTaxaTela: 35.00,
+            silkBatida: 1.80,
+            silkTinta: 0.90
+          });
+        }
+
+        renderizarAplicacoes();
+        recalcularBenchmarkModal();
+        mostrarToast('Nova aplicação adicionada à peça!', 'green');
+      });
+    });
+
+    // Botão Adicionar Aplicação Vazia
+    document.getElementById('btnAdicionarAplicacaoVazia')?.addEventListener('click', () => {
+      const it = itensOrcamento[itemAtivoIndex];
+      if (!it) return;
+      if (!Array.isArray(it.aplicacoes)) it.aplicacoes = [];
+
+      const pdr = carregarPadroesSistema();
+      it.aplicacoes.push({
+        id: 'APP-' + Date.now(),
+        local: 'Peito Frente (Logo Esquerdo)',
+        tecnica: 'DTF',
+        dtfLarguraRolo: pdr.dtfLarguraRolo || 58,
+        dtfLarguraArte: 12,
+        dtfAlturaArte: 8,
+        dtfMetroLinear: pdr.dtfMetroLinear58 || 60,
+        dtfPrensagem: 1.50
+      });
+
+      renderizarAplicacoes();
+      recalcularBenchmarkModal();
+    });
+
+    // Botão Peça Lisa (Sem Estampa)
+    document.getElementById('btnLimparEstampasLisa')?.addEventListener('click', () => {
+      const it = itensOrcamento[itemAtivoIndex];
+      if (!it) return;
+      it.aplicacoes = [{
+        id: 'APP-' + Date.now(),
+        local: 'Peça Lisa',
+        tecnica: 'Lisa',
+        custoUnitario: 0
+      }];
+      renderizarAplicacoes();
+      recalcularBenchmarkModal();
+      mostrarToast('Peça configurada como Lisa (sem estampa).', 'blue');
+    });
+
+    // Adicionar Outro Modelo ao Pedido
+    document.getElementById('btnAddModeloTab')?.addEventListener('click', () => {
+      sincronizarItemAtivoDoDOM();
+      const novoNum = itensOrcamento.length + 1;
+      const prodsDisponiveis = db.produtosBase || [];
+      const prodSugestao = prodsDisponiveis[novoNum - 1] || prodsDisponiveis[0] || null;
+      const novoItem = criarItemModeloPadrao(novoNum, prodSugestao, padroes);
+
+      itensOrcamento.push(novoItem);
+      itemAtivoIndex = itensOrcamento.length - 1;
+      carregarItemAtivoNoDOM();
+      recalcularBenchmarkModal();
+      mostrarToast(`Modelo #${novoNum} adicionado ao pedido! Configure suas especificações.`, 'green');
+    });
+
+    // Mudança de modelo textil no select
+    document.getElementById('orcProdutoSelect')?.addEventListener('change', () => {
+      const it = itensOrcamento[itemAtivoIndex];
+      if (!it) return;
+      const produtoId = document.getElementById('orcProdutoSelect')?.value;
+      const prod = db.produtosBase.find(pr => pr.id === produtoId) || db.produtosBase[0];
+      if (prod) {
+        it.produtoId = prod.id;
+        it.produtoNome = prod.nome;
+        it.tipoMalhaPadrao = prod.tipoMalhaPadrao;
+        it.consumoTecido = prod.consumoMalhaKgPorPeca || 0.28;
+        it.custoCostura = prod.custoMaoDeObraBase || 7.50;
+
+        const inpConsumo = document.getElementById('inputConsumoTecido');
+        if (inpConsumo) inpConsumo.value = it.consumoTecido.toFixed(2);
+        const inpCostura = document.getElementById('inputCustoCostura');
+        if (inpCostura) inpCostura.value = it.custoCostura.toFixed(2);
+
+        if (!it.mockupUploadPersonalizado) {
+          const cliId = document.getElementById('orcClienteSelect')?.value;
+          const cli = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
+          const sigla = (cli ? (cli.nomeFantasia || cli.nome || "BRAVVI") : "BRAVVI").toString().substring(0, 6);
+          it.mockupUrl = window.ERP_MOCKUPS.gerarMockupSvg(prod.nome, "#1e3a8a", "#ffffff", sigla);
+          const prev = document.getElementById('previewMockup3x4Orc');
+          if (prev) prev.src = it.mockupUrl;
+        }
+      }
+      renderizarAbasModelos();
+      recalcularBenchmarkModal();
+    });
+
+    // Upload de mockup personalizado para o modelo ativo
+    document.getElementById('inputUploadMockupOrc')?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file && itensOrcamento[itemAtivoIndex]) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          itensOrcamento[itemAtivoIndex].mockupUrl = evt.target.result;
+          itensOrcamento[itemAtivoIndex].mockupUploadPersonalizado = true;
+          const prev = document.getElementById('previewMockup3x4Orc');
+          if (prev) prev.src = evt.target.result;
+          mostrarToast('Mockup do cliente anexado para este modelo!', 'green');
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Presets de cores de mockup para o modelo ativo
+    document.querySelectorAll('.btn-mock-orc-preset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const it = itensOrcamento[itemAtivoIndex];
+        if (!it) return;
+        const preset = btn.getAttribute('data-preset');
+        const cliId = document.getElementById('orcClienteSelect')?.value;
+        const cObj = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
+        const sigla = (cObj ? (cObj.nomeFantasia || cObj.nome || "BRAVVI") : "BRAVVI").toString().substring(0, 6);
+
+        if (preset === 'azul') it.mockupUrl = window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, "#1e3a8a", "#ffffff", sigla);
+        else if (preset === 'cinza') it.mockupUrl = window.ERP_MOCKUPS.gerarMockupSvg("brim", "#475569", "#eab308", sigla);
+        else if (preset === 'branco') it.mockupUrl = window.ERP_MOCKUPS.gerarMockupSvg("jaleco", "#ffffff", "#047857", sigla);
+        else if (preset === 'preto') it.mockupUrl = window.ERP_MOCKUPS.gerarMockupSvg("camiseta", "#0f172a", "#ffffff", sigla);
+        else if (preset === 'royal') it.mockupUrl = window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, "#2563eb", "#ffffff", sigla);
+
+        it.mockupUploadPersonalizado = false;
+        const prev = document.getElementById('previewMockup3x4Orc');
+        if (prev) prev.src = it.mockupUrl;
       });
     });
 
@@ -4273,115 +4843,64 @@
 
       const lblCli = document.getElementById('labelDataEntregaCliente');
       if (lblCli) {
-        lblCli.textContent = `📅 Previsão Entrega Cliente: ${calcularDataFuturaDiasUteis(diasCli)} (${diasCli} dias úteis)`;
+        lblCli.textContent = `📅 Entrega: ${calcularDataFuturaDiasUteis(diasCli)} (${diasCli} dias)`;
       }
 
       const lblInt = document.getElementById('labelDataMetaInterna');
       if (lblInt) {
         const folga = diasCli - diasInt;
-        lblInt.textContent = `🏭 Meta Interna Fábrica: ${calcularDataFuturaDiasUteis(diasInt)} (${diasInt} dias úteis${folga > 0 ? ` • ${folga}d de folga` : ''})`;
+        lblInt.textContent = `🏭 Fábrica: ${calcularDataFuturaDiasUteis(diasInt)} (${diasInt} dias${folga > 0 ? ` • ${folga}d folga` : ''})`;
       }
     }
 
     document.getElementById('inputPrazoClienteDias')?.addEventListener('input', atualizarLabelsPrazos);
     document.getElementById('inputPrazoInternoDias')?.addEventListener('input', atualizarLabelsPrazos);
 
-    document.querySelectorAll('.btn-prazo-cli-pill').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const dias = btn.getAttribute('data-dias');
-        const inp = document.getElementById('inputPrazoClienteDias');
-        if (inp) {
-          inp.value = dias;
-          atualizarLabelsPrazos();
-        }
-      });
-    });
-
-    document.querySelectorAll('.btn-prazo-int-pill').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const dias = btn.getAttribute('data-dias');
-        const inp = document.getElementById('inputPrazoInternoDias');
-        if (inp) {
-          inp.value = dias;
-          atualizarLabelsPrazos();
-        }
-      });
-    });
-
     // Salvar prazos como padrão
     document.getElementById('btnSalvarPrazosPadrao')?.addEventListener('click', () => {
       const diasCli = parseInt(document.getElementById('inputPrazoClienteDias')?.value || 15, 10);
       const diasInt = parseInt(document.getElementById('inputPrazoInternoDias')?.value || 10, 10);
-      salvarPadroesSistema({
-        prazoPedidoDias: diasCli,
-        prazoInternoDias: diasInt
-      });
+      salvarPadroesSistema({ prazoPedidoDias: diasCli, prazoInternoDias: diasInt });
       mostrarToast(`⭐ Prazos padrão atualizados: ${diasCli} dias (Cliente) / ${diasInt} dias (Fábrica).`, 'green');
     });
 
-    // Salvar todos os custos e parâmetros como padrão do usuário
+    // Salvar custos do modelo ativo como padrão
     document.getElementById('btnSalvarCustosPadrao')?.addEventListener('click', () => {
-      const custoTec = parseFloat(document.getElementById('inputCustoTecido')?.value || 48.50);
-      const consumo = parseFloat(document.getElementById('inputConsumoTecido')?.value || 0.28);
-      const margemErro = parseFloat(document.getElementById('inputMargemErroTecido')?.value || 8.0);
-      const aviamento = parseFloat(document.getElementById('inputCustoAviamento')?.value || 4.80);
-      const costura = parseFloat(document.getElementById('inputCustoCostura')?.value || 7.50);
-      const diasCli = parseInt(document.getElementById('inputPrazoClienteDias')?.value || 15, 10);
-      const diasInt = parseInt(document.getElementById('inputPrazoInternoDias')?.value || 10, 10);
-      
-      const selLargura = document.getElementById('dtfParamLarguraRolo')?.value || '58';
-      let larguraRolo = 58;
-      if (selLargura === '28') larguraRolo = 28;
-      else if (selLargura === 'custom') larguraRolo = parseFloat(document.getElementById('dtfParamLarguraCustom')?.value || 58);
-
-      const dtfMetro = parseFloat(document.getElementById('dtfParamMetro')?.value || 60.00);
-      const dtfPrensa = parseFloat(document.getElementById('dtfParamPrensa')?.value || 1.50);
+      const it = itensOrcamento[itemAtivoIndex];
+      if (!it) return;
+      sincronizarItemAtivoDoDOM();
 
       const updateObj = {
-        custoTecidoKg: custoTec,
-        consumoTecido: consumo,
-        margemErroTecido: margemErro,
-        custoAviamento: aviamento,
-        custoCostura: costura,
-        prazoPedidoDias: diasCli,
-        prazoInternoDias: diasInt,
-        dtfLarguraRolo: larguraRolo,
-        dtfPrensagem: dtfPrensa
+        custoTecidoKg: it.custoTecidoKg,
+        consumoTecido: it.consumoTecido,
+        margemErroTecido: it.margemErroTecido,
+        custoAviamento: it.custoAviamento,
+        custoCostura: it.custoCostura,
+        margemDesejada: it.margemDesejada,
+        aliquotaImposto: it.aliquotaImposto
       };
 
-      if (larguraRolo === 28) {
-        updateObj.dtfMetroLinear28 = dtfMetro;
-      } else {
-        updateObj.dtfMetroLinear58 = dtfMetro;
-      }
-
       salvarPadroesSistema(updateObj);
-      mostrarToast('⭐ Padrões salvos com sucesso! Novos orçamentos e pedidos já carregarão automaticamente com estes custos, margem de erro, costura e DTF.', 'green');
+      mostrarToast('⭐ Padrões salvos com sucesso! Novos orçamentos utilizarão estes parâmetros.', 'green');
     });
 
     // Restaurar padrões
     document.getElementById('btnRestaurarCustosPadrao')?.addEventListener('click', () => {
       const pdr = carregarPadroesSistema();
-      const inpCustoTec = document.getElementById('inputCustoTecido');
-      if (inpCustoTec) inpCustoTec.value = pdr.custoTecidoKg.toFixed(2);
-      const inpConsumo = document.getElementById('inputConsumoTecido');
-      if (inpConsumo) inpConsumo.value = pdr.consumoTecido.toFixed(2);
-      const inpMargemErro = document.getElementById('inputMargemErroTecido');
-      if (inpMargemErro) inpMargemErro.value = pdr.margemErroTecido.toFixed(1);
-      const inpAviamento = document.getElementById('inputCustoAviamento');
-      if (inpAviamento) inpAviamento.value = pdr.custoAviamento.toFixed(2);
-      const inpCostura = document.getElementById('inputCustoCostura');
-      if (inpCostura) inpCostura.value = pdr.custoCostura.toFixed(2);
-      const inpDiasCli = document.getElementById('inputPrazoClienteDias');
-      if (inpDiasCli) inpDiasCli.value = pdr.prazoPedidoDias;
-      const inpDiasInt = document.getElementById('inputPrazoInternoDias');
-      if (inpDiasInt) inpDiasInt.value = pdr.prazoInternoDias;
-      atualizarLabelsPrazos();
+      const it = itensOrcamento[itemAtivoIndex];
+      if (it) {
+        it.custoTecidoKg = pdr.custoTecidoKg;
+        it.consumoTecido = pdr.consumoTecido;
+        it.margemErroTecido = pdr.margemErroTecido;
+        it.custoAviamento = pdr.custoAviamento;
+        it.custoCostura = pdr.custoCostura;
+      }
+      carregarItemAtivoNoDOM();
       recalcularBenchmarkModal();
-      mostrarToast('Padrões restaurados nos campos.', 'blue');
+      mostrarToast('Padrões restaurados no modelo atual.', 'blue');
     });
 
-    // Eventos de Cadastro Inline (Clientes e Modelos)
+    // Cadastro inline de cliente e modelo
     document.getElementById('btnCadastrarClienteInline')?.addEventListener('click', () => {
       abrirModalNovoClienteInline((novoCli) => {
         const sel = document.getElementById('orcClienteSelect');
@@ -4391,13 +4910,6 @@
           opt.textContent = `${novoCli.nomeFantasia} • ${formatarTelefone(novoCli.telefone)} (${novoCli.cidade}/${novoCli.uf})`;
           opt.selected = true;
           sel.prepend(opt);
-          if (!mockupUploadPersonalizado) {
-            const prodId = document.getElementById('orcProdutoSelect')?.value;
-            const pObj = db.produtosBase.find(pr => pr.id === prodId) || db.produtosBase[0];
-            mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(pObj.nome, "#1e3a8a", "#ffffff", novoCli.nomeFantasia.substring(0, 6));
-            const prev = document.getElementById('previewMockup3x4Orc');
-            if (prev) prev.src = mockupOrcamentoUrl;
-          }
         }
       });
     });
@@ -4411,246 +4923,220 @@
           opt.textContent = `${novoMod.nome} [${novoMod.tipoMalhaPadrao}]`;
           opt.selected = true;
           sel.prepend(opt);
-          document.getElementById('inputCustoCostura').value = novoMod.custoMaoDeObraBase.toFixed(2);
-          const inpConsumo = document.getElementById('inputConsumoTecido');
-          if (inpConsumo) inpConsumo.value = (novoMod.consumoMalhaKgPorPeca || 0.28).toFixed(2);
-          if (!mockupUploadPersonalizado) {
-            const cliId = document.getElementById('orcClienteSelect')?.value;
-            const cli = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
-            const sigla = (cli ? (cli.nomeFantasia || cli.nome || cli.razaoSocial || "BRAVVI") : "BRAVVI").toString().substring(0, 6);
-            mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(novoMod.nome, "#1e3a8a", "#ffffff", sigla);
-            const prev = document.getElementById('previewMockup3x4Orc');
-            if (prev) prev.src = mockupOrcamentoUrl;
+          const it = itensOrcamento[itemAtivoIndex];
+          if (it) {
+            it.produtoId = novoMod.id;
+            it.produtoNome = novoMod.nome;
+            it.tipoMalhaPadrao = novoMod.tipoMalhaPadrao;
+            it.custoCostura = novoMod.custoMaoDeObraBase || 7.50;
+            it.consumoTecido = novoMod.consumoMalhaKgPorPeca || 0.28;
           }
+          carregarItemAtivoNoDOM();
           recalcularBenchmarkModal();
         }
       });
     });
 
-    // Mudança de modelo textil
-    document.getElementById('orcProdutoSelect')?.addEventListener('change', () => {
-      const produtoId = document.getElementById('orcProdutoSelect')?.value;
-      const prod = db.produtosBase.find(pr => pr.id === produtoId) || db.produtosBase[0];
-      const inpConsumo = document.getElementById('inputConsumoTecido');
-      if (inpConsumo && prod) {
-        inpConsumo.value = (prod.consumoMalhaKgPorPeca || 0.28).toFixed(2);
-      }
-      const inpCostura = document.getElementById('inputCustoCostura');
-      if (inpCostura && prod && prod.custoMaoDeObraBase) {
-        inpCostura.value = prod.custoMaoDeObraBase.toFixed(2);
-      }
-      if (!mockupUploadPersonalizado) {
-        const cliId = document.getElementById('orcClienteSelect')?.value;
-        const cli = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
-        const sigla = (cli ? (cli.nomeFantasia || cli.nome || cli.razaoSocial || "BRAVVI") : "BRAVVI").toString().substring(0, 6);
-        mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(prod.nome, "#1e3a8a", "#ffffff", sigla);
-        const prev = document.getElementById('previewMockup3x4Orc');
-        if (prev) prev.src = mockupOrcamentoUrl;
-      }
-      recalcularBenchmarkModal();
-    });
-
-    // Mudança de cliente
-    document.getElementById('orcClienteSelect')?.addEventListener('change', () => {
-      if (!mockupUploadPersonalizado) {
-        const cliId = document.getElementById('orcClienteSelect')?.value;
-        const cli = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
-        const sigla = (cli ? (cli.nomeFantasia || cli.nome || cli.razaoSocial || "BRAVVI") : "BRAVVI").toString().substring(0, 6);
-        const prodId = document.getElementById('orcProdutoSelect')?.value;
-        const prod = db.produtosBase.find(pr => pr.id === prodId) || db.produtosBase[0];
-        mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(prod.nome, "#1e3a8a", "#ffffff", sigla);
-        const prev = document.getElementById('previewMockup3x4Orc');
-        if (prev) prev.src = mockupOrcamentoUrl;
-      }
-    });
-
-    // Recálculo da Engenharia Têxtil, Viabilidade e Rendimento em Tempo Real
+    // Recálculo Completo: Engenharia Têxtil, Viabilidade e Totais Consolidados do Pedido
     function recalcularBenchmarkModal() {
-      const pp = parseInt(document.getElementById('gradePP')?.value || 0, 10);
-      const p = parseInt(document.getElementById('gradeP')?.value || 0, 10);
-      const m = parseInt(document.getElementById('gradeM')?.value || 0, 10);
-      const g = parseInt(document.getElementById('gradeG')?.value || 0, 10);
-      const gg = parseInt(document.getElementById('gradeGG')?.value || 0, 10);
-      const xg = parseInt(document.getElementById('gradeXG')?.value || 0, 10);
-      const totalPecas = pp + p + m + g + gg + xg;
+      sincronizarItemAtivoDoDOM();
 
+      const itAtivo = itensOrcamento[itemAtivoIndex];
+      if (!itAtivo) return;
+
+      const totalPecasItem = itAtivo.grade?.total || 0;
       const inpTotal = document.getElementById('gradeTotal');
-      if (inpTotal) inpTotal.value = totalPecas;
+      if (inpTotal) inpTotal.value = totalPecasItem;
 
-      const custoTecidoKg = parseFloat(document.getElementById('inputCustoTecido')?.value || 48.50);
-      const consumoBase = parseFloat(document.getElementById('inputConsumoTecido')?.value || 0.28);
-      const margemErro = parseFloat(document.getElementById('inputMargemErroTecido')?.value || 8.0);
-      const custoAviamento = parseFloat(document.getElementById('inputCustoAviamento')?.value || 4.80);
-      const custoEstampa = parseFloat(document.getElementById('inputCustoEstampa')?.value || 0);
-      const custoCostura = parseFloat(document.getElementById('inputCustoCostura')?.value || 7.50);
-      const precoPretendido = parseFloat(document.getElementById('inputPrecoPretendido')?.value || 54.00);
-      const margemDesejada = parseFloat(document.getElementById('inputMargemDesejada')?.value || 30.0);
-      const aliquotaImposto = parseFloat(document.getElementById('inputAliquotaImposto')?.value || 6.5);
-
-      const prodId = document.getElementById('orcProdutoSelect')?.value || 'PROD-001';
-
-      // Cálculo de Rendimento e Custo de Malha com Margem de Erro
+      // Engenharia Têxtil do Modelo Ativo
+      const consumoBase = itAtivo.consumoTecido || 0.28;
+      const margemErro = itAtivo.margemErroTecido || 8.0;
       const consumoRealComPerda = consumoBase * (1 + (margemErro / 100));
       const rendimentoPecasPorKg = consumoRealComPerda > 0 ? (1 / consumoRealComPerda) : 0;
-      const custoTecidoUnitario = custoTecidoKg * consumoRealComPerda;
-      const totalKgTecido = totalPecas * consumoRealComPerda;
+      const custoTecidoUnitario = (itAtivo.custoTecidoKg || 48.50) * consumoRealComPerda;
+      const totalKgTecido = totalPecasItem * consumoRealComPerda;
 
       const boxRendimento = document.getElementById('boxRendimentoTecido');
       if (boxRendimento) {
         boxRendimento.innerHTML = `
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <strong style="color: var(--text-primary); font-size: 12px; display: flex; align-items: center; gap: 5px;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-              Engenharia Têxtil: Rendimento & Custo do Tecido por Peça:
+            <strong style="color: var(--text-primary); font-size: 11.5px; display: flex; align-items: center; gap: 5px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+              Engenharia Têxtil deste Modelo (${itAtivo.produtoNome.split(' ')[0]}):
             </strong>
-            <span class="status-pill status-gray" style="font-size: 10px; font-weight: 700;">Margem de Perda: ${margemErro.toFixed(1)}%</span>
+            <span class="status-pill status-gray" style="font-size: 9.5px; font-weight: 700;">Perda Corte/Enfesto: ${margemErro.toFixed(1)}%</span>
           </div>
-          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; font-size: 11.5px;">
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; font-size: 11px;">
             <div>
-              <span style="color: var(--text-gray-500); display: block; font-size: 10px;">Consumo c/ Margem:</span>
+              <span style="color: var(--text-gray-500); display: block; font-size: 9.5px;">Consumo c/ Margem:</span>
               <strong style="color: var(--text-primary);">${consumoRealComPerda.toFixed(3)} kg/un</strong>
-              <span style="font-size: 9.5px; color: var(--text-gray-400); display: block;">Base: ${consumoBase.toFixed(2)} + ${margemErro}%</span>
             </div>
             <div>
-              <span style="color: var(--text-gray-500); display: block; font-size: 10px;">Rendimento do Tecido:</span>
+              <span style="color: var(--text-gray-500); display: block; font-size: 9.5px;">Rendimento Malha:</span>
               <strong style="color: var(--color-green);">${rendimentoPecasPorKg.toFixed(2)} peças / kg</strong>
-              <span style="font-size: 9.5px; color: var(--text-gray-400); display: block;">de malha acabada</span>
             </div>
             <div>
-              <span style="color: var(--text-gray-500); display: block; font-size: 10px;">Custo Malha por Peça:</span>
-              <strong style="color: #1e40af; font-size: 13px;">${formatarMoeda(custoTecidoUnitario)}</strong>
-              <span style="font-size: 9.5px; color: var(--text-gray-400); display: block;">@ ${formatarMoeda(custoTecidoKg)}/kg</span>
+              <span style="color: var(--text-gray-500); display: block; font-size: 9.5px;">Custo Tecido / Peça:</span>
+              <strong style="color: #1e40af; font-size: 12.5px;">${formatarMoeda(custoTecidoUnitario)}</strong>
             </div>
             <div>
-              <span style="color: var(--text-gray-500); display: block; font-size: 10px;">Consumo Total Pedido:</span>
-              <strong style="color: var(--text-primary);">${totalPecas > 0 ? `${totalKgTecido.toFixed(2)} kg` : '0.00 kg'}</strong>
-              <span style="font-size: 9.5px; color: var(--text-gray-400); display: block;">${totalPecas} peças na grade</span>
+              <span style="color: var(--text-gray-500); display: block; font-size: 9.5px;">Consumo Total Modelo:</span>
+              <strong style="color: var(--text-primary);">${totalPecasItem > 0 ? `${totalKgTecido.toFixed(2)} kg` : '0.00 kg'}</strong>
             </div>
           </div>
-          ${totalPecas === 0 ? `
-            <div style="margin-top: 8px; padding: 6px 8px; background: #fffbeb; border: 1px dashed #fde68a; border-radius: 4px; font-size: 10.5px; color: #92400e;">
-              ℹ️ <strong>Grade zerada:</strong> Digite a distribuição de tamanhos (PP, P, M, G, GG, XG) acima para calcular o pedido completo.
-            </div>
-          ` : ''}
         `;
       }
 
-      // Benchmark e Viabilidade Financeira (usa quantidade real ou 1 para simulação de custos unitários)
-      const qtdCalculo = Math.max(1, totalPecas);
+      // Benchmark e Viabilidade Financeira do Modelo Ativo
+      const qtdCalculo = Math.max(1, totalPecasItem);
       const viabilidade = window.MarketBenchmark ? window.MarketBenchmark.calcularViabilidadeOrcamento({
-        produtoId: prodId,
+        produtoId: itAtivo.produtoId,
         quantidade: qtdCalculo,
-        custoTecidoKgOuMetro: custoTecidoKg,
-        consumoPorPeca: consumoBase,
-        margemErroTecidoPercentual: margemErro,
-        custoAviamentosTotal: custoAviamento,
-        custoPersonalizacaoUnitario: custoEstampa,
-        custoMaoDeObraCostura: custoCostura,
+        custoTecidoKgOuMetro: itAtivo.custoTecidoKg,
+        consumoPorPeca: itAtivo.consumoTecido,
+        margemErroTecidoPercentual: itAtivo.margemErroTecido,
+        custoAviamentosTotal: itAtivo.custoAviamento,
+        custoPersonalizacaoUnitario: itAtivo.custoEstampaTotal,
+        custoMaoDeObraCostura: itAtivo.custoCostura,
         custoEmbalagemEtiqueta: 1.50,
-        aliquotaImpostoPercentual: aliquotaImposto,
-        margemDesejadaPercentual: margemDesejada,
-        precoVendaPretendido: precoPretendido
+        aliquotaImpostoPercentual: itAtivo.aliquotaImposto,
+        margemDesejadaPercentual: itAtivo.margemDesejada,
+        precoVendaPretendido: itAtivo.precoVendaUnitario
       }) : {
-        custoProducaoUnitario: custoTecidoUnitario + custoAviamento + custoEstampa + custoCostura + 1.50,
-        precoSugeridoCalculado: precoPretendido,
+        custoProducaoUnitario: custoTecidoUnitario + itAtivo.custoAviamento + itAtivo.custoEstampaTotal + itAtivo.custoCostura + 1.50,
+        precoSugeridoCalculado: itAtivo.precoVendaUnitario,
         margemLiquidaReal: 25.0,
-        lucroLiquidoUnitario: precoPretendido * 0.25,
+        lucroLiquidoUnitario: itAtivo.precoVendaUnitario * 0.25,
         statusTexto: 'VIÁVEL (Padrão)',
         classeCor: 'status-green',
-        mercado: { min: 10, max: 100, precoMedioBrasil: precoPretendido },
+        mercado: { min: 10, max: 100, precoMedioBrasil: itAtivo.precoVendaUnitario },
         recomendacao: 'Valores calculados conforme custo direto de insumos e mão de obra.'
       };
 
+      // Atualiza propriedades financeiras do item ativo
+      itAtivo.custoUnitarioProducao = viabilidade.custoProducaoUnitario;
+      itAtivo.valorTotalVenda = itAtivo.precoVendaUnitario * totalPecasItem;
+      itAtivo.custoTotalProducao = viabilidade.custoProducaoUnitario * totalPecasItem;
+      itAtivo.lucroTotal = itAtivo.valorTotalVenda - itAtivo.custoTotalProducao;
+      itAtivo.margemReal = viabilidade.margemLiquidaReal;
+
+      // Painel de Benchmark do Modelo Ativo
       const painel = document.getElementById('painelBenchmarkResultado');
-      if (!painel) return;
-
-      const faturamentoTotalReal = precoPretendido * totalPecas;
-      const custoTotalReal = viabilidade.custoProducaoUnitario * totalPecas;
-      const lucroTotalReal = viabilidade.lucroLiquidoUnitario * totalPecas;
-
-      painel.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="status-pill ${viabilidade.classeCor}" style="font-size: 12px; padding: 4px 10px; font-weight: 800;">
-              ${viabilidade.statusTexto}
-            </span>
-            <span style="font-size: 11px; color: var(--text-gray-500);">
-              ${totalPecas > 0 ? `Pedido de <strong>${totalPecas} peças</strong>` : `Simulação unitária (Grade zerada)`}
-            </span>
-          </div>
-          <div style="font-size: 11px; color: var(--text-gray-600); text-align: right;">
-            Preço Médio Brasil (Faixa ${viabilidade.mercado.min}-${viabilidade.mercado.max} pçs): <strong>${formatarMoeda(viabilidade.mercado.precoMedioBrasil)}</strong>
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px;">
-          <div class="card" style="padding: 10px; margin: 0; background: #f8fafc; border: 1px solid var(--border-medium);">
-            <span style="font-size: 10px; color: var(--text-gray-500); text-transform: uppercase;">Custo Direto Produção</span>
-            <div class="text-mono" style="font-size: 14px; font-weight: 800; color: var(--text-primary); margin-top: 2px;">
-              ${formatarMoeda(viabilidade.custoProducaoUnitario)}
+      if (painel) {
+        painel.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="status-pill ${viabilidade.classeCor}" style="font-size: 11.5px; padding: 3px 8px; font-weight: 800;">
+                ${viabilidade.statusTexto}
+              </span>
+              <span style="font-size: 11px; color: var(--text-gray-500);">
+                Modelo ${itemAtivoIndex + 1} (${itAtivo.produtoNome}): <strong>${totalPecasItem} peças</strong>
+              </span>
             </div>
-            <span style="font-size: 9.5px; color: var(--text-gray-400);">por peça acabada</span>
-          </div>
-
-          <div class="card" style="padding: 10px; margin: 0; background: #f8fafc; border: 1px solid var(--border-medium);">
-            <span style="font-size: 10px; color: var(--text-gray-500); text-transform: uppercase;">Preço de Venda Unitário</span>
-            <div class="text-mono" style="font-size: 14px; font-weight: 800; color: #1e40af; margin-top: 2px;">
-              ${formatarMoeda(precoPretendido)}
+            <div style="font-size: 10.5px; color: var(--text-gray-600);">
+              Média Brasil: <strong>${formatarMoeda(viabilidade.mercado.precoMedioBrasil)}</strong>
             </div>
-            <span style="font-size: 9.5px; color: var(--text-gray-400);">Sugerido: ${formatarMoeda(viabilidade.precoSugeridoCalculado)}</span>
           </div>
 
-          <div class="card" style="padding: 10px; margin: 0; background: #f8fafc; border: 1px solid var(--border-medium);">
-            <span style="font-size: 10px; color: var(--text-gray-500); text-transform: uppercase;">Margem Líquida Real</span>
-            <div class="text-mono" style="font-size: 14px; font-weight: 800; color: ${viabilidade.margemLiquidaReal >= 20 ? 'var(--color-green)' : viabilidade.margemLiquidaReal >= 10 ? '#d97706' : 'var(--color-red)'}; margin-top: 2px;">
-              ${viabilidade.margemLiquidaReal.toFixed(1)}%
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 8px;">
+            <div class="card" style="padding: 8px; margin: 0; background: #f8fafc; border: 1px solid var(--border-medium);">
+              <span style="font-size: 9.5px; color: var(--text-gray-500); text-transform: uppercase;">Custo Produção</span>
+              <div class="text-mono" style="font-size: 13.5px; font-weight: 800; color: var(--text-primary); margin-top: 1px;">
+                ${formatarMoeda(viabilidade.custoProducaoUnitario)}
+              </div>
+              <span style="font-size: 9px; color: var(--text-gray-400);">por peça acabada</span>
             </div>
-            <span style="font-size: 9.5px; color: var(--text-gray-400);">${formatarMoeda(viabilidade.lucroLiquidoUnitario)} lucro/pç</span>
-          </div>
 
-          <div class="card" style="padding: 10px; margin: 0; background: #f0fdf4; border: 1px solid #bbf7d0;">
-            <span style="font-size: 10px; color: #166534; text-transform: uppercase; font-weight: 700;">
-              ${totalPecas > 0 ? 'Lucro Líquido do Pedido' : 'Valor Total do Pedido'}
-            </span>
-            <div class="text-mono" style="font-size: 15px; font-weight: 800; color: #166534; margin-top: 2px;">
-              ${totalPecas > 0 ? formatarMoeda(lucroTotalReal) : 'R$ 0,00'}
+            <div class="card" style="padding: 8px; margin: 0; background: #f8fafc; border: 1px solid var(--border-medium);">
+              <span style="font-size: 9.5px; color: var(--text-gray-500); text-transform: uppercase;">Preço Venda</span>
+              <div class="text-mono" style="font-size: 13.5px; font-weight: 800; color: #1e40af; margin-top: 1px;">
+                ${formatarMoeda(itAtivo.precoVendaUnitario)}
+              </div>
+              <span style="font-size: 9px; color: var(--text-gray-400);">Sugerido: ${formatarMoeda(viabilidade.precoSugeridoCalculado)}</span>
             </div>
-            <span style="font-size: 9.5px; color: #15803d;">
-              ${totalPecas > 0 ? `Faturamento: ${formatarMoeda(faturamentoTotalReal)}` : 'Preencha a grade'}
-            </span>
-          </div>
-        </div>
 
-        <div style="font-size: 11px; padding: 8px 12px; background: #ffffff; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); color: var(--text-gray-600); line-height: 1.4;">
-          <strong>Diagnóstico Industrial:</strong> ${viabilidade.recomendacao}
-        </div>
-      `;
+            <div class="card" style="padding: 8px; margin: 0; background: #f8fafc; border: 1px solid var(--border-medium);">
+              <span style="font-size: 9.5px; color: var(--text-gray-500); text-transform: uppercase;">Margem Real</span>
+              <div class="text-mono" style="font-size: 13.5px; font-weight: 800; color: ${viabilidade.margemLiquidaReal >= 20 ? 'var(--color-green)' : '#d97706'}; margin-top: 1px;">
+                ${viabilidade.margemLiquidaReal.toFixed(1)}%
+              </div>
+              <span style="font-size: 9px; color: var(--text-gray-400);">${formatarMoeda(viabilidade.lucroLiquidoUnitario)} lucro/pç</span>
+            </div>
+
+            <div class="card" style="padding: 8px; margin: 0; background: #f0fdf4; border: 1px solid #bbf7d0;">
+              <span style="font-size: 9.5px; color: #166534; text-transform: uppercase; font-weight: 700;">Subtotal Modelo</span>
+              <div class="text-mono" style="font-size: 14px; font-weight: 800; color: #166534; margin-top: 1px;">
+                ${formatarMoeda(itAtivo.valorTotalVenda)}
+              </div>
+              <span style="font-size: 9px; color: #15803d;">Lucro: ${formatarMoeda(itAtivo.lucroTotal)}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      // ========================================================================
+      // TOTAIS GERAIS CONSOLIDADOS DO PEDIDO (TODOS OS MODELOS JUNTOS)
+      // ========================================================================
+      const totalPecasGeral = itensOrcamento.reduce((s, it) => s + (it.grade?.total || 0), 0);
+      const faturamentoTotalGeral = itensOrcamento.reduce((s, it) => s + ((it.precoVendaUnitario || 0) * (it.grade?.total || 0)), 0);
+      const custoTotalGeral = itensOrcamento.reduce((s, it) => s + ((it.custoUnitarioProducao || 0) * (it.grade?.total || 0)), 0);
+      const lucroTotalGeral = faturamentoTotalGeral - custoTotalGeral;
+      const margemMediaGeral = faturamentoTotalGeral > 0 ? (lucroTotalGeral / faturamentoTotalGeral) * 100 : 0;
+
+      const boxConsolidado = document.getElementById('boxResumoGeralConsolidado');
+      if (boxConsolidado) {
+        boxConsolidado.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <span style="font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.85;">Resumo Financeiro Consolidado do Pedido:</span>
+              <h4 style="margin: 0; font-size: 14.5px; font-weight: 800; color: #ffffff;">
+                ${itensOrcamento.length} ${itensOrcamento.length === 1 ? 'Modelo' : 'Modelos Diferentes no Pedido'} • ${totalPecasGeral} Peças no Total
+              </h4>
+            </div>
+            <div style="font-size: 11px; opacity: 0.9; text-align: right;">
+              ${itensOrcamento.map((it, i) => `<span style="display: inline-block; background: rgba(255,255,255,0.1); padding: 1px 6px; border-radius: 3px; margin: 1px;">${i+1}. ${it.produtoNome.split(' ')[0]} (${it.grade?.total || 0} pçs)</span>`).join(' ')}
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center;">
+            <div style="background: rgba(255,255,255,0.08); padding: 8px; border-radius: 4px;">
+              <span style="font-size: 10px; opacity: 0.75; display: block;">Total Peças Pedido</span>
+              <strong style="font-size: 16px; color: #ffffff;">${totalPecasGeral} un</strong>
+            </div>
+            <div style="background: rgba(255,255,255,0.08); padding: 8px; border-radius: 4px;">
+              <span style="font-size: 10px; opacity: 0.75; display: block;">Custo Direto Total</span>
+              <strong style="font-size: 16px; color: #fca5a5;">${formatarMoeda(custoTotalGeral)}</strong>
+            </div>
+            <div style="background: rgba(255,255,255,0.08); padding: 8px; border-radius: 4px;">
+              <span style="font-size: 10px; opacity: 0.75; display: block;">Faturamento Total</span>
+              <strong style="font-size: 16px; color: #93c5fd;">${formatarMoeda(faturamentoTotalGeral)}</strong>
+            </div>
+            <div style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); padding: 8px; border-radius: 4px;">
+              <span style="font-size: 10px; color: #6ee7b7; display: block;">Lucro Líquido Global</span>
+              <strong style="font-size: 16px; color: #34d399;">${formatarMoeda(lucroTotalGeral)}</strong>
+              <span style="font-size: 9.5px; opacity: 0.85; display: block;">(${margemMediaGeral.toFixed(1)}% margem média)</span>
+            </div>
+          </div>
+        `;
+      }
+
+      // Atualiza badges das abas
+      const tabBadges = document.querySelectorAll('.modelo-tab-badge');
+      itensOrcamento.forEach((it, idx) => {
+        if (tabBadges[idx]) tabBadges[idx].textContent = `${it.grade?.total || 0} pçs`;
+      });
     }
 
-    // Coleta dos dados do formulário com validações
+    // Coleta dos dados completos do pedido multimodelo
     function coletarDadosOrcamentoModal() {
-      const pp = parseInt(document.getElementById('gradePP')?.value || 0, 10);
-      const p = parseInt(document.getElementById('gradeP')?.value || 0, 10);
-      const m = parseInt(document.getElementById('gradeM')?.value || 0, 10);
-      const g = parseInt(document.getElementById('gradeG')?.value || 0, 10);
-      const gg = parseInt(document.getElementById('gradeGG')?.value || 0, 10);
-      const xg = parseInt(document.getElementById('gradeXG')?.value || 0, 10);
-      const totalPecas = pp + p + m + g + gg + xg;
+      sincronizarItemAtivoDoDOM();
 
-      if (totalPecas <= 0) {
-        mostrarToast('Por favor, informe a quantidade de peças na grade de tamanhos (PP a XG).', 'red');
-        const boxGrade = document.getElementById('boxGradeTableInput') || document.querySelector('.grade-table-input');
+      const totalPecasGeral = itensOrcamento.reduce((s, it) => s + (it.grade?.total || 0), 0);
+      if (totalPecasGeral <= 0) {
+        mostrarToast('Por favor, informe a quantidade de peças na grade de tamanhos (PP a XG) de pelo menos um modelo.', 'red');
+        const boxGrade = document.getElementById('boxGradeTableInput');
         if (boxGrade) {
           boxGrade.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.45)';
-          boxGrade.style.transition = 'box-shadow 0.2s ease';
-          setTimeout(() => {
-            boxGrade.style.boxShadow = '';
-          }, 3000);
-        }
-        const inpM = document.getElementById('gradeM') || document.getElementById('gradeP') || document.getElementById('gradePP');
-        if (inpM) {
-          inpM.focus();
-          inpM.select();
+          setTimeout(() => { boxGrade.style.boxShadow = ''; }, 3000);
         }
         return null;
       }
@@ -4658,78 +5144,68 @@
       const clienteId = document.getElementById('orcClienteSelect')?.value;
       const cliente = db.clientes.find(c => c.id === clienteId) || db.clientes[0];
 
-      const prodId = document.getElementById('orcProdutoSelect')?.value;
-      const prod = db.produtosBase.find(pr => pr.id === prodId) || db.produtosBase[0];
-
-      const corPrincipal = (document.getElementById('orcCorPrincipalTecido')?.value || 'A Definir').trim();
-      const observacoesCoresDetalhes = (document.getElementById('orcObservacoesCoresDetalhes')?.value || '').trim();
-
-      const custoTecido = parseFloat(document.getElementById('inputCustoTecido')?.value || 48.50);
-      const consumoTecido = parseFloat(document.getElementById('inputConsumoTecido')?.value || 0.28);
-      const margemErroTecido = parseFloat(document.getElementById('inputMargemErroTecido')?.value || 8.0);
-      const custoAviamento = parseFloat(document.getElementById('inputCustoAviamento')?.value || 4.80);
-      const custoEstampa = parseFloat(document.getElementById('inputCustoEstampa')?.value || 0);
-      const custoCostura = parseFloat(document.getElementById('inputCustoCostura')?.value || 7.50);
-      const precoVendaUnitario = parseFloat(document.getElementById('inputPrecoPretendido')?.value || 54.00);
-      const margemDesejada = parseFloat(document.getElementById('inputMargemDesejada')?.value || 30.0);
-      const aliquotaImposto = parseFloat(document.getElementById('inputAliquotaImposto')?.value || 6.5);
-
       const prazoClienteDias = parseInt(document.getElementById('inputPrazoClienteDias')?.value || 15, 10);
       const prazoInternoDias = parseInt(document.getElementById('inputPrazoInternoDias')?.value || 10, 10);
       const dataEntregaCliente = calcularDataFuturaDiasUteis(prazoClienteDias);
       const dataMetaInterna = calcularDataFuturaDiasUteis(prazoInternoDias);
 
-      const selLargura = document.getElementById('dtfParamLarguraRolo')?.value || '58';
-      let larguraRolo = 58;
-      if (selLargura === '28') larguraRolo = 28;
-      else if (selLargura === 'custom') larguraRolo = parseFloat(document.getElementById('dtfParamLarguraCustom')?.value || 58);
+      // Soma financeira e grade combinada
+      const gradeConsolidada = { pp: 0, p: 0, m: 0, g: 0, gg: 0, xg: 0, total: 0 };
+      itensOrcamento.forEach(it => {
+        ['pp', 'p', 'm', 'g', 'gg', 'xg'].forEach(tam => {
+          gradeConsolidada[tam] += (it.grade?.[tam] || 0);
+        });
+        gradeConsolidada.total += (it.grade?.total || 0);
+      });
 
-      const viabilidade = window.MarketBenchmark ? window.MarketBenchmark.calcularViabilidadeOrcamento({
-        produtoId: prod.id,
-        quantidade: totalPecas,
-        custoTecidoKgOuMetro: custoTecido,
-        consumoPorPeca: consumoTecido,
-        margemErroTecidoPercentual: margemErroTecido,
-        custoAviamentosTotal: custoAviamento,
-        custoPersonalizacaoUnitario: custoEstampa,
-        custoMaoDeObraCostura: custoCostura,
-        custoEmbalagemEtiqueta: 1.50,
-        aliquotaImpostoPercentual: aliquotaImposto,
-        margemDesejadaPercentual: margemDesejada,
-        precoVendaPretendido: precoVendaUnitario
-      }) : {
-        custoProducaoUnitario: 24.50,
-        custoTecidoUnitario: custoTecido * consumoTecido * 1.08,
-        consumoRealComPerda: consumoTecido * 1.08,
-        lucroLiquidoUnitario: precoVendaUnitario * 0.25,
-        margemLiquidaReal: 25.0
-      };
+      const faturamentoTotalGeral = itensOrcamento.reduce((s, it) => s + ((it.precoVendaUnitario || 0) * (it.grade?.total || 0)), 0);
+      const custoTotalGeral = itensOrcamento.reduce((s, it) => s + ((it.custoUnitarioProducao || 0) * (it.grade?.total || 0)), 0);
+      const lucroTotalGeral = faturamentoTotalGeral - custoTotalGeral;
+      const margemMediaGeral = faturamentoTotalGeral > 0 ? (lucroTotalGeral / faturamentoTotalGeral) * 100 : 0;
+
+      // Resumo de produtos e personalizações
+      const produtoNomeGeral = itensOrcamento.length === 1
+        ? itensOrcamento[0].produtoNome
+        : itensOrcamento.map(it => `${it.produtoNome} (${it.grade?.total || 0} un)`).join(' + ');
+
+      const corPrincipalGeral = itensOrcamento.map(it => it.corTecido).filter((v, i, a) => a.indexOf(v) === i).join(' / ');
+      const obsCoresGeral = itensOrcamento.map((it, idx) => it.observacoesCoresDetalhes ? `[${it.produtoNome.split(' ')[0]}]: ${it.observacoesCoresDetalhes}` : '').filter(Boolean).join(' | ');
+
+      const resumoPersonalizacoes = itensOrcamento.map(it => {
+        const apps = (it.aplicacoes && it.aplicacoes.length > 0)
+          ? it.aplicacoes.map(a => `${a.local} (${a.tecnica})`).join(', ')
+          : 'Peça Lisa';
+        return `${it.produtoNome.split(' ')[0]}: ${apps}`;
+      }).join(' • ');
 
       return {
         cliente,
-        prod,
-        corPrincipal,
-        observacoesCoresDetalhes,
-        grade: { pp, p, m, g, gg, xg, total: totalPecas },
-        precoVendaUnitario,
-        valorTotal: precoVendaUnitario * totalPecas,
-        custoTotal: viabilidade.custoProducaoUnitario * totalPecas,
-        custoUnitario: viabilidade.custoProducaoUnitario,
-        custoTecidoPorPeca: viabilidade.custoTecidoUnitario,
-        consumoRealComPerda: viabilidade.consumoRealComPerda,
-        margemErroTecido: margemErroTecido,
-        lucroLiquido: viabilidade.lucroLiquidoUnitario * totalPecas,
-        margem: viabilidade.margemLiquidaReal,
+        itens: JSON.parse(JSON.stringify(itensOrcamento)),
+        prod: db.produtosBase.find(p => p.id === itensOrcamento[0].produtoId) || db.produtosBase[0],
+        produtoNome: produtoNomeGeral,
+        corPrincipal: corPrincipalGeral,
+        observacoesCoresDetalhes: obsCoresGeral,
+        grade: gradeConsolidada,
+        precoVendaUnitario: totalPecasGeral > 0 ? (faturamentoTotalGeral / totalPecasGeral) : 58.00,
+        valorTotal: faturamentoTotalGeral,
+        custoTotal: custoTotalGeral,
+        custoUnitario: totalPecasGeral > 0 ? (custoTotalGeral / totalPecasGeral) : 24.50,
+        custoTecidoPorPeca: itensOrcamento[0].custoTecidoKg * (itensOrcamento[0].consumoTecido || 0.28) * 1.08,
+        consumoRealComPerda: (itensOrcamento[0].consumoTecido || 0.28) * 1.08,
+        margemErroTecido: itensOrcamento[0].margemErroTecido || 8.0,
+        lucroLiquido: lucroTotalGeral,
+        margem: margemMediaGeral,
         prazoPedidoDias: prazoClienteDias,
         prazoInternoDias: prazoInternoDias,
         dataPrevisaoEntrega: dataEntregaCliente,
         dataMetaInterna: dataMetaInterna,
-        dtfLarguraRolo: larguraRolo,
-        mockupUrl: mockupOrcamentoUrl
+        dtfLarguraRolo: itensOrcamento[0].aplicacoes?.find(a => a.tecnica === 'DTF')?.dtfLarguraRolo || 58,
+        tipoPersonalizacao: resumoPersonalizacoes,
+        mockupUrl: itensOrcamento[0].mockupUrl
       };
     }
 
-    // Inputs que disparam recálculo em tempo real
+    // Inputs que disparam recálculo do item ativo
     const inputsRecalculo = [
       'gradePP', 'gradeP', 'gradeM', 'gradeG', 'gradeGG', 'gradeXG',
       'inputCustoTecido', 'inputConsumoTecido', 'inputMargemErroTecido',
@@ -4742,26 +5218,7 @@
       document.getElementById(id)?.addEventListener('change', recalcularBenchmarkModal);
     });
 
-    // Configura o seletor industrial de cores e atualiza mockup em tempo real
-    configurarEventosSeletorCores('orc', (corNome, corHex) => {
-      if (!mockupUploadPersonalizado) {
-        const prodId = document.getElementById('orcProdutoSelect')?.value;
-        const pObj = db.produtosBase.find(pr => pr.id === prodId) || db.produtosBase[0];
-        const cliId = document.getElementById('orcClienteSelect')?.value;
-        const cObj = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
-        const sigla = (cObj ? (cObj.nomeFantasia || cObj.nome || cObj.razaoSocial || "BRAVVI") : "BRAVVI").toString().substring(0, 6);
-        mockupOrcamentoUrl = window.ERP_MOCKUPS.gerarMockupSvg(pObj.nome, corHex, "#ffffff", sigla);
-        const prev = document.getElementById('previewMockup3x4Orc');
-        if (prev) prev.src = mockupOrcamentoUrl;
-      }
-    });
-
-    // Inicializa datas e painel DTF
-    atualizarLabelsPrazos();
-    atualizarPainelTecnica('DTF');
-    recalcularBenchmarkModal();
-
-    // Eventos dos botões de preenchimento rápido de grade
+    // Atalhos de preenchimento rápido de grade
     document.querySelectorAll('.btn-grade-rapida').forEach(btn => {
       btn.addEventListener('click', () => {
         const dist = (btn.getAttribute('data-dist') || '').split(',').map(n => parseInt(n, 10) || 0);
@@ -4791,11 +5248,13 @@
         orcamentoExistente.clienteId = dadosOrcamento.cliente ? dadosOrcamento.cliente.id : orcamentoExistente.clienteId;
         orcamentoExistente.clienteNome = dadosOrcamento.cliente ? (dadosOrcamento.cliente.nomeFantasia || dadosOrcamento.cliente.nome || dadosOrcamento.cliente.razaoSocial || 'Cliente') : orcamentoExistente.clienteNome;
         orcamentoExistente.clienteTelefone = dadosOrcamento.cliente ? dadosOrcamento.cliente.telefone : orcamentoExistente.clienteTelefone;
+        orcamentoExistente.itens = dadosOrcamento.itens;
         orcamentoExistente.produtoId = dadosOrcamento.prod ? dadosOrcamento.prod.id : orcamentoExistente.produtoId;
-        orcamentoExistente.produtoNome = dadosOrcamento.prod ? dadosOrcamento.prod.nome : orcamentoExistente.produtoNome;
+        orcamentoExistente.produtoNome = dadosOrcamento.produtoNome;
         orcamentoExistente.tecidoEspecificacao = dadosOrcamento.prod ? dadosOrcamento.prod.tipoMalhaPadrao : orcamentoExistente.tecidoEspecificacao;
         orcamentoExistente.corTecido = dadosOrcamento.corPrincipal || 'A Definir';
         orcamentoExistente.observacoesCoresDetalhes = dadosOrcamento.observacoesCoresDetalhes || '';
+        orcamentoExistente.tipoPersonalizacao = dadosOrcamento.tipoPersonalizacao;
         orcamentoExistente.grade = dadosOrcamento.grade;
         orcamentoExistente.precoUnitarioVenda = dadosOrcamento.precoVendaUnitario;
         orcamentoExistente.valorTotalVenda = dadosOrcamento.valorTotal;
@@ -4819,7 +5278,7 @@
         atualizarBadges();
         fecharModal();
         renderizarPedidos();
-        mostrarToast(`Orçamento #${orcamentoExistente.numero} renegociado e atualizado com sucesso! Abrindo proposta comercial...`, 'green');
+        mostrarToast(`Orçamento #${orcamentoExistente.numero} atualizado com sucesso com todos os modelos e estampas!`, 'green');
         abrirModalPropostaComercial(orcamentoExistente.id);
       });
 
@@ -4830,11 +5289,13 @@
         orcamentoExistente.clienteId = dadosOrcamento.cliente ? dadosOrcamento.cliente.id : orcamentoExistente.clienteId;
         orcamentoExistente.clienteNome = dadosOrcamento.cliente ? (dadosOrcamento.cliente.nomeFantasia || dadosOrcamento.cliente.nome || dadosOrcamento.cliente.razaoSocial || 'Cliente') : orcamentoExistente.clienteNome;
         orcamentoExistente.clienteTelefone = dadosOrcamento.cliente ? dadosOrcamento.cliente.telefone : orcamentoExistente.clienteTelefone;
+        orcamentoExistente.itens = dadosOrcamento.itens;
         orcamentoExistente.produtoId = dadosOrcamento.prod ? dadosOrcamento.prod.id : orcamentoExistente.produtoId;
-        orcamentoExistente.produtoNome = dadosOrcamento.prod ? dadosOrcamento.prod.nome : orcamentoExistente.produtoNome;
+        orcamentoExistente.produtoNome = dadosOrcamento.produtoNome;
         orcamentoExistente.tecidoEspecificacao = dadosOrcamento.prod ? dadosOrcamento.prod.tipoMalhaPadrao : orcamentoExistente.tecidoEspecificacao;
         orcamentoExistente.corTecido = dadosOrcamento.corPrincipal || 'A Definir';
         orcamentoExistente.observacoesCoresDetalhes = dadosOrcamento.observacoesCoresDetalhes || '';
+        orcamentoExistente.tipoPersonalizacao = dadosOrcamento.tipoPersonalizacao;
         orcamentoExistente.grade = dadosOrcamento.grade;
         orcamentoExistente.precoUnitarioVenda = dadosOrcamento.precoVendaUnitario;
         orcamentoExistente.valorTotalVenda = dadosOrcamento.valorTotal;
@@ -4870,6 +5331,11 @@
         abrirEtapaAvancarPedido(dadosOrcamento);
       });
     }
+
+    // Inicializa o primeiro modelo e cálculos
+    atualizarLabelsPrazos();
+    carregarItemAtivoNoDOM();
+    recalcularBenchmarkModal();
   }
 
   // Salvar Orçamento Apenas
@@ -4900,12 +5366,13 @@
       clienteTelefone: dados.cliente ? dados.cliente.telefone : '',
       status: tipoRegistro === 'Orcamento' ? 'Orcamento' : 'Quarentena',
       etapaProducao: tipoRegistro === 'Orcamento' ? 'Em Negociação' : 'Aguardando Aprovação Técnica',
+      itens: dados.itens || [],
       produtoId: dados.prod ? dados.prod.id : '',
       produtoNome: dados.prod ? dados.prod.nome : 'Produto',
       corTecido: dados.corPrincipal || 'A Definir',
       observacoesCoresDetalhes: dados.observacoesCoresDetalhes || '',
       tecidoEspecificacao: dados.prod ? dados.prod.tipoMalhaPadrao : 'Padrão Têxtil',
-      tipoPersonalizacao: 'Personalização Conforme Proposta',
+      tipoPersonalizacao: dados.tipoPersonalizacao || 'Personalização Conforme Proposta',
       mockupUrl: dados.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(dados.prod ? dados.prod.nome : 'Camisa', "#1e3a8a", "#ffffff", (dados.cliente ? (dados.cliente.nomeFantasia || dados.cliente.nome || "BRAVVI") : "BRAVVI").toString().substring(0, 6)) : ''),
       artesAnexadas: [],
       grade: dados.grade,
@@ -4948,12 +5415,38 @@
   function abrirEtapaAvancarPedido(dadosBase) {
     if (!modalContainer) return;
 
-    let artesBase64 = {
-      peito: null,
-      costa: null,
-      ombro: null,
-      outro: null
-    };
+    // Extrai todas as aplicações configuradas em cada modelo
+    const todasAplicacoes = [];
+    if (dadosBase.itens && Array.isArray(dadosBase.itens) && dadosBase.itens.length > 0) {
+      dadosBase.itens.forEach((it, itIdx) => {
+        const modNome = it.produtoNome || `Modelo ${itIdx + 1}`;
+        const qtdModelo = it.grade?.total || 0;
+        if (it.aplicacoes && it.aplicacoes.length > 0) {
+          it.aplicacoes.forEach((app, appIdx) => {
+            if (app.tecnica !== 'lisa') {
+              todasAplicacoes.push({
+                idGlobal: `app_${itIdx}_${appIdx}`,
+                modeloNome: modNome,
+                itemIndex: itIdx,
+                appIndex: appIdx,
+                local: app.local || 'Peito Esquerdo',
+                tecnica: app.tecnica || 'DTF Digital',
+                larguraCm: app.larguraCm || 10,
+                alturaCm: app.alturaCm || 10,
+                dimensoes: (app.larguraCm && app.alturaCm) ? `${app.larguraCm} x ${app.alturaCm} cm` : (app.dimensoes || '10 x 10 cm'),
+                quantidadePecas: qtdModelo,
+                detalhes: app.tecnica === 'bordado' ? `${app.pontosMilhares || 5}k pontos` : app.tecnica === 'silk' ? `${app.numTelas || 2} telas` : `${app.larguraCm || 10}x${app.alturaCm || 10} cm`
+              });
+            }
+          });
+        }
+      });
+    }
+
+    const ehApenasPecaLisa = todasAplicacoes.length === 0 && (
+      (dadosBase.tipoPersonalizacao && dadosBase.tipoPersonalizacao.toLowerCase().includes('lisa')) ||
+      (dadosBase.itens && dadosBase.itens.length > 0 && dadosBase.itens.every(it => !it.aplicacoes || it.aplicacoes.length === 0 || it.aplicacoes.every(a => a.tecnica === 'lisa')))
+    );
 
     let mockupDataUrl = dadosBase.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(dadosBase.prod ? dadosBase.prod.nome : dadosBase.produtoNome, "#1e3a8a", "#ffffff", (dadosBase.cliente ? dadosBase.cliente.nomeFantasia : dadosBase.clienteNome).substring(0, 6));
 
@@ -4962,7 +5455,7 @@
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active" id="modalAvancarPedidoOverlay">
-        <div class="modal-box" style="max-width: 820px;">
+        <div class="modal-box" style="max-width: 840px;">
           <div class="modal-header">
             <div>
               <div class="modal-title">Entrada Oficial no Pedido • Confecção & Chão de Fábrica</div>
@@ -4996,51 +5489,84 @@
 
             <!-- 2. Artes da Camiseta em Alta Resolução (Checklist com Locais Obrigatórios) -->
             <div class="form-group" style="margin-top: 14px;">
-              <label class="form-label">
-                <strong>Artes da Peça em Alta Resolução</strong> (Selecione os locais e anexe os arquivos obrigatórios)
-              </label>
-              
-              <div class="art-location-grid">
-                <!-- Peito -->
-                <div class="art-location-card" id="cardArtePeito">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" id="chkArtePeito" class="quarentena-checkbox" checked>
-                    <label for="chkArtePeito" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Peito (Frente)</label>
-                  </div>
-                  <input type="file" id="fileArtePeito" class="form-input" style="font-size: 11px; padding: 4px;" accept="image/*,.pdf,.ai,.pes,.dst">
-                  <input type="text" id="dimArtePeito" class="form-input" value="9.0 x 7.5 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px;">
-                </div>
-
-                <!-- Costas -->
-                <div class="art-location-card" id="cardArteCostas">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" id="chkArteCostas" class="quarentena-checkbox">
-                    <label for="chkArteCostas" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Costas</label>
-                  </div>
-                  <input type="file" id="fileArteCostas" class="form-input" style="font-size: 11px; padding: 4px;" accept="image/*,.pdf,.ai,.pes,.dst">
-                  <input type="text" id="dimArteCostas" class="form-input" value="28.0 x 12.0 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px;">
-                </div>
-
-                <!-- Manga / Ombro -->
-                <div class="art-location-card" id="cardArteOmbro">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" id="chkArteOmbro" class="quarentena-checkbox">
-                    <label for="chkArteOmbro" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Ombro / Manga</label>
-                  </div>
-                  <input type="file" id="fileArteOmbro" class="form-input" style="font-size: 11px; padding: 4px;" accept="image/*,.pdf,.ai,.pes,.dst">
-                  <input type="text" id="dimArteOmbro" class="form-input" value="8.0 x 4.0 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px;">
-                </div>
-
-                <!-- Outro Local -->
-                <div class="art-location-card" id="cardArteOutro">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" id="chkArteOutro" class="quarentena-checkbox">
-                    <label for="chkArteOutro" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Outro Local</label>
-                  </div>
-                  <input type="text" id="descArteOutro" class="form-input" placeholder="Descreva o local (ex: Gola, Barra, Bolso)" style="font-size: 11px;">
-                  <input type="file" id="fileArteOutro" class="form-input" style="font-size: 11px; padding: 4px;" accept="image/*,.pdf,.ai,.pes,.dst">
-                </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label class="form-label" style="margin-bottom: 0;">
+                  <strong>Artes da Peça & Personalizações em Alta Resolução</strong> ${todasAplicacoes.length > 0 ? `(${todasAplicacoes.length} aplicações configuradas)` : ''}
+                </label>
+                <span style="font-size: 11px; color: var(--text-gray-500);">Anexe os arquivos ou informe as especificações finais de cada estampa/bordado</span>
               </div>
+              
+              ${ehApenasPecaLisa ? `
+                <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 6px; padding: 12px; color: #166534; font-size: 12px;">
+                  <strong>✅ Peça Lisa (Sem Estampa / Sem Bordado)</strong>
+                  <p style="margin: 4px 0 0 0; color: #15803d; font-size: 11.5px;">Este pedido foi configurado como peça lisa. Não há necessidade de envio de matrizes ou arquivos de estamparia para o chão de fábrica.</p>
+                </div>
+              ` : todasAplicacoes.length > 0 ? `
+                <div class="art-location-grid">
+                  ${todasAplicacoes.map((app, idx) => `
+                    <div class="art-location-card" id="cardArteApp_${idx}" style="border-left: 3px solid var(--brand-primary); background: #fdfdfd; padding: 10px;">
+                      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                          <input type="checkbox" id="chkArteApp_${idx}" class="quarentena-checkbox chk-arte-dinamica" checked data-idx="${idx}">
+                          <label for="chkArteApp_${idx}" style="font-weight: 700; font-size: 12px; cursor: pointer; color: #0f172a;">
+                            ${(dadosBase.itens && dadosBase.itens.length > 1) ? `<span style="color:#64748b; font-size:10.5px;">[${app.modeloNome.split(' ')[0]}]</span> ` : ''}<strong>${app.local}</strong>
+                          </label>
+                        </div>
+                        <span style="font-size: 10px; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">
+                          ${app.tecnica} • ${app.quantidadePecas} un
+                        </span>
+                      </div>
+                      <div style="display: flex; gap: 6px; align-items: center;">
+                        <input type="file" id="fileArteApp_${idx}" class="form-input" style="font-size: 11px; padding: 4px; flex: 1.3;" accept="image/*,.pdf,.ai,.pes,.dst">
+                        <input type="text" id="dimArteApp_${idx}" class="form-input" value="${app.dimensoes}" placeholder="Dimensões (LxA cm)" style="font-size: 11px; flex: 1;">
+                      </div>
+                      ${app.detalhes ? `<span style="font-size: 10px; color: #64748b; margin-top: 3px; display: block;">Especificação: ${app.detalhes}</span>` : ''}
+                    </div>
+                  `).join('')}
+                </div>
+              ` : `
+                <div class="art-location-grid">
+                  <!-- Peito -->
+                  <div class="art-location-card" id="cardArtePeito">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <input type="checkbox" id="chkArtePeito" class="quarentena-checkbox" checked>
+                      <label for="chkArtePeito" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Peito (Frente)</label>
+                    </div>
+                    <input type="file" id="fileArtePeito" class="form-input" style="font-size: 11px; padding: 4px;" accept="image/*,.pdf,.ai,.pes,.dst">
+                    <input type="text" id="dimArtePeito" class="form-input" value="9.0 x 7.5 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px;">
+                  </div>
+
+                  <!-- Costas -->
+                  <div class="art-location-card" id="cardArteCostas">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <input type="checkbox" id="chkArteCostas" class="quarentena-checkbox">
+                      <label for="chkArteCostas" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Costas</label>
+                    </div>
+                    <input type="file" id="fileArteCostas" class="form-input" style="font-size: 11px; padding: 4px;" accept="image/*,.pdf,.ai,.pes,.dst">
+                    <input type="text" id="dimArteCostas" class="form-input" value="28.0 x 12.0 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px;">
+                  </div>
+
+                  <!-- Manga / Ombro -->
+                  <div class="art-location-card" id="cardArteOmbro">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <input type="checkbox" id="chkArteOmbro" class="quarentena-checkbox">
+                      <label for="chkArteOmbro" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Ombro / Manga</label>
+                    </div>
+                    <input type="file" id="fileArteOmbro" class="form-input" style="font-size: 11px; padding: 4px;" accept="image/*,.pdf,.ai,.pes,.dst">
+                    <input type="text" id="dimArteOmbro" class="form-input" value="8.0 x 4.0 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px;">
+                  </div>
+
+                  <!-- Outro Local -->
+                  <div class="art-location-card" id="cardArteOutro">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <input type="checkbox" id="chkArteOutro" class="quarentena-checkbox">
+                      <label for="chkArteOutro" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Outro Local</label>
+                    </div>
+                    <input type="text" id="descArteOutro" class="form-input" placeholder="Descreva o local (ex: Gola, Barra, Bolso)" style="font-size: 11px;">
+                    <input type="file" id="fileArteOutro" class="form-input" style="font-size: 11px; padding: 4px;" accept="image/*,.pdf,.ai,.pes,.dst">
+                  </div>
+                </div>
+              `}
             </div>
 
             <!-- 3. Mockup 3x4 Obrigatório -->
@@ -5286,64 +5812,101 @@
       }
 
       // 2. Validação Obrigatória das Artes
-      const chkPeito = document.getElementById('chkArtePeito')?.checked;
-      const chkCostas = document.getElementById('chkArteCostas')?.checked;
-      const chkOmbro = document.getElementById('chkArteOmbro')?.checked;
-      const chkOutro = document.getElementById('chkArteOutro')?.checked;
-
-      if (!chkPeito && !chkCostas && !chkOmbro && !chkOutro) {
-        mostrarToast('É obrigatório selecionar ao menos 1 local de aplicação de arte (Peito, Costas, Ombro ou Outro).', 'red');
-        return;
-      }
-
       let artesLista = [];
 
-      if (chkPeito) {
-        const dim = document.getElementById('dimArtePeito')?.value || '9.0 x 7.5 cm';
-        const file = document.getElementById('fileArtePeito')?.files[0];
-        artesLista.push({
-          local: "Peito Esquerdo",
-          tecnica: "Bordado / DTF Peito",
-          dimensoes: dim,
-          arquivoNome: file ? file.name : "arte_peito_alta_resolucao.pdf"
+      if (todasAplicacoes.length > 0) {
+        todasAplicacoes.forEach((app, idx) => {
+          const chk = document.getElementById(`chkArteApp_${idx}`);
+          if (chk && chk.checked) {
+            const dim = document.getElementById(`dimArteApp_${idx}`)?.value || app.dimensoes || 'Padrão';
+            const file = document.getElementById(`fileArteApp_${idx}`)?.files[0];
+            artesLista.push({
+              local: app.local,
+              tecnica: app.tecnica,
+              modeloNome: app.modeloNome,
+              dimensoes: dim,
+              larguraCm: app.larguraCm || 10,
+              alturaCm: app.alturaCm || 10,
+              quantidadePecas: app.quantidadePecas,
+              arquivoNome: file ? file.name : `arte_${app.local.toLowerCase().replace(/[^a-z0-9]/g, '_')}_vetor.ai`
+            });
+          }
         });
-      }
 
-      if (chkCostas) {
-        const dim = document.getElementById('dimArteCostas')?.value || '28.0 x 12.0 cm';
-        const file = document.getElementById('fileArteCostas')?.files[0];
-        artesLista.push({
-          local: "Costas",
-          tecnica: "DTF / Silk Costas",
-          dimensoes: dim,
-          arquivoNome: file ? file.name : "arte_costas_vetor.ai"
-        });
-      }
-
-      if (chkOmbro) {
-        const dim = document.getElementById('dimArteOmbro')?.value || '8.0 x 4.0 cm';
-        const file = document.getElementById('fileArteOmbro')?.files[0];
-        artesLista.push({
-          local: "Manga / Ombro",
-          tecnica: "Aplicação Manga",
-          dimensoes: dim,
-          arquivoNome: file ? file.name : "logo_manga_patrocinio.png"
-        });
-      }
-
-      if (chkOutro) {
-        const desc = document.getElementById('descArteOutro')?.value;
-        if (!desc) {
-          mostrarToast('Por favor, descreva qual é o outro local da arte selecionada.', 'red');
+        if (!ehApenasPecaLisa && artesLista.length === 0) {
+          mostrarToast('Por favor, selecione ao menos 1 estampa/bordado para o pedido ou confirme se é Peça Lisa.', 'red');
           return;
         }
-        const file = document.getElementById('fileArteOutro')?.files[0];
-        artesLista.push({
-          local: desc,
-          tecnica: "Personalização Especial",
-          dimensoes: "Conforme Especificação",
-          arquivoNome: file ? file.name : "arte_especial_alta_res.pdf"
-        });
+      } else if (!ehApenasPecaLisa) {
+        const chkPeito = document.getElementById('chkArtePeito')?.checked;
+        const chkCostas = document.getElementById('chkArteCostas')?.checked;
+        const chkOmbro = document.getElementById('chkArteOmbro')?.checked;
+        const chkOutro = document.getElementById('chkArteOutro')?.checked;
+
+        if (!chkPeito && !chkCostas && !chkOmbro && !chkOutro) {
+          mostrarToast('É obrigatório selecionar ao menos 1 local de aplicação de arte (Peito, Costas, Ombro ou Outro).', 'red');
+          return;
+        }
+
+        if (chkPeito) {
+          const dim = document.getElementById('dimArtePeito')?.value || '9.0 x 7.5 cm';
+          const file = document.getElementById('fileArtePeito')?.files[0];
+          artesLista.push({
+            local: "Peito Esquerdo",
+            tecnica: "Bordado / DTF Peito",
+            dimensoes: dim,
+            larguraCm: 9,
+            alturaCm: 7.5,
+            quantidadePecas: dadosBase.grade?.total || 0,
+            arquivoNome: file ? file.name : "arte_peito_alta_resolucao.pdf"
+          });
+        }
+
+        if (chkCostas) {
+          const dim = document.getElementById('dimArteCostas')?.value || '28.0 x 12.0 cm';
+          const file = document.getElementById('fileArteCostas')?.files[0];
+          artesLista.push({
+            local: "Costas",
+            tecnica: "DTF / Silk Costas",
+            dimensoes: dim,
+            larguraCm: 28,
+            alturaCm: 12,
+            quantidadePecas: dadosBase.grade?.total || 0,
+            arquivoNome: file ? file.name : "arte_costas_vetor.ai"
+          });
+        }
+
+        if (chkOmbro) {
+          const dim = document.getElementById('dimArteOmbro')?.value || '8.0 x 4.0 cm';
+          const file = document.getElementById('fileArteOmbro')?.files[0];
+          artesLista.push({
+            local: "Manga / Ombro",
+            tecnica: "Aplicação Manga",
+            dimensoes: dim,
+            larguraCm: 8,
+            alturaCm: 4,
+            quantidadePecas: dadosBase.grade?.total || 0,
+            arquivoNome: file ? file.name : "logo_manga_patrocinio.png"
+          });
+        }
+
+        if (chkOutro) {
+          const desc = document.getElementById('descArteOutro')?.value;
+          if (!desc) {
+            mostrarToast('Por favor, descreva qual é o outro local da arte selecionada.', 'red');
+            return;
+          }
+          const file = document.getElementById('fileArteOutro')?.files[0];
+          artesLista.push({
+            local: desc,
+            tecnica: "Personalização Especial",
+            dimensoes: "Conforme Especificação",
+            larguraCm: 10,
+            alturaCm: 10,
+            quantidadePecas: dadosBase.grade?.total || 0,
+            arquivoNome: file ? file.name : "arte_especial_alta_res.pdf"
+          });
+        }
       }
 
       // 3. Validação dos Valores e Sinal Recebido
@@ -5391,12 +5954,15 @@
         status: "Quarentena", // Vai para quarentena para aprovação administrativa obrigatória
         etapaProducao: "Aguardando Aprovação Técnica",
         quarentenaAprovada: false,
+        itens: dadosBase.itens || [],
         produtoId: prodIdFinal,
         produtoNome: prodNomeFinal,
         corTecido: corFinal,
         observacoesCoresDetalhes: obsCoresFinal,
         tecidoEspecificacao: dadosBase.prod ? dadosBase.prod.tipoMalhaPadrao : "Conforme Ficha",
-        tipoPersonalizacao: artesLista.map(a => a.local).join(' + '),
+        tipoPersonalizacao: artesLista.length > 0
+          ? artesLista.map(a => `${a.modeloNome ? `[${a.modeloNome.split(' ')[0]}] ` : ''}${a.local} (${a.tecnica})`).join(' + ')
+          : (dadosBase.tipoPersonalizacao || 'Peça Lisa'),
         costureiraId: costureiraObj.id,
         costureiraNome: costureiraObj.nome,
         mockupUrl: mockupDataUrl,
@@ -5461,6 +6027,7 @@
         pedidoNumero: pedidoOficial.numero,
         cliente: clienteNomeFinal,
         produto: prodNomeFinal,
+        itens: dadosBase.itens || [],
         corTecido: corFinal,
         observacoesCoresDetalhes: obsCoresFinal,
         mockupUrl: mockupDataUrl,
@@ -5477,7 +6044,9 @@
         dtfLarguraRolo: pedidoOficial.dtfLarguraRolo || 58,
         tecidoConsumidoKg: (pedidoOficial.grade.total * (dadosBase.consumoRealComPerda || 0.28)).toFixed(1),
         artesAplicacao: artesLista,
-        instrucoesCorte: `Corte padrão para ${pedidoOficial.grade.total} peças de ${prodNomeFinal}. Cor principal: ${corFinal}.${obsCoresFinal ? ' ATENÇÃO AOS DETALHES DE COR: ' + obsCoresFinal : ''}`,
+        instrucoesCorte: (dadosBase.itens && dadosBase.itens.length > 1)
+          ? `Corte múltiplo para ${dadosBase.itens.length} modelos (${pedidoOficial.grade.total} pçs no total). Consulte a grade de cada modelo nesta Ficha Técnica.`
+          : `Corte padrão para ${pedidoOficial.grade.total} peças de ${prodNomeFinal}. Cor principal: ${corFinal}.${obsCoresFinal ? ' ATENÇÃO AOS DETALHES DE COR: ' + obsCoresFinal : ''}`,
         instrucoesCostura: `Costureira responsável: ${costureiraObj.nome}.${obsCoresFinal ? ' DETALHES DE CONFECÇÃO: ' + obsCoresFinal : ' Fechamento com fio reforçado.'}`,
         statusBordado: "Pendente",
         statusCostura: "Pendente",
@@ -5486,17 +6055,23 @@
       db.ordensServico.unshift(novaOS);
 
       // 6. Adiciona artes para a fila do Nesting DTF automaticamente
-      artesLista.forEach((art, aIdx) => {
-        db.nestingFila.unshift({
-          id: `ART-${Math.floor(10 + Math.random() * 90)}`,
-          pedidoNumero: pedidoOficial.numero,
-          cliente: clienteNomeFinal,
-          descricao: `${art.local} (${art.arquivoNome})`,
-          larguraCm: 24.0,
-          alturaCm: 10.0,
-          copias: pedidoOficial.grade.total,
-          roloLarguraCm: 58.0
-        });
+      artesLista.forEach((art) => {
+        const isDTF = (art.tecnica || '').toLowerCase().includes('dtf');
+        if (isDTF) {
+          const dims = (art.dimensoes || '').replace('cm', '').split('x').map(s => parseFloat(s.trim()));
+          const w = (dims[0] && !isNaN(dims[0])) ? dims[0] : (art.larguraCm || 24.0);
+          const h = (dims[1] && !isNaN(dims[1])) ? dims[1] : (art.alturaCm || 10.0);
+          db.nestingFila.unshift({
+            id: `ART-${Math.floor(10 + Math.random() * 90)}`,
+            pedidoNumero: pedidoOficial.numero,
+            cliente: clienteNomeFinal,
+            descricao: `${art.modeloNome ? `[${art.modeloNome.split(' ')[0]}] ` : ''}${art.local} (${art.arquivoNome})`,
+            larguraCm: w,
+            alturaCm: h,
+            copias: art.quantidadePecas || pedidoOficial.grade.total,
+            roloLarguraCm: pedidoOficial.dtfLarguraRolo || 58.0
+          });
+        }
       });
 
       salvarEstado();
@@ -5694,58 +6269,143 @@
         </div>
       </div>
 
-      <!-- Detalhamento do Produto & Mockup 3x4 -->
-      <div style="display: flex; gap: 14px; margin-bottom: 14px; align-items: center;">
-        <img src="${p.mockupUrl || ''}" class="mockup-thumb-3x4" alt="Mockup da Peça" style="width: 78px; height: 104px;">
-        <div style="flex: 1;">
-          <h3 style="font-size: 14px; font-weight: 800; color: #0f172a;">${p.produtoNome}</h3>
-          <div style="font-size: 11.5px; color: #475569; margin-top: 3px; line-height: 1.4;">
-            <strong>Cor Principal:</strong> <span style="font-weight: 700; color: #0f172a;">${p.corTecido || 'A Definir'}</span><br>
-            ${p.observacoesCoresDetalhes ? `
-              <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 4px 8px; margin: 4px 0; font-size: 11px; color: #92400e; line-height: 1.35; white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; box-sizing: border-box;">
-                <strong>Detalhes de Cores / Confecção:</strong> ${p.observacoesCoresDetalhes}
-              </div>
-            ` : ''}
-            <strong>Especificação do Tecido:</strong> ${p.tecidoEspecificacao || 'Padrão da Indústria'}<br>
-            <strong>Personalização:</strong> ${p.tipoPersonalizacao || 'Estampa/Bordado Conforme Pedido'}<br>
-            <strong>Quantidade Total:</strong> ${p.grade?.total || 0} peças
+      <!-- Detalhamento de Modelos & Grades de Tamanhos -->
+      ${(p.itens && p.itens.length > 1) ? `
+        <!-- Detalhamento Multi-Modelos do Pedido -->
+        <div style="margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <strong style="color: #0f172a; font-size: 11.5px; text-transform: uppercase;">
+              ITENS & MODELOS DO PEDIDO (${p.itens.length} MODELOS CONFIGURADOS):
+            </strong>
+            <span style="font-size: 11px; color: #475569;">Grade detalhada com personalizações por peça</span>
+          </div>
+          
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11px;">
+            <thead>
+              <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1; color: #1e293b;">
+                <th style="padding: 6px 8px; text-align: left;">Item / Modelo</th>
+                <th style="padding: 6px 8px; text-align: left;">Cor / Tecido</th>
+                <th style="padding: 6px 8px; text-align: left;">Personalizações (Locais)</th>
+                <th style="padding: 6px 4px; text-align: center;">PP</th>
+                <th style="padding: 6px 4px; text-align: center;">P</th>
+                <th style="padding: 6px 4px; text-align: center;">M</th>
+                <th style="padding: 6px 4px; text-align: center;">G</th>
+                <th style="padding: 6px 4px; text-align: center;">GG</th>
+                <th style="padding: 6px 4px; text-align: center;">XG</th>
+                <th style="padding: 6px 4px; text-align: center; background: #e2e8f0;">Qtd</th>
+                <th style="padding: 6px 8px; text-align: right;">Unitário</th>
+                <th style="padding: 6px 8px; text-align: right;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${p.itens.map((it, idx) => {
+                const appsHtml = (it.aplicacoes && it.aplicacoes.length > 0)
+                  ? it.aplicacoes.map(a => `• <strong>${a.local}:</strong> ${a.tecnica}`).join('<br>')
+                  : '<span style="color: #64748b; font-style: italic;">Peça Lisa</span>';
+                const subtotal = (it.valorSubtotal || ((it.precoVendaUnitario || 0) * (it.grade?.total || 0))) || 0;
+                return `
+                  <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 6px 8px; vertical-align: top;">
+                      <strong style="color: #0f172a;">${idx + 1}. ${it.produtoNome}</strong>
+                    </td>
+                    <td style="padding: 6px 8px; vertical-align: top;">
+                      <span style="font-weight: 700; color: #1e3a8a;">${it.corPrincipal || 'A Definir'}</span><br>
+                      <span style="font-size: 10px; color: #64748b;">${it.tecidoEspecificacao || ''}</span>
+                      ${it.observacoesCoresDetalhes ? `<br><span style="font-size: 9.5px; color: #b45309;">${it.observacoesCoresDetalhes}</span>` : ''}
+                    </td>
+                    <td style="padding: 6px 8px; vertical-align: top; font-size: 10.5px; color: #334155; line-height: 1.35;">
+                      ${appsHtml}
+                    </td>
+                    <td style="padding: 6px 4px; text-align: center;" class="text-mono">${it.grade?.pp || 0}</td>
+                    <td style="padding: 6px 4px; text-align: center;" class="text-mono">${it.grade?.p || 0}</td>
+                    <td style="padding: 6px 4px; text-align: center;" class="text-mono">${it.grade?.m || 0}</td>
+                    <td style="padding: 6px 4px; text-align: center;" class="text-mono">${it.grade?.g || 0}</td>
+                    <td style="padding: 6px 4px; text-align: center;" class="text-mono">${it.grade?.gg || 0}</td>
+                    <td style="padding: 6px 4px; text-align: center;" class="text-mono">${it.grade?.xg || 0}</td>
+                    <td style="padding: 6px 4px; text-align: center; font-weight: 800; background: #f8fafc;" class="text-mono">${it.grade?.total || 0}</td>
+                    <td style="padding: 6px 8px; text-align: right;" class="text-mono">${formatarMoeda(it.precoVendaUnitario)}</td>
+                    <td style="padding: 6px 8px; text-align: right; font-weight: 700;" class="text-mono">${formatarMoeda(subtotal)}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+            <tfoot>
+              <tr style="background: #f8fafc; font-weight: 800; border-top: 2px solid #cbd5e1;">
+                <td colspan="3" style="padding: 6px 8px; text-align: right;">TOTAIS CONSOLIDADOS DO PEDIDO:</td>
+                <td style="padding: 6px 4px; text-align: center;" class="text-mono">${p.grade?.pp || 0}</td>
+                <td style="padding: 6px 4px; text-align: center;" class="text-mono">${p.grade?.p || 0}</td>
+                <td style="padding: 6px 4px; text-align: center;" class="text-mono">${p.grade?.m || 0}</td>
+                <td style="padding: 6px 4px; text-align: center;" class="text-mono">${p.grade?.g || 0}</td>
+                <td style="padding: 6px 4px; text-align: center;" class="text-mono">${p.grade?.gg || 0}</td>
+                <td style="padding: 6px 4px; text-align: center;" class="text-mono">${p.grade?.xg || 0}</td>
+                <td style="padding: 6px 4px; text-align: center; color: #047857; background: #e2e8f0;" class="text-mono">${p.grade?.total || 0} un</td>
+                <td style="padding: 6px 8px; text-align: right;">-</td>
+                <td style="padding: 6px 8px; text-align: right; color: #0f172a; font-size: 13px;" class="text-mono">${formatarMoeda(p.valorTotalVenda)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      ` : `
+        <!-- Detalhamento do Produto & Mockup 3x4 -->
+        <div style="display: flex; gap: 14px; margin-bottom: 14px; align-items: center;">
+          <img src="${p.mockupUrl || ''}" class="mockup-thumb-3x4" alt="Mockup da Peça" style="width: 78px; height: 104px;">
+          <div style="flex: 1;">
+            <h3 style="font-size: 14px; font-weight: 800; color: #0f172a;">${p.produtoNome}</h3>
+            <div style="font-size: 11.5px; color: #475569; margin-top: 3px; line-height: 1.4;">
+              <strong>Cor Principal:</strong> <span style="font-weight: 700; color: #0f172a;">${p.corTecido || 'A Definir'}</span><br>
+              ${p.observacoesCoresDetalhes ? `
+                <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 4px 8px; margin: 4px 0; font-size: 11px; color: #92400e; line-height: 1.35; white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; box-sizing: border-box;">
+                  <strong>Detalhes de Cores / Confecção:</strong> ${p.observacoesCoresDetalhes}
+                </div>
+              ` : ''}
+              <strong>Especificação do Tecido:</strong> ${p.tecidoEspecificacao || 'Padrão da Indústria'}<br>
+              <strong>Personalização:</strong> ${p.tipoPersonalizacao || 'Estampa/Bordado Conforme Pedido'}<br>
+              <strong>Quantidade Total:</strong> ${p.grade?.total || 0} peças
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Grade de Tamanhos -->
-      <table style="margin-bottom: 12px;">
-        <thead>
-          <tr>
-            <th style="text-align: center;">PP</th>
-            <th style="text-align: center;">P</th>
-            <th style="text-align: center;">M</th>
-            <th style="text-align: center;">G</th>
-            <th style="text-align: center;">GG</th>
-            <th style="text-align: center;">XG</th>
-            <th style="text-align: center;">TOTAL</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="text-align: center;" class="text-mono">${p.grade?.pp || 0}</td>
-            <td style="text-align: center;" class="text-mono">${p.grade?.p || 0}</td>
-            <td style="text-align: center;" class="text-mono">${p.grade?.m || 0}</td>
-            <td style="text-align: center;" class="text-mono">${p.grade?.g || 0}</td>
-            <td style="text-align: center;" class="text-mono">${p.grade?.gg || 0}</td>
-            <td style="text-align: center;" class="text-mono">${p.grade?.xg || 0}</td>
-            <td style="text-align: center;" class="text-mono"><strong>${p.grade?.total || 0} peças</strong></td>
-          </tr>
-        </tbody>
-      </table>
+        <!-- Grade de Tamanhos -->
+        <table style="margin-bottom: 12px;">
+          <thead>
+            <tr>
+              <th style="text-align: center;">PP</th>
+              <th style="text-align: center;">P</th>
+              <th style="text-align: center;">M</th>
+              <th style="text-align: center;">G</th>
+              <th style="text-align: center;">GG</th>
+              <th style="text-align: center;">XG</th>
+              <th style="text-align: center;">TOTAL</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="text-align: center;" class="text-mono">${p.grade?.pp || 0}</td>
+              <td style="text-align: center;" class="text-mono">${p.grade?.p || 0}</td>
+              <td style="text-align: center;" class="text-mono">${p.grade?.m || 0}</td>
+              <td style="text-align: center;" class="text-mono">${p.grade?.g || 0}</td>
+              <td style="text-align: center;" class="text-mono">${p.grade?.gg || 0}</td>
+              <td style="text-align: center;" class="text-mono">${p.grade?.xg || 0}</td>
+              <td style="text-align: center;" class="text-mono"><strong>${p.grade?.total || 0} peças</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      `}
 
       <!-- Resumo de Valores -->
       <div style="border-top: 1px solid #cbd5e1; padding-top: 8px; display: flex; justify-content: flex-end; margin-bottom: 12px;">
         <div style="width: 260px; display: flex; flex-direction: column; gap: 4px;">
-          <div style="display: flex; justify-content: space-between;">
-            <span>Preço Unitário:</span>
-            <span class="text-mono">${formatarMoeda(p.precoUnitarioVenda)}</span>
-          </div>
+          ${(!p.itens || p.itens.length <= 1) ? `
+            <div style="display: flex; justify-content: space-between;">
+              <span>Preço Unitário:</span>
+              <span class="text-mono">${formatarMoeda(p.precoUnitarioVenda)}</span>
+            </div>
+          ` : `
+            <div style="display: flex; justify-content: space-between; font-size: 11px; color: #64748b;">
+              <span>Preço Médio / Pç:</span>
+              <span class="text-mono">${formatarMoeda((p.valorTotalVenda || 0) / (p.grade?.total || 1))}</span>
+            </div>
+          `}
           <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 800; border-top: 1px solid #cbd5e1; padding-top: 4px;">
             <span>VALOR TOTAL:</span>
             <span class="text-mono" style="color: #0f172a;">${formatarMoeda(p.valorTotalVenda)}</span>
@@ -5932,6 +6592,7 @@
 
   function gerarHtmlCorpoFichaTecnica(os) {
     const pedido = db.pedidos.find(p => p.numero === os.pedidoNumero) || {};
+    const itensLista = (os.itens && os.itens.length > 0) ? os.itens : (pedido.itens && pedido.itens.length > 0 ? pedido.itens : []);
     const prazoCli = os.prazoPedidoDias || pedido.prazoPedidoDias || 15;
     const prazoInt = os.prazoInternoDias || pedido.prazoInternoDias || 10;
     const dataEntrega = os.dataPrevisaoEntrega || pedido.dataPrevisaoEntrega || calcularDataFuturaDiasUteis(prazoCli);
@@ -6019,18 +6680,69 @@
       </div>
 
       <!-- Grade Oficial de Corte -->
-      <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 10px; border-radius: 4px; margin-bottom: 12px;">
-        <strong style="color: #0f172a; display: block; margin-bottom: 4px; font-size: 11px;">GRADE OFICIAL DE CORTE & FECHAMENTO:</strong>
-        <div class="text-mono" style="display: flex; justify-content: space-around; font-size: 12.5px; font-weight: 700;">
-          <span>PP: ${os.grade?.pp || 0}</span>
-          <span>P: ${os.grade?.p || 0}</span>
-          <span>M: ${os.grade?.m || 0}</span>
-          <span>G: ${os.grade?.g || 0}</span>
-          <span>GG: ${os.grade?.gg || 0}</span>
-          <span>XG: ${os.grade?.xg || 0}</span>
-          <span style="color: #047857;">TOTAL: ${os.quantidadeTotal} pçs</span>
+      ${(itensLista.length > 1) ? `
+        <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 4px; padding: 10px; margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <strong style="color: #0f172a; font-size: 11.5px;">GRADE OFICIAL DE CORTE POR MODELO (${itensLista.length} MODELOS):</strong>
+            <span style="font-weight: 800; color: #047857; font-size: 11.5px;">TOTAL CONSOLIDADO: ${os.quantidadeTotal} PEÇAS</span>
+          </div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+            <thead>
+              <tr style="background: #e2e8f0; color: #1e293b;">
+                <th style="padding: 4px 6px; text-align: left;">Modelo / Especificação</th>
+                <th style="padding: 4px 6px; text-align: left;">Cor / Detalhes</th>
+                <th style="padding: 4px 4px; text-align: center;">PP</th>
+                <th style="padding: 4px 4px; text-align: center;">P</th>
+                <th style="padding: 4px 4px; text-align: center;">M</th>
+                <th style="padding: 4px 4px; text-align: center;">G</th>
+                <th style="padding: 4px 4px; text-align: center;">GG</th>
+                <th style="padding: 4px 4px; text-align: center;">XG</th>
+                <th style="padding: 4px 4px; text-align: center; background: #cbd5e1;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itensLista.map((it, idx) => `
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                  <td style="padding: 5px 6px;"><strong>${idx + 1}. ${it.produtoNome}</strong><br><span style="font-size: 10px; color: #64748b;">${it.tecidoEspecificacao || ''}</span></td>
+                  <td style="padding: 5px 6px;"><span style="color: #1e3a8a; font-weight: 700;">${it.corPrincipal || 'A Definir'}</span>${it.observacoesCoresDetalhes ? `<br><span style="font-size: 9.5px; color: #b45309;">${it.observacoesCoresDetalhes}</span>` : ''}</td>
+                  <td style="padding: 5px 4px; text-align: center;" class="text-mono">${it.grade?.pp || 0}</td>
+                  <td style="padding: 5px 4px; text-align: center;" class="text-mono">${it.grade?.p || 0}</td>
+                  <td style="padding: 5px 4px; text-align: center;" class="text-mono">${it.grade?.m || 0}</td>
+                  <td style="padding: 5px 4px; text-align: center;" class="text-mono">${it.grade?.g || 0}</td>
+                  <td style="padding: 5px 4px; text-align: center;" class="text-mono">${it.grade?.gg || 0}</td>
+                  <td style="padding: 5px 4px; text-align: center;" class="text-mono">${it.grade?.xg || 0}</td>
+                  <td style="padding: 5px 4px; text-align: center; font-weight: 800; background: #f1f5f9;" class="text-mono">${it.grade?.total || 0}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+            <tfoot>
+              <tr style="background: #f1f5f9; font-weight: 800; border-top: 2px solid #94a3b8;">
+                <td colspan="2" style="padding: 5px 6px; text-align: right;">SOMA TOTAL DO CORTE:</td>
+                <td style="padding: 5px 4px; text-align: center;" class="text-mono">${os.grade?.pp || 0}</td>
+                <td style="padding: 5px 4px; text-align: center;" class="text-mono">${os.grade?.p || 0}</td>
+                <td style="padding: 5px 4px; text-align: center;" class="text-mono">${os.grade?.m || 0}</td>
+                <td style="padding: 5px 4px; text-align: center;" class="text-mono">${os.grade?.g || 0}</td>
+                <td style="padding: 5px 4px; text-align: center;" class="text-mono">${os.grade?.gg || 0}</td>
+                <td style="padding: 5px 4px; text-align: center;" class="text-mono">${os.grade?.xg || 0}</td>
+                <td style="padding: 5px 4px; text-align: center; color: #047857; background: #e2e8f0;" class="text-mono">${os.quantidadeTotal} pçs</td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
-      </div>
+      ` : `
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 10px; border-radius: 4px; margin-bottom: 12px;">
+          <strong style="color: #0f172a; display: block; margin-bottom: 4px; font-size: 11px;">GRADE OFICIAL DE CORTE & FECHAMENTO:</strong>
+          <div class="text-mono" style="display: flex; justify-content: space-around; font-size: 12.5px; font-weight: 700;">
+            <span>PP: ${os.grade?.pp || 0}</span>
+            <span>P: ${os.grade?.p || 0}</span>
+            <span>M: ${os.grade?.m || 0}</span>
+            <span>G: ${os.grade?.g || 0}</span>
+            <span>GG: ${os.grade?.gg || 0}</span>
+            <span>XG: ${os.grade?.xg || 0}</span>
+            <span style="color: #047857;">TOTAL: ${os.quantidadeTotal} pçs</span>
+          </div>
+        </div>
+      `}
 
       <!-- 1. Instruções para a Mesa de Corte -->
       <div style="margin-bottom: 10px;">
@@ -6048,7 +6760,11 @@
         </div>
         <ul style="padding-left: 18px; color: #475569; font-size: 11px; margin-top: 4px;">
           ${(os.artesAplicacao && os.artesAplicacao.length > 0) ? os.artesAplicacao.map(a => `
-            <li><strong>${a.local}:</strong> ${a.dimensoes || a.dimensao || 'Padrão'} • Arquivo: ${a.arquivoNome || a.tecnica || 'Vetor Fechado'}</li>
+            <li>
+              ${a.modeloNome ? `<strong>[${a.modeloNome.split(' ')[0]}]</strong> ` : ''}
+              <strong>${a.local}:</strong> ${a.dimensoes || a.dimensao || 'Padrão'} • Técnica/Arquivo: <strong>${a.arquivoNome || a.tecnica || 'Vetor Fechado'}</strong>
+              ${a.quantidadePecas ? ` (${a.quantidadePecas} un)` : ''}
+            </li>
           `).join('') : `
             <li>Personalização padrão conforme ficha de estampa e bordado aprovada.</li>
           `}

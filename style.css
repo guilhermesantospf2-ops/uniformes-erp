@@ -2315,3 +2315,148 @@ button.status-pill:hover {
 .modal-shake {
   animation: modalNudge 0.35s ease-in-out !important;
 }
+
+/* ==========================================================================
+   ESTILOS PARA MULTI-MODELOS E MÚLTIPLAS PERSONALIZAÇÕES (DTF / BORDADO)
+   ========================================================================== */
+.modelos-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  padding: 4px 2px;
+  border-bottom: 2px solid var(--border-medium);
+}
+
+.modelo-tab-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border: 1px solid var(--border-medium);
+  border-bottom: none;
+  background: #f1f5f9;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.modelo-tab-item:hover {
+  background: #e2e8f0;
+  color: var(--text-primary);
+}
+
+.modelo-tab-item.active {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+  box-shadow: 0 -2px 6px rgba(0,0,0,0.06);
+}
+
+.modelo-tab-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: inherit;
+  padding: 2px 7px;
+  border-radius: 12px;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.modelo-tab-item:not(.active) .modelo-tab-badge {
+  background: #cbd5e1;
+  color: #0f172a;
+}
+
+.modelo-tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 13px;
+  line-height: 1;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.modelo-tab-close:hover {
+  opacity: 1;
+  background: rgba(239, 68, 68, 0.35);
+}
+
+.btn-add-modelo-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #1e40af;
+  background: #eff6ff;
+  border: 1.5px dashed #93c5fd;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-add-modelo-tab:hover {
+  background: #dbeafe;
+  border-color: #3b82f6;
+}
+
+/* Cards de Aplicações de Personalização */
+.aplicacao-card {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: all 0.15s ease;
+}
+
+.aplicacao-card:hover {
+  border-color: #94a3b8;
+}
+
+.aplicacao-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.aplicacao-cost-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 800;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.resumo-geral-pedido-box {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #ffffff;
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+}
+
