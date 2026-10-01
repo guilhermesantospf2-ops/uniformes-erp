@@ -2039,14 +2039,21 @@
     modalPilha.push(modalEl);
     modalContainer.appendChild(modalEl);
 
-    // 1. Fechar este modal específico ao clicar no backdrop (fora da caixa de diálogo)
+    // 1. NÃO fechar ao clicar no backdrop (fora da caixa) - protege 100% dos dados preenchidos
     modalEl.addEventListener('click', (e) => {
       if (e.target === modalEl) {
-        fecharModal(modalEl);
+        // Feedback visual sutil indicando que a janela é fixa e fecha apenas no 'X'
+        const box = modalEl.querySelector('.modal-box, .modal-content, .modal-dialog');
+        if (box) {
+          box.classList.remove('modal-shake');
+          void box.offsetWidth;
+          box.classList.add('modal-shake');
+          setTimeout(() => box.classList.remove('modal-shake'), 350);
+        }
       }
     });
 
-    // 2. Mapeia e vincula todos os botões de fechar e cancelar internos deste modal
+    // 2. Mapeia e vincula todos os botões de fechar (X) e cancelar internos deste modal
     modalEl.querySelectorAll('.modal-close, .modal-close-btn, button[onclick*="fecharModal"]').forEach(btn => {
       btn.removeAttribute('onclick');
       btn.addEventListener('click', (e) => {
@@ -2095,14 +2102,7 @@
   }
 
   function configurarFechamentoModaisGlobal() {
-    // 1. Fechar o modal do topo ao pressionar ESC
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' || e.key === 'Esc') {
-        if (modalPilha.length > 0 || document.querySelector('.modal-overlay')) {
-          fecharModal(); // Fecha apenas a camada do topo!
-        }
-      }
-    });
+    // Tecla ESC desativada para fechamento acidental a pedido do usuário (modais fecham apenas no botão 'X' ou 'Cancelar')
   }
 
   /* ==========================================================================
