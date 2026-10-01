@@ -1841,6 +1841,20 @@
       };
     }
 
+    if (p.status === 'Cancelado') {
+      return {
+        statusPrazo: 'cancelado',
+        diffDias: 999,
+        classeCor: 'countdown-cancelado',
+        pulse: false,
+        label: 'CANCELADO',
+        diasTexto: `Pedido cancelado${p.motivoCancelamento ? ': ' + p.motivoCancelamento : ''}`,
+        corBarra: '#ef4444',
+        percTempo: 0,
+        badgeHtml: `<span class="badge-countdown countdown-cancelado" style="background: #fee2e2; color: #b91c1c; border-color: #fca5a5; font-weight: 800;" title="Pedido Cancelado"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> CANCELADO</span>`
+      };
+    }
+
     // Regra Têxtil Industrial: Orçamentos em negociação NÃO contam prazo de produção (não são pedidos confirmados)
     if (isPedidoOrcamento(p)) {
       const diasPrometidos = p.prazoPedidoDias || 15;
@@ -2643,12 +2657,14 @@
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
         <div style="display: flex; gap: 10px; align-items: center;">
           <input type="text" id="filtroPedidoBusca" class="form-input" style="width: 260px;" placeholder="Buscar cliente, número ou modelo...">
-          <select id="filtroPedidoStatus" class="form-select" style="width: 170px;">
+          <select id="filtroPedidoStatus" class="form-select" style="width: 185px;">
             <option value="TODOS">Todos os Status</option>
+            <option value="ATIVOS">Apenas Ativos (Sem Cancelados)</option>
             <option value="Em Producao">Em Produção</option>
             <option value="Quarentena">Em Quarentena</option>
             <option value="Orcamento">Apenas Orçamento</option>
             <option value="Finalizado">Finalizados</option>
+            <option value="Cancelado">🚫 Apenas Cancelados</option>
           </select>
         </div>
 
@@ -2696,10 +2712,18 @@
       const termo = (buscaInput?.value || '').toLowerCase();
       const st = statusSelect?.value || 'TODOS';
       const filtrados = db.pedidos.filter(p => {
-        const matchesTermo = p.clienteNome.toLowerCase().includes(termo) ||
-                             p.produtoNome.toLowerCase().includes(termo) ||
-                             p.numero.toString().includes(termo);
-        const matchesStatus = (st === 'TODOS') || (p.status === st);
+        const matchesTermo = (p.clienteNome || '').toLowerCase().includes(termo) ||
+                             (p.produtoNome || '').toLowerCase().includes(termo) ||
+                             (p.numero || '').toString().includes(termo) ||
+                             (p.motivoCancelamento || '').toLowerCase().includes(termo);
+        let matchesStatus = true;
+        if (st === 'TODOS') {
+          matchesStatus = true;
+        } else if (st === 'ATIVOS') {
+          matchesStatus = p.status !== 'Cancelado';
+        } else {
+          matchesStatus = (p.status === st);
+        }
         return matchesTermo && matchesStatus;
       });
 
@@ -2775,20 +2799,21 @@
               const quitadoTotal = totalVenda > 0 && saldoDevedor <= 0;
               const parcialPago = jaPago > 0 && saldoDevedor > 0;
               const percPago = totalVenda > 0 ? ((jaPago / totalVenda) * 100).toFixed(0) : 0;
+              const isCancelado = p.status === 'Cancelado';
               const isQuarentena = p.status === 'Quarentena';
               const isOrcamento = p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento';
               const countdown = calcularContagemRegressivaPedido(p);
               return `
-                <tr>
+                <tr style="${isCancelado ? 'opacity: 0.88; background: #fff1f2;' : ''}">
                   <td>
                     <img src="${mockup}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela">
                   </td>
                   <td>
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
                       <span class="text-mono" style="font-weight: 800; font-size: 13px;">#${p.numero}</span>
-                      <span class="status-pill ${isOrcamento ? 'status-gray' : isQuarentena ? 'status-red' : 'status-green'}" 
-                            style="font-size: 8.5px; padding: 1.5px 5px; ${isOrcamento ? 'background: #e0f2fe; color: #0369a1; border-color: #bae6fd; font-weight: 800;' : ''}">
-                        ${isOrcamento ? 'ORÇAMENTO' : isQuarentena ? 'QUARENTENA' : 'PEDIDO'}
+                      <span class="status-pill ${isCancelado ? 'status-red' : isOrcamento ? 'status-gray' : isQuarentena ? 'status-red' : 'status-green'}" 
+                            style="font-size: 8.5px; padding: 1.5px 5px; ${isCancelado ? 'background: #fee2e2; color: #b91c1c; border-color: #fca5a5; font-weight: 800;' : isOrcamento ? 'background: #e0f2fe; color: #0369a1; border-color: #bae6fd; font-weight: 800;' : ''}">
+                        ${isCancelado ? 'CANCELADO' : isOrcamento ? 'ORÇAMENTO' : isQuarentena ? 'QUARENTENA' : 'PEDIDO'}
                       </span>
                     </div>
                     <span style="display: block; font-size: 10px; color: var(--text-gray-500); margin-top: 2px;">Criado: ${p.dataCriacao || '-'}</span>
@@ -2796,7 +2821,7 @@
                     <!-- CONTAGEM REGRESSIVA DINÂMICA COM CORES DE URGÊNCIA (APENAS PEDIDOS CONFIRMADOS) -->
                     <div style="margin-top: 6px;">
                       ${countdown.badgeHtml}
-                      ${!isOrcamento ? `
+                      ${(!isOrcamento && !isCancelado) ? `
                         <div class="countdown-bar-track" title="Tempo decorrido: ${countdown.percTempo}%">
                           <div class="countdown-bar-fill" style="width: ${countdown.percTempo}%; background-color: ${countdown.corBarra};"></div>
                         </div>
@@ -2903,7 +2928,22 @@
                     </div>
                   </td>
                   <td>
-                    ${isOrcamento ? `
+                    ${isCancelado ? `
+                      <div style="display: flex; flex-direction: column; gap: 3px;">
+                        <span class="status-pill status-red" style="font-size: 10px; font-weight: 800; background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; display: inline-flex; align-items: center; gap: 4px;">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                          PEDIDO CANCELADO
+                        </span>
+                        ${p.motivoCancelamento ? `
+                          <span style="font-size: 9.5px; color: #b91c1c; line-height: 1.25;" title="Motivo: ${p.motivoCancelamento}">
+                            <strong>Motivo:</strong> ${p.motivoCancelamento}
+                          </span>
+                        ` : ''}
+                        ${p.dataCancelamentoFormatada ? `
+                          <span style="font-size: 9px; color: #64748b;">${p.dataCancelamentoFormatada}</span>
+                        ` : ''}
+                      </div>
+                    ` : isOrcamento ? `
                       <div style="display: flex; flex-direction: column; gap: 3px;">
                         <span class="status-pill" style="background: #f8fafc; border: 1px solid #e2e8f0; color: #64748b; font-size: 10px; font-weight: 700;">
                           💬 Em Proposta / Orçamento
@@ -2943,7 +2983,15 @@
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                         WPP
                       </button>
-                      ${isOrcamento ? `
+                      ${isCancelado ? `
+                        <button class="btn btn-secondary btn-sm btn-ver-cancelamento" data-id="${p.id}" style="color: #475569; font-weight: 600;" title="Ver detalhes do cancelamento">
+                          Motivo
+                        </button>
+                        <button class="btn btn-secondary btn-sm btn-reativar-pedido" data-id="${p.id}" style="font-weight: 700; color: #047857; border-color: #a7f3d0; background: #ecfdf5;" title="Reativar Pedido Cancelado (retorna à produção)">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                          Reativar
+                        </button>
+                      ` : isOrcamento ? `
                         <button class="btn btn-secondary btn-sm btn-editar-orcamento" data-id="${p.id}" style="font-weight: 700; color: #b45309; border-color: #fde68a; background: #fffbeb;" title="Editar Orçamento (alterar grade, quantidades, modelo, cores ou preços da negociação)">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                           Editar
@@ -2953,8 +3001,16 @@
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
                           Entrada
                         </button>
+                        <button class="btn btn-secondary btn-sm btn-cancelar-pedido" data-id="${p.id}" style="font-weight: 700; color: #dc2626; border-color: #fca5a5;" title="Cancelar este Orçamento">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                          Cancelar
+                        </button>
                       ` : `
                         <button class="btn btn-secondary btn-sm btn-ver-os" data-id="${p.id}">OS</button>
+                        <button class="btn btn-secondary btn-sm btn-cancelar-pedido" data-id="${p.id}" style="font-weight: 700; color: #dc2626; border-color: #fca5a5;" title="Cancelar este Pedido Oficial">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                          Cancelar
+                        </button>
                       `}
                     </div>
                   </td>
@@ -2969,11 +3025,11 @@
 
   function renderizarKanbanPedidosHtml(pedidos) {
     const colunas = [
-      { id: "col-orcamento", etapaDestino: "Quarentena", titulo: "1. ORÇAMENTO & QUARENTENA", filtro: p => p.status === 'Orcamento' || p.status === 'Quarentena' },
-      { id: "col-corte", etapaDestino: "Corte", titulo: "2. MESA DE CORTE", filtro: p => p.status === 'Em Producao' && (p.etapaProducao === 'Corte' || p.etapaProducao === 'Aguardando Tecido') },
-      { id: "col-estampa", etapaDestino: "Estamparia / DTF", titulo: "3. ESTAMPARIA & DTF", filtro: p => p.status === 'Em Producao' && (p.etapaProducao === 'Estamparia / DTF' || p.etapaProducao === 'Bordado') },
-      { id: "col-costura", etapaDestino: "Costura", titulo: "4. COSTURA & FECHAMENTO", filtro: p => p.status === 'Em Producao' && p.etapaProducao === 'Costura' },
-      { id: "col-expedicao", etapaDestino: "Expedicao", titulo: "5. EXPEDIÇÃO & FINALIZADO", filtro: p => p.etapaProducao === 'Acabamento' || p.etapaProducao === 'Expedicao' || p.status === 'Finalizado' }
+      { id: "col-orcamento", etapaDestino: "Quarentena", titulo: "1. ORÇAMENTO & QUARENTENA", filtro: p => (p.status === 'Orcamento' || p.status === 'Quarentena') && p.status !== 'Cancelado' },
+      { id: "col-corte", etapaDestino: "Corte", titulo: "2. MESA DE CORTE", filtro: p => p.status === 'Em Producao' && p.status !== 'Cancelado' && (p.etapaProducao === 'Corte' || p.etapaProducao === 'Aguardando Tecido') },
+      { id: "col-estampa", etapaDestino: "Estamparia / DTF", titulo: "3. ESTAMPARIA & DTF", filtro: p => p.status === 'Em Producao' && p.status !== 'Cancelado' && (p.etapaProducao === 'Estamparia / DTF' || p.etapaProducao === 'Bordado') },
+      { id: "col-costura", etapaDestino: "Costura", titulo: "4. COSTURA & FECHAMENTO", filtro: p => p.status === 'Em Producao' && p.status !== 'Cancelado' && p.etapaProducao === 'Costura' },
+      { id: "col-expedicao", etapaDestino: "Expedicao", titulo: "5. EXPEDIÇÃO & FINALIZADO", filtro: p => p.status !== 'Cancelado' && (p.etapaProducao === 'Acabamento' || p.etapaProducao === 'Expedicao' || p.status === 'Finalizado') }
     ];
 
     return `
@@ -3080,9 +3136,15 @@
                           <button class="btn btn-primary btn-sm btn-converter-pedido" data-id="${p.id}" style="flex: 1.2; font-weight: 800; background: var(--color-green); border-color: var(--color-green);" title="Oficializar Pedido e Dar Entrada">
                             Entrada
                           </button>
+                          <button class="btn btn-secondary btn-sm btn-cancelar-pedido" data-id="${p.id}" style="padding: 3px 6px; color: #dc2626; border-color: #fca5a5;" title="Cancelar este Orçamento">
+                            ✕
+                          </button>
                         ` : `
                           <button class="btn btn-primary btn-sm btn-ver-os" data-id="${p.id}" style="flex: 1;">
                             Ficha OS
+                          </button>
+                          <button class="btn btn-secondary btn-sm btn-cancelar-pedido" data-id="${p.id}" style="padding: 3px 6px; color: #dc2626; border-color: #fca5a5;" title="Cancelar este Pedido">
+                            ✕
                           </button>
                         `}
                       </div>
@@ -3178,6 +3240,33 @@
         const id = select.getAttribute('data-id');
         const novaEtapa = select.value;
         atualizarEtapaPedido(id, novaEtapa);
+      });
+    });
+
+    // Cancelar Pedido / Orçamento
+    document.querySelectorAll('.btn-cancelar-pedido').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        abrirModalCancelarPedido(id);
+      });
+    });
+
+    // Reativar Pedido Cancelado
+    document.querySelectorAll('.btn-reativar-pedido').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        reativarPedido(id);
+      });
+    });
+
+    // Ver Detalhes do Cancelamento
+    document.querySelectorAll('.btn-ver-cancelamento').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        abrirModalDetalhesCancelamento(id);
       });
     });
 
@@ -3643,6 +3732,279 @@
 
     // Abre imediatamente o modal com a mensagem pronta personalizada para o WhatsApp do cliente
     abrirModalWhatsApp(p.id);
+  }
+
+  /* ==========================================================================
+     CANCELAMENTO & REATIVAÇÃO DE PEDIDOS E ORÇAMENTOS
+     ========================================================================== */
+  function abrirModalCancelarPedido(pedidoIdOuNumero) {
+    if (!pedidoIdOuNumero || !modalContainer) return;
+    const p = db.pedidos.find(x => x.id === pedidoIdOuNumero || String(x.numero) === String(pedidoIdOuNumero));
+    if (!p) {
+      mostrarToast('Pedido ou orçamento não encontrado para cancelamento.', 'red');
+      return;
+    }
+
+    if (p.status === 'Cancelado') {
+      abrirModalDetalhesCancelamento(p.id);
+      return;
+    }
+
+    const isOrcamento = isPedidoOrcamento(p);
+    const totalVenda = Number(p.valorTotalVenda) || 0;
+    const jaPago = Number(p.valorSinalPago) || 0;
+    const osVinculada = db.ordensServico.find(o => o.pedidoNumero === p.numero && o.status !== 'Cancelada');
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active" id="modalCancelarPedidoOverlay">
+        <div class="modal-box" style="max-width: 580px;">
+          <div class="modal-header" style="border-bottom: 2px solid #fee2e2;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 38px; height: 38px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+              </div>
+              <div>
+                <div class="modal-title" style="color: #991c1c; font-size: 16px;">Cancelar ${isOrcamento ? 'Orçamento' : 'Pedido Oficial'} #${p.numero}</div>
+                <span style="font-size: 11.5px; color: var(--text-gray-500);">Cliente: <strong>${p.clienteNome}</strong> • ${p.grade?.total || 0} peças</span>
+              </div>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+          </div>
+
+          <div class="modal-body" style="padding-top: 14px;">
+            <!-- Box Resumo do Pedido -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; font-size: 12px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 12px;">
+              <div><span style="color: #64748b;">Item / Modelo:</span> <strong>${p.produtoNome}</strong></div>
+              <div><span style="color: #64748b;">Tipo:</span> <span class="status-pill ${isOrcamento ? 'status-gray' : 'status-green'}" style="font-size: 9px; padding: 1px 6px;">${isOrcamento ? 'ORÇAMENTO' : 'PEDIDO OFICIAL'}</span></div>
+              <div><span style="color: #64748b;">Valor Total:</span> <strong class="text-mono">${formatarMoeda(totalVenda)}</strong></div>
+              <div><span style="color: #64748b;">Sinal Já Pago:</span> <strong class="text-mono" style="color: ${jaPago > 0 ? 'var(--color-green)' : '#64748b'};">${formatarMoeda(jaPago)}</strong></div>
+              <div style="grid-column: span 2;"><span style="color: #64748b;">Etapa Atual:</span> <strong>${p.etapaProducao || p.status}</strong></div>
+            </div>
+
+            <!-- Alerta Financeiro se houver sinal recebido -->
+            ${jaPago > 0 ? `
+              <div style="background: #fef2f2; border: 1px solid #fca5a5; border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; font-size: 11.5px; color: #991b1b; display: flex; gap: 10px; align-items: flex-start; line-height: 1.4;">
+                <span style="font-size: 18px; line-height: 1;">⚠️</span>
+                <div>
+                  <strong style="display: block; font-size: 12px; margin-bottom: 2px;">Atenção Financeira: Pedido com Sinal Já Recebido!</strong>
+                  Este pedido possui <strong>${formatarMoeda(jaPago)}</strong> já registrados no sistema. O cancelamento suspenderá o pedido no ERP. Se houver devolução de dinheiro ao cliente, registre a saída no módulo Financeiro.
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- Alerta de Produção se estiver na oficina -->
+            ${p.status === 'Em Producao' ? `
+              <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; font-size: 11.5px; color: #92400e; display: flex; gap: 10px; align-items: flex-start; line-height: 1.4;">
+                <span style="font-size: 18px; line-height: 1;">🏭</span>
+                <div>
+                  <strong style="display: block; font-size: 12px; margin-bottom: 2px;">Aviso de Produção: Pedido em Andamento na Fábrica!</strong>
+                  O pedido está na etapa de <strong>${p.etapaProducao}</strong>. Ao confirmar, as ordens de serviço e cortes vinculados serão cancelados para evitar consumo desnecessário de matéria-prima.
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- Formulário de Motivo e Observações -->
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" style="font-weight: 700; color: #0f172a;">Motivo do Cancelamento *</label>
+              <select id="selMotivoCancelamento" class="form-select" style="font-weight: 600;">
+                <option value="Desistência do cliente">Desistência do cliente</option>
+                <option value="Não aprovou orçamento / Preço">Não aprovou orçamento / Preço</option>
+                <option value="Prazo de entrega não atende o cliente">Prazo de entrega não atende o cliente</option>
+                <option value="Falta de tecido / insumos no fornecedor">Falta de tecido / insumos no fornecedor</option>
+                <option value="Inviabilidade técnica na confecção ou arte">Inviabilidade técnica na confecção ou arte</option>
+                <option value="Pedido duplicado ou erro de lançamento">Pedido duplicado ou erro de lançamento</option>
+                <option value="Problemas com pagamento / Inadimplência">Problemas com pagamento / Inadimplência</option>
+                <option value="Outro motivo">Outro motivo (especificar abaixo)</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+              <label class="form-label" style="font-weight: 600; color: #475569;">Observações / Justificativa Detalhada</label>
+              <textarea id="txtObsCancelamento" class="form-input" rows="3" style="font-size: 12px; resize: vertical;" placeholder="Informe detalhes para o histórico da fábrica e financeiro (ex: cliente desistiu da confecção, faltou malha piquet, etc.)..."></textarea>
+            </div>
+
+            ${osVinculada ? `
+              <div style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                <input type="checkbox" id="chkCancelarOsVinculada" checked style="width: 16px; height: 16px; cursor: pointer;">
+                <label for="chkCancelarOsVinculada" style="cursor: pointer; color: #1e293b;">
+                  Cancelar e retirar a <strong>Ficha de Produção / OS (${osVinculada.id})</strong> da fila da oficina
+                </label>
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Voltar / Não Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnConfirmarCancelamentoPedido" style="background: #dc2626; border-color: #dc2626; font-weight: 800; padding: 7px 16px; display: inline-flex; align-items: center; gap: 6px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+              Confirmar Cancelamento
+            </button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    document.getElementById('btnConfirmarCancelamentoPedido')?.addEventListener('click', () => {
+      const motivo = document.getElementById('selMotivoCancelamento')?.value || 'Desistência do cliente';
+      const obs = (document.getElementById('txtObsCancelamento')?.value || '').trim();
+      const cancelarOs = document.getElementById('chkCancelarOsVinculada')?.checked ?? true;
+
+      confirmarCancelamentoPedido(p.id, motivo, obs, cancelarOs);
+    });
+  }
+
+  function confirmarCancelamentoPedido(pedidoId, motivo, observacoes, cancelarOs) {
+    const p = db.pedidos.find(x => x.id === pedidoId);
+    if (!p) return;
+
+    p.statusAnterior = p.status;
+    p.etapaAnterior = p.etapaProducao;
+    p.status = 'Cancelado';
+    p.etapaProducao = 'Cancelado';
+    p.dataCancelamento = new Date().toISOString();
+    p.dataCancelamentoFormatada = new Date().toLocaleString('pt-BR');
+    p.motivoCancelamento = motivo;
+    p.observacoesCancelamento = observacoes;
+
+    // Registra no histórico de pagamentos e eventos
+    p.historicoPagamentos = p.historicoPagamentos || [];
+    p.historicoPagamentos.push({
+      data: new Date().toLocaleDateString('pt-BR'),
+      descricao: `Cancelamento: ${motivo}${observacoes ? ' - ' + observacoes : ''}`,
+      formaPagamento: 'N/A',
+      valor: 0,
+      tipo: 'Cancelamento'
+    });
+
+    // Se houver OS vinculada e selecionado para cancelar
+    if (cancelarOs) {
+      const os = db.ordensServico.find(o => o.pedidoNumero === p.numero);
+      if (os) {
+        os.status = 'Cancelada';
+        os.etapaAtual = 'Cancelada';
+        os.motivoCancelamento = motivo;
+      }
+    }
+
+    salvarEstado();
+    atualizarBadges();
+    fecharModal();
+
+    // Re-renderiza a visualização atual
+    if (abaAtiva === 'pedidos') {
+      renderizarPedidos();
+    } else if (abaAtiva === 'dashboard') {
+      renderizarDashboard();
+    } else if (abaAtiva === 'os') {
+      renderizarOrdensServico();
+    }
+
+    mostrarToast(`Pedido #${p.numero} cancelado com sucesso.`, 'red');
+  }
+
+  function reativarPedido(pedidoId) {
+    const p = db.pedidos.find(x => x.id === pedidoId);
+    if (!p) return;
+
+    const confirma = confirm(`Deseja realmente reativar o Pedido #${p.numero} (${p.clienteNome})? Ele voltará para a fila ativa do sistema.`);
+    if (!confirma) return;
+
+    // Se tinha status anterior preservado, recupera
+    if (p.statusAnterior && p.statusAnterior !== 'Cancelado') {
+      p.status = p.statusAnterior;
+      p.etapaProducao = p.etapaAnterior || (p.status === 'Quarentena' ? 'Aguardando Aprovação Técnica' : 'Corte');
+    } else if (p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento') {
+      p.status = 'Orcamento';
+      p.etapaProducao = 'Em Negociação';
+    } else {
+      p.status = 'Quarentena';
+      p.etapaProducao = 'Aguardando Aprovação Técnica';
+    }
+
+    p.dataReativacao = new Date().toISOString();
+    p.dataReativacaoFormatada = new Date().toLocaleString('pt-BR');
+    p.motivoCancelamento = null;
+    p.observacoesCancelamento = null;
+
+    p.historicoPagamentos = p.historicoPagamentos || [];
+    p.historicoPagamentos.push({
+      data: new Date().toLocaleDateString('pt-BR'),
+      descricao: 'Pedido Reativado',
+      formaPagamento: 'N/A',
+      valor: 0,
+      tipo: 'Reativação'
+    });
+
+    // Reativa OS se houver
+    const os = db.ordensServico.find(o => o.pedidoNumero === p.numero);
+    if (os && os.status === 'Cancelada') {
+      os.status = 'Em Producao';
+      os.etapaAtual = p.etapaProducao;
+    }
+
+    salvarEstado();
+    atualizarBadges();
+    fecharModal();
+
+    if (abaAtiva === 'pedidos') {
+      renderizarPedidos();
+    } else if (abaAtiva === 'dashboard') {
+      renderizarDashboard();
+    } else if (abaAtiva === 'os') {
+      renderizarOrdensServico();
+    }
+
+    mostrarToast(`Pedido #${p.numero} reativado com sucesso!`, 'green');
+  }
+
+  function abrirModalDetalhesCancelamento(pedidoId) {
+    const p = db.pedidos.find(x => x.id === pedidoId);
+    if (!p || !modalContainer) return;
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 520px;">
+          <div class="modal-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="status-pill status-red" style="font-weight: 800;">CANCELADO</span>
+              <div class="modal-title">Detalhes do Cancelamento • #${p.numero}</div>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+          </div>
+
+          <div class="modal-body" style="font-size: 12.5px; line-height: 1.5;">
+            <div style="background: #fef2f2; border: 1px solid #fca5a5; border-radius: 6px; padding: 12px; margin-bottom: 14px;">
+              <div style="color: #991c1c; font-weight: 700; margin-bottom: 4px;">Motivo Registrado:</div>
+              <div style="font-size: 13.5px; font-weight: 800; color: #7f1d1d;">${p.motivoCancelamento || 'Não especificado'}</div>
+              ${p.observacoesCancelamento ? `
+                <div style="margin-top: 8px; font-size: 12px; color: #991c1c; border-top: 1px dashed #fca5a5; padding-top: 6px;">
+                  <strong>Observações:</strong> ${p.observacoesCancelamento}
+                </div>
+              ` : ''}
+              <div style="margin-top: 8px; font-size: 11px; color: #b91c1c;">
+                Cancelado em: <strong>${p.dataCancelamentoFormatada || p.dataCancelamento || 'Data não registrada'}</strong>
+              </div>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; font-size: 12px;">
+              <div>Cliente: <strong>${p.clienteNome}</strong></div>
+              <div>Modelo: <strong>${p.produtoNome}</strong></div>
+              <div>Quantidade: <strong>${p.grade?.total || 0} peças</strong></div>
+              <div>Valor do Pedido: <strong>${formatarMoeda(p.valorTotalVenda)}</strong></div>
+              <div>Sinal Pago: <strong>${formatarMoeda(p.valorSinalPago || 0)}</strong></div>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
+            <button type="button" class="btn btn-primary" onclick="window.ERP.reativarPedido('${p.id}')" style="background: #047857; border-color: #047857; font-weight: 700;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+              Reativar Pedido Agora
+            </button>
+          </div>
+        </div>
+      </div>
+    `);
   }
 
   /* ==========================================================================
@@ -6836,12 +7198,24 @@
             ${htmlCorpo}
           </div>
 
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
-            <button type="button" class="btn btn-primary" id="btnImprimirFichaDoc" onclick="window.ERP.imprimirFichaTecnicaIsolada('${os.id}')">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-              Imprimir Ordem de Produção (A4)
-            </button>
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div>
+              ${os.status !== 'Cancelada' ? `
+                <button type="button" class="btn btn-secondary btn-sm" style="color: #dc2626; border-color: #fca5a5; font-weight: 700;" onclick="window.ERP.abrirModalCancelarPedido('${os.pedidoNumero || os.id}')">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                  Cancelar Pedido / Ficha
+                </button>
+              ` : `
+                <span class="status-pill status-red" style="font-size: 11px; font-weight: 800;">🚫 FICHA / PEDIDO CANCELADO</span>
+              `}
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
+              <button type="button" class="btn btn-primary" id="btnImprimirFichaDoc" onclick="window.ERP.imprimirFichaTecnicaIsolada('${os.id}')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                Imprimir Ordem de Produção (A4)
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -9459,11 +9833,17 @@
             </div>
           </div>
 
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
-            <button type="button" class="btn btn-green" id="btnAprovarParaOficina" disabled style="opacity: 0.5; cursor: not-allowed; font-weight: 800;">
-              Aprovar para Produção na Oficina
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <button type="button" class="btn btn-secondary btn-sm" style="color: #dc2626; border-color: #fca5a5; font-weight: 700;" onclick="window.ERP.abrirModalCancelarPedido('${p.id}')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+              Reprovar / Cancelar Pedido
             </button>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
+              <button type="button" class="btn btn-green" id="btnAprovarParaOficina" disabled style="opacity: 0.5; cursor: not-allowed; font-weight: 800;">
+                Aprovar para Produção na Oficina
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -10264,20 +10644,32 @@
             </div>
           </div>
 
-          <div class="modal-footer">
-            ${pedido ? `
-              <button type="button" class="btn btn-secondary btn-sm" id="btnModalMockupWpp">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                Disparar Mockup no WhatsApp
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div>
+              ${(pedido && pedido.status !== 'Cancelado') ? `
+                <button type="button" class="btn btn-secondary btn-sm" id="btnModalMockupCancelar" style="color: #dc2626; border-color: #fca5a5; font-weight: 700;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                  Cancelar Pedido
+                </button>
+              ` : (pedido && pedido.status === 'Cancelado') ? `
+                <span class="status-pill status-red" style="font-weight: 800;">🚫 PEDIDO CANCELADO</span>
+              ` : ''}
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              ${pedido ? `
+                <button type="button" class="btn btn-secondary btn-sm" id="btnModalMockupWpp">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                  Disparar no WhatsApp
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnModalMockupFicha">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                  Ver Ficha Técnica / OS
+                </button>
+              ` : ''}
+              <button type="button" class="btn btn-primary btn-sm" onclick="window.ERP.fecharModal()">
+                Fechar
               </button>
-              <button type="button" class="btn btn-secondary btn-sm" id="btnModalMockupFicha">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                Ver Ficha Técnica / OS
-              </button>
-            ` : ''}
-            <button type="button" class="btn btn-primary btn-sm" onclick="window.ERP.fecharModal()">
-              Fechar
-            </button>
+            </div>
           </div>
         </div>
       </div>
@@ -10292,6 +10684,9 @@
     });
 
     if (pedido) {
+      document.getElementById('btnModalMockupCancelar')?.addEventListener('click', () => {
+        abrirModalCancelarPedido(pedido.id);
+      });
       document.getElementById('btnModalMockupWpp')?.addEventListener('click', () => {
         abrirModalWhatsApp(pedido.id);
       });
@@ -11790,6 +12185,9 @@
     abrirModalVisualizarMockup,
     abrirModalNovoOrcamento,
     abrirModalEditarOrcamento: (id) => abrirModalNovoOrcamento(id),
+    abrirModalCancelarPedido,
+    reativarPedido,
+    abrirModalDetalhesCancelamento,
     abrirModalNovoClienteInline,
     abrirModalNovoModeloInline,
     abrirModalInspecaoQuarentena,
