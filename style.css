@@ -2253,6 +2253,58 @@ button.status-pill:hover {
   font-size: 11px;
 }
 
+/* ==========================================================================
+   CONSULTA AUTOMÁTICA DE CNPJ E CEP (RECEITA FEDERAL)
+   ========================================================================== */
+.cnpj-smart-card {
+  background: linear-gradient(135deg, #032b35 0%, #0f172a 100%);
+  border: 1.5px solid #0d9488;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(3, 43, 53, 0.25);
+  transition: all 0.3s ease;
+}
+
+.cnpj-smart-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(45, 212, 191, 0.15);
+  color: #2dd4bf;
+  border: 1px solid rgba(45, 212, 191, 0.3);
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+@keyframes fieldGlowPulse {
+  0% {
+    background-color: #ecfdf5;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+  }
+  60% {
+    background-color: #ecfdf5;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+  }
+  100% {
+    background-color: inherit;
+    border-color: inherit;
+    box-shadow: none;
+  }
+}
+
+.field-auto-filled {
+  animation: fieldGlowPulse 1.6s ease-out;
+}
+
+
 
 
 

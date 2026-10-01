@@ -1307,6 +1307,149 @@
     return tel || '';
   }
 
+  function formatarCnpj(cnpj) {
+    if (!cnpj) return '';
+    const n = cnpj.toString().replace(/\D/g, '').slice(0, 14);
+    if (n.length <= 2) return n;
+    if (n.length <= 5) return `${n.slice(0, 2)}.${n.slice(2)}`;
+    if (n.length <= 8) return `${n.slice(0, 2)}.${n.slice(2, 5)}.${n.slice(5)}`;
+    if (n.length <= 12) return `${n.slice(0, 2)}.${n.slice(2, 5)}.${n.slice(5, 8)}/${n.slice(8)}`;
+    return `${n.slice(0, 2)}.${n.slice(2, 5)}.${n.slice(5, 8)}/${n.slice(8, 12)}-${n.slice(12, 14)}`;
+  }
+
+  function formatarCpf(cpf) {
+    if (!cpf) return '';
+    const n = cpf.toString().replace(/\D/g, '').slice(0, 11);
+    if (n.length <= 3) return n;
+    if (n.length <= 6) return `${n.slice(0, 3)}.${n.slice(3)}`;
+    if (n.length <= 9) return `${n.slice(0, 3)}.${n.slice(3, 6)}.${n.slice(6)}`;
+    return `${n.slice(0, 3)}.${n.slice(3, 6)}.${n.slice(6, 9)}-${n.slice(9, 11)}`;
+  }
+
+  function formatarCep(cep) {
+    if (!cep) return '';
+    const n = cep.toString().replace(/\D/g, '').slice(0, 8);
+    if (n.length <= 5) return n;
+    return `${n.slice(0, 5)}-${n.slice(5, 8)}`;
+  }
+
+  function deduzirRamoPorCnae(cnaeTexto) {
+    const t = (cnaeTexto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (t.includes('transporte') || t.includes('carga') || t.includes('logistica') || t.includes('entrega') || t.includes('rodoviario')) {
+      return 'Transporte & Logística';
+    }
+    if (t.includes('saude') || t.includes('hospital') || t.includes('medico') || t.includes('clinica') || t.includes('odonto') || t.includes('laboratorio')) {
+      return 'Saúde & Odontologia';
+    }
+    if (t.includes('escola') || t.includes('colegio') || t.includes('educacao') || t.includes('ensino') || t.includes('curso') || t.includes('faculdade')) {
+      return 'Educação & Escolas';
+    }
+    if (t.includes('restaurante') || t.includes('alimento') || t.includes('bebida') || t.includes('bar') || t.includes('lanche') || t.includes('padaria') || t.includes('gastronomia') || t.includes('refeicao')) {
+      return 'Alimentação & Gastronomia';
+    }
+    if (t.includes('industria') || t.includes('fabricacao') || t.includes('confeccao') || t.includes('manufatura') || t.includes('textil') || t.includes('metalurgica') || t.includes('quimica') || t.includes('usinagem') || t.includes('petroleo') || t.includes('gas natural') || t.includes('mineracao')) {
+      return 'Indústria & Manufatura';
+    }
+    return 'Comércio & Serviços';
+  }
+
+  async function consultarDadosCnpjPublico(cnpj) {
+    const limpo = (cnpj || '').toString().replace(/\D/g, '');
+    if (limpo.length !== 14) {
+      throw new Error('O CNPJ deve conter 14 dígitos numéricos.');
+    }
+
+    // 1. Tenta BrasilAPI primeiro
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6000);
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${limpo}`, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (res.ok) {
+        const d = await res.json();
+        return {
+          sucesso: true,
+          razaoSocial: d.razao_social || '',
+          nomeFantasia: d.nome_fantasia || d.razao_social || '',
+          cnpjFormatado: formatarCnpj(limpo),
+          situacaoCadastral: d.descricao_situacao_cadastral || 'ATIVA',
+          dataSituacao: d.data_situacao_cadastral || '',
+          cnae: d.cnae_fiscal_descricao || '',
+          ramoSugerido: deduzirRamoPorCnae(d.cnae_fiscal_descricao),
+          porte: d.porte || '',
+          contatoSugerido: (d.qsa && Array.isArray(d.qsa) && d.qsa[0] && d.qsa[0].nome_socio) ? d.qsa[0].nome_socio : '',
+          capitalSocial: d.capital_social || 0,
+          cep: formatarCep(d.cep || ''),
+          endereco: [d.descricao_tipo_de_logradouro, d.logradouro, d.numero ? 'nº ' + d.numero : '', d.complemento].filter(Boolean).join(' ').trim(),
+          bairro: d.bairro || '',
+          cidade: d.municipio || '',
+          uf: d.uf || '',
+          telefone: (d.ddd_telefone_1 || '').replace(/\D/g, ''),
+          email: (d.email || '').toLowerCase().trim(),
+          fonte: 'Receita Federal'
+        };
+      }
+    } catch (e) {
+      console.warn('Tentativa BrasilAPI falhou, tentando fallback MinhaReceita...', e);
+    }
+
+    // 2. Fallback: MinhaReceita
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6000);
+      const res = await fetch(`https://minhareceita.org/${limpo}`, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (res.ok) {
+        const d = await res.json();
+        return {
+          sucesso: true,
+          razaoSocial: d.razao_social || '',
+          nomeFantasia: d.nome_fantasia || d.razao_social || '',
+          cnpjFormatado: formatarCnpj(limpo),
+          situacaoCadastral: d.descricao_situacao_cadastral || 'ATIVA',
+          dataSituacao: d.data_situacao_cadastral || '',
+          cnae: d.cnae_fiscal_descricao || '',
+          ramoSugerido: deduzirRamoPorCnae(d.cnae_fiscal_descricao),
+          porte: d.porte || '',
+          contatoSugerido: (d.qsa && Array.isArray(d.qsa) && d.qsa[0] && d.qsa[0].nome_socio) ? d.qsa[0].nome_socio : '',
+          capitalSocial: d.capital_social || 0,
+          cep: formatarCep(d.cep || ''),
+          endereco: [d.descricao_tipo_de_logradouro, d.logradouro, d.numero ? 'nº ' + d.numero : '', d.complemento].filter(Boolean).join(' ').trim(),
+          bairro: d.bairro || '',
+          cidade: d.municipio || '',
+          uf: d.uf || '',
+          telefone: (d.ddd_telefone_1 || '').replace(/\D/g, ''),
+          email: (d.email || '').toLowerCase().trim(),
+          fonte: 'Receita Federal (Contingência)'
+        };
+      }
+    } catch (e) {
+      console.warn('Fallback MinhaReceita falhou:', e);
+    }
+
+    throw new Error('Não foi possível obter dados para este CNPJ na base pública da Receita Federal.');
+  }
+
+  async function consultarCepPublico(cep) {
+    const limpo = (cep || '').toString().replace(/\D/g, '');
+    if (limpo.length !== 8) return null;
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${limpo}/json/`);
+      if (res.ok) {
+        const d = await res.json();
+        if (!d.erro) {
+          return {
+            endereco: [d.logradouro, d.complemento].filter(Boolean).join(' '),
+            bairro: d.bairro || '',
+            cidade: d.localidade || '',
+            uf: d.uf || ''
+          };
+        }
+      }
+    } catch (e) {}
+    return null;
+  }
+
   function formatarDataBr(dataIso) {
     if (!dataIso) return '-';
     const clean = dataIso.split('T')[0];
@@ -7645,132 +7788,400 @@
   function abrirModalNovoClienteInline(callback) {
     if (!modalContainer) return;
 
+    let tipoCadastro = 'PJ'; // 'PJ' ou 'PF'
+    let buscandoCnpj = false;
+
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active" id="modalNovoClienteInlineOverlay">
-        <div class="modal-box" style="max-width: 680px;">
-          <div class="modal-header">
-            <div>
-              <div class="modal-title">Cadastrar Novo Cliente (Dados Obrigatórios)</div>
-              <span style="font-size: 11px; color: var(--text-gray-500);">Preencha todos os campos obrigatórios para emissão de pedidos e NF-e</span>
+        <div class="modal-box" style="max-width: 720px; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+          <div class="modal-header" style="background: linear-gradient(135deg, #032b35 0%, #0f172a 100%); color: #ffffff; padding: 18px 22px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(45, 212, 191, 0.15); color: #2dd4bf; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+                🏢
+              </div>
+              <div>
+                <div class="modal-title" style="color: #ffffff; font-size: 16px; font-weight: 800;">Cadastrar Novo Cliente (CRM Têxtil)</div>
+                <div style="font-size: 11.5px; color: #2dd4bf; margin-top: 2px;">Preenchimento automático via Cartão CNPJ e integração completa com Pedidos e NF-e</div>
+              </div>
             </div>
-            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+            <button class="modal-close" style="color: #94a3b8; font-size: 24px;" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
 
-          <div class="modal-body">
+          <div class="modal-body" style="padding: 20px 22px; max-height: calc(85vh - 130px); overflow-y: auto;">
+            <!-- Seletor Tipo de Cadastro: PJ vs PF -->
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+              <span style="font-size: 12px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Tipo de Cadastro:</span>
+              <div style="display: flex; gap: 16px;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; font-weight: 800; color: #0f172a;">
+                  <input type="radio" name="tipoCadastroCli" value="PJ" id="radioCliPj" checked>
+                  <span>🏢 Pessoa Jurídica (Empresa com CNPJ)</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; font-weight: 700; color: #64748b;">
+                  <input type="radio" name="tipoCadastroCli" value="PF" id="radioCliPf">
+                  <span>👤 Pessoa Física (CPF / Autônomo)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Card Inteligente de Consulta Automática no Cartão CNPJ -->
+            <div id="secaoConsultaCnpj" class="cnpj-smart-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 16px;">⚡</span>
+                  <span style="font-size: 12px; font-weight: 800; color: #2dd4bf; letter-spacing: 0.5px; text-transform: uppercase;">
+                    Consulta Automática no Cartão CNPJ (Receita Federal)
+                  </span>
+                </div>
+                <span class="cnpj-smart-badge">100% Automático</span>
+              </div>
+              <div style="font-size: 11.5px; color: #cbd5e1; margin-bottom: 10px; line-height: 1.4;">
+                Basta digitar ou colar os 14 números do CNPJ. O sistema preencherá Razão Social, Fantasia, Endereço, Bairro, Cidade, UF, CEP, Telefone e E-mail em segundos!
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <div style="position: relative; flex: 1;">
+                  <input type="text" id="cadCliCnpjBusca" class="form-input text-mono" placeholder="Digite ou cole o CNPJ (ex: 33.000.167/0001-01)" style="font-size: 14px; font-weight: 800; background: #ffffff; color: #0f172a; padding: 10px 14px; padding-right: 40px; border-radius: 6px; border: 2px solid #2dd4bf;">
+                  <span id="cnpjBuscaIcone" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 15px; display: none;">⏳</span>
+                </div>
+                <button type="button" class="btn" id="btnBuscarCnpjReceita" style="background: #0d9488; color: #ffffff; font-weight: 800; font-size: 13px; border: none; padding: 11px 18px; border-radius: 6px; display: flex; align-items: center; gap: 6px; white-space: nowrap; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  <span id="btnBuscarCnpjReceitaTexto">Buscar Dados</span>
+                </button>
+              </div>
+              <div id="statusCnpjReceita" style="margin-top: 10px; font-size: 12px; display: none; line-height: 1.4;"></div>
+            </div>
+
+            <!-- Linha 1: Razão Social e Nome Fantasia -->
             <div class="form-row">
-              <div class="form-group" style="flex: 2;">
-                <label class="form-label">Razão Social Oficial *</label>
+              <div class="form-group" style="flex: 1.3;">
+                <label class="form-label" id="lblRazaoSocial" style="font-weight: 700;">Razão Social Oficial *</label>
                 <input type="text" id="cadCliRazao" class="form-input" placeholder="Ex: Confecções Industriais do Brasil Ltda">
               </div>
-              <div class="form-group" style="flex: 2;">
-                <label class="form-label">Nome Fantasia *</label>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label" id="lblNomeFantasia" style="font-weight: 700;">Nome Fantasia *</label>
                 <input type="text" id="cadCliFantasia" class="form-input" placeholder="Ex: TexBrasil">
               </div>
             </div>
 
+            <!-- Linha 2: CNPJ/CPF, Inscrição Estadual e Ramo -->
             <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">CNPJ ou CPF *</label>
+              <div class="form-group" style="flex: 1.1;">
+                <label class="form-label" id="lblCnpjCpf" style="font-weight: 700;">CNPJ *</label>
                 <input type="text" id="cadCliCnpj" class="form-input text-mono" placeholder="00.000.000/0001-00">
               </div>
-              <div class="form-group">
-                <label class="form-label">Inscrição Estadual / RG</label>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label" style="font-weight: 700;">Inscrição Estadual / RG</label>
                 <input type="text" id="cadCliIe" class="form-input text-mono" placeholder="Isento ou Nº">
               </div>
-              <div class="form-group">
-                <label class="form-label">Ramo / Segmento *</label>
-                <select id="cadCliRamo" class="form-select">
+              <div class="form-group" style="flex: 1.2;">
+                <label class="form-label" style="font-weight: 700;">Ramo / Segmento *</label>
+                <select id="cadCliRamo" class="form-select" style="font-weight: 600;">
                   <option value="Indústria & Manufatura">Indústria & Manufatura</option>
                   <option value="Transporte & Logística">Transporte & Logística</option>
                   <option value="Saúde & Odontologia">Saúde & Odontologia</option>
                   <option value="Educação & Escolas">Educação & Escolas</option>
                   <option value="Alimentação & Gastronomia">Alimentação & Gastronomia</option>
-                  <option value="Comércio & Serviços">Comércio & Serviços</option>
+                  <option value="Comércio & Serviços" selected>Comércio & Serviços</option>
                 </select>
               </div>
             </div>
 
+            <!-- Linha 3: Contato, Telefone e E-mail -->
             <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Nome do Contato / Responsável *</label>
+              <div class="form-group" style="flex: 1.1;">
+                <label class="form-label" style="font-weight: 700;">Nome do Contato / Responsável *</label>
                 <input type="text" id="cadCliContato" class="form-input" placeholder="Ex: Roberto Medeiros">
               </div>
-              <div class="form-group">
-                <label class="form-label">WhatsApp com DDD (Somente Números) *</label>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label" style="font-weight: 700;">WhatsApp com DDD (Somente Números) *</label>
                 <input type="text" id="cadCliTelefone" class="form-input text-mono" placeholder="11987654321">
               </div>
-              <div class="form-group">
-                <label class="form-label">E-mail Corporativo *</label>
+              <div class="form-group" style="flex: 1.2;">
+                <label class="form-label" style="font-weight: 700;">E-mail Corporativo *</label>
                 <input type="email" id="cadCliEmail" class="form-input" placeholder="contato@empresa.com.br">
               </div>
             </div>
 
+            <!-- Linha 4: CEP e Endereço -->
             <div class="form-row">
               <div class="form-group" style="flex: 1;">
-                <label class="form-label">CEP *</label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <label class="form-label" style="font-weight: 700; margin: 0;">CEP *</label>
+                  <span id="cepBuscaStatus" style="font-size: 10px; color: #0d9488; font-weight: 700; display: none;">Buscando CEP...</span>
+                </div>
                 <input type="text" id="cadCliCep" class="form-input text-mono" placeholder="13035-000">
               </div>
               <div class="form-group" style="flex: 3;">
-                <label class="form-label">Endereço Completo (Rua / Av e Nº) *</label>
+                <label class="form-label" style="font-weight: 700;">Endereço Completo (Rua / Av e Nº) *</label>
                 <input type="text" id="cadCliEndereco" class="form-input" placeholder="Av. das Indústrias, 1000">
               </div>
             </div>
 
+            <!-- Linha 5: Bairro, Cidade e UF -->
             <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Bairro *</label>
+              <div class="form-group" style="flex: 1.4;">
+                <label class="form-label" style="font-weight: 700;">Bairro *</label>
                 <input type="text" id="cadCliBairro" class="form-input" placeholder="Distrito Industrial">
               </div>
-              <div class="form-group">
-                <label class="form-label">Cidade *</label>
+              <div class="form-group" style="flex: 1.4;">
+                <label class="form-label" style="font-weight: 700;">Cidade *</label>
                 <input type="text" id="cadCliCidade" class="form-input" placeholder="Campinas">
               </div>
-              <div class="form-group">
-                <label class="form-label">UF *</label>
-                <input type="text" id="cadCliUf" class="form-input" value="SP" maxlength="2">
+              <div class="form-group" style="flex: 0.6;">
+                <label class="form-label" style="font-weight: 700;">UF *</label>
+                <input type="text" id="cadCliUf" class="form-input text-mono" value="SP" maxlength="2" style="text-transform: uppercase;">
               </div>
             </div>
           </div>
 
-          <div class="modal-footer">
+          <div class="modal-footer" style="padding: 14px 22px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
             <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
-            <button type="button" class="btn btn-primary" id="btnSalvarClienteCompleto">Cadastrar Cliente</button>
+            <button type="button" class="btn btn-primary" id="btnSalvarClienteCompleto" style="font-weight: 800; padding: 10px 20px;">
+              ✓ Salvar Cliente no CRM
+            </button>
           </div>
         </div>
       </div>
     `);
 
-    document.getElementById('btnSalvarClienteCompleto')?.addEventListener('click', () => {
-      const razao = document.getElementById('cadCliRazao')?.value.trim();
-      const fantasia = document.getElementById('cadCliFantasia')?.value.trim();
-      const cnpj = document.getElementById('cadCliCnpj')?.value.trim();
-      const contato = document.getElementById('cadCliContato')?.value.trim();
-      const tel = document.getElementById('cadCliTelefone')?.value.replace(/\D/g, '').trim();
-      const email = document.getElementById('cadCliEmail')?.value.trim();
-      const endereco = document.getElementById('cadCliEndereco')?.value.trim();
-      const bairro = document.getElementById('cadCliBairro')?.value.trim();
-      const cidade = document.getElementById('cadCliCidade')?.value.trim();
-      const uf = document.getElementById('cadCliUf')?.value.trim();
-      const cep = document.getElementById('cadCliCep')?.value.trim();
-      const ramo = document.getElementById('cadCliRamo')?.value;
+    // Elementos do Modal
+    const radioPj = modalEl.querySelector('#radioCliPj');
+    const radioPf = modalEl.querySelector('#radioCliPf');
+    const secaoConsultaCnpj = modalEl.querySelector('#secaoConsultaCnpj');
+    const inputCnpjBusca = modalEl.querySelector('#cadCliCnpjBusca');
+    const btnBuscarCnpj = modalEl.querySelector('#btnBuscarCnpjReceita');
+    const btnBuscarCnpjTexto = modalEl.querySelector('#btnBuscarCnpjReceitaTexto');
+    const iconeBusca = modalEl.querySelector('#cnpjBuscaIcone');
+    const statusCnpj = modalEl.querySelector('#statusCnpjReceita');
+
+    const inpRazao = modalEl.querySelector('#cadCliRazao');
+    const inpFantasia = modalEl.querySelector('#cadCliFantasia');
+    const inpCnpj = modalEl.querySelector('#cadCliCnpj');
+    const inpIe = modalEl.querySelector('#cadCliIe');
+    const inpRamo = modalEl.querySelector('#cadCliRamo');
+    const inpContato = modalEl.querySelector('#cadCliContato');
+    const inpTel = modalEl.querySelector('#cadCliTelefone');
+    const inpEmail = modalEl.querySelector('#cadCliEmail');
+    const inpCep = modalEl.querySelector('#cadCliCep');
+    const inpEndereco = modalEl.querySelector('#cadCliEndereco');
+    const inpBairro = modalEl.querySelector('#cadCliBairro');
+    const inpCidade = modalEl.querySelector('#cadCliCidade');
+    const inpUf = modalEl.querySelector('#cadCliUf');
+    const cepStatus = modalEl.querySelector('#cepBuscaStatus');
+
+    const lblRazao = modalEl.querySelector('#lblRazaoSocial');
+    const lblFantasia = modalEl.querySelector('#lblNomeFantasia');
+    const lblCnpj = modalEl.querySelector('#lblCnpjCpf');
+
+    // Alternar entre Pessoa Jurídica (CNPJ) e Pessoa Física (CPF)
+    function atualizarModoCadastro(modo) {
+      tipoCadastro = modo;
+      if (modo === 'PF') {
+        secaoConsultaCnpj.style.display = 'none';
+        lblRazao.textContent = 'Nome Completo do Cliente *';
+        inpRazao.placeholder = 'Ex: Carlos Eduardo de Oliveira';
+        lblFantasia.textContent = 'Como Chamar / Nome Social';
+        inpFantasia.placeholder = 'Ex: Carlos';
+        lblCnpj.textContent = 'CPF do Cliente *';
+        inpCnpj.placeholder = '000.000.000-00';
+        inpIe.placeholder = 'RG (Opcional)';
+      } else {
+        secaoConsultaCnpj.style.display = 'block';
+        lblRazao.textContent = 'Razão Social Oficial *';
+        inpRazao.placeholder = 'Ex: Confecções Industriais do Brasil Ltda';
+        lblFantasia.textContent = 'Nome Fantasia *';
+        inpFantasia.placeholder = 'Ex: TexBrasil';
+        lblCnpj.textContent = 'CNPJ *';
+        inpCnpj.placeholder = '00.000.000/0001-00';
+        inpIe.placeholder = 'Isento ou Nº';
+      }
+    }
+
+    radioPj?.addEventListener('change', () => atualizarModoCadastro('PJ'));
+    radioPf?.addEventListener('change', () => atualizarModoCadastro('PF'));
+
+    // Máscara dinâmica no campo principal de CNPJ/CPF
+    inpCnpj?.addEventListener('input', (e) => {
+      if (tipoCadastro === 'PF') {
+        e.target.value = formatarCpf(e.target.value);
+      } else {
+        e.target.value = formatarCnpj(e.target.value);
+      }
+    });
+
+    // Máscara e gatilho de busca no input da Receita Federal
+    inputCnpjBusca?.addEventListener('input', (e) => {
+      const formatado = formatarCnpj(e.target.value);
+      e.target.value = formatado;
+      inpCnpj.value = formatado;
+
+      const digitos = e.target.value.replace(/\D/g, '');
+      if (digitos.length === 14 && !buscandoCnpj) {
+        executarBuscaCnpj(digitos);
+      }
+    });
+
+    inputCnpjBusca?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const digitos = inputCnpjBusca.value.replace(/\D/g, '');
+        if (digitos.length === 14 && !buscandoCnpj) {
+          executarBuscaCnpj(digitos);
+        }
+      }
+    });
+
+    btnBuscarCnpj?.addEventListener('click', () => {
+      const digitos = inputCnpjBusca.value.replace(/\D/g, '');
+      if (digitos.length < 14) {
+        mostrarToast('Digite o CNPJ completo com 14 números para consultar.', 'red');
+        inputCnpjBusca.focus();
+        return;
+      }
+      if (!buscandoCnpj) {
+        executarBuscaCnpj(digitos);
+      }
+    });
+
+    // Função central de busca na Receita Federal com preenchimento automático
+    async function executarBuscaCnpj(cnpjNumeros) {
+      buscandoCnpj = true;
+      if (iconeBusca) iconeBusca.style.display = 'block';
+      if (btnBuscarCnpj) btnBuscarCnpj.disabled = true;
+      if (btnBuscarCnpjTexto) btnBuscarCnpjTexto.textContent = 'Consultando...';
+
+      statusCnpj.style.display = 'block';
+      statusCnpj.innerHTML = `
+        <div style="background: rgba(45, 212, 191, 0.15); border: 1px solid rgba(45, 212, 191, 0.4); border-radius: 6px; padding: 8px 12px; color: #2dd4bf; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+          <span>⏳</span> Consultando base da Receita Federal em tempo real...
+        </div>
+      `;
+
+      try {
+        const data = await consultarDadosCnpjPublico(cnpjNumeros);
+
+        // Preenche automaticamente todos os campos do formulário
+        if (inpRazao) inpRazao.value = data.razaoSocial || '';
+        if (inpFantasia) inpFantasia.value = data.nomeFantasia || data.razaoSocial || '';
+        if (inpCnpj) inpCnpj.value = data.cnpjFormatado;
+        if (inputCnpjBusca) inputCnpjBusca.value = data.cnpjFormatado;
+        if (data.contatoSugerido && inpContato && !inpContato.value) inpContato.value = data.contatoSugerido;
+        if (inpCep) inpCep.value = data.cep || '';
+        if (inpEndereco) inpEndereco.value = data.endereco || '';
+        if (inpBairro) inpBairro.value = data.bairro || '';
+        if (inpCidade) inpCidade.value = data.cidade || '';
+        if (inpUf) inpUf.value = (data.uf || 'SP').toUpperCase();
+        if (data.telefone && inpTel && !inpTel.value) inpTel.value = data.telefone;
+        if (data.email && inpEmail && !inpEmail.value) inpEmail.value = data.email;
+        if (data.ramoSugerido && inpRamo) inpRamo.value = data.ramoSugerido;
+
+        // Animação de destaque nos campos preenchidos
+        [inpRazao, inpFantasia, inpCnpj, inpContato, inpCep, inpEndereco, inpBairro, inpCidade, inpUf, inpTel, inpEmail, inpRamo].forEach(el => {
+          if (el && el.value) {
+            el.classList.add('field-auto-filled');
+            setTimeout(() => el.classList.remove('field-auto-filled'), 1800);
+          }
+        });
+
+        // Exibe badge de status da Receita Federal
+        const isAtiva = (data.situacaoCadastral || '').toUpperCase() === 'ATIVA';
+        if (isAtiva) {
+          statusCnpj.innerHTML = `
+            <div style="background: rgba(16, 185, 129, 0.2); border: 1.5px solid #10b981; border-radius: 6px; padding: 9px 12px; color: #a7f3d0; font-size: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+              <span style="font-weight: 800;">✅ CNPJ ATIVO NA RECEITA FEDERAL • ${data.razaoSocial}</span>
+              <span style="font-size: 11px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 4px; color: #ffffff; font-weight: 700;">
+                ${data.cidade}/${data.uf} • ${data.porte || 'Empresa'}
+              </span>
+            </div>
+          `;
+          mostrarToast(`Dados da empresa "${data.nomeFantasia}" carregados da Receita Federal!`, 'green');
+        } else {
+          statusCnpj.innerHTML = `
+            <div style="background: rgba(239, 68, 68, 0.25); border: 1.5px solid #ef4444; border-radius: 6px; padding: 9px 12px; color: #fecaca; font-size: 12px; font-weight: 700;">
+              ⚠️ ALERTA: Situação Cadastral deste CNPJ é [${data.situacaoCadastral}] na Receita Federal!
+            </div>
+          `;
+          mostrarToast(`Atenção: Situação do CNPJ é ${data.situacaoCadastral}!`, 'orange');
+        }
+
+        // Foco no nome do contato responsável
+        if (inpContato && !inpContato.value) {
+          setTimeout(() => inpContato.focus(), 200);
+        }
+      } catch (err) {
+        console.warn('Erro na consulta de CNPJ:', err);
+        statusCnpj.innerHTML = `
+          <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 8px 12px; color: #fca5a5; font-size: 11.5px;">
+            ⚠️ CNPJ não localizado automaticamente na base pública. Você pode preencher os campos abaixo manualmente.
+          </div>
+        `;
+      } finally {
+        buscandoCnpj = false;
+        if (iconeBusca) iconeBusca.style.display = 'none';
+        if (btnBuscarCnpj) btnBuscarCnpj.disabled = false;
+        if (btnBuscarCnpjTexto) btnBuscarCnpjTexto.textContent = 'Buscar Dados';
+      }
+    }
+
+    // Consulta automática de CEP
+    inpCep?.addEventListener('input', async (e) => {
+      e.target.value = formatarCep(e.target.value);
+      const digitos = e.target.value.replace(/\D/g, '');
+      if (digitos.length === 8) {
+        if (cepStatus) cepStatus.style.display = 'inline';
+        const cepData = await consultarCepPublico(digitos);
+        if (cepStatus) cepStatus.style.display = 'none';
+        if (cepData) {
+          if (inpEndereco && (!inpEndereco.value || inpEndereco.value.length < 5)) inpEndereco.value = cepData.endereco;
+          if (inpBairro && !inpBairro.value) inpBairro.value = cepData.bairro;
+          if (inpCidade && !inpCidade.value) inpCidade.value = cepData.cidade;
+          if (inpUf && !inpUf.value) inpUf.value = cepData.uf;
+
+          [inpEndereco, inpBairro, inpCidade, inpUf].forEach(el => {
+            if (el && el.value) {
+              el.classList.add('field-auto-filled');
+              setTimeout(() => el.classList.remove('field-auto-filled'), 1500);
+            }
+          });
+        }
+      }
+    });
+
+    // Foco inicial no campo de busca do CNPJ
+    setTimeout(() => inputCnpjBusca?.focus(), 150);
+
+    // Salvar cliente
+    modalEl.querySelector('#btnSalvarClienteCompleto')?.addEventListener('click', () => {
+      const razao = inpRazao?.value.trim();
+      const fantasia = inpFantasia?.value.trim() || razao;
+      const cnpj = inpCnpj?.value.trim();
+      const contato = inpContato?.value.trim();
+      const tel = inpTel?.value.replace(/\D/g, '').trim();
+      const email = inpEmail?.value.trim();
+      const endereco = inpEndereco?.value.trim();
+      const bairro = inpBairro?.value.trim();
+      const cidade = inpCidade?.value.trim();
+      const uf = (inpUf?.value.trim() || 'SP').toUpperCase();
+      const cep = inpCep?.value.trim();
+      const ramo = inpRamo?.value || 'Comércio & Serviços';
 
       // Validação de todos os campos obrigatórios
-      if (!razao || !fantasia || !cnpj || !contato || !tel || !email || !endereco || !bairro || !cidade || !uf) {
+      if (!razao || !cnpj || !contato || !tel || !email || !endereco || !bairro || !cidade || !uf) {
         mostrarToast('Por favor, preencha todos os campos obrigatórios marcados com (*).', 'red');
         return;
       }
 
       if (tel.length < 10) {
         mostrarToast('Informe um número de WhatsApp com DDD válido (ex: 11987654321).', 'red');
+        inpTel?.focus();
         return;
       }
 
       const novoCli = {
-        id: `CLI-${Math.floor(100 + db.clientes.length + 1)}`,
+        id: `CLI-${Math.floor(100 + (db.clientes || []).length + 1)}`,
         razaoSocial: razao,
         nomeFantasia: fantasia,
         cnpj: cnpj,
-        ie: document.getElementById('cadCliIe')?.value || 'Isento',
+        ie: inpIe?.value.trim() || 'Isento',
         contatoNome: contato,
         cargoContato: "Responsável",
         telefone: tel,
@@ -7781,6 +8192,7 @@
         uf: uf,
         cep: cep || "00000-000",
         ramoAtividade: ramo,
+        tipoPessoa: tipoCadastro,
         totalPedidosFeitos: 0,
         faturamentoAcumulado: 0,
         dataUltimaCompra: new Date().toISOString().split('T')[0],
@@ -7788,12 +8200,13 @@
         precisaRecompraAlerta: false
       };
 
+      if (!Array.isArray(db.clientes)) db.clientes = [];
       db.clientes.unshift(novoCli);
       salvarEstado();
       fecharModal(modalEl);
       mostrarToast(`Cliente "${novoCli.nomeFantasia}" cadastrado com sucesso!`, 'green');
 
-      if (callback) callback(novoCli);
+      if (typeof callback === 'function') callback(novoCli);
     });
   }
 
