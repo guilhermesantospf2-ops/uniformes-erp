@@ -342,21 +342,761 @@
   const modalContainer = document.getElementById('modalContainer');
 
   // Inicialização do Sistema
+  // Inicialização do Sistema com Blindagem Rigorosa de Autenticação
   function init() {
     configurarMenuNavegacao();
     configurarIdentidadeEPerfis();
     configurarCliqueStatusNuvem();
-    if (!isDemo) {
-      configurarEscutaNuvemRealtime();
-    }
-    if (isDemo) {
-      carregarDemonstracaoShowroom();
-    }
-    atualizarBadges();
     configurarCliqueGlobalMockups();
     configurarFechamentoModaisGlobal();
     inicializarBarraRolagemFixa();
-    navegarPara(abaAtiva);
+
+    if (isDemo) {
+      document.body.classList.add('bravvi-demo-mode');
+      carregarDemonstracaoShowroom();
+      atualizarBadges();
+      navegarPara(abaAtiva);
+    } else {
+      // Modo Produção Real: Acesso bloqueado até login com senha
+      const user = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterUsuarioLogado === 'function') 
+        ? window.ERP_CLOUD.obterUsuarioLogado() 
+        : null;
+
+      if (user) {
+        desbloquearAcessoAoErp(user);
+      } else {
+        exibirGatekeeperAutenticacao();
+      }
+    }
+  }
+
+  /* ==========================================================================
+     MÓDULO DE AUTENTICAÇÃO, GATEKEEPER & ISOLAMENTO TOTAL MULTI-TENANT
+     ========================================================================== */
+  async function desbloquearAcessoAoErp(user, callbackAposCarregar) {
+    // 1. Remove a barreira do Gatekeeper
+    const gatekeeper = document.getElementById('bravviAuthGatekeeper');
+    if (gatekeeper) {
+      gatekeeper.style.display = 'none';
+      gatekeeper.innerHTML = '';
+    }
+
+    // 2. Torna o ERP visível apenas com autorização confirmada
+    document.body.classList.add('bravvi-authenticated');
+    const erpContainer = document.querySelector('.erp-container');
+    if (erpContainer) {
+      erpContainer.style.removeProperty('display');
+    }
+
+    atualizarBotaoAuthNavbar();
+
+    // 3. Carrega exclusivamente o banco isolado deste tenant
+    if (window.ERP_CLOUD && typeof window.ERP_CLOUD.carregarBancoTenant === 'function') {
+      await window.ERP_CLOUD.carregarBancoTenant((novoDb) => {
+        if (novoDb && Array.isArray(novoDb.pedidos)) {
+          db = novoDb;
+          salvarEstado();
+          atualizarBadges();
+        }
+      });
+    }
+
+    // 4. Inicia a escuta em tempo real apenas para este tenant autenticado
+    configurarEscutaNuvemRealtime();
+
+    atualizarBadges();
+
+    const perfilAtivo = window.ERP_CLOUD ? window.ERP_CLOUD.obterPerfilAtivo() : null;
+    const primeiraAba = (perfilAtivo && perfilAtivo.abasPermitidas && perfilAtivo.abasPermitidas.length > 0)
+      ? (perfilAtivo.abasPermitidas.includes('abertura') ? 'abertura' : perfilAtivo.abasPermitidas[0])
+      : 'abertura';
+    navegarPara(primeiraAba);
+
+    if (typeof callbackAposCarregar === 'function') {
+      callbackAposCarregar();
+    }
+  }
+
+  // Modal Obrigatório de Primeiro Acesso: O funcionário deve criar sua senha pessoal definitiva
+  function abrirModalTrocaSenhaPrimeiroAcesso(user, colab, callbackSucesso) {
+    const nomeColab = user?.user_metadata?.full_name || colab?.nome || 'Colaborador';
+    const colabId = colab?.id || user?.colaboradorId || user?.id;
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active" id="modalTrocaSenhaPrimeiroAcessoOverlay" style="z-index: 1000000;">
+        <div class="modal-box" style="max-width: 490px; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); overflow: hidden;">
+          <div class="modal-header" style="background: linear-gradient(135deg, #032b35 0%, #0f172a 100%); color: #fff; padding: 20px 22px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(45, 212, 191, 0.15); color: #2dd4bf; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+                🔐
+              </div>
+              <div>
+                <div class="modal-title" style="color: #ffffff; font-size: 16px; font-weight: 800;">Primeiro Acesso ao Sistema</div>
+                <div style="font-size: 12px; color: #2dd4bf; margin-top: 2px;">Crie sua senha pessoal definitiva</div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-body" style="padding: 22px; line-height: 1.5;">
+            <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 13px 15px; margin-bottom: 18px; font-size: 12.5px; color: #166534; line-height: 1.45;">
+              Olá, <strong>${nomeColab}</strong>! Você entrou com a senha temporária definida pela diretoria. Por segurança, crie agora sua <strong>senha pessoal exclusiva</strong> para acessar o sistema da fábrica.
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+              <label class="form-label" style="font-weight: 700; color: #0f172a;">Sua Nova Senha Pessoal *</label>
+              <div style="position: relative;">
+                <input type="password" id="inputNovaSenhaPessoal" class="form-input" placeholder="Mínimo 6 caracteres" style="font-size: 14px; padding-right: 40px;">
+                <button type="button" id="btnToggleNovaSenhaPessoal" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b; font-size: 15px;" title="Ver ou ocultar senha">👁️</button>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+              <label class="form-label" style="font-weight: 700; color: #0f172a;">Confirmar Nova Senha *</label>
+              <input type="password" id="inputConfirmaNovaSenhaPessoal" class="form-input" placeholder="Digite a mesma senha novamente" style="font-size: 14px;">
+            </div>
+
+            <div id="erroTrocaSenhaPrimeiroAcesso" style="display: none; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; margin-bottom: 12px;"></div>
+          </div>
+          <div class="modal-footer" style="padding: 16px 22px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+            <button type="button" class="btn btn-primary" id="btnConfirmarNovaSenhaPessoal" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 800; background: #047857; border-color: #047857;">
+              Salvar Minha Nova Senha & Entrar no ERP &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    const inputNova = modalEl.querySelector('#inputNovaSenhaPessoal');
+    const inputConf = modalEl.querySelector('#inputConfirmaNovaSenhaPessoal');
+    const erroEl = modalEl.querySelector('#erroTrocaSenhaPrimeiroAcesso');
+    const btnToggle = modalEl.querySelector('#btnToggleNovaSenhaPessoal');
+    const btnSalvar = modalEl.querySelector('#btnConfirmarNovaSenhaPessoal');
+
+    btnToggle?.addEventListener('click', () => {
+      const isPass = inputNova.type === 'password';
+      inputNova.type = isPass ? 'text' : 'password';
+      inputConf.type = isPass ? 'text' : 'password';
+      btnToggle.textContent = isPass ? '🔒' : '👁️';
+    });
+
+    btnSalvar?.addEventListener('click', async () => {
+      const s1 = inputNova.value.trim();
+      const s2 = inputConf.value.trim();
+
+      if (!s1 || s1.length < 6) {
+        erroEl.textContent = 'A nova senha deve ter no mínimo 6 caracteres.';
+        erroEl.style.display = 'block';
+        inputNova.focus();
+        return;
+      }
+      if (s1 !== s2) {
+        erroEl.textContent = 'As senhas digitadas não coincidem. Digite com atenção.';
+        erroEl.style.display = 'block';
+        inputConf.focus();
+        return;
+      }
+
+      btnSalvar.disabled = true;
+      btnSalvar.innerHTML = '<span>Salvando nova senha segura...</span>';
+
+      if (window.ERP_CLOUD && typeof window.ERP_CLOUD.atualizarSenhaColaborador === 'function') {
+        const res = await window.ERP_CLOUD.atualizarSenhaColaborador(colabId, s1, user?.tenant_id);
+        if (!res.sucesso) {
+          btnSalvar.disabled = false;
+          btnSalvar.textContent = 'Salvar Minha Nova Senha & Entrar no ERP →';
+          erroEl.textContent = res.erro || 'Erro ao salvar a nova senha.';
+          erroEl.style.display = 'block';
+          return;
+        }
+      }
+
+      if (colab) {
+        colab.precisaTrocarSenha = false;
+        delete colab.senhaTemporaria;
+      }
+
+      fecharModal(modalEl);
+      mostrarToast('Nova senha pessoal cadastrada com sucesso! Seja bem-vindo à fábrica.', 'green');
+
+      if (typeof callbackSucesso === 'function') {
+        callbackSucesso();
+      }
+    });
+  }
+
+  function exibirGatekeeperAutenticacao() {
+    // Garante que o painel do ERP continue 100% invisível
+    document.body.classList.remove('bravvi-authenticated');
+    const erpContainer = document.querySelector('.erp-container');
+    if (erpContainer) {
+      erpContainer.style.setProperty('display', 'none', 'important');
+    }
+
+    let gatekeeper = document.getElementById('bravviAuthGatekeeper');
+    if (!gatekeeper) {
+      gatekeeper = document.createElement('div');
+      gatekeeper.id = 'bravviAuthGatekeeper';
+      gatekeeper.className = 'bravvi-gatekeeper-screen';
+      document.body.appendChild(gatekeeper);
+    }
+
+    gatekeeper.style.display = 'flex';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const querCadastrar = urlParams.get('cadastrar') === '1' || urlParams.get('cadastro') === '1' || urlParams.get('signup') === '1';
+
+    // Opção de lembrar e-mail (a senha NUNCA é salva, deve ser digitada a cada entrada)
+    const emailSalvo = localStorage.getItem('BRAVVI_REMEMBERED_EMAIL') || '';
+
+    gatekeeper.innerHTML = `
+      <div class="bravvi-gatekeeper-card">
+        <!-- Cabeçalho Oficial Bravvi -->
+        <div class="auth-header">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px;">
+            <img src="assets/bravvi-icon.png" alt="Bravvi" style="width: 40px; height: 40px; object-fit: contain;">
+            <div style="text-align: left;">
+              <div style="font-family: var(--font-heading, sans-serif); font-size: 20px; font-weight: 900; letter-spacing: 0.5px; color: #ffffff;">BRAVVI ERP TÊXTIL</div>
+              <div style="font-size: 10.5px; color: #2dd4bf; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Sistema Oficial de Gestão Industrial</div>
+            </div>
+          </div>
+          <p style="font-size: 12.5px; color: #94a3b8; margin: 0; line-height: 1.4;">
+            Ambiente Seguro • Banco de dados 100% isolado por confecção
+          </p>
+        </div>
+
+        <!-- Abas: Entrar vs Cadastrar -->
+        <div class="auth-tab-bar">
+          <button type="button" class="auth-tab-btn ${querCadastrar ? '' : 'active'}" id="gateBtnTabEntrar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+            Já sou Cliente • Entrar
+          </button>
+          <button type="button" class="auth-tab-btn ${querCadastrar ? 'active' : ''}" id="gateBtnTabCadastrar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+            Cadastrar Minha Confecção
+          </button>
+        </div>
+
+        <div style="padding: 24px;">
+          <!-- Alerta Dinâmico -->
+          <div id="gateAlertBox" style="display: none;"></div>
+
+          <!-- FORMULÁRIO 1: ENTRAR -->
+          <form id="gateFormLogin" style="display: ${querCadastrar ? 'none' : 'flex'}; flex-direction: column; gap: 14px;">
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-weight: 700; color: #1e293b;">E-mail Cadastrado:</label>
+              <input type="email" id="gateLoginEmail" class="form-control" placeholder="ex: contato@suaconfeccao.com.br" value="${emailSalvo}" required style="font-size: 13.5px; padding: 10px 12px;">
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label class="form-label" style="font-weight: 700; color: #1e293b; margin: 0;">Sua Senha:</label>
+                <a href="javascript:void(0)" id="gateLinkEsqueciSenha" style="font-size: 11px; color: #0284c7; font-weight: 600; text-decoration: underline;">Esqueceu a senha?</a>
+              </div>
+              <div style="position: relative;">
+                <input type="password" id="gateLoginSenha" class="form-control" placeholder="Digite sua senha de acesso" required style="font-size: 13.5px; padding: 10px 40px 10px 12px;">
+                <button type="button" id="btnToggleSenhaGateLogin" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 13px;" title="Ver ou ocultar senha">👁️</button>
+              </div>
+            </div>
+
+            <!-- Opção de Lembrar E-mail -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: -2px;">
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #475569; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="gateChkLembrarEmail" ${emailSalvo ? 'checked' : ''} style="width: 15px; height: 15px; cursor: pointer; accent-color: #032b35;">
+                <span>Lembrar meu e-mail neste dispositivo</span>
+              </label>
+            </div>
+
+            <button type="submit" id="gateBtnSubmitLogin" class="btn btn-primary" style="padding: 12px; font-size: 14px; font-weight: 800; width: 100%; margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <span>Acessar Meu Painel Industrial</span>
+              <span>&rarr;</span>
+            </button>
+          </form>
+
+          <!-- FORMULÁRIO 2: CADASTRAR NOVA CONFECÇÃO -->
+          <form id="gateFormCadastro" style="display: ${querCadastrar ? 'flex' : 'none'}; flex-direction: column; gap: 12px;">
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-weight: 700; color: #1e293b;">Nome da Confecção / Fábrica:</label>
+              <input type="text" id="gateCadNomeEmpresa" class="form-control" placeholder="ex: Confecção Silva Uniformes" required style="font-size: 13px; padding: 9px 12px;">
+            </div>
+
+            <div class="grid-cards-2" style="gap: 10px; margin: 0;">
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-weight: 700; color: #1e293b;">Seu Nome (Responsável):</label>
+                <input type="text" id="gateCadNomeResp" class="form-control" placeholder="ex: Roberto Silva" required style="font-size: 13px; padding: 9px 12px;">
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-weight: 700; color: #1e293b;">WhatsApp Comercial:</label>
+                <input type="tel" id="gateCadWhatsapp" class="form-control" placeholder="(11) 98765-4321" required style="font-size: 13px; padding: 9px 12px;">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-weight: 700; color: #1e293b;">E-mail Comercial (Login):</label>
+              <input type="email" id="gateCadEmail" class="form-control" placeholder="contato@suaconfeccao.com.br" required style="font-size: 13px; padding: 9px 12px;">
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-weight: 700; color: #1e293b;">Crie uma Senha Forte:</label>
+              <div style="position: relative;">
+                <input type="password" id="gateCadSenha" class="form-control" placeholder="Crie sua senha segura" required style="font-size: 13px; padding: 9px 38px 9px 12px;">
+                <button type="button" id="btnToggleSenhaGateCad" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 13px;" title="Ver ou ocultar senha">👁️</button>
+              </div>
+
+              <!-- Checklist Visual Interativo de Senha Forte -->
+              <div class="pwd-requirements-box" id="gatePwdRequirements">
+                <div class="pwd-strength-bar-bg">
+                  <div class="pwd-strength-bar-fill" id="gatePwdStrengthBar"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span style="font-size: 11px; font-weight: 700; color: #475569;">Critérios de Segurança:</span>
+                  <span id="gatePwdStrengthLabel" style="font-size: 10.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Aguardando digitação</span>
+                </div>
+                <div class="pwd-req-list">
+                  <div class="pwd-req-item invalid" id="reqTamanho">
+                    <span class="pwd-req-icon">⚪</span> <span>Mínimo de 8 caracteres</span>
+                  </div>
+                  <div class="pwd-req-item invalid" id="reqMaiuscula">
+                    <span class="pwd-req-icon">⚪</span> <span>Ao menos 1 letra maiúscula (A-Z)</span>
+                  </div>
+                  <div class="pwd-req-item invalid" id="reqMinuscula">
+                    <span class="pwd-req-icon">⚪</span> <span>Ao menos 1 letra minúscula (a-z)</span>
+                  </div>
+                  <div class="pwd-req-item invalid" id="reqNumero">
+                    <span class="pwd-req-icon">⚪</span> <span>Ao menos 1 número (0-9)</span>
+                  </div>
+                  <div class="pwd-req-item invalid" id="reqEspecial">
+                    <span class="pwd-req-icon">⚪</span> <span>Ao menos 1 caractere especial (!@#$...)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background: #f8fafc; border-radius: 6px; padding: 8px 12px; font-size: 11px; color: #475569; display: flex; align-items: center; gap: 6px;">
+              <span>🔒</span>
+              <span><strong>Isolamento Multi-tenant:</strong> Seu banco de dados na nuvem é 100% exclusivo da sua empresa.</span>
+            </div>
+
+            <button type="submit" id="gateBtnSubmitCad" class="btn btn-primary" style="padding: 12px; font-size: 14px; font-weight: 800; width: 100%; margin-top: 2px; display: flex; align-items: center; justify-content: center; gap: 8px; background: #047857; border-color: #047857;">
+              <span>Criar Conta da Confecção & Acessar</span>
+              <span>&rarr;</span>
+            </button>
+          </form>
+
+          <!-- Rodapé de Alternativa: Showroom / Demonstração & Instalação no Computador -->
+          <div style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed #cbd5e1; text-align: center; display: flex; flex-direction: column; gap: 8px;">
+            <div style="font-size: 11.5px; color: #64748b;">
+              Quer apenas conhecer as ferramentas antes de se cadastrar?
+            </div>
+            <a href="/demo" id="gateBtnEntrarDemo" style="background: none; border: none; cursor: pointer; color: #0284c7; font-weight: 700; font-size: 12.5px; text-decoration: underline; display: inline-flex; align-items: center; justify-content: center; gap: 5px;">
+              ✨ Explorar Modo Demonstração Showroom (Sem Cadastro) &rarr;
+            </a>
+            <button type="button" id="gateBtnInstalarApp" style="margin-top: 4px; background: rgba(3, 43, 53, 0.05); border: 1px dashed #0d9488; border-radius: 6px; padding: 7px 10px; cursor: pointer; color: #0f766e; font-weight: 700; font-size: 11.5px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+              <span>💻 Instalar Aplicativo no Computador (Área de Trabalho)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Vincular Eventos do Gatekeeper
+    gatekeeper.querySelector('#gateBtnInstalarApp')?.addEventListener('click', () => {
+      if (typeof window.solicitarInstalacaoBravviApp === 'function') {
+        window.solicitarInstalacaoBravviApp();
+      } else if (window.ERP && typeof window.ERP.solicitarInstalacaoApp === 'function') {
+        window.ERP.solicitarInstalacaoApp();
+      }
+    });
+
+    const tabEntrar = gatekeeper.querySelector('#gateBtnTabEntrar');
+    const tabCadastrar = gatekeeper.querySelector('#gateBtnTabCadastrar');
+    const formLogin = gatekeeper.querySelector('#gateFormLogin');
+    const formCadastro = gatekeeper.querySelector('#gateFormCadastro');
+    const alertBox = gatekeeper.querySelector('#gateAlertBox');
+    const btnSubmitLogin = gatekeeper.querySelector('#gateBtnSubmitLogin');
+    const btnSubmitCad = gatekeeper.querySelector('#gateBtnSubmitCad');
+    const inpSenhaLogin = gatekeeper.querySelector('#gateLoginSenha');
+    const inpSenhaCad = gatekeeper.querySelector('#gateCadSenha');
+    const chkLembrarEmail = gatekeeper.querySelector('#gateChkLembrarEmail');
+
+    // Foco inicial
+    if (emailSalvo) {
+      setTimeout(() => inpSenhaLogin?.focus(), 150);
+    } else {
+      setTimeout(() => gatekeeper.querySelector('#gateLoginEmail')?.focus(), 150);
+    }
+
+    function alternarAbas(aba) {
+      if (aba === 'entrar') {
+        tabEntrar?.classList.add('active');
+        tabCadastrar?.classList.remove('active');
+        if (formLogin) formLogin.style.display = 'flex';
+        if (formCadastro) formCadastro.style.display = 'none';
+        if (emailSalvo) {
+          inpSenhaLogin?.focus();
+        }
+      } else {
+        tabCadastrar?.classList.add('active');
+        tabEntrar?.classList.remove('active');
+        if (formCadastro) formCadastro.style.display = 'flex';
+        if (formLogin) formLogin.style.display = 'none';
+        gatekeeper.querySelector('#gateCadNomeEmpresa')?.focus();
+      }
+      if (alertBox) alertBox.style.display = 'none';
+    }
+
+    tabEntrar?.addEventListener('click', () => alternarAbas('entrar'));
+    tabCadastrar?.addEventListener('click', () => alternarAbas('cadastrar'));
+
+    // Toggles de ver senha
+    const btnToggleL = gatekeeper.querySelector('#btnToggleSenhaGateLogin');
+    btnToggleL?.addEventListener('click', () => {
+      if (inpSenhaLogin.type === 'password') {
+        inpSenhaLogin.type = 'text';
+        btnToggleL.textContent = '🔒';
+      } else {
+        inpSenhaLogin.type = 'password';
+        btnToggleL.textContent = '👁️';
+      }
+    });
+
+    const btnToggleC = gatekeeper.querySelector('#btnToggleSenhaGateCad');
+    btnToggleC?.addEventListener('click', () => {
+      if (inpSenhaCad.type === 'password') {
+        inpSenhaCad.type = 'text';
+        btnToggleC.textContent = '🔒';
+      } else {
+        inpSenhaCad.type = 'password';
+        btnToggleC.textContent = '👁️';
+      }
+    });
+
+    // Máscara WhatsApp
+    const inpWhats = gatekeeper.querySelector('#gateCadWhatsapp');
+    inpWhats?.addEventListener('input', (e) => {
+      let v = e.target.value.replace(/\D/g, '').substring(0, 11);
+      if (v.length > 6) {
+        v = `(${v.substring(0, 2)}) ${v.substring(2, 7)}-${v.substring(7)}`;
+      } else if (v.length > 2) {
+        v = `(${v.substring(0, 2)}) ${v.substring(2)}`;
+      } else if (v.length > 0) {
+        v = `(${v}`;
+      }
+      e.target.value = v;
+    });
+
+    // Validação interativa de senha forte no formulário de cadastro
+    inpSenhaCad?.addEventListener('input', () => {
+      const val = inpSenhaCad.value;
+      const res = window.ERP_CLOUD.validarSenhaForte(val);
+
+      function atualizarItem(id, atingido) {
+        const item = gatekeeper.querySelector('#' + id);
+        if (!item) return;
+        if (atingido) {
+          item.className = 'pwd-req-item valid';
+          item.querySelector('.pwd-req-icon').textContent = '✓';
+        } else {
+          item.className = 'pwd-req-item invalid';
+          item.querySelector('.pwd-req-icon').textContent = '⚪';
+        }
+      }
+
+      atualizarItem('reqTamanho', res.criterios.tamanho);
+      atualizarItem('reqMaiuscula', res.criterios.maiuscula);
+      atualizarItem('reqMinuscula', res.criterios.minuscula);
+      atualizarItem('reqNumero', res.criterios.numero);
+      atualizarItem('reqEspecial', res.criterios.especial);
+
+      const bar = gatekeeper.querySelector('#gatePwdStrengthBar');
+      const lbl = gatekeeper.querySelector('#gatePwdStrengthLabel');
+
+      if (!val) {
+        if (bar) { bar.style.width = '0%'; bar.style.backgroundColor = '#e2e8f0'; }
+        if (lbl) { lbl.textContent = 'Aguardando digitação'; lbl.style.color = '#94a3b8'; }
+      } else if (res.valida) {
+        if (bar) { bar.style.width = '100%'; bar.style.backgroundColor = '#059669'; }
+        if (lbl) { lbl.textContent = '🛡️ Senha Forte & Segura'; lbl.style.color = '#059669'; }
+      } else if (res.pontuacao >= 3) {
+        if (bar) { bar.style.width = '60%'; bar.style.backgroundColor = '#d97706'; }
+        if (lbl) { lbl.textContent = '⚠️ Senha Média (faltam critérios)'; lbl.style.color = '#d97706'; }
+      } else {
+        if (bar) { bar.style.width = '30%'; bar.style.backgroundColor = '#dc2626'; }
+        if (lbl) { lbl.textContent = '❌ Senha Fraca'; lbl.style.color = '#dc2626'; }
+      }
+    });
+
+    function mostrarAlertaGate(msg, tipo = 'error', htmlExtra = '') {
+      if (!alertBox) return;
+      alertBox.className = `auth-alert auth-alert-${tipo}`;
+      alertBox.innerHTML = `
+        <div style="font-size: 16px;">${tipo === 'error' ? '⚠️' : tipo === 'warning' ? '⏳' : '✅'}</div>
+        <div style="flex: 1;">
+          <div>${msg}</div>
+          ${htmlExtra ? `<div style="margin-top: 6px;">${htmlExtra}</div>` : ''}
+        </div>
+      `;
+      alertBox.style.display = 'flex';
+    }
+
+    // SUBMIT LOGIN
+    const inpLoginEmail = gatekeeper.querySelector('#gateLoginEmail');
+    inpLoginEmail?.addEventListener('blur', (e) => {
+      let val = (e.target.value || '').trim();
+      val = val.replace(/@(gmail|hotmail|outlook|yahoo)\.co[rn]$/i, '@$1.com')
+               .replace(/@(gmail|hotmail|outlook|yahoo)\.com\.b[rn]$/i, '@$1.com.br');
+      e.target.value = val;
+    });
+
+    formLogin?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      let email = gatekeeper.querySelector('#gateLoginEmail').value.trim();
+      email = email.replace(/@(gmail|hotmail|outlook|yahoo)\.co[rn]$/i, '@$1.com')
+                   .replace(/@(gmail|hotmail|outlook|yahoo)\.com\.b[rn]$/i, '@$1.com.br');
+      gatekeeper.querySelector('#gateLoginEmail').value = email;
+
+      const senha = gatekeeper.querySelector('#gateLoginSenha').value;
+
+      if (!email || !senha) {
+        mostrarAlertaGate('Por favor, informe seu e-mail e sua senha de acesso.', 'error');
+        return;
+      }
+
+      btnSubmitLogin.disabled = true;
+      btnSubmitLogin.innerHTML = '<span>Verificando credenciais...</span>';
+
+      try {
+        if (!window.ERP_CLOUD || typeof window.ERP_CLOUD.fazerLogin !== 'function') {
+          throw new Error('Módulo de conexão com o banco não está pronto. Recarregue a página.');
+        }
+
+        const res = await window.ERP_CLOUD.fazerLogin(email, senha);
+
+        if (res.sucesso) {
+          // Opção "Lembrar meu e-mail"
+          if (chkLembrarEmail?.checked) {
+            localStorage.setItem('BRAVVI_REMEMBERED_EMAIL', email);
+          } else {
+            localStorage.removeItem('BRAVVI_REMEMBERED_EMAIL');
+          }
+
+          if (res.precisaTrocarSenha) {
+            abrirModalTrocaSenhaPrimeiroAcesso(res.user, res.colaborador, async () => {
+              mostrarToast(`Senha pessoal definida com sucesso! Bem-vindo.`, 'green');
+              await desbloquearAcessoAoErp(res.user);
+            });
+          } else {
+            mostrarToast(`Bem-vindo de volta! Conectado a ${res.user.email}`, 'green');
+            await desbloquearAcessoAoErp(res.user);
+          }
+        } else {
+          if (res.codigo === 'email_not_confirmed') {
+            mostrarAlertaGate(
+              'Sua conta foi criada, mas seu e-mail ainda não foi ativado no link de confirmação.',
+              'warning',
+              `<button type="button" id="btnReenviarEmailConfGate" style="background: #0284c7; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">Reenviar e-mail de ativação</button>`
+            );
+            gatekeeper.querySelector('#btnReenviarEmailConfGate')?.addEventListener('click', async () => {
+              await window.ERP_CLOUD.reenviarEmailConfirmacao(email);
+              mostrarToast('E-mail de confirmação reenviado! Verifique sua caixa de entrada.', 'green');
+            });
+          } else {
+            mostrarAlertaGate(res.erro || 'E-mail ou senha incorretos.', 'error');
+            inpSenhaLogin.focus();
+          }
+        }
+      } catch (errSubmit) {
+        console.error('Erro na autenticação:', errSubmit);
+        mostrarAlertaGate('Erro ao verificar credenciais: ' + (errSubmit.message || 'Falha de comunicação'), 'error');
+      } finally {
+        btnSubmitLogin.disabled = false;
+        btnSubmitLogin.innerHTML = '<span>Acessar Meu Painel Industrial</span><span>&rarr;</span>';
+      }
+    });
+
+    // SUBMIT CADASTRO
+    formCadastro?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nomeEmpresa = gatekeeper.querySelector('#gateCadNomeEmpresa').value.trim();
+      const nomeResponsavel = gatekeeper.querySelector('#gateCadNomeResp').value.trim();
+      const whatsapp = gatekeeper.querySelector('#gateCadWhatsapp').value.trim();
+      const email = gatekeeper.querySelector('#gateCadEmail').value.trim();
+      const senha = gatekeeper.querySelector('#gateCadSenha').value;
+
+      // Validação do formato completo do e-mail
+      const regexEmail = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+      if (!regexEmail.test(email)) {
+        mostrarAlertaGate('Por favor, digite o e-mail completo com .com ou .com.br (ex: seuemail@gmail.com).', 'error');
+        gatekeeper.querySelector('#gateCadEmail')?.focus();
+        return;
+      }
+
+      const validacao = window.ERP_CLOUD.validarSenhaForte(senha);
+      if (!validacao.valida) {
+        mostrarAlertaGate('A sua senha precisa cumprir todos os 5 critérios de segurança antes de criar a conta.', 'error');
+        inpSenhaCad.focus();
+        return;
+      }
+
+      btnSubmitCad.disabled = true;
+      btnSubmitCad.innerHTML = '<span>Criando banco de dados exclusivo...</span>';
+
+      try {
+        const res = await window.ERP_CLOUD.cadastrarConfeccao({
+          nomeEmpresa,
+          nomeResponsavel,
+          whatsapp,
+          email,
+          senha
+        });
+
+        if (res.sucesso) {
+          // Inicializa banco limpo para o novo cliente
+          db = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA));
+          db.pedidos = [];
+          db.ordensServico = [];
+          db.lancamentosFinanceiros = [];
+          db.quarentena = [];
+          db.clientes = [];
+          db.despesasFixas = [];
+          db.nestingFila = [];
+          db.notasFiscais = [];
+          db.compras = [];
+          salvarEstado();
+
+          mostrarToast(`Parabéns! Confecção ${nomeEmpresa} cadastrada e ativa!`, 'green');
+          await desbloquearAcessoAoErp(res.user);
+        } else {
+          const msgErro = res.erro || 'Não foi possível concluir o cadastro.';
+          const botaoExtra = (msgErro.includes('Já sou Cliente') || msgErro.includes('Limite temporário') || msgErro.includes('já possui cadastro'))
+            ? `<button type="button" id="btnIrParaLoginAposErro" style="background: #032b35; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11.5px; font-weight: 700; cursor: pointer; margin-top: 6px;">→ Fazer Login Agora com Este E-mail</button>`
+            : '';
+
+          mostrarAlertaGate(msgErro, 'error', botaoExtra);
+
+          gatekeeper.querySelector('#btnIrParaLoginAposErro')?.addEventListener('click', () => {
+            alternarAbas('entrar');
+            const loginInp = gatekeeper.querySelector('#gateLoginEmail');
+            if (loginInp) loginInp.value = email;
+            gatekeeper.querySelector('#gateLoginSenha')?.focus();
+          });
+        }
+      } catch (errCad) {
+        console.error('Erro no cadastro:', errCad);
+        mostrarAlertaGate('Erro ao processar cadastro: ' + (errCad.message || 'Falha de comunicação'), 'error');
+      } finally {
+        btnSubmitCad.disabled = false;
+        btnSubmitCad.innerHTML = '<span>Criar Conta da Confecção & Acessar</span><span>&rarr;</span>';
+      }
+    });
+
+    gatekeeper.querySelector('#gateLinkEsqueciSenha')?.addEventListener('click', () => {
+      const email = gatekeeper.querySelector('#gateLoginEmail').value.trim();
+      if (!email) {
+        alert('Por favor, informe seu e-mail no campo acima para solicitar a recuperação da senha.');
+      } else {
+        alert(`Instruções para redefinição de senha serão enviadas para: ${email}`);
+      }
+    });
+  }
+
+  function atualizarBotaoAuthNavbar() {
+    const user = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterUsuarioLogado === 'function') 
+      ? window.ERP_CLOUD.obterUsuarioLogado() 
+      : null;
+    const btn = document.getElementById('btnHeaderAuth');
+    const txt = document.getElementById('btnHeaderAuthText');
+    if (!btn || !txt) return;
+
+    if (user) {
+      const meta = user.user_metadata || {};
+      const emp = meta.company_name || 'Minha Conta';
+      txt.textContent = emp.length > 15 ? emp.substring(0, 13) + '...' : emp;
+      btn.title = `Conectado como: ${user.email} (${emp})`;
+    } else if (isDemo) {
+      txt.textContent = 'Modo Demo';
+      btn.title = 'Você está no modo demonstração com dados de exemplo';
+    } else {
+      txt.textContent = 'Entrar';
+      btn.title = 'Fazer login ou cadastrar sua confecção';
+    }
+  }
+
+  function confirmarLogout() {
+    const user = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterUsuarioLogado === 'function') 
+      ? window.ERP_CLOUD.obterUsuarioLogado() 
+      : null;
+    const nome = user && user.user_metadata && user.user_metadata.company_name 
+      ? user.user_metadata.company_name 
+      : 'sua conta';
+    if (confirm(`Deseja realmente sair da conta de "${nome}"? Você precisará digitar a senha para entrar novamente.`)) {
+      if (window.ERP_CLOUD && typeof window.ERP_CLOUD.fazerLogout === 'function') {
+        window.ERP_CLOUD.fazerLogout();
+      }
+    }
+  }
+
+  function abrirModalAutenticacao(opcoes = {}) {
+    const user = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterUsuarioLogado === 'function') 
+      ? window.ERP_CLOUD.obterUsuarioLogado() 
+      : null;
+
+    if (!user && !isDemo) {
+      exibirGatekeeperAutenticacao();
+      return null;
+    }
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay modal-auth-overlay active">
+        <div class="modal-box modal-auth-box">
+          <div class="auth-header">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px;">
+              <img src="assets/bravvi-icon.png" alt="Bravvi" style="width: 38px; height: 38px; object-fit: contain;">
+              <div style="text-align: left;">
+                <div style="font-family: var(--font-heading, sans-serif); font-size: 19px; font-weight: 900; letter-spacing: 0.5px; color: #ffffff;">BRAVVI ERP TÊXTIL</div>
+                <div style="font-size: 10px; color: #2dd4bf; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Sistema Oficial de Gestão Industrial</div>
+              </div>
+            </div>
+            <p style="font-size: 12.5px; color: #94a3b8; margin: 0; line-height: 1.4;">
+              ${user ? `Você está conectado como <strong>${user.email}</strong>` : 'Demonstração Showroom'}
+            </p>
+            <button class="modal-close" onclick="window.ERP.fecharModal()" style="color: #ffffff; opacity: 0.8; position: absolute; top: 14px; right: 16px; font-size: 24px; background: none; border: none; cursor: pointer;">&times;</button>
+          </div>
+
+          <div style="padding: 24px;">
+            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <div class="user-avatar" style="width: 44px; height: 44px; font-size: 16px;">
+                  ${((user?.user_metadata?.company_name || 'CF')).substring(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <strong style="display: block; font-size: 15px; color: #0f172a;">${user?.user_metadata?.company_name || 'Minha Confecção'}</strong>
+                  <span style="font-size: 12px; color: #64748b;">${user ? user.email : 'Modo Demonstração'}</span>
+                </div>
+              </div>
+              <div style="font-size: 12px; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 8px 12px; font-weight: 600;">
+                🟢 Banco de dados isolado e sincronizado em nuvem.
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <button class="btn btn-primary" onclick="window.ERP.fecharModal()" style="width: 100%; padding: 12px;">
+                Continuar Trabalhando no ERP &rarr;
+              </button>
+              <button class="btn btn-secondary" onclick="window.ERP.fecharModal(); window.ERP.solicitarInstalacaoApp();" style="width: 100%; padding: 11px; color: #0f766e; border-color: #5eead4; background: #f0fdfa; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                Instalar Aplicativo no Computador (Desktop)
+              </button>
+              <button class="btn btn-secondary" onclick="window.ERP.confirmarLogout()" style="width: 100%; padding: 11px; color: #b91c1c; border-color: #fca5a5;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                Sair desta Conta / Trocar de Confecção
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+
+    return modalEl;
   }
 
   function configurarCliqueStatusNuvem() {
@@ -7393,61 +8133,105 @@
   }
 
   /* ==========================================================================
-     MÓDULO 11: EQUIPE & COLABORADORES FUNCIONAL
+     MÓDULO 11: EQUIPE & GESTÃO DE USUÁRIOS INDUSTRIAL (DIRETORIA)
      ========================================================================== */
   function renderizarEquipe() {
-    pageTitleElem.textContent = 'Gestão de Colaboradores & Equipe Têxtil';
-    pageBreadcrumbElem.textContent = 'SISTEMA > EQUIPE';
+    pageTitleElem.textContent = 'Gestão de Usuários, Colaboradores & Equipe Têxtil';
+    pageBreadcrumbElem.textContent = 'SISTEMA > EQUIPE & ACESSOS';
+
+    // Bloqueio rigoroso de segurança: apenas o Dono / Diretor pode acessar e gerenciar a equipe
+    if (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterPerfilAtivo === 'function') {
+      const perfilAtivo = window.ERP_CLOUD.obterPerfilAtivo();
+      if (perfilAtivo && perfilAtivo.id !== 'dono') {
+        contentArea.innerHTML = `
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 45px 20px; text-align: center; max-width: 580px; margin: 40px auto; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+            <div style="font-size: 38px; margin-bottom: 12px;">🔒</div>
+            <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">Acesso Restrito à Diretoria</h2>
+            <p style="font-size: 13px; color: #64748b; line-height: 1.5; margin-bottom: 20px;">
+              Apenas o <strong>Dono / Administrador Geral</strong> tem autorização para cadastrar novos funcionários, definir perfis de permissão e criar senhas temporárias de acesso.
+            </p>
+            <button class="btn btn-primary" onclick="window.ERP.navegarPara('pedidos')">Voltar para Pedidos</button>
+          </div>
+        `;
+        return;
+      }
+    }
 
     contentArea.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-        <p style="color: var(--text-gray-500); margin: 0;">Controle de colaboradores internos, costureiras, encarregados e permissões de acesso.</p>
-        <button class="btn btn-primary" id="btnCadastrarColaborador">+ Cadastrar Colaborador / Costureira</button>
+        <div>
+          <h2 style="font-size: 16px; font-weight: 800; color: var(--text-primary); margin: 0 0 4px 0;">Controle de Acessos & Equipe da Confecção</h2>
+          <p style="color: var(--text-gray-500); font-size: 12px; margin: 0;">Cadastre seus funcionários com e-mail, senha provisória e nível de acesso. Eles criarão a própria senha no 1º login.</p>
+        </div>
+        <button class="btn btn-primary" id="btnCadastrarColaborador" style="display: flex; align-items: center; gap: 6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          + Cadastrar Novo Usuário / Funcionário
+        </button>
       </div>
 
       <div class="table-wrapper">
         <table class="erp-table">
           <thead>
             <tr>
-              <th>Nome Completo</th>
-              <th>E-mail Corporativo</th>
+              <th>Colaborador / Funcionário</th>
+              <th>E-mail de Login</th>
+              <th>Perfil de Acesso</th>
               <th>Cargo / Função</th>
-              <th>Nível de Acesso</th>
-              <th>Capacidade Dia</th>
-              <th>Remuneração / Salário</th>
-              <th>Status</th>
+              <th>Status da Senha</th>
+              <th>Status do Acesso</th>
+              <th>Remuneração / Diária</th>
               <th style="text-align: right; min-width: 140px;">Ações</th>
             </tr>
           </thead>
           <tbody>
-            ${(db.equipe || []).length > 0 ? db.equipe.map((u, idx) => `
-              <tr>
-                <td><strong>${u.nome}</strong></td>
-                <td class="text-mono">${u.email || '-'}</td>
-                <td>${u.cargo || u.especialidade || '-'}</td>
-                <td>
-                  <span class="status-pill ${u.nivelAcesso === 'Admin' ? 'status-green' : 'status-gray'}">
-                    ${(u.nivelAcesso || 'Producao').toUpperCase()}
-                  </span>
-                </td>
-                <td class="text-mono">${u.capacidadeDiaPecas > 0 ? `${u.capacidadeDiaPecas} pçs/dia` : 'Setor Fixo'}</td>
-                <td class="text-mono">${u.valorRemuneracao ? formatarMoeda(u.valorRemuneracao) : 'Por Produção'}</td>
-                <td>
-                  <span class="status-pill status-green">${u.status || 'Ativo'}</span>
-                </td>
-                <td style="text-align: right;">
-                  <div style="display: flex; gap: 5px; justify-content: flex-end;">
-                    <button class="btn btn-secondary btn-sm btn-editar-equipe" data-id="${u.id}">Editar</button>
-                    <button class="btn btn-red btn-sm btn-excluir-equipe" data-id="${u.id}">Excluir</button>
-                  </div>
-                </td>
-              </tr>
-            `).join('') : `
+            ${(db.equipe || []).length > 0 ? db.equipe.map((u, idx) => {
+              const perfilId = u.perfil || (u.nivelAcesso === 'Admin' ? 'dono' : (u.nivelAcesso === 'Comercial' ? 'vendedor' : 'oficina'));
+              const badgePerfil = perfilId === 'dono'
+                ? '<span class="status-pill status-green" style="font-weight: 800;">👑 Dono / Diretor</span>'
+                : (perfilId === 'vendedor'
+                  ? '<span class="status-pill status-blue" style="font-weight: 800; background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">💼 Vendedor</span>'
+                  : '<span class="status-pill status-orange" style="font-weight: 800; background: #fef3c7; color: #92400e; border-color: #fde68a;">✂️ Oficina / Fábrica</span>');
+
+              const statusSenha = u.precisaTrocarSenha
+                ? `<div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
+                     <span class="status-pill status-orange" title="Funcionário precisa trocar no 1º login" style="font-size: 10px; background: #fff7ed; color: #c2410c; border: 1px dashed #fdba74;">🔑 Provisória</span>
+                     ${u.senha ? `<span style="font-family: monospace; font-size: 11px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-weight: 700; color: #1e293b; border: 1px solid #cbd5e1;" title="Senha provisória inicial">${u.senha}</span>` : ''}
+                   </div>`
+                : '<span class="status-pill status-green" title="Senha definitiva configurada" style="font-size: 10px;">✓ Senha Pessoal Criada</span>';
+
+              return `
+                <tr>
+                  <td>
+                    <strong>${u.nome}</strong>
+                    ${u.telefone ? `<div style="font-size: 11px; color: var(--text-gray-500);">${u.telefone}</div>` : ''}
+                  </td>
+                  <td class="text-mono" style="font-weight: 700; color: #0f172a;">${u.email || '-'}</td>
+                  <td>${badgePerfil}</td>
+                  <td>${u.cargo || u.especialidade || '-'}</td>
+                  <td>${statusSenha}</td>
+                  <td>
+                    <span class="status-pill ${(u.status || 'Ativo') === 'Ativo' ? 'status-green' : 'status-red'}">
+                      ${u.status || 'Ativo'}
+                    </span>
+                  </td>
+                  <td class="text-mono">
+                    ${u.valorRemuneracao ? formatarMoeda(u.valorRemuneracao) : 'Por Produção'}
+                    ${u.capacidadeDiaPecas > 0 ? `<div style="font-size: 11px; color: #64748b;">${u.capacidadeDiaPecas} pçs/dia</div>` : ''}
+                  </td>
+                  <td style="text-align: right;">
+                    <div style="display: flex; gap: 5px; justify-content: flex-end;">
+                      <button class="btn btn-secondary btn-sm btn-editar-equipe" data-id="${u.id}">Editar</button>
+                      <button class="btn btn-red btn-sm btn-excluir-equipe" data-id="${u.id}">Excluir</button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join('') : `
               <tr>
                 <td colspan="8" style="text-align: center; padding: 45px 15px; color: var(--text-gray-500);">
-                  <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Nenhum colaborador ou costureira cadastrada</div>
-                  <p style="font-size: 12px; margin-bottom: 14px;">Cadastre seus costureiros, cortadores, encarregados e administradores para organizar a fábrica.</p>
-                  <button class="btn btn-primary btn-sm" id="btnCadastrarPrimeiroColaborador">+ Cadastrar Primeiro Colaborador</button>
+                  <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Nenhum colaborador ou usuário cadastrado</div>
+                  <p style="font-size: 12px; margin-bottom: 14px;">Cadastre seus vendedores, costureiros, cortadores e gerentes para liberar os acessos individuais.</p>
+                  <button class="btn btn-primary btn-sm" id="btnCadastrarPrimeiroColaborador">+ Cadastrar Primeiro Usuário</button>
                 </td>
               </tr>
             `}
@@ -7476,12 +8260,12 @@
         const id = btn.getAttribute('data-id');
         const col = (db.equipe || []).find(u => u.id === id);
         if (!col) return;
-        if (confirm(`Deseja realmente excluir "${col.nome}" da equipe?`)) {
+        if (confirm(`Deseja realmente excluir "${col.nome}" da equipe? O acesso deste funcionário será revogado imediatamente.`)) {
           db.equipe = (db.equipe || []).filter(u => u.id !== id);
           db.costureiras = (db.costureiras || []).filter(c => c.id !== id);
           salvarEstado();
           renderizarEquipe();
-          mostrarToast(`Colaborador "${col.nome}" removido.`, 'green');
+          mostrarToast(`Usuário "${col.nome}" removido do sistema.`, 'green');
         }
       });
     });
@@ -7492,21 +8276,38 @@
     const isEdit = !!colaboradorParaEditar;
     const col = colaboradorParaEditar || {
       nome: '',
+      email: '',
       telefone: '',
       cargo: '',
-      nivelAcesso: 'Producao',
+      perfil: 'vendedor',
+      nivelAcesso: 'Comercial',
+      status: 'Ativo',
       capacidadeDiaPecas: 100,
-      valorRemuneracao: 2800
+      valorRemuneracao: 2800,
+      precisaTrocarSenha: true
     };
+
+    const perfilAtual = col.perfil || (col.nivelAcesso === 'Admin' ? 'dono' : (col.nivelAcesso === 'Comercial' ? 'vendedor' : 'oficina'));
+
+    // Sugestão de senha temporária para novo colaborador
+    const sugestaoSenha = isEdit ? '' : ('Temp@' + Math.floor(1000 + Math.random() * 9000));
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active" id="modalNovoColaboradorInlineOverlay">
-        <div class="modal-box" style="max-width: 580px;">
-          <div class="modal-header">
-            <div class="modal-title">${isEdit ? 'Editar Colaborador / Costureira' : 'Cadastrar Novo Colaborador ou Costureira'}</div>
+        <div class="modal-box" style="max-width: 620px;">
+          <div class="modal-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 16px 20px;">
+            <div>
+              <div class="modal-title" style="font-size: 16px; font-weight: 800; color: #0f172a;">
+                ${isEdit ? 'Editar Usuário / Colaborador' : 'Cadastrar Novo Usuário / Funcionário'}
+              </div>
+              <div style="font-size: 11.5px; color: #64748b; margin-top: 2px;">
+                Defina o perfil de acesso e a senha temporária para o colaborador
+              </div>
+            </div>
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
-          <div class="modal-body">
+          <div class="modal-body" style="padding: 20px;">
+            <!-- Linha 1: Nome e WhatsApp -->
             <div class="form-row">
               <div class="form-group" style="flex: 2;">
                 <label class="form-label">Nome Completo / Oficina *</label>
@@ -7518,22 +8319,48 @@
               </div>
             </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Cargo / Especialidade</label>
-                <input type="text" id="cadColCargo" class="form-input" placeholder="Ex: Costureira Especialista Polo e Camisaria" value="${col.cargo || col.especialidade || ''}">
+            <!-- Linha 2: Credenciais de Login e Senha Temporária -->
+            <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 14px 16px; margin: 12px 0 16px 0;">
+              <div style="font-size: 11px; font-weight: 800; color: #166534; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                <span>🔑 Credenciais de Acesso ao Sistema (Login do Funcionário)</span>
               </div>
-              <div class="form-group">
-                <label class="form-label">Nível de Permissão</label>
-                <select id="cadColAcesso" class="form-select">
-                  <option value="Producao" ${col.nivelAcesso === 'Producao' ? 'selected' : ''}>Produção / Oficina</option>
-                  <option value="Comercial" ${col.nivelAcesso === 'Comercial' ? 'selected' : ''}>Comercial / Vendas</option>
-                  <option value="Financeiro" ${col.nivelAcesso === 'Financeiro' ? 'selected' : ''}>Financeiro</option>
-                  <option value="Admin" ${col.nivelAcesso === 'Admin' ? 'selected' : ''}>Administrador Geral</option>
-                </select>
+              <div class="form-row" style="margin-bottom: 8px;">
+                <div class="form-group" style="flex: 1.2;">
+                  <label class="form-label" style="color: #14532d; font-weight: 700;">E-mail de Login do Usuário *</label>
+                  <input type="email" id="cadColEmail" class="form-input text-mono" placeholder="ex: funcionario@confeccao.com.br" value="${col.email || ''}" style="background: #ffffff;">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                  <label class="form-label" style="color: #14532d; font-weight: 700;">
+                    ${isEdit ? 'Redefinir Senha Temporária' : 'Senha Temporária Inicial *'}
+                  </label>
+                  <div style="display: flex; gap: 4px;">
+                    <input type="text" id="cadColSenhaTemp" class="form-input text-mono" placeholder="${isEdit ? 'Deixe vazio p/ manter' : 'Ex: Temp@2026'}" value="${sugestaoSenha}" style="background: #ffffff; font-weight: 700; letter-spacing: 0.5px;">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnGerarNovaSenhaTemp" title="Gerar outra senha temporária" style="padding: 0 10px; background: #ffffff;">🎲</button>
+                  </div>
+                </div>
+              </div>
+              <div style="font-size: 11px; color: #15803d; line-height: 1.4;">
+                💡 <strong>Troca Obrigatória:</strong> Ao entrar com esta senha temporária, o sistema exigirá automaticamente que o funcionário crie sua própria senha pessoal definitiva.
               </div>
             </div>
 
+            <!-- Linha 3: Perfil e Cargo Definidos pelo Diretor -->
+            <div class="form-row">
+              <div class="form-group" style="flex: 1.2;">
+                <label class="form-label" style="font-weight: 700;">Perfil / Nível de Acesso (Definido pelo Diretor) *</label>
+                <select id="cadColPerfil" class="form-select" style="font-weight: 700; color: #0f172a;">
+                  <option value="vendedor" ${perfilAtual === 'vendedor' ? 'selected' : ''}>💼 Vendedor / Comercial (Sem Financeiro / DRE / Equipe)</option>
+                  <option value="oficina" ${perfilAtual === 'oficina' ? 'selected' : ''}>✂️ Oficina / Chão de Fábrica (Apenas OS / Nesting / Estoque)</option>
+                  <option value="dono" ${perfilAtual === 'dono' ? 'selected' : ''}>👑 Dono / Administrador Geral (Acesso Total ao ERP)</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">Cargo / Especialidade</label>
+                <input type="text" id="cadColCargo" class="form-input" placeholder="Ex: Costureira Especialista Polo" value="${col.cargo || col.especialidade || ''}">
+              </div>
+            </div>
+
+            <!-- Linha 4: Capacidade Diária, Remuneração e Status -->
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Capacidade Diária (Peças)</label>
@@ -7543,34 +8370,113 @@
                 <label class="form-label">Salário Mensal ou Custo p/ Peça (R$)</label>
                 <input type="number" id="cadColRemun" class="form-input" value="${col.valorRemuneracao !== undefined ? col.valorRemuneracao : 2800.00}" step="100.00">
               </div>
+              <div class="form-group">
+                <label class="form-label">Status do Acesso</label>
+                <select id="cadColStatus" class="form-select">
+                  <option value="Ativo" ${(col.status || 'Ativo') === 'Ativo' ? 'selected' : ''}>✅ Ativo (Acesso Liberado)</option>
+                  <option value="Inativo" ${col.status === 'Inativo' ? 'selected' : ''}>⛔ Inativo (Acesso Bloqueado)</option>
+                </select>
+              </div>
             </div>
           </div>
-          <div class="modal-footer">
+          <div class="modal-footer" style="padding: 14px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
             <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
             <button type="button" class="btn btn-primary" id="btnSalvarColaborador">
-              ${isEdit ? 'Salvar Alterações' : 'Cadastrar Colaborador'}
+              ${isEdit ? 'Salvar Alterações' : 'Cadastrar Usuário & Criar Senha'}
             </button>
           </div>
         </div>
       </div>
     `);
 
-    document.getElementById('btnSalvarColaborador')?.addEventListener('click', () => {
-      const nome = document.getElementById('cadColNome')?.value.trim();
+    // Botão de Gerar Senha Temporária
+    modalEl.querySelector('#btnGerarNovaSenhaTemp')?.addEventListener('click', () => {
+      const inputSenha = modalEl.querySelector('#cadColSenhaTemp');
+      if (inputSenha) {
+        inputSenha.value = 'Temp@' + Math.floor(1000 + Math.random() * 9000);
+        inputSenha.focus();
+      }
+    });
+
+    modalEl.querySelector('#btnSalvarColaborador')?.addEventListener('click', async () => {
+      const nome = modalEl.querySelector('#cadColNome')?.value.trim();
+      const email = modalEl.querySelector('#cadColEmail')?.value.trim().toLowerCase();
+      const senhaTemp = modalEl.querySelector('#cadColSenhaTemp')?.value.trim();
+      const perfil = modalEl.querySelector('#cadColPerfil')?.value || 'vendedor';
+      const status = modalEl.querySelector('#cadColStatus')?.value || 'Ativo';
+      const tel = modalEl.querySelector('#cadColTel')?.value.trim() || '';
+      const cargo = modalEl.querySelector('#cadColCargo')?.value.trim() || (perfil === 'dono' ? 'Diretor Geral' : (perfil === 'vendedor' ? 'Vendedor Comercial' : 'Oficina / Costura'));
+      const capacidade = parseInt(modalEl.querySelector('#cadColCapacidade')?.value || 0, 10);
+      const remun = parseFloat(modalEl.querySelector('#cadColRemun')?.value || 0);
+
       if (!nome) {
         mostrarToast('Informe o nome do colaborador.', 'red');
+        modalEl.querySelector('#cadColNome')?.focus();
         return;
+      }
+
+      if (!email || !email.includes('@') || !email.includes('.')) {
+        mostrarToast('Informe um e-mail válido para o login do funcionário.', 'red');
+        modalEl.querySelector('#cadColEmail')?.focus();
+        return;
+      }
+
+      // Verifica duplicidade de e-mail com outro colaborador
+      const emailDuplicado = (db.equipe || []).find(u => (u.email || '').toLowerCase().trim() === email && (!isEdit || u.id !== col.id));
+      if (emailDuplicado) {
+        mostrarToast('Já existe outro colaborador cadastrado com este e-mail.', 'red');
+        modalEl.querySelector('#cadColEmail')?.focus();
+        return;
+      }
+
+      if (!isEdit && (!senhaTemp || senhaTemp.length < 4)) {
+        mostrarToast('Defina uma senha temporária inicial (mínimo 4 caracteres).', 'red');
+        modalEl.querySelector('#cadColSenhaTemp')?.focus();
+        return;
+      }
+
+      if (isEdit && senhaTemp && senhaTemp.length < 4) {
+        mostrarToast('A senha temporária deve ter pelo menos 4 caracteres.', 'red');
+        modalEl.querySelector('#cadColSenhaTemp')?.focus();
+        return;
+      }
+
+      const btnSalvar = modalEl.querySelector('#btnSalvarColaborador');
+      btnSalvar.disabled = true;
+      btnSalvar.textContent = 'Salvando...';
+
+      // Criptografia da senha temporária (se informada)
+      let authObj = col.auth || null;
+      let alterouSenha = false;
+      if (senhaTemp) {
+        const salt = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        let hash = '';
+        if (window.ERP_CLOUD && typeof window.ERP_CLOUD.gerarHashSha256 === 'function') {
+          hash = await window.ERP_CLOUD.gerarHashSha256(salt + ':' + senhaTemp);
+        }
+        authObj = { salt, hash };
+        alterouSenha = true;
       }
 
       if (isEdit) {
         col.nome = nome;
         col.responsavel = nome;
-        col.telefone = document.getElementById('cadColTel')?.value || '';
-        col.cargo = document.getElementById('cadColCargo')?.value || 'Colaborador';
-        col.especialidade = col.cargo;
-        col.nivelAcesso = document.getElementById('cadColAcesso')?.value || 'Producao';
-        col.capacidadeDiaPecas = parseInt(document.getElementById('cadColCapacidade')?.value || 0, 10);
-        col.valorRemuneracao = parseFloat(document.getElementById('cadColRemun')?.value || 0);
+        col.email = email;
+        col.telefone = tel;
+        col.cargo = cargo;
+        col.especialidade = cargo;
+        col.perfil = perfil;
+        col.nivelAcesso = perfil === 'dono' ? 'Admin' : (perfil === 'vendedor' ? 'Comercial' : 'Producao');
+        col.status = status;
+        col.capacidadeDiaPecas = capacidade;
+        col.valorRemuneracao = remun;
+
+        if (alterouSenha) {
+          col.auth = authObj;
+          col.senha = senhaTemp;
+          col.precisaTrocarSenha = true;
+          col.senhaTemporaria = true;
+        }
 
         // Atualizar também na lista de costureiras se existir
         const costMatch = (db.costureiras || []).find(c => c.id === col.id);
@@ -7584,22 +8490,28 @@
 
         salvarEstado();
         fecharModal(modalEl);
-        mostrarToast(`Colaborador "${col.nome}" atualizado com sucesso!`, 'green');
+        mostrarToast(`Usuário "${col.nome}" atualizado com sucesso!`, 'green');
         if (callback) callback(col);
       } else {
         const novoCol = {
-          id: `COST-${Date.now().toString().slice(-6)}`,
+          id: `USER-${Date.now().toString().slice(-6)}`,
           nome: nome,
           responsavel: nome,
-          email: `${nome.toLowerCase().replace(/[^a-z0-9]/g, '')}@bravvi.com.br`,
-          telefone: document.getElementById('cadColTel')?.value || '',
-          cargo: document.getElementById('cadColCargo')?.value || 'Costureira Especialista',
-          especialidade: document.getElementById('cadColCargo')?.value || 'Costura Geral',
-          nivelAcesso: document.getElementById('cadColAcesso')?.value || 'Producao',
-          capacidadeDiaPecas: parseInt(document.getElementById('cadColCapacidade')?.value || 100, 10),
+          email: email,
+          telefone: tel,
+          cargo: cargo,
+          especialidade: cargo,
+          perfil: perfil,
+          nivelAcesso: perfil === 'dono' ? 'Admin' : (perfil === 'vendedor' ? 'Comercial' : 'Producao'),
+          status: status,
+          auth: authObj,
+          senha: senhaTemp,
+          precisaTrocarSenha: true,
+          senhaTemporaria: true,
+          capacidadeDiaPecas: capacidade,
           valorMedioPorPeca: 8.00,
-          valorRemuneracao: parseFloat(document.getElementById('cadColRemun')?.value || 2800),
-          status: 'Ativo'
+          valorRemuneracao: remun,
+          criadoEm: new Date().toISOString()
         };
 
         if (!Array.isArray(db.equipe)) db.equipe = [];
@@ -7608,7 +8520,7 @@
         db.costureiras.unshift(novoCol);
         salvarEstado();
         fecharModal(modalEl);
-        mostrarToast(`Colaborador "${novoCol.nome}" cadastrado com sucesso!`, 'green');
+        mostrarToast(`Usuário "${novoCol.nome}" cadastrado! Passe o e-mail (${novoCol.email}) e a senha temporária para ele.`, 'green');
         if (callback) callback(novoCol);
       }
     });
@@ -8340,91 +9252,65 @@
     const footerUser = document.getElementById('sidebarUserFooter');
     if (footerUser) {
       footerUser.addEventListener('click', () => {
-        abrirModalTrocarPerfil();
+        abrirModalMeuPerfil();
       });
     }
   }
 
-  function abrirModalTrocarPerfil() {
+  function abrirModalMeuPerfil() {
     if (!window.ERP_CLOUD) return;
-    const perfilAtual = window.ERP_CLOUD.obterPerfilAtivo();
+    const user = window.ERP_CLOUD.obterUsuarioLogado();
+    const perfil = window.ERP_CLOUD.obterPerfilAtivo();
+    const nome = user?.user_metadata?.full_name || perfil?.nome || 'Usuário';
+    const email = user?.email || 'contato@empresa.com.br';
+    const cargo = user?.user_metadata?.role || perfil?.cargo || 'Colaborador';
+    const empresa = user?.user_metadata?.company_name || 'Bravvi Uniformes';
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
-        <div class="modal-box" style="max-width: 680px;">
-          <div class="modal-header">
-            <div>
-              <div class="modal-title">Alternar Perfil de Acesso Industrial</div>
-              <div style="font-size: 11.5px; color: var(--text-gray-500); margin-top: 2px;">
-                Selecione o nível de permissão operacional para simular ou operar o sistema
-              </div>
-            </div>
+        <div class="modal-box" style="max-width: 480px; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+          <div class="modal-header" style="background: #032b35; color: #fff; padding: 18px 22px;">
+            <div class="modal-title" style="color: #ffffff; font-size: 16px; font-weight: 800;">Identificação do Usuário</div>
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
 
-          <div class="modal-body" style="padding: 20px;">
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-              <div class="perfil-card-option ${perfilAtual.id === 'dono' ? 'selected' : ''}" data-perfil-id="dono" style="border: 2px solid ${perfilAtual.id === 'dono' ? '#0f172a' : '#cbd5e1'}; background: ${perfilAtual.id === 'dono' ? '#f8fafc' : '#ffffff'}; border-radius: 6px; padding: 14px; cursor: pointer;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 38px; height: 38px; border-radius: 4px; background: #0f172a; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;">ADM</div>
-                    <div>
-                      <strong style="font-size: 14px; color: #0f172a;">👑 Diretoria / Dono (Acesso Total)</strong>
-                      <div style="font-size: 11.5px; color: #475569; margin-top: 2px;">Acesso irrestrito a todas as 14 áreas, DRE gerencial, margens de lucro, faturamento e parametrização.</div>
-                    </div>
-                  </div>
-                  ${perfilAtual.id === 'dono' ? '<span class="status-pill status-green" style="font-weight: 700;">ATIVO</span>' : '<button class="btn btn-secondary btn-xs">Selecionar</button>'}
-                </div>
+          <div class="modal-body" style="padding: 22px;">
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0;">
+              <div style="width: 52px; height: 52px; border-radius: 50%; background: #0f172a; color: #fff; font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center;">
+                ${(nome.replace(/[^a-zA-Z]/g, '').substring(0, 2) || 'US').toUpperCase()}
               </div>
-
-              <div class="perfil-card-option ${perfilAtual.id === 'vendedor' ? 'selected' : ''}" data-perfil-id="vendedor" style="border: 2px solid ${perfilAtual.id === 'vendedor' ? '#0f172a' : '#cbd5e1'}; background: ${perfilAtual.id === 'vendedor' ? '#f8fafc' : '#ffffff'}; border-radius: 6px; padding: 14px; cursor: pointer;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 38px; height: 38px; border-radius: 4px; background: #0284c7; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;">VND</div>
-                    <div>
-                      <strong style="font-size: 14px; color: #0f172a;">💼 Vendedor / Atendimento Comercial</strong>
-                      <div style="font-size: 11.5px; color: #475569; margin-top: 2px;">Foco em orçamentos rápidos, propostas no WhatsApp e catálogo. Oculta DRE e margem interna de lucro.</div>
-                    </div>
-                  </div>
-                  ${perfilAtual.id === 'vendedor' ? '<span class="status-pill status-green" style="font-weight: 700;">ATIVO</span>' : '<button class="btn btn-secondary btn-xs">Selecionar</button>'}
-                </div>
-              </div>
-
-              <div class="perfil-card-option ${perfilAtual.id === 'oficina' ? 'selected' : ''}" data-perfil-id="oficina" style="border: 2px solid ${perfilAtual.id === 'oficina' ? '#0f172a' : '#cbd5e1'}; background: ${perfilAtual.id === 'oficina' ? '#f8fafc' : '#ffffff'}; border-radius: 6px; padding: 14px; cursor: pointer;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 38px; height: 38px; border-radius: 4px; background: #b45309; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;">OFC</div>
-                    <div>
-                      <strong style="font-size: 14px; color: #0f172a;">✂️ Oficina / Chão de Fábrica & Corte</strong>
-                      <div style="font-size: 11.5px; color: #475569; margin-top: 2px;">Foco em Ordens de Produção, Nesting DTF e Estoque de tecidos. Oculta dados de faturamento e valores monetários.</div>
-                    </div>
-                  </div>
-                  ${perfilAtual.id === 'oficina' ? '<span class="status-pill status-green" style="font-weight: 700;">ATIVO</span>' : '<button class="btn btn-secondary btn-xs">Selecionar</button>'}
-                </div>
+              <div>
+                <div style="font-size: 16px; font-weight: 800; color: #0f172a;">${nome}</div>
+                <div style="font-size: 13px; color: #64748b;" class="text-mono">${email}</div>
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Empresa: <strong>${empresa}</strong></div>
               </div>
             </div>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 15px;">
+              <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Nível de Acesso no Sistema</div>
+              <div style="font-size: 14px; font-weight: 800; color: #0f172a;">${cargo}</div>
+              <div style="font-size: 12px; color: #475569; margin-top: 4px;">
+                ${perfil?.id === 'dono' ? '👑 Acesso Total e irrestrito a todas as 14 áreas, finanças e gestão da equipe.' : '🔒 Definido e gerenciado exclusivamente pela Diretoria da confecção.'}
+              </div>
+            </div>
+
+            ${perfil?.id === 'dono' ? `
+              <div style="text-align: center; margin-top: 10px;">
+                <button class="btn btn-primary btn-sm" onclick="window.ERP.fecharModal(); window.ERP.navegarPara('equipe');" style="width: 100%; padding: 10px; font-weight: 700;">
+                  👥 Gerenciar Usuários, Senhas & Equipe
+                </button>
+              </div>
+            ` : ''}
           </div>
 
-          <div class="modal-footer">
+          <div class="modal-footer" style="padding: 14px 22px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between;">
             <button class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
+            <button class="btn btn-red btn-sm" onclick="window.ERP.fecharModal(); window.ERP.confirmarLogout();">Sair da Conta</button>
           </div>
         </div>
       </div>
     `);
-
-    modalEl.querySelectorAll('.perfil-card-option').forEach(card => {
-      card.addEventListener('click', () => {
-        const id = card.getAttribute('data-perfil-id');
-        const p = window.ERP_CLOUD.definirPerfilAtivo(id);
-        fecharModal(modalEl);
-        mostrarToast('Perfil ativado: ' + p.cargo, 'green');
-        if (!p.abasPermitidas.includes(abaAtiva)) {
-          navegarPara(p.abasPermitidas[0] || 'pedidos');
-        } else {
-          navegarPara(abaAtiva);
-        }
-      });
-    });
+    return modalEl;
   }
 
   function abrirModalBackup() {
@@ -8485,26 +9371,6 @@
                   Configurar Nuvem
                 </button>
               </div>
-
-              <div style="border: 1px solid #bae6fd; background: #f0f9ff; border-radius: 6px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <strong style="color: #0369a1; font-size: 13px;">✨ Carregar Showroom de Vendas (Demo Completo)</strong>
-                  <div style="font-size: 11px; color: #0284c7; margin-top: 2px;">Preenche pedidos, estoque e financeiro com dados de fábrica modelo para demonstrações.</div>
-                </div>
-                <button class="btn btn-secondary btn-sm" id="btnShowroomModal" style="border-color: #0284c7; color: #0369a1; font-weight: 700;">
-                  Carregar Demo
-                </button>
-              </div>
-
-              <div style="border: 1px solid #fecaca; background: #fff5f5; border-radius: 6px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <strong style="color: #b91c1c; font-size: 13px;">⚠️ Zerar Sistema para Produção Real</strong>
-                  <div style="font-size: 11px; color: #991b1b; margin-top: 2px;">Limpa todos os pedidos de teste e deixa as tabelas limpas para começar a operar.</div>
-                </div>
-                <button class="btn btn-secondary btn-sm" id="btnZerarProducaoModal" style="border-color: #b91c1c; color: #b91c1c; font-weight: 700;">
-                  Zerar Fábrica
-                </button>
-              </div>
             </div>
           </div>
 
@@ -8548,20 +9414,6 @@
         });
       };
       reader.readAsText(file);
-    });
-
-    document.getElementById('btnShowroomModal')?.addEventListener('click', () => {
-      if (confirm('Deseja carregar a demonstração completa de showroom da fábrica?')) {
-        fecharModal(modalEl);
-        carregarDemonstracaoShowroom();
-      }
-    });
-
-    document.getElementById('btnZerarProducaoModal')?.addEventListener('click', () => {
-      if (confirm('Atenção: deseja zerar todos os pedidos e dados de teste para iniciar a produção real da confecção?')) {
-        fecharModal(modalEl);
-        zerarBancoProducaoReal();
-      }
     });
   }
 
@@ -9124,45 +9976,28 @@
         </div>
       </div>
 
-      <!-- Card 3: Central de Backup, Restauração e Demonstração -->
+      <!-- Card 3: Central de Backup Seguro & Exportação de Dados -->
       <div class="card">
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-          <div class="card-title">3. Central de Backup Seguro, Nuvem & Demonstração Comercial (Showroom)</div>
+          <div class="card-title">3. Central de Backup Seguro & Exportação de Dados</div>
           <span class="status-pill status-blue">GESTÃO DE DADOS</span>
         </div>
         <div class="card-body">
-          <div class="grid-cards-2" style="gap: 16px;">
-            <div style="border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 14px; background: #ffffff;">
-              <strong style="display: block; color: var(--text-primary); font-size: 13.5px; margin-bottom: 4px;">📦 Backup Completo em Arquivo JSON</strong>
-              <p style="font-size: 11.5px; color: var(--text-gray-500); line-height: 1.4; margin-bottom: 12px;">
-                Baixe um arquivo seguro com todos os pedidos, clientes, orçamentos, estoque e finanças para seu computador ou pen drive.
-              </p>
-              <div style="display: flex; gap: 8px;">
-                <button type="button" class="btn btn-primary btn-sm" id="btnExportarJsonCard">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                  Exportar Backup Agora
-                </button>
-                <input type="file" id="inpRestaurarArquivoCard" accept=".json" style="display: none;">
-                <button type="button" class="btn btn-secondary btn-sm" id="btnRestaurarJsonCard">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                  Restaurar de Arquivo
-                </button>
-              </div>
-            </div>
-
-            <div style="border: 1.5px solid #bae6fd; background: #f0f9ff; border-radius: var(--radius-md); padding: 14px;">
-              <strong style="display: block; color: #0369a1; font-size: 13.5px; margin-bottom: 4px;">✨ Showroom de Vendas (Demonstração 1-Clique)</strong>
-              <p style="font-size: 11.5px; color: #0284c7; line-height: 1.4; margin-bottom: 12px;">
-                Vai apresentar o sistema para uma confecção ou cliente? Carregue dados modelo com polos, jalecos, camisetas, mockups 3x4 e fluxo financeiro completo.
-              </p>
-              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <button type="button" class="btn btn-secondary btn-sm" id="btnCarregarShowroomCard" style="border-color: #0284c7; color: #0369a1; font-weight: 700;">
-                  Carregar Showroom Demo
-                </button>
-                <button type="button" class="btn btn-secondary btn-sm" id="btnZerarFabricaCard" style="border-color: #f87171; color: #b91c1c; font-weight: 700;">
-                  Zerar para Produção Real
-                </button>
-              </div>
+          <div style="border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 16px; background: #ffffff;">
+            <strong style="display: block; color: var(--text-primary); font-size: 13.5px; margin-bottom: 4px;">📦 Backup Completo em Arquivo JSON</strong>
+            <p style="font-size: 11.5px; color: var(--text-gray-500); line-height: 1.4; margin-bottom: 14px;">
+              Baixe um arquivo seguro com todos os pedidos, clientes, orçamentos, estoque e finanças para seu computador ou pen drive.
+            </p>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-primary btn-sm" id="btnExportarJsonCard">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Exportar Backup Agora
+              </button>
+              <input type="file" id="inpRestaurarArquivoCard" accept=".json" style="display: none;">
+              <button type="button" class="btn btn-secondary btn-sm" id="btnRestaurarJsonCard">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                Restaurar de Arquivo
+              </button>
             </div>
           </div>
         </div>
@@ -9253,18 +10088,6 @@
         });
       };
       reader.readAsText(file);
-    });
-
-    document.getElementById('btnCarregarShowroomCard')?.addEventListener('click', () => {
-      if (confirm('Deseja carregar a demonstração completa de showroom da fábrica?')) {
-        carregarDemonstracaoShowroom();
-      }
-    });
-
-    document.getElementById('btnZerarFabricaCard')?.addEventListener('click', () => {
-      if (confirm('Atenção: deseja zerar todos os pedidos e dados de teste para iniciar a produção real da confecção?')) {
-        zerarBancoProducaoReal();
-      }
     });
   }
 
@@ -9553,7 +10376,7 @@
   }
 
   // Exposição Global das Funções Públicas da API Bravvi ERP Têxtil
-  window.ERP = {
+  window.ERP = Object.assign(window.ERP || {}, {
     obterDb: () => db,
     salvarOrcamentoOuPedido,
     navegarPara,
@@ -9580,10 +10403,22 @@
     abrirModalEditarCapacidades,
     renderizarConfiguracoesEmpresa,
     abrirModalBackup,
-    abrirModalTrocarPerfil,
+    abrirModalMeuPerfil,
+    abrirModalTrocaSenhaPrimeiroAcesso,
     abrirModalRoteiroVendas,
     carregarDemonstracaoShowroom,
     zerarBancoProducaoReal,
+    abrirModalAutenticacao,
+    confirmarLogout,
+    exibirGatekeeperAutenticacao,
+    desbloquearAcessoAoErp,
+    solicitarInstalacaoApp: () => {
+      if (typeof window.solicitarInstalacaoBravviApp === 'function') {
+        window.solicitarInstalacaoBravviApp();
+      } else if (window.BRAVVI_PWA && typeof window.BRAVVI_PWA.solicitarInstalacaoApp === 'function') {
+        window.BRAVVI_PWA.solicitarInstalacaoApp();
+      }
+    },
     forcarResetarBanco: function() {
       try {
         localStorage.removeItem(STORAGE_KEY);
@@ -9604,7 +10439,7 @@
       navegarPara(abaAtiva);
       mostrarToast('Sistema 100% zerado e pronto para operação real!', 'green');
     }
-  };
+  });
 
   // Inicialização no DOM Ready
   document.addEventListener('DOMContentLoaded', init);

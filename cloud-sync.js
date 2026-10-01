@@ -118,6 +118,11 @@
 
   function obterPerfilAtivo() {
     try {
+      const user = obterUsuarioLogado();
+      if (user && user.user_metadata && user.user_metadata.perfil) {
+        const pId = user.user_metadata.perfil;
+        return PERFIS_PERMISSOES[pId] || PERFIS_PERMISSOES.dono;
+      }
       const perfilId = localStorage.getItem(STORAGE_KEY_PERFIL) || localStorage.getItem('TEXPRO_ERP_PERFIL_ATIVO') || 'dono';
       return PERFIS_PERMISSOES[perfilId] || PERFIS_PERMISSOES.dono;
     } catch (e) {
@@ -126,6 +131,11 @@
   }
 
   function definirPerfilAtivo(perfilId) {
+    const user = obterUsuarioLogado();
+    // Bloqueio de segurança: se o usuário logado possui perfil atribuído pelo admin (ex: vendedor, oficina), ele não pode alterar seu perfil
+    if (user && user.user_metadata && user.user_metadata.perfil && user.user_metadata.perfil !== 'dono') {
+      perfilId = user.user_metadata.perfil;
+    }
     const p = PERFIS_PERMISSOES[perfilId] || PERFIS_PERMISSOES.dono;
     try {
       localStorage.setItem(STORAGE_KEY_PERFIL, p.id);
@@ -135,16 +145,28 @@
   }
 
   function atualizarVisuaisPerfil(perfil) {
+    // Atualiza o badge oficial na barra superior (navbar)
+    const roleBadgeText = document.getElementById('navbarUserRoleText');
+    if (roleBadgeText) {
+      roleBadgeText.textContent = perfil.cargo || perfil.nome;
+    }
+
     const sel = document.getElementById('selectPerfilUsuario');
     if (sel && sel.value !== perfil.id) {
       sel.value = perfil.id;
     }
 
+    const user = obterUsuarioLogado();
+    const nomeExibicao = (user && user.user_metadata && (user.user_metadata.full_name || user.user_metadata.company_name)) || perfil.nome;
+
     const av = document.getElementById('sidebarUserAvatar');
-    if (av) av.textContent = perfil.avatar;
+    if (av) {
+      const iniciais = (nomeExibicao.replace(/[^a-zA-Z]/g, '').substring(0, 2) || perfil.avatar || 'US').toUpperCase();
+      av.textContent = iniciais;
+    }
 
     const un = document.getElementById('sidebarUserName');
-    if (un) un.textContent = perfil.nome;
+    if (un) un.textContent = nomeExibicao;
 
     const ur = document.getElementById('sidebarUserRole');
     if (ur) ur.textContent = perfil.cargo;
@@ -362,8 +384,23 @@ with check (true);
     try {
       const cleanUrl = config.url.replace(/\/rest\/v1\/?$/, '').trim();
       supabaseClient = window.supabase.createClient(cleanUrl, config.anonKey.trim(), {
-        auth: { persistSession: false, autoRefreshToken: false }
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false
+        }
       });
+
+      // Escuta eventos de login/logout explícitos
+      supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session && session.user) {
+          definirUsuarioLogado(session.user);
+        } else if (event === 'SIGNED_OUT') {
+          definirUsuarioLogado(null);
+        }
+        atualizarStatusNuvem();
+      });
+
       atualizarStatusNuvem();
       return true;
     } catch (err) {
@@ -372,6 +409,754 @@ with check (true);
       atualizarStatusNuvem();
       return false;
     }
+  }
+
+  // ==========================================================================
+  // VALIDAÇÃO RIGOROSA DE SENHA FORTE (LETRAS MAIÚSCULAS, MINÚSCULAS, NÚMEROS E ESPECIAIS)
+  // ==========================================================================
+  function validarSenhaForte(senha) {
+    const s = (senha || '').trim();
+    const temTamanhoMin = s.length >= 8;
+    const temMaiuscula = /[A-Z]/.test(s);
+    const temMinuscula = /[a-z]/.test(s);
+    const temNumero = /[0-9]/.test(s);
+    const temEspecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`§±]/.test(s);
+
+    const pontuacao = (temTamanhoMin ? 1 : 0) + 
+                      (temMaiuscula ? 1 : 0) + 
+                      (temMinuscula ? 1 : 0) + 
+                      (temNumero ? 1 : 0) + 
+                      (temEspecial ? 1 : 0);
+
+    let nivel = 'fraca';
+    if (pontuacao === 5) {
+      nivel = 'forte';
+    } else if (pontuacao >= 3) {
+      nivel = 'media';
+    }
+
+    return {
+      valida: pontuacao === 5,
+      pontuacao,
+      nivel,
+      criterios: {
+        tamanho: temTamanhoMin,
+        maiuscula: temMaiuscula,
+        minuscula: temMinuscula,
+        numero: temNumero,
+        especial: temEspecial
+      }
+    };
+  }
+
+  // ==========================================================================
+  // AUTENTICAÇÃO CRIPTOGRÁFICA OFICIAL & GESTÃO MULTI-TENANT ISOLADA
+  // ==========================================================================
+  const STORAGE_KEY_AUTH_USER = 'BRAVVI_ERP_AUTH_USER';
+  let usuarioAutenticado = null;
+  let tenantAuthAtivo = null;
+
+  // Utilitários Criptográficos Nativos (SHA-256 e Salt Determinístico por Tenant)
+  async function gerarHashSha256(texto) {
+    if (typeof crypto !== 'undefined' && crypto.subtle && crypto.subtle.digest) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(texto);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    // Fallback caso Web Crypto não esteja disponível
+    let h1 = 0xdeadbeef ^ 0, h2 = 0x41c64e6d ^ 0;
+    for (let i = 0, ch; i < texto.length; i++) {
+      ch = texto.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(16, '0') + '0123456789abcdef';
+  }
+
+  function gerarSaltAleatorio() {
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      const arr = new Uint8Array(16);
+      crypto.getRandomValues(arr);
+      return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    return Math.random().toString(36).substring(2) + Date.now().toString(36);
+  }
+
+  async function obterTenantIdPorEmail(email) {
+    const clean = (email || '').toLowerCase().trim();
+    const hash = await gerarHashSha256('tenant_bravvi_' + clean);
+    return 'tenant_' + hash.substring(0, 24);
+  }
+
+  function obterUsuarioLogado() {
+    if (usuarioAutenticado) return usuarioAutenticado;
+    try {
+      // Limpa chave legada de localStorage se presente
+      if (localStorage.getItem(STORAGE_KEY_AUTH_USER)) {
+        localStorage.removeItem(STORAGE_KEY_AUTH_USER);
+      }
+      // Sessão ativa da aba: persiste no F5 (recarregar página), mas expira ao fechar a aba/navegador
+      const raw = sessionStorage.getItem(STORAGE_KEY_AUTH_USER);
+      if (raw) {
+        const sessao = JSON.parse(raw);
+        if (sessao && sessao.user) {
+          usuarioAutenticado = sessao.user;
+          if (sessao.auth) {
+            tenantAuthAtivo = sessao.auth;
+          }
+          atualizarVisuaisUsuarioLogado();
+          return usuarioAutenticado;
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao restaurar sessão da aba:', e);
+    }
+    return null;
+  }
+
+  function definirUsuarioLogado(user, authData) {
+    usuarioAutenticado = user;
+    if (authData) {
+      tenantAuthAtivo = authData;
+    }
+    try {
+      if (user) {
+        const sessao = {
+          user: user,
+          auth: authData || tenantAuthAtivo || null,
+          salvoEm: Date.now()
+        };
+        // Salva em sessionStorage para permitir F5 sem pedir senha novamente
+        sessionStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(sessao));
+        // Guarda o e-mail em localStorage para vir pré-preenchido no próximo acesso
+        if (user.email) {
+          localStorage.setItem('BRAVVI_REMEMBERED_EMAIL', user.email);
+        }
+      } else {
+        sessionStorage.removeItem(STORAGE_KEY_AUTH_USER);
+      }
+    } catch (e) {}
+    atualizarVisuaisUsuarioLogado();
+  }
+
+  function atualizarVisuaisUsuarioLogado() {
+    const user = obterUsuarioLogado();
+    const avatarEl = document.getElementById('sidebarUserAvatar');
+    const nameEl = document.getElementById('sidebarUserName');
+    const roleEl = document.getElementById('sidebarUserRole');
+    const headerNome = document.getElementById('headerEmpresaNome');
+    const roleBadgeText = document.getElementById('navbarUserRoleText');
+
+    if (user) {
+      const meta = user.user_metadata || {};
+      const nome = meta.full_name || meta.company_name || user.email.split('@')[0];
+      const empresa = meta.company_name || 'Minha Confecção';
+      const perfilId = meta.perfil || 'dono';
+      const perfilObj = PERFIS_PERMISSOES[perfilId] || PERFIS_PERMISSOES.dono;
+
+      if (avatarEl) {
+        const iniciais = (nome.replace(/[^a-zA-Z]/g, '').substring(0, 2) || perfilObj.avatar || 'CF').toUpperCase();
+        avatarEl.textContent = iniciais;
+      }
+      if (nameEl) nameEl.textContent = nome;
+      if (roleEl) {
+        if (perfilId === 'dono') {
+          roleEl.textContent = '👑 ' + (meta.role || 'Dono / Diretor');
+        } else if (perfilId === 'vendedor') {
+          roleEl.textContent = '💼 ' + (meta.role || 'Vendedor Comercial');
+        } else {
+          roleEl.textContent = '✂️ ' + (meta.role || 'Oficina / Fábrica');
+        }
+      }
+      if (roleBadgeText) {
+        roleBadgeText.textContent = perfilObj.cargo || perfilObj.nome;
+      }
+      if (headerNome && meta.company_name) {
+        headerNome.textContent = meta.company_name;
+      }
+      atualizarVisuaisPerfil(perfilObj);
+    } else if (isModoDemo()) {
+      if (avatarEl) avatarEl.textContent = 'DEMO';
+      if (nameEl) nameEl.textContent = 'Showroom';
+      if (roleEl) roleEl.textContent = 'Modo Demonstração';
+      if (roleBadgeText) roleBadgeText.textContent = '👑 Dono / Diretor (Demo)';
+    }
+  }
+
+  async function fazerLogin(email, senha) {
+    if (!supabaseClient) inicializarSupabase();
+    if (!supabaseClient) return { sucesso: false, erro: 'Sistema de autenticação não inicializado. Verifique sua conexão.' };
+
+    let cleanEmail = (email || '').toLowerCase().trim();
+    // Correção inteligente de erros comuns de digitação em domínios populares (.cor -> .com, .con -> .com, etc.)
+    cleanEmail = cleanEmail
+      .replace(/@(gmail|hotmail|outlook|yahoo)\.co[rn]$/i, '@$1.com')
+      .replace(/@(gmail|hotmail|outlook|yahoo)\.com\.b[rn]$/i, '@$1.com.br');
+
+    const senhaStr = senha || '';
+
+    if (!cleanEmail || !senhaStr) {
+      return { sucesso: false, erro: 'Por favor, informe seu e-mail e senha de acesso.' };
+    }
+
+    const tenantId = await obterTenantIdPorEmail(cleanEmail);
+
+    // Camada 1: Autenticação Criptográfica Direta do Dono / Diretor no Banco erp_tenants
+    try {
+      const { data: tenantRow, error: errBusca } = await supabaseClient
+        .from('erp_tenants')
+        .select('tenant_id, empresa, db')
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
+
+      if (!errBusca && tenantRow && tenantRow.empresa) {
+        const emp = tenantRow.empresa;
+        const auth = emp.auth;
+
+        if (auth && auth.salt && auth.hash) {
+          const testHash = await gerarHashSha256(auth.salt + ':' + senhaStr);
+          if (testHash === auth.hash) {
+            tenantAuthAtivo = auth;
+            const userObj = {
+              id: tenantId,
+              tenant_id: tenantId,
+              email: cleanEmail,
+              user_metadata: {
+                company_name: emp.nomeFantasia || emp.razaoSocial || 'Minha Confecção',
+                full_name: auth.nomeResponsavel || 'Administrador',
+                phone: auth.whatsapp || emp.telefone || '',
+                perfil: 'dono',
+                role: 'Dono / Diretor',
+                tenant_id: tenantId
+              }
+            };
+
+            salvarEmpresaConfig(emp);
+            definirPerfilAtivo('dono');
+            definirUsuarioLogado(userObj, auth);
+
+            return { sucesso: true, user: userObj, precisaTrocarSenha: false };
+          } else {
+            return { sucesso: false, erro: 'E-mail ou senha incorretos. Verifique suas credenciais.' };
+          }
+        }
+      }
+    } catch (errDb) {
+      console.warn('Aviso na verificação de autenticação de tenant:', errDb);
+    }
+
+    // Camada 1.5: Autenticação de Colaborador / Funcionário criado pelo Diretor no Supabase
+    try {
+      const filter = JSON.stringify([{ email: cleanEmail }]);
+      const { data: rowsColab, error: errColab } = await supabaseClient
+        .from('erp_tenants')
+        .select('tenant_id, empresa, db')
+        .filter('db->equipe', 'cs', filter);
+
+      if (!errColab && rowsColab && rowsColab.length > 0) {
+        const tRow = rowsColab[0];
+        const equipe = (tRow.db && Array.isArray(tRow.db.equipe)) ? tRow.db.equipe : [];
+        const colab = equipe.find(c => (c.email || '').toLowerCase().trim() === cleanEmail);
+
+        if (colab) {
+          if (colab.status && colab.status.toLowerCase() === 'inativo') {
+            return { sucesso: false, erro: 'Este usuário está inativo no sistema. Contate a diretoria da empresa.' };
+          }
+
+          let senhaCorreta = false;
+          if (colab.auth && colab.auth.salt && colab.auth.hash) {
+            const testHash = await gerarHashSha256(colab.auth.salt + ':' + senhaStr);
+            if (testHash === colab.auth.hash) senhaCorreta = true;
+          } else if (colab.senha && colab.senha === senhaStr) {
+            senhaCorreta = true;
+          }
+
+          if (senhaCorreta) {
+            const perfilEscolhido = colab.perfil || (colab.nivelAcesso === 'Admin' ? 'dono' : (colab.nivelAcesso === 'Comercial' ? 'vendedor' : 'oficina'));
+            const userObj = {
+              id: colab.id || ('colab_' + Date.now()),
+              tenant_id: tRow.tenant_id,
+              email: cleanEmail,
+              colaboradorId: colab.id,
+              user_metadata: {
+                company_name: tRow.empresa?.nomeFantasia || tRow.empresa?.razaoSocial || 'Minha Confecção',
+                full_name: colab.nome || 'Colaborador',
+                phone: colab.telefone || '',
+                perfil: perfilEscolhido, // Travado pelo que o diretor escolheu!
+                role: colab.cargo || colab.especialidade || (perfilEscolhido === 'dono' ? 'Dono / Diretor' : (perfilEscolhido === 'vendedor' ? 'Vendedor Comercial' : 'Oficina & Produção')),
+                tenant_id: tRow.tenant_id
+              }
+            };
+
+            if (tRow.empresa) salvarEmpresaConfig(tRow.empresa);
+            definirPerfilAtivo(perfilEscolhido);
+            definirUsuarioLogado(userObj, colab.auth || null);
+
+            return {
+              sucesso: true,
+              user: userObj,
+              colaborador: colab,
+              colaboradorId: colab.id,
+              tenant_id: tRow.tenant_id,
+              precisaTrocarSenha: colab.precisaTrocarSenha === true
+            };
+          } else {
+            return { sucesso: false, erro: 'E-mail ou senha incorretos. Verifique sua senha.' };
+          }
+        }
+      }
+    } catch (errColab) {
+      console.warn('Aviso ao autenticar colaborador na nuvem:', errColab);
+    }
+
+    // 1.5.2: Fallback para autenticação de colaborador local (offline / localStorage)
+    try {
+      const localDbRaw = localStorage.getItem('UNIFORMES_ERP_DATABASE_V8');
+      if (localDbRaw) {
+        const localDb = JSON.parse(localDbRaw);
+        if (localDb && Array.isArray(localDb.equipe)) {
+          const colab = localDb.equipe.find(c => (c.email || '').toLowerCase().trim() === cleanEmail);
+          if (colab) {
+            if (colab.status && colab.status.toLowerCase() === 'inativo') {
+              return { sucesso: false, erro: 'Este usuário está inativo no sistema. Contate a diretoria da empresa.' };
+            }
+
+            let senhaCorreta = false;
+            if (colab.auth && colab.auth.salt && colab.auth.hash) {
+              const testHash = await gerarHashSha256(colab.auth.salt + ':' + senhaStr);
+              if (testHash === colab.auth.hash) senhaCorreta = true;
+            } else if (colab.senha && colab.senha === senhaStr) {
+              senhaCorreta = true;
+            }
+
+            if (senhaCorreta) {
+              const emp = obterEmpresaConfig();
+              const perfilEscolhido = colab.perfil || (colab.nivelAcesso === 'Admin' ? 'dono' : (colab.nivelAcesso === 'Comercial' ? 'vendedor' : 'oficina'));
+              const tId = localStorage.getItem('BRAVVI_ERP_TENANT_ID') || 'local';
+              const userObj = {
+                id: colab.id,
+                tenant_id: tId,
+                email: cleanEmail,
+                colaboradorId: colab.id,
+                user_metadata: {
+                  company_name: emp.nomeFantasia || emp.razaoSocial || 'Minha Confecção',
+                  full_name: colab.nome,
+                  phone: colab.telefone || '',
+                  perfil: perfilEscolhido,
+                  role: colab.cargo || perfilEscolhido,
+                  tenant_id: tId
+                }
+              };
+              definirPerfilAtivo(perfilEscolhido);
+              definirUsuarioLogado(userObj, colab.auth || null);
+
+              return {
+                sucesso: true,
+                user: userObj,
+                colaborador: colab,
+                colaboradorId: colab.id,
+                tenant_id: tId,
+                precisaTrocarSenha: colab.precisaTrocarSenha === true
+              };
+            } else {
+              return { sucesso: false, erro: 'E-mail ou senha incorretos. Verifique sua senha.' };
+            }
+          }
+        }
+      }
+    } catch (e) {}
+
+    // Camada 2: Fallback para contas criadas via Supabase Auth
+    try {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: cleanEmail,
+        password: senhaStr
+      });
+
+      if (!error && data && data.user) {
+        const tId = data.user.user_metadata?.tenant_id || tenantId || ('tenant_' + data.user.id.replace(/-/g, '_'));
+        data.user.tenant_id = tId;
+
+        definirUsuarioLogado(data.user);
+        if (data.user.user_metadata && data.user.user_metadata.company_name) {
+          const emp = obterEmpresaConfig();
+          emp.nomeFantasia = data.user.user_metadata.company_name;
+          emp.razaoSocial = data.user.user_metadata.company_name;
+          salvarEmpresaConfig(emp);
+        }
+        return { sucesso: true, user: data.user, session: data.session };
+      }
+
+      if (error) {
+        const msg = error.message ? error.message.toLowerCase() : '';
+        if (msg.includes('invalid login credentials')) {
+          return { sucesso: false, erro: 'E-mail ou senha incorretos.' };
+        }
+        if (msg.includes('email not confirmed')) {
+          return {
+            sucesso: false,
+            codigo: 'email_not_confirmed',
+            erro: 'E-mail cadastrado, mas ainda aguardando ativação.'
+          };
+        }
+        return { sucesso: false, erro: error.message };
+      }
+    } catch (errAuth) {
+      console.warn('Erro no fallback do Supabase Auth:', errAuth);
+    }
+
+    return {
+      sucesso: false,
+      erro: 'E-mail ou senha incorretos. Se ainda não possui conta, clique na aba "Cadastrar Minha Confecção".'
+    };
+  }
+
+  async function atualizarSenhaColaborador(colaboradorId, novaSenha, tenantIdOpcional) {
+    if (!colaboradorId || !novaSenha || novaSenha.length < 6) {
+      return { sucesso: false, erro: 'A nova senha deve ter no mínimo 6 caracteres.' };
+    }
+
+    const salt = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const hash = await gerarHashSha256(salt + ':' + novaSenha);
+    const novaAuth = { salt, hash };
+
+    // 1. Atualiza no banco local se estiver em window.ERP ou localStorage
+    try {
+      if (window.ERP && typeof window.ERP.obterDb === 'function') {
+        const dbLocal = window.ERP.obterDb();
+        if (dbLocal && Array.isArray(dbLocal.equipe)) {
+          const colab = dbLocal.equipe.find(u => u.id === colaboradorId);
+          if (colab) {
+            colab.auth = novaAuth;
+            colab.precisaTrocarSenha = false;
+            colab.senhaAlteradaEm = new Date().toISOString();
+            delete colab.senha;
+            delete colab.senhaTemporaria;
+          }
+        }
+      }
+      const raw = localStorage.getItem('UNIFORMES_ERP_DATABASE_V8');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.equipe)) {
+          const colab = parsed.equipe.find(u => u.id === colaboradorId);
+          if (colab) {
+            colab.auth = novaAuth;
+            colab.precisaTrocarSenha = false;
+            colab.senhaAlteradaEm = new Date().toISOString();
+            delete colab.senha;
+            delete colab.senhaTemporaria;
+            localStorage.setItem('UNIFORMES_ERP_DATABASE_V8', JSON.stringify(parsed));
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Aviso ao atualizar senha local:', e);
+    }
+
+    // 2. Atualiza no Supabase erp_tenants
+    const tId = tenantIdOpcional || obterTenantId();
+    if (tId && supabaseClient) {
+      try {
+        const { data: tRow, error: errGet } = await supabaseClient
+          .from('erp_tenants')
+          .select('tenant_id, db')
+          .eq('tenant_id', tId)
+          .maybeSingle();
+
+        if (!errGet && tRow && tRow.db && Array.isArray(tRow.db.equipe)) {
+          const colab = tRow.db.equipe.find(u => u.id === colaboradorId);
+          if (colab) {
+            colab.auth = novaAuth;
+            colab.precisaTrocarSenha = false;
+            colab.senhaAlteradaEm = new Date().toISOString();
+            delete colab.senha;
+            delete colab.senhaTemporaria;
+
+            await supabaseClient
+              .from('erp_tenants')
+              .update({
+                db: tRow.db,
+                atualizado_em: new Date().toISOString()
+              })
+              .eq('tenant_id', tId);
+          }
+        }
+      } catch (errSync) {
+        console.warn('Aviso ao sincronizar nova senha com Supabase:', errSync);
+      }
+    }
+
+    return { sucesso: true, auth: novaAuth };
+  }
+
+  async function cadastrarConfeccao(dados) {
+    if (!supabaseClient) inicializarSupabase();
+    if (!supabaseClient) return { sucesso: false, erro: 'Sistema de autenticação não inicializado. Verifique sua conexão.' };
+
+    const cleanEmail = (dados.email || '').toLowerCase().trim();
+    const nomeEmpresa = (dados.nomeEmpresa || '').trim();
+    const nomeResponsavel = (dados.nomeResponsavel || '').trim();
+    const whatsapp = (dados.whatsapp || '').trim();
+    const senha = dados.senha || '';
+
+    // 1. Validação rigorosa de senha forte
+    const validacaoSenha = validarSenhaForte(senha);
+    if (!validacaoSenha.valida) {
+      return {
+        sucesso: false,
+        erro: 'A senha escolhida não atende a todos os critérios de segurança (mínimo 8 caracteres, maiúscula, minúscula, número e caractere especial).'
+      };
+    }
+
+    // 2. Tenant ID único e determinístico baseado no e-mail
+    const tenantId = await obterTenantIdPorEmail(cleanEmail);
+
+    // 3. Verifica se este e-mail já possui cadastro existente
+    try {
+      const { data: tenantExistente, error: errBusca } = await supabaseClient
+        .from('erp_tenants')
+        .select('tenant_id, empresa')
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
+
+      if (!errBusca && tenantExistente && tenantExistente.empresa && tenantExistente.empresa.auth) {
+        return {
+          sucesso: false,
+          erro: 'Este e-mail já possui cadastro no sistema. Clique na aba "Já sou Cliente • Entrar" acima para acessar com sua senha.'
+        };
+      }
+    } catch (e) {
+      console.warn('Verificação de tenant pré-existente:', e);
+    }
+
+    // 4. Cria salt e hash criptográfico SHA-256
+    const salt = gerarSaltAleatorio();
+    const passHash = await gerarHashSha256(salt + ':' + senha);
+
+    const authData = {
+      email: cleanEmail,
+      salt: salt,
+      hash: passHash,
+      nomeResponsavel: nomeResponsavel || 'Administrador',
+      whatsapp: whatsapp,
+      criadoEm: new Date().toISOString()
+    };
+    tenantAuthAtivo = authData;
+
+    const empNova = {
+      razaoSocial: nomeEmpresa || 'Minha Confecção',
+      nomeFantasia: nomeEmpresa || 'Minha Confecção',
+      cnpj: '',
+      inscricaoEstadual: '',
+      telefone: whatsapp,
+      email: cleanEmail,
+      chavePix: '',
+      tipoChavePix: 'CNPJ',
+      endereco: '',
+      bairro: '',
+      cidade: '',
+      uf: '',
+      cep: '',
+      logoUrl: null,
+      rodapeProposta: 'Proposta válida por 15 dias corridos. Pagamento de 50% de sinal na aprovação.',
+      rodapeFicha: 'Ordem de Produção Oficial. Tolerância industrial de 2mm.',
+      auth: authData
+    };
+
+    // 5. Prepara banco inicial vazio exclusivo para este tenant
+    const bancoLimpo = (typeof window !== 'undefined' && window.ERP_INITIAL_DATA)
+      ? JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA))
+      : { pedidos: [] };
+    bancoLimpo.pedidos = [];
+    bancoLimpo.ordensServico = [];
+    bancoLimpo.lancamentosFinanceiros = [];
+    bancoLimpo.quarentena = [];
+    bancoLimpo.clientes = [];
+    bancoLimpo.despesasFixas = [];
+    bancoLimpo.nestingFila = [];
+    bancoLimpo.notasFiscais = [];
+    bancoLimpo.compras = [];
+    bancoLimpo.empresa = empNova;
+
+    // 6. Grava imediatamente o novo tenant no Supabase PostgreSQL
+    try {
+      const { error: errUpsert } = await supabaseClient.from('erp_tenants').upsert({
+        tenant_id: tenantId,
+        db: bancoLimpo,
+        empresa: empNova,
+        ultima_atualizacao_ms: Date.now(),
+        versao_erp: '8.5.0',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'tenant_id' });
+
+      if (errUpsert) {
+        console.error('Erro ao registrar tenant no Supabase:', errUpsert);
+        return { sucesso: false, erro: 'Falha ao provisionar banco na nuvem: ' + errUpsert.message };
+      }
+    } catch (errDb) {
+      console.error('Exceção ao provisionar tenant no Supabase:', errDb);
+      return { sucesso: false, erro: 'Erro de comunicação com o servidor.' };
+    }
+
+    // 7. Tenta registro opcional em background no Supabase Auth (ignora qualquer erro de rate limit de e-mail)
+    try {
+      supabaseClient.auth.signUp({
+        email: cleanEmail,
+        password: senha,
+        options: {
+          data: {
+            company_name: nomeEmpresa,
+            full_name: nomeResponsavel,
+            phone: whatsapp,
+            tenant_id: tenantId
+          }
+        }
+      }).catch(err => {
+        // Ignora silenciosamente rate limit de email do Supabase Auth
+        console.log('Notificação background Supabase Auth:', err?.message);
+      });
+    } catch (e) {
+      // Ignora
+    }
+
+    // 8. Atualiza configuração local e ativa sessão
+    salvarEmpresaConfig(empNova);
+
+    const userObj = {
+      id: tenantId,
+      tenant_id: tenantId,
+      email: cleanEmail,
+      user_metadata: {
+        company_name: nomeEmpresa,
+        full_name: nomeResponsavel,
+        phone: whatsapp,
+        tenant_id: tenantId
+      }
+    };
+
+    definirUsuarioLogado(userObj, authData);
+
+    return {
+      sucesso: true,
+      user: userObj
+    };
+  }
+
+  async function reenviarEmailConfirmacao(email) {
+    if (!supabaseClient) inicializarSupabase();
+    if (!supabaseClient) return false;
+    try {
+      const { error } = await supabaseClient.auth.resend({
+        type: 'signup',
+        email: (email || '').trim()
+      });
+      return !error;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async function fazerLogout() {
+    definirUsuarioLogado(null);
+    tenantAuthAtivo = null;
+    if (supabaseClient) {
+      try {
+        await supabaseClient.auth.signOut();
+      } catch (e) {}
+    }
+    try {
+      localStorage.removeItem('BRAVVI_ERP_USER_SESSION');
+      localStorage.removeItem(STORAGE_KEY_AUTH_USER);
+      localStorage.removeItem(STORAGE_KEY_EMPRESA);
+      localStorage.removeItem('bravvi_erp_prod_v8');
+      sessionStorage.clear();
+    } catch (e) {}
+    window.location.reload();
+  }
+
+  async function carregarBancoTenant(onSucesso) {
+    if (isModoDemo() || !supabaseClient) return null;
+    const tenantId = obterTenantId();
+    if (!tenantId) return null;
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('erp_tenants')
+        .select('db, empresa, ultima_atualizacao_ms')
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
+
+      if (!error && data && data.db) {
+        if (data.empresa) {
+          if (data.empresa.auth) {
+            tenantAuthAtivo = data.empresa.auth;
+          }
+          salvarEmpresaConfig(data.empresa);
+        }
+        if (typeof onSucesso === 'function') {
+          onSucesso(data.db);
+        }
+        return data.db;
+      } else if (!error && !data) {
+        // Tenant recém-criado sem registros anteriores: inicializa banco isolado e exclusivo
+        const user = obterUsuarioLogado();
+        const nomeEmpresa = user?.user_metadata?.company_name || 'Minha Confecção';
+        const empNova = {
+          razaoSocial: nomeEmpresa,
+          nomeFantasia: nomeEmpresa,
+          cnpj: '',
+          inscricaoEstadual: '',
+          telefone: user?.user_metadata?.phone || '',
+          email: user?.email || '',
+          chavePix: '',
+          tipoChavePix: 'CNPJ',
+          endereco: '',
+          bairro: '',
+          cidade: '',
+          uf: '',
+          cep: '',
+          logoUrl: null,
+          rodapeProposta: 'Proposta válida por 15 dias corridos. Pagamento de 50% de sinal na aprovação.',
+          rodapeFicha: 'Ordem de Produção Oficial. Tolerância industrial de 2mm.'
+        };
+        const bancoLimpo = (typeof window !== 'undefined' && window.ERP_INITIAL_DATA)
+          ? JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA))
+          : { pedidos: [] };
+        bancoLimpo.pedidos = [];
+        bancoLimpo.ordensServico = [];
+        bancoLimpo.lancamentosFinanceiros = [];
+        bancoLimpo.quarentena = [];
+        bancoLimpo.clientes = [];
+        bancoLimpo.despesasFixas = [];
+        bancoLimpo.nestingFila = [];
+        bancoLimpo.notasFiscais = [];
+        bancoLimpo.compras = [];
+        bancoLimpo.empresa = empNova;
+
+        salvarEmpresaConfig(empNova);
+
+        await supabaseClient.from('erp_tenants').upsert({
+          tenant_id: tenantId,
+          db: bancoLimpo,
+          empresa: empNova,
+          ultima_atualizacao_ms: Date.now(),
+          versao_erp: '8.5.0'
+        }, { onConflict: 'tenant_id' });
+
+        if (typeof onSucesso === 'function') {
+          onSucesso(bancoLimpo);
+        }
+        return bancoLimpo;
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar banco remoto do tenant:', e);
+    }
+    return null;
   }
 
   // --- FIREBASE CONFIG (LEGACY / FALLBACK) ---
@@ -435,18 +1220,20 @@ with check (true);
     }
   }
 
-  // --- TENANT & PROVEDORES ---
+  // --- TENANT & PROVEDORES (ISOLAMENTO MULTI-TENANT RIGOROSO POR USUÁRIO) ---
   function obterTenantId() {
-    const emp = obterEmpresaConfig();
-    if (emp && emp.cnpj) {
-      const num = emp.cnpj.replace(/\D/g, '');
-      if (num.length >= 8) return 'empresa_' + num;
+    if (isModoDemo()) {
+      return 'empresa_demo_showroom';
     }
-    if (emp && emp.nomeFantasia) {
-      const slug = emp.nomeFantasia.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 24);
-      if (slug.length >= 3) return 'empresa_' + slug;
+    const user = obterUsuarioLogado();
+    if (user) {
+      if (user.tenant_id) return user.tenant_id;
+      if (user.id) {
+        if (user.id.startsWith('tenant_')) return user.id;
+        return 'tenant_' + user.id.replace(/-/g, '_');
+      }
     }
-    return 'empresa_principal';
+    return null; // NUNCA retorna fallback de outra empresa! Se não estiver logado, é null.
   }
 
   function obterProvedorAtivo() {
@@ -468,6 +1255,12 @@ with check (true);
       atualizarStatusNuvem();
       return;
     }
+    const tenantId = obterTenantId();
+    if (!tenantId) {
+      // Bloqueio rigoroso: nada é sincronizado sem tenant autenticado
+      atualizarStatusNuvem();
+      return;
+    }
     const provedor = obterProvedorAtivo();
     if (provedor === 'local' || !navigator.onLine) {
       atualizarStatusNuvem();
@@ -484,14 +1277,18 @@ with check (true);
       ultimaAtualizacaoRemota = agora;
 
       if (provedor === 'supabase' && supabaseClient) {
+        const empParaSalvar = Object.assign({}, obterEmpresaConfig());
+        if (tenantAuthAtivo) {
+          empParaSalvar.auth = tenantAuthAtivo;
+        }
         supabaseClient
           .from('erp_tenants')
           .upsert({
             tenant_id: tenantId,
             db: dbAtual,
-            empresa: obterEmpresaConfig(),
+            empresa: empParaSalvar,
             ultima_atualizacao_ms: agora,
-            versao_erp: "8.4.0",
+            versao_erp: "8.5.0",
             updated_at: new Date().toISOString()
           }, { onConflict: 'tenant_id' })
           .then(({ error }) => {
@@ -532,8 +1329,12 @@ with check (true);
     if (isModoDemo()) {
       return;
     }
-    const provedor = obterProvedorAtivo();
     const tenantId = obterTenantId();
+    if (!tenantId) {
+      // Bloqueio rigoroso: não inicia escuta nem carrega dados sem usuário logado
+      return;
+    }
+    const provedor = obterProvedorAtivo();
 
     if (provedor === 'supabase' && supabaseClient) {
       if (supabaseChannel) {
@@ -937,6 +1738,20 @@ with check (true);
     // Firebase
     obterFirebaseConfig,
     salvarFirebaseConfig,
+    // Autenticação & Multi-Tenancy Oficial
+    validarSenhaForte,
+    gerarHashSha256,
+    obterTenantIdPorEmail,
+    obterTenantId,
+    obterUsuarioLogado,
+    definirUsuarioLogado,
+    atualizarVisuaisUsuarioLogado,
+    fazerLogin,
+    atualizarSenhaColaborador,
+    cadastrarConfeccao,
+    reenviarEmailConfirmacao,
+    fazerLogout,
+    carregarBancoTenant,
     // Estado Geral da Nuvem
     obterProvedorAtivo,
     isNuvemAtiva,
