@@ -2609,18 +2609,142 @@
   }
 
   // ==========================================================================
-  // HELPERS DE GRADE DE TAMANHOS (EXIBE APENAS TAMANHOS SELECIONADOS > 0)
+  // HELPERS DE GRADE DE TAMANHOS (ADULTO, ESPECIAIS ATÉ G5, INFANTIL, BABY LOOK, SLIM)
   // ==========================================================================
+  const CATALOGO_TAMANHOS_MESTRE = [
+    // 1. Infantis / Juvenis
+    { chave: 'inf2', rotulo: '2 (Inf)' },
+    { chave: 'inf4', rotulo: '4 (Inf)' },
+    { chave: 'inf6', rotulo: '6 (Inf)' },
+    { chave: 'inf8', rotulo: '8 (Inf)' },
+    { chave: 'inf10', rotulo: '10 (Inf)' },
+    { chave: 'inf12', rotulo: '12 (Inf)' },
+    { chave: 'inf14', rotulo: '14 (Inf)' },
+    { chave: 'inf16', rotulo: '16 (Inf)' },
+
+    // 2. Adulto Regular
+    { chave: 'pp', rotulo: 'PP' },
+    { chave: 'p', rotulo: 'P' },
+    { chave: 'm', rotulo: 'M' },
+    { chave: 'g', rotulo: 'G' },
+    { chave: 'gg', rotulo: 'GG' },
+    { chave: 'xg', rotulo: 'XG' },
+
+    // 3. Tamanhos Especiais / Plus Size
+    { chave: 'g1', rotulo: 'G1' },
+    { chave: 'g2', rotulo: 'G2' },
+    { chave: 'g3', rotulo: 'G3' },
+    { chave: 'g4', rotulo: 'G4' },
+    { chave: 'g5', rotulo: 'G5' },
+
+    // 4. Baby Look (Feminina)
+    { chave: 'bl_pp', rotulo: 'BL-PP' },
+    { chave: 'bl_p', rotulo: 'BL-P' },
+    { chave: 'bl_m', rotulo: 'BL-M' },
+    { chave: 'bl_g', rotulo: 'BL-G' },
+    { chave: 'bl_gg', rotulo: 'BL-GG' },
+    { chave: 'bl_xg', rotulo: 'BL-XG' },
+
+    // 5. Modelagem Slim
+    { chave: 'slim_p', rotulo: 'Slim-P' },
+    { chave: 'slim_m', rotulo: 'Slim-M' },
+    { chave: 'slim_g', rotulo: 'Slim-G' },
+    { chave: 'slim_gg', rotulo: 'Slim-GG' },
+    { chave: 'slim_xg', rotulo: 'Slim-XG' }
+  ];
+
+  const CAMPOS_GRADE_REGULAR = [
+    { id: 'gradePP', chave: 'pp', rotulo: 'PP' },
+    { id: 'gradeP', chave: 'p', rotulo: 'P' },
+    { id: 'gradeM', chave: 'm', rotulo: 'M' },
+    { id: 'gradeG', chave: 'g', rotulo: 'G' },
+    { id: 'gradeGG', chave: 'gg', rotulo: 'GG' },
+    { id: 'gradeXG', chave: 'xg', rotulo: 'XG' }
+  ];
+
+  const SECOES_GRADE_EXTRAS = [
+    {
+      id: 'secaoGrade_especiais',
+      chaveSecao: 'especiais',
+      titulo: '⚡ Tamanhos Especiais / Plus Size (G1 a G5)',
+      campos: [
+        { id: 'gradeG1', chave: 'g1', rotulo: 'G1' },
+        { id: 'gradeG2', chave: 'g2', rotulo: 'G2' },
+        { id: 'gradeG3', chave: 'g3', rotulo: 'G3' },
+        { id: 'gradeG4', chave: 'g4', rotulo: 'G4' },
+        { id: 'gradeG5', chave: 'g5', rotulo: 'G5' }
+      ]
+    },
+    {
+      id: 'secaoGrade_infantis',
+      chaveSecao: 'infantis',
+      titulo: '👶 Grade Infantil & Juvenil (2 ao 16)',
+      campos: [
+        { id: 'gradeInf2', chave: 'inf2', rotulo: '2' },
+        { id: 'gradeInf4', chave: 'inf4', rotulo: '4' },
+        { id: 'gradeInf6', chave: 'inf6', rotulo: '6' },
+        { id: 'gradeInf8', chave: 'inf8', rotulo: '8' },
+        { id: 'gradeInf10', chave: 'inf10', rotulo: '10' },
+        { id: 'gradeInf12', chave: 'inf12', rotulo: '12' },
+        { id: 'gradeInf14', chave: 'inf14', rotulo: '14' },
+        { id: 'gradeInf16', chave: 'inf16', rotulo: '16' }
+      ]
+    },
+    {
+      id: 'secaoGrade_babylook',
+      chaveSecao: 'babylook',
+      titulo: '👚 Modelagem Baby Look Feminina (BL-PP ao BL-XG)',
+      campos: [
+        { id: 'gradeBlPp', chave: 'bl_pp', rotulo: 'BL-PP' },
+        { id: 'gradeBlP', chave: 'bl_p', rotulo: 'BL-P' },
+        { id: 'gradeBlM', chave: 'bl_m', rotulo: 'BL-M' },
+        { id: 'gradeBlG', chave: 'bl_g', rotulo: 'BL-G' },
+        { id: 'gradeBlGg', chave: 'bl_gg', rotulo: 'BL-GG' },
+        { id: 'gradeBlXg', chave: 'bl_xg', rotulo: 'BL-XG' }
+      ]
+    },
+    {
+      id: 'secaoGrade_slim',
+      chaveSecao: 'slim',
+      titulo: '📐 Modelagem Slim Fit (Slim-P ao Slim-XG)',
+      campos: [
+        { id: 'gradeSlimP', chave: 'slim_p', rotulo: 'Slim-P' },
+        { id: 'gradeSlimM', chave: 'slim_m', rotulo: 'Slim-M' },
+        { id: 'gradeSlimG', chave: 'slim_g', rotulo: 'Slim-G' },
+        { id: 'gradeSlimGg', chave: 'slim_gg', rotulo: 'Slim-GG' },
+        { id: 'gradeSlimXg', chave: 'slim_xg', rotulo: 'Slim-XG' }
+      ]
+    }
+  ];
+
+  const TODOS_CAMPOS_GRADE = [
+    ...CAMPOS_GRADE_REGULAR,
+    ...SECOES_GRADE_EXTRAS.flatMap(s => s.campos)
+  ];
+
   function obterTamanhosSelecionadosGrade(grade) {
     if (!grade) return [];
-    const tamOrdem = ['pp', 'p', 'm', 'g', 'gg', 'xg'];
     const res = [];
-    tamOrdem.forEach(tam => {
-      const qtd = parseInt(grade[tam], 10) || 0;
+    const processados = new Set(['total']);
+
+    CATALOGO_TAMANHOS_MESTRE.forEach(item => {
+      processados.add(item.chave);
+      const qtd = parseInt(grade[item.chave], 10) || 0;
       if (qtd > 0) {
-        res.push({ tam: tam.toUpperCase(), qtd });
+        res.push({ tam: item.rotulo, qtd, chave: item.chave });
       }
     });
+
+    // Pega quaisquer outras chaves extras não listadas no catálogo
+    Object.keys(grade).forEach(k => {
+      if (!processados.has(k)) {
+        const qtd = parseInt(grade[k], 10) || 0;
+        if (qtd > 0) {
+          res.push({ tam: k.toUpperCase(), qtd, chave: k });
+        }
+      }
+    });
+
     return res;
   }
 
@@ -2629,16 +2753,26 @@
     if (!selecionados.length) {
       return '<span style="color: #64748b; font-style: italic; font-size: 11px;">Sem grade</span>';
     }
-    if (estilo === 'badge') {
-      return selecionados.map(s => `
-        <span style="display: inline-block; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 2px 7px; border-radius: 4px; font-size: 11px; margin: 1px 3px 1px 0; border: 1px solid #bae6fd;">
-          ${s.qtd}x ${s.tam}
-        </span>
-      `).join('');
+
+    function obterEstiloBadge(tam) {
+      if (tam.startsWith('BL-')) {
+        return 'background: #fdf2f8; color: #9d174d; border: 1px solid #fbcfe8;';
+      }
+      if ((tam.startsWith('G1') || tam.startsWith('G2') || tam.startsWith('G3') || tam.startsWith('G4') || tam.startsWith('G5')) && !tam.startsWith('GG')) {
+        return 'background: #fffbeb; color: #92400e; border: 1px solid #fde68a;';
+      }
+      if (tam.includes('(Inf)')) {
+        return 'background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd;';
+      }
+      if (tam.startsWith('Slim')) {
+        return 'background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe;';
+      }
+      return 'background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;';
     }
-    if (estilo === 'badge-blue') {
+
+    if (estilo === 'badge' || estilo === 'badge-blue') {
       return selecionados.map(s => `
-        <span style="display: inline-block; font-weight: 800; background: #eff6ff; color: #1e40af; padding: 2px 7px; border-radius: 4px; font-size: 11px; margin: 1px 3px 1px 0; border: 1px solid #bfdbfe;">
+        <span style="display: inline-block; font-weight: 800; padding: 2px 7px; border-radius: 4px; font-size: 11px; margin: 1px 3px 1px 0; ${obterEstiloBadge(s.tam)}">
           ${s.qtd}x ${s.tam}
         </span>
       `).join('');
@@ -4559,19 +4693,24 @@
               </div>
 
               <!-- Grade de Tamanhos do Modelo Ativo -->
-              <div class="form-group">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 6px;">
+              <div class="form-group" style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
                   <div>
-                    <label class="form-label" style="margin: 0; font-weight: 700;">Grade de Tamanhos (Peças deste Modelo)</label>
-                    <span style="font-size: 10px; color: var(--text-gray-500);">Distribuição de peças para esta modelagem:</span>
+                    <label class="form-label" style="margin: 0; font-weight: 800; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                      Grade de Tamanhos (Peças deste Modelo)
+                    </label>
+                    <span style="font-size: 10.5px; color: var(--text-gray-500);">Preencha os tamanhos necessários. Somente os tamanhos com quantidade aparecerão no orçamento e corte.</span>
                   </div>
-                  <div style="display: flex; gap: 4px; align-items: center;">
+                  <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
                     <button type="button" class="btn btn-secondary btn-sm btn-grade-rapida" data-dist="2,4,8,4,2,0" style="font-size: 10px; padding: 2px 7px; font-weight: 600;" title="Preencher com 20 peças">+20 Pçs</button>
                     <button type="button" class="btn btn-secondary btn-sm btn-grade-rapida" data-dist="5,10,15,12,6,2" style="font-size: 10px; padding: 2px 7px; font-weight: 600;" title="Preencher com 50 peças">+50 Pçs</button>
                     <button type="button" class="btn btn-secondary btn-sm btn-grade-rapida" data-dist="10,20,30,25,10,5" style="font-size: 10px; padding: 2px 7px; font-weight: 600;" title="Preencher com 100 peças">+100 Pçs</button>
-                    <button type="button" class="btn btn-secondary btn-sm" id="btnZerarGrade" style="font-size: 10px; padding: 2px 7px; color: #dc2626;" title="Zerar todas as quantidades">Zerar</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnZerarGrade" style="font-size: 10px; padding: 2px 7px; color: #dc2626; font-weight: 700;" title="Zerar todas as quantidades da grade">Zerar Grade</button>
                   </div>
                 </div>
+
+                <!-- Grade Regular Padrão (Adulto PP ao XG + Totalizador Geral) -->
                 <div class="grade-table-input" id="boxGradeTableInput">
                   <div class="grade-col"><div class="grade-label">PP</div><input type="number" id="gradePP" class="grade-input" value="0" min="0"></div>
                   <div class="grade-col"><div class="grade-label">P</div><input type="number" id="gradeP" class="grade-input" value="0" min="0"></div>
@@ -4579,7 +4718,105 @@
                   <div class="grade-col"><div class="grade-label">G</div><input type="number" id="gradeG" class="grade-input" value="0" min="0"></div>
                   <div class="grade-col"><div class="grade-label">GG</div><input type="number" id="gradeGG" class="grade-input" value="0" min="0"></div>
                   <div class="grade-col"><div class="grade-label">XG</div><input type="number" id="gradeXG" class="grade-input" value="0" min="0"></div>
-                  <div class="grade-col"><div class="grade-label">TOTAL</div><input type="text" id="gradeTotal" class="grade-input" style="font-weight: 800; background: #0f172a; color: #ffffff;" value="0" readonly></div>
+                  <div class="grade-col"><div class="grade-label" style="background: #0f172a; color: #38bdf8; font-weight: 900;">TOTAL</div><input type="text" id="gradeTotal" class="grade-input" style="font-weight: 900; background: #0f172a; color: #38bdf8;" value="0" readonly title="Total geral somando todos os tamanhos"></div>
+                </div>
+
+                <!-- Barra de Seletores de Grades Especiais (Abrir sob demanda) -->
+                <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #cbd5e1; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 11px; font-weight: 800; color: #475569;">+ Outras Grades sob demanda:</span>
+                    <span style="font-size: 10px; color: #94a3b8;">(Clique para selecionar se houver no pedido)</span>
+                  </div>
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary btn-sm btn-toggle-grade-extra" data-secao="especiais" id="btnToggle_especiais" style="font-size: 11px; padding: 3px 9px; font-weight: 700; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; cursor: pointer;">
+                      ⚡ Especiais (G1 a G5)
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-toggle-grade-extra" data-secao="infantis" id="btnToggle_infantis" style="font-size: 11px; padding: 3px 9px; font-weight: 700; color: #0369a1; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 4px; cursor: pointer;">
+                      👶 Infantis (2 ao 16)
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-toggle-grade-extra" data-secao="babylook" id="btnToggle_babylook" style="font-size: 11px; padding: 3px 9px; font-weight: 700; color: #9d174d; background: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 4px; cursor: pointer;">
+                      👚 Baby Look (BL)
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-toggle-grade-extra" data-secao="slim" id="btnToggle_slim" style="font-size: 11px; padding: 3px 9px; font-weight: 700; color: #6d28d9; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 4px; cursor: pointer;">
+                      📐 Slim Fit
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Seção Expansível 1: Especiais Plus Size (G1 a G5) -->
+                <div id="secaoGrade_especiais" class="secao-grade-extra-card" style="display: none; margin-top: 10px; padding: 10px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span style="font-size: 11.5px; font-weight: 800; color: #92400e;">⚡ Tamanhos Especiais / Plus Size (G1 ao G5)</span>
+                      <span style="font-size: 10px; color: #b45309;">(Preencha as quantidades para peças plus size)</span>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm btn-fechar-grade-extra" data-secao="especiais" style="font-size: 10px; padding: 1px 7px; color: #92400e; background: #ffffff; border: 1px solid #fde68a;">✕ Fechar</button>
+                  </div>
+                  <div class="grade-table-input" style="grid-template-columns: repeat(5, 1fr);">
+                    <div class="grade-col"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">G1</div><input type="number" id="gradeG1" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">G2</div><input type="number" id="gradeG2" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">G3</div><input type="number" id="gradeG3" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">G4</div><input type="number" id="gradeG4" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">G5</div><input type="number" id="gradeG5" class="grade-input" value="0" min="0"></div>
+                  </div>
+                </div>
+
+                <!-- Seção Expansível 2: Infantis & Juvenis (2 ao 16) -->
+                <div id="secaoGrade_infantis" class="secao-grade-extra-card" style="display: none; margin-top: 10px; padding: 10px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span style="font-size: 11.5px; font-weight: 800; color: #0369a1;">👶 Grade Infantil & Juvenil (Tamanhos 2 ao 16)</span>
+                      <span style="font-size: 10px; color: #0284c7;">(Para colégios, uniformes escolares e eventos)</span>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm btn-fechar-grade-extra" data-secao="infantis" style="font-size: 10px; padding: 1px 7px; color: #0369a1; background: #ffffff; border: 1px solid #bae6fd;">✕ Fechar</button>
+                  </div>
+                  <div class="grade-table-input" style="grid-template-columns: repeat(8, 1fr);">
+                    <div class="grade-col"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 2</div><input type="number" id="gradeInf2" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 4</div><input type="number" id="gradeInf4" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 6</div><input type="number" id="gradeInf6" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 8</div><input type="number" id="gradeInf8" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 10</div><input type="number" id="gradeInf10" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 12</div><input type="number" id="gradeInf12" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 14</div><input type="number" id="gradeInf14" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 16</div><input type="number" id="gradeInf16" class="grade-input" value="0" min="0"></div>
+                  </div>
+                </div>
+
+                <!-- Seção Expansível 3: Baby Look Feminina (BL-PP ao BL-XG) -->
+                <div id="secaoGrade_babylook" class="secao-grade-extra-card" style="display: none; margin-top: 10px; padding: 10px; background: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 6px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span style="font-size: 11.5px; font-weight: 800; color: #9d174d;">👚 Modelagem Baby Look Feminina (BL-PP ao BL-XG)</span>
+                      <span style="font-size: 10px; color: #be185d;">(Corte acinturado feminino)</span>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm btn-fechar-grade-extra" data-secao="babylook" style="font-size: 10px; padding: 1px 7px; color: #9d174d; background: #ffffff; border: 1px solid #fbcfe8;">✕ Fechar</button>
+                  </div>
+                  <div class="grade-table-input" style="grid-template-columns: repeat(6, 1fr);">
+                    <div class="grade-col"><div class="grade-label" style="background: #fce7f3; color: #9d174d; font-weight: 800;">BL-PP</div><input type="number" id="gradeBlPp" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #fce7f3; color: #9d174d; font-weight: 800;">BL-P</div><input type="number" id="gradeBlP" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #fce7f3; color: #9d174d; font-weight: 800;">BL-M</div><input type="number" id="gradeBlM" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #fce7f3; color: #9d174d; font-weight: 800;">BL-G</div><input type="number" id="gradeBlG" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #fce7f3; color: #9d174d; font-weight: 800;">BL-GG</div><input type="number" id="gradeBlGg" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #fce7f3; color: #9d174d; font-weight: 800;">BL-XG</div><input type="number" id="gradeBlXg" class="grade-input" value="0" min="0"></div>
+                  </div>
+                </div>
+
+                <!-- Seção Expansível 4: Modelagem Slim Fit (Slim-P ao Slim-XG) -->
+                <div id="secaoGrade_slim" class="secao-grade-extra-card" style="display: none; margin-top: 10px; padding: 10px; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 6px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span style="font-size: 11.5px; font-weight: 800; color: #6d28d9;">📐 Modelagem Slim Fit (Slim-P ao Slim-XG)</span>
+                      <span style="font-size: 10px; color: #7c3aed;">(Modelagem mais ajustada ao corpo)</span>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm btn-fechar-grade-extra" data-secao="slim" style="font-size: 10px; padding: 1px 7px; color: #6d28d9; background: #ffffff; border: 1px solid #ddd6fe;">✕ Fechar</button>
+                  </div>
+                  <div class="grade-table-input" style="grid-template-columns: repeat(5, 1fr);">
+                    <div class="grade-col"><div class="grade-label" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Slim-P</div><input type="number" id="gradeSlimP" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Slim-M</div><input type="number" id="gradeSlimM" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Slim-G</div><input type="number" id="gradeSlimG" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Slim-GG</div><input type="number" id="gradeSlimGg" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Slim-XG</div><input type="number" id="gradeSlimXg" class="grade-input" value="0" min="0"></div>
+                  </div>
                 </div>
               </div>
 
@@ -4766,13 +5003,15 @@
       const inpObs = document.getElementById('orcObservacoesCoresDetalhes');
       if (inpObs) it.observacoesCoresDetalhes = (inpObs.value || '').trim();
 
-      const pp = parseInt(document.getElementById('gradePP')?.value || 0, 10);
-      const p = parseInt(document.getElementById('gradeP')?.value || 0, 10);
-      const m = parseInt(document.getElementById('gradeM')?.value || 0, 10);
-      const g = parseInt(document.getElementById('gradeG')?.value || 0, 10);
-      const gg = parseInt(document.getElementById('gradeGG')?.value || 0, 10);
-      const xg = parseInt(document.getElementById('gradeXG')?.value || 0, 10);
-      it.grade = { pp, p, m, g, gg, xg, total: pp + p + m + g + gg + xg };
+      const novaGrade = {};
+      let totalGrade = 0;
+      TODOS_CAMPOS_GRADE.forEach(campo => {
+        const val = parseInt(document.getElementById(campo.id)?.value || 0, 10);
+        novaGrade[campo.chave] = val;
+        totalGrade += val;
+      });
+      novaGrade.total = totalGrade;
+      it.grade = novaGrade;
 
       it.custoTecidoKg = parseFloat(document.getElementById('inputCustoTecido')?.value || padroes.custoTecidoKg || 48.50);
       it.consumoTecido = parseFloat(document.getElementById('inputConsumoTecido')?.value || 0.28);
@@ -4935,14 +5174,33 @@
         prevMock.src = it.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, "#1e3a8a", "#ffffff", "BRAVVI") : '');
       }
 
-      // Grade
+      // Grade Completa (Regular + Especiais + Infantis + Baby Look + Slim)
       const g = it.grade || {};
-      ['PP', 'P', 'M', 'G', 'GG', 'XG'].forEach(tam => {
-        const inp = document.getElementById(`grade${tam}`);
-        if (inp) inp.value = g[tam.toLowerCase()] || 0;
+      TODOS_CAMPOS_GRADE.forEach(campo => {
+        const inp = document.getElementById(campo.id);
+        if (inp) inp.value = g[campo.chave] || 0;
       });
       const inpTotal = document.getElementById('gradeTotal');
       if (inpTotal) inpTotal.value = g.total || 0;
+
+      // Auto-expande seções que já tenham quantidades preenchidas
+      SECOES_GRADE_EXTRAS.forEach(sec => {
+        const temQtd = sec.campos.some(c => (g[c.chave] || 0) > 0);
+        const elSec = document.getElementById(sec.id);
+        const btnTog = document.getElementById(`btnToggle_${sec.chaveSecao}`);
+        if (elSec) {
+          elSec.style.display = temQtd ? 'block' : 'none';
+        }
+        if (btnTog) {
+          if (temQtd) {
+            btnTog.style.boxShadow = '0 0 0 2px currentColor';
+            btnTog.style.fontWeight = '800';
+          } else {
+            btnTog.style.boxShadow = '';
+            btnTog.style.fontWeight = '700';
+          }
+        }
+      });
 
       // Custos
       const inpTec = document.getElementById('inputCustoTecido');
@@ -5552,10 +5810,13 @@
       const dataMetaInterna = calcularDataFuturaDiasUteis(prazoInternoDias);
 
       // Soma financeira e grade combinada
-      const gradeConsolidada = { pp: 0, p: 0, m: 0, g: 0, gg: 0, xg: 0, total: 0 };
+      const gradeConsolidada = { total: 0 };
+      TODOS_CAMPOS_GRADE.forEach(c => {
+        gradeConsolidada[c.chave] = 0;
+      });
       itensOrcamento.forEach(it => {
-        ['pp', 'p', 'm', 'g', 'gg', 'xg'].forEach(tam => {
-          gradeConsolidada[tam] += (it.grade?.[tam] || 0);
+        TODOS_CAMPOS_GRADE.forEach(c => {
+          gradeConsolidada[c.chave] += (it.grade?.[c.chave] || 0);
         });
         gradeConsolidada.total += (it.grade?.total || 0);
       });
@@ -5607,9 +5868,9 @@
       };
     }
 
-    // Inputs que disparam recálculo do item ativo
+    // Inputs que disparam recálculo do item ativo (tamanhos regulares + especiais + custos)
     const inputsRecalculo = [
-      'gradePP', 'gradeP', 'gradeM', 'gradeG', 'gradeGG', 'gradeXG',
+      ...TODOS_CAMPOS_GRADE.map(c => c.id),
       'inputCustoTecido', 'inputConsumoTecido', 'inputMargemErroTecido',
       'inputCustoAviamento', 'inputCustoEstampa', 'inputCustoCostura',
       'inputPrecoPretendido', 'inputMargemDesejada', 'inputAliquotaImposto'
@@ -5634,11 +5895,44 @@
     });
 
     document.getElementById('btnZerarGrade')?.addEventListener('click', () => {
-      ['gradePP', 'gradeP', 'gradeM', 'gradeG', 'gradeGG', 'gradeXG'].forEach(id => {
-        const el = document.getElementById(id);
+      TODOS_CAMPOS_GRADE.forEach(c => {
+        const el = document.getElementById(c.id);
         if (el) el.value = 0;
       });
       recalcularBenchmarkModal();
+    });
+
+    // Toggle de seções extras de grade sob demanda
+    document.querySelectorAll('.btn-toggle-grade-extra').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const secaoKey = btn.getAttribute('data-secao');
+        const elSecao = document.getElementById(`secaoGrade_${secaoKey}`);
+        if (!elSecao) return;
+        const estaVisivel = elSecao.style.display !== 'none';
+        elSecao.style.display = estaVisivel ? 'none' : 'block';
+        if (!estaVisivel) {
+          btn.style.boxShadow = '0 0 0 2px currentColor';
+          btn.style.fontWeight = '800';
+          const primeiroInput = elSecao.querySelector('input');
+          if (primeiroInput) primeiroInput.focus();
+        } else {
+          btn.style.boxShadow = '';
+          btn.style.fontWeight = '700';
+        }
+      });
+    });
+
+    document.querySelectorAll('.btn-fechar-grade-extra').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const secaoKey = btn.getAttribute('data-secao');
+        const elSecao = document.getElementById(`secaoGrade_${secaoKey}`);
+        const btnTog = document.getElementById(`btnToggle_${secaoKey}`);
+        if (elSecao) elSecao.style.display = 'none';
+        if (btnTog) {
+          btnTog.style.boxShadow = '';
+          btnTog.style.fontWeight = '700';
+        }
+      });
     });
 
     // Botões de ação do Duplo Fluxo / Edição
