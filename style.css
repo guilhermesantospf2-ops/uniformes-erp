@@ -343,6 +343,7 @@ body {
 }
 
 .navbar-breadcrumb {
+  display: none !important;
   font-size: 11px;
   color: var(--text-gray-500);
   font-family: var(--font-mono);

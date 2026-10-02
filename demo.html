@@ -239,38 +239,20 @@
       <header class="top-navbar">
         <div class="navbar-page-title">
           <h1 id="pageTitle">Abertura & Visão Geral da Fábrica</h1>
-          <span class="navbar-breadcrumb" id="pageBreadcrumb">SISTEMA > ABERTURA</span>
+          <span class="navbar-breadcrumb" id="pageBreadcrumb" style="display: none !important;">SISTEMA > ABERTURA</span>
         </div>
 
-        <div class="navbar-actions">
-          <!-- Indicador de Status em Nuvem White-label e Corporativo -->
-          <div class="cloud-status-badge" id="cloudStatusBadge" style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; padding: 4px 10px; border-radius: 20px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; font-weight: 700; cursor: default; white-space: nowrap;">
-            <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #3b82f6;"></span>
-            <span id="cloudStatusText">🧪 Test Drive Ativo</span>
+        <div class="navbar-actions" style="display: flex; align-items: center; gap: 14px;">
+          <!-- Informações da Empresa (Nome Fantasia & CNPJ) -->
+          <div style="font-size: 11.5px; text-align: right;" id="headerEmpresaInfo">
+            <strong style="display: block; color: var(--text-primary); font-weight: 800; font-size: 13px;" id="headerEmpresaNome">Bravvi Indústria Têxtil</strong>
+            <span class="text-mono" style="color: var(--text-gray-500); font-size: 11px;" id="headerEmpresaCnpj">CNPJ: 34.582.910/0001-44</span>
           </div>
 
-          <!-- Seletor de Perfil Industrial -->
-          <div style="display: flex; align-items: center; gap: 5px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 8px;">
-            <span style="font-size: 10px; font-weight: 700; color: var(--text-gray-500); text-transform: uppercase;">Perfil:</span>
-            <select id="selectPerfilUsuario" class="form-select" style="font-size: 11px; padding: 2px 4px; height: 26px; border: none; background: transparent; font-weight: 800; color: var(--text-primary); cursor: pointer;">
-              <option value="dono">👑 Dono / Diretor (Acesso Total)</option>
-              <option value="vendedor">💼 Vendedor (Sem Financeiro/DRE)</option>
-              <option value="oficina">✂️ Oficina / Chão de Fábrica</option>
-            </select>
-          </div>
-
-          <div style="font-size: 11px; text-align: right; margin-right: 4px;" id="headerEmpresaInfo">
-            <strong style="display: block; color: var(--text-primary); font-weight: 800;" id="headerEmpresaNome">Bravvi Indústria Têxtil</strong>
-            <span class="text-mono" style="color: var(--text-gray-500);" id="headerEmpresaCnpj">CNPJ: 34.582.910/0001-44</span>
-          </div>
-
-          <button class="btn btn-secondary btn-sm" onclick="window.ERP.navegarPara('nesting')" title="Otimização de Encaixe DTF para Impressão">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line></svg>
-            Nesting DTF
-          </button>
-          <button class="btn btn-primary btn-sm" onclick="window.ERP.abrirModalNovoOrcamento()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            Novo Orçamento
+          <!-- Botão de Acesso ao Perfil / Minha Conta -->
+          <button class="btn btn-secondary btn-sm" id="btnHeaderAuth" onclick="window.ERP.abrirModalAutenticacao()" title="Acessar Perfil ou Configurações da Conta" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; padding: 6px 12px; border-radius: 6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <span id="btnHeaderAuthText">Minha Conta</span>
           </button>
         </div>
       </header>
