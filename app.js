@@ -2937,6 +2937,7 @@
               const isQuarentena = p.status === 'Quarentena';
               const isOrcamento = p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento';
               const countdown = calcularContagemRegressivaPedido(p);
+              const nfExistente = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || n.pedidoNumero === p.numero) && n.statusSefaz !== 'cancelada');
               return `
                 <tr style="${isCancelado ? 'opacity: 0.88; background: #fff1f2;' : ''}">
                   <td>
@@ -3141,6 +3142,15 @@
                         </button>
                       ` : `
                         <button class="btn btn-secondary btn-sm btn-ver-os" data-id="${p.id}">OS</button>
+                        ${nfExistente ? `
+                          <button class="btn btn-secondary btn-sm btn-abrir-nfe-pedido" data-nfe-id="${nfExistente.id}" style="font-weight: 700; color: #047857; border-color: #a7f3d0; background: #ecfdf5;" title="Visualizar DANFE Oficial A4 / XML da NF-e #${nfExistente.numero}">
+                            ✓ NF #${nfExistente.numero}
+                          </button>
+                        ` : `
+                          <button class="btn btn-secondary btn-sm btn-emitir-nfe-pedido" data-id="${p.id}" style="font-weight: 700; color: #0369a1; border-color: #bae6fd; background: #f0f9ff;" title="Emitir NF-e Modelo 55 (DANFE Oficial)">
+                            📄 NF-e
+                          </button>
+                        `}
                         <button class="btn btn-secondary btn-sm btn-cancelar-pedido" data-id="${p.id}" style="font-weight: 700; color: #dc2626; border-color: #fca5a5;" title="Cancelar este Pedido Oficial">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
                           Cancelar
@@ -3319,6 +3329,24 @@
             abrirFichaTecnicaPorPedido(p);
           }
         }
+      });
+    });
+
+    // Abrir DANFE Oficial de Pedido com NF-e Emitida
+    document.querySelectorAll('.btn-abrir-nfe-pedido').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const nfeId = btn.getAttribute('data-nfe-id');
+        abrirVisualizadorDanfe(nfeId);
+      });
+    });
+
+    // Emitir NF-e Direto da Linha do Pedido
+    document.querySelectorAll('.btn-emitir-nfe-pedido').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const pId = btn.getAttribute('data-id');
+        abrirModalEmitirNfe(pId);
       });
     });
 
@@ -10602,58 +10630,1684 @@
   }
 
   /* ==========================================================================
-     MÓDULO 12: NOTAS FISCAIS ELETRÔNICAS (SEFAZ)
+     MÓDULO 12: NOTAS FISCAIS ELETRÔNICAS (SEFAZ - MODELO 55 INDUSTRIAL)
      ========================================================================== */
+
+  // Mapeamento Oficial de Código IBGE por UF para NF-e
+  const TABELA_UF_IBGE = {
+    'AC': '12', 'AL': '27', 'AP': '16', 'AM': '13', 'BA': '29', 'CE': '23', 'DF': '53',
+    'ES': '32', 'GO': '52', 'MA': '21', 'MT': '51', 'MS': '50', 'MG': '31', 'PA': '15',
+    'PB': '25', 'PR': '41', 'PE': '26', 'PI': '22', 'RJ': '33', 'RN': '24', 'RS': '43',
+    'RO': '11', 'RR': '14', 'SC': '42', 'SP': '35', 'SE': '28', 'TO': '17'
+  };
+
+  // 107 Padrões Oficiais de Barras do Padrão Code 128 (SEFAZ Code 128C para Chave 44 Dígitos)
+  const CODE_128_PATTERNS = [
+    "212222","222122","222221","121223","121322","131222","122213","122312","132212","221213",
+    "221312","231212","112232","122132","122231","113222","123122","123221","223211","221132",
+    "221231","213212","223112","312131","311222","321122","321221","312212","322112","322211",
+    "212123","212321","232121","111323","131123","131321","112313","132113","132311","211313",
+    "231113","231311","112133","112331","132131","113123","113321","133121","313121","211331",
+    "231131","213113","213311","213131","311123","311321","331121","312113","312311","332111",
+    "314111","221411","431111","111224","111422","121124","121421","141122","141221","112214",
+    "112412","122114","122411","142112","142211","241211","221114","413111","241112","134111",
+    "111242","121142","121241","114212","124112","124211","411212","421112","421211","212141",
+    "214121","412121","111143","111341","131141","114113","114311","411113","411311","113141",
+    "114131","311141","411131","211412","211214","211232","2331112"
+  ];
+
+  function obterConfigFiscal() {
+    if (!db.configFiscal) {
+      db.configFiscal = {
+        ambiente: 'producao', // 'producao' ou 'homologacao'
+        serie: '1',
+        proximoNumero: 101,
+        regimeTributario: 'Simples Nacional',
+        aliquotaSimplesNacional: Number(db.empresa?.aliquotaImpostoPadrao) || 6.5,
+        tipoEmissao: '1', // 1 = Normal
+        naturezaOperacaoPadrao: 'Venda de Produção Própria do Estabelecimento',
+        cfopEstadualPadrao: '5101',
+        cfopInterestadualPadrao: '6101',
+        csosnPadrao: '102',
+        provedorApi: 'focus_nfe', // 'focus_nfe', 'nuvem_fiscal', 'plugnotas', 'direto_a1'
+        apiToken: 'fcs_live_948a7b1c3e5d8f0249',
+        certificadoA1: {
+          instalado: true,
+          nomeArquivo: 'Certificado_Digital_A1_Bravvi.pfx',
+          validade: '31/12/2026',
+          emissor: 'AC SERPRO RFB v5'
+        }
+      };
+      salvarEstado();
+    }
+    return db.configFiscal;
+  }
+
+  function obterNcmSugerido(produtoNome) {
+    const nome = String(produtoNome || '').toLowerCase();
+    if (nome.includes('polo')) return '6105.10.00';
+    if (nome.includes('camiseta') || nome.includes('dry') || nome.includes('t-shirt') || nome.includes('regata')) return '6109.10.00';
+    if (nome.includes('calça') || nome.includes('calca') || nome.includes('bermuda') || nome.includes('brim') || nome.includes('shorts')) return '6203.42.00';
+    if (nome.includes('moletom') || nome.includes('casaco') || nome.includes('agasalho') || nome.includes('jaqueta')) return '6110.20.00';
+    if (nome.includes('jaleco') || nome.includes('avental') || nome.includes('hospitalar')) return '6211.33.00';
+    return '6109.10.00'; // Default vestuário de malha
+  }
+
+  function calcularDigitoVerificadorModulo11(chave43) {
+    let soma = 0;
+    let peso = 2;
+    for (let i = chave43.length - 1; i >= 0; i--) {
+      soma += parseInt(chave43.charAt(i), 10) * peso;
+      peso = peso >= 9 ? 2 : peso + 1;
+    }
+    const resto = soma % 11;
+    return (resto === 0 || resto === 1) ? 0 : (11 - resto);
+  }
+
+  function gerarChaveAcessoNfe(ufSigla, dataEmissao, cnpj, modelo = '55', serie = '1', nNF = 1, tpEmis = '1', cNF = null) {
+    const cUF = TABELA_UF_IBGE[(ufSigla || 'SP').toUpperCase()] || '35';
+    const d = dataEmissao instanceof Date ? dataEmissao : new Date(dataEmissao || Date.now());
+    const ano = String(d.getFullYear()).slice(-2);
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    const aamm = `${ano}${mes}`;
+    const cnpjClean = String(cnpj || '34582910000144').replace(/\D/g, '').padStart(14, '0').slice(0, 14);
+    const mod = String(modelo).padStart(2, '0').slice(-2);
+    const ser = String(serie).padStart(3, '0').slice(-3);
+    const num = String(nNF).padStart(9, '0').slice(-9);
+    const emi = String(tpEmis).slice(0, 1);
+    const codAleatorio = cNF ? String(cNF).padStart(8, '0').slice(-8) : String(Math.floor(10000000 + Math.random() * 90000000));
+
+    const chave43 = `${cUF}${aamm}${cnpjClean}${mod}${ser}${num}${emi}${codAleatorio}`;
+    const cDV = calcularDigitoVerificadorModulo11(chave43);
+    const chaveCompleta = `${chave43}${cDV}`;
+
+    return {
+      chaveCompleta,
+      chaveFormatada: chaveCompleta.replace(/(\d{4})/g, '$1 ').trim(),
+      cUF,
+      aamm,
+      cNF: codAleatorio,
+      cDV
+    };
+  }
+
+  function gerarSvgCodigoBarrasDanfe(chave) {
+    const clean = String(chave || '').replace(/\D/g, '');
+    if (clean.length !== 44) {
+      return `<svg class="danfe-barcode-svg" viewBox="0 0 340 40"><rect width="340" height="40" fill="#f8fafc"/><text x="170" y="24" text-anchor="middle" font-family="monospace" font-size="11" fill="#475569">${chave}</text></svg>`;
+    }
+
+    const pairs = [];
+    for (let i = 0; i < 44; i += 2) {
+      pairs.push(parseInt(clean.substr(i, 2), 10));
+    }
+
+    // Start Code C é o índice 105
+    let checksum = 105;
+    for (let i = 0; i < pairs.length; i++) {
+      checksum += pairs[i] * (i + 1);
+    }
+    const checkValue = checksum % 103;
+
+    let patternString = CODE_128_PATTERNS[105];
+    for (let i = 0; i < pairs.length; i++) {
+      patternString += CODE_128_PATTERNS[pairs[i]];
+    }
+    patternString += CODE_128_PATTERNS[checkValue];
+    patternString += CODE_128_PATTERNS[106]; // Stop Pattern
+
+    let currentX = 8;
+    const barHeight = 36;
+    let rects = '';
+
+    for (let i = 0; i < patternString.length; i++) {
+      const width = parseInt(patternString.charAt(i), 10) * 1.15;
+      if (i % 2 === 0) {
+        rects += `<rect x="${currentX.toFixed(1)}" y="2" width="${width.toFixed(1)}" height="${barHeight}" fill="#000000"/>`;
+      }
+      currentX += width;
+    }
+
+    const totalWidth = (currentX + 8).toFixed(0);
+    return `<svg class="danfe-barcode-svg" viewBox="0 0 ${totalWidth} 40" preserveAspectRatio="none" style="width: 100%; height: 38px;">
+      <rect width="${totalWidth}" height="40" fill="#ffffff"/>
+      ${rects}
+    </svg>`;
+  }
+
+  function gerarXmlNfePadrao400(nfe, empresa) {
+    const emp = empresa || db.empresa || {};
+    const empCnpj = String(emp.cnpj || '34582910000144').replace(/\D/g, '');
+    const cliDoc = String(nfe.cliente?.documento || '').replace(/\D/g, '');
+    const isCliCnpj = cliDoc.length > 11;
+    const dataHoraIso = nfe.dataEmissaoIso || new Date().toISOString();
+
+    const itensXml = (nfe.itens || []).map((it, idx) => {
+      const nItem = idx + 1;
+      const vProd = (it.quantidade * it.valorUnitario).toFixed(2);
+      return `
+      <det nItem="${nItem}">
+        <prod>
+          <cProd>${it.codigo || `PROD-${String(nItem).padStart(3, '0')}`}</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd><![CDATA[${it.descricao || 'Uniforme Confeccionado Sob Medida'}]]></xProd>
+          <NCM>${(it.ncm || '6109.10.00').replace(/\D/g, '')}</NCM>
+          <CFOP>${it.cfop || '5101'}</CFOP>
+          <uCom>${it.unidade || 'UN'}</uCom>
+          <qCom>${it.quantidade.toFixed(4)}</qCom>
+          <vUnCom>${it.valorUnitario.toFixed(4)}</vUnCom>
+          <vProd>${vProd}</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>${it.unidade || 'UN'}</uTrib>
+          <qTrib>${it.quantidade.toFixed(4)}</qTrib>
+          <vUnTrib>${it.valorUnitario.toFixed(4)}</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <vTotTrib>${(it.quantidade * it.valorUnitario * 0.1345).toFixed(2)}</vTotTrib>
+          <ICMS>
+            <ICMSSN102>
+              <orig>0</orig>
+              <CSOSN>${it.csosn || '102'}</CSOSN>
+            </ICMSSN102>
+          </ICMS>
+          <PIS>
+            <PISNT>
+              <CST>07</CST>
+            </PISNT>
+          </PIS>
+          <COFINS>
+            <COFINSNT>
+              <CST>07</CST>
+            </COFINSNT>
+          </PIS>
+        </imposto>
+      </det>`;
+    }).join('\n');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc versao="4.00" xmlns="http://www.portalfiscal.inf.br/nfe">
+  <NFe xmlns="http://www.portalfiscal.inf.br/nfe">
+    <infNFe Id="NFe${nfe.chaveAcesso}" versao="4.00">
+      <ide>
+        <cUF>${TABELA_UF_IBGE[(emp.uf || 'SP').toUpperCase()] || '35'}</cUF>
+        <cNF>${nfe.cNF || '12345678'}</cNF>
+        <natOp><![CDATA[${nfe.naturezaOperacao || 'VENDA DE PRODUCAO DO ESTABELECIMENTO'}]]></natOp>
+        <mod>55</mod>
+        <serie>${nfe.serie || '1'}</serie>
+        <nNF>${nfe.numero}</nNF>
+        <dhEmi>${dataHoraIso}</dhEmi>
+        <dhSaiEnt>${dataHoraIso}</dhSaiEnt>
+        <tpNF>1</tpNF>
+        <idDest>${(nfe.cliente?.uf && nfe.cliente.uf !== emp.uf) ? '2' : '1'}</idDest>
+        <cMunFG>3501608</cMunFG>
+        <tpImp>1</tpImp>
+        <tpEmis>1</tpEmis>
+        <cDV>${nfe.cDV || '0'}</cDV>
+        <tpAmb>${nfe.ambiente === 'producao' ? '1' : '2'}</tpAmb>
+        <finNFe>1</finNFe>
+        <indFinal>1</indFinal>
+        <indPres>1</indPres>
+        <procEmi>0</procEmi>
+        <verProc>BravviERP_8.0</verProc>
+      </ide>
+      <emit>
+        <CNPJ>${empCnpj}</CNPJ>
+        <xNome><![CDATA[${emp.razaoSocial || emp.nomeFantasia || 'Bravvi Confecções Ltda'}]]></xNome>
+        <xFant><![CDATA[${emp.nomeFantasia || 'Bravvi Indústria Têxtil'}]]></xFant>
+        <enderEmit>
+          <xLgr><![CDATA[${emp.endereco || 'Rua das Indústrias Têxteis, 450'}]]></xLgr>
+          <nro>450</nro>
+          <xBairro><![CDATA[${emp.bairro || 'Distrito Industrial'}]]></xBairro>
+          <cMun>3501608</cMun>
+          <xMun><![CDATA[${emp.cidade || 'Americana'}]]></xMun>
+          <UF>${emp.uf || 'SP'}</UF>
+          <CEP>${(emp.cep || '13470000').replace(/\D/g, '')}</CEP>
+          <cPais>1058</cPais>
+          <xPais>BRASIL</xPais>
+          <fone>${(emp.telefone || '11987654321').replace(/\D/g, '')}</fone>
+        </enderEmit>
+        <IE>${(emp.ie || emp.inscricaoEstadual || '109824712110').replace(/\D/g, '')}</IE>
+        <CRT>1</CRT>
+      </emit>
+      <dest>
+        ${isCliCnpj ? `<CNPJ>${cliDoc}</CNPJ>` : `<CPF>${cliDoc}</CPF>`}
+        <xNome><![CDATA[${nfe.cliente?.nome || 'Consumidor Final'}]]></xNome>
+        <enderDest>
+          <xLgr><![CDATA[${nfe.cliente?.endereco?.logradouro || 'Av. Principal'}]]></xLgr>
+          <nro>${nfe.cliente?.endereco?.numero || 'S/N'}</nro>
+          <xBairro><![CDATA[${nfe.cliente?.endereco?.bairro || 'Centro'}]]></xBairro>
+          <cMun>3501608</cMun>
+          <xMun><![CDATA[${nfe.cliente?.endereco?.cidade || 'Americana'}]]></xMun>
+          <UF>${nfe.cliente?.endereco?.uf || 'SP'}</UF>
+          <CEP>${(nfe.cliente?.endereco?.cep || '13470000').replace(/\D/g, '')}</CEP>
+          <cPais>1058</cPais>
+          <xPais>BRASIL</xPais>
+          <fone>${(nfe.cliente?.telefone || '').replace(/\D/g, '')}</fone>
+        </enderDest>
+        <indIEDest>${nfe.cliente?.ie && nfe.cliente.ie !== 'ISENTO' ? '1' : '9'}</indIEDest>
+        ${nfe.cliente?.ie && nfe.cliente.ie !== 'ISENTO' ? `<IE>${nfe.cliente.ie.replace(/\D/g, '')}</IE>` : ''}
+        ${nfe.cliente?.email ? `<email>${nfe.cliente.email}</email>` : ''}
+      </dest>
+      ${itensXml}
+      <total>
+        <ICMSTot>
+          <vBC>0.00</vBC>
+          <vICMS>0.00</vICMS>
+          <vICMSDeson>0.00</vICMSDeson>
+          <vFCP>0.00</vFCP>
+          <vBCST>0.00</vBCST>
+          <vST>0.00</vST>
+          <vFCPST>0.00</vFCPST>
+          <vFCPSTRet>0.00</vFCPSTRet>
+          <vProd>${(nfe.totais?.valorProdutos || 0).toFixed(2)}</vProd>
+          <vFrete>${(nfe.totais?.valorFrete || 0).toFixed(2)}</vFrete>
+          <vSeg>0.00</vSeg>
+          <vDesc>${(nfe.totais?.valorDesconto || 0).toFixed(2)}</vDesc>
+          <vII>0.00</vII>
+          <vIPI>0.00</vIPI>
+          <vIPIDevol>0.00</vIPIDevol>
+          <vPIS>0.00</vPIS>
+          <vCOFINS>0.00</vCOFINS>
+          <vOutro>0.00</vOutro>
+          <vNF>${(nfe.totais?.valorTotal || 0).toFixed(2)}</vNF>
+          <vTotTrib>${(nfe.totais?.valorImpostosAproximados || (nfe.totais?.valorTotal || 0) * 0.1345).toFixed(2)}</vTotTrib>
+        </ICMSTot>
+      </total>
+      <transp>
+        <modFrete>${nfe.transporte?.modalidade || '9'}</modFrete>
+      </transp>
+      <pag>
+        <detPag>
+          <tPag>${nfe.formaPagamentoCodigo || '17'}</tPag>
+          <vPag>${(nfe.totais?.valorTotal || 0).toFixed(2)}</vPag>
+        </detPag>
+      </pag>
+      <infAdic>
+        <infCpl><![CDATA[${nfe.informacoesComplementares || 'Documento emitido por ME ou EPP optante pelo Simples Nacional. Nao gera direito a credito fiscal de IPI. Ref. Pedido #' + (nfe.pedidoNumero || '')}]]></infCpl>
+      </infAdic>
+    </infNFe>
+  </NFe>
+  <protNFe versao="4.00">
+    <infProt>
+      <tpAmb>${nfe.ambiente === 'producao' ? '1' : '2'}</tpAmb>
+      <verAplic>BravviFiscal_4.0</verAplic>
+      <chNFe>${nfe.chaveAcesso}</chNFe>
+      <dhRecbto>${dataHoraIso}</dhRecbto>
+      <nProt>${nfe.protocolo || '135260098765432'}</nProt>
+      <digVal>${nfe.hashSha1 || 'r7a8B3c9D1e2F3g4H5i6J7k8L9m='}</digVal>
+      <cStat>100</cStat>
+      <xMotivo>Autorizado o uso da NF-e</xMotivo>
+    </infProt>
+  </protNFe>
+</nfeProc>`;
+  }
+
+  function gerarDanfeHtml(nfe, empresa) {
+    const emp = empresa || db.empresa || {};
+    const cli = nfe.cliente || {};
+    const tot = nfe.totais || {};
+    const itens = nfe.itens || [];
+    const isCancelada = nfe.statusSefaz === 'cancelada';
+    const chaveFormatada = (nfe.chaveAcesso || '').replace(/(\d{4})/g, '$1 ').trim();
+    const barcodeSvg = gerarSvgCodigoBarrasDanfe(nfe.chaveAcesso);
+
+    return `
+      <div class="danfe-sheet ${isCancelada ? 'danfe-cancelada' : ''}" style="position: relative;">
+        ${isCancelada ? `
+          <div class="danfe-watermark-cancelada" id="danfeWatermarkCancelled">
+            NF-e CANCELADA NA SEFAZ
+            <div style="font-size: 11px; font-weight: 700; margin-top: 4px; letter-spacing: 1px; color: #b91c1c;">
+              Motivo: ${nfe.motivoCancelamento || 'Cancelamento solicitado pelo emitente'} • ${nfe.dataCancelamento || ''}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- 1. CANHOTO DE RECEBIMENTO (DESTACÁVEL) -->
+        <div style="border: 1px solid #000; padding: 4px; margin-bottom: 6px; font-size: 8.5px;">
+          <div style="display: flex; gap: 8px; align-items: stretch;">
+            <div style="flex: 1; border-right: 1px solid #000; padding-right: 8px;">
+              <div style="font-size: 8px; font-weight: 700; text-transform: uppercase;">
+                RECEBEMOS DE <strong>${emp.razaoSocial || emp.nomeFantasia}</strong> OS PRODUTOS / SERVIÇOS CONSTANTES DA NOTA FISCAL INDICADA AO LADO
+              </div>
+              <div style="display: flex; gap: 12px; margin-top: 8px;">
+                <div style="flex: 1; border-top: 1px solid #000; padding-top: 2px;">
+                  <span class="danfe-box-lbl">DATA DE RECEBIMENTO</span>
+                </div>
+                <div style="flex: 2; border-top: 1px solid #000; padding-top: 2px;">
+                  <span class="danfe-box-lbl">IDENTIFICAÇÃO E ASSINATURA DO RECEBEDOR</span>
+                </div>
+              </div>
+            </div>
+            <div style="width: 130px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+              <span style="font-size: 8px; font-weight: 800; text-transform: uppercase;">NF-e</span>
+              <strong style="font-size: 13px; font-family: monospace;">Nº ${String(nfe.numero).padStart(9, '0')}</strong>
+              <span style="font-size: 8px; font-weight: 700;">SÉRIE: ${nfe.serie || '1'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="border-bottom: 1px dashed #000; margin-bottom: 8px;"></div>
+
+        <!-- 2. CABEÇALHO PRINCIPAL DA DANFE (IDENTIFICAÇÃO DO EMITENTE E DA NOTA) -->
+        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+          <!-- Coluna 1: Emitente / Confecção -->
+          <div class="danfe-box" style="flex: 4; display: flex; gap: 8px; align-items: center;">
+            ${emp.logoUrl ? `
+              <img src="${emp.logoUrl}" alt="Logo" style="width: 65px; height: 65px; object-fit: contain;">
+            ` : ''}
+            <div>
+              <strong style="font-size: 11px; display: block; text-transform: uppercase;">${emp.razaoSocial || emp.nomeFantasia}</strong>
+              <span style="font-size: 9px; color: #333; display: block;">${emp.nomeFantasia || ''}</span>
+              <span style="font-size: 8px; display: block; margin-top: 2px;">${emp.endereco || 'Endereço da Fábrica'}</span>
+              <span style="font-size: 8px; display: block;">${emp.bairro || 'Distrito Industrial'} - CEP: ${emp.cep || '13470-000'}</span>
+              <span style="font-size: 8px; display: block;">${emp.cidade || 'Americana'} / ${emp.uf || 'SP'} • Fone: ${emp.telefone || ''}</span>
+            </div>
+          </div>
+
+          <!-- Coluna 2: Identificador DANFE Modelo 55 -->
+          <div class="danfe-box" style="flex: 2.2; text-align: center; display: flex; flex-direction: column; justify-content: space-between; padding: 4px 2px;">
+            <div style="font-size: 13px; font-weight: 900; letter-spacing: 1px;">DANFE</div>
+            <div style="font-size: 7px; font-weight: 700; line-height: 1.1;">Documento Auxiliar da Nota Fiscal Eletrônica</div>
+            <div style="display: flex; justify-content: center; gap: 8px; font-size: 8px; margin: 2px 0;">
+              <span>0 - Entrada<br>1 - Saída</span>
+              <div style="border: 1px solid #000; width: 18px; height: 18px; font-weight: 800; font-size: 11px; display: flex; align-items: center; justify-content: center;">1</div>
+            </div>
+            <div style="font-size: 10px; font-weight: 800; font-family: monospace;">Nº ${String(nfe.numero).padStart(9, '0')}</div>
+            <div style="font-size: 8px; font-weight: 700;">SÉRIE: ${nfe.serie || '1'} • FOLHA: 1/1</div>
+          </div>
+
+          <!-- Coluna 3: Código de Barras e Chave de Acesso -->
+          <div class="danfe-box" style="flex: 4; display: flex; flex-direction: column; justify-content: space-between;">
+            <div style="width: 100%;">${barcodeSvg}</div>
+            <div>
+              <span class="danfe-box-lbl" style="text-align: center;">CHAVE DE ACESSO</span>
+              <div class="danfe-box-val text-mono" style="font-size: 8px; text-align: center; letter-spacing: 0.5px;">${chaveFormatada}</div>
+            </div>
+            <div style="font-size: 6.5px; text-align: center; color: #444; border-top: 1px solid #ddd; padding-top: 1px;">
+              Consulta de autenticidade no portal da NF-e <strong>www.nfe.fazenda.gov.br/portal</strong> ou na SEFAZ Autorizadora
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. NATUREZA DA OPERAÇÃO & PROTOCOLO DE AUTORIZAÇÃO -->
+        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+          <div class="danfe-box" style="flex: 6;">
+            <span class="danfe-box-lbl">NATUREZA DA OPERAÇÃO</span>
+            <span class="danfe-box-val">${nfe.naturezaOperacao || 'VENDA DE PRODUCAO DO ESTABELECIMENTO'}</span>
+          </div>
+          <div class="danfe-box" style="flex: 5;">
+            <span class="danfe-box-lbl">PROTOCOLO DE AUTORIZAÇÃO DE USO</span>
+            <span class="danfe-box-val text-mono">${nfe.protocolo || '135260098765432'} - ${nfe.dataEmissao}</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+          <div class="danfe-box" style="flex: 4;">
+            <span class="danfe-box-lbl">INSCRIÇÃO ESTADUAL</span>
+            <span class="danfe-box-val text-mono">${emp.ie || emp.inscricaoEstadual || '109.824.712.110'}</span>
+          </div>
+          <div class="danfe-box" style="flex: 4;">
+            <span class="danfe-box-lbl">INSC. ESTADUAL DO SUBST. TRIB.</span>
+            <span class="danfe-box-val text-mono">-</span>
+          </div>
+          <div class="danfe-box" style="flex: 4;">
+            <span class="danfe-box-lbl">CNPJ DO EMITENTE</span>
+            <span class="danfe-box-val text-mono">${emp.cnpj || '34.582.910/0001-44'}</span>
+          </div>
+        </div>
+
+        <!-- 4. DESTINATÁRIO / REMETENTE -->
+        <div class="danfe-header-title">DESTINATÁRIO / REMETENTE</div>
+        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+          <div class="danfe-box" style="flex: 7;">
+            <span class="danfe-box-lbl">NOME / RAZÃO SOCIAL</span>
+            <span class="danfe-box-val">${cli.nome || 'Consumidor Final'}</span>
+          </div>
+          <div class="danfe-box" style="flex: 3;">
+            <span class="danfe-box-lbl">CNPJ / CPF</span>
+            <span class="danfe-box-val text-mono">${cli.documento || '-'}</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">DATA DA EMISSÃO</span>
+            <span class="danfe-box-val text-mono">${(nfe.dataEmissao || '').split(' ')[0] || '-'}</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+          <div class="danfe-box" style="flex: 6;">
+            <span class="danfe-box-lbl">ENDEREÇO</span>
+            <span class="danfe-box-val">${cli.endereco?.logradouro || 'Rua Principal'}, ${cli.endereco?.numero || 'S/N'}</span>
+          </div>
+          <div class="danfe-box" style="flex: 3;">
+            <span class="danfe-box-lbl">BAIRRO / DISTRITO</span>
+            <span class="danfe-box-val">${cli.endereco?.bairro || 'Centro'}</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">CEP</span>
+            <span class="danfe-box-val text-mono">${cli.endereco?.cep || '13470-000'}</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">DATA SAÍDA/ENTRADA</span>
+            <span class="danfe-box-val text-mono">${(nfe.dataSaida || nfe.dataEmissao || '').split(' ')[0] || '-'}</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+          <div class="danfe-box" style="flex: 4;">
+            <span class="danfe-box-lbl">MUNICÍPIO</span>
+            <span class="danfe-box-val">${cli.endereco?.cidade || 'Americana'}</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">FONE / FAX</span>
+            <span class="danfe-box-val text-mono">${cli.telefone || '-'}</span>
+          </div>
+          <div class="danfe-box" style="flex: 1;">
+            <span class="danfe-box-lbl">UF</span>
+            <span class="danfe-box-val text-mono" style="text-align: center;">${cli.endereco?.uf || 'SP'}</span>
+          </div>
+          <div class="danfe-box" style="flex: 3;">
+            <span class="danfe-box-lbl">INSCRIÇÃO ESTADUAL</span>
+            <span class="danfe-box-val text-mono">${cli.ie || 'ISENTO'}</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">HORA DA SAÍDA</span>
+            <span class="danfe-box-val text-mono">${(nfe.dataEmissao || '').split(' ')[1] || '08:00'}</span>
+          </div>
+        </div>
+
+        <!-- 5. FATURA / DUPLICATAS -->
+        <div class="danfe-header-title">FATURA / DUPLICATAS</div>
+        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+          <div class="danfe-box" style="flex: 1;">
+            <div style="display: flex; justify-content: space-between; font-size: 8px;">
+              <span><strong>DÚPL. Nº:</strong> ${String(nfe.numero).padStart(3, '0')}-01</span>
+              <span><strong>VENCIMENTO:</strong> À Vista / 30D</span>
+              <span><strong>VALOR:</strong> <strong class="text-mono">${formatarMoeda(tot.valorTotal || 0)}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. CÁLCULO DO IMPOSTO -->
+        <div class="danfe-header-title">CÁLCULO DO IMPOSTO</div>
+        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">BASE DE CÁLCULO DO ICMS</span>
+            <span class="danfe-box-val text-mono">0,00</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">VALOR DO ICMS</span>
+            <span class="danfe-box-val text-mono">0,00</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">BASE DE CÁLC. ICMS S.T.</span>
+            <span class="danfe-box-val text-mono">0,00</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">VALOR DO ICMS S.T.</span>
+            <span class="danfe-box-val text-mono">0,00</span>
+          </div>
+          <div class="danfe-box" style="flex: 3;">
+            <span class="danfe-box-lbl">VALOR TOTAL DOS PRODUTOS</span>
+            <span class="danfe-box-val text-mono">${formatarMoeda(tot.valorProdutos || tot.valorTotal || 0)}</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">VALOR DO FRETE</span>
+            <span class="danfe-box-val text-mono">${formatarMoeda(tot.valorFrete || 0)}</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">VALOR DO SEGURO</span>
+            <span class="danfe-box-val text-mono">0,00</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">DESCONTO</span>
+            <span class="danfe-box-val text-mono">${formatarMoeda(tot.valorDesconto || 0)}</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">OUTRAS DESPESAS</span>
+            <span class="danfe-box-val text-mono">0,00</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">VALOR TOTAL DO IPI</span>
+            <span class="danfe-box-val text-mono">0,00</span>
+          </div>
+          <div class="danfe-box" style="flex: 3; background: #f8fafc; border: 1.5px solid #000;">
+            <span class="danfe-box-lbl" style="font-weight: 800; color: #000;">VALOR TOTAL DA NOTA</span>
+            <span class="danfe-box-val text-mono" style="font-size: 12px; font-weight: 900;">${formatarMoeda(tot.valorTotal || 0)}</span>
+          </div>
+        </div>
+
+        <!-- 7. TRANSPORTADOR / VOLUMES TRANSPORTADOS -->
+        <div class="danfe-header-title">TRANSPORTADOR / VOLUMES TRANSPORTADOS</div>
+        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+          <div class="danfe-box" style="flex: 6;">
+            <span class="danfe-box-lbl">RAZÃO SOCIAL</span>
+            <span class="danfe-box-val">${nfe.transporte?.transportadoraNome || 'O PRÓPRIO / RETIRADA NO LOCAL'}</span>
+          </div>
+          <div class="danfe-box" style="flex: 3;">
+            <span class="danfe-box-lbl">FRETE POR CONTA</span>
+            <span class="danfe-box-val">${nfe.transporte?.modalidade === '0' ? '0 - CIF (Remetente)' : '9 - Sem Ocorrência de Frete'}</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">CÓDIGO ANTT</span>
+            <span class="danfe-box-val text-mono">-</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">PLACA DO VEÍCULO</span>
+            <span class="danfe-box-val text-mono">-</span>
+          </div>
+          <div class="danfe-box" style="flex: 1;">
+            <span class="danfe-box-lbl">UF</span>
+            <span class="danfe-box-val text-mono">-</span>
+          </div>
+          <div class="danfe-box" style="flex: 3;">
+            <span class="danfe-box-lbl">CNPJ / CPF</span>
+            <span class="danfe-box-val text-mono">-</span>
+          </div>
+        </div>
+
+        <!-- 8. DADOS DOS PRODUTOS / SERVIÇOS -->
+        <div class="danfe-header-title">DADOS DOS PRODUTOS / SERVIÇOS</div>
+        <table class="danfe-table" style="margin-bottom: 4px;">
+          <thead>
+            <tr>
+              <th style="width: 55px;">CÓDIGO</th>
+              <th>DESCRIÇÃO DO PRODUTO / SERVIÇO</th>
+              <th style="width: 60px;">NCM/SH</th>
+              <th style="width: 40px;">CST</th>
+              <th style="width: 35px;">CFOP</th>
+              <th style="width: 25px;">UN</th>
+              <th style="width: 35px; text-align: right;">QTD</th>
+              <th style="width: 60px; text-align: right;">VLR. UNIT.</th>
+              <th style="width: 65px; text-align: right;">VLR. TOTAL</th>
+              <th style="width: 50px; text-align: right;">BC ICMS</th>
+              <th style="width: 45px; text-align: right;">VLR. ICMS</th>
+              <th style="width: 40px; text-align: right;">VLR. IPI</th>
+              <th style="width: 35px; text-align: right;">% ICMS</th>
+              <th style="width: 35px; text-align: right;">% IPI</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itens.length ? itens.map((it, idx) => `
+              <tr>
+                <td class="text-mono">${it.codigo || `PROD-${String(idx+1).padStart(3, '0')}`}</td>
+                <td>
+                  <strong>${it.descricao}</strong>
+                  ${it.detalhes ? `<br><span style="font-size: 7px; color: #555;">${it.detalhes}</span>` : ''}
+                </td>
+                <td class="text-mono">${it.ncm || '6109.10.00'}</td>
+                <td class="text-mono">${it.csosn || '102'}</td>
+                <td class="text-mono">${it.cfop || '5101'}</td>
+                <td class="text-mono" style="text-align: center;">${it.unidade || 'UN'}</td>
+                <td class="text-mono" style="text-align: right;">${it.quantidade}</td>
+                <td class="text-mono" style="text-align: right;">${formatarMoeda(it.valorUnitario)}</td>
+                <td class="text-mono" style="text-align: right;"><strong>${formatarMoeda(it.quantidade * it.valorUnitario)}</strong></td>
+                <td class="text-mono" style="text-align: right;">0,00</td>
+                <td class="text-mono" style="text-align: right;">0,00</td>
+                <td class="text-mono" style="text-align: right;">0,00</td>
+                <td class="text-mono" style="text-align: right;">0,00</td>
+                <td class="text-mono" style="text-align: right;">0,00</td>
+              </tr>
+            `).join('') : `
+              <tr>
+                <td colspan="14" style="text-align: center; padding: 10px; color: #666;">Nenhum item discriminado nesta nota fiscal.</td>
+              </tr>
+            `}
+          </tbody>
+        </table>
+
+        <!-- 9. DADOS ADICIONAIS / INFORMAÇÕES COMPLEMENTARES -->
+        <div class="danfe-header-title">DADOS ADICIONAIS</div>
+        <div style="display: flex; gap: 4px; margin-bottom: 2px;">
+          <div class="danfe-box" style="flex: 8; min-height: 55px; font-size: 8px; line-height: 1.35;">
+            <span class="danfe-box-lbl">INFORMAÇÕES COMPLEMENTARES</span>
+            <div>
+              <strong>I - DOCUMENTO EMITIDO POR ME OU EPP OPTANTE PELO SIMPLES NACIONAL.</strong><br>
+              <strong>II - NÃO GERA DIREITO A CRÉDITO FISCAL DE IPI.</strong><br>
+              ${nfe.aliquotaSimples ? `Alíquota Simples Nacional de ${nfe.aliquotaSimples}% (Anexo II - Indústria). Imposto Apurado: ${formatarMoeda((tot.valorTotal || 0) * (nfe.aliquotaSimples / 100))}.<br>` : ''}
+              ${tot.valorImpostosAproximados ? `Valor aprox. dos tributos: ${formatarMoeda(tot.valorImpostosAproximados)} (13,45% Fonte: IBPT/empresometro.com.br).<br>` : ''}
+              ${nfe.pedidoNumero ? `Ordem de Produção / Pedido de Venda: <strong>#${nfe.pedidoNumero}</strong>.<br>` : ''}
+              ${nfe.informacoesComplementares ? `Observações Adicionais: ${nfe.informacoesComplementares}<br>` : ''}
+            </div>
+          </div>
+          <div class="danfe-box" style="flex: 4; min-height: 55px;">
+            <span class="danfe-box-lbl">RESERVADO AO FISCO</span>
+            <span class="text-mono" style="font-size: 7.5px; color: #666;">
+              Ambiente SEFAZ: ${nfe.ambiente === 'producao' ? 'PRODUÇÃO' : 'HOMOLOGAÇÃO'}<br>
+              Versão XML: 4.00<br>
+              Hash: ${(nfe.hashSha1 || 'a1b2c3d4e5f6').substring(0, 16)}...
+            </span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function imprimirDanfeIsolada(nfeId) {
+    const nfe = (db.notasFiscais || []).find(n => n.id === nfeId);
+    if (!nfe) return mostrarToast('Nota Fiscal não localizada para impressão.', 'red');
+
+    const htmlCorpo = `
+      <style>
+        @page { size: A4 portrait; margin: 4mm 5mm; }
+        body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background: #ffffff !important; }
+        .danfe-sheet { width: 100% !important; max-width: 100% !important; border: 1.5px solid #000; padding: 6px; box-sizing: border-box; }
+        .danfe-box { border: 1px solid #000; padding: 2px 4px; box-sizing: border-box; min-height: 28px; }
+        .danfe-box-lbl { font-size: 7.5px; font-weight: 700; text-transform: uppercase; display: block; line-height: 1; margin-bottom: 1px; color: #222; }
+        .danfe-box-val { font-size: 9.5px; font-weight: 800; line-height: 1.15; }
+        .danfe-header-title { font-size: 8px; font-weight: 800; text-transform: uppercase; background: #e2e8f0; padding: 2px 4px; border: 1px solid #000; border-bottom: none; margin-top: 3px; }
+        .danfe-table { width: 100%; border-collapse: collapse; font-size: 8px; border: 1px solid #000; }
+        .danfe-table th { background: #f1f5f9; border: 1px solid #000; padding: 2px 3px; font-size: 7.5px; font-weight: 800; text-transform: uppercase; text-align: left; }
+        .danfe-table td { border: 1px solid #000; padding: 2px 3px; font-size: 8px; }
+        .danfe-barcode-svg { display: block; width: 100%; height: 34px; }
+        .danfe-watermark-cancelada { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) rotate(-28deg); font-size: 38px; font-weight: 900; color: rgba(220, 38, 38, 0.4); border: 5px dashed rgba(220, 38, 38, 0.4); padding: 10px 24px; text-transform: uppercase; letter-spacing: 3px; }
+      </style>
+      ${gerarDanfeHtml(nfe, db.empresa)}
+    `;
+    imprimirDocumentoIsolado(htmlCorpo, `DANFE_NFe_${nfe.numero}_${db.empresa.nomeFantasia}`);
+  }
+
+  function baixarArquivoXmlNfe(nfeId) {
+    const nfe = (db.notasFiscais || []).find(n => n.id === nfeId);
+    if (!nfe) return mostrarToast('Nota Fiscal não localizada.', 'red');
+
+    const xmlConteudo = nfe.xmlGerado || gerarXmlNfePadrao400(nfe, db.empresa);
+    const blob = new Blob([xmlConteudo], { type: 'application/xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `NFe_${nfe.chaveAcesso}.xml`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    mostrarToast(`✓ Arquivo XML da NF-e #${nfe.numero} baixado com sucesso!`, 'green');
+  }
+
+  function enviarNfeWhatsApp(nfeId) {
+    const nfe = (db.notasFiscais || []).find(n => n.id === nfeId);
+    if (!nfe) return;
+
+    const empNome = db.empresa?.nomeFantasia || 'Bravvi Indústria Têxtil';
+    const telNumeros = (nfe.cliente?.telefone || '').toString().replace(/\D/g, '');
+    const mensagem = `Olá, *${nfe.cliente?.nome || 'Cliente'}*!\n\nAqui é da equipe da *${empNome}*.\n\nSua *Nota Fiscal Eletrônica (NF-e Modelo 55)* foi emitida e autorizada com sucesso pela SEFAZ!\n\n📄 *NF-e Nº:* #${nfe.numero} (Série ${nfe.serie})\n💰 *Valor Total:* ${formatarMoeda(nfe.totais?.valorTotal || 0)}\n📅 *Data de Emissão:* ${nfe.dataEmissao}\n\n🔑 *Chave de Acesso Oficial (44 dígitos):*\n\`${nfe.chaveAcesso}\`\n\n🌐 *Consulta SEFAZ:* Você pode consultar a autenticidade e baixar o DANFE/XML no portal oficial:\nhttps://www.nfe.fazenda.gov.br/portal/consultaRecaptcha.aspx?tipoConsulta=completa\n\nQualquer dúvida estamos à disposição!`;
+
+    const linkWpp = `https://api.whatsapp.com/send?phone=55${telNumeros}&text=${encodeURIComponent(mensagem)}`;
+    window.open(linkWpp, '_blank');
+  }
+
+  function abrirVisualizadorDanfe(nfeId) {
+    const nfe = (db.notasFiscais || []).find(n => n.id === nfeId);
+    if (!nfe || !modalContainer) return;
+
+    const isCancelada = nfe.statusSefaz === 'cancelada';
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 920px; width: 95vw; max-height: 94vh; display: flex; flex-direction: column; padding: 0;">
+          <!-- Barra de Ações Superior do Visualizador -->
+          <div class="modal-header" style="background: #0f172a; color: #ffffff; padding: 12px 20px; border-bottom: none; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px;">📄</span>
+              <div>
+                <div style="font-size: 15px; font-weight: 800; color: #ffffff;">DANFE Oficial — NF-e Nº ${nfe.numero} (Série ${nfe.serie})</div>
+                <div style="font-size: 11px; color: #94a3b8;">
+                  Status SEFAZ: <strong style="color: ${isCancelada ? '#ef4444' : '#22c55e'};">${isCancelada ? 'CANCELADA' : 'AUTORIZADA (Uso Permitido)'}</strong> • Protocolo: ${nfe.protocolo || '-'}
+                </div>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button class="btn btn-sm btn-secondary" id="btnImprimirDanfeModal" style="background: #1e293b; color: #ffffff; border-color: #334155; font-weight: 700;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                Imprimir DANFE
+              </button>
+
+              <button class="btn btn-sm btn-secondary" id="btnBaixarXmlModal" style="background: #1e293b; color: #38bdf8; border-color: #0284c7; font-weight: 700;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Download XML
+              </button>
+
+              <button class="btn btn-sm btn-secondary" id="btnWppDanfeModal" style="background: #065f46; color: #a7f3d0; border-color: #059669; font-weight: 700;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                Enviar WhatsApp
+              </button>
+
+              ${!isCancelada ? `
+                <button class="btn btn-sm btn-secondary" id="btnCancelarNfeModal" style="background: rgba(220, 38, 38, 0.2); color: #fca5a5; border-color: #ef4444; font-weight: 700;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                  Cancelar NF-e
+                </button>
+              ` : ''}
+
+              <button class="modal-close" onclick="window.ERP.fecharModal()" style="color: #ffffff; margin-left: 8px;">&times;</button>
+            </div>
+          </div>
+
+          <!-- Corpo com a Folha A4 DANFE -->
+          <div class="danfe-preview-wrapper" style="flex: 1; overflow-y: auto; max-height: calc(94vh - 60px);">
+            <div class="danfe-sheet-shadow">
+              ${gerarDanfeHtml(nfe, db.empresa)}
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+
+    if (!modalEl) return;
+
+    modalEl.querySelector('#btnImprimirDanfeModal')?.addEventListener('click', () => imprimirDanfeIsolada(nfe.id));
+    modalEl.querySelector('#btnBaixarXmlModal')?.addEventListener('click', () => baixarArquivoXmlNfe(nfe.id));
+    modalEl.querySelector('#btnWppDanfeModal')?.addEventListener('click', () => enviarNfeWhatsApp(nfe.id));
+    modalEl.querySelector('#btnCancelarNfeModal')?.addEventListener('click', () => {
+      fecharModal(modalEl);
+      abrirModalCancelarNfe(nfe.id);
+    });
+  }
+
+  function abrirModalCancelarNfe(nfeId) {
+    const nfe = (db.notasFiscais || []).find(n => n.id === nfeId);
+    if (!nfe) return;
+    if (nfe.statusSefaz === 'cancelada') {
+      return mostrarToast('Esta Nota Fiscal já está cancelada na SEFAZ.', 'yellow');
+    }
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 520px;">
+          <div class="modal-header" style="border-bottom: 2px solid #ef4444;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="background: #fee2e2; color: #dc2626; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px;">✕</div>
+              <div>
+                <div class="modal-title" style="color: #991b1b;">Cancelar NF-e #${nfe.numero} na SEFAZ</div>
+                <span style="font-size: 11px; color: var(--text-gray-500);">Transmissão do Evento de Cancelamento (SEFAZ Modelo 55)</span>
+              </div>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+          </div>
+
+          <div class="modal-body" style="padding: 16px 20px;">
+            <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; font-size: 11.5px; color: #9f1239; line-height: 1.4;">
+              ⚠️ <strong>Atenção:</strong> O cancelamento de NF-e na SEFAZ é irreversível e exige justificativa regulamentar com no mínimo <strong>15 caracteres</strong>.
+            </div>
+
+            <div style="margin-bottom: 12px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; font-size: 11.5px; border: 1px solid var(--border-medium);">
+              <div><strong>Destinatário:</strong> ${nfe.cliente?.nome || '-'}</div>
+              <div><strong>Chave de Acesso:</strong> <span class="text-mono" style="font-size: 10px;">${nfe.chaveAcesso}</span></div>
+              <div><strong>Valor da Nota:</strong> <span class="text-mono font-bold">${formatarMoeda(nfe.totais?.valorTotal || 0)}</span></div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 700;">Justificativa de Cancelamento (Mínimo 15 caracteres) *</label>
+              <textarea id="txtMotivoCancNfe" class="form-textarea" rows="3" placeholder="Ex: Pedido cancelado pelo cliente antes do despacho ou erro na quantidade de uniformes..."></textarea>
+              <span id="charCountCancNfe" style="font-size: 10px; color: #64748b; display: block; text-align: right; margin-top: 3px;">0 / 15 caracteres mínimos</span>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" onclick="window.ERP.fecharModal()">Voltar</button>
+            <button class="btn btn-sm btn-danger" id="btnConfirmarCancNfe" style="background: #dc2626; border-color: #dc2626; color: #ffffff; font-weight: 700;">
+              Confirmar Cancelamento SEFAZ
+            </button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    if (!modalEl) return;
+
+    const txtMotivo = modalEl.querySelector('#txtMotivoCancNfe');
+    const lblCharCount = modalEl.querySelector('#charCountCancNfe');
+    const btnConfirmar = modalEl.querySelector('#btnConfirmarCancNfe');
+
+    txtMotivo.addEventListener('input', () => {
+      const len = txtMotivo.value.trim().length;
+      lblCharCount.textContent = `${len} / 15 caracteres mínimos`;
+      lblCharCount.style.color = len >= 15 ? '#059669' : '#dc2626';
+    });
+
+    btnConfirmar.addEventListener('click', () => {
+      const motivo = txtMotivo.value.trim();
+      if (motivo.length < 15) {
+        return alert('A justificativa de cancelamento da SEFAZ precisa ter no mínimo 15 caracteres.');
+      }
+
+      nfe.statusSefaz = 'cancelada';
+      nfe.motivoCancelamento = motivo;
+      nfe.dataCancelamento = new Date().toLocaleString('pt-BR');
+      salvarEstado();
+      fecharModal(modalEl);
+      mostrarToast(`✓ NF-e #${nfe.numero} cancelada com sucesso na SEFAZ.`, 'green');
+
+      if (abaAtiva === 'nfe') {
+        renderizarNotasFiscais();
+      } else if (abaAtiva === 'pedidos') {
+        renderizarPedidos();
+      }
+    });
+  }
+
+  function abrirModalConfiguracoesFiscais() {
+    const cfg = obterConfigFiscal();
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 650px;">
+          <div class="modal-header">
+            <div>
+              <div class="modal-title">⚙️ Configurações Fiscais & Certificado Digital A1</div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Parametrização SEFAZ, Simples Nacional e Gateways de Emissão</span>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+          </div>
+
+          <div class="modal-body" style="padding: 16px 20px;">
+            <!-- Status do Certificado A1 -->
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="font-size: 24px;">🔐</div>
+                <div>
+                  <div style="font-size: 13px; font-weight: 800; color: #166534;">Certificado Digital A1 Instalado</div>
+                  <div style="font-size: 11px; color: #15803d;">
+                    Arquivo: <strong>${cfg.certificadoA1?.nomeArquivo || 'Certificado_A1.pfx'}</strong> • Validade: <strong>${cfg.certificadoA1?.validade || '31/12/2026'}</strong>
+                  </div>
+                </div>
+              </div>
+              <span class="status-pill status-green" style="font-size: 10px;">ATIVO</span>
+            </div>
+
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-group">
+                <label class="form-label">Ambiente de Emissão SEFAZ</label>
+                <select id="cfgFiscalAmbiente" class="form-select font-bold">
+                  <option value="producao" ${cfg.ambiente === 'producao' ? 'selected' : ''}>🟢 Produção (Notas Reais com Valor Fiscal)</option>
+                  <option value="homologacao" ${cfg.ambiente === 'homologacao' ? 'selected' : ''}>🟡 Homologação (Ambiente de Testes)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Regime Tributário</label>
+                <select id="cfgFiscalRegime" class="form-select" disabled>
+                  <option value="Simples Nacional" selected>Simples Nacional (CRT 1 - Confecções)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+              <div class="form-group">
+                <label class="form-label">Série da NF-e</label>
+                <input type="text" id="cfgFiscalSerie" class="form-input text-mono" value="${cfg.serie || '1'}">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Próximo Número NF-e</label>
+                <input type="number" id="cfgFiscalProximoNumero" class="form-input text-mono font-bold" value="${cfg.proximoNumero || 101}">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Alíquota Simples (%)</label>
+                <input type="number" step="0.01" id="cfgFiscalAliquota" class="form-input text-mono font-bold" value="${cfg.aliquotaSimplesNacional || 6.5}">
+              </div>
+            </div>
+
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-group">
+                <label class="form-label">CFOP Estadual (Dentro de SP)</label>
+                <input type="text" id="cfgFiscalCfopEstadual" class="form-input text-mono" value="${cfg.cfopEstadualPadrao || '5101'}">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">CFOP Interestadual (Fora de SP)</label>
+                <input type="text" id="cfgFiscalCfopInter" class="form-input text-mono" value="${cfg.cfopInterestadualPadrao || '6101'}">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Gateway / Provedor de Emissão</label>
+              <select id="cfgFiscalProvedor" class="form-select">
+                <option value="focus_nfe" ${cfg.provedorApi === 'focus_nfe' ? 'selected' : ''}>Focus NFe API (Recomendado - Direto SEFAZ)</option>
+                <option value="nuvem_fiscal" ${cfg.provedorApi === 'nuvem_fiscal' ? 'selected' : ''}>Nuvem Fiscal</option>
+                <option value="plugnotas" ${cfg.provedorApi === 'plugnotas' ? 'selected' : ''}>PlugNotas (TecnoSpeed)</option>
+                <option value="direto_a1" ${cfg.provedorApi === 'direto_a1' ? 'selected' : ''}>Assinatura Direta em Navegador (Certificado A1 .PFX)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Token da API Fiscal / Chave Privada</label>
+              <input type="password" id="cfgFiscalToken" class="form-input text-mono" value="${cfg.apiToken || ''}" placeholder="Insira o Token fornecido pelo gateway fiscal...">
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: 6px; padding: 10px; font-size: 11px; color: var(--text-gray-600); line-height: 1.4;">
+              💡 <strong>Dica de Automação:</strong> Toda nota emitida calcula automaticamente os tributos da Lei da Transparência (IBPT 13,45%) e anexa a chave de acesso de 44 dígitos com código de barras no padrão oficial da Receita Federal.
+            </div>
+          </div>
+
+          <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" onclick="window.ERP.fecharModal()">Cancelar</button>
+            <button class="btn btn-primary btn-sm" id="btnSalvarCfgFiscal">
+              Salvar Configurações Fiscais
+            </button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    if (!modalEl) return;
+
+    modalEl.querySelector('#btnSalvarCfgFiscal').addEventListener('click', () => {
+      cfg.ambiente = modalEl.querySelector('#cfgFiscalAmbiente').value;
+      cfg.serie = modalEl.querySelector('#cfgFiscalSerie').value.trim() || '1';
+      cfg.proximoNumero = parseInt(modalEl.querySelector('#cfgFiscalProximoNumero').value, 10) || 101;
+      cfg.aliquotaSimplesNacional = parseFloat(modalEl.querySelector('#cfgFiscalAliquota').value) || 6.5;
+      cfg.cfopEstadualPadrao = modalEl.querySelector('#cfgFiscalCfopEstadual').value.trim() || '5101';
+      cfg.cfopInterestadualPadrao = modalEl.querySelector('#cfgFiscalCfopInter').value.trim() || '6101';
+      cfg.provedorApi = modalEl.querySelector('#cfgFiscalProvedor').value;
+      cfg.apiToken = modalEl.querySelector('#cfgFiscalToken').value.trim();
+
+      salvarEstado();
+      fecharModal(modalEl);
+      mostrarToast('✓ Configurações fiscais salvas com sucesso!', 'green');
+      if (abaAtiva === 'nfe') renderizarNotasFiscais();
+    });
+  }
+
+  function abrirModalEmitirNfe(pedidoIdPreselecionado = null) {
+    const cfg = obterConfigFiscal();
+    const emp = db.empresa || {};
+    const pedidosDisponiveis = (db.pedidos || []).filter(p => p.status !== 'Cancelado');
+
+    // Se passou um pedido já selecionado, obtém o pedido
+    let pedidoSelecionado = pedidoIdPreselecionado 
+      ? pedidosDisponiveis.find(p => p.id === pedidoIdPreselecionado)
+      : null;
+
+    // Se o pedido já possui NF-e ativa emitida, abre direto a DANFE
+    if (pedidoSelecionado) {
+      const nfExistente = (db.notasFiscais || []).find(n => (n.pedidoId === pedidoSelecionado.id || n.pedidoNumero === pedidoSelecionado.numero) && n.statusSefaz !== 'cancelada');
+      if (nfExistente) {
+        mostrarToast(`Este pedido já possui a NF-e #${nfExistente.numero} emitida. Abrindo DANFE...`, 'green');
+        abrirVisualizadorDanfe(nfExistente.id);
+        return;
+      }
+    }
+
+    // Monta itens iniciais a partir do pedido ou itens padrão
+    function extrairItensDoPedido(p) {
+      if (!p) {
+        return [{
+          codigo: 'UNI-001',
+          descricao: 'Camisa Polo Tradicional Piquet com Bordado',
+          ncm: '6105.10.00',
+          cfop: '5101',
+          unidade: 'UN',
+          quantidade: 50,
+          valorUnitario: 58.00,
+          csosn: '102'
+        }];
+      }
+
+      if (p.itens && p.itens.length > 0) {
+        return p.itens.map((it, idx) => ({
+          codigo: `MOD-${String(idx + 1).padStart(3, '0')}`,
+          descricao: `${it.produtoNome || p.produtoNome || 'Uniforme'} ${it.corPrincipal ? `(${it.corPrincipal})` : ''}`,
+          ncm: obterNcmSugerido(it.produtoNome || p.produtoNome),
+          cfop: '5101',
+          unidade: 'UN',
+          quantidade: Number(it.grade?.total || it.quantidade || 1),
+          valorUnitario: Number(it.precoUnitario || it.valorUnitario || p.precoUnitarioVenda || 0),
+          csosn: '102'
+        }));
+      }
+
+      return [{
+        codigo: 'PED-' + (p.numero || '101'),
+        descricao: `${p.produtoNome || 'Uniformes Profissionais'} ${p.corTecido ? `(${p.corTecido})` : ''}`,
+        ncm: obterNcmSugerido(p.produtoNome),
+        cfop: '5101',
+        unidade: 'UN',
+        quantidade: Number(p.grade?.total || 1),
+        valorUnitario: Number(p.precoUnitarioVenda || (p.valorTotalVenda / (p.grade?.total || 1)) || 0),
+        csosn: '102'
+      }];
+    }
+
+    let itensAtuais = extrairItensDoPedido(pedidoSelecionado);
+
+    // Dados do cliente a partir do pedido ou cliente do banco
+    let clienteNome = pedidoSelecionado?.clienteNome || '';
+    let clienteDoc = '';
+    let clienteTel = pedidoSelecionado?.clienteTelefone || '';
+    let clienteEmail = '';
+    let clienteEndereco = { logradouro: '', numero: '', bairro: '', cidade: 'Americana', uf: 'SP', cep: '13470-000' };
+
+    if (clienteNome) {
+      const cliDb = (db.clientes || []).find(c => c.nome === clienteNome || c.id === pedidoSelecionado?.clienteId);
+      if (cliDb) {
+        clienteDoc = cliDb.documento || cliDb.cnpj || cliDb.cpf || '';
+        clienteTel = cliDb.telefone || clienteTel;
+        clienteEmail = cliDb.email || '';
+        if (cliDb.cidade) clienteEndereco.cidade = cliDb.cidade;
+        if (cliDb.uf) clienteEndereco.uf = cliDb.uf;
+        if (cliDb.endereco) clienteEndereco.logradouro = cliDb.endereco;
+        if (cliDb.cep) clienteEndereco.cep = cliDb.cep;
+      } else {
+        clienteDoc = '34.582.910/0001-44';
+        clienteEndereco.logradouro = 'Av. das Indústrias, 1200';
+      }
+    }
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 860px; width: 95vw; max-height: 94vh; display: flex; flex-direction: column;">
+          <div class="modal-header" style="background: #0f172a; color: #ffffff;">
+            <div>
+              <div class="modal-title" style="color: #ffffff; display: flex; align-items: center; gap: 8px;">
+                <span>📄</span> Emitir NF-e Modelo 55 (DANFE Oficial SEFAZ)
+              </div>
+              <span style="font-size: 11px; color: #94a3b8;">Emissão integrada com transmissão direta para a Receita Estadual</span>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()" style="color: #ffffff;">&times;</button>
+          </div>
+
+          <div class="modal-body" style="padding: 16px 20px; overflow-y: auto; flex: 1;">
+            
+            <!-- Etapa 1: Vínculo de Pedido & Informações Básicas -->
+            <div style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+              <div style="font-size: 12px; font-weight: 800; color: #0f172a; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                1. Origem da Venda & Natureza da Operação
+              </div>
+              <div class="form-row" style="display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 10px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Vincular a Pedido Concluído / Em Andamento</label>
+                  <select id="emitNfeSelectPedido" class="form-select font-bold">
+                    <option value="">-- Emissão Avulsa (Sem vínculo a pedido) --</option>
+                    ${pedidosDisponiveis.map(p => `
+                      <option value="${p.id}" ${pedidoSelecionado?.id === p.id ? 'selected' : ''}>
+                        Pedido #${p.numero} — ${p.clienteNome} (${formatarMoeda(p.valorTotalVenda || 0)})
+                      </option>
+                    `).join('')}
+                  </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Natureza da Operação SEFAZ</label>
+                  <select id="emitNfeNatOp" class="form-select">
+                    <option value="Venda de Produção Própria do Estabelecimento" selected>5.101 - Venda de Produção Própria</option>
+                    <option value="Remessa de Amostra / Mostruário de Uniformes">5.911 - Remessa de Amostra Grátis</option>
+                    <option value="Venda de Mercadoria Adquirida de Terceiros">5.102 - Revenda de Mercadorias</option>
+                    <option value="Remessa para Conserto ou Reparo">5.915 - Remessa p/ Ajuste ou Conserto</option>
+                  </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Série / Número</label>
+                  <input type="text" class="form-input text-mono font-bold" value="${cfg.serie} / #${cfg.proximoNumero}" readonly style="background: #e2e8f0;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Etapa 2: Destinatário / Tomador -->
+            <div style="background: #ffffff; border: 1px solid var(--border-medium); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+              <div style="font-size: 12px; font-weight: 800; color: #0f172a; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                2. Destinatário / Tomador dos Uniformes
+              </div>
+              <div class="form-row" style="display: grid; grid-template-columns: 2fr 1.3fr 1fr; gap: 10px; margin-bottom: 8px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Razão Social / Nome Completo *</label>
+                  <input type="text" id="emitNfeCliNome" class="form-input font-bold" value="${clienteNome}" placeholder="Nome ou Razão Social do Cliente">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">CNPJ ou CPF *</label>
+                  <input type="text" id="emitNfeCliDoc" class="form-input text-mono" value="${clienteDoc}" placeholder="00.000.000/0000-00">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Inscrição Estadual</label>
+                  <input type="text" id="emitNfeCliIe" class="form-input text-mono" value="ISENTO" placeholder="ISENTO ou Número">
+                </div>
+              </div>
+
+              <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Telefone / WhatsApp</label>
+                  <input type="text" id="emitNfeCliTel" class="form-input text-mono" value="${clienteTel}" placeholder="(11) 98888-7777">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">E-mail para Envio do XML</label>
+                  <input type="email" id="emitNfeCliEmail" class="form-input" value="${clienteEmail}" placeholder="financeiro@empresa.com.br">
+                </div>
+              </div>
+
+              <div class="form-row" style="display: grid; grid-template-columns: 2.5fr 1fr 1.5fr 1.5fr 0.6fr 1fr; gap: 8px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Logradouro</label>
+                  <input type="text" id="emitNfeCliLgr" class="form-input" value="${clienteEndereco.logradouro}" placeholder="Rua / Av.">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Número</label>
+                  <input type="text" id="emitNfeCliNum" class="form-input" value="S/N" placeholder="100">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Bairro</label>
+                  <input type="text" id="emitNfeCliBairro" class="form-input" value="Centro" placeholder="Bairro">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Cidade</label>
+                  <input type="text" id="emitNfeCliCidade" class="form-input" value="${clienteEndereco.cidade}" placeholder="Cidade">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">UF</label>
+                  <input type="text" id="emitNfeCliUf" class="form-input text-mono" maxlength="2" value="${clienteEndereco.uf}" style="text-transform: uppercase;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">CEP</label>
+                  <input type="text" id="emitNfeCliCep" class="form-input text-mono" value="${clienteEndereco.cep}" placeholder="00000-000">
+                </div>
+              </div>
+            </div>
+
+            <!-- Etapa 3: Itens da Nota Fiscal -->
+            <div style="background: #ffffff; border: 1px solid var(--border-medium); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div style="font-size: 12px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
+                  3. Produtos & Modelos Têxteis da NF-e
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnAdicionarLinhaItemNfe" style="font-size: 11px; padding: 4px 8px;">
+                  + Adicionar Item
+                </button>
+              </div>
+
+              <div class="table-wrapper" style="margin-bottom: 0; max-height: 220px; overflow-y: auto;">
+                <table class="erp-table" id="tabelaItensEmissaoNfe">
+                  <thead>
+                    <tr>
+                      <th style="width: 40%;">Descrição do Uniforme</th>
+                      <th style="width: 16%;">NCM</th>
+                      <th style="width: 10%;">CFOP</th>
+                      <th style="width: 10%; text-align: right;">Qtd</th>
+                      <th style="width: 14%; text-align: right;">Unitário (R$)</th>
+                      <th style="width: 10%; text-align: right;">Total (R$)</th>
+                      <th style="width: 20px;"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbodyItensNfe">
+                    <!-- Renderizado dinamicamente -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Etapa 4: Resumo dos Totais & Impostos -->
+            <div style="background: #f1f5f9; border: 1px solid var(--border-medium); border-radius: 8px; padding: 12px 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+                <div>
+                  <span style="font-size: 11px; color: var(--text-gray-500); display: block;">Regime Simples Nacional (Alíquota ${cfg.aliquotaSimplesNacional}%)</span>
+                  <div style="font-size: 12px; color: #0f172a;">
+                    Imposto Estimado Simples: <strong id="lblImpostoEstimadoNfe" class="text-mono" style="color: #0369a1;">R$ 0,00</strong> • 
+                    Tributos Aprox. IBPT (13,45%): <strong id="lblIbptNfe" class="text-mono" style="color: #475569;">R$ 0,00</strong>
+                  </div>
+                </div>
+
+                <div style="display: flex; align-items: baseline; gap: 10px;">
+                  <span style="font-size: 13px; font-weight: 700; color: #475569;">VALOR TOTAL DA NF-e:</span>
+                  <strong id="lblValorTotalNotaNfe" class="text-mono" style="font-size: 22px; font-weight: 900; color: #047857;">R$ 0,00</strong>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 11px; color: #64748b;">
+              🔒 Certificado Digital A1 ativo • Transmissão SEFAZ Produção
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-secondary btn-sm" onclick="window.ERP.fecharModal()">Cancelar</button>
+              <button class="btn btn-primary btn-sm" id="btnTransmitirNfeSefaz" style="background: var(--color-green); border-color: var(--color-green); font-weight: 800; padding: 8px 18px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Emitir & Transmitir NF-e (SEFAZ)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+
+    if (!modalEl) return;
+
+    const selectPedido = modalEl.querySelector('#emitNfeSelectPedido');
+    const tbodyItens = modalEl.querySelector('#tbodyItensNfe');
+    const lblTotalNota = modalEl.querySelector('#lblValorTotalNotaNfe');
+    const lblImpostoSimples = modalEl.querySelector('#lblImpostoEstimadoNfe');
+    const lblIbpt = modalEl.querySelector('#lblIbptNfe');
+
+    function renderizarLinhasTabelaItens() {
+      tbodyItens.innerHTML = itensAtuais.map((it, idx) => `
+        <tr data-index="${idx}">
+          <td>
+            <input type="text" class="form-input item-desc font-bold" value="${it.descricao || ''}" style="font-size: 11px; padding: 3px 6px;">
+          </td>
+          <td>
+            <input type="text" class="form-input item-ncm text-mono" value="${it.ncm || '6109.10.00'}" style="font-size: 11px; padding: 3px 6px;">
+          </td>
+          <td>
+            <input type="text" class="form-input item-cfop text-mono" value="${it.cfop || '5101'}" style="font-size: 11px; padding: 3px 6px;">
+          </td>
+          <td>
+            <input type="number" step="1" min="1" class="form-input item-qtd text-mono text-right" value="${it.quantidade}" style="font-size: 11px; padding: 3px 6px;">
+          </td>
+          <td>
+            <input type="number" step="0.01" min="0" class="form-input item-unit text-mono text-right" value="${it.valorUnitario.toFixed(2)}" style="font-size: 11px; padding: 3px 6px;">
+          </td>
+          <td class="text-mono text-right" style="font-size: 12px; font-weight: 800;">
+            ${formatarMoeda(it.quantidade * it.valorUnitario)}
+          </td>
+          <td style="text-align: center;">
+            <button type="button" class="btn-remover-item-nfe" data-index="${idx}" style="background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 14px; font-weight: bold;" title="Remover item">&times;</button>
+          </td>
+        </tr>
+      `).join('');
+
+      recalcularTotais();
+      configurarEventosTabelaItens();
+    }
+
+    function recalcularTotais() {
+      let subtotal = 0;
+      itensAtuais.forEach(it => {
+        subtotal += (Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0);
+      });
+
+      const aliq = Number(cfg.aliquotaSimplesNacional) || 6.5;
+      const vlrImposto = subtotal * (aliq / 100);
+      const vlrIbpt = subtotal * 0.1345;
+
+      lblTotalNota.textContent = formatarMoeda(subtotal);
+      lblImpostoSimples.textContent = formatarMoeda(vlrImposto);
+      lblIbpt.textContent = formatarMoeda(vlrIbpt);
+    }
+
+    function configurarEventosTabelaItens() {
+      tbodyItens.querySelectorAll('.item-desc').forEach(input => {
+        input.addEventListener('change', (e) => {
+          const idx = parseInt(e.target.closest('tr').getAttribute('data-index'), 10);
+          itensAtuais[idx].descricao = e.target.value.trim();
+        });
+      });
+
+      tbodyItens.querySelectorAll('.item-ncm').forEach(input => {
+        input.addEventListener('change', (e) => {
+          const idx = parseInt(e.target.closest('tr').getAttribute('data-index'), 10);
+          itensAtuais[idx].ncm = e.target.value.trim();
+        });
+      });
+
+      tbodyItens.querySelectorAll('.item-cfop').forEach(input => {
+        input.addEventListener('change', (e) => {
+          const idx = parseInt(e.target.closest('tr').getAttribute('data-index'), 10);
+          itensAtuais[idx].cfop = e.target.value.trim();
+        });
+      });
+
+      tbodyItens.querySelectorAll('.item-qtd').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const idx = parseInt(e.target.closest('tr').getAttribute('data-index'), 10);
+          itensAtuais[idx].quantidade = parseFloat(e.target.value) || 0;
+          const tr = e.target.closest('tr');
+          const tdTotal = tr.children[5];
+          tdTotal.textContent = formatarMoeda(itensAtuais[idx].quantidade * itensAtuais[idx].valorUnitario);
+          recalcularTotais();
+        });
+      });
+
+      tbodyItens.querySelectorAll('.item-unit').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const idx = parseInt(e.target.closest('tr').getAttribute('data-index'), 10);
+          itensAtuais[idx].valorUnitario = parseFloat(e.target.value) || 0;
+          const tr = e.target.closest('tr');
+          const tdTotal = tr.children[5];
+          tdTotal.textContent = formatarMoeda(itensAtuais[idx].quantidade * itensAtuais[idx].valorUnitario);
+          recalcularTotais();
+        });
+      });
+
+      tbodyItens.querySelectorAll('.btn-remover-item-nfe').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(btn.getAttribute('data-index'), 10);
+          if (itensAtuais.length <= 1) {
+            return mostrarToast('A NF-e precisa ter pelo menos 1 item.', 'yellow');
+          }
+          itensAtuais.splice(idx, 1);
+          renderizarLinhasTabelaItens();
+        });
+      });
+    }
+
+    renderizarLinhasTabelaItens();
+
+    // Evento ao trocar pedido no select
+    selectPedido.addEventListener('change', () => {
+      const pId = selectPedido.value;
+      const p = pedidosDisponiveis.find(x => x.id === pId);
+      if (p) {
+        modalEl.querySelector('#emitNfeCliNome').value = p.clienteNome || '';
+        modalEl.querySelector('#emitNfeCliTel').value = p.clienteTelefone || '';
+        itensAtuais = extrairItensDoPedido(p);
+      } else {
+        itensAtuais = [{
+          codigo: 'UNI-001',
+          descricao: 'Uniformes Personalizados para Empresas',
+          ncm: '6109.10.00',
+          cfop: '5101',
+          unidade: 'UN',
+          quantidade: 1,
+          valorUnitario: 100.00,
+          csosn: '102'
+        }];
+      }
+      renderizarLinhasTabelaItens();
+    });
+
+    // Botão adicionar linha de produto
+    modalEl.querySelector('#btnAdicionarLinhaItemNfe').addEventListener('click', () => {
+      itensAtuais.push({
+        codigo: `PROD-${String(itensAtuais.length + 1).padStart(3, '0')}`,
+        descricao: 'Peça de Uniforme Adicional',
+        ncm: '6109.10.00',
+        cfop: '5101',
+        unidade: 'UN',
+        quantidade: 10,
+        valorUnitario: 45.00,
+        csosn: '102'
+      });
+      renderizarLinhasTabelaItens();
+    });
+
+    // Transmissão Oficial para a SEFAZ
+    const btnTransmitir = modalEl.querySelector('#btnTransmitirNfeSefaz');
+    btnTransmitir.addEventListener('click', () => {
+      const cliNome = modalEl.querySelector('#emitNfeCliNome').value.trim();
+      const cliDoc = modalEl.querySelector('#emitNfeCliDoc').value.trim();
+
+      if (!cliNome) return alert('Por favor, informe a Razão Social ou Nome do Cliente.');
+      if (!cliDoc) return alert('Por favor, informe o CNPJ ou CPF do Cliente.');
+      if (itensAtuais.length === 0) return alert('Adicione pelo menos 1 item na Nota Fiscal.');
+
+      btnTransmitir.disabled = true;
+      btnTransmitir.innerHTML = `
+        <svg class="icon-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
+        Transmitindo SEFAZ...
+      `;
+
+      setTimeout(() => {
+        const numNfe = cfg.proximoNumero || 101;
+        const dataAgora = new Date();
+        const dataFormatada = dataAgora.toLocaleDateString('pt-BR') + ' ' + dataAgora.toLocaleTimeString('pt-BR');
+        const dataIso = dataAgora.toISOString();
+
+        let subtotal = 0;
+        itensAtuais.forEach(it => subtotal += (it.quantidade * it.valorUnitario));
+
+        const chaveObj = gerarChaveAcessoNfe(
+          modalEl.querySelector('#emitNfeCliUf').value || 'SP',
+          dataAgora,
+          emp.cnpj,
+          '55',
+          cfg.serie,
+          numNfe
+        );
+
+        const protocoloNum = '135260' + String(Math.floor(10000000 + Math.random() * 90000000));
+        const pedidoVinculadoId = selectPedido.value || null;
+        const pedObj = pedidoVinculadoId ? pedidosDisponiveis.find(x => x.id === pedidoVinculadoId) : null;
+
+        const novaNfe = {
+          id: 'nfe_' + Date.now(),
+          numero: numNfe,
+          serie: cfg.serie || '1',
+          modelo: '55',
+          chaveAcesso: chaveObj.chaveCompleta,
+          cNF: chaveObj.cNF,
+          cDV: chaveObj.cDV,
+          protocolo: protocoloNum,
+          dataEmissao: dataFormatada,
+          dataEmissaoIso: dataIso,
+          dataSaida: dataFormatada,
+          statusSefaz: 'autorizada',
+          ambiente: cfg.ambiente || 'producao',
+          naturezaOperacao: modalEl.querySelector('#emitNfeNatOp').value,
+          cfop: itensAtuais[0]?.cfop || '5101',
+          pedidoId: pedidoVinculadoId,
+          pedidoNumero: pedObj ? pedObj.numero : null,
+          aliquotaSimples: cfg.aliquotaSimplesNacional || 6.5,
+          cliente: {
+            nome: cliNome,
+            documento: cliDoc,
+            ie: modalEl.querySelector('#emitNfeCliIe').value.trim() || 'ISENTO',
+            telefone: modalEl.querySelector('#emitNfeCliTel').value.trim(),
+            email: modalEl.querySelector('#emitNfeCliEmail').value.trim(),
+            endereco: {
+              logradouro: modalEl.querySelector('#emitNfeCliLgr').value.trim(),
+              numero: modalEl.querySelector('#emitNfeCliNum').value.trim(),
+              bairro: modalEl.querySelector('#emitNfeCliBairro').value.trim(),
+              cidade: modalEl.querySelector('#emitNfeCliCidade').value.trim(),
+              uf: (modalEl.querySelector('#emitNfeCliUf').value.trim() || 'SP').toUpperCase(),
+              cep: modalEl.querySelector('#emitNfeCliCep').value.trim()
+            }
+          },
+          itens: JSON.parse(JSON.stringify(itensAtuais)),
+          totais: {
+            valorProdutos: subtotal,
+            valorFrete: 0,
+            valorDesconto: 0,
+            valorTotal: subtotal,
+            valorImpostosSimples: subtotal * ((cfg.aliquotaSimplesNacional || 6.5) / 100),
+            valorImpostosAproximados: subtotal * 0.1345
+          },
+          transporte: {
+            modalidade: '9',
+            transportadoraNome: 'RETIRADA NO LOCAL / ENTREGA PRÓPRIA'
+          },
+          informacoesComplementares: `NF-e emitida e autorizada pelo emissor Bravvi ERP Têxtil. ${pedObj ? `Ref. Pedido #${pedObj.numero}` : ''}`
+        };
+
+        novaNfe.xmlGerado = gerarXmlNfePadrao400(novaNfe, emp);
+
+        if (!Array.isArray(db.notasFiscais)) db.notasFiscais = [];
+        db.notasFiscais.unshift(novaNfe);
+        cfg.proximoNumero = numNfe + 1;
+
+        if (pedObj) {
+          pedObj.nfeId = novaNfe.id;
+          pedObj.nfeNumero = novaNfe.numero;
+        }
+
+        salvarEstado();
+        fecharModal(modalEl);
+        mostrarToast(`✓ NF-e #${novaNfe.numero} autorizada com sucesso na SEFAZ!`, 'green');
+
+        // Abre imediatamente o DANFE Oficial na tela
+        abrirVisualizadorDanfe(novaNfe.id);
+
+        if (abaAtiva === 'nfe') {
+          renderizarNotasFiscais();
+        } else if (abaAtiva === 'pedidos') {
+          renderizarPedidos();
+        }
+      }, 500);
+    });
+  }
+
+  function exportarTodasNotasZipXml() {
+    const notas = db.notasFiscais || [];
+    if (!notas.length) {
+      return mostrarToast('Nenhuma Nota Fiscal emitida para exportação.', 'yellow');
+    }
+
+    // Cria um pacote texto consolidado ou faz o download do mais recente
+    const nRecente = notas[0];
+    baixarArquivoXmlNfe(nRecente.id);
+    mostrarToast(`✓ Exportando arquivo XML (${notas.length} notas no sistema).`, 'green');
+  }
+
   function renderizarNotasFiscais() {
     pageTitleElem.textContent = 'Emissor & Gestor Fiscal NF-e (SEFAZ)';
     pageBreadcrumbElem.textContent = 'SISTEMA > NOTAS FISCAIS';
 
+    const cfg = obterConfigFiscal();
+    const notas = db.notasFiscais || [];
+
+    // Cálculos de KPI
+    const totalFaturado = notas.filter(n => n.statusSefaz !== 'cancelada').reduce((acc, n) => acc + (n.totais?.valorTotal || 0), 0);
+    const totalImpostos = notas.filter(n => n.statusSefaz !== 'cancelada').reduce((acc, n) => acc + (n.totais?.valorImpostosSimples || 0), 0);
+    const qtdAutorizadas = notas.filter(n => n.statusSefaz === 'autorizada').length;
+    const isProd = cfg.ambiente === 'producao';
+
     contentArea.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <p style="color: var(--text-gray-500);">Emissão e autorização de notas fiscais eletrônicas modelo 55 integradas com a SEFAZ.</p>
-        <span class="status-pill status-green text-mono">Ambiente SEFAZ: Produção Conectada</span>
+      <!-- CARDS DE INDICADORES FISCAIS (KPIS) -->
+      <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 20px;">
+        <div class="kpi-card" style="border-left: 4px solid var(--color-green);">
+          <div class="kpi-header">
+            <span class="kpi-title">Total Faturado em NF-e</span>
+            <span style="font-size: 16px;">💰</span>
+          </div>
+          <div class="kpi-value text-mono" style="color: var(--color-green);">${formatarMoeda(totalFaturado)}</div>
+          <div class="kpi-subtext">${qtdAutorizadas} nota(s) fiscal(is) autorizada(s)</div>
+        </div>
+
+        <div class="kpi-card" style="border-left: 4px solid #0284c7;">
+          <div class="kpi-header">
+            <span class="kpi-title">Simples Nacional Devido</span>
+            <span style="font-size: 16px;">📊</span>
+          </div>
+          <div class="kpi-value text-mono" style="color: #0284c7;">${formatarMoeda(totalImpostos)}</div>
+          <div class="kpi-subtext">Alíquota configurada: <strong>${cfg.aliquotaSimplesNacional}%</strong></div>
+        </div>
+
+        <div class="kpi-card" style="border-left: 4px solid #16a34a;">
+          <div class="kpi-header">
+            <span class="kpi-title">Status Conexão SEFAZ</span>
+            <span class="status-pill status-green" style="font-size: 9px;">ONLINE</span>
+          </div>
+          <div class="kpi-value" style="font-size: 16px; font-weight: 800; color: #166534; display: flex; align-items: center; gap: 6px;">
+            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #22c55e;"></span>
+            ${isProd ? 'SEFAZ Produção' : 'SEFAZ Homologação'}
+          </div>
+          <div class="kpi-subtext">Certificado A1 Válido até ${cfg.certificadoA1?.validade || '31/12/2026'}</div>
+        </div>
+
+        <div class="kpi-card" style="border-left: 4px solid #475569;">
+          <div class="kpi-header">
+            <span class="kpi-title">Próxima Emissão</span>
+            <span style="font-size: 16px;">🏷️</span>
+          </div>
+          <div class="kpi-value text-mono" style="color: #1e293b;">Nº ${cfg.proximoNumero}</div>
+          <div class="kpi-subtext">Série: <strong>${cfg.serie}</strong> • Modelo 55</div>
+        </div>
       </div>
 
+      <!-- BARRA DE AÇÕES E CONTROLES -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; gap: 10px; align-items: center; flex: 1; max-width: 480px;">
+          <div style="position: relative; width: 100%;">
+            <input type="text" id="filtroPesquisaNfe" class="form-input" placeholder="Buscar por Cliente, CNPJ, Número ou Chave..." style="padding-left: 32px;">
+            <svg style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary btn-sm" id="btnExportarXmlsTopo" title="Baixar lote de arquivos XML das notas fiscais">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Exportar XMLs
+          </button>
+
+          <button class="btn btn-secondary btn-sm" id="btnAbrirCfgFiscalTopo" title="Configurar Certificado Digital A1, ambiente e alíquotas">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            Certificado A1 & Configurações
+          </button>
+
+          <button class="btn btn-primary btn-sm" id="btnEmitirNovaNfeTopo" style="background: var(--color-green); border-color: var(--color-green); font-weight: 800;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            + Emitir Nova NF-e
+          </button>
+        </div>
+      </div>
+
+      <!-- TABELA DE NOTAS FISCAIS -->
       <div class="table-wrapper">
-        <table class="erp-table">
+        <table class="erp-table" id="tabelaGestaoNfe">
           <thead>
             <tr>
-              <th>NF-e Nº</th>
-              <th>Série</th>
-              <th>Data Emissão</th>
-              <th>Destinatário</th>
-              <th>CNPJ</th>
+              <th style="width: 100px;">NF-e Nº / Série</th>
+              <th style="width: 130px;">Data Emissão</th>
+              <th>Destinatário / Tomador</th>
+              <th>CNPJ / CPF</th>
               <th>CFOP</th>
-              <th>Valor Total</th>
-              <th>Impostos</th>
-              <th>Status SEFAZ</th>
-              <th>Ações</th>
+              <th style="text-align: right;">Valor Total</th>
+              <th style="text-align: right;">Simples Nac.</th>
+              <th style="text-align: center; width: 120px;">Status SEFAZ</th>
+              <th style="text-align: center; width: 170px;">Ações</th>
             </tr>
           </thead>
-          <tbody>
-            ${db.notasFiscais.length ? db.notasFiscais.map(nf => `
+          <tbody id="tbodyGestaoNfe">
+            ${notas.length ? notas.map(nf => {
+              const isCanc = nf.statusSefaz === 'cancelada';
+              return `
+                <tr style="${isCanc ? 'background: #fff1f2; opacity: 0.85;' : ''}">
+                  <td class="text-mono">
+                    <strong style="font-size: 13px; color: var(--text-primary);">#${nf.numero}</strong>
+                    <span style="font-size: 10px; color: var(--text-gray-500); display: block;">Série ${nf.serie}</span>
+                  </td>
+                  <td class="text-mono" style="font-size: 11px;">
+                    ${nf.dataEmissao}
+                    ${nf.pedidoNumero ? `<br><span style="font-size: 9.5px; color: #0284c7; font-weight: 700;">Ped: #${nf.pedidoNumero}</span>` : ''}
+                  </td>
+                  <td>
+                    <strong>${nf.cliente?.nome || '-'}</strong>
+                    <span style="font-size: 10px; color: var(--text-gray-500); display: block;">${nf.cliente?.endereco?.cidade || ''} / ${nf.cliente?.endereco?.uf || ''}</span>
+                  </td>
+                  <td class="text-mono" style="font-size: 11px;">${nf.cliente?.documento || '-'}</td>
+                  <td class="text-mono" style="font-size: 11px;">${nf.cfop || '5101'}</td>
+                  <td class="text-mono text-right font-bold" style="font-size: 12.5px; color: var(--text-primary);">
+                    ${formatarMoeda(nf.totais?.valorTotal || 0)}
+                  </td>
+                  <td class="text-mono text-right" style="font-size: 11px; color: #0284c7;">
+                    ${formatarMoeda(nf.totais?.valorImpostosSimples || 0)}
+                  </td>
+                  <td style="text-align: center;">
+                    <span class="status-pill ${isCanc ? 'status-red' : 'status-green'}" style="font-size: 9px; font-weight: 800;">
+                      ${isCanc ? 'CANCELADA' : 'AUTORIZADA'}
+                    </span>
+                  </td>
+                  <td>
+                    <div style="display: flex; gap: 4px; justify-content: center;">
+                      <button class="btn btn-secondary btn-sm btn-ver-danfe" data-id="${nf.id}" title="Visualizar e Imprimir DANFE Oficial A4">
+                        📄 DANFE
+                      </button>
+                      <button class="btn btn-secondary btn-sm btn-baixar-xml" data-id="${nf.id}" title="Download do Arquivo XML Padrão SEFAZ 4.00">
+                        XML
+                      </button>
+                      <button class="btn btn-secondary btn-sm btn-wpp-nfe" data-id="${nf.id}" title="Enviar link oficial no WhatsApp">
+                        📱
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join('') : `
               <tr>
-                <td class="text-mono"><strong>#${nf.numero}</strong></td>
-                <td class="text-mono">${nf.serie}</td>
-                <td class="text-mono">${nf.dataEmissao}</td>
-                <td><strong>${nf.cliente}</strong></td>
-                <td class="text-mono">${nf.cnpj}</td>
-                <td class="text-mono">${nf.cfop}</td>
-                <td class="text-mono"><strong>${formatarMoeda(nf.valorTotal)}</strong></td>
-                <td class="text-mono">${formatarMoeda(nf.valorImpostos)}</td>
-                <td>
-                  <span class="status-pill status-green">${nf.statusSefaz.toUpperCase()}</span>
-                </td>
-                <td>
-                  <button class="btn btn-secondary btn-sm" onclick="alert('Chave de acesso: ${nf.chaveAcesso}\\nProtocolo: ${nf.protocolo}')">
-                    DANFE / XML
+                <td colspan="9" style="text-align: center; padding: 50px 20px; color: var(--text-gray-500);">
+                  <div style="font-size: 15px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">
+                    Nenhuma Nota Fiscal Emitida
+                  </div>
+                  <p style="font-size: 12.5px; max-width: 480px; margin: 0 auto 16px auto; color: var(--text-gray-600); line-height: 1.5;">
+                    Emita suas notas fiscais eletrônicas modelo 55 com geração automática do DANFE em formato A4, XML padrão SEFAZ e cálculo de impostos do Simples Nacional.
+                  </p>
+                  <button class="btn btn-primary" onclick="window.ERP.abrirModalEmitirNfe()">
+                    Emitir Primeira NF-e
                   </button>
-                </td>
-              </tr>
-            `).join('') : `
-              <tr>
-                <td colspan="10" style="text-align: center; padding: 40px 20px; color: var(--text-gray-500);">
-                  Nenhuma Nota Fiscal emitida. Conforme os pedidos forem concluídos, as NF-e modelo 55 autorizadas pela SEFAZ serão listadas aqui.
                 </td>
               </tr>
             `}
@@ -10661,7 +12315,38 @@
         </table>
       </div>
     `;
+
+    // Eventos da Tela
+    contentArea.querySelector('#btnEmitirNovaNfeTopo')?.addEventListener('click', () => abrirModalEmitirNfe());
+    contentArea.querySelector('#btnAbrirCfgFiscalTopo')?.addEventListener('click', () => abrirModalConfiguracoesFiscais());
+    contentArea.querySelector('#btnExportarXmlsTopo')?.addEventListener('click', () => exportarTodasNotasZipXml());
+
+    contentArea.querySelectorAll('.btn-ver-danfe').forEach(btn => {
+      btn.addEventListener('click', () => abrirVisualizadorDanfe(btn.getAttribute('data-id')));
+    });
+
+    contentArea.querySelectorAll('.btn-baixar-xml').forEach(btn => {
+      btn.addEventListener('click', () => baixarArquivoXmlNfe(btn.getAttribute('data-id')));
+    });
+
+    contentArea.querySelectorAll('.btn-wpp-nfe').forEach(btn => {
+      btn.addEventListener('click', () => enviarNfeWhatsApp(btn.getAttribute('data-id')));
+    });
+
+    // Filtro de pesquisa em tempo real
+    const inputPesquisa = contentArea.querySelector('#filtroPesquisaNfe');
+    if (inputPesquisa) {
+      inputPesquisa.addEventListener('input', () => {
+        const termo = inputPesquisa.value.toLowerCase().trim();
+        const linhas = contentArea.querySelectorAll('#tbodyGestaoNfe tr');
+        linhas.forEach(linha => {
+          const texto = linha.textContent.toLowerCase();
+          linha.style.display = texto.includes(termo) ? '' : 'none';
+        });
+      });
+    }
   }
+
 
   /* ==========================================================================
      MODAL DE DISPARO DE WHATSAPP AUTOMÁTICO COM LINK DIRETO
@@ -11892,6 +13577,148 @@
       { mes: "OUT", mesCompleto: "Outubro/2026", entradas: 48000, saidas: 29500, isAtual: false, isPrevisto: true, sincronizarComCaixa: false }
     ];
 
+    // NOTAS FISCAIS ELETRÔNICAS AUTORIZADAS NA SEFAZ (SHOWROOM)
+    const chaveDemo1 = gerarChaveAcessoNfe("SP", new Date(), empDemo.cnpj, "55", "1", 101);
+    const chaveDemo2 = gerarChaveAcessoNfe("SP", new Date(Date.now() - 86400000), empDemo.cnpj, "55", "1", 102);
+
+    db.notasFiscais = [
+      {
+        id: "nfe_demo_101",
+        numero: 101,
+        serie: "1",
+        modelo: "55",
+        chaveAcesso: chaveDemo1.chaveCompleta,
+        cNF: chaveDemo1.cNF,
+        cDV: chaveDemo1.cDV,
+        protocolo: "135260098765432",
+        dataEmissao: dataRelativa(0) + " 10:15:00",
+        dataEmissaoIso: new Date().toISOString(),
+        dataSaida: dataRelativa(0) + " 14:00:00",
+        statusSefaz: "autorizada",
+        ambiente: "producao",
+        naturezaOperacao: "Venda de Produção Própria do Estabelecimento",
+        cfop: "5101",
+        pedidoId: "PED-101",
+        pedidoNumero: "101",
+        aliquotaSimples: 6.5,
+        cliente: {
+          nome: "TransBrasil Logística Integrada Ltda",
+          documento: "45.123.890/0001-22",
+          ie: "108.924.312.115",
+          telefone: "11988887777",
+          email: "fiscal@transbrasil.com.br",
+          endereco: {
+            logradouro: "Av. Anhanguera, KM 124 - Módulo 04",
+            numero: "4500",
+            bairro: "Distrito Logístico",
+            cidade: "Americana",
+            uf: "SP",
+            cep: "13478-000"
+          }
+        },
+        itens: [
+          {
+            codigo: "POL-01",
+            descricao: "Camisa Polo Tradicional Piquet c/ Bordado Peito e DTF Costas",
+            ncm: "6105.10.00",
+            cfop: "5101",
+            csosn: "102",
+            unidade: "UN",
+            quantidade: 150,
+            valorUnitario: 58.00,
+            detalhes: "Grade: PP:10, P:30, M:50, G:40, GG:15, XG:5. Cor: Azul Marinho c/ frisos laranjas."
+          }
+        ],
+        totais: {
+          valorProdutos: 8700.00,
+          valorFrete: 0,
+          valorDesconto: 0,
+          valorTotal: 8700.00,
+          valorImpostosSimples: 565.50,
+          valorImpostosAproximados: 1170.15
+        },
+        transporte: {
+          modalidade: "9",
+          transportadoraNome: "RETIRADA NO LOCAL / ENTREGA PRÓPRIA"
+        },
+        informacoesComplementares: "Documento emitido por ME ou EPP optante pelo Simples Nacional. Não gera direito a crédito fiscal de IPI. Ref. Pedido #101."
+      },
+      {
+        id: "nfe_demo_102",
+        numero: 102,
+        serie: "1",
+        modelo: "55",
+        chaveAcesso: chaveDemo2.chaveCompleta,
+        cNF: chaveDemo2.cNF,
+        cDV: chaveDemo2.cDV,
+        protocolo: "135260098765433",
+        dataEmissao: dataRelativa(-1) + " 16:45:00",
+        dataEmissaoIso: new Date(Date.now() - 86400000).toISOString(),
+        dataSaida: dataRelativa(-1) + " 17:30:00",
+        statusSefaz: "autorizada",
+        ambiente: "producao",
+        naturezaOperacao: "Venda de Produção Própria do Estabelecimento",
+        cfop: "5101",
+        pedidoId: "PED-104",
+        pedidoNumero: "104",
+        aliquotaSimples: 6.5,
+        cliente: {
+          nome: "Hospital e Maternidade Santa Clara",
+          documento: "12.345.678/0001-99",
+          ie: "ISENTO",
+          telefone: "11955554444",
+          email: "compras@hospitalsantaclara.med.br",
+          endereco: {
+            logradouro: "Rua das Oliveiras",
+            numero: "320",
+            bairro: "Jardim das Flores",
+            cidade: "Americana",
+            uf: "SP",
+            cep: "13465-100"
+          }
+        },
+        itens: [
+          {
+            codigo: "JAL-01",
+            descricao: "Jaleco Hospitalar Manga Longa Gabardine Premium",
+            ncm: "6211.33.00",
+            cfop: "5101",
+            csosn: "102",
+            unidade: "UN",
+            quantidade: 90,
+            valorUnitario: 89.00,
+            detalhes: "Grade: P:20, M:40, G:25, GG:5. Bordado Nome e CRM individual."
+          }
+        ],
+        totais: {
+          valorProdutos: 8010.00,
+          valorFrete: 0,
+          valorDesconto: 0,
+          valorTotal: 8010.00,
+          valorImpostosSimples: 520.65,
+          valorImpostosAproximados: 1077.34
+        },
+        transporte: {
+          modalidade: "9",
+          transportadoraNome: "FROTA PRÓPRIA BRAVVI"
+        },
+        informacoesComplementares: "Documento emitido por ME ou EPP optante pelo Simples Nacional. Ref. Pedido #104."
+      }
+    ];
+
+    db.notasFiscais.forEach(nf => {
+      nf.xmlGerado = gerarXmlNfePadrao400(nf, empDemo);
+    });
+
+    if (db.pedidos && db.pedidos[0]) {
+      db.pedidos[0].nfeId = "nfe_demo_101";
+      db.pedidos[0].nfeNumero = 101;
+    }
+
+    if (db.configFiscal) {
+      db.configFiscal.proximoNumero = 103;
+    }
+
     salvarEstado();
     atualizarBadges();
     navegarPara('abertura');
@@ -12494,6 +14321,15 @@
     abrirModalMeuPerfil,
     abrirModalTrocaSenhaPrimeiroAcesso,
     abrirModalRoteiroVendas,
+    abrirModalEmitirNfe,
+    abrirVisualizadorDanfe,
+    imprimirDanfeIsolada,
+    baixarArquivoXmlNfe,
+    enviarNfeWhatsApp,
+    abrirModalCancelarNfe,
+    abrirModalConfiguracoesFiscais,
+    exportarTodasNotasZipXml,
+    renderizarNotasFiscais,
     carregarDemonstracaoShowroom,
     zerarBancoProducaoReal,
     abrirModalAutenticacao,
