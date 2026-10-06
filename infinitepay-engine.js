@@ -180,219 +180,24 @@
       return `https://infinitepay.io/pay/${handleLimpo}?amount=${(plano.valor).toFixed(2)}&description=${encodeURIComponent(plano.nome)}`;
     }
 
-    // 3. Fallback inteligente: redireciona para o checkout oficial InfinitePay ou WhatsApp comercial
-    return `https://wa.me/${config.whatsappSuporte}?text=${encodeURIComponent(
-      `Olá! Quero assinar o ${plano.nome} no valor de ${plano.valorFormatado} via InfinitePay (Cartão de Crédito em até 12x ou Pix). Pode me enviar o link de pagamento?`
-    )}`;
+    // 3. Fallback: checkout InfinitePay direto
+    return 'https://infinitepay.io/pay';
   }
 
   /**
-   * Abre o Modal de Checkout Oficial InfinitePay no sistema
+   * Redireciona diretamente para o checkout de pagamento da InfinitePay
+   * (Sem abrir nenhum modal no sistema ou no site)
    */
-  function abrirModalCheckout(planoKey = 'mensal') {
-    const modalExistente = document.getElementById('modalCheckoutInfinitePay');
-    if (modalExistente) modalExistente.remove();
-
-    const plano = PLANOS_CONFIG[planoKey] || PLANOS_CONFIG.mensal;
-    const linkPagamento = obterLinkPagamentoPlano(planoKey);
-    const config = carregarConfiguracoes();
-
-    const overlay = document.createElement('div');
-    overlay.id = 'modalCheckoutInfinitePay';
-    overlay.className = 'modal-overlay active';
-    overlay.style.zIndex = '999999';
-    overlay.innerHTML = `
-      <div class="modal-box" style="max-width: 640px; border-radius: 14px; overflow: hidden; box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5); margin: 20px auto; background: #ffffff;">
-        
-        <!-- Header Checkout Seguro Bravvi -->
-        <div style="background: linear-gradient(135deg, #032b35 0%, #044343 100%); padding: 18px 24px; color: #ffffff; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2dd4bf;">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="background: rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 6px 12px; display: flex; align-items: center; gap: 6px;">
-              <span style="font-weight: 900; font-size: 15px; color: #2dd4bf; letter-spacing: -0.5px;">BRAVVI ERP</span>
-              <span style="font-weight: 800; font-size: 11px; color: #a7f3d0; background: rgba(13, 148, 136, 0.4); padding: 2px 6px; border-radius: 4px;">OFICIAL</span>
-            </div>
-            <div>
-              <div style="font-size: 15px; font-weight: 800; color: #ffffff;">Checkout Seguro de Assinatura</div>
-              <div style="font-size: 11.5px; color: #a7f3d0;">Cartão de Crédito até 12x ou Pix Instantâneo</div>
-            </div>
-          </div>
-          <button id="btnFecharCheckoutIP" style="color: #94a3b8; font-size: 26px; background: none; border: none; cursor: pointer; line-height: 1; padding: 4px;" onmouseover="this.style.color='#ffffff'" onmouseout="this.style.color='#94a3b8'">&times;</button>
-        </div>
-
-        <!-- Conteúdo do Modal -->
-        <div style="padding: 22px 24px; max-height: calc(85vh - 120px); overflow-y: auto;">
-          
-          <!-- Seletor de Planos Rápido -->
-          <div style="margin-bottom: 18px;">
-            <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
-              Selecione a Modalidade Desejada:
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-              <button type="button" class="btn-trocar-plano ${planoKey === 'mensal' ? 'ativo' : ''}" data-plano="mensal" style="text-align: left; padding: 12px 14px; border: 2px solid ${planoKey === 'mensal' ? '#0d9488' : '#e2e8f0'}; background: ${planoKey === 'mensal' ? '#f0fdfa' : '#ffffff'}; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <strong style="font-size: 13px; color: #0f172a;">Mensal Flexível</strong>
-                  <span style="font-size: 9px; font-weight: 800; background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 4px;">SEM FIDELIDADE</span>
-                </div>
-                <div style="font-size: 16px; font-weight: 900; color: #0f766e; margin-top: 4px;">R$ 397 <span style="font-size: 11px; font-weight: 500; color: #64748b;">/mês</span></div>
-              </button>
-
-              <button type="button" class="btn-trocar-plano ${planoKey === 'anual' ? 'ativo' : ''}" data-plano="anual" style="text-align: left; padding: 12px 14px; border: 2px solid ${planoKey === 'anual' ? '#0d9488' : '#e2e8f0'}; background: ${planoKey === 'anual' ? '#f0fdfa' : '#ffffff'}; border-radius: 8px; cursor: pointer; transition: all 0.2s; position: relative;">
-                <span style="position: absolute; top: -8px; right: 8px; font-size: 8.5px; font-weight: 800; background: #059669; color: #ffffff; padding: 2px 6px; border-radius: 10px;">MAIS ESCOLHIDO</span>
-                <strong style="font-size: 13px; color: #0f172a;">Anual Pro Econômico</strong>
-                <div style="font-size: 16px; font-weight: 900; color: #047857; margin-top: 4px;">12x R$ 297 <span style="font-size: 11px; font-weight: 500; color: #64748b;">(R$ 3.564/ano)</span></div>
-              </button>
-            </div>
-
-            <!-- Botão Opção com Implementação -->
-            <div style="margin-top: 10px;">
-              <button type="button" class="btn-trocar-plano ${planoKey === 'anual_implementacao' ? 'ativo' : ''}" data-plano="anual_implementacao" style="width: 100%; text-align: left; padding: 10px 14px; border: 2px solid ${planoKey === 'anual_implementacao' ? '#0d9488' : '#e2e8f0'}; background: ${planoKey === 'anual_implementacao' ? '#f0fdfa' : '#f8fafc'}; border-radius: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="font-size: 12px;">⭐</span>
-                    <strong style="font-size: 12.5px; color: #0f172a;">Combo Anual + Implementação VIP Acompanhada</strong>
-                  </div>
-                  <span style="font-size: 11px; color: #64748b;">Acesso de 1 ano + setup completo por especialista e equipe treinada</span>
-                </div>
-                <div style="text-align: right;">
-                  <span style="font-size: 14px; font-weight: 900; color: #0f766e;">12x R$ 397</span>
-                  <span style="display: block; font-size: 10px; color: #64748b;">(R$ 4.290 à vista)</span>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <!-- Card Resumo do Plano Selecionado -->
-          <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-              <div>
-                <span style="display: inline-block; font-size: 10px; font-weight: 800; background: #047857; color: #ffffff; padding: 2px 8px; border-radius: 4px; margin-bottom: 4px;">
-                  ${plano.badge}
-                </span>
-                <h3 style="font-size: 17px; font-weight: 800; color: #0f172a; margin: 0;">${plano.nome}</h3>
-                <p style="font-size: 11.5px; color: #64748b; margin: 2px 0 0 0;">${plano.descricao}</p>
-              </div>
-              <div style="text-align: right;">
-                <div style="font-size: 24px; font-weight: 900; color: #032b35; line-height: 1.1;">${plano.valorFormatado}</div>
-                <div style="font-size: 11px; font-weight: 700; color: #0d9488;">${plano.periodo}</div>
-              </div>
-            </div>
-
-            <div style="font-size: 11.5px; color: #047857; font-weight: 700; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 6px 10px; border-radius: 6px; margin-bottom: 14px; display: flex; align-items: center; gap: 6px;">
-              <span>💳</span>
-              <span>${plano.parcelamento}</span>
-            </div>
-
-            <!-- O que está incluso -->
-            <div style="font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 8px;">
-              Incluso nesta contratação:
-            </div>
-            <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: #334155; line-height: 1.6;">
-              ${plano.itens.map(item => `<li>${item}</li>`).join('')}
-            </ul>
-          </div>
-
-          <!-- Seção Explicativa: O que é a Implementação -->
-          <div style="background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" id="toggleExplicacaoImplementacao">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 18px;">💡</span>
-                <strong style="font-size: 13px; color: #115e59;">O que é a Implementação Acompanhada? (Clique para ver detalhes)</strong>
-              </div>
-              <span id="setaToggleImplementacao" style="font-size: 12px; font-weight: 800; color: #0d9488;">▼</span>
-            </div>
-
-            <div id="corpoExplicacaoImplementacao" style="display: none; margin-top: 14px; border-top: 1px solid #ccfbf1; padding-top: 12px;">
-              <p style="font-size: 12px; color: #134e4a; margin: 0 0 12px 0; line-height: 1.45;">
-                A Implementação é um serviço consultivo em que um especialista sênior da Bravvi coloca a sua confecção para operar com o sistema em <strong>menos de 48 horas</strong>, sem que você precise perder tempo cadastrando do zero:
-              </p>
-              
-              <div style="display: flex; flex-direction: column; gap: 10px;">
-                ${DETALHAMENTO_IMPLEMENTACAO.map(d => `
-                  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px;">
-                    <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; color: #0f172a;">
-                      <span>${d.icone}</span>
-                      <span>${d.titulo}</span>
-                    </div>
-                    <p style="font-size: 11.5px; color: #475569; margin: 4px 0 0 0; line-height: 1.4;">${d.descricao}</p>
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-          </div>
-
-          <!-- Métodos de Pagamento Aceitos -->
-          <div style="display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 20px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 11px; font-weight: 800; color: #475569;">PAGUE COM:</span>
-              <span style="font-size: 11px; font-weight: 700; color: #047857; background: #ecfdf5; padding: 2px 6px; border-radius: 4px;">⚡ PIX Instantâneo</span>
-              <span style="font-size: 11px; font-weight: 700; color: #1d4ed8; background: #eff6ff; padding: 2px 6px; border-radius: 4px;">💳 Cartão até 12x</span>
-            </div>
-            <div style="font-size: 10.5px; color: #64748b; font-weight: 600;">
-              🔒 Checkout Criptografado & Seguro
-            </div>
-          </div>
-
-          <!-- Botões de Ação Final -->
-          <div style="display: flex; flex-direction: column; gap: 10px;">
-            <a href="${linkPagamento}" target="_blank" id="btnIrParaCheckoutInfinitePay" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #047857; color: #ffffff; padding: 14px 20px; border-radius: 8px; font-size: 14px; font-weight: 800; text-decoration: none; box-shadow: 0 4px 12px rgba(4, 120, 87, 0.3); transition: all 0.2s;" onmouseover="this.style.background='#065f46'" onmouseout="this.style.background='#047857'">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
-              <span>Pagar ${plano.valorFormatado} (Cartão ou Pix) &rarr;</span>
-            </a>
-
-            <div style="display: flex; gap: 10px;">
-              <a href="https://wa.me/${config.whatsappSuporte}?text=${encodeURIComponent(
-                `Olá! Estou finalizando a contratação do ${plano.nome} (${plano.valorFormatado}) e gostaria de tirar uma dúvida sobre a assinatura no Cartão ou Pix.`
-              )}" target="_blank" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: #ffffff; border: 1.5px solid #cbd5e1; color: #334155; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; text-decoration: none;">
-                💬 Tirar Dúvidas pelo WhatsApp
-              </a>
-
-              <button type="button" id="btnConfigurarLinksIP" style="display: flex; align-items: center; justify-content: center; gap: 6px; background: #f8fafc; border: 1px solid #cbd5e1; color: #64748b; padding: 10px 14px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;">
-                ⚙️ Configurar Links
-              </button>
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-    `;
-
-    const container = document.getElementById('modalContainer') || document.body;
-    container.appendChild(overlay);
-
-    // Eventos do Modal
-    const fechar = () => overlay.remove();
-    overlay.querySelector('#btnFecharCheckoutIP')?.addEventListener('click', fechar);
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) fechar();
-    });
-
-    // Troca de planos interativa
-    overlay.querySelectorAll('.btn-trocar-plano').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const novoPlano = btn.getAttribute('data-plano');
-        fechar();
-        abrirModalCheckout(novoPlano);
-      });
-    });
-
-    // Toggle da explicação de Implementação
-    const toggleImp = overlay.querySelector('#toggleExplicacaoImplementacao');
-    const corpoImp = overlay.querySelector('#corpoExplicacaoImplementacao');
-    const setaImp = overlay.querySelector('#setaToggleImplementacao');
-    if (toggleImp && corpoImp) {
-      toggleImp.addEventListener('click', () => {
-        const aberto = corpoImp.style.display !== 'none';
-        corpoImp.style.display = aberto ? 'none' : 'block';
-        if (setaImp) setaImp.textContent = aberto ? '▼' : '▲';
-      });
+  function irParaCheckout(planoKey = 'mensal') {
+    const link = obterLinkPagamentoPlano(planoKey);
+    if (link) {
+      window.open(link, '_blank');
     }
+  }
 
-    // Configurar credenciais InfinitePay
-    overlay.querySelector('#btnConfigurarLinksIP')?.addEventListener('click', () => {
-      fechar();
-      abrirModalConfiguracoesInfinitePay(planoKey);
-    });
+  // Alias para retrocompatibilidade total: abre direto o link de pagamento sem modal
+  function abrirModalCheckout(planoKey = 'mensal') {
+    irParaCheckout(planoKey);
   }
 
   /**
@@ -477,7 +282,9 @@
       };
       salvarConfiguracoes(novaCfg);
       fechar();
-      abrirModalCheckout(retornarPlano);
+      if (window.ERP && typeof window.ERP.toast === 'function') {
+        window.ERP.toast('Configurações de pagamento salvas com sucesso!', 'success');
+      }
     });
   }
 
@@ -488,14 +295,16 @@
     carregarConfiguracoes,
     salvarConfiguracoes,
     obterLinkPagamentoPlano,
+    irParaCheckout,
     abrirModalCheckout,
     abrirModalConfiguracoes: abrirModalConfiguracoesInfinitePay
   };
 
   // Atalho global direto
-  window.abrirModalCheckoutInfinitePay = abrirModalCheckout;
+  window.abrirModalCheckoutInfinitePay = irParaCheckout;
   if (!window.ERP) window.ERP = {};
-  window.ERP.abrirModalPlanosAssinatura = () => abrirModalCheckout('mensal');
-  window.ERP.abrirModalCheckoutInfinitePay = abrirModalCheckout;
+  // No ERP, o clique direciona direto para a escolha de planos no site oficial
+  window.ERP.abrirModalPlanosAssinatura = () => window.open('vendas.html#planos', '_blank');
+  window.ERP.abrirModalCheckoutInfinitePay = (planoKey) => irParaCheckout(planoKey);
 
 })();

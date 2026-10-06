@@ -197,17 +197,17 @@
           <span>Minha Empresa</span>
         </a>
 
-        <!-- 14. Ativar Licença PRO (Apenas no Modo Demonstração) -->
-        <a class="menu-item menu-item-upgrade" href="javascript:void(0)" onclick="if (window.abrirModalCheckoutInfinitePay) { window.abrirModalCheckoutInfinitePay(); } else { window.open('vendas.html#planos', '_blank'); }" style="margin-top: 8px; background: rgba(3, 43, 53, 0.5); border: 1px solid rgba(45, 212, 191, 0.3); color: #2dd4bf; font-weight: 700;">
+        <!-- 14. Planos & Upgrade (Direto para Página de Vendas) -->
+        <a class="menu-item menu-item-upgrade" href="vendas.html#planos" target="_blank" style="margin-top: 8px; background: rgba(3, 43, 53, 0.5); border: 1px solid rgba(45, 212, 191, 0.3); color: #2dd4bf; font-weight: 700;">
           <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: #2dd4bf;">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
           </svg>
-          <span>Ativar Licença PRO</span>
+          <span>Planos & Upgrade</span>
           <span class="menu-badge" style="background: #0d9488; color: #ffffff; font-size: 9px; font-weight: 800;">PRO</span>
         </a>
       </nav>
 
-      <!-- Card Modo Demonstração -> Ativar PRO -->
+      <!-- Card Modo Demonstração -> Ir para o Site Escolher Plano -->
       <div class="sidebar-plan-card" style="margin: 8px 10px; padding: 12px; background: rgba(3, 43, 53, 0.7); border: 1px solid rgba(45, 212, 191, 0.25); border-radius: 8px;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
           <span style="font-size: 10.5px; font-weight: 800; color: #f59e0b; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
@@ -216,11 +216,11 @@
           <span style="font-size: 9px; font-weight: 800; background: #0d9488; color: #ffffff; padding: 1px 6px; border-radius: 10px;">PRO</span>
         </div>
         <p style="font-size: 11px; color: #cbd5e1; margin: 0 0 8px 0; line-height: 1.35;">
-          Gostou do sistema? Ative a licença oficial para sua fábrica.
+          Aproveite para testar todos os recursos na sua confecção.
         </p>
-        <button type="button" onclick="if (window.abrirModalCheckoutInfinitePay) { window.abrirModalCheckoutInfinitePay(); } else { window.open('vendas.html#planos', '_blank'); }" style="display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; font-size: 11px; font-weight: 800; background: #0d9488; color: #ffffff; padding: 6px 8px; border-radius: 6px; border: none; cursor: pointer; text-decoration: none; box-shadow: 0 2px 4px rgba(13, 148, 136, 0.3); transition: all 0.2s;" onmouseover="this.style.background='#0f766e'" onmouseout="this.style.background='#0d9488'">
-          <span>Ativar Licença PRO &rarr;</span>
-        </button>
+        <a href="vendas.html#planos" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; font-size: 11px; font-weight: 800; background: #0d9488; color: #ffffff; padding: 6px 8px; border-radius: 6px; text-decoration: none; box-shadow: 0 2px 4px rgba(13, 148, 136, 0.3); transition: all 0.2s;" onmouseover="this.style.background='#0f766e'" onmouseout="this.style.background='#0d9488'">
+          <span>Fazer Upgrade / Planos &rarr;</span>
+        </a>
       </div>
 
       <div class="sidebar-footer" id="sidebarUserFooter" style="cursor: pointer;" title="Clique para trocar o perfil de acesso">

@@ -12,7 +12,7 @@
   // 1. Registra o Service Worker com auto-update forçado e limpeza de caches legados
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      const swPath = './sw.js?v=8.7.1';
+      const swPath = './sw.js?v=8.7.2';
       navigator.serviceWorker.register(swPath)
         .then(reg => {
           console.log('[PWA] Service Worker registrado. Escopo:', reg.scope);
