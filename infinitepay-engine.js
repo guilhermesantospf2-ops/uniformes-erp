@@ -59,7 +59,7 @@
         'Atualizações contínuas de novos recursos',
         'Backup automático na nuvem'
       ],
-      linkPadrao: 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA'
+      linkPadrao: 'https://checkout.infinitepay.io/guilherme-santos-329/J5sFLTLWln'
     },
     anual_implementacao: {
       id: 'plano_anual_vip_setup',
@@ -147,7 +147,7 @@
     const padrao = {
       handle: '', // ex: 'bravvitextil'
       linkMensal: 'https://invoice.infinitepay.io/plans/guilherme-santos-329/RRkQGnGO65',
-      linkAnual: '',
+      linkAnual: 'https://checkout.infinitepay.io/guilherme-santos-329/J5sFLTLWln',
       linkCombo: '',
       linkSetup: '',
       apiKey: '',
@@ -157,6 +157,10 @@
       // Se linkMensal estiver vazio ou com link antigo avulso, atualiza para o link oficial de assinatura mensal
       if (!data.linkMensal || data.linkMensal.includes('psgTp3BpPA')) {
         data.linkMensal = padrao.linkMensal;
+      }
+      // Se linkAnual estiver vazio ou com link antigo genérico, atualiza para o link oficial anual
+      if (!data.linkAnual || data.linkAnual.includes('psgTp3BpPA')) {
+        data.linkAnual = padrao.linkAnual;
       }
       return { ...padrao, ...data };
     }
