@@ -170,6 +170,13 @@
       border: 1px solid #cbd5e1;
     }
 
+    .actions-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
     .btn-submit {
       width: 100%;
       padding: 15px 22px;
@@ -195,10 +202,29 @@
       transform: translateY(-1px);
     }
 
-    .countdown-note {
-      font-size: 11.5px;
-      color: var(--text-muted);
-      margin-top: 14px;
+    .btn-support {
+      width: 100%;
+      padding: 14px 22px;
+      background: #16a34a;
+      color: #ffffff;
+      font-size: 14.5px;
+      font-weight: 800;
+      border: none;
+      border-radius: 9999px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .btn-support:hover {
+      background: #15803d;
+      box-shadow: 0 6px 20px rgba(22, 163, 74, 0.5);
+      transform: translateY(-1px);
     }
 
     .support-note {
@@ -265,18 +291,21 @@
         </div>
       </div>
 
-      <a id="btnIrLogin" href="index.html" class="btn-submit">
-        <span>Entrar no Bravvi ERP Agora</span>
-        <span>&rarr;</span>
-      </a>
+      <!-- Grupo de Ações: Login ou Suporte -->
+      <div class="actions-group">
+        <a id="btnIrLogin" href="index.html" class="btn-submit">
+          <span>Entendi, desejo fazer login</span>
+          <span>&rarr;</span>
+        </a>
 
-      <div class="countdown-note" id="countdownDesc">
-        Redirecionando automaticamente para o login em <span id="contadorSegundos" style="font-weight: 800; color: var(--brand-teal);">5</span> segundos...
+        <a id="btnSuporteWhats" href="https://wa.me/5544998071870?text=Ol%C3%A1!%20Acabei%20de%20assinar%20o%20Bravvi%20ERP%20e%20gostaria%20de%20ajuda%20do%20suporte%20no%20meu%20primeiro%20acesso." target="_blank" class="btn-support">
+          <span>💬 Desejo falar com o suporte</span>
+        </a>
       </div>
 
       <div class="support-note">
-        Dúvidas ou suporte? Fale conosco no WhatsApp: 
-        <a href="https://wa.me/5544998071870?text=Ol%C3%A1!%20Preciso%20de%20ajuda%20para%20fazer%20meu%20primeiro%20login%20no%20Bravvi%20ERP." target="_blank" class="support-link">
+        Central de atendimento e suporte técnico: 
+        <a href="https://wa.me/5544998071870?text=Ol%C3%A1!%20Preciso%20de%20ajuda%20com%20o%20Bravvi%20ERP." target="_blank" class="support-link">
           (44) 99807-1870 &rarr;
         </a>
       </div>
@@ -291,31 +320,16 @@
 
     const dispEmailEl = document.getElementById('dispEmail');
     const btnIrLoginEl = document.getElementById('btnIrLogin');
+    const btnSuporteEl = document.getElementById('btnSuporteWhats');
 
     if (emailUrl) {
       dispEmailEl.textContent = emailUrl;
       btnIrLoginEl.href = 'index.html?email=' + encodeURIComponent(emailUrl) + (tokenUrl ? '&token=' + encodeURIComponent(tokenUrl) : '');
+      btnSuporteEl.href = 'https://wa.me/5544998071870?text=' + encodeURIComponent('Olá! Acabei de assinar o Bravvi ERP com o e-mail ' + emailUrl + ' e gostaria de ajuda do suporte no meu primeiro acesso.');
     } else {
       dispEmailEl.textContent = 'O e-mail informado na compra';
       btnIrLoginEl.href = 'index.html';
     }
-
-    // Contagem regressiva para auto-redirecionamento
-    let segundos = 5;
-    const contadorEl = document.getElementById('contadorSegundos');
-    const timer = setInterval(() => {
-      segundos--;
-      if (contadorEl) contadorEl.textContent = segundos;
-      if (segundos <= 0) {
-        clearInterval(timer);
-        window.location.href = btnIrLoginEl.href;
-      }
-    }, 1000);
-
-    // Se o usuário clicar, para o timer e vai direto
-    btnIrLoginEl.addEventListener('click', () => {
-      clearInterval(timer);
-    });
   </script>
 
 </body>
