@@ -123,6 +123,52 @@ module.exports = async function handler(req, res) {
         });
 
         console.log('[Cakto Webhook] Salvo com sucesso no Supabase (tokens + subscriptions)!');
+
+        // 3. Disparo automático de e-mail com senha temporária via Resend (se RESEND_API_KEY estiver configurado)
+        if (process.env.RESEND_API_KEY && isPaid && cleanEmail) {
+          try {
+            await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.RESEND_API_KEY}`
+              },
+              body: JSON.stringify({
+                from: process.env.EMAIL_FROM || 'Bravvi ERP Têxtil <onboarding@resend.dev>',
+                to: [cleanEmail],
+                subject: 'Seu acesso ao Bravvi ERP Têxtil foi liberado! 🎉',
+                html: `
+                  <div style="font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+                    <h2 style="color: #032b35; margin-bottom: 8px;">Bem-vindo ao Bravvi ERP Têxtil! 🎉</h2>
+                    <p style="font-size: 14px; color: #334155; line-height: 1.5;">
+                      Olá, <strong>${nome || 'Gestor'}</strong>! O seu pagamento foi confirmado com sucesso.
+                    </p>
+                    <div style="background: #f0fdfa; border: 1.5px dashed #0d9488; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                      <p style="margin: 0 0 8px 0; font-size: 12px; font-weight: bold; color: #0f766e; text-transform: uppercase;">Suas Credenciais de Primeiro Acesso:</p>
+                      <p style="margin: 4px 0; font-size: 14px; color: #0f172a;"><strong>E-mail de login:</strong> ${cleanEmail}</p>
+                      <p style="margin: 4px 0; font-size: 14px; color: #0f172a;"><strong>Senha Temporária:</strong> <span style="font-family: monospace; font-size: 16px; font-weight: bold; color: #0d9488;">Bravvi@2026</span></p>
+                    </div>
+                    <p style="font-size: 13.5px; color: #475569; line-height: 1.5;">
+                      No seu primeiro login, você dará o nome oficial à sua confecção e definirá a sua <strong>senha pessoal definitiva</strong>.
+                    </p>
+                    <div style="text-align: center; margin: 26px 0;">
+                      <a href="https://uniformes-erp.vercel.app?email=${encodeURIComponent(cleanEmail)}" style="background: #0d9488; color: #ffffff; padding: 13px 26px; text-decoration: none; border-radius: 9999px; font-weight: bold; font-size: 14px; display: inline-block;">
+                        Acessar Meu Painel Industrial Agora &rarr;
+                      </a>
+                    </div>
+                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+                    <p style="font-size: 12px; color: #94a3b8; text-align: center;">
+                      Dúvidas ou suporte? WhatsApp da equipe: (44) 99807-1870
+                    </p>
+                  </div>
+                `
+              })
+            });
+            console.log('[Cakto Webhook] E-mail de primeiro acesso enviado com sucesso via Resend!');
+          } catch (resendErr) {
+            console.warn('[Cakto Webhook] Erro ao disparar e-mail Resend:', resendErr.message);
+          }
+        }
       } catch (dbErr) {
         console.warn('[Cakto Webhook] Erro ao gravar no Supabase:', dbErr.message);
       }
