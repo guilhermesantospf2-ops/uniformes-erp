@@ -39,7 +39,7 @@
         'Módulo Financeiro, DRE e Custos Têxteis',
         'Suporte técnico via WhatsApp'
       ],
-      linkPadrao: 'https://invoice.infinitepay.io/plans/guilherme-santos-329/RRkQGnGO65'
+      linkPadrao: 'https://www.asaas.com/000/c/m8bsuy5ipe4g7xca'
     },
     anual: {
       id: 'plano_anual_3970',
@@ -146,7 +146,7 @@
     }
     const padrao = {
       handle: '', // ex: 'bravvitextil'
-      linkMensal: 'https://invoice.infinitepay.io/plans/guilherme-santos-329/RRkQGnGO65',
+      linkMensal: 'https://www.asaas.com/000/c/m8bsuy5ipe4g7xca',
       linkAnual: 'https://www.asaas.com/000/c/khj0e52sm5psx8ts',
       linkCombo: '',
       linkSetup: '',
@@ -154,8 +154,8 @@
       whatsappSuporte: '5511987654321'
     };
     if (data) {
-      // Se linkMensal estiver vazio ou com link antigo avulso, atualiza para o link oficial de assinatura mensal
-      if (!data.linkMensal || data.linkMensal.includes('psgTp3BpPA')) {
+      // Se linkMensal estiver vazio ou com link antigo, atualiza para o link oficial de assinatura mensal do Asaas
+      if (!data.linkMensal || data.linkMensal.includes('infinitepay.io') || data.linkMensal.includes('psgTp3BpPA') || data.linkMensal.includes('RRkQGnGO65')) {
         data.linkMensal = padrao.linkMensal;
       }
       // Se linkAnual estiver vazio ou com link antigo, atualiza para o link oficial anual do Asaas

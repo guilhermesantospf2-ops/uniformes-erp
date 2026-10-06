@@ -226,9 +226,9 @@
   }
 
   // ==========================================================================
-  // ESCUDO DE INADIMPLÊNCIA & GESTÃO DE ASSINATURAS (INFINITEPAY)
+  // ESCUDO DE INADIMPLÊNCIA & GESTÃO DE ASSINATURAS (ASAAS)
   // ==========================================================================
-  const LINK_PAGAMENTO_INFINITEPAY = 'https://invoice.infinitepay.io/plans/guilherme-santos-329/RRkQGnGO65';
+  const LINK_PAGAMENTO_ASSINATURA = 'https://www.asaas.com/000/c/m8bsuy5ipe4g7xca';
 
   function verificarStatusAssinaturaEmpresa(empresa) {
     if (isModoDemo()) return; // Modo demonstração não possui bloqueio
@@ -294,8 +294,8 @@
         <span>⚠️</span>
         <span>Atenção: A mensalidade da sua fábrica venceu em ${dataVenc.toLocaleDateString('pt-BR')}. Você tem <strong>${diasRestantes} dia(s) de tolerância</strong> antes do bloqueio das fichas técnicas.</span>
       </div>
-      <a href="${LINK_PAGAMENTO_INFINITEPAY}" target="_blank" style="background: #0d9488; color: #ffffff; padding: 5px 14px; border-radius: 9999px; text-decoration: none; font-size: 12px; font-weight: 800;">
-        Regularizar via InfinitePay &rarr;
+      <a href="${LINK_PAGAMENTO_ASSINATURA}" target="_blank" style="background: #0d9488; color: #ffffff; padding: 5px 14px; border-radius: 9999px; text-decoration: none; font-size: 12px; font-weight: 800;">
+        Regularizar Mensalidade &rarr;
       </a>
     `;
     document.body.prepend(banner);
@@ -345,8 +345,8 @@
         </p>
 
         <div style="display: flex; flex-direction: column; gap: 12px;">
-          <a href="${LINK_PAGAMENTO_INFINITEPAY}" target="_blank" style="background: #0d9488; color: #ffffff; padding: 14px 20px; border-radius: 9999px; text-decoration: none; font-weight: 800; font-size: 15px; box-shadow: 0 4px 14px rgba(13, 148, 136, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px;">
-            💳 Pagar Mensalidade no InfinitePay (Desbloqueio Automático) &rarr;
+          <a href="${LINK_PAGAMENTO_ASSINATURA}" target="_blank" style="background: #0d9488; color: #ffffff; padding: 14px 20px; border-radius: 9999px; text-decoration: none; font-weight: 800; font-size: 15px; box-shadow: 0 4px 14px rgba(13, 148, 136, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px;">
+            💳 Pagar Mensalidade via Cartão ou Pix (Desbloqueio Automático) &rarr;
           </a>
 
           <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Minha%20mensalidade%20do%20Bravvi%20ERP%20venceu%20e%20quero%20enviar%20o%20comprovante%20para%20desbloqueio." target="_blank" style="background: #f1f5f9; color: #334155; padding: 12px 20px; border-radius: 9999px; text-decoration: none; font-weight: 700; font-size: 13.5px; border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: center; gap: 8px;">
