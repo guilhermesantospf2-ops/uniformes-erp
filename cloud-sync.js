@@ -226,9 +226,9 @@
   }
 
   // ==========================================================================
-  // ESCUDO DE INADIMPLÊNCIA & GESTÃO DE ASSINATURAS (ASAAS)
+  // ESCUDO DE INADIMPLÊNCIA & GESTÃO DE ASSINATURAS (CAKTO)
   // ==========================================================================
-  const LINK_PAGAMENTO_ASSINATURA = 'https://www.asaas.com/000/c/m8bsuy5ipe4g7xca';
+  const LINK_PAGAMENTO_ASSINATURA = 'https://pay.cakto.com.br/rb6atzs_1178556';
 
   function verificarStatusAssinaturaEmpresa(empresa) {
     if (isModoDemo()) return; // Modo demonstração não possui bloqueio

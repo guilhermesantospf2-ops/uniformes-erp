@@ -39,7 +39,7 @@
         'Módulo Financeiro, DRE e Custos Têxteis',
         'Suporte técnico via WhatsApp'
       ],
-      linkPadrao: 'https://www.asaas.com/000/c/m8bsuy5ipe4g7xca'
+      linkPadrao: 'https://pay.cakto.com.br/rb6atzs_1178556'
     },
     anual: {
       id: 'plano_anual_3970',
@@ -146,7 +146,7 @@
     }
     const padrao = {
       handle: '', // ex: 'bravvitextil'
-      linkMensal: 'https://www.asaas.com/000/c/m8bsuy5ipe4g7xca',
+      linkMensal: 'https://pay.cakto.com.br/rb6atzs_1178556',
       linkAnual: 'https://www.asaas.com/000/c/khj0e52sm5psx8ts',
       linkCombo: 'https://www.asaas.com/000/c/tpt2gei572ffkjpn',
       linkSetup: '',
@@ -154,8 +154,8 @@
       whatsappSuporte: '5511987654321'
     };
     if (data) {
-      // Se linkMensal estiver vazio ou com link antigo, atualiza para o link oficial de assinatura mensal do Asaas
-      if (!data.linkMensal || data.linkMensal.includes('infinitepay.io') || data.linkMensal.includes('psgTp3BpPA') || data.linkMensal.includes('RRkQGnGO65')) {
+      // Se linkMensal estiver vazio ou não for da Cakto, atualiza para o link oficial da Cakto
+      if (!data.linkMensal || !data.linkMensal.includes('cakto.com.br')) {
         data.linkMensal = padrao.linkMensal;
       }
       // Se linkAnual estiver vazio ou com link antigo, atualiza para o link oficial anual do Asaas
