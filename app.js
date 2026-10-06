@@ -542,7 +542,7 @@
     gatekeeper.style.display = 'flex';
 
     const urlParams = new URLSearchParams(window.location.search);
-    const querCadastrar = urlParams.get('cadastrar') === '1' || urlParams.get('cadastro') === '1' || urlParams.get('signup') === '1';
+    const modoAtivacao = urlParams.get('ativar') === '1' || urlParams.get('adesao') === '1' || urlParams.get('novo_cliente') === '1';
 
     // Opção de lembrar e-mail (a senha NUNCA é salva, deve ser digitada a cada entrada)
     const emailSalvo = localStorage.getItem('BRAVVI_REMEMBERED_EMAIL') || '';
@@ -558,29 +558,26 @@
               <div style="font-size: 10.5px; color: #2dd4bf; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Sistema Oficial de Gestão Industrial</div>
             </div>
           </div>
-          <p style="font-size: 12.5px; color: #94a3b8; margin: 0; line-height: 1.4;">
-            Ambiente Seguro • Banco de dados 100% isolado por confecção
-          </p>
-        </div>
-
-        <!-- Abas: Entrar vs Cadastrar -->
-        <div class="auth-tab-bar">
-          <button type="button" class="auth-tab-btn ${querCadastrar ? '' : 'active'}" id="gateBtnTabEntrar">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
-            Já sou Cliente • Entrar
-          </button>
-          <button type="button" class="auth-tab-btn ${querCadastrar ? 'active' : ''}" id="gateBtnTabCadastrar">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-            Cadastrar Minha Confecção
-          </button>
+          ${modoAtivacao ? `
+            <div style="margin-top: 6px; display: inline-flex; align-items: center; gap: 6px; background: rgba(5, 150, 105, 0.25); border: 1px solid #10b981; padding: 4px 12px; border-radius: 20px;">
+              <span style="font-size: 11.5px; color: #a7f3d0; font-weight: 800;">🎉 Adesão Realizada • Ativação de Primeiro Acesso</span>
+            </div>
+            <p style="font-size: 11.5px; color: #94a3b8; margin: 6px 0 0 0; line-height: 1.4;">
+              Crie suas credenciais para provisionar o banco de dados exclusivo da sua confecção.
+            </p>
+          ` : `
+            <p style="font-size: 12.5px; color: #94a3b8; margin: 0; line-height: 1.4;">
+              Acesso Exclusivo para Confecções Assinantes
+            </p>
+          `}
         </div>
 
         <div style="padding: 24px;">
           <!-- Alerta Dinâmico -->
           <div id="gateAlertBox" style="display: none;"></div>
 
-          <!-- FORMULÁRIO 1: ENTRAR -->
-          <form id="gateFormLogin" style="display: ${querCadastrar ? 'none' : 'flex'}; flex-direction: column; gap: 14px;">
+          <!-- FORMULÁRIO 1: ENTRAR (PADRÃO PARA QUEM JÁ É CLIENTE) -->
+          <form id="gateFormLogin" style="display: ${modoAtivacao ? 'none' : 'flex'}; flex-direction: column; gap: 14px;">
             <div class="form-group" style="margin: 0;">
               <label class="form-label" style="font-weight: 700; color: #1e293b;">E-mail Cadastrado:</label>
               <input type="email" id="gateLoginEmail" class="form-control" placeholder="ex: contato@suaconfeccao.com.br" value="${emailSalvo}" required style="font-size: 13.5px; padding: 10px 12px;">
@@ -609,10 +606,34 @@
               <span>Acessar Meu Painel Industrial</span>
               <span>&rarr;</span>
             </button>
+
+            <!-- Card Bloqueio Anti-Acesso Gratuito: Direcionamento para Pagamento de Assinatura -->
+            <div style="margin-top: 6px; padding: 14px 16px; background: rgba(3, 43, 53, 0.4); border: 1px solid rgba(45, 212, 191, 0.25); border-radius: 8px; text-align: center;">
+              <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; font-weight: 800; color: #2dd4bf; margin-bottom: 4px;">
+                <span>⭐</span> <span>Ainda não possui assinatura ativa?</span>
+              </div>
+              <p style="font-size: 11.5px; color: #cbd5e1; margin: 0 0 10px 0; line-height: 1.4;">
+                O acesso ao sistema é liberado após a adesão. Escolha seu plano com Cartão até 12x ou Pix para ativar sua confecção.
+              </p>
+              <a href="vendas.html#planos" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 14px; font-size: 12px; font-weight: 800; background: #0d9488; color: #ffffff; text-decoration: none; border-radius: 6px; box-shadow: 0 2px 6px rgba(13, 148, 136, 0.3); transition: all 0.2s;" onmouseover="this.style.background='#0f766e'" onmouseout="this.style.background='#0d9488'">
+                <span>Conhecer Planos & Assinar (a partir de R$ 397) &rarr;</span>
+              </a>
+            </div>
+
+            <div style="text-align: center; margin-top: 2px;">
+              <a href="javascript:void(0)" id="gateLinkIrParaAtivacao" style="font-size: 11px; color: #64748b; text-decoration: underline;">
+                Já realizou a assinatura? Ativar primeiro acesso aqui
+              </a>
+            </div>
           </form>
 
-          <!-- FORMULÁRIO 2: CADASTRAR NOVA CONFECÇÃO -->
-          <form id="gateFormCadastro" style="display: ${querCadastrar ? 'flex' : 'none'}; flex-direction: column; gap: 12px;">
+          <!-- FORMULÁRIO 2: ATIVAÇÃO DE PRIMEIRO ACESSO (PÓS-PAGAMENTO) -->
+          <form id="gateFormCadastro" style="display: ${modoAtivacao ? 'flex' : 'none'}; flex-direction: column; gap: 12px;">
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 8px 12px; font-size: 11.5px; color: #166534; display: flex; align-items: center; gap: 6px;">
+              <span>✅</span>
+              <span><strong>Adesão confirmada:</strong> Configure sua confecção abaixo para liberar o acesso PRO.</span>
+            </div>
+
             <div class="form-group" style="margin: 0;">
               <label class="form-label" style="font-weight: 700; color: #1e293b;">Nome da Confecção / Fábrica:</label>
               <input type="text" id="gateCadNomeEmpresa" class="form-control" placeholder="ex: Confecção Silva Uniformes" required style="font-size: 13px; padding: 9px 12px;">
@@ -672,21 +693,27 @@
 
             <div style="background: #f8fafc; border-radius: 6px; padding: 8px 12px; font-size: 11px; color: #475569; display: flex; align-items: center; gap: 6px;">
               <span>🔒</span>
-              <span><strong>Isolamento Multi-tenant:</strong> Seu banco de dados na nuvem é 100% exclusivo da sua empresa.</span>
+              <span><strong>Banco Exclusivo:</strong> Isolamento multi-tenant seguro na nuvem para a sua confecção.</span>
             </div>
 
             <button type="submit" id="gateBtnSubmitCad" class="btn btn-primary" style="padding: 12px; font-size: 14px; font-weight: 800; width: 100%; margin-top: 2px; display: flex; align-items: center; justify-content: center; gap: 8px; background: #047857; border-color: #047857;">
-              <span>Criar Conta da Confecção & Acessar</span>
+              <span>Ativar Minha Licença PRO & Entrar</span>
               <span>&rarr;</span>
             </button>
+
+            <div style="text-align: center; margin-top: 4px;">
+              <a href="javascript:void(0)" id="gateLinkVoltarParaLogin" style="font-size: 11.5px; color: #0284c7; font-weight: 600; text-decoration: underline;">
+                Já ativou seu acesso anteriormente? Fazer Login aqui &rarr;
+              </a>
+            </div>
           </form>
 
           <!-- Rodapé de Alternativa: Showroom / Demonstração & Instalação no Computador -->
           <div style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed #cbd5e1; text-align: center; display: flex; flex-direction: column; gap: 8px;">
             <div style="font-size: 11.5px; color: #64748b;">
-              Quer apenas conhecer as ferramentas antes de se cadastrar?
+              Quer apenas conhecer as ferramentas antes de assinar?
             </div>
-            <a href="/demo" id="gateBtnEntrarDemo" style="background: none; border: none; cursor: pointer; color: #0284c7; font-weight: 700; font-size: 12.5px; text-decoration: underline; display: inline-flex; align-items: center; justify-content: center; gap: 5px;">
+            <a href="demo.html" id="gateBtnEntrarDemo" style="background: none; border: none; cursor: pointer; color: #0284c7; font-weight: 700; font-size: 12.5px; text-decoration: underline; display: inline-flex; align-items: center; justify-content: center; gap: 5px;">
               ✨ Explorar Modo Demonstração Showroom (Sem Cadastro) &rarr;
             </a>
             <button type="button" id="gateBtnInstalarApp" style="margin-top: 4px; background: rgba(3, 43, 53, 0.05); border: 1px dashed #0d9488; border-radius: 6px; padding: 7px 10px; cursor: pointer; color: #0f766e; font-weight: 700; font-size: 11.5px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
@@ -707,8 +734,6 @@
       }
     });
 
-    const tabEntrar = gatekeeper.querySelector('#gateBtnTabEntrar');
-    const tabCadastrar = gatekeeper.querySelector('#gateBtnTabCadastrar');
     const formLogin = gatekeeper.querySelector('#gateFormLogin');
     const formCadastro = gatekeeper.querySelector('#gateFormCadastro');
     const alertBox = gatekeeper.querySelector('#gateAlertBox');
@@ -717,35 +742,31 @@
     const inpSenhaLogin = gatekeeper.querySelector('#gateLoginSenha');
     const inpSenhaCad = gatekeeper.querySelector('#gateCadSenha');
     const chkLembrarEmail = gatekeeper.querySelector('#gateChkLembrarEmail');
+    const linkIrAtivacao = gatekeeper.querySelector('#gateLinkIrParaAtivacao');
+    const linkVoltarLogin = gatekeeper.querySelector('#gateLinkVoltarParaLogin');
+
+    linkIrAtivacao?.addEventListener('click', () => {
+      if (formLogin) formLogin.style.display = 'none';
+      if (formCadastro) formCadastro.style.display = 'flex';
+      gatekeeper.querySelector('#gateCadNomeEmpresa')?.focus();
+      if (alertBox) alertBox.style.display = 'none';
+    });
+
+    linkVoltarLogin?.addEventListener('click', () => {
+      if (formCadastro) formCadastro.style.display = 'none';
+      if (formLogin) formLogin.style.display = 'flex';
+      if (inpSenhaLogin) inpSenhaLogin.focus();
+      if (alertBox) alertBox.style.display = 'none';
+    });
 
     // Foco inicial
-    if (emailSalvo) {
+    if (modoAtivacao) {
+      setTimeout(() => gatekeeper.querySelector('#gateCadNomeEmpresa')?.focus(), 150);
+    } else if (emailSalvo) {
       setTimeout(() => inpSenhaLogin?.focus(), 150);
     } else {
       setTimeout(() => gatekeeper.querySelector('#gateLoginEmail')?.focus(), 150);
     }
-
-    function alternarAbas(aba) {
-      if (aba === 'entrar') {
-        tabEntrar?.classList.add('active');
-        tabCadastrar?.classList.remove('active');
-        if (formLogin) formLogin.style.display = 'flex';
-        if (formCadastro) formCadastro.style.display = 'none';
-        if (emailSalvo) {
-          inpSenhaLogin?.focus();
-        }
-      } else {
-        tabCadastrar?.classList.add('active');
-        tabEntrar?.classList.remove('active');
-        if (formCadastro) formCadastro.style.display = 'flex';
-        if (formLogin) formLogin.style.display = 'none';
-        gatekeeper.querySelector('#gateCadNomeEmpresa')?.focus();
-      }
-      if (alertBox) alertBox.style.display = 'none';
-    }
-
-    tabEntrar?.addEventListener('click', () => alternarAbas('entrar'));
-    tabCadastrar?.addEventListener('click', () => alternarAbas('cadastrar'));
 
     // Toggles de ver senha
     const btnToggleL = gatekeeper.querySelector('#btnToggleSenhaGateLogin');
@@ -974,10 +995,12 @@
           mostrarAlertaGate(msgErro, 'error', botaoExtra);
 
           gatekeeper.querySelector('#btnIrParaLoginAposErro')?.addEventListener('click', () => {
-            alternarAbas('entrar');
+            if (formCadastro) formCadastro.style.display = 'none';
+            if (formLogin) formLogin.style.display = 'flex';
             const loginInp = gatekeeper.querySelector('#gateLoginEmail');
             if (loginInp) loginInp.value = email;
             gatekeeper.querySelector('#gateLoginSenha')?.focus();
+            if (alertBox) alertBox.style.display = 'none';
           });
         }
       } catch (errCad) {
@@ -985,7 +1008,7 @@
         mostrarAlertaGate('Erro ao processar cadastro: ' + (errCad.message || 'Falha de comunicação'), 'error');
       } finally {
         btnSubmitCad.disabled = false;
-        btnSubmitCad.innerHTML = '<span>Criar Conta da Confecção & Acessar</span><span>&rarr;</span>';
+        btnSubmitCad.innerHTML = '<span>Ativar Minha Licença PRO & Entrar</span><span>&rarr;</span>';
       }
     });
 

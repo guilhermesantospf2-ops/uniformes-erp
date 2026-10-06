@@ -288,6 +288,11 @@
     });
   }
 
+  function obterLinkAtivacao(email = '') {
+    const base = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '/');
+    return `${base}index.html?ativar=1${email ? '&email=' + encodeURIComponent(email) : ''}`;
+  }
+
   // Inicialização e Exposição Global
   window.InfinitePayEngine = {
     PLANOS_CONFIG,
@@ -295,6 +300,7 @@
     carregarConfiguracoes,
     salvarConfiguracoes,
     obterLinkPagamentoPlano,
+    obterLinkAtivacao,
     irParaCheckout,
     abrirModalCheckout,
     abrirModalConfiguracoes: abrirModalConfiguracoesInfinitePay
