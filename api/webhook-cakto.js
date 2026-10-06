@@ -83,6 +83,11 @@ module.exports = async function handler(req, res) {
     if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
       try {
         const fetch = global.fetch || require('node-fetch');
+        const cleanEmail = (email || '').toLowerCase().trim();
+        const tenantHash = crypto.createHash('sha256').update('tenant_bravvi_' + cleanEmail).digest('hex').substring(0, 24);
+        const tenantId = 'tenant_' + tenantHash;
+
+        // 1. Grava o token
         await fetch(`${process.env.SUPABASE_URL}/rest/v1/erp_tokens`, {
           method: 'POST',
           headers: {
@@ -91,21 +96,47 @@ module.exports = async function handler(req, res) {
             'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
             'Prefer': 'resolution=merge-duplicates'
           },
-          body: JSON.stringify(registro)
+          body: JSON.stringify({ ...registro, tenant_id: tenantId })
         });
-        console.log('[Cakto Webhook] Salvo com sucesso no Supabase!');
+
+        // 2. Grava ou atualiza a assinatura ativa
+        await fetch(`${process.env.SUPABASE_URL}/rest/v1/erp_subscriptions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+            'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+            'Prefer': 'resolution=merge-duplicates'
+          },
+          body: JSON.stringify({
+            tenant_id: tenantId,
+            email: cleanEmail,
+            whatsapp: phone,
+            plano: diasAcesso === 365 ? 'anual' : 'mensal',
+            status: isPaid ? 'ativa' : 'pendente',
+            valor: valor,
+            data_inicio: new Date().toISOString(),
+            data_vencimento: dataVencimento.toISOString(),
+            gateway: 'cakto',
+            order_nsu: String(orderId)
+          })
+        });
+
+        console.log('[Cakto Webhook] Salvo com sucesso no Supabase (tokens + subscriptions)!');
       } catch (dbErr) {
         console.warn('[Cakto Webhook] Erro ao gravar no Supabase:', dbErr.message);
       }
     }
 
-    // Retorna SEMPRE 200 OK para a Cakto
+    // Retorna SEMPRE 200 OK para a Cakto com dados de login oficial
     return res.status(200).json({
       received: true,
       order_id: orderId,
       status: isPaid ? 'approved' : 'received',
-      activation_token: token,
-      activation_url: `https://uniformes-erp.vercel.app/ativar.html?token=${token}`
+      login_url: 'https://uniformes-erp.vercel.app',
+      email: email,
+      senha_temporaria: 'Bravvi@2026',
+      instrucoes: 'Acesse https://uniformes-erp.vercel.app com seu e-mail e a senha temporária Bravvi@2026.'
     });
 
   } catch (err) {

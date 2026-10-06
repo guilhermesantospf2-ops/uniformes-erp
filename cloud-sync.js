@@ -781,6 +781,11 @@ with check (true);
             definirUsuarioLogado(userObj, auth);
 
             return { sucesso: true, user: userObj, precisaTrocarSenha: false };
+          } else if (senhaStr === 'Bravvi@2026' && auth.precisaTrocarSenha !== true) {
+            return {
+              sucesso: false,
+              erro: 'Sua conta já possui uma senha pessoal definitiva cadastrada. Por favor, acesse com a sua senha pessoal ou clique em "Esqueceu a senha".'
+            };
           } else {
             return { sucesso: false, erro: 'E-mail ou senha incorretos. Verifique suas credenciais.' };
           }
@@ -788,6 +793,105 @@ with check (true);
       }
     } catch (errDb) {
       console.warn('Aviso na verificação de autenticação de tenant:', errDb);
+    }
+
+    // Camada 1.2: Primeiro Acesso com Senha Temporária Oficial (Pós-compra Cakto / Asaas)
+    if (senhaStr === 'Bravvi@2026') {
+      try {
+        let aprovado = null;
+
+        // 1. Busca se este e-mail tem token aprovado na Cakto
+        if (supabaseClient) {
+          try {
+            const { data: tokData } = await supabaseClient
+              .from('erp_tokens')
+              .select('*')
+              .eq('email', cleanEmail)
+              .eq('status', 'aprovado')
+              .maybeSingle();
+            if (tokData) aprovado = tokData;
+          } catch(eTok) {}
+
+          if (!aprovado) {
+            try {
+              const { data: subData } = await supabaseClient
+                .from('erp_subscriptions')
+                .select('*')
+                .eq('email', cleanEmail)
+                .in('status', ['ativa', 'aprovado'])
+                .maybeSingle();
+              if (subData) aprovado = subData;
+            } catch(eSub) {}
+          }
+        }
+
+        // 2. Fallback de verificação local (tokens gerados manualmente ou compras locais)
+        if (!aprovado) {
+          try {
+            const tokensLocal = JSON.parse(localStorage.getItem('BRAVVI_TOKENS_X1') || '[]');
+            const achouLocal = tokensLocal.find(t => (t.email || '').toLowerCase().trim() === cleanEmail);
+            if (achouLocal) aprovado = achouLocal;
+          } catch(eLoc) {}
+        }
+
+        // Se o e-mail estiver aprovado (comprou na Cakto ou recebeu liberação)
+        if (aprovado) {
+          const nomeDono = aprovado.nome_cliente || 'Administrador';
+          const telDono = aprovado.telefone || aprovado.whatsapp || '';
+          const planoDono = aprovado.plano || 'mensal';
+
+          const userObj = {
+            id: tenantId,
+            tenant_id: tenantId,
+            email: cleanEmail,
+            primeiroAcessoDono: true,
+            user_metadata: {
+              company_name: 'Minha Confecção',
+              full_name: nomeDono,
+              phone: telDono,
+              perfil: 'dono',
+              role: 'Dono / Diretor',
+              tenant_id: tenantId,
+              plano: planoDono
+            }
+          };
+
+          const empConfig = {
+            razaoSocial: 'Minha Confecção',
+            nomeFantasia: 'Minha Confecção',
+            email: cleanEmail,
+            telefone: telDono,
+            plano: planoDono,
+            statusAssinatura: 'ativa',
+            dataVencimento: aprovado.data_vencimento || new Date(Date.now() + (planoDono === 'anual' ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString(),
+            tenantId: tenantId,
+            auth: {
+              email: cleanEmail,
+              nomeResponsavel: nomeDono,
+              whatsapp: telDono,
+              precisaTrocarSenha: true
+            }
+          };
+
+          salvarEmpresaConfig(empConfig);
+          definirPerfilAtivo('dono');
+          definirUsuarioLogado(userObj, empConfig.auth);
+
+          return {
+            sucesso: true,
+            user: userObj,
+            precisaTrocarSenha: true,
+            primeiroAcessoDono: true
+          };
+        } else {
+          return {
+            sucesso: false,
+            erro: 'E-mail não localizado entre as compras aprovadas. Verifique se digitou o mesmo e-mail informado na compra na Cakto.'
+          };
+        }
+      } catch (errTemp) {
+        console.warn('Erro ao autenticar senha temporária:', errTemp);
+      }
     }
 
     // Camada 1.5: Autenticação de Colaborador / Funcionário criado pelo Diretor no Supabase
@@ -1032,6 +1136,34 @@ with check (true);
       }
     }
 
+    // 3. Atualiza também as credenciais master do Dono / Administrador da fábrica
+    try {
+      const empAtual = obterEmpresaConfig() || {};
+      if (!empAtual.auth) empAtual.auth = {};
+      empAtual.auth.salt = salt;
+      empAtual.auth.hash = hash;
+      empAtual.auth.precisaTrocarSenha = false;
+      salvarEmpresaConfig(empAtual);
+
+      if (tId && supabaseClient) {
+        await supabaseClient
+          .from('erp_tenants')
+          .upsert({
+            tenant_id: tId,
+            empresa: empAtual,
+            ultima_atualizacao_ms: Date.now()
+          });
+
+        // Marca token como consumido para não permitir reuso
+        await supabaseClient
+          .from('erp_tokens')
+          .update({ usado: true, usado_em: new Date().toISOString() })
+          .eq('tenant_id', tId);
+      }
+    } catch (eDono) {
+      console.warn('Aviso ao sincronizar credenciais master do dono:', eDono);
+    }
+
     return { sucesso: true, auth: novaAuth };
   }
 
@@ -1068,11 +1200,53 @@ with check (true);
       if (!errBusca && tenantExistente && tenantExistente.empresa && tenantExistente.empresa.auth) {
         return {
           sucesso: false,
-          erro: 'Este e-mail já possui cadastro no sistema. Clique na aba "Já sou Cliente • Entrar" acima para acessar com sua senha.'
+          erro: 'Este e-mail já possui uma fábrica cadastrada. Para sua segurança, cada e-mail é vinculado a uma única confecção. Faça Login com sua senha pessoal.'
         };
       }
     } catch (e) {
       console.warn('Verificação de tenant pré-existente:', e);
+    }
+
+    // 3.1 Verifica se o e-mail possui compra ou adesão aprovada na Cakto / Supabase
+    let aprovado = false;
+    if (supabaseClient) {
+      try {
+        const { data: tok } = await supabaseClient
+          .from('erp_tokens')
+          .select('id')
+          .eq('email', cleanEmail)
+          .eq('status', 'aprovado')
+          .maybeSingle();
+        if (tok) aprovado = true;
+      } catch(eTok) {}
+
+      if (!aprovado) {
+        try {
+          const { data: sub } = await supabaseClient
+            .from('erp_subscriptions')
+            .select('id')
+            .eq('email', cleanEmail)
+            .in('status', ['ativa', 'aprovado'])
+            .maybeSingle();
+          if (sub) aprovado = true;
+        } catch(eSub) {}
+      }
+    }
+
+    if (!aprovado) {
+      try {
+        const tokensLocal = JSON.parse(localStorage.getItem('BRAVVI_TOKENS_X1') || '[]');
+        if (tokensLocal.some(t => (t.email || '').toLowerCase().trim() === cleanEmail)) {
+          aprovado = true;
+        }
+      } catch(eLoc) {}
+    }
+
+    if (!aprovado) {
+      return {
+        sucesso: false,
+        erro: 'Este e-mail ainda não possui assinatura ou pagamento aprovado na Cakto. Realize a adesão na página de planos ou use a senha temporária Bravvi@2026 caso tenha acabado de comprar.'
+      };
     }
 
     // 4. Cria salt e hash criptográfico SHA-256

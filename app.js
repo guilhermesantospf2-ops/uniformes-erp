@@ -438,8 +438,19 @@
           </div>
           <div class="modal-body" style="padding: 22px; line-height: 1.5;">
             <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 13px 15px; margin-bottom: 18px; font-size: 12.5px; color: #166534; line-height: 1.45;">
-              Olá, <strong>${nomeColab}</strong>! Você entrou com a senha temporária definida pela diretoria. Por segurança, crie agora sua <strong>senha pessoal exclusiva</strong> para acessar o sistema da fábrica.
+              ${user?.primeiroAcessoDono ? `
+                Olá, <strong>${nomeColab}</strong>! Seu pagamento foi confirmado com sucesso. Configure os dados da sua empresa e defina sua <strong>senha pessoal definitiva</strong> para liberar o seu ambiente industrial exclusivo.
+              ` : `
+                Olá, <strong>${nomeColab}</strong>! Você entrou com a senha temporária definida pela diretoria. Por segurança, crie agora sua <strong>senha pessoal exclusiva</strong> para acessar o sistema da fábrica.
+              `}
             </div>
+
+            ${user?.primeiroAcessoDono ? `
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label" style="font-weight: 700; color: #0f172a;">Nome da sua Confecção / Fábrica *</label>
+                <input type="text" id="inputNomeEmpresaPrimeiroAcesso" class="form-input" placeholder="Ex: Uniformes & Cia Industrial" required style="font-size: 14px;">
+              </div>
+            ` : ''}
 
             <div class="form-group" style="margin-bottom: 14px;">
               <label class="form-label" style="font-weight: 700; color: #0f172a;">Sua Nova Senha Pessoal *</label>
@@ -481,6 +492,23 @@
     btnSalvar?.addEventListener('click', async () => {
       const s1 = inputNova.value.trim();
       const s2 = inputConf.value.trim();
+
+      if (user?.primeiroAcessoDono) {
+        const inpEmp = modalEl.querySelector('#inputNomeEmpresaPrimeiroAcesso');
+        const nomeEmp = inpEmp ? inpEmp.value.trim() : '';
+        if (!nomeEmp) {
+          erroEl.textContent = 'Por favor, informe o nome da sua confecção.';
+          erroEl.style.display = 'block';
+          inpEmp?.focus();
+          return;
+        }
+        if (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function') {
+          const emp = window.ERP_CLOUD.obterEmpresaConfig() || {};
+          emp.nomeFantasia = nomeEmp;
+          emp.razaoSocial = nomeEmp;
+          window.ERP_CLOUD.salvarEmpresaConfig(emp);
+        }
+      }
 
       if (!s1 || s1.length < 6) {
         erroEl.textContent = 'A nova senha deve ter no mínimo 6 caracteres.';
@@ -542,10 +570,12 @@
     gatekeeper.style.display = 'flex';
 
     const urlParams = new URLSearchParams(window.location.search);
-    const modoAtivacao = urlParams.get('ativar') === '1' || urlParams.get('adesao') === '1' || urlParams.get('novo_cliente') === '1';
+    const emailUrl = (urlParams.get('email') || '').trim();
+    const modoAtivacao = urlParams.get('ativar') === '1' || urlParams.get('adesao') === '1' || urlParams.get('novo_cliente') === '1' || Boolean(emailUrl);
 
     // Opção de lembrar e-mail (a senha NUNCA é salva, deve ser digitada a cada entrada)
     const emailSalvo = localStorage.getItem('BRAVVI_REMEMBERED_EMAIL') || '';
+    const emailInicial = emailUrl || emailSalvo;
 
     gatekeeper.innerHTML = `
       <div class="bravvi-gatekeeper-card">
@@ -560,10 +590,10 @@
           </div>
           ${modoAtivacao ? `
             <div style="margin-top: 6px; display: inline-flex; align-items: center; gap: 6px; background: rgba(5, 150, 105, 0.25); border: 1px solid #10b981; padding: 4px 12px; border-radius: 20px;">
-              <span style="font-size: 11.5px; color: #a7f3d0; font-weight: 800;">🎉 Adesão Realizada • Ativação de Primeiro Acesso</span>
+              <span style="font-size: 11.5px; color: #a7f3d0; font-weight: 800;">🎉 Adesão Confirmada • Primeiro Acesso Oficial</span>
             </div>
             <p style="font-size: 11.5px; color: #94a3b8; margin: 6px 0 0 0; line-height: 1.4;">
-              Crie suas credenciais para provisionar o banco de dados exclusivo da sua confecção.
+              Entre com o e-mail da compra e a senha temporária para configurar sua fábrica.
             </p>
           ` : `
             <p style="font-size: 12.5px; color: #94a3b8; margin: 0; line-height: 1.4;">
@@ -576,16 +606,16 @@
           <!-- Alerta Dinâmico -->
           <div id="gateAlertBox" style="display: none;"></div>
 
-          <!-- FORMULÁRIO 1: ENTRAR (PADRÃO PARA QUEM JÁ É CLIENTE) -->
-          <form id="gateFormLogin" style="display: ${modoAtivacao ? 'none' : 'flex'}; flex-direction: column; gap: 14px;">
+          <!-- FORMULÁRIO 1: ENTRAR (PADRÃO PARA QUEM JÁ É CLIENTE OU PRIMEIRO ACESSO) -->
+          <form id="gateFormLogin" style="display: flex; flex-direction: column; gap: 14px;">
             <div class="form-group" style="margin: 0;">
-              <label class="form-label" style="font-weight: 700; color: #1e293b;">E-mail Cadastrado:</label>
-              <input type="email" id="gateLoginEmail" class="form-control" placeholder="ex: contato@suaconfeccao.com.br" value="${emailSalvo}" required style="font-size: 13.5px; padding: 10px 12px;">
+              <label class="form-label" style="font-weight: 700; color: #1e293b;">E-mail Cadastrado na Compra:</label>
+              <input type="email" id="gateLoginEmail" class="form-control" placeholder="ex: contato@suaconfeccao.com.br" value="${emailInicial}" required style="font-size: 13.5px; padding: 10px 12px;">
             </div>
 
             <div class="form-group" style="margin: 0;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <label class="form-label" style="font-weight: 700; color: #1e293b; margin: 0;">Sua Senha:</label>
+                <label class="form-label" style="font-weight: 700; color: #1e293b; margin: 0;">Sua Senha de Acesso:</label>
                 <a href="javascript:void(0)" id="gateLinkEsqueciSenha" style="font-size: 11px; color: #0284c7; font-weight: 600; text-decoration: underline;">Esqueceu a senha?</a>
               </div>
               <div style="position: relative;">
@@ -620,9 +650,9 @@
               </a>
             </div>
 
-            <div style="text-align: center; margin-top: 2px;">
-              <a href="javascript:void(0)" id="gateLinkIrParaAtivacao" style="font-size: 11px; color: #64748b; text-decoration: underline;">
-                Já realizou a assinatura? Ativar primeiro acesso aqui
+            <div style="text-align: center; margin-top: 4px;">
+              <a href="javascript:void(0)" id="gateLinkIrParaAtivacao" style="font-size: 11.5px; color: #0284c7; font-weight: 700; text-decoration: underline;">
+                💡 Primeiro acesso pós-compra? Clique aqui para orientações
               </a>
             </div>
           </form>
@@ -746,10 +776,21 @@
     const linkVoltarLogin = gatekeeper.querySelector('#gateLinkVoltarParaLogin');
 
     linkIrAtivacao?.addEventListener('click', () => {
-      if (formLogin) formLogin.style.display = 'none';
-      if (formCadastro) formCadastro.style.display = 'flex';
-      gatekeeper.querySelector('#gateCadNomeEmpresa')?.focus();
-      if (alertBox) alertBox.style.display = 'none';
+      if (inpSenhaLogin) {
+        inpSenhaLogin.value = 'Bravvi@2026';
+        inpSenhaLogin.type = 'text';
+        if (btnToggleL) btnToggleL.textContent = '🔒';
+      }
+      mostrarAlertaGate(
+        '🔑 <strong>Primeiro Acesso:</strong> Informe o mesmo e-mail cadastrado na compra e utilize a senha temporária <strong>Bravvi@2026</strong>. Ao clicar em Acessar, você definirá o nome da sua confecção e sua senha pessoal definitiva.',
+        'info'
+      );
+      const emailVal = gatekeeper.querySelector('#gateLoginEmail')?.value.trim();
+      if (!emailVal) {
+        gatekeeper.querySelector('#gateLoginEmail')?.focus();
+      } else {
+        btnSubmitLogin?.focus();
+      }
     });
 
     linkVoltarLogin?.addEventListener('click', () => {
@@ -759,9 +800,25 @@
       if (alertBox) alertBox.style.display = 'none';
     });
 
-    // Foco inicial
-    if (modoAtivacao) {
-      setTimeout(() => gatekeeper.querySelector('#gateCadNomeEmpresa')?.focus(), 150);
+    // Foco e banner inicial
+    if (emailUrl || modoAtivacao) {
+      setTimeout(() => {
+        if (inpSenhaLogin && !inpSenhaLogin.value) {
+          inpSenhaLogin.value = 'Bravvi@2026';
+          inpSenhaLogin.type = 'text';
+          if (btnToggleL) btnToggleL.textContent = '🔒';
+        }
+        mostrarAlertaGate(
+          '🎉 <strong>Adesão Confirmada!</strong> Entre com seu e-mail cadastrado e a senha temporária <strong>Bravvi@2026</strong> para liberar o ambiente exclusivo da sua fábrica.',
+          'info'
+        );
+        const emailVal = gatekeeper.querySelector('#gateLoginEmail')?.value.trim();
+        if (!emailVal) {
+          gatekeeper.querySelector('#gateLoginEmail')?.focus();
+        } else {
+          btnSubmitLogin?.focus();
+        }
+      }, 200);
     } else if (emailSalvo) {
       setTimeout(() => inpSenhaLogin?.focus(), 150);
     } else {

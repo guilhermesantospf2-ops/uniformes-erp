@@ -64,7 +64,7 @@
         'Atualizações contínuas de novos recursos',
         'Backup automático na nuvem'
       ],
-      linkPadrao: LINK_WHATSAPP_ANUAL
+      linkPadrao: 'https://pay.cakto.com.br/ecrfqfr_1178654'
     },
     anual_implementacao: {
       id: 'plano_anual_vip_setup',
@@ -152,7 +152,7 @@
     const padrao = {
       handle: '', // ex: 'bravvitextil'
       linkMensal: 'https://pay.cakto.com.br/rb6atzs_1178556',
-      linkAnual: LINK_WHATSAPP_ANUAL,
+      linkAnual: 'https://pay.cakto.com.br/ecrfqfr_1178654',
       linkCombo: LINK_WHATSAPP_COMBO,
       linkSetup: LINK_WHATSAPP_SETUP,
       apiKey: '',
@@ -163,8 +163,11 @@
       if (!data.linkMensal || !data.linkMensal.includes('cakto.com.br')) {
         data.linkMensal = padrao.linkMensal;
       }
-      // Sempre garante que o Anual e Combo abram o WhatsApp oficial para negociação direta
-      data.linkAnual = LINK_WHATSAPP_ANUAL;
+      // Sempre garante que o Anual aponte para o checkout oficial da Cakto
+      if (!data.linkAnual || !data.linkAnual.includes('cakto.com.br/ecrfqfr_1178654')) {
+        data.linkAnual = padrao.linkAnual;
+      }
+      // O Combo Anual + Implementação vai para o WhatsApp com especialista
       data.linkCombo = LINK_WHATSAPP_COMBO;
       data.linkSetup = LINK_WHATSAPP_SETUP;
       data.whatsappSuporte = WHATSAPP_SUPORTE;
@@ -192,12 +195,16 @@
       return config.linkMensal || 'https://pay.cakto.com.br/rb6atzs_1178556';
     }
 
-    // 2. Anual e Combo vão direto para o WhatsApp do suporte/vendas
-    if (planoKey === 'anual') return LINK_WHATSAPP_ANUAL;
+    // 2. Anual vai direto para o checkout da Cakto
+    if (planoKey === 'anual') {
+      return config.linkAnual || 'https://pay.cakto.com.br/ecrfqfr_1178654';
+    }
+
+    // 3. Combo Anual com Implementação vai direto para o WhatsApp
     if (planoKey === 'anual_implementacao') return LINK_WHATSAPP_COMBO;
     if (planoKey === 'implementacao_avulsa') return LINK_WHATSAPP_SETUP;
 
-    return plano.linkPadrao || LINK_WHATSAPP_ANUAL;
+    return plano.linkPadrao || 'https://pay.cakto.com.br/ecrfqfr_1178654';
   }
 
   /**

@@ -2159,6 +2159,12 @@ button.status-pill:hover {
   border: 1px solid #fde68a;
 }
 
+.auth-alert-info {
+  background: #f0fdfa;
+  color: #0f766e;
+  border: 1px solid #99f6e4;
+}
+
 /* ==========================================================================
    BRAVVI AUTH GATEKEEPER - BLINDAGEM DE ACESSO & ISOLAMENTO TOTAL
    ========================================================================== */
