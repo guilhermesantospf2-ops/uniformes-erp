@@ -64,8 +64,8 @@
     anual_implementacao: {
       id: 'plano_anual_vip_setup',
       nome: 'Combo Anual Pro + Implementação VIP',
-      valor: 4290.00,
-      valorFormatado: 'R$ 4.290,00',
+      valor: 4764.00,
+      valorFormatado: 'R$ 4.764,00',
       periodo: '/ano à vista',
       parcelamento: 'Ou em até 12x de R$ 397,00 no cartão de crédito',
       destaque: false,
@@ -80,7 +80,7 @@
         'Treinamento ao vivo com vendedores, encarregados e diretoria',
         'Acompanhamento assistido dos primeiros 10 pedidos reais'
       ],
-      linkPadrao: 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA'
+      linkPadrao: 'https://www.asaas.com/000/c/tpt2gei572ffkjpn'
     },
     implementacao_avulsa: {
       id: 'setup_implementacao_997',
@@ -148,7 +148,7 @@
       handle: '', // ex: 'bravvitextil'
       linkMensal: 'https://www.asaas.com/000/c/m8bsuy5ipe4g7xca',
       linkAnual: 'https://www.asaas.com/000/c/khj0e52sm5psx8ts',
-      linkCombo: '',
+      linkCombo: 'https://www.asaas.com/000/c/tpt2gei572ffkjpn',
       linkSetup: '',
       apiKey: '',
       whatsappSuporte: '5511987654321'
@@ -161,6 +161,10 @@
       // Se linkAnual estiver vazio ou com link antigo, atualiza para o link oficial anual do Asaas
       if (!data.linkAnual || data.linkAnual.includes('infinitepay.io') || data.linkAnual.includes('psgTp3BpPA') || data.linkAnual.includes('J5sFLTLWln')) {
         data.linkAnual = padrao.linkAnual;
+      }
+      // Se linkCombo estiver vazio ou com link antigo, atualiza para o link oficial combo do Asaas
+      if (!data.linkCombo || data.linkCombo.includes('infinitepay.io') || data.linkCombo.includes('psgTp3BpPA')) {
+        data.linkCombo = padrao.linkCombo;
       }
       return { ...padrao, ...data };
     }
@@ -257,7 +261,7 @@
           </div>
 
           <div style="margin-bottom: 12px;">
-            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">Link Combo Anual + Implementação (R$ 4.290,00):</label>
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">Link Combo Anual + Implementação (R$ 4.764,00 em até 12x):</label>
             <input type="url" id="cfgIpLinkCombo" value="${config.linkCombo || ''}" placeholder="https://pay.infinitepay.io/..." style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 12px; box-sizing: border-box;">
           </div>
 
