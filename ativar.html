@@ -63,21 +63,6 @@
       margin-bottom: 24px;
     }
 
-    .success-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: #ecfdf5;
-      color: #059669;
-      border: 1px solid #a7f3d0;
-      padding: 6px 14px;
-      border-radius: 9999px;
-      font-size: 12.5px;
-      font-weight: 800;
-      letter-spacing: 0.3px;
-      margin-bottom: 16px;
-    }
-
     .title {
       font-family: 'Outfit', sans-serif;
       font-size: 26px;
@@ -177,10 +162,6 @@
     <img src="assets/bravvi-logo.png" alt="Bravvi ERP Têxtil" class="brand-logo-img">
 
     <div id="formSection">
-      <div class="success-badge">
-        <span>⚡ Pagamento Confirmado via InfinitePay</span>
-      </div>
-
       <h1 class="title">Crie o Acesso Oficial da sua Confecção</h1>
       <p class="subtitle">
         Cadastre os dados da sua empresa e defina sua senha master de administrador para liberar o chão de fábrica imediatamente.
@@ -236,8 +217,10 @@
   <script>
     // Recupera parâmetros da URL (ex: ?token=xyz ou ?email=...)
     const urlParams = new URLSearchParams(window.location.search);
-    const tokenUrl = urlParams.get('token') || ('tok_inf_' + Date.now().toString(36));
+    const tokenUrl = urlParams.get('token') || ('tok_' + Date.now().toString(36));
     const emailUrl = urlParams.get('email') || '';
+    const gatewayUrl = urlParams.get('gateway') || 'cakto';
+    const planoUrl = urlParams.get('plano') || 'mensal';
 
     if (emailUrl && document.getElementById('emailAdmin')) {
       document.getElementById('emailAdmin').value = emailUrl;
@@ -272,10 +255,10 @@
         logoUrl: 'assets/bravvi-logo.png',
         tenantId: tenantId,
         tokenAtivacao: tokenUrl,
-        plano: 'mensal',
+        plano: planoUrl,
         statusAssinatura: 'ativa',
         dataVencimento: dataVenc.toISOString(),
-        gateway: 'infinitepay'
+        gateway: gatewayUrl
       };
 
       try {
@@ -298,10 +281,10 @@
               tenant_id: tenantId,
               email: email,
               whatsapp: whatsapp,
-              plano: 'mensal',
+              plano: planoUrl,
               status: 'ativa',
               data_vencimento: dataVenc.toISOString(),
-              gateway: 'infinitepay'
+              gateway: gatewayUrl
             });
           } catch (supErr) {
             console.warn('[Ativação] Fallback offline Supabase:', supErr);
@@ -313,7 +296,7 @@
         document.getElementById('successSection').style.display = 'block';
         document.getElementById('successDesc').innerHTML = `
           A confecção <strong>${nome}</strong> está ativa.<br>
-          Seu acesso foi liberado até <strong>${dataVenc.toLocaleDateString('pt-BR')}</strong> via InfinitePay.
+          Seu acesso foi liberado com sucesso até <strong>${dataVenc.toLocaleDateString('pt-BR')}</strong>.
         `;
 
         // Redireciona automaticamente em 2.5 segundos
