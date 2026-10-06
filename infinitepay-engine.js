@@ -52,14 +52,14 @@
       valor: 3970.00,
       valorFormatado: 'R$ 3.970,00',
       periodo: '/ano à vista',
-      parcelamento: 'Ou em até 12x de R$ 330,83 no cartão de crédito',
+      parcelamento: 'Ou parcelado em até 12x no cartão de crédito',
       destaque: true,
       badge: 'Mais Escolhido • Economize R$ 794 (2 meses grátis)',
       descricao: 'O melhor custo-benefício para indústrias têxteis com desconto anual garantido.',
       itens: [
         'Tudo do Plano Mensal incluso',
         'Economia de R$ 794,00 no ano (paga 10 meses, usa 12 meses)',
-        'Parcelamento em até 12x sem complicação no cartão',
+        'Parcelamento em até 12x no cartão de crédito',
         'Suporte Prioritário VIP com fila acelerada no WhatsApp',
         'Atualizações contínuas de novos recursos',
         'Backup automático na nuvem'
