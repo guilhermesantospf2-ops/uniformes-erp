@@ -228,7 +228,7 @@
   // ==========================================================================
   // ESCUDO DE INADIMPLÊNCIA & GESTÃO DE ASSINATURAS (INFINITEPAY)
   // ==========================================================================
-  const LINK_PAGAMENTO_INFINITEPAY = 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA';
+  const LINK_PAGAMENTO_INFINITEPAY = 'https://invoice.infinitepay.io/plans/guilherme-santos-329/RRkQGnGO65';
 
   function verificarStatusAssinaturaEmpresa(empresa) {
     if (isModoDemo()) return; // Modo demonstração não possui bloqueio

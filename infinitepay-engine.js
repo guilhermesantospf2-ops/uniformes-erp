@@ -39,7 +39,7 @@
         'Módulo Financeiro, DRE e Custos Têxteis',
         'Suporte técnico via WhatsApp'
       ],
-      linkPadrao: 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA'
+      linkPadrao: 'https://invoice.infinitepay.io/plans/guilherme-santos-329/RRkQGnGO65'
     },
     anual: {
       id: 'plano_anual_3564',
@@ -137,21 +137,30 @@
   const STORAGE_KEY = 'bravvi_infinitepay_settings';
 
   function carregarConfiguracoes() {
+    let data = null;
     try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (data) return JSON.parse(data);
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) data = JSON.parse(raw);
     } catch (e) {
       console.warn('[InfinitePay] Erro ao carregar config:', e);
     }
-    return {
+    const padrao = {
       handle: '', // ex: 'bravvitextil'
-      linkMensal: 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA',
-      linkAnual: 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA',
-      linkCombo: 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA',
-      linkSetup: 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA',
+      linkMensal: 'https://invoice.infinitepay.io/plans/guilherme-santos-329/RRkQGnGO65',
+      linkAnual: '',
+      linkCombo: '',
+      linkSetup: '',
       apiKey: '',
       whatsappSuporte: '5511987654321'
     };
+    if (data) {
+      // Se linkMensal estiver vazio ou com link antigo avulso, atualiza para o link oficial de assinatura mensal
+      if (!data.linkMensal || data.linkMensal.includes('psgTp3BpPA')) {
+        data.linkMensal = padrao.linkMensal;
+      }
+      return { ...padrao, ...data };
+    }
+    return padrao;
   }
 
   function salvarConfiguracoes(novaConfig) {
