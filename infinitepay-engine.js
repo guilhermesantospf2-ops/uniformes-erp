@@ -17,6 +17,11 @@
 (function () {
   'use strict';
 
+  const WHATSAPP_SUPORTE = '5544998071870';
+  const LINK_WHATSAPP_ANUAL = 'https://wa.me/5544998071870?text=' + encodeURIComponent('Olá! Quero contratar o Plano Anual Pro do Bravvi ERP Têxtil (R$ 3.970/ano à vista ou 12x no cartão).');
+  const LINK_WHATSAPP_COMBO = 'https://wa.me/5544998071870?text=' + encodeURIComponent('Olá! Quero contratar o Combo Anual + Implementação VIP do Bravvi ERP Têxtil (12x R$ 397 / R$ 4.764).');
+  const LINK_WHATSAPP_SETUP = 'https://wa.me/5544998071870?text=' + encodeURIComponent('Olá! Quero contratar a Implementação Especializada VIP da Bravvi.');
+
   // Configuração padrão dos planos e valores oficiais
   const PLANOS_CONFIG = {
     mensal: {
@@ -59,7 +64,7 @@
         'Atualizações contínuas de novos recursos',
         'Backup automático na nuvem'
       ],
-      linkPadrao: 'https://www.asaas.com/000/c/khj0e52sm5psx8ts'
+      linkPadrao: LINK_WHATSAPP_ANUAL
     },
     anual_implementacao: {
       id: 'plano_anual_vip_setup',
@@ -80,7 +85,7 @@
         'Treinamento ao vivo com vendedores, encarregados e diretoria',
         'Acompanhamento assistido dos primeiros 10 pedidos reais'
       ],
-      linkPadrao: 'https://www.asaas.com/000/c/tpt2gei572ffkjpn'
+      linkPadrao: LINK_WHATSAPP_COMBO
     },
     implementacao_avulsa: {
       id: 'setup_implementacao_997',
@@ -100,7 +105,7 @@
         'Treinamento prático em vídeo/WhatsApp para vendedores e chão de fábrica',
         'Auditoria e acompanhamento dos primeiros pedidos lançados'
       ],
-      linkPadrao: 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA'
+      linkPadrao: LINK_WHATSAPP_SETUP
     }
   };
 
@@ -147,25 +152,22 @@
     const padrao = {
       handle: '', // ex: 'bravvitextil'
       linkMensal: 'https://pay.cakto.com.br/rb6atzs_1178556',
-      linkAnual: 'https://www.asaas.com/000/c/khj0e52sm5psx8ts',
-      linkCombo: 'https://www.asaas.com/000/c/tpt2gei572ffkjpn',
-      linkSetup: '',
+      linkAnual: LINK_WHATSAPP_ANUAL,
+      linkCombo: LINK_WHATSAPP_COMBO,
+      linkSetup: LINK_WHATSAPP_SETUP,
       apiKey: '',
-      whatsappSuporte: '5511987654321'
+      whatsappSuporte: WHATSAPP_SUPORTE
     };
     if (data) {
       // Se linkMensal estiver vazio ou não for da Cakto, atualiza para o link oficial da Cakto
       if (!data.linkMensal || !data.linkMensal.includes('cakto.com.br')) {
         data.linkMensal = padrao.linkMensal;
       }
-      // Se linkAnual estiver vazio ou com link antigo, atualiza para o link oficial anual do Asaas
-      if (!data.linkAnual || data.linkAnual.includes('infinitepay.io') || data.linkAnual.includes('psgTp3BpPA') || data.linkAnual.includes('J5sFLTLWln')) {
-        data.linkAnual = padrao.linkAnual;
-      }
-      // Se linkCombo estiver vazio ou com link antigo, atualiza para o link oficial combo do Asaas
-      if (!data.linkCombo || data.linkCombo.includes('infinitepay.io') || data.linkCombo.includes('psgTp3BpPA')) {
-        data.linkCombo = padrao.linkCombo;
-      }
+      // Sempre garante que o Anual e Combo abram o WhatsApp oficial para negociação direta
+      data.linkAnual = LINK_WHATSAPP_ANUAL;
+      data.linkCombo = LINK_WHATSAPP_COMBO;
+      data.linkSetup = LINK_WHATSAPP_SETUP;
+      data.whatsappSuporte = WHATSAPP_SUPORTE;
       return { ...padrao, ...data };
     }
     return padrao;
@@ -179,26 +181,23 @@
   }
 
   /**
-   * Obtém a URL final de pagamento da InfinitePay para um plano específico
+   * Obtém a URL final de pagamento ou negociação no WhatsApp
    */
   function obterLinkPagamentoPlano(planoKey) {
     const plano = PLANOS_CONFIG[planoKey] || PLANOS_CONFIG.mensal;
     const config = carregarConfiguracoes();
 
-    // 1. Link direto configurado para o plano
-    if (planoKey === 'mensal' && config.linkMensal) return config.linkMensal;
-    if (planoKey === 'anual' && config.linkAnual) return config.linkAnual;
-    if (planoKey === 'anual_implementacao' && config.linkCombo) return config.linkCombo;
-    if (planoKey === 'implementacao_avulsa' && config.linkSetup) return config.linkSetup;
-
-    // 2. Se o usuário informou um handle da InfinitePay (ex: 'minhaconfeccao')
-    if (config.handle) {
-      const handleLimpo = config.handle.trim().replace(/^@/, '');
-      return `https://infinitepay.io/pay/${handleLimpo}?amount=${(plano.valor).toFixed(2)}&description=${encodeURIComponent(plano.nome)}`;
+    // 1. Mensal vai direto para o checkout da Cakto
+    if (planoKey === 'mensal') {
+      return config.linkMensal || 'https://pay.cakto.com.br/rb6atzs_1178556';
     }
 
-    // 3. Fallback: checkout InfinitePay direto configurado
-    return plano.linkPadrao || 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA';
+    // 2. Anual e Combo vão direto para o WhatsApp do suporte/vendas
+    if (planoKey === 'anual') return LINK_WHATSAPP_ANUAL;
+    if (planoKey === 'anual_implementacao') return LINK_WHATSAPP_COMBO;
+    if (planoKey === 'implementacao_avulsa') return LINK_WHATSAPP_SETUP;
+
+    return plano.linkPadrao || LINK_WHATSAPP_ANUAL;
   }
 
   /**
@@ -267,11 +266,11 @@
 
           <div style="margin-bottom: 16px;">
             <label style="display: block; font-size: 11.5px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">WhatsApp Comercial de Suporte (DDD + Número):</label>
-            <input type="text" id="cfgIpWhatsapp" value="${config.whatsappSuporte || '5511987654321'}" placeholder="5511999999999" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 12px; box-sizing: border-box;">
+            <input type="text" id="cfgIpWhatsapp" value="${config.whatsappSuporte || '5544998071870'}" placeholder="5544998071870" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 12px; box-sizing: border-box;">
           </div>
 
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; font-size: 11px; color: #64748b; line-height: 1.4;">
-            💡 <em>Dica:</em> No app da InfinitePay no seu celular, vá em <strong>Cobrar &rarr; Link de Pagamento</strong>, crie os links com os valores e cole aqui.
+            💡 <em>Dica:</em> No app de pagamentos ou WhatsApp, defina os canais de recebimento e suporte.
           </div>
         </div>
 
@@ -295,7 +294,7 @@
         linkMensal: overlay.querySelector('#cfgIpLinkMensal').value.trim(),
         linkAnual: overlay.querySelector('#cfgIpLinkAnual').value.trim(),
         linkCombo: overlay.querySelector('#cfgIpLinkCombo').value.trim(),
-        whatsappSuporte: overlay.querySelector('#cfgIpWhatsapp').value.replace(/\D/g, '') || '5511987654321'
+        whatsappSuporte: overlay.querySelector('#cfgIpWhatsapp').value.replace(/\D/g, '') || '5544998071870'
       };
       salvarConfiguracoes(novaCfg);
       fechar();
