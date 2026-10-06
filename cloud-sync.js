@@ -1173,13 +1173,25 @@ with check (true);
       salvarEmpresaConfig(empAtual);
 
       if (tId && supabaseClient) {
-        await supabaseClient
+        const { error: errUpd } = await supabaseClient
           .from('erp_tenants')
-          .upsert({
-            tenant_id: tId,
+          .update({
             empresa: empAtual,
             ultima_atualizacao_ms: Date.now()
-          });
+          })
+          .eq('tenant_id', tId);
+
+        if (errUpd) {
+          console.warn('Aviso no update de erp_tenants, tentando upsert com fallback db: {}', errUpd);
+          await supabaseClient
+            .from('erp_tenants')
+            .upsert({
+              tenant_id: tId,
+              db: {},
+              empresa: empAtual,
+              ultima_atualizacao_ms: Date.now()
+            });
+        }
 
         // Marca token como consumido para não permitir reuso
         await supabaseClient

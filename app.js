@@ -422,59 +422,69 @@
     const nomeColab = user?.user_metadata?.full_name || colab?.nome || 'Colaborador';
     const colabId = colab?.id || user?.colaboradorId || user?.id;
 
+    // 1. Oculta o Gatekeeper de login para que o onboarding apareça com foco total
+    const gatekeeper = document.getElementById('bravviAuthGatekeeper');
+    if (gatekeeper) {
+      gatekeeper.style.display = 'none';
+    }
+
     const modalEl = criarModalCamada(`
-      <div class="modal-overlay active" id="modalTrocaSenhaPrimeiroAcessoOverlay" style="z-index: 1000000;">
-        <div class="modal-box" style="max-width: 490px; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); overflow: hidden;">
-          <div class="modal-header" style="background: linear-gradient(135deg, #032b35 0%, #0f172a 100%); color: #fff; padding: 20px 22px;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(45, 212, 191, 0.15); color: #2dd4bf; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+      <div class="modal-overlay active" id="modalTrocaSenhaPrimeiroAcessoOverlay" style="z-index: 20000000 !important; position: fixed; inset: 0; background: radial-gradient(circle at 50% 15%, #06323d 0%, #031820 55%, #010a0e 100%); display: flex !important; align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">
+        <div class="modal-box" style="max-width: 490px; width: 100%; border-radius: 16px; box-shadow: 0 35px 90px -15px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.12); overflow: hidden; background: #ffffff; animation: bravviFadeInUp 0.32s cubic-bezier(0.16, 1, 0.3, 1);">
+          <div class="modal-header" style="background: linear-gradient(135deg, #032b35 0%, #0f172a 100%); color: #fff; padding: 22px 24px;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <div style="width: 46px; height: 46px; border-radius: 12px; background: rgba(45, 212, 191, 0.15); border: 1px solid rgba(45, 212, 191, 0.3); color: #2dd4bf; display: flex; align-items: center; justify-content: center; font-size: 24px;">
                 🔐
               </div>
               <div>
-                <div class="modal-title" style="color: #ffffff; font-size: 16px; font-weight: 800;">Primeiro Acesso ao Sistema</div>
-                <div style="font-size: 12px; color: #2dd4bf; margin-top: 2px;">Crie sua senha pessoal definitiva</div>
+                <div class="modal-title" style="color: #ffffff; font-size: 17px; font-weight: 800; letter-spacing: -0.2px;">Primeiro Acesso ao Sistema</div>
+                <div style="font-size: 12.5px; color: #2dd4bf; margin-top: 2px; font-weight: 600;">Configure sua fábrica & crie sua senha definitiva</div>
               </div>
             </div>
           </div>
-          <div class="modal-body" style="padding: 22px; line-height: 1.5;">
-            <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 13px 15px; margin-bottom: 18px; font-size: 12.5px; color: #166534; line-height: 1.45;">
+          <div class="modal-body" style="padding: 24px; line-height: 1.5;">
+            <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; font-size: 13px; color: #166534; line-height: 1.5;">
               ${user?.primeiroAcessoDono ? `
-                Olá, <strong>${nomeColab}</strong>! Seu pagamento foi confirmado com sucesso. Configure os dados da sua empresa e defina sua <strong>senha pessoal definitiva</strong> para liberar o seu ambiente industrial exclusivo.
+                🎉 Olá, <strong>${nomeColab}</strong>! Seu pagamento foi confirmado com sucesso. Configure os dados da sua empresa e defina sua <strong>senha pessoal definitiva</strong> para liberar o seu painel industrial exclusivo.
               ` : `
-                Olá, <strong>${nomeColab}</strong>! Você entrou com a senha temporária definida pela diretoria. Por segurança, crie agora sua <strong>senha pessoal exclusiva</strong> para acessar o sistema da fábrica.
+                Olá, <strong>${nomeColab}</strong>! Você entrou com a senha temporária definida pela diretoria. Por segurança, crie agora sua <strong>senha pessoal definitiva</strong> para acessar o sistema da fábrica.
               `}
             </div>
 
             ${user?.primeiroAcessoDono ? `
-              <div class="form-group" style="margin-bottom: 14px;">
-                <label class="form-label" style="font-weight: 700; color: #0f172a;">Nome da sua Confecção / Fábrica *</label>
-                <input type="text" id="inputNomeEmpresaPrimeiroAcesso" class="form-input" placeholder="Ex: Uniformes & Cia Industrial" required style="font-size: 14px;">
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label" style="font-weight: 700; color: #0f172a; margin-bottom: 6px; display: block;">Nome da sua Confecção / Fábrica *</label>
+                <input type="text" id="inputNomeEmpresaPrimeiroAcesso" class="form-control" placeholder="Ex: Uniformes & Cia Industrial" value="${user?.user_metadata?.company_name && user.user_metadata.company_name !== 'Roberto Simulação' && user.user_metadata.company_name !== 'Minha Confecção' ? user.user_metadata.company_name : ''}" required style="font-size: 14px; padding: 11px 13px; border-radius: 8px;">
               </div>
             ` : ''}
 
-            <div class="form-group" style="margin-bottom: 14px;">
-              <label class="form-label" style="font-weight: 700; color: #0f172a;">Sua Nova Senha Pessoal *</label>
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label class="form-label" style="font-weight: 700; color: #0f172a; margin-bottom: 6px; display: block;">Sua Nova Senha Pessoal Definitiva *</label>
               <div style="position: relative;">
-                <input type="password" id="inputNovaSenhaPessoal" class="form-input" placeholder="Mínimo 6 caracteres" style="font-size: 14px; padding-right: 40px;">
-                <button type="button" id="btnToggleNovaSenhaPessoal" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b; font-size: 15px;" title="Ver ou ocultar senha">👁️</button>
+                <input type="password" id="inputNovaSenhaPessoal" class="form-control" placeholder="Mínimo 6 caracteres" style="font-size: 14px; padding: 11px 42px 11px 13px; border-radius: 8px;">
+                <button type="button" id="btnToggleNovaSenhaPessoal" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b; font-size: 16px;" title="Ver ou ocultar senha">👁️</button>
               </div>
             </div>
 
-            <div class="form-group" style="margin-bottom: 14px;">
-              <label class="form-label" style="font-weight: 700; color: #0f172a;">Confirmar Nova Senha *</label>
-              <input type="password" id="inputConfirmaNovaSenhaPessoal" class="form-input" placeholder="Digite a mesma senha novamente" style="font-size: 14px;">
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label class="form-label" style="font-weight: 700; color: #0f172a; margin-bottom: 6px; display: block;">Confirmar Nova Senha *</label>
+              <input type="password" id="inputConfirmaNovaSenhaPessoal" class="form-control" placeholder="Digite a mesma senha novamente" style="font-size: 14px; padding: 11px 13px; border-radius: 8px;">
             </div>
 
-            <div id="erroTrocaSenhaPrimeiroAcesso" style="display: none; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; margin-bottom: 12px;"></div>
+            <div id="erroTrocaSenhaPrimeiroAcesso" style="display: none; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 11px 13px; border-radius: 8px; font-size: 12.5px; font-weight: 600; margin-bottom: 14px;"></div>
           </div>
-          <div class="modal-footer" style="padding: 16px 22px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
-            <button type="button" class="btn btn-primary" id="btnConfirmarNovaSenhaPessoal" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 800; background: #047857; border-color: #047857;">
+          <div class="modal-footer" style="padding: 16px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+            <button type="button" class="btn btn-primary" id="btnConfirmarNovaSenhaPessoal" style="width: 100%; padding: 13px; font-size: 14.5px; font-weight: 800; background: #047857; border-color: #047857; border-radius: 8px; box-shadow: 0 4px 12px rgba(4, 120, 87, 0.35); cursor: pointer;">
               Salvar Minha Nova Senha & Entrar no ERP &rarr;
             </button>
           </div>
         </div>
       </div>
-    `);
+    `, { zIndex: 20000000 });
+
+    if (modalEl) {
+      modalEl.style.setProperty('z-index', '20000000', 'important');
+    }
 
     const inputNova = modalEl.querySelector('#inputNovaSenhaPessoal');
     const inputConf = modalEl.querySelector('#inputConfirmaNovaSenhaPessoal');
@@ -986,8 +996,11 @@
         console.error('Erro na autenticação:', errSubmit);
         mostrarAlertaGate('Erro ao verificar credenciais: ' + (errSubmit.message || 'Falha de comunicação'), 'error');
       } finally {
-        btnSubmitLogin.disabled = false;
-        btnSubmitLogin.innerHTML = '<span>Acessar Meu Painel Industrial</span><span>&rarr;</span>';
+        const gate = document.getElementById('bravviAuthGatekeeper');
+        if (gate && gate.style.display !== 'none') {
+          btnSubmitLogin.disabled = false;
+          btnSubmitLogin.innerHTML = '<span>Acessar Meu Painel Industrial</span><span>&rarr;</span>';
+        }
       }
     });
 
@@ -2217,7 +2230,7 @@
 
     // Nível de profundidade atual na pilha
     const nivel = modalPilha.length;
-    const baseZ = 10000 + (nivel * 40);
+    const baseZ = options.zIndex || (10000 + (nivel * 40));
     modalEl.style.zIndex = baseZ;
 
     // Se for camada filha (sub-modal sobreposto a outro modal), destaca com backdrop escurecido
