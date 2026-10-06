@@ -34,7 +34,14 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const payload = req.body || {};
+    let payload = req.body || {};
+    if (typeof payload === 'string') {
+      try {
+        payload = JSON.parse(payload);
+      } catch (parseErr) {
+        payload = {};
+      }
+    }
     console.log('[InfinitePay Webhook] Recebido:', JSON.stringify(payload, null, 2));
 
     // A InfinitePay envia eventos de pagamento/transação
