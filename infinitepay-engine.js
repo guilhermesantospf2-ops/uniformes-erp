@@ -59,7 +59,7 @@
         'Atualizações contínuas de novos recursos',
         'Backup automático na nuvem'
       ],
-      linkPadrao: 'https://checkout.infinitepay.io/guilherme-santos-329/J5sFLTLWln'
+      linkPadrao: 'https://www.asaas.com/000/c/khj0e52sm5psx8ts'
     },
     anual_implementacao: {
       id: 'plano_anual_vip_setup',
@@ -147,7 +147,7 @@
     const padrao = {
       handle: '', // ex: 'bravvitextil'
       linkMensal: 'https://invoice.infinitepay.io/plans/guilherme-santos-329/RRkQGnGO65',
-      linkAnual: 'https://checkout.infinitepay.io/guilherme-santos-329/J5sFLTLWln',
+      linkAnual: 'https://www.asaas.com/000/c/khj0e52sm5psx8ts',
       linkCombo: '',
       linkSetup: '',
       apiKey: '',
@@ -158,8 +158,8 @@
       if (!data.linkMensal || data.linkMensal.includes('psgTp3BpPA')) {
         data.linkMensal = padrao.linkMensal;
       }
-      // Se linkAnual estiver vazio ou com link antigo genérico, atualiza para o link oficial anual
-      if (!data.linkAnual || data.linkAnual.includes('psgTp3BpPA')) {
+      // Se linkAnual estiver vazio ou com link antigo, atualiza para o link oficial anual do Asaas
+      if (!data.linkAnual || data.linkAnual.includes('infinitepay.io') || data.linkAnual.includes('psgTp3BpPA') || data.linkAnual.includes('J5sFLTLWln')) {
         data.linkAnual = padrao.linkAnual;
       }
       return { ...padrao, ...data };
