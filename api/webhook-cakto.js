@@ -79,8 +79,11 @@ module.exports = async function handler(req, res) {
 
     console.log('[Cakto Webhook] Registro preparado:', registro);
 
-    // Persistir no Supabase se as variáveis de ambiente existirem
-    if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    // Persistir no Supabase
+    const supabaseUrl = process.env.SUPABASE_URL || 'https://nrhygqygcfjyniogjegq.supabase.co';
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yaHlncXlnY2ZqeW5pb2dqZWdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0NzU1MTMsImV4cCI6MjEwNjA1MTUxM30.JXAt9Ha1ni2T3G-dMvITGdH9PIPTc7_utI3H9LPrIV4';
+
+    if (supabaseUrl && supabaseKey) {
       try {
         const fetch = global.fetch || require('node-fetch');
         const cleanEmail = (email || '').toLowerCase().trim();
@@ -105,12 +108,12 @@ module.exports = async function handler(req, res) {
           }
         };
 
-        await fetch(`${process.env.SUPABASE_URL}/rest/v1/erp_tenants`, {
+        await fetch(`${supabaseUrl}/rest/v1/erp_tenants`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
-            'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
             'Prefer': 'resolution=merge-duplicates'
           },
           body: JSON.stringify({
@@ -123,40 +126,42 @@ module.exports = async function handler(req, res) {
 
         // 2. Grava o token em erp_tokens
         try {
-          await fetch(`${process.env.SUPABASE_URL}/rest/v1/erp_tokens`, {
+          await fetch(`${supabaseUrl}/rest/v1/erp_tokens`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
-              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+              'apikey': supabaseKey,
+              'Authorization': `Bearer ${supabaseKey}`,
               'Prefer': 'resolution=merge-duplicates'
             },
             body: JSON.stringify({ ...registro, tenant_id: tenantId })
           });
         } catch(eTok) {}
 
-        // 2. Grava ou atualiza a assinatura ativa
-        await fetch(`${process.env.SUPABASE_URL}/rest/v1/erp_subscriptions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
-            'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-            'Prefer': 'resolution=merge-duplicates'
-          },
-          body: JSON.stringify({
-            tenant_id: tenantId,
-            email: cleanEmail,
-            whatsapp: phone,
-            plano: diasAcesso === 365 ? 'anual' : 'mensal',
-            status: isPaid ? 'ativa' : 'pendente',
-            valor: valor,
-            data_inicio: new Date().toISOString(),
-            data_vencimento: dataVencimento.toISOString(),
-            gateway: 'cakto',
-            order_nsu: String(orderId)
-          })
-        });
+        // 3. Grava ou atualiza a assinatura ativa
+        try {
+          await fetch(`${supabaseUrl}/rest/v1/erp_subscriptions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': supabaseKey,
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify({
+              tenant_id: tenantId,
+              email: cleanEmail,
+              whatsapp: phone,
+              plano: diasAcesso === 365 ? 'anual' : 'mensal',
+              status: isPaid ? 'ativa' : 'pendente',
+              valor: valor,
+              data_inicio: new Date().toISOString(),
+              data_vencimento: dataVencimento.toISOString(),
+              gateway: 'cakto',
+              order_nsu: String(orderId)
+            })
+          });
+        } catch(eSub) {}
 
         console.log('[Cakto Webhook] Salvo com sucesso no Supabase (tokens + subscriptions)!');
 
