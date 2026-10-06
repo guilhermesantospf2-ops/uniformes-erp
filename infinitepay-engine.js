@@ -42,18 +42,18 @@
       linkPadrao: 'https://invoice.infinitepay.io/plans/guilherme-santos-329/RRkQGnGO65'
     },
     anual: {
-      id: 'plano_anual_3564',
+      id: 'plano_anual_3970',
       nome: 'Plano Anual Pro Industrial',
-      valor: 3564.00,
-      valorFormatado: 'R$ 3.564,00',
+      valor: 3970.00,
+      valorFormatado: 'R$ 3.970,00',
       periodo: '/ano à vista',
-      parcelamento: 'Ou em até 12x de R$ 297,00 no cartão de crédito',
+      parcelamento: 'Ou em até 12x de R$ 330,83 no cartão de crédito',
       destaque: true,
-      badge: 'Mais Escolhido • Economize R$ 1.200 (3 meses grátis)',
+      badge: 'Mais Escolhido • Economize R$ 794 (2 meses grátis)',
       descricao: 'O melhor custo-benefício para indústrias têxteis com desconto anual garantido.',
       itens: [
         'Tudo do Plano Mensal incluso',
-        'Economia de R$ 1.200,00 no ano (paga 9 meses, usa 12 meses)',
+        'Economia de R$ 794,00 no ano (paga 10 meses, usa 12 meses)',
         'Parcelamento em até 12x sem complicação no cartão',
         'Suporte Prioritário VIP com fila acelerada no WhatsApp',
         'Atualizações contínuas de novos recursos',
@@ -252,7 +252,7 @@
           </div>
 
           <div style="margin-bottom: 12px;">
-            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">Link do Plano Anual (R$ 3.564,00 em até 12x):</label>
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">Link do Plano Anual (R$ 3.970,00 em até 12x):</label>
             <input type="url" id="cfgIpLinkAnual" value="${config.linkAnual || ''}" placeholder="https://pay.infinitepay.io/..." style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 12px; box-sizing: border-box;">
           </div>
 
