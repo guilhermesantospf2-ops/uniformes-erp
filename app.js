@@ -14526,7 +14526,7 @@
                     <li>Perfis de Dono, Vendedor e Oficina</li>
                     <li>Emissão de NF-e Focus/SEFAZ modelo 55</li>
                     <li>Gerador de Mockups, Fichas A4 e Nesting DTF</li>
-                    <li>Suporte direto via WhatsApp InfinitePay</li>
+                    <li>Suporte direto via WhatsApp oficial</li>
                     <li>Sem fidelidade ou carência</li>
                   </ul>
                   <div style="font-size: 11px; color: #0369a1; font-weight: 700;">Fácil adesão e receita recorrente previsível.</div>

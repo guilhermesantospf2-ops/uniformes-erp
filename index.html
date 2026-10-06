@@ -188,31 +188,18 @@
           <span>Minha Empresa</span>
         </a>
 
-        <!-- 14. Planos & Assinatura (Checkout InfinitePay) -->
-        <a class="menu-item menu-item-upgrade" href="javascript:void(0)" onclick="if (window.abrirModalCheckoutInfinitePay) { window.abrirModalCheckoutInfinitePay(); } else { window.open('vendas.html#planos', '_blank'); }" style="margin-top: 8px; background: rgba(3, 43, 53, 0.5); border: 1px solid rgba(45, 212, 191, 0.3); color: #2dd4bf; font-weight: 700;">
-          <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: #2dd4bf;">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-          </svg>
-          <span>Planos & Assinatura</span>
-          <span class="menu-badge" style="background: #0d9488; color: #ffffff; font-size: 9px; font-weight: 800;">PRO</span>
-        </a>
       </nav>
 
-      <!-- Card Licença & Assinatura Oficial InfinitePay -->
-      <div class="sidebar-plan-card" style="margin: 8px 10px; padding: 12px; background: rgba(3, 43, 53, 0.7); border: 1px solid rgba(45, 212, 191, 0.25); border-radius: 8px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-          <span style="font-size: 10.5px; font-weight: 800; color: #2dd4bf; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-            Assinatura & Licença
-          </span>
-          <span style="font-size: 9px; font-weight: 800; background: #0d9488; color: #ffffff; padding: 1px 6px; border-radius: 10px;">PRO</span>
+      <!-- Status Oficial: Usuário PRO Ativo (Painel da Fábrica) -->
+      <div class="sidebar-pro-badge" style="margin: 8px 10px; padding: 10px 12px; background: rgba(3, 43, 53, 0.6); border: 1px solid rgba(45, 212, 191, 0.3); border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></span>
+          <div>
+            <div style="font-size: 11px; font-weight: 800; color: #2dd4bf; letter-spacing: 0.3px;">LICENÇA PRO ATIVA</div>
+            <div style="font-size: 10px; color: #94a3b8;">Plano Industrial • Ilimitado</div>
+          </div>
         </div>
-        <p style="font-size: 11px; color: #cbd5e1; margin: 0 0 8px 0; line-height: 1.35;">
-          Plano Mensal (R$ 397) ou Anual Pro com InfinitePay.
-        </p>
-        <button type="button" onclick="if (window.abrirModalCheckoutInfinitePay) { window.abrirModalCheckoutInfinitePay(); } else { window.open('vendas.html#planos', '_blank'); }" style="display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; font-size: 11px; font-weight: 800; background: #0d9488; color: #ffffff; padding: 6px 8px; border-radius: 6px; border: none; cursor: pointer; text-decoration: none; box-shadow: 0 2px 4px rgba(13, 148, 136, 0.3); transition: all 0.2s;" onmouseover="this.style.background='#0f766e'" onmouseout="this.style.background='#0d9488'">
-          <span>Planos & Pagamento &rarr;</span>
-        </button>
+        <span style="font-size: 9px; font-weight: 900; background: #0d9488; color: #ffffff; padding: 2px 6px; border-radius: 4px;">PRO</span>
       </div>
 
       <!-- Botão Aplicativo Desktop na Barra Lateral -->
@@ -225,10 +212,10 @@
 
       <div class="sidebar-footer" id="sidebarUserFooter" style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
         <div style="display: flex; align-items: center; gap: 10px; cursor: pointer; flex: 1; min-width: 0;" onclick="window.ERP.abrirModalTrocarPerfil()" title="Clique para trocar o perfil de acesso">
-          <div class="user-avatar" id="sidebarUserAvatar">ADM</div>
+          <div class="user-avatar" id="sidebarUserAvatar">PRO</div>
           <div class="user-info" style="min-width: 0; overflow: hidden;">
             <div class="user-name" id="sidebarUserName" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Administrador</div>
-            <div class="user-role" id="sidebarUserRole" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">👑 Dono / Gerente</div>
+            <div class="user-role" id="sidebarUserRole" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">👑 Dono / Usuário PRO</div>
           </div>
         </div>
         <button id="btnSidebarLogout" title="Sair da Conta / Trocar Confecção" style="background: transparent; border: none; cursor: pointer; color: #94a3b8; padding: 6px; border-radius: 4px; display: flex; align-items: center; justify-content: center; transition: color 0.15s ease;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'" onclick="window.ERP.confirmarLogout()">
@@ -291,14 +278,14 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Scripts do ERP Têxtil com Versionamento Anti-Cache -->
-  <script src="mock-data.js?v=8.7.0"></script>
-  <script src="market-benchmark.js?v=8.7.0"></script>
-  <script src="nesting-engine.js?v=8.7.0"></script>
-  <script src="cloud-sync.js?v=8.7.0"></script>
-  <script src="pwa-install.js?v=8.7.0"></script>
+  <script src="mock-data.js?v=8.7.1"></script>
+  <script src="market-benchmark.js?v=8.7.1"></script>
+  <script src="nesting-engine.js?v=8.7.1"></script>
+  <script src="cloud-sync.js?v=8.7.1"></script>
+  <script src="pwa-install.js?v=8.7.1"></script>
   <script src="pix-qrcode.min.js"></script>
-  <script src="pix-engine.js?v=8.7.0"></script>
-  <script src="infinitepay-engine.js?v=8.7.0"></script>
-  <script src="app.js?v=8.7.0"></script>
+  <script src="pix-engine.js?v=8.7.1"></script>
+  <script src="infinitepay-engine.js?v=8.7.1"></script>
+  <script src="app.js?v=8.7.1"></script>
 </body>
 </html>

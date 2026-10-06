@@ -47,7 +47,7 @@
       valor: 3564.00,
       valorFormatado: 'R$ 3.564,00',
       periodo: '/ano à vista',
-      parcelamento: 'Ou em até 12x de R$ 297,00 no cartão via InfinitePay',
+      parcelamento: 'Ou em até 12x de R$ 297,00 no cartão de crédito',
       destaque: true,
       badge: 'Mais Escolhido • Economize R$ 1.200 (3 meses grátis)',
       descricao: 'O melhor custo-benefício para indústrias têxteis com desconto anual garantido.',
@@ -67,7 +67,7 @@
       valor: 4290.00,
       valorFormatado: 'R$ 4.290,00',
       periodo: '/ano à vista',
-      parcelamento: 'Ou em até 12x de R$ 397,00 no cartão via InfinitePay',
+      parcelamento: 'Ou em até 12x de R$ 397,00 no cartão de crédito',
       destaque: false,
       badge: 'Chave na Mão • Setup Completo',
       descricao: 'Acesso anual completo com consultoria de implantação e fábrica rodando em 48h.',
@@ -88,7 +88,7 @@
       valor: 997.00,
       valorFormatado: 'R$ 997,00',
       periodo: 'taxa única',
-      parcelamento: 'Ou em até 6x no cartão via InfinitePay',
+      parcelamento: 'Ou em até 6x no cartão de crédito',
       destaque: false,
       badge: 'Serviço Consultivo Especializado',
       descricao: 'Colocamos a sua confecção para rodar pronta em menos de 48 horas.',
@@ -204,13 +204,12 @@
     overlay.innerHTML = `
       <div class="modal-box" style="max-width: 640px; border-radius: 14px; overflow: hidden; box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5); margin: 20px auto; background: #ffffff;">
         
-        <!-- Header InfinitePay + Bravvi -->
+        <!-- Header Checkout Seguro Bravvi -->
         <div style="background: linear-gradient(135deg, #032b35 0%, #044343 100%); padding: 18px 24px; color: #ffffff; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2dd4bf;">
           <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="background: rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 6px 10px; display: flex; align-items: center; gap: 6px;">
-              <span style="font-weight: 900; font-size: 15px; color: #2dd4bf; letter-spacing: -0.5px;">BRAVVI</span>
-              <span style="color: #94a3b8; font-size: 12px;">×</span>
-              <span style="font-weight: 800; font-size: 13px; color: #ffffff;">InfinitePay</span>
+            <div style="background: rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 6px 12px; display: flex; align-items: center; gap: 6px;">
+              <span style="font-weight: 900; font-size: 15px; color: #2dd4bf; letter-spacing: -0.5px;">BRAVVI ERP</span>
+              <span style="font-weight: 800; font-size: 11px; color: #a7f3d0; background: rgba(13, 148, 136, 0.4); padding: 2px 6px; border-radius: 4px;">OFICIAL</span>
             </div>
             <div>
               <div style="font-size: 15px; font-weight: 800; color: #ffffff;">Checkout Seguro de Assinatura</div>
@@ -321,7 +320,7 @@
             </div>
           </div>
 
-          <!-- Métodos de Pagamento InfinitePay Aceitos -->
+          <!-- Métodos de Pagamento Aceitos -->
           <div style="display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 20px;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span style="font-size: 11px; font-weight: 800; color: #475569;">PAGUE COM:</span>
@@ -329,7 +328,7 @@
               <span style="font-size: 11px; font-weight: 700; color: #1d4ed8; background: #eff6ff; padding: 2px 6px; border-radius: 4px;">💳 Cartão até 12x</span>
             </div>
             <div style="font-size: 10.5px; color: #64748b; font-weight: 600;">
-              Processamento Criptografado InfinitePay
+              🔒 Checkout Criptografado & Seguro
             </div>
           </div>
 
@@ -337,12 +336,12 @@
           <div style="display: flex; flex-direction: column; gap: 10px;">
             <a href="${linkPagamento}" target="_blank" id="btnIrParaCheckoutInfinitePay" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #047857; color: #ffffff; padding: 14px 20px; border-radius: 8px; font-size: 14px; font-weight: 800; text-decoration: none; box-shadow: 0 4px 12px rgba(4, 120, 87, 0.3); transition: all 0.2s;" onmouseover="this.style.background='#065f46'" onmouseout="this.style.background='#047857'">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
-              <span>Pagar ${plano.valorFormatado} com InfinitePay &rarr;</span>
+              <span>Pagar ${plano.valorFormatado} (Cartão ou Pix) &rarr;</span>
             </a>
 
             <div style="display: flex; gap: 10px;">
               <a href="https://wa.me/${config.whatsappSuporte}?text=${encodeURIComponent(
-                `Olá! Estou finalizando a contratação do ${plano.nome} (${plano.valorFormatado}) e gostaria de tirar uma dúvida sobre a forma de pagamento via InfinitePay.`
+                `Olá! Estou finalizando a contratação do ${plano.nome} (${plano.valorFormatado}) e gostaria de tirar uma dúvida sobre a assinatura no Cartão ou Pix.`
               )}" target="_blank" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: #ffffff; border: 1.5px solid #cbd5e1; color: #334155; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; text-decoration: none;">
                 💬 Tirar Dúvidas pelo WhatsApp
               </a>
