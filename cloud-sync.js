@@ -789,6 +789,33 @@ with check (true);
           } else {
             return { sucesso: false, erro: 'E-mail ou senha incorretos. Verifique suas credenciais.' };
           }
+        } else if (auth && auth.precisaTrocarSenha === true && senhaStr === 'Bravvi@2026') {
+          tenantAuthAtivo = auth;
+          const userObj = {
+            id: tenantId,
+            tenant_id: tenantId,
+            email: cleanEmail,
+            primeiroAcessoDono: true,
+            user_metadata: {
+              company_name: emp.nomeFantasia || emp.razaoSocial || 'Minha Confecção',
+              full_name: auth.nomeResponsavel || 'Administrador',
+              phone: auth.whatsapp || emp.telefone || '',
+              perfil: 'dono',
+              role: 'Dono / Diretor',
+              tenant_id: tenantId
+            }
+          };
+
+          salvarEmpresaConfig(emp);
+          definirPerfilAtivo('dono');
+          definirUsuarioLogado(userObj, auth);
+
+          return {
+            sucesso: true,
+            user: userObj,
+            precisaTrocarSenha: true,
+            primeiroAcessoDono: true
+          };
         }
       }
     } catch (errDb) {

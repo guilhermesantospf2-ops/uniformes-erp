@@ -87,8 +87,25 @@ module.exports = async function handler(req, res) {
         const tenantHash = crypto.createHash('sha256').update('tenant_bravvi_' + cleanEmail).digest('hex').substring(0, 24);
         const tenantId = 'tenant_' + tenantHash;
 
-        // 1. Grava o token
-        await fetch(`${process.env.SUPABASE_URL}/rest/v1/erp_tokens`, {
+        // 1. Grava diretamente em erp_tenants para liberar primeiro acesso
+        const empNova = {
+          razaoSocial: nome || 'Minha Confecção',
+          nomeFantasia: nome || 'Minha Confecção',
+          email: cleanEmail,
+          telefone: phone,
+          plano: diasAcesso === 365 ? 'anual' : 'mensal',
+          statusAssinatura: isPaid ? 'ativa' : 'pendente',
+          dataVencimento: dataVencimento.toISOString(),
+          gateway: 'cakto',
+          auth: {
+            email: cleanEmail,
+            nomeResponsavel: nome || 'Administrador',
+            whatsapp: phone,
+            precisaTrocarSenha: true
+          }
+        };
+
+        await fetch(`${process.env.SUPABASE_URL}/rest/v1/erp_tenants`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -96,8 +113,27 @@ module.exports = async function handler(req, res) {
             'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
             'Prefer': 'resolution=merge-duplicates'
           },
-          body: JSON.stringify({ ...registro, tenant_id: tenantId })
+          body: JSON.stringify({
+            tenant_id: tenantId,
+            empresa: empNova,
+            db: {},
+            ultima_atualizacao_ms: Date.now()
+          })
         });
+
+        // 2. Grava o token em erp_tokens
+        try {
+          await fetch(`${process.env.SUPABASE_URL}/rest/v1/erp_tokens`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+              'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify({ ...registro, tenant_id: tenantId })
+          });
+        } catch(eTok) {}
 
         // 2. Grava ou atualiza a assinatura ativa
         await fetch(`${process.env.SUPABASE_URL}/rest/v1/erp_subscriptions`, {
