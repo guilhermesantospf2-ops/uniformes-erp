@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bravvi ERP — Painel de Vendas X1 & Gerador de Acessos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Outfit:wght@600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+
+  <style>
+    :root {
+      --brand-navy: #032b35;
+      --brand-teal: #0d9488;
+      --brand-teal-hover: #0f766e;
+      --brand-cyan: #2dd4bf;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-subtle: #e2e8f0;
+      --bg-page: #f1f5f9;
+      --radius-lg: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-page);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+      max-width: 580px;
+      width: 100%;
+      padding: 36px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--border-subtle);
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+
+    .title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--brand-navy);
+    }
+
+    .badge-x1 {
+      background: #ecfdf5;
+      color: #059669;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      border: 1px solid #a7f3d0;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--text-main);
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      padding: 11px 14px;
+      font-size: 14px;
+      border: 1.5px solid var(--border-subtle);
+      border-radius: 8px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .form-input:focus, .form-select:focus {
+      border-color: var(--brand-teal);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 13px 20px;
+      background: var(--brand-teal);
+      color: #ffffff;
+      font-size: 14.5px;
+      font-weight: 800;
+      border: none;
+      border-radius: 9999px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+      transition: all 0.2s ease;
+      margin-top: 10px;
+    }
+
+    .btn:hover {
+      background: var(--brand-teal-hover);
+      transform: translateY(-1px);
+    }
+
+    .result-box {
+      margin-top: 24px;
+      padding: 20px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      display: none;
+    }
+
+    .result-link {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 10px;
+      border-radius: 6px;
+      word-break: break-all;
+      margin-bottom: 12px;
+      color: #0d9488;
+      font-weight: 700;
+    }
+
+    .btn-copy {
+      background: #25d366;
+      color: #ffffff;
+      font-size: 13.5px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 9999px;
+      cursor: pointer;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .btn-copy:hover {
+      background: #1ebd5b;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="header">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <img src="assets/bravvi-icon.png" style="height: 36px; width: 36px;" alt="Bravvi">
+        <h1 class="title">Gerador de Acesso X1</h1>
+      </div>
+      <span class="badge-x1">PAINEL DO DONO</span>
+    </div>
+
+    <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 20px;">
+      Use esta ferramenta para criar links de ativação imediatos após negociar com clientes pelo WhatsApp.
+    </p>
+
+    <form id="genForm" onsubmit="gerarAcesso(event)">
+      <div class="form-group">
+        <label class="form-label">Nome da Confecção do Cliente *</label>
+        <input type="text" id="cliNome" class="form-input" placeholder="Ex: Confecções Líder" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">WhatsApp ou E-mail do Cliente *</label>
+        <input type="text" id="cliContato" class="form-input" placeholder="Ex: (11) 98765-4321" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Plano Negociado *</label>
+        <select id="cliPlano" class="form-select">
+          <option value="30">Plano Mensal (30 dias de acesso)</option>
+          <option value="60">Plano 2 Meses (60 dias de acesso)</option>
+          <option value="365" selected>Plano Anual Pro (365 dias de acesso)</option>
+          <option value="7">Teste Especial VIP (7 dias)</option>
+          <option value="3650">Vitalício / Parceiro Ilimitado</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn">
+        ⚡ Gerar Link de Ativação Único
+      </button>
+    </form>
+
+    <div class="result-box" id="resultBox">
+      <div style="font-size: 12px; font-weight: 800; color: #059669; text-transform: uppercase; margin-bottom: 8px;">
+        ✓ Link Gerado com Sucesso!
+      </div>
+      <div class="result-link" id="txtLink"></div>
+      <button class="btn-copy" onclick="copiarMensagemWhatsApp()">
+        📋 Copiar Mensagem Pronta para WhatsApp
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    let ultimoLink = '';
+    let ultimoNome = '';
+
+    function gerarAcesso(e) {
+      e.preventDefault();
+      const nome = document.getElementById('cliNome').value.trim();
+      const contato = document.getElementById('cliContato').value.trim();
+      const dias = parseInt(document.getElementById('cliPlano').value, 10);
+
+      const token = 'bravvi_x1_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now().toString(36);
+      const urlBase = window.location.origin || 'https://uniformes-erp.vercel.app';
+      ultimoLink = `${urlBase}/ativar.html?token=${token}&email=${encodeURIComponent(contato)}`;
+      ultimoNome = nome;
+
+      // Salva no banco/storage
+      const novoToken = {
+        token: token,
+        nome_cliente: nome,
+        email: contato,
+        dias_acesso: dias,
+        criado_por: 'manual_x1',
+        usado: false,
+        data_criacao: new Date().toISOString()
+      };
+
+      try {
+        const tokensSalvos = JSON.parse(localStorage.getItem('BRAVVI_TOKENS_X1') || '[]');
+        tokensSalvos.push(novoToken);
+        localStorage.setItem('BRAVVI_TOKENS_X1', JSON.stringify(tokensSalvos));
+      } catch(err) {}
+
+      document.getElementById('txtLink').textContent = ultimoLink;
+      document.getElementById('resultBox').style.display = 'block';
+    }
+
+    function copiarMensagemWhatsApp() {
+      const msg = `Olá ${ultimoNome}! Pagamento confirmado com sucesso! 🚀
+
+Aqui está o seu link exclusivo para criar o acesso oficial da sua confecção no *Bravvi ERP Têxtil*:
+👉 ${ultimoLink}
+
+Basta clicar, cadastrar sua senha master e começar a emitir orçamentos com foto e fichas técnicas A4 imediatamente!
+
+Qualquer dúvida, estou aqui à disposição.`;
+
+      navigator.clipboard.writeText(msg).then(() => {
+        alert('Mensagem copiada para a área de transferência! Basta colar no WhatsApp do cliente.');
+      }).catch(() => {
+        prompt('Copie a mensagem abaixo:', msg);
+      });
+    }
+  </script>
+
+</body>
+</html>

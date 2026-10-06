@@ -30,3 +30,46 @@ on public.erp_tenants
 for all
 using (true)
 with check (true);
+
+-- 5. Tabela de controle de assinaturas e status de pagamento (InfinitePay / Recorrência)
+create table if not exists public.erp_subscriptions (
+  id uuid default gen_random_uuid() primary key,
+  tenant_id text references public.erp_tenants(tenant_id) on delete cascade,
+  email text,
+  whatsapp text,
+  plano text default 'mensal', -- 'mensal' | 'anual' | 'vitalicio'
+  status text default 'ativa', -- 'ativa' | 'pendente' | 'bloqueada' | 'cancelada'
+  valor numeric default 97.00,
+  data_inicio timestamp with time zone default timezone('utc'::text, now()) not null,
+  data_vencimento timestamp with time zone not null,
+  dias_carencia int default 3,
+  gateway text default 'infinitepay',
+  infinitepay_link_id text,
+  order_nsu text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.erp_subscriptions enable row level security;
+create policy "Acesso livre a assinaturas" on public.erp_subscriptions for all using (true) with check (true);
+
+-- 6. Tabela de tokens de primeiro acesso / ativação blindada
+create table if not exists public.erp_tokens (
+  token text primary key,
+  tenant_id text,
+  tipo text default 'ativacao', -- 'ativacao' | 'renovacao'
+  email text,
+  nome_cliente text,
+  plano text default 'mensal',
+  dias_acesso int default 30,
+  valor numeric,
+  order_nsu text,
+  status text default 'aprovado',
+  usado boolean default false,
+  usado_em timestamp with time zone,
+  criado_por text default 'infinitepay_webhook', -- 'infinitepay_webhook' | 'manual_x1'
+  criado_em timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.erp_tokens enable row level security;
+create policy "Acesso livre a tokens de ativacao" on public.erp_tokens for all using (true) with check (true);

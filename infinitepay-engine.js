@@ -39,7 +39,7 @@
         'Módulo Financeiro, DRE e Custos Têxteis',
         'Suporte técnico via WhatsApp'
       ],
-      linkPadrao: 'https://infinitepay.io/pay'
+      linkPadrao: 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA'
     },
     anual: {
       id: 'plano_anual_3564',
@@ -59,7 +59,7 @@
         'Atualizações contínuas de novos recursos',
         'Backup automático na nuvem'
       ],
-      linkPadrao: 'https://infinitepay.io/pay'
+      linkPadrao: 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA'
     },
     anual_implementacao: {
       id: 'plano_anual_vip_setup',
@@ -80,7 +80,7 @@
         'Treinamento ao vivo com vendedores, encarregados e diretoria',
         'Acompanhamento assistido dos primeiros 10 pedidos reais'
       ],
-      linkPadrao: 'https://infinitepay.io/pay'
+      linkPadrao: 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA'
     },
     implementacao_avulsa: {
       id: 'setup_implementacao_997',
@@ -100,7 +100,7 @@
         'Treinamento prático em vídeo/WhatsApp para vendedores e chão de fábrica',
         'Auditoria e acompanhamento dos primeiros pedidos lançados'
       ],
-      linkPadrao: 'https://infinitepay.io/pay'
+      linkPadrao: 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA'
     }
   };
 
@@ -145,10 +145,10 @@
     }
     return {
       handle: '', // ex: 'bravvitextil'
-      linkMensal: '', // Link direto de pagamento InfinitePay para R$ 397
-      linkAnual: '', // Link direto de pagamento InfinitePay para R$ 3.564
-      linkCombo: '', // Link direto de pagamento InfinitePay para R$ 4.290
-      linkSetup: '', // Link direto de pagamento InfinitePay para R$ 997
+      linkMensal: 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA',
+      linkAnual: 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA',
+      linkCombo: 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA',
+      linkSetup: 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA',
       apiKey: '',
       whatsappSuporte: '5511987654321'
     };
@@ -180,8 +180,8 @@
       return `https://infinitepay.io/pay/${handleLimpo}?amount=${(plano.valor).toFixed(2)}&description=${encodeURIComponent(plano.nome)}`;
     }
 
-    // 3. Fallback: checkout InfinitePay direto
-    return 'https://infinitepay.io/pay';
+    // 3. Fallback: checkout InfinitePay direto configurado
+    return plano.linkPadrao || 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA';
   }
 
   /**

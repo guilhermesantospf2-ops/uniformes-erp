@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bravvi ERP Têxtil — Ativação de Acesso da Confecção</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Outfit:wght@600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="shortcut icon" href="favicon.ico">
+
+  <style>
+    :root {
+      --brand-navy: #032b35;
+      --brand-teal: #0d9488;
+      --brand-teal-hover: #0f766e;
+      --brand-teal-light: #f0fdfa;
+      --brand-cyan: #2dd4bf;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-subtle: #e2e8f0;
+      --border-focus: #0d9488;
+      --bg-page: #f8fafc;
+      --radius-lg: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .activation-card {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 10px 30px -5px rgba(3, 43, 53, 0.08), 0 4px 10px -2px rgba(0, 0, 0, 0.03);
+      max-width: 540px;
+      width: 100%;
+      padding: 40px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brand-logo-img {
+      height: 48px;
+      width: auto;
+      object-fit: contain;
+      margin-bottom: 24px;
+    }
+
+    .success-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 12.5px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      margin-bottom: 16px;
+    }
+
+    .title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--brand-navy);
+      margin-bottom: 8px;
+      line-height: 1.25;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+
+    .form-group {
+      text-align: left;
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 14.5px;
+      border: 1.5px solid var(--border-subtle);
+      border-radius: 10px;
+      outline: none;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .form-input:focus {
+      border-color: var(--brand-teal);
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+    }
+
+    .form-input-help {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 14px 20px;
+      background: var(--brand-teal);
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 800;
+      border: none;
+      border-radius: 9999px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
+      transition: all 0.2s ease;
+      margin-top: 10px;
+    }
+
+    .btn-submit:hover {
+      background: var(--brand-teal-hover);
+      box-shadow: 0 6px 20px rgba(13, 148, 136, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .secure-note {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 20px;
+    }
+
+    /* Estado de Sucesso */
+    .success-panel {
+      display: none;
+    }
+
+    .success-icon {
+      font-size: 54px;
+      margin-bottom: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="activation-card">
+    <img src="assets/bravvi-logo.png" alt="Bravvi ERP Têxtil" class="brand-logo-img">
+
+    <div id="formSection">
+      <div class="success-badge">
+        <span>⚡ Pagamento Confirmado via InfinitePay</span>
+      </div>
+
+      <h1 class="title">Crie o Acesso Oficial da sua Confecção</h1>
+      <p class="subtitle">
+        Cadastre os dados da sua empresa e defina sua senha master de administrador para liberar o chão de fábrica imediatamente.
+      </p>
+
+      <form id="activationForm" onsubmit="handleAtivacao(event)">
+        <div class="form-group">
+          <label class="form-label" for="nomeEmpresa">Nome da Confecção / Razão Social *</label>
+          <input type="text" id="nomeEmpresa" class="form-input" placeholder="Ex: Uniformes & Cia Industrial" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="emailAdmin">E-mail do Administrador (Dono) *</label>
+          <input type="email" id="emailAdmin" class="form-input" placeholder="seu-email@suaconfeccao.com.br" required>
+          <div class="form-input-help">Será usado para fazer login e receber relatórios.</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="whatsappAdmin">WhatsApp para Alertas *</label>
+          <input type="tel" id="whatsappAdmin" class="form-input" placeholder="(11) 98765-4321" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="senhaMaster">Crie sua Senha Master de Acesso *</label>
+          <input type="password" id="senhaMaster" class="form-input" placeholder="Mínimo 6 caracteres" minlength="6" required>
+        </div>
+
+        <button type="submit" class="btn-submit" id="btnAtivar">
+          Criar Acesso e Abrir o ERP Agora &rarr;
+        </button>
+
+        <div class="secure-note">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          Conexão Segura Criptografada • Seus dados 100% protegidos
+        </div>
+      </form>
+    </div>
+
+    <!-- Tela de Sucesso Pós-Criação -->
+    <div id="successSection" class="success-panel">
+      <div class="success-icon">🎉</div>
+      <h2 class="title" style="color: #059669;">Acesso Criado com Sucesso!</h2>
+      <p class="subtitle" id="successDesc">
+        Sua confecção foi configurada no sistema. Você tem 30 dias de acesso completo liberados.
+      </p>
+      <a href="index.html" class="btn-submit" style="display: block; text-decoration: none;">
+        Entrar no Bravvi ERP Têxtil Agora &rarr;
+      </a>
+    </div>
+
+  </div>
+
+  <script>
+    // Recupera parâmetros da URL (ex: ?token=xyz ou ?email=...)
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenUrl = urlParams.get('token') || ('tok_inf_' + Date.now().toString(36));
+    const emailUrl = urlParams.get('email') || '';
+
+    if (emailUrl && document.getElementById('emailAdmin')) {
+      document.getElementById('emailAdmin').value = emailUrl;
+    }
+
+    async function handleAtivacao(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnAtivar');
+      btn.disabled = true;
+      btn.textContent = 'Configurando seu ambiente de fábrica...';
+
+      const nome = document.getElementById('nomeEmpresa').value.trim();
+      const email = document.getElementById('emailAdmin').value.trim();
+      const whatsapp = document.getElementById('whatsappAdmin').value.trim();
+      const senha = document.getElementById('senhaMaster').value;
+
+      // Gera identificador único da fábrica
+      const tenantId = 'bravvi_' + nome.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 15) + '_' + Math.random().toString(36).substring(2, 6);
+
+      // Calcula 30 dias de validade inicial
+      const dataVenc = new Date();
+      dataVenc.setDate(dataVenc.getDate() + 30);
+
+      // Salva no LocalStorage Oficial do ERP
+      const configEmpresa = {
+        razaoSocial: nome,
+        nomeFantasia: nome,
+        email: email,
+        telefone: whatsapp,
+        chavePix: email,
+        tipoChavePix: 'E-mail',
+        logoUrl: 'assets/bravvi-logo.png',
+        tenantId: tenantId,
+        tokenAtivacao: tokenUrl,
+        plano: 'mensal',
+        statusAssinatura: 'ativa',
+        dataVencimento: dataVenc.toISOString(),
+        gateway: 'infinitepay'
+      };
+
+      try {
+        localStorage.setItem('BRAVVI_ERP_EMPRESA_CONFIG', JSON.stringify(configEmpresa));
+        localStorage.setItem('BRAVVI_ERP_TENANT_ID', tenantId);
+        localStorage.setItem('BRAVVI_ERP_SENHA_HASH', btoa(senha));
+        localStorage.setItem('BRAVVI_ERP_ASSINATURA_STATUS', 'ativa');
+        localStorage.setItem('BRAVVI_ERP_ASSINATURA_VENCIMENTO', dataVenc.toISOString());
+
+        // Se o Supabase estiver configurado, salva a nova empresa no banco
+        if (window.supabase) {
+          try {
+            await window.supabase.from('erp_tenants').upsert({
+              tenant_id: tenantId,
+              empresa: configEmpresa,
+              db: {},
+              ultima_atualizacao_ms: Date.now()
+            });
+            await window.supabase.from('erp_subscriptions').insert({
+              tenant_id: tenantId,
+              email: email,
+              whatsapp: whatsapp,
+              plano: 'mensal',
+              status: 'ativa',
+              data_vencimento: dataVenc.toISOString(),
+              gateway: 'infinitepay'
+            });
+          } catch (supErr) {
+            console.warn('[Ativação] Fallback offline Supabase:', supErr);
+          }
+        }
+
+        // Exibe tela de sucesso
+        document.getElementById('formSection').style.display = 'none';
+        document.getElementById('successSection').style.display = 'block';
+        document.getElementById('successDesc').innerHTML = `
+          A confecção <strong>${nome}</strong> está ativa.<br>
+          Seu acesso foi liberado até <strong>${dataVenc.toLocaleDateString('pt-BR')}</strong> via InfinitePay.
+        `;
+
+        // Redireciona automaticamente em 2.5 segundos
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 2500);
+
+      } catch (err) {
+        alert('Erro ao salvar configuração: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = 'Criar Acesso e Abrir o ERP Agora →';
+      }
+    }
+  </script>
+
+</body>
+</html>

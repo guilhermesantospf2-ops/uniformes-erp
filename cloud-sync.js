@@ -220,6 +220,147 @@
 
     const headerCnpj = document.getElementById('headerEmpresaCnpj');
     if (headerCnpj) headerCnpj.textContent = `CNPJ: ${empresa.cnpj || 'Não Informado'}`;
+
+    // Verifica a assinatura e status de pagamento da confecção
+    verificarStatusAssinaturaEmpresa(empresa);
+  }
+
+  // ==========================================================================
+  // ESCUDO DE INADIMPLÊNCIA & GESTÃO DE ASSINATURAS (INFINITEPAY)
+  // ==========================================================================
+  const LINK_PAGAMENTO_INFINITEPAY = 'https://checkout.infinitepay.io/guilherme-santos-329/psgTp3BpPA';
+
+  function verificarStatusAssinaturaEmpresa(empresa) {
+    if (isModoDemo()) return; // Modo demonstração não possui bloqueio
+
+    const dadosEmp = empresa || obterEmpresaConfig();
+    const vencimentoStr = dadosEmp.dataVencimento || 
+                          localStorage.getItem('BRAVVI_ERP_ASSINATURA_VENCIMENTO') || 
+                          dadosEmp.vencimento;
+
+    if (!vencimentoStr) return;
+
+    const agora = new Date();
+    const dataVenc = new Date(vencimentoStr);
+    if (isNaN(dataVenc.getTime())) return;
+
+    const diffMs = agora.getTime() - dataVenc.getTime();
+    const diasAtraso = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    // Se está em dia (vencimento no futuro)
+    if (diasAtraso < 0) {
+      removerAvisosAssinatura();
+      return;
+    }
+
+    // Se está nos 3 primeiros dias de atraso: Carência Amigável (Não trava o chão de fábrica)
+    if (diasAtraso <= 3) {
+      exibirBannerCarencia(dataVenc, 3 - diasAtraso);
+      return;
+    }
+
+    // Mais de 3 dias de atraso: BLOQUEIO TOTAL OPERACIONAL (PAYWALL)
+    exibirModalBloqueioInadimplencia(dadosEmp, diasAtraso);
+  }
+
+  function removerAvisosAssinatura() {
+    const banner = document.getElementById('bravviBannerCarencia');
+    if (banner) banner.remove();
+    const modal = document.getElementById('bravviModalPaywall');
+    if (modal) modal.remove();
+  }
+
+  function exibirBannerCarencia(dataVenc, diasRestantes) {
+    if (document.getElementById('bravviBannerCarencia')) return;
+    const banner = document.createElement('div');
+    banner.id = 'bravviBannerCarencia';
+    banner.style.cssText = `
+      background: #fef3c7;
+      color: #92400e;
+      border-bottom: 2px solid #f59e0b;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 99999;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    `;
+    banner.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span>⚠️</span>
+        <span>Atenção: A mensalidade da sua fábrica venceu em ${dataVenc.toLocaleDateString('pt-BR')}. Você tem <strong>${diasRestantes} dia(s) de tolerância</strong> antes do bloqueio das fichas técnicas.</span>
+      </div>
+      <a href="${LINK_PAGAMENTO_INFINITEPAY}" target="_blank" style="background: #0d9488; color: #ffffff; padding: 5px 14px; border-radius: 9999px; text-decoration: none; font-size: 12px; font-weight: 800;">
+        Regularizar via InfinitePay &rarr;
+      </a>
+    `;
+    document.body.prepend(banner);
+  }
+
+  function exibirModalBloqueioInadimplencia(empresa, diasAtraso) {
+    if (document.getElementById('bravviModalPaywall')) return;
+
+    // Desativa rolagem do fundo
+    document.body.style.overflow = 'hidden';
+
+    const overlay = document.createElement('div');
+    overlay.id = 'bravviModalPaywall';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(3, 43, 53, 0.96);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 9999999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: #ffffff;
+    `;
+
+    overlay.innerHTML = `
+      <div style="background: #ffffff; color: #0f172a; border-radius: 20px; max-width: 520px; width: 100%; padding: 40px 32px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4); border: 2px solid #cbd5e1;">
+        <img src="assets/bravvi-logo.png" style="height: 48px; width: auto; object-fit: contain; margin-bottom: 20px;" alt="Bravvi ERP">
+        
+        <div style="display: inline-flex; align-items: center; gap: 6px; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 4px 12px; border-radius: 9999px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 16px;">
+          ACESSO OPERACIONAL SUSPENSO
+        </div>
+
+        <h2 style="font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 800; color: #032b35; margin-bottom: 10px;">
+          Mensalidade Pendente
+        </h2>
+
+        <p style="font-size: 14px; color: #475569; line-height: 1.55; margin-bottom: 24px;">
+          A assinatura da confecção <strong>${empresa.nomeFantasia || empresa.razaoSocial || 'sua confecção'}</strong> venceu há <strong>${diasAtraso} dias</strong>.<br><br>
+          Seus dados, pedidos e fichas técnicas continuam <strong>100% salvos e protegidos</strong>. Para retomar a emissão de orçamentos e a produção no chão de fábrica, efetue o pagamento da mensalidade.
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <a href="${LINK_PAGAMENTO_INFINITEPAY}" target="_blank" style="background: #0d9488; color: #ffffff; padding: 14px 20px; border-radius: 9999px; text-decoration: none; font-weight: 800; font-size: 15px; box-shadow: 0 4px 14px rgba(13, 148, 136, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px;">
+            💳 Pagar Mensalidade no InfinitePay (Desbloqueio Automático) &rarr;
+          </a>
+
+          <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Minha%20mensalidade%20do%20Bravvi%20ERP%20venceu%20e%20quero%20enviar%20o%20comprovante%20para%20desbloqueio." target="_blank" style="background: #f1f5f9; color: #334155; padding: 12px 20px; border-radius: 9999px; text-decoration: none; font-weight: 700; font-size: 13.5px; border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            💬 Enviar Comprovante de Pagamento no WhatsApp
+          </a>
+
+          <button onclick="window.location.reload()" style="background: transparent; border: none; color: #64748b; font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 8px; text-decoration: underline;">
+            🔄 Já efetuei o pagamento, verificar desbloqueio agora
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
   }
 
   // Backup & Restauração Completa do Banco
