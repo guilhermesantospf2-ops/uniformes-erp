@@ -333,6 +333,9 @@
   // Estado da Aplicação
   let abaAtiva = 'abertura';
   let visualizacaoPedidos = 'tabela'; // 'tabela' ou 'kanban'
+  let visualizacaoEstoque = 'saldos'; // 'saldos' ou 'historico'
+  let filtroBuscaEstoque = '';
+  let filtroCategoriaEstoque = 'todos';
 
   // Elementos Centrais
   const contentArea = document.getElementById('contentArea');
@@ -1830,6 +1833,22 @@
       return `${dia}/${partes[1]} (${nomesMes[mesNum - 1] || ''})`;
     }
     return dataIso;
+  }
+
+  function formatarDataHoraBr(dataIso) {
+    if (!dataIso) return '-';
+    try {
+      const d = new Date(dataIso);
+      if (isNaN(d.getTime())) return formatarDataBr(dataIso);
+      const dia = String(d.getDate()).padStart(2, '0');
+      const mes = String(d.getMonth() + 1).padStart(2, '0');
+      const ano = d.getFullYear();
+      const hora = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      return `${dia}/${mes}/${ano} ${hora}:${min}`;
+    } catch (e) {
+      return formatarDataBr(dataIso);
+    }
   }
 
   function calcularStatusDespesa(despesa) {
@@ -8011,80 +8030,582 @@
   }
 
   /* ==========================================================================
-     MÓDULO 5: ESTOQUE TÊXTIL (ENTRADA ROBUSTA + CUSTO MÉDIO + VARIANTES)
+     MÓDULO 5: ESTOQUE TÊXTIL (ENTRADAS + BAIXAS + CUSTO MÉDIO + HISTÓRICO)
      ========================================================================== */
   function renderizarEstoque() {
     pageTitleElem.textContent = 'Estoque de Malhas, Tecidos & Insumos';
     pageBreadcrumbElem.textContent = 'SISTEMA > ESTOQUE';
 
+    if (!Array.isArray(db.estoque)) db.estoque = [];
+    if (!Array.isArray(db.historicoEstoque)) db.historicoEstoque = [];
+
+    // Indicadores Gerais de Estoque
+    const totalItens = db.estoque.length;
+    const patrimonioEstoque = db.estoque.reduce((acc, item) => acc + ((Number(item.saldoAtual) || 0) * (Number(item.custoMedioUnitario) || 0)), 0);
+    const itensCriticos = db.estoque.filter(item => (Number(item.saldoAtual) || 0) <= (Number(item.estoqueMinimo) || 0)).length;
+    const totalBaixas = db.historicoEstoque.filter(h => h.tipo === 'Saida').length;
+
+    // Filtros aplicados na tabela de saldos
+    const itensFiltrados = db.estoque.filter(item => {
+      const matchBusca = !filtroBuscaEstoque || 
+        (item.descricao || '').toLowerCase().includes(filtroBuscaEstoque.toLowerCase()) || 
+        (item.codigo || '').toLowerCase().includes(filtroBuscaEstoque.toLowerCase());
+      const matchCat = filtroCategoriaEstoque === 'todos' || item.categoria === filtroCategoriaEstoque;
+      return matchBusca && matchCat;
+    });
+
     contentArea.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <p style="color: var(--text-gray-500);">Controle rigoroso com recálculo de custo médio ponderado, variantes de cores e estoque mínimo.</p>
-        <button class="btn btn-primary" id="btnDarEntradaEstoque">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          Cadastrar Entrada de Estoque
-        </button>
+      <!-- CARDS KPI DE ESTOQUE INDUSTRIAL -->
+      <div class="grid-cards-4" style="margin-bottom: 20px;">
+        <div class="card">
+          <div class="kpi-title">
+            <span>Insumos em Catálogo</span>
+            <span style="font-size: 16px;">📦</span>
+          </div>
+          <div class="kpi-value text-primary">${totalItens} itens</div>
+          <div class="kpi-desc">
+            <span class="text-gray-500">Malhas, tecidos, aviamentos e DTF</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="kpi-title">
+            <span>Patrimônio Físico</span>
+            <span style="font-size: 16px;">💰</span>
+          </div>
+          <div class="kpi-value text-green">${formatarMoeda(patrimonioEstoque)}</div>
+          <div class="kpi-desc">
+            <span class="text-gray-500">Avaliado pelo custo médio ponderado</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="kpi-title">
+            <span>Estoque Crítico (Comprar)</span>
+            <span style="font-size: 16px;">⚠️</span>
+          </div>
+          <div class="kpi-value ${itensCriticos > 0 ? 'text-red' : 'text-primary'}" style="${itensCriticos > 0 ? 'color: #dc2626;' : ''}">
+            ${itensCriticos} itens
+          </div>
+          <div class="kpi-desc">
+            <span class="${itensCriticos > 0 ? 'text-red' : 'text-gray-500'}">
+              ${itensCriticos > 0 ? 'Saldo abaixo do mínimo de segurança' : 'Todos os saldos saudáveis'}
+            </span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="kpi-title">
+            <span>Baixas Registradas</span>
+            <span style="font-size: 16px;">📉</span>
+          </div>
+          <div class="kpi-value text-primary">${totalBaixas} baixas</div>
+          <div class="kpi-desc">
+            <span class="text-gray-500">Corte, OPs, mostruários e descartes</span>
+          </div>
+        </div>
       </div>
 
-      <div class="table-wrapper">
-        <table class="erp-table">
-          <thead>
-            <tr>
-              <th>Código</th>
-              <th>Descrição do Material / Insumo</th>
-              <th>Categoria</th>
-              <th>Unidade</th>
-              <th>Saldo Físico</th>
-              <th>Estoque Mínimo</th>
-              <th>Custo Médio Unitário</th>
-              <th>Valor Total em Estoque</th>
-              <th>Status</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${db.estoque.map(item => {
-              const estaCritico = item.saldoAtual <= item.estoqueMinimo;
-              const valorTotalItem = item.saldoAtual * item.custoMedioUnitario;
-              return `
+      <!-- BARRA DE CONTROLE: ABAS & AÇÕES RÁPIDAS -->
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; flex-wrap: wrap;">
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <div class="view-switch-group">
+            <button class="view-switch-btn ${visualizacaoEstoque === 'saldos' ? 'active' : ''}" id="btnViewSaldosEstoque">
+              📦 Saldos & Insumos
+            </button>
+            <button class="view-switch-btn ${visualizacaoEstoque === 'historico' ? 'active' : ''}" id="btnViewHistoricoEstoque">
+              📋 Histórico de Movimentações (${db.historicoEstoque.length})
+            </button>
+          </div>
+
+          ${visualizacaoEstoque === 'saldos' ? `
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="text" id="inpFiltroBuscaEstoque" class="form-input" placeholder="🔍 Buscar por código ou nome..." value="${filtroBuscaEstoque}" style="font-size: 12.5px; padding: 7px 12px; width: 220px;">
+              <select id="selFiltroCategoriaEstoque" class="form-select" style="font-size: 12.5px; padding: 7px 10px;">
+                <option value="todos" ${filtroCategoriaEstoque === 'todos' ? 'selected' : ''}>Todas as Categorias</option>
+                <option value="Malhas e Tecidos" ${filtroCategoriaEstoque === 'Malhas e Tecidos' ? 'selected' : ''}>Malhas e Tecidos</option>
+                <option value="Aviamentos" ${filtroCategoriaEstoque === 'Aviamentos' ? 'selected' : ''}>Aviamentos</option>
+                <option value="Insumos DTF" ${filtroCategoriaEstoque === 'Insumos DTF' ? 'selected' : ''}>Insumos DTF</option>
+              </select>
+            </div>
+          ` : ''}
+        </div>
+
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="btn btn-secondary" id="btnDarEntradaEstoque" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>+ Cadastrar Entrada</span>
+          </button>
+          <button class="btn btn-primary" id="btnDarBaixaEstoque" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; background: #dc2626; border-color: #dc2626; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>- Dar Baixa no Estoque</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- CONTEÚDO DINÂMICO CONFORME A SUB-ABA -->
+      ${visualizacaoEstoque === 'saldos' ? `
+        <div class="table-wrapper">
+          <table class="erp-table">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Descrição do Material / Insumo</th>
+                <th>Categoria</th>
+                <th>Unidade</th>
+                <th>Saldo Físico</th>
+                <th>Estoque Mínimo</th>
+                <th>Custo Médio Unitário</th>
+                <th>Valor Total em Estoque</th>
+                <th>Status</th>
+                <th style="text-align: right;">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itensFiltrados.length === 0 ? `
                 <tr>
-                  <td class="text-mono"><strong>${item.codigo}</strong></td>
-                  <td><strong>${item.descricao}</strong></td>
-                  <td>${item.categoria}</td>
-                  <td class="text-mono">${item.unidade}</td>
-                  <td class="text-mono" style="font-weight: 800; font-size: 13.5px; color: var(--text-primary);">
-                    ${item.saldoAtual} ${item.unidade}
+                  <td colspan="10" style="text-align: center; padding: 30px; color: var(--text-gray-500);">
+                    Nenhum insumo encontrado para os filtros selecionados.
                   </td>
-                  <td class="text-mono">${item.estoqueMinimo} ${item.unidade}</td>
-                  <td class="text-mono">${formatarMoeda(item.custoMedioUnitario)}</td>
-                  <td class="text-mono"><strong>${formatarMoeda(valorTotalItem)}</strong></td>
+                </tr>
+              ` : itensFiltrados.map(item => {
+                const saldoNum = Number(item.saldoAtual) || 0;
+                const minNum = Number(item.estoqueMinimo) || 0;
+                const estaCritico = saldoNum <= minNum;
+                const valorTotalItem = saldoNum * (Number(item.custoMedioUnitario) || 0);
+                return `
+                  <tr>
+                    <td class="text-mono"><strong>${item.codigo}</strong></td>
+                    <td><strong>${item.descricao}</strong></td>
+                    <td>${item.categoria}</td>
+                    <td class="text-mono">${item.unidade}</td>
+                    <td class="text-mono" style="font-weight: 800; font-size: 13.5px; color: ${estaCritico ? '#dc2626' : 'var(--text-primary)'};">
+                      ${saldoNum} ${item.unidade}
+                    </td>
+                    <td class="text-mono">${minNum} ${item.unidade}</td>
+                    <td class="text-mono">${formatarMoeda(item.custoMedioUnitario)}</td>
+                    <td class="text-mono"><strong>${formatarMoeda(valorTotalItem)}</strong></td>
+                    <td>
+                      <span class="status-pill ${estaCritico ? 'status-red' : 'status-green'}">
+                        ${estaCritico ? 'COMPRA URGENTE' : 'NORMAL'}
+                      </span>
+                    </td>
+                    <td style="text-align: right;">
+                      <div style="display: flex; gap: 6px; align-items: center; justify-content: flex-end;">
+                        <button class="btn btn-secondary btn-sm btn-ajustar-saldo-estoque" data-id="${item.id}" title="Cadastrar nova entrada de compra">
+                          + Entrada
+                        </button>
+                        <button class="btn btn-sm btn-dar-baixa-item" data-id="${item.id}" style="background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; font-weight: 700; padding: 4px 9px; border-radius: 4px; cursor: pointer;" title="Dar baixa física neste insumo">
+                          - Baixa
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      ` : `
+        <!-- TABELA DO HISTÓRICO DE MOVIMENTAÇÕES -->
+        <div class="table-wrapper">
+          <table class="erp-table">
+            <thead>
+              <tr>
+                <th>Data / Hora</th>
+                <th>Tipo</th>
+                <th>Material / Insumo</th>
+                <th>Qtd Movimentada</th>
+                <th>Saldo Físico (Antes &rarr; Depois)</th>
+                <th>Valor Total</th>
+                <th>Motivo / Justificativa</th>
+                <th>Pedido / OP</th>
+                <th>Responsável</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${db.historicoEstoque.length === 0 ? `
+                <tr>
+                  <td colspan="9" style="text-align: center; padding: 40px; color: var(--text-gray-500);">
+                    <div style="font-size: 28px; margin-bottom: 6px;">📋</div>
+                    <div style="font-weight: 700; font-size: 14px; color: #1e293b;">Nenhuma movimentação registrada ainda</div>
+                    <div style="font-size: 12px; margin-top: 4px;">Utilize os botões acima para cadastrar Entradas ou dar Baixas de material da fábrica.</div>
+                  </td>
+                </tr>
+              ` : db.historicoEstoque.map(mov => `
+                <tr>
+                  <td class="text-mono" style="font-size: 12px; color: var(--text-gray-600); white-space: nowrap;">
+                    ${formatarDataHoraBr(mov.data)}
+                  </td>
                   <td>
-                    <span class="status-pill ${estaCritico ? 'status-red' : 'status-green'}">
-                      ${estaCritico ? 'COMPRA URGENTE' : 'NORMAL'}
+                    <span class="status-pill ${mov.tipo === 'Entrada' ? 'status-green' : 'status-red'}" style="font-weight: 800; font-size: 11px;">
+                      ${mov.tipo === 'Entrada' ? '⬆️ ENTRADA' : '⬇️ BAIXA'}
                     </span>
                   </td>
                   <td>
-                    <button class="btn btn-secondary btn-sm btn-ajustar-saldo-estoque" data-id="${item.id}">
-                      Ajustar / Entrada
-                    </button>
+                    <strong>${mov.itemDescricao}</strong>
+                    <div style="font-size: 11px; color: var(--text-gray-500); font-family: monospace;">${mov.itemCodigo}</div>
+                  </td>
+                  <td class="text-mono" style="font-weight: 800; font-size: 13.5px; color: ${mov.tipo === 'Entrada' ? '#059669' : '#dc2626'};">
+                    ${mov.tipo === 'Entrada' ? '+' : '-'} ${mov.quantidade} ${mov.unidade}
+                  </td>
+                  <td class="text-mono" style="font-size: 12px;">
+                    ${mov.saldoAnterior} &rarr; <strong>${mov.novoSaldo} ${mov.unidade}</strong>
+                  </td>
+                  <td class="text-mono">${formatarMoeda(mov.valorTotal)}</td>
+                  <td>
+                    <span style="font-weight: 600; color: #1e293b;">${mov.motivo}</span>
+                    ${mov.observacoes ? `<div style="font-size: 11px; color: #64748b; font-style: italic; margin-top: 2px;">"${mov.observacoes}"</div>` : ''}
+                  </td>
+                  <td>
+                    ${mov.pedidoId ? `<span style="background: #e0f2fe; color: #0369a1; font-weight: 800; padding: 2px 6px; border-radius: 4px; font-size: 11px;">OP: ${mov.pedidoId}</span>` : '<span style="color: #94a3b8;">-</span>'}
+                  </td>
+                  <td style="font-size: 12px; color: #475569;">
+                    ${mov.responsavel || 'Sistema'}
                   </td>
                 </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `}
     `;
 
-    document.getElementById('btnDarEntradaEstoque')?.addEventListener('click', abrirModalEntradaEstoque);
+    // Eventos da Barra de Visualização
+    document.getElementById('btnViewSaldosEstoque')?.addEventListener('click', () => {
+      visualizacaoEstoque = 'saldos';
+      renderizarEstoque();
+    });
+    document.getElementById('btnViewHistoricoEstoque')?.addEventListener('click', () => {
+      visualizacaoEstoque = 'historico';
+      renderizarEstoque();
+    });
+
+    // Eventos dos Filtros
+    const inpBusca = document.getElementById('inpFiltroBuscaEstoque');
+    inpBusca?.addEventListener('input', (e) => {
+      filtroBuscaEstoque = e.target.value.trim();
+      renderizarEstoque();
+      const el = document.getElementById('inpFiltroBuscaEstoque');
+      if (el) {
+        el.focus();
+        el.selectionStart = el.selectionEnd = el.value.length;
+      }
+    });
+
+    document.getElementById('selFiltroCategoriaEstoque')?.addEventListener('change', (e) => {
+      filtroCategoriaEstoque = e.target.value;
+      renderizarEstoque();
+    });
+
+    // Eventos dos Botões de Ação
+    document.getElementById('btnDarEntradaEstoque')?.addEventListener('click', () => abrirModalEntradaEstoque());
+    document.getElementById('btnDarBaixaEstoque')?.addEventListener('click', () => abrirModalBaixaEstoque());
+
     document.querySelectorAll('.btn-ajustar-saldo-estoque').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
         abrirModalEntradaEstoque(id);
       });
     });
+
+    document.querySelectorAll('.btn-dar-baixa-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        abrirModalBaixaEstoque(id);
+      });
+    });
   }
 
+  // ==========================================================================
+  // MODAL: DAR BAIXA NO ESTOQUE (CONSUMO DE CORTE, OPs, AVARIAS & AJUSTES)
+  // ==========================================================================
+  function abrirModalBaixaEstoque(itemEstoqueId = null) {
+    if (!modalContainer) return;
+    if (!Array.isArray(db.estoque) || db.estoque.length === 0) {
+      mostrarToast('Não há insumos cadastrados no estoque para dar baixa.', 'amber');
+      return;
+    }
+
+    const itemInicial = itemEstoqueId ? db.estoque.find(e => e.id === itemEstoqueId) : db.estoque[0];
+    const userLogado = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterUsuarioLogado === 'function') 
+      ? window.ERP_CLOUD.obterUsuarioLogado() 
+      : null;
+    const responsavelPadrao = userLogado?.user_metadata?.full_name || 'Encarregado(a) de Corte';
+
+    const pedidosAtivos = (db.pedidos || []).filter(p => p.status !== 'Cancelado');
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 620px; border-radius: 14px; overflow: hidden; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.5);">
+          <div class="modal-header" style="background: linear-gradient(135deg, #7f1d1d 0%, #0f172a 100%); color: #fff; padding: 18px 22px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                📉
+              </div>
+              <div>
+                <div class="modal-title" style="color: #ffffff; font-size: 16px; font-weight: 800;">Dar Baixa de Material no Estoque</div>
+                <div style="font-size: 11.5px; color: #fca5a5; margin-top: 2px;">Consumo de corte, ordem de produção, avarias ou ajuste de inventário</div>
+              </div>
+            </div>
+            <button class="modal-close" style="color: #cbd5e1; font-size: 22px; cursor: pointer; background: none; border: none;">&times;</button>
+          </div>
+
+          <div class="modal-body" style="padding: 22px; line-height: 1.5;">
+            <!-- Seleção do Insumo -->
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label class="form-label" style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 6px;">
+                Selecione o Insumo / Material para Baixa *
+              </label>
+              <select id="selInsumoBaixa" class="form-select" style="font-size: 13.5px; padding: 10px 12px; font-weight: 600;">
+                ${db.estoque.map(item => `
+                  <option value="${item.id}" ${itemInicial && item.id === itemInicial.id ? 'selected' : ''}>
+                    [${item.codigo}] ${item.descricao} — Saldo: ${item.saldoAtual} ${item.unidade}
+                  </option>
+                `).join('')}
+              </select>
+            </div>
+
+            <!-- Card Visual de Status Atual do Insumo Selecionado -->
+            <div id="cardStatusInsumoBaixa" style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; margin-bottom: 18px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center;">
+            </div>
+
+            <!-- Quantidade da Baixa e Novo Saldo -->
+            <div class="form-row" style="margin-bottom: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 6px;">
+                  Quantidade da Baixa *
+                </label>
+                <div style="position: relative;">
+                  <input type="number" id="inpQtdBaixa" class="form-input" min="0.01" step="0.5" value="1" required style="font-size: 15px; font-weight: 800; color: #dc2626; padding: 10px 45px 10px 12px;">
+                  <span id="lblUnidadeBaixa" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-weight: 800; color: #64748b; font-size: 13px;">kg</span>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 6px;">
+                  Previsão do Saldo Restante
+                </label>
+                <div id="boxPrevisaoSaldo" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 12px; font-weight: 800; font-size: 14px; color: #0f172a; height: 42px; display: flex; align-items: center; box-sizing: border-box;">
+                  --
+                </div>
+              </div>
+            </div>
+
+            <div id="alertaEstoqueCriticoBaixa" style="display: none; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: #92400e; font-weight: 600;">
+              ⚠️ Atenção: Esta baixa deixará o saldo deste insumo abaixo do estoque mínimo de segurança!
+            </div>
+
+            <!-- Motivo da Baixa -->
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label class="form-label" style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 6px;">
+                Motivo / Tipo de Baixa *
+              </label>
+              <select id="selMotivoBaixa" class="form-select" style="font-size: 13.5px; padding: 10px 12px;">
+                <option value="Consumo de Produção (Corte / OP)">✂️ Consumo de Produção (Corte / Ordem de Produção)</option>
+                <option value="Avaria / Defeito no Tecido">⚠️ Avaria / Defeito de Fiação ou Tecido Manchado</option>
+                <option value="Perda de Enfesto / Retalho">🗑️ Perda de Enfesto / Retalho Inutilizável</option>
+                <option value="Ajuste de Inventário (Balanço)">📦 Ajuste de Inventário (Contagem Física / Balanço)</option>
+                <option value="Amostra / Peça Piloto">👕 Amostra / Confecção de Peça Piloto Comercial</option>
+                <option value="Descarte / Outro">🔄 Outro / Descarte Justificado</option>
+              </select>
+            </div>
+
+            <!-- Vínculo Opcional a Pedido / Ordem de Produção -->
+            <div class="form-row" style="margin-bottom: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 6px;">
+                  Vincular a Pedido / OP (Opcional)
+                </label>
+                <select id="selPedidoVinculoBaixa" class="form-select" style="font-size: 12.5px; padding: 10px 12px;">
+                  <option value="">Nenhum (Consumo Geral / Fábrica)</option>
+                  ${pedidosAtivos.map(p => `
+                    <option value="${p.numero || p.id}">${p.numero || p.id} — ${p.cliente?.nome || p.cliente || 'Cliente'} (${p.tipoUniforme || 'Uniforme'})</option>
+                  `).join('')}
+                </select>
+              </div>
+
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 6px;">
+                  Responsável pela Baixa
+                </label>
+                <input type="text" id="inpResponsavelBaixa" class="form-input" value="${responsavelPadrao}" placeholder="Nome do cortador/operador" style="font-size: 13px; padding: 10px 12px;">
+              </div>
+            </div>
+
+            <!-- Observações -->
+            <div class="form-group" style="margin-bottom: 4px;">
+              <label class="form-label" style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 6px;">
+                Observações / Justificativa
+              </label>
+              <textarea id="txtObsBaixa" class="form-input" rows="2" placeholder="Ex: Consumido para cortar 80 camisas polo da empresa X" style="font-size: 12.5px; padding: 8px 12px; resize: vertical;"></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 16px 22px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnConfirmarBaixaEstoque" style="background: #dc2626; border-color: #dc2626; font-weight: 800; padding: 10px 20px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <span>Confirmar Baixa de Estoque</span>
+              <span>&rarr;</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    function atualizarStatusInsumoSelecionado() {
+      const selId = modalEl.querySelector('#selInsumoBaixa')?.value;
+      const item = db.estoque.find(e => e.id === selId);
+      if (!item) return;
+
+      const card = modalEl.querySelector('#cardStatusInsumoBaixa');
+      if (card) {
+        card.innerHTML = `
+          <div>
+            <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Saldo Atual</div>
+            <div style="font-size: 18px; font-weight: 900; color: #0f172a; margin-top: 2px;">
+              ${item.saldoAtual} <span style="font-size: 12px; color: #64748b;">${item.unidade}</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Estoque Mínimo</div>
+            <div style="font-size: 16px; font-weight: 800; color: #475569; margin-top: 2px;">
+              ${item.estoqueMinimo} <span style="font-size: 12px; color: #64748b;">${item.unidade}</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Custo Médio</div>
+            <div style="font-size: 16px; font-weight: 800; color: #059669; margin-top: 2px;">
+              ${formatarMoeda(item.custoMedioUnitario)}
+            </div>
+          </div>
+        `;
+      }
+
+      const lblUnidade = modalEl.querySelector('#lblUnidadeBaixa');
+      if (lblUnidade) lblUnidade.textContent = item.unidade;
+
+      atualizarCalculoPrevisao();
+    }
+
+    function atualizarCalculoPrevisao() {
+      const selId = modalEl.querySelector('#selInsumoBaixa')?.value;
+      const item = db.estoque.find(e => e.id === selId);
+      if (!item) return;
+
+      const inpQtd = modalEl.querySelector('#inpQtdBaixa');
+      const qtd = parseFloat(inpQtd?.value || 0);
+      const boxPrevisao = modalEl.querySelector('#boxPrevisaoSaldo');
+      const alertaCritico = modalEl.querySelector('#alertaEstoqueCriticoBaixa');
+
+      const saldoAtual = Number(item.saldoAtual) || 0;
+      const restante = saldoAtual - qtd;
+      const valorConsumido = qtd * (Number(item.custoMedioUnitario) || 0);
+
+      if (restante < 0) {
+        if (boxPrevisao) {
+          boxPrevisao.innerHTML = `<span style="color: #dc2626; font-size: 12.5px;">⚠️ Saldo negativo (${restante.toFixed(2)} ${item.unidade})</span>`;
+        }
+        if (alertaCritico) {
+          alertaCritico.style.display = 'block';
+          alertaCritico.innerHTML = `⚠️ Quantidade informada (${qtd} ${item.unidade}) excede o saldo físico atual (${saldoAtual} ${item.unidade})!`;
+          alertaCritico.style.background = '#fef2f2';
+          alertaCritico.style.borderColor = '#fecaca';
+          alertaCritico.style.color = '#dc2626';
+        }
+      } else {
+        if (boxPrevisao) {
+          boxPrevisao.innerHTML = `<span style="color: #166534;">${restante.toFixed(2)} ${item.unidade}</span> <span style="font-size: 11px; color: #64748b; margin-left: 6px;">(${formatarMoeda(valorConsumido)})</span>`;
+        }
+        if (restante <= Number(item.estoqueMinimo || 0)) {
+          if (alertaCritico) {
+            alertaCritico.style.display = 'block';
+            alertaCritico.innerHTML = `⚠️ Atenção: Esta baixa deixará o saldo deste insumo abaixo do estoque mínimo de segurança (${item.estoqueMinimo} ${item.unidade})!`;
+            alertaCritico.style.background = '#fffbeb';
+            alertaCritico.style.borderColor = '#fde68a';
+            alertaCritico.style.color = '#92400e';
+          }
+        } else {
+          if (alertaCritico) alertaCritico.style.display = 'none';
+        }
+      }
+    }
+
+    modalEl.querySelector('#selInsumoBaixa')?.addEventListener('change', atualizarStatusInsumoSelecionado);
+    modalEl.querySelector('#inpQtdBaixa')?.addEventListener('input', atualizarCalculoPrevisao);
+    atualizarStatusInsumoSelecionado();
+
+    modalEl.querySelector('#btnConfirmarBaixaEstoque')?.addEventListener('click', () => {
+      const selId = modalEl.querySelector('#selInsumoBaixa')?.value;
+      const item = db.estoque.find(e => e.id === selId);
+      if (!item) {
+        mostrarToast('Selecione um insumo válido.', 'red');
+        return;
+      }
+
+      const qtdBaixa = parseFloat(modalEl.querySelector('#inpQtdBaixa')?.value || 0);
+      if (isNaN(qtdBaixa) || qtdBaixa <= 0) {
+        mostrarToast('Informe uma quantidade válida para a baixa (maior que zero).', 'red');
+        modalEl.querySelector('#inpQtdBaixa')?.focus();
+        return;
+      }
+
+      if (qtdBaixa > (Number(item.saldoAtual) || 0)) {
+        const confirmarExcesso = confirm(
+          `O saldo atual deste insumo é de ${item.saldoAtual} ${item.unidade}.\n` +
+          `Você informou uma baixa de ${qtdBaixa} ${item.unidade}.\n\n` +
+          `Deseja realmente confirmar e zerar o saldo em estoque?`
+        );
+        if (!confirmarExcesso) return;
+      }
+
+      const motivo = modalEl.querySelector('#selMotivoBaixa')?.value || 'Consumo de Produção';
+      const pedidoVinculo = modalEl.querySelector('#selPedidoVinculoBaixa')?.value || '';
+      const responsavel = modalEl.querySelector('#inpResponsavelBaixa')?.value.trim() || responsavelPadrao;
+      const obs = modalEl.querySelector('#txtObsBaixa')?.value.trim() || '';
+
+      const saldoAntigo = Number(item.saldoAtual) || 0;
+      const novoSaldo = Math.max(0, parseFloat((saldoAntigo - qtdBaixa).toFixed(2)));
+      const valorTotalBaixa = parseFloat((qtdBaixa * (Number(item.custoMedioUnitario) || 0)).toFixed(2));
+
+      item.saldoAtual = novoSaldo;
+
+      // Registra no histórico de movimentações
+      if (!Array.isArray(db.historicoEstoque)) db.historicoEstoque = [];
+      db.historicoEstoque.unshift({
+        id: `BAIXA-${Date.now().toString().slice(-6)}`,
+        tipo: 'Saida',
+        itemId: item.id,
+        itemCodigo: item.codigo,
+        itemDescricao: item.descricao,
+        quantidade: qtdBaixa,
+        unidade: item.unidade,
+        custoUnitario: Number(item.custoMedioUnitario) || 0,
+        valorTotal: valorTotalBaixa,
+        saldoAnterior: saldoAntigo,
+        novoSaldo: novoSaldo,
+        motivo: motivo,
+        pedidoId: pedidoVinculo,
+        responsavel: responsavel,
+        observacoes: obs,
+        data: new Date().toISOString()
+      });
+
+      salvarEstado();
+      fecharModal(modalEl);
+      renderizarEstoque();
+
+      if (novoSaldo <= Number(item.estoqueMinimo || 0)) {
+        mostrarToast(`Baixa de ${qtdBaixa} ${item.unidade} confirmada! ⚠️ Nível crítico atingido (${novoSaldo} ${item.unidade}). Sugerida reposição urgente.`, 'amber');
+      } else {
+        mostrarToast(`Baixa de ${qtdBaixa} ${item.unidade} de ${item.descricao} realizada com sucesso! Novo saldo: ${novoSaldo} ${item.unidade}`, 'green');
+      }
+    });
+  }
+
+  // ==========================================================================
+  // MODAL: ENTRADA DE INSUMOS NO ESTOQUE (COMPRAS & CUSTO MÉDIO PONDERADO)
+  // ==========================================================================
   function abrirModalEntradaEstoque(itemEstoqueId = null) {
     if (!modalContainer) return;
 
@@ -8092,7 +8613,7 @@
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
-        <div class="modal-box" style="max-width: 680px;">
+        <div class="modal-box" style="max-width: 680px; border-radius: 14px; overflow: hidden; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.5);">
           <div class="modal-header">
             <div>
               <div class="modal-title">Entrada de Insumo no Estoque Têxtil</div>
@@ -8101,11 +8622,18 @@
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
 
-          <div class="modal-body">
+          <div class="modal-body" style="padding: 22px; line-height: 1.5;">
+            ${itemPreselecionado ? `
+              <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: 12.5px; color: #166534;">
+                Adicionando estoque diretamente para: <strong>[${itemPreselecionado.codigo}] ${itemPreselecionado.descricao}</strong><br>
+                <span>Saldo físico atual: <strong>${itemPreselecionado.saldoAtual} ${itemPreselecionado.unidade}</strong> • Custo médio atual: <strong>${formatarMoeda(itemPreselecionado.custoMedioUnitario)}</strong></span>
+              </div>
+            ` : ''}
+
             <!-- Pesquisa de Insumo no Catálogo Mestre Têxtil -->
-            <div class="form-group">
+            <div class="form-group" style="margin-bottom: 16px;">
               <label class="form-label">
-                Pesquisar Insumo no Catálogo Têxtil Exaustivo (Tecidos, Malhas, Aviamentos, Linhas, DTF, Botões, etc.)
+                ${itemPreselecionado ? 'Alterar Insumo / Catálogo Têxtil' : 'Pesquisar Insumo no Catálogo Têxtil Exaustivo'}
               </label>
               <select id="selInsumoCatalogo" class="form-select">
                 ${db.insumosCatalogoMestre.map(cat => `
@@ -8114,8 +8642,8 @@
               </select>
             </div>
 
-            <div class="form-row">
-              <div class="form-group">
+            <div class="form-row" style="margin-bottom: 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+              <div class="form-group" style="margin: 0;">
                 <label class="form-label">Cor / Variante do Lote</label>
                 <select id="selVarianteCor" class="form-select">
                   <option value="Azul Marinho">Azul Marinho</option>
@@ -8129,43 +8657,43 @@
                 </select>
               </div>
 
-              <div class="form-group">
+              <div class="form-group" style="margin: 0;">
                 <label class="form-label">Fornecedor Têxtil</label>
-                <input type="text" id="entFornecedor" class="form-input" value="Malharia Textil Sul S.A." placeholder="Razão do fornecedor">
+                <input type="text" id="entFornecedor" class="form-input" value="${itemPreselecionado?.fornecedorUltimo || 'Malharia Textil Sul S.A.'}" placeholder="Razão do fornecedor">
               </div>
 
-              <div class="form-group">
-                <label class="form-label">Nota Fiscal de Entrada (NF-e)</label>
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label">Nota Fiscal (NF-e)</label>
                 <input type="text" id="entNfe" class="form-input" value="NF-8924" placeholder="Ex: NF-1290">
               </div>
             </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Quantidade que Está Entrando</label>
-                <input type="number" id="entQuantidade" class="form-input" style="font-weight: 800; font-size: 14px;" value="100" min="1" step="0.5">
+            <div class="form-row" style="margin-bottom: 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label">Quantidade Entrando</label>
+                <input type="number" id="entQuantidade" class="form-input" style="font-weight: 800; font-size: 14px;" value="100" min="0.01" step="0.5">
               </div>
 
-              <div class="form-group">
-                <label class="form-label">Preço Unitário Pago na Compra (R$)</label>
-                <input type="number" id="entPrecoPago" class="form-input" style="font-weight: 800; font-size: 14px;" value="48.50" step="0.50">
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label">Preço Unitário Pago (R$)</label>
+                <input type="number" id="entPrecoPago" class="form-input" style="font-weight: 800; font-size: 14px;" value="${itemPreselecionado?.custoMedioUnitario || 48.50}" step="0.50">
               </div>
 
-              <div class="form-group">
-                <label class="form-label">Estoque Mínimo de Segurança</label>
-                <input type="number" id="entEstoqueMinimo" class="form-input" value="60" min="1">
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label">Estoque Mínimo</label>
+                <input type="number" id="entEstoqueMinimo" class="form-input" value="${itemPreselecionado?.estoqueMinimo || 60}" min="1">
               </div>
             </div>
 
             <div style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); padding: 12px; font-size: 12px; color: var(--text-gray-600);">
-              <strong style="color: var(--text-primary); display: block; margin-bottom: 4px;">Recálculo de Custo Médio Ponderado:</strong>
-              O sistema mesclará o saldo antigo com a nova entrada e recalculará o custo médio exato para garantir que os futuros orçamentos reflitam os preços reais pagos aos fornecedores.
+              <strong style="color: var(--text-primary); display: block; margin-bottom: 4px;">Recálculo Automático de Custo Médio Ponderado:</strong>
+              O sistema mescla o saldo físico com a nova compra e recalcula o custo médio exato para garantir que os futuros orçamentos da fábrica reflitam os preços reais pagos aos fornecedores.
             </div>
           </div>
 
-          <div class="modal-footer">
+          <div class="modal-footer" style="padding: 16px 22px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
             <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
-            <button type="button" class="btn btn-green" id="btnSalvarEntradaEstoque">
+            <button type="button" class="btn btn-green" id="btnSalvarEntradaEstoque" style="font-weight: 800; padding: 10px 20px;">
               Confirmar Entrada & Recalcular Custo Médio
             </button>
           </div>
@@ -8174,11 +8702,16 @@
     `);
 
     document.getElementById('btnSalvarEntradaEstoque')?.addEventListener('click', () => {
+      let itemExistente = itemPreselecionado;
+      let descItem = '';
+      let unidadeInsumo = 'kg';
+      let categoriaInsumo = 'Malhas e Tecidos';
+
       const insumoId = document.getElementById('selInsumoCatalogo')?.value;
       const insumoMestre = db.insumosCatalogoMestre.find(i => i.id === insumoId) || db.insumosCatalogoMestre[0];
       const cor = document.getElementById('selVarianteCor')?.value || 'Padrão';
-      const fornecedor = document.getElementById('entFornecedor')?.value || 'Fornecedor Têxtil';
-      const nfe = document.getElementById('entNfe')?.value || 'S/N';
+      const fornecedor = document.getElementById('entFornecedor')?.value.trim() || 'Fornecedor Têxtil';
+      const nfe = document.getElementById('entNfe')?.value.trim() || 'S/N';
       const qtdEntrada = parseFloat(document.getElementById('entQuantidade')?.value || 0);
       const precoPago = parseFloat(document.getElementById('entPrecoPago')?.value || 0);
       const estoqueMin = parseFloat(document.getElementById('entEstoqueMinimo')?.value || 50);
@@ -8188,41 +8721,75 @@
         return;
       }
 
-      // Procura se já existe esse item com essa cor no estoque
-      const descItem = `${insumoMestre.nome} (${cor})`;
-      let itemExistente = db.estoque.find(e => e.descricao.toLowerCase() === descItem.toLowerCase());
+      if (itemPreselecionado) {
+        descItem = itemPreselecionado.descricao;
+        unidadeInsumo = itemPreselecionado.unidade;
+        categoriaInsumo = itemPreselecionado.categoria;
+      } else {
+        descItem = `${insumoMestre.nome} (${cor})`;
+        unidadeInsumo = insumoMestre.unidade;
+        categoriaInsumo = insumoMestre.categoria;
+        itemExistente = db.estoque.find(e => e.descricao.toLowerCase() === descItem.toLowerCase());
+      }
+
+      const saldoAntigo = itemExistente ? (Number(itemExistente.saldoAtual) || 0) : 0;
+      const custoAntigo = itemExistente ? (Number(itemExistente.custoMedioUnitario) || precoPago) : precoPago;
+      const novoSaldo = saldoAntigo + qtdEntrada;
+      const novoCustoMedio = ((saldoAntigo * custoAntigo) + (qtdEntrada * precoPago)) / (novoSaldo || 1);
 
       if (itemExistente) {
-        const saldoAntigo = itemExistente.saldoAtual;
-        const custoAntigo = itemExistente.custoMedioUnitario;
-        const novoSaldo = saldoAntigo + qtdEntrada;
-        const novoCustoMedio = ((saldoAntigo * custoAntigo) + (qtdEntrada * precoPago)) / novoSaldo;
-
-        itemExistente.saldoAtual = novoSaldo;
+        itemExistente.saldoAtual = parseFloat(novoSaldo.toFixed(2));
         itemExistente.custoMedioUnitario = parseFloat(novoCustoMedio.toFixed(2));
         itemExistente.fornecedorUltimo = fornecedor;
       } else {
-        db.estoque.unshift({
+        itemExistente = {
           id: `EST-${Math.floor(100 + Math.random() * 900)}`,
           codigo: `INS-${Math.floor(1000 + Math.random() * 9000)}`,
           descricao: descItem,
-          categoria: insumoMestre.categoria,
-          unidade: insumoMestre.unidade,
-          saldoAtual: qtdEntrada,
+          categoria: categoriaInsumo,
+          unidade: unidadeInsumo,
+          saldoAtual: parseFloat(qtdEntrada.toFixed(2)),
           estoqueMinimo: estoqueMin,
-          custoMedioUnitario: precoPago,
+          custoMedioUnitario: parseFloat(precoPago.toFixed(2)),
           fornecedorUltimo: fornecedor
-        });
+        };
+        db.estoque.unshift(itemExistente);
       }
 
+      // Registra no histórico de movimentações (Rastreabilidade Industrial)
+      if (!Array.isArray(db.historicoEstoque)) db.historicoEstoque = [];
+      const valorTotalCompra = parseFloat((qtdEntrada * precoPago).toFixed(2));
+      const userLogado = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterUsuarioLogado === 'function') 
+        ? window.ERP_CLOUD.obterUsuarioLogado() 
+        : null;
+
+      db.historicoEstoque.unshift({
+        id: `ENT-${Date.now().toString().slice(-6)}`,
+        tipo: 'Entrada',
+        itemId: itemExistente.id,
+        itemCodigo: itemExistente.codigo,
+        itemDescricao: itemExistente.descricao,
+        quantidade: qtdEntrada,
+        unidade: itemExistente.unidade,
+        custoUnitario: precoPago,
+        valorTotal: valorTotalCompra,
+        saldoAnterior: saldoAntigo,
+        novoSaldo: itemExistente.saldoAtual,
+        motivo: `Compra / Entrada de Insumo (NF ${nfe})`,
+        fornecedor: fornecedor,
+        responsavel: userLogado?.user_metadata?.full_name || 'Almoxarifado',
+        observacoes: `Fornecedor: ${fornecedor} | NF: ${nfe}`,
+        data: new Date().toISOString()
+      });
+
       // Sincroniza em compras
-      const valorTotalCompra = qtdEntrada * precoPago;
+      if (!Array.isArray(db.compras)) db.compras = [];
       db.compras.unshift({
         id: `COM-${Math.floor(600 + db.compras.length)}`,
         data: new Date().toISOString().split('T')[0],
         fornecedor: fornecedor,
-        categoria: insumoMestre.categoria,
-        itens: `${qtdEntrada} ${insumoMestre.unidade} de ${descItem} (NF ${nfe})`,
+        categoria: categoriaInsumo,
+        itens: `${qtdEntrada} ${itemExistente.unidade} de ${itemExistente.descricao} (NF ${nfe})`,
         valorTotal: valorTotalCompra,
         status: "Entregue",
         previsaoChegada: new Date().toISOString().split('T')[0],
@@ -8230,24 +8797,26 @@
       });
 
       // Lança a saída no financeiro
+      if (!Array.isArray(db.lancamentosFinanceiros)) db.lancamentosFinanceiros = [];
       db.lancamentosFinanceiros.unshift({
         id: `LAN-${Math.floor(100 + Math.random() * 900)}`,
         data: new Date().toISOString().split('T')[0],
         tipo: "Saida",
-        descricao: `Compra de Insumos: ${descItem} (NF ${nfe})`,
+        descricao: `Compra de Insumos: ${itemExistente.descricao} (NF ${nfe})`,
         cliente: fornecedor,
         valor: valorTotalCompra,
         formaPagamento: "Boleto 30dd",
-        categoria: insumoMestre.categoria
+        categoria: categoriaInsumo
       });
 
       salvarEstado();
-      fecharModal();
+      fecharModal(modalEl);
       renderizarEstoque();
 
-      mostrarToast(`Entrada de ${qtdEntrada} ${insumoMestre.unidade} confirmada! Custo médio recalculado e registrado no Financeiro.`, 'green');
+      mostrarToast(`Entrada de ${qtdEntrada} ${itemExistente.unidade} confirmada! Custo médio recalculado e registrado no Histórico.`, 'green');
     });
   }
+
 
   /* ==========================================================================
      MÓDULO 6: PRODUTOS & CATÁLOGO DE MODELAGEM COMPLETO (28 MODELOS)
@@ -14794,6 +15363,7 @@
     abrirModalInspecaoQuarentena,
     abrirModalReceberPagamento,
     abrirModalEntradaEstoque,
+    abrirModalBaixaEstoque,
     abrirModalEditarFinanceiro,
     abrirModalEditarCapacidades,
     renderizarConfiguracoesEmpresa,
