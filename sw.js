@@ -1,14 +1,19 @@
-const CACHE_NAME = 'bravvi-erp-desktop-v8.5.2';
+const CACHE_NAME = 'bravvi-erp-desktop-v8.7.0';
 
 const CORE_ASSETS = [
   '/',
   '/index.html',
-  '/style.css?v=8.5.0',
-  '/app.js',
-  '/cloud-sync.js',
-  '/nesting-engine.js',
-  '/market-benchmark.js',
-  '/mock-data.js',
+  '/demo.html',
+  '/style.css?v=8.7.0',
+  '/app.js?v=8.7.0',
+  '/cloud-sync.js?v=8.7.0',
+  '/nesting-engine.js?v=8.7.0',
+  '/market-benchmark.js?v=8.7.0',
+  '/mock-data.js?v=8.7.0',
+  '/pwa-install.js?v=8.7.0',
+  '/pix-engine.js?v=8.7.0',
+  '/pix-qrcode.min.js',
+  '/infinitepay-engine.js?v=8.7.0',
   '/manifest.json',
   '/favicon.ico',
   '/assets/favicon.png',
@@ -19,12 +24,13 @@ const CORE_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(CORE_ASSETS).catch((err) => {
-        console.warn('[PWA ServiceWorker] Cache inicial parcial:', err);
+        console.warn('[PWA ServiceWorker v8.7.0] Cache inicial parcial:', err);
       });
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
@@ -34,6 +40,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log('[PWA ServiceWorker] Deletando cache antigo:', key);
             return caches.delete(key);
           }
         })
@@ -42,15 +49,38 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Estratégia Network-First para manter os dados sempre sincronizados na nuvem
+// Estratégia Network-First agressiva: Sempre tenta a rede para evitar HTML desatualizado no app instalado
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Não intercepta chamadas externas (Supabase, Firebase, Google Fonts CDNs)
+  // Não intercepta chamadas externas (Supabase, Firebase, Google Fonts, CDNs, Focus NFe)
   if (url.origin !== self.location.origin || event.request.method !== 'GET') {
     return;
   }
 
+  // Requisições de navegação (HTML principal do app): prioridade total de rede com fallback
+  if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, clone);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(event.request).then((cachedResponse) => {
+            return cachedResponse || caches.match('/index.html') || new Response('Modo Offline', { status: 503 });
+          });
+        })
+    );
+    return;
+  }
+
+  // Demais arquivos (scripts, estilos, imagens)
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
@@ -67,10 +97,7 @@ self.addEventListener('fetch', (event) => {
           if (cachedResponse) {
             return cachedResponse;
           }
-          if (event.request.mode === 'navigate') {
-            return caches.match('/index.html');
-          }
-          return new Response('Modo Offline', { status: 503, statusText: 'Offline' });
+          return new Response('Recurso Indisponível Offline', { status: 503 });
         });
       })
   );

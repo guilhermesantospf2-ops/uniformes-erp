@@ -197,31 +197,31 @@
           <span>Minha Empresa</span>
         </a>
 
-        <!-- 14. Planos & Upgrade (Direto para Página de Vendas) -->
-        <a class="menu-item menu-item-upgrade" href="vendas.html#planos" target="_blank" style="margin-top: 8px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; font-weight: 700;">
-          <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: #059669;">
+        <!-- 14. Planos & Assinatura (Checkout InfinitePay) -->
+        <a class="menu-item menu-item-upgrade" href="javascript:void(0)" onclick="if (window.abrirModalCheckoutInfinitePay) { window.abrirModalCheckoutInfinitePay(); } else { window.open('vendas.html#planos', '_blank'); }" style="margin-top: 8px; background: rgba(3, 43, 53, 0.5); border: 1px solid rgba(45, 212, 191, 0.3); color: #2dd4bf; font-weight: 700;">
+          <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: #2dd4bf;">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
           </svg>
-          <span>Planos & Upgrade</span>
-          <span class="menu-badge" style="background: #059669; color: #ffffff; font-size: 9px; font-weight: 800;">PRO</span>
+          <span>Planos & Assinatura</span>
+          <span class="menu-badge" style="background: #0d9488; color: #ffffff; font-size: 9px; font-weight: 800;">PRO</span>
         </a>
       </nav>
 
-      <!-- Card Promocional de Teste Grátis de 15 Dias / Upgrade -->
-      <div class="sidebar-trial-card" style="margin: 8px 10px; padding: 12px; background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 1px solid #a7f3d0; border-radius: 8px;">
+      <!-- Card Licença & Assinatura Oficial InfinitePay -->
+      <div class="sidebar-plan-card" style="margin: 8px 10px; padding: 12px; background: rgba(3, 43, 53, 0.7); border: 1px solid rgba(45, 212, 191, 0.25); border-radius: 8px;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-          <span style="font-size: 10.5px; font-weight: 800; color: #047857; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-            Teste Grátis (15 Dias)
+          <span style="font-size: 10.5px; font-weight: 800; color: #2dd4bf; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            Assinatura & Licença
           </span>
-          <span style="font-size: 9px; font-weight: 800; background: #059669; color: #ffffff; padding: 1px 6px; border-radius: 10px;">PRO</span>
+          <span style="font-size: 9px; font-weight: 800; background: #0d9488; color: #ffffff; padding: 1px 6px; border-radius: 10px;">PRO</span>
         </div>
-        <p style="font-size: 11px; color: #065f46; margin: 0 0 8px 0; line-height: 1.35;">
-          Aproveite seu período de avaliação para testar na sua confecção.
+        <p style="font-size: 11px; color: #cbd5e1; margin: 0 0 8px 0; line-height: 1.35;">
+          Plano Mensal (R$ 397) ou Anual Pro com InfinitePay.
         </p>
-        <a href="vendas.html#planos" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; font-size: 11px; font-weight: 800; background: #059669; color: #ffffff; padding: 6px 8px; border-radius: 6px; text-decoration: none; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);">
-          <span>Fazer Upgrade / Planos &rarr;</span>
-        </a>
+        <button type="button" onclick="if (window.abrirModalCheckoutInfinitePay) { window.abrirModalCheckoutInfinitePay(); } else { window.open('vendas.html#planos', '_blank'); }" style="display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; font-size: 11px; font-weight: 800; background: #0d9488; color: #ffffff; padding: 6px 8px; border-radius: 6px; border: none; cursor: pointer; text-decoration: none; box-shadow: 0 2px 4px rgba(13, 148, 136, 0.3); transition: all 0.2s;" onmouseover="this.style.background='#0f766e'" onmouseout="this.style.background='#0d9488'">
+          <span>Planos & Pagamento &rarr;</span>
+        </button>
       </div>
 
       <div class="sidebar-footer" id="sidebarUserFooter" style="cursor: pointer;" title="Clique para trocar o perfil de acesso">
@@ -284,10 +284,13 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Scripts do ERP Têxtil com Versionamento Anti-Cache -->
-  <script src="mock-data.js?v=8.6.0"></script>
-  <script src="market-benchmark.js?v=8.6.0"></script>
-  <script src="nesting-engine.js?v=8.6.0"></script>
-  <script src="cloud-sync.js?v=8.6.0"></script>
-  <script src="app.js?v=8.6.0"></script>
+  <script src="mock-data.js?v=8.7.0"></script>
+  <script src="market-benchmark.js?v=8.7.0"></script>
+  <script src="nesting-engine.js?v=8.7.0"></script>
+  <script src="cloud-sync.js?v=8.7.0"></script>
+  <script src="pix-qrcode.min.js"></script>
+  <script src="pix-engine.js?v=8.7.0"></script>
+  <script src="infinitepay-engine.js?v=8.7.0"></script>
+  <script src="app.js?v=8.7.0"></script>
 </body>
 </html>

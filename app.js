@@ -2010,6 +2010,7 @@
   }
 
   let filtroDespesas = 'todas';
+  let filtroReceber = 'aberto';
 
   // Configuração dos Menus da Sidebar
   function configurarMenuNavegacao() {
@@ -3060,6 +3061,14 @@
                           Falta: ${formatarMoeda(totalVenda)}
                         </span>
                       `}
+                      ${!quitadoTotal ? `
+                        <button type="button" class="btn btn-secondary btn-xs btn-cobrar-pix-pedido" 
+                                data-id="${p.id}" 
+                                style="font-size: 9px; padding: 2px 6px; display: inline-flex; align-items: center; gap: 3px; color: #047857; font-weight: 700; align-self: flex-start; margin-top: 2px; border-color: #a7f3d0; background: #ecfdf5;" 
+                                title="Gerar cobrança PIX e WhatsApp com 1 clique">
+                          ⚡ Cobrar PIX
+                        </button>
+                      ` : ''}
                     </div>
                   </td>
                   <td>
@@ -3387,6 +3396,17 @@
       });
     });
 
+    // Cobrar PIX com 1 clique diretamente da tabela
+    document.querySelectorAll('.btn-cobrar-pix-pedido').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        if (window.PixEngine) {
+          window.PixEngine.abrirModalCobrancaPix({ pedidoId: id });
+        }
+      });
+    });
+
     // Abrir Quarentena direta pelo botão de bloqueio
     document.querySelectorAll('.btn-abrir-quarentena').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -3689,14 +3709,21 @@
             `}
           </div>
 
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
-            ${!isQuitado ? `
-              <button type="button" class="btn btn-green" id="btnConfirmarRecebimentoPagamento" style="font-weight: 800;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                Confirmar Recebimento & Baixar no Caixa
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div>
+              <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-secondary" id="btnGerarPixModalPagamento" style="display: inline-flex; align-items: center; gap: 5px; color: #047857; font-weight: 700; border-color: #a7f3d0; background: #ecfdf5;" title="Gerar QR Code PIX e mensagem WhatsApp para este valor">
+                <span>⚡ Gerar PIX / WhatsApp</span>
               </button>
-            ` : ''}
+              ${!isQuitado ? `
+                <button type="button" class="btn btn-green" id="btnConfirmarRecebimentoPagamento" style="font-weight: 800;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  Confirmar Recebimento & Baixar no Caixa
+                </button>
+              ` : ''}
+            </div>
           </div>
         </div>
       </div>
@@ -3835,6 +3862,21 @@
         mostrarToast(`🎉 Pedido #${p.numero} 100% QUITADO! Recebimento de ${formatarMoeda(valor)} creditado no Financeiro.`, 'green');
       } else {
         mostrarToast(`⚠️ Recebimento de ${formatarMoeda(valor)} confirmado! Faltou dinheiro para quitar: saldo remanescente devedor de ${formatarMoeda(novoSaldoPendente)}.`, 'yellow');
+      }
+    });
+
+    document.getElementById('btnGerarPixModalPagamento')?.addEventListener('click', () => {
+      const val = parseFloat(inputValor?.value) || saldoDevedor;
+      fecharModal(modalEl);
+      if (window.PixEngine) {
+        window.PixEngine.abrirModalCobrancaPix({
+          pedidoId: p.id,
+          valorInicial: val > 0 ? val : saldoDevedor,
+          tipoSugerido: val >= saldoDevedor ? 'Quitação do Saldo' : 'Recebimento Parcial',
+          onBaixaConfirmada: () => {
+            renderizarPedidos();
+          }
+        });
       }
     });
   }
@@ -8233,7 +8275,7 @@
      MÓDULO 7: FINANCEIRO COMPLETO COM CONTAS A PAGAR, DRE, BAIXAS E VENCIMENTOS
      ========================================================================== */
   function renderizarFinanceiro() {
-    pageTitleElem.textContent = 'Gestão Financeira, Contas a Pagar & DRE';
+    pageTitleElem.textContent = 'Gestão Financeira, Contas a Receber, Contas a Pagar & DRE';
     pageBreadcrumbElem.textContent = 'SISTEMA > FINANCEIRO';
 
     // 1. Cálculos de Vendas e Margens
@@ -8276,12 +8318,85 @@
 
     const saldoAtualCaixa = totalEntradasCaixa - totalSaidasCaixa;
 
-    // 4. Saldo a Receber de Clientes
-    const totalAReceber = pedidosOficiais.reduce((acc, p) => {
-      const totalVenda = Number(p.valorTotalVenda) || 0;
-      const pago = Number(p.valorSinalPago) || (p.sinalPago ? totalVenda * 0.5 : 0);
-      return acc + Math.max(0, totalVenda - pago);
-    }, 0);
+    // 4. Mapeamento Completo de Contas a Receber (Saldos de Clientes e Títulos)
+    const hojeIso = new Date().toISOString().split('T')[0];
+    const hojeObj = new Date(hojeIso + 'T12:00:00');
+
+    const receberLista = (db.pedidos || [])
+      .filter(p => p.status !== 'Cancelado')
+      .map(p => {
+        const totalVenda = Number(p.valorTotalVenda) || 0;
+        const jaPago = Number(p.valorSinalPago) || (p.sinalPago ? totalVenda * 0.5 : 0);
+        const saldoDevedor = Math.max(0, totalVenda - jaPago);
+        const percPago = totalVenda > 0 ? (jaPago / totalVenda) * 100 : 0;
+        const isQuitado = saldoDevedor <= 0;
+
+        const dataVenc = p.dataVencimentoSaldo || p.dataPrevisaoEntrega || p.dataCriacao || hojeIso;
+        const vencClean = dataVenc.includes('T') ? dataVenc.split('T')[0] : dataVenc;
+        const vencObj = new Date(vencClean + 'T12:00:00');
+        const diffDias = Math.floor((hojeObj - vencObj) / (1000 * 60 * 60 * 24));
+        const isAtrasado = !isQuitado && diffDias > 0;
+        const diasAtraso = isAtrasado ? diffDias : 0;
+        const diasRestantes = !isQuitado && diffDias <= 0 ? Math.abs(diffDias) : 0;
+
+        const cliDb = (db.clientes || []).find(c => c.nome === p.clienteNome || c.id === p.clienteId);
+        const telLimpo = (cliDb?.telefone || p.clienteTelefone || '').replace(/\D/g, '');
+
+        let statusCobranca = 'Quitado';
+        let statusBadge = '<span class="status-pill status-green" style="font-size: 9.5px;">✓ QUITADO</span>';
+        if (!isQuitado) {
+          if (isAtrasado) {
+            statusCobranca = 'Atrasado';
+            statusBadge = `<span class="status-pill status-red" style="font-size: 9.5px; font-weight: 800;">⚠️ VENCIDO (${diasAtraso}d)</span>`;
+          } else if (jaPago > 0) {
+            statusCobranca = 'Aguardando Saldo';
+            statusBadge = `<span class="status-pill status-yellow" style="font-size: 9.5px;">🟡 AGUARDANDO RETIRADA</span>`;
+          } else {
+            statusCobranca = 'Sem Entrada';
+            statusBadge = `<span class="status-pill status-red" style="font-size: 9.5px;">🟠 SEM ENTRADA</span>`;
+          }
+        }
+
+        return {
+          id: p.id,
+          numero: p.numero,
+          clienteNome: p.clienteNome,
+          clienteTelefone: telLimpo,
+          produtoNome: p.produtoNome || 'Uniformes',
+          gradeTotal: p.grade?.total || 0,
+          totalVenda,
+          jaPago,
+          percPago,
+          saldoDevedor,
+          isQuitado,
+          isAtrasado,
+          diasAtraso,
+          diasRestantes,
+          dataVencimento: vencClean,
+          statusCobranca,
+          statusBadge,
+          tipoRegistro: p.tipoRegistro || 'Pedido'
+        };
+      });
+
+    const receberPendentes = receberLista.filter(r => !r.isQuitado);
+    const totalPendenteReceber = receberPendentes.reduce((acc, r) => acc + r.saldoDevedor, 0);
+
+    const receberAtrasados = receberPendentes.filter(r => r.isAtrasado);
+    const totalAtrasadoReceber = receberAtrasados.reduce((acc, r) => acc + r.saldoDevedor, 0);
+
+    const receberQuitados = receberLista.filter(r => r.isQuitado);
+    const totalJaRecebidoPedidos = receberLista.reduce((acc, r) => acc + r.jaPago, 0);
+
+    // Filtragem de Contas a Receber
+    let receberFiltrados = receberLista;
+    if (filtroReceber === 'aberto') {
+      receberFiltrados = receberPendentes;
+    } else if (filtroReceber === 'atrasados') {
+      receberFiltrados = receberAtrasados;
+    } else if (filtroReceber === 'quitados') {
+      receberFiltrados = receberQuitados;
+    }
 
     // 5. Lucro Líquido Operacional (DRE)
     const totalDespesasFixasDRE = despesasLista.reduce((acc, d) => acc + d.valorReal, 0);
@@ -8329,9 +8444,11 @@
             <span>Total a Receber (Clientes)</span>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
           </div>
-          <div class="kpi-value text-green">${formatarMoeda(totalAReceber)}</div>
+          <div class="kpi-value ${totalAtrasadoReceber > 0 ? 'text-red' : 'text-green'}">${formatarMoeda(totalPendenteReceber)}</div>
           <div class="kpi-desc">
-            <span>Saldos a receber de pedidos abertos</span>
+            <span class="${totalAtrasadoReceber > 0 ? 'text-red' : 'text-gray-500'}">
+              ${receberPendentes.length} título(s)${totalAtrasadoReceber > 0 ? ` • ${receberAtrasados.length} em atraso (${formatarMoeda(totalAtrasadoReceber)})` : ' • Todos no prazo'}
+            </span>
           </div>
         </div>
 
@@ -8344,6 +8461,137 @@
           <div class="kpi-desc">
             <span>Margem Contribuição - Despesas</span>
           </div>
+        </div>
+      </div>
+
+      <!-- Gestão Completa de Contas a Receber & Cobranças de Clientes -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="table-header-bar" style="padding: 0 0 16px 0; flex-wrap: wrap; gap: 12px; align-items: center;">
+          <div>
+            <div class="table-title">Contas a Receber & Cobranças de Clientes</div>
+            <span style="font-size: 11.5px; color: var(--text-gray-500);">
+              Gestão de saldos devedores, prazos de vencimento, cobrança instantânea via PIX / WhatsApp e quitações
+            </span>
+          </div>
+
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <div style="display: flex; gap: 4px; background: var(--bg-subtle); padding: 3px; border-radius: var(--radius-sm); border: 1px solid var(--border-medium);">
+              <button class="filter-btn-pill ${filtroReceber === 'aberto' ? 'active' : ''}" data-filtro-rec="aberto">
+                Em Aberto (${receberPendentes.length})
+              </button>
+              <button class="filter-btn-pill ${filtroReceber === 'atrasados' ? 'active' : ''}" data-filtro-rec="atrasados" style="${receberAtrasados.length > 0 ? 'color: #dc2626; font-weight: 700;' : ''}">
+                ⚠️ Em Atraso (${receberAtrasados.length})
+              </button>
+              <button class="filter-btn-pill ${filtroReceber === 'quitados' ? 'active' : ''}" data-filtro-rec="quitados">
+                ✓ Quitados (${receberQuitados.length})
+              </button>
+              <button class="filter-btn-pill ${filtroReceber === 'todos' ? 'active' : ''}" data-filtro-rec="todos">
+                Todos (${receberLista.length})
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mini Resumo Financeiro de Recebíveis -->
+        <div style="display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;">
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 12px; font-size: 11px;">
+            <span style="color: #64748b;">Saldo Total em Aberto:</span> <strong class="text-mono" style="color: #0f172a;">${formatarMoeda(totalPendenteReceber)}</strong>
+          </div>
+          <div style="background: ${totalAtrasadoReceber > 0 ? '#fef2f2' : '#f8fafc'}; border: 1px solid ${totalAtrasadoReceber > 0 ? '#fca5a5' : '#e2e8f0'}; border-radius: 6px; padding: 6px 12px; font-size: 11px;">
+            <span style="color: ${totalAtrasadoReceber > 0 ? '#b91c1c' : '#64748b'};">Vencidos em Atraso:</span> <strong class="text-mono" style="color: ${totalAtrasadoReceber > 0 ? '#b91c1c' : '#0f172a'};">${formatarMoeda(totalAtrasadoReceber)}</strong>
+          </div>
+          <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 6px 12px; font-size: 11px;">
+            <span style="color: #047857;">Total Já Baixado/Recebido:</span> <strong class="text-mono" style="color: #047857;">${formatarMoeda(totalJaRecebidoPedidos)}</strong>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="erp-table">
+            <thead>
+              <tr>
+                <th style="min-width: 210px;">Pedido & Cliente</th>
+                <th>Produto & Quantidade</th>
+                <th>Vencimento / Previsão</th>
+                <th>Valor Total (R$)</th>
+                <th>Já Recebido</th>
+                <th>Saldo a Receber</th>
+                <th>Status Cobrança</th>
+                <th style="text-align: right; min-width: 200px;">Ações de Cobrança</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${receberFiltrados.length > 0 ? receberFiltrados.map(rec => `
+                <tr>
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <strong class="text-mono" style="color: #032b35; font-size: 13px;">#${rec.numero}</strong>
+                      <span class="status-pill status-gray" style="font-size: 9px;">${rec.tipoRegistro}</span>
+                    </div>
+                    <strong style="display: block; color: var(--text-primary); font-size: 12.5px; margin-top: 2px;">${rec.clienteNome}</strong>
+                    ${rec.clienteTelefone ? `
+                      <a href="https://wa.me/55${rec.clienteTelefone}" target="_blank" style="font-size: 11px; color: #047857; text-decoration: none; display: inline-flex; align-items: center; gap: 3px; margin-top: 2px;">
+                        <span>📱 ${rec.clienteTelefone}</span>
+                      </a>
+                    ` : '<span style="font-size: 10.5px; color: var(--text-gray-400);">Sem telefone cadastrado</span>'}
+                  </td>
+                  <td>
+                    <span>${rec.produtoNome}</span>
+                    <div class="text-mono" style="font-size: 11px; color: var(--text-gray-500);">${rec.gradeTotal} peça(s)</div>
+                  </td>
+                  <td>
+                    <strong style="font-size: 12.5px; color: var(--text-primary);">${formatarDiaMes(rec.dataVencimento)}</strong>
+                    <div class="text-mono" style="font-size: 11px; color: var(--text-gray-500);">${formatarDataBr(rec.dataVencimento)}</div>
+                    ${rec.isAtrasado ? `
+                      <div style="font-size: 10px; color: #dc2626; font-weight: 700; margin-top: 2px;">⚠️ ${rec.diasAtraso} dia(s) em atraso</div>
+                    ` : !rec.isQuitado ? `
+                      <div style="font-size: 10px; color: #64748b; margin-top: 2px;">${rec.diasRestantes === 0 ? 'Vence hoje' : `Em ${rec.diasRestantes} dia(s)`}</div>
+                    ` : ''}
+                  </td>
+                  <td class="text-mono">
+                    <strong>${formatarMoeda(rec.totalVenda)}</strong>
+                  </td>
+                  <td class="text-mono">
+                    <span class="text-green" style="font-weight: 700;">${formatarMoeda(rec.jaPago)}</span>
+                    <div style="font-size: 10px; color: var(--text-gray-500);">(${rec.percPago.toFixed(0)}%)</div>
+                  </td>
+                  <td class="text-mono">
+                    <strong class="${rec.isQuitado ? 'text-green' : 'text-red'}" style="font-size: 13.5px;">
+                      ${rec.isQuitado ? '✓ R$ 0,00' : formatarMoeda(rec.saldoDevedor)}
+                    </strong>
+                  </td>
+                  <td>
+                    <div>${rec.statusBadge}</div>
+                  </td>
+                  <td style="text-align: right;">
+                    <div style="display: flex; gap: 5px; justify-content: flex-end; align-items: center;">
+                      ${!rec.isQuitado ? `
+                        <button class="btn btn-secondary btn-sm btn-cobrar-pix-receber" data-id="${rec.id}" title="Gerar cobrança PIX e mensagem WhatsApp" style="font-weight: 800; color: #047857; background: #ecfdf5; border-color: #a7f3d0;">
+                          ⚡ Cobrar PIX
+                        </button>
+                      ` : ''}
+                      <button class="btn btn-green btn-sm btn-dar-baixa-receber" data-id="${rec.id}" title="Registrar recebimento ou baixa">
+                        ${rec.isQuitado ? 'Ver Baixas' : '✓ Dar Baixa'}
+                      </button>
+                      <button class="btn btn-secondary btn-sm btn-ver-pedido-receber" data-id="${rec.id}" title="Ver detalhes do pedido">
+                        Pedido
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('') : `
+                <tr>
+                  <td colspan="8" style="text-align: center; padding: 45px 15px; color: var(--text-gray-500);">
+                    <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">
+                      ${filtroReceber === 'aberto' ? '🎉 Nenhum saldo devedor em aberto! Todos os pedidos estão quitados.' : `Nenhum título encontrado no filtro "${filtroReceber}".`}
+                    </div>
+                    <p style="font-size: 12px; margin-bottom: 0;">
+                      Conforme novos pedidos forem lançados ou oficializados, os saldos e parcelas a receber aparecerão aqui com suporte a PIX e WhatsApp.
+                    </p>
+                  </td>
+                </tr>
+              `}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -8601,11 +8849,56 @@
       </div>
     `;
 
-    // Listeners de Filtro
-    document.querySelectorAll('.filter-btn-pill').forEach(btn => {
+    // Listeners de Filtro de Despesas
+    document.querySelectorAll('.filter-btn-pill[data-filtro]').forEach(btn => {
       btn.addEventListener('click', () => {
         filtroDespesas = btn.getAttribute('data-filtro') || 'todas';
         renderizarFinanceiro();
+      });
+    });
+
+    // Listeners de Filtro de Contas a Receber
+    document.querySelectorAll('.filter-btn-pill[data-filtro-rec]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        filtroReceber = btn.getAttribute('data-filtro-rec') || 'aberto';
+        renderizarFinanceiro();
+      });
+    });
+
+    // Listeners de Ações de Contas a Receber (Cobrança PIX, Baixas e Navegação)
+    document.querySelectorAll('.btn-cobrar-pix-receber').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        if (window.PixEngine) {
+          window.PixEngine.abrirModalCobrancaPix({
+            pedidoId: id,
+            onBaixaConfirmada: () => {
+              renderizarFinanceiro();
+            }
+          });
+        }
+      });
+    });
+
+    document.querySelectorAll('.btn-dar-baixa-receber').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        abrirModalReceberPagamento(id);
+      });
+    });
+
+    document.querySelectorAll('.btn-ver-pedido-receber').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        navegarPara('pedidos');
+        setTimeout(() => {
+          const pedCard = document.querySelector(`[data-id="${id}"]`) || document.getElementById(`ped-row-${id}`);
+          if (pedCard) {
+            pedCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            pedCard.style.outline = '2px solid #2dd4bf';
+            setTimeout(() => { pedCard.style.outline = ''; }, 3000);
+          }
+        }, 150);
       });
     });
 
@@ -14226,13 +14519,14 @@
                   <span class="status-pill status-blue" style="font-size: 10px; font-weight: 700;">MAIS POPULAR (SAAS)</span>
                   <h3 style="font-size: 16px; font-weight: 800; color: #0369a1; margin-top: 6px;">Plano Fábrica Mensal</h3>
                   <div class="text-mono" style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 8px 0;">
-                    R$ 297 a R$ 490 <span style="font-size: 12px; font-weight: 400; color: #64748b;">/mês</span>
+                    R$ 397 <span style="font-size: 12px; font-weight: 400; color: #64748b;">/mês</span>
                   </div>
                   <ul style="font-size: 11.5px; color: #334155; line-height: 1.5; padding-left: 18px; margin-bottom: 12px;">
                     <li>Acesso ilimitado a todas as 14 áreas</li>
                     <li>Perfis de Dono, Vendedor e Oficina</li>
-                    <li>Gerador de Mockups e Fichas A4</li>
-                    <li>Suporte direto via WhatsApp</li>
+                    <li>Emissão de NF-e Focus/SEFAZ modelo 55</li>
+                    <li>Gerador de Mockups, Fichas A4 e Nesting DTF</li>
+                    <li>Suporte direto via WhatsApp InfinitePay</li>
                     <li>Sem fidelidade ou carência</li>
                   </ul>
                   <div style="font-size: 11px; color: #0369a1; font-weight: 700;">Fácil adesão e receita recorrente previsível.</div>
@@ -14240,16 +14534,17 @@
 
                 <!-- Opção 2 -->
                 <div style="border: 1px solid #cbd5e1; background: #ffffff; border-radius: 6px; padding: 16px;">
-                  <span class="status-pill status-gray" style="font-size: 10px; font-weight: 700;">ALTO TICKET</span>
-                  <h3 style="font-size: 16px; font-weight: 800; color: #0f172a; margin-top: 6px;">Setup + Mensalidade</h3>
+                  <span class="status-pill status-gray" style="font-size: 10px; font-weight: 700;">SETUP VIP + RELEVANTE</span>
+                  <h3 style="font-size: 16px; font-weight: 800; color: #0f172a; margin-top: 6px;">Implementação + Mensalidade</h3>
                   <div class="text-mono" style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 8px 0;">
-                    R$ 1.200 <span style="font-size: 12px; font-weight: 400; color: #64748b;">setup</span> + R$ 250/mês
+                    R$ 997 <span style="font-size: 12px; font-weight: 400; color: #64748b;">setup</span> + R$ 397/mês
                   </div>
                   <ul style="font-size: 11.5px; color: #334155; line-height: 1.5; padding-left: 18px; margin-bottom: 12px;">
-                    <li>Cadastro inicial do catálogo da fábrica</li>
-                    <li>Configuração da logo e chave PIX</li>
-                    <li>Treinamento de 1h com a equipe de vendas</li>
-                    <li>Acompanhamento dos 3 primeiros pedidos</li>
+                    <li>Parametrização completa de logo, NF-e e CNPJ</li>
+                    <li>Mapeamento de custos e cadastro de tecidos</li>
+                    <li>Calibração de Nesting DTF para o maquinário</li>
+                    <li>Treinamento de vendas e chão de fábrica</li>
+                    <li>Acompanhamento dos primeiros 10 pedidos</li>
                   </ul>
                   <div style="font-size: 11px; color: #047857; font-weight: 700;">Gera caixa imediato com a taxa de implantação.</div>
                 </div>
@@ -14351,7 +14646,20 @@
 
   // Exposição Global das Funções Públicas da API Bravvi ERP Têxtil
   window.ERP = Object.assign(window.ERP || {}, {
+    db,
     obterDb: () => db,
+    formatarMoeda,
+    mostrarToast,
+    criarModalCamada,
+    abrirModalCobrancaPix: (pedidoId, valor, tipo) => {
+      if (window.PixEngine) {
+        window.PixEngine.abrirModalCobrancaPix({
+          pedidoId,
+          valorInicial: valor,
+          tipoSugerido: tipo
+        });
+      }
+    },
     salvarOrcamentoOuPedido,
     navegarPara,
     calcularContagemRegressivaPedido,

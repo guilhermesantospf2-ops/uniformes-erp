@@ -1776,7 +1776,7 @@
       <div class="section-header-center">
         <span class="section-tag">Preços Transparentes</span>
         <h2 class="section-title">Sem mensalidade por usuário. Tudo incluso.</h2>
-        <p class="section-desc">Escolha o plano ideal para o tamanho da sua confecção e comece hoje mesmo.</p>
+        <p class="section-desc">Escolha o plano ideal para a sua confecção e assine via InfinitePay com Cartão até 12x ou Pix.</p>
       </div>
 
       <div class="pricing-grid">
@@ -1784,54 +1784,132 @@
         <!-- Plano 1: Mensal -->
         <div class="pricing-card">
           <div class="pricing-name">Mensal Flexível</div>
-          <div class="pricing-desc">Para quem quer começar com flexibilidade total e sem fidelidade.</div>
-          <div class="pricing-value">R$ 147 <span>/ mês</span></div>
+          <div class="pricing-desc">Para quem quer começar com flexibilidade total e sem fidelidade contratual.</div>
+          <div class="pricing-value">R$ 397 <span>/ mês</span></div>
+          <div style="font-size: 11.5px; color: var(--text-muted); margin-top: -6px; margin-bottom: 12px; font-weight: 600;">Cancele quando quiser • Sem carência</div>
           <ul class="pricing-features">
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Usuários e computadores ilimitados</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Orçamentos 3x4 com Mockups</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Fichas Técnicas A4 com Grade</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Radar de Prazos Industrial</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Suporte técnico por WhatsApp</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Orçamentos 3x4 com Mockups dinâmicos</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Fichas Técnicas A4 com Grade Infantil ao G5</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Radar de Prazos Industrial com alertas</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Emissor de NF-e Focus/SEFAZ Modelo 55</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Otimizador de Bobina Nesting DTF</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Suporte técnico oficial por WhatsApp</li>
           </ul>
-          <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Mensal%20do%20Bravvi%20ERP%20T%C3%AAxtil." target="_blank" class="btn btn-secondary">
-            Contratar Plano Mensal
-          </a>
+          <button type="button" onclick="if (window.InfinitePayEngine) { window.InfinitePayEngine.abrirModalCheckout('mensal'); } else { window.open('https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Mensal%20(R$%20397)%20via%20InfinitePay.', '_blank'); }" class="btn btn-secondary" style="width: 100%; cursor: pointer;">
+            💳 Assinar Plano Mensal (R$ 397)
+          </button>
         </div>
 
         <!-- Plano 2: Anual Pro (Destaque) -->
         <div class="pricing-card featured">
-          <div class="pricing-pill">Mais Escolhido • Economize 34%</div>
+          <div class="pricing-pill">Mais Escolhido • Economize R$ 1.200 (3 meses grátis)</div>
           <div class="pricing-name">Anual Pro Industrial</div>
-          <div class="pricing-desc">A solução completa com implantação acompanhada e desconto especial.</div>
-          <div class="pricing-value">R$ 97 <span>/ mês</span></div>
-          <div style="font-size: 12px; color: var(--brand-teal); font-weight: 700; margin-top: -4px; margin-bottom: 12px;">Cobrado anualmente (R$ 1.164/ano)</div>
+          <div class="pricing-desc">A solução mais inteligente e econômica com desconto máximo anual.</div>
+          <div class="pricing-value">12x R$ 297 <span>/ mês</span></div>
+          <div style="font-size: 12px; color: var(--brand-teal); font-weight: 700; margin-top: -4px; margin-bottom: 12px;">Cobrado anualmente: R$ 3.564/ano à vista ou 12x no cartão</div>
           <ul class="pricing-features">
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Tudo do Plano Mensal</strong></li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Implantação VIP com Treinamento</strong></li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Otimizador de Bobina DTF Nesting</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> DRE Gerencial & Lucro Real</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Suporte Prioritário VIP 7 dias</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Tudo do Plano Mensal incluso</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Economia garantida de R$ 1.200 no ano</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Parcelamento em até 12x sem complicação</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Otimizador de Bobina DTF Nesting Avançado</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> DRE Gerencial & Lucro Real por Pedido</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Suporte Prioritário VIP com fila rápida</li>
           </ul>
-          <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20aproveitar%20a%20promo%C3%A7%C3%A3o%20do%20Plano%20Anual%20Pro%20do%20Bravvi%20ERP%20T%C3%AAxtil." target="_blank" class="btn btn-primary">
-            Garantir Desconto Anual &rarr;
-          </a>
+          <button type="button" onclick="if (window.InfinitePayEngine) { window.InfinitePayEngine.abrirModalCheckout('anual'); } else { window.open('https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Anual%20(12x%20R$%20297)%20via%20InfinitePay.', '_blank'); }" class="btn btn-primary" style="width: 100%; cursor: pointer;">
+            🚀 Garantir Plano Anual &rarr;
+          </button>
         </div>
 
-        <!-- Plano 3: Vitalício / Sob Consulta -->
+        <!-- Plano 3: Combo Anual + Implementação VIP -->
         <div class="pricing-card">
-          <div class="pricing-name">Multi-Fábricas & Redes</div>
-          <div class="pricing-desc">Para indústrias com múltiplos galpões, facções integradas e alto volume.</div>
-          <div class="pricing-value">Sob Medida</div>
+          <div class="pricing-pill" style="background: #0284c7; color: #ffffff;">Setup Completo • Chave na Mão</div>
+          <div class="pricing-name">Anual + Implementação VIP</div>
+          <div class="pricing-desc">A fábrica rodando pronta em 48h com consultoria e equipe 100% treinada.</div>
+          <div class="pricing-value">12x R$ 397 <span>/ mês</span></div>
+          <div style="font-size: 12px; color: #0284c7; font-weight: 700; margin-top: -4px; margin-bottom: 12px;">Cobrado anualmente: R$ 4.290 à vista (Setup + 12 meses)</div>
           <ul class="pricing-features">
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Multi-CNPJ e filiais integradas</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Integração com banco PostgreSQL / Supabase</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Consultoria de processos no chão de fábrica</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Gerente de contas dedicado</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>12 meses de acesso completo ao ERP</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Implementação VIP com Especialista Têxtil</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Parametrização de logotipo, CNPJ e SEFAZ</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Mapeamento de custos e catálogo de tecidos</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Treinamento ao vivo (Vendas + Chão de Fábrica)</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Acompanhamento assistido dos primeiros 10 pedidos</li>
           </ul>
-          <a href="https://wa.me/5511987654321?text=Ol%C3%A1!%20Gostaria%20de%20conversar%20sobre%20o%20Plano%20Multi-F%C3%A1bricas%20do%20Bravvi%20ERP." target="_blank" class="btn btn-secondary">
-            Falar com Consultor Corporativo
-          </a>
+          <button type="button" onclick="if (window.InfinitePayEngine) { window.InfinitePayEngine.abrirModalCheckout('anual_implementacao'); } else { window.open('https://wa.me/5511987654321?text=Ol%C3%A1!%20Quero%20contratar%20o%20Combo%20Anual%20com%20Implementa%C3%A7%C3%A3o%20VIP.', '_blank'); }" class="btn btn-secondary" style="width: 100%; cursor: pointer;">
+            ⭐ Contratar com Implementação
+          </button>
         </div>
+
+      </div>
+
+      <!-- SEÇÃO DETALHADA: O QUE É A IMPLEMENTAÇÃO ACOMPANHADA -->
+      <div style="margin-top: 48px; background: #ffffff; border: 2px solid #0d9488; border-radius: var(--radius-md); padding: 32px 28px; box-shadow: 0 10px 25px -5px rgba(13, 148, 136, 0.1);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 16px;">
+          <div>
+            <span style="font-size: 11px; font-weight: 800; background: #f0fdfa; color: #0d9488; border: 1px solid #99f6e4; padding: 3px 10px; border-radius: 20px; text-transform: uppercase;">Serviço Especializado</span>
+            <h3 style="font-size: 22px; font-weight: 900; color: #0f172a; margin: 8px 0 4px 0;">O que é a Implementação Acompanhada da Bravvi?</h3>
+            <p style="font-size: 13.5px; color: #64748b; margin: 0;">Você não precisa perder semanas quebrando a cabeça. Nós entregamos o sistema 100% configurado para a realidade do seu galpão.</p>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 11px; font-weight: 700; color: #64748b;">Opção Avulsa (Taxa Única):</div>
+            <div style="font-size: 22px; font-weight: 900; color: #0d9488;">R$ 997,00</div>
+            <div style="font-size: 11px; color: #059669; font-weight: 700;">Ou grátis no Combo Anual VIP</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px;">
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <span style="font-size: 22px;">🎨</span>
+              <strong style="font-size: 13.5px; color: #0f172a;">1. Parametrização & Identidade Visual</strong>
+            </div>
+            <p style="font-size: 12px; color: #475569; margin: 0; line-height: 1.5;">
+              Vetorização e aplicação do logotipo da sua confecção em alta definição nas propostas e fichas A4. Parametrização completa do CNPJ, Inscrição Estadual, chave PIX e emissão fiscal de NF-e Focus/SEFAZ.
+            </p>
+          </div>
+
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <span style="font-size: 22px;">🧵</span>
+              <strong style="font-size: 13.5px; color: #0f172a;">2. Mapeamento de Custos Têxteis</strong>
+            </div>
+            <p style="font-size: 12px; color: #475569; margin: 0; line-height: 1.5;">
+              Cadastro dos tecidos da fábrica (Poliéster, Dry Fit, Algodão 30.1, Piquet, Brim, Ripstop). Parametrização do rendimento por quilo/metro, custos de estamparia (DTF, Silk, Bordado) e margem de contribuição.
+            </p>
+          </div>
+
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <span style="font-size: 22px;">🖨️</span>
+              <strong style="font-size: 13.5px; color: #0f172a;">3. Calibração do Nesting DTF</strong>
+            </div>
+            <p style="font-size: 12px; color: #475569; margin: 0; line-height: 1.5;">
+              Ajuste fino da largura útil de bobina (58cm / 60cm), margem de segurança entre artes e padrão de corte para economizar metros de filme de impressão em cada tiragem.
+            </p>
+          </div>
+
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <span style="font-size: 22px;">👥</span>
+              <strong style="font-size: 13.5px; color: #0f172a;">4. Treinamento Ao Vivo da Equipe</strong>
+            </div>
+            <p style="font-size: 12px; color: #475569; margin: 0; line-height: 1.5;">
+              Treinamento prático em vídeo/WhatsApp: vendedores aprendem a fechar orçamentos no WhatsApp com mockup em 2 minutos; encarregados aprendem a ler a Ficha A4 e operar o Radar de Prazos.
+            </p>
+          </div>
+
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; grid-column: 1 / -1;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <span style="font-size: 22px;">🚀</span>
+              <strong style="font-size: 13.5px; color: #0f172a;">5. Auditoria & Acompanhamento dos Primeiros 10 Pedidos</strong>
+            </div>
+            <p style="font-size: 12px; color: #475569; margin: 0; line-height: 1.5;">
+              Um especialista da Bravvi audita e acompanha lado a lado os primeiros pedidos reais lançados pela sua equipe até a entrega ao cliente, garantindo que nenhum erro ocorra no chão de fábrica.
+            </p>
+          </div>
+        </div>
+      </div>
 
       </div>
 
@@ -2078,5 +2156,11 @@
       });
     });
   </script>
+
+  <!-- Container de Modais de Pagamento & Checkout -->
+  <div id="modalContainer"></div>
+
+  <!-- Motor de Pagamentos InfinitePay -->
+  <script src="infinitepay-engine.js?v=8.7.0"></script>
 </body>
 </html>

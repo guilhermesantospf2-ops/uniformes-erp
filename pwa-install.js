@@ -9,17 +9,44 @@
   let deferredPrompt = null;
   let isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
-  // 1. Registra o Service Worker com caminho relativo para funcionar em qualquer subpasta ou servidor
+  // 1. Registra o Service Worker com auto-update forçado e limpeza de caches legados
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      const swPath = './sw.js';
+      const swPath = './sw.js?v=8.7.0';
       navigator.serviceWorker.register(swPath)
         .then(reg => {
-          console.log('[PWA] Service Worker registrado com sucesso. Escopo:', reg.scope);
+          console.log('[PWA] Service Worker registrado. Escopo:', reg.scope);
+          // Força verificação imediata de nova versão
+          reg.update();
+
+          // Se um novo worker for instalado, atualiza para refletir mudanças do cabeçalho
+          reg.addEventListener('updatefound', () => {
+            const novoWorker = reg.installing;
+            if (novoWorker) {
+              novoWorker.addEventListener('statechange', () => {
+                if (novoWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('[PWA] Nova versão do app instalada em segundo plano. Recarregando caches...');
+                  window.location.reload();
+                }
+              });
+            }
+          });
         })
         .catch(err => {
           console.warn('[PWA] Falha ao registrar Service Worker:', err);
         });
+
+      // Limpeza agressiva de qualquer cache antigo mantido no navegador
+      if ('caches' in window) {
+        caches.keys().then(keys => {
+          keys.forEach(key => {
+            if (key !== 'bravvi-erp-desktop-v8.7.0') {
+              console.log('[PWA] Purgando cache antigo de versão anterior:', key);
+              caches.delete(key);
+            }
+          });
+        });
+      }
     });
   }
 
