@@ -666,6 +666,12 @@ with check (true);
     }
     try {
       if (user) {
+        // Blindagem rigorosa: Se o usuário precisa trocar a senha temporária, NUNCA persiste sessão liberada
+        if (user.precisaTrocarSenha === true || (authData && authData.precisaTrocarSenha === true)) {
+          sessionStorage.removeItem(STORAGE_KEY_AUTH_USER);
+          return;
+        }
+
         const sessao = {
           user: user,
           auth: authData || tenantAuthAtivo || null,
@@ -796,6 +802,7 @@ with check (true);
             tenant_id: tenantId,
             email: cleanEmail,
             primeiroAcessoDono: true,
+            precisaTrocarSenha: true,
             user_metadata: {
               company_name: emp.nomeFantasia || emp.razaoSocial || 'Minha Confecção',
               full_name: auth.nomeResponsavel || 'Administrador',
@@ -872,6 +879,7 @@ with check (true);
             tenant_id: tenantId,
             email: cleanEmail,
             primeiroAcessoDono: true,
+            precisaTrocarSenha: true,
             user_metadata: {
               company_name: 'Minha Confecção',
               full_name: nomeDono,
@@ -954,6 +962,7 @@ with check (true);
               tenant_id: tRow.tenant_id,
               email: cleanEmail,
               colaboradorId: colab.id,
+              precisaTrocarSenha: colab.precisaTrocarSenha === true,
               user_metadata: {
                 company_name: tRow.empresa?.nomeFantasia || tRow.empresa?.razaoSocial || 'Minha Confecção',
                 full_name: colab.nome || 'Colaborador',
@@ -1014,6 +1023,7 @@ with check (true);
                 tenant_id: tId,
                 email: cleanEmail,
                 colaboradorId: colab.id,
+                precisaTrocarSenha: colab.precisaTrocarSenha === true,
                 user_metadata: {
                   company_name: emp.nomeFantasia || emp.razaoSocial || 'Minha Confecção',
                   full_name: colab.nome,

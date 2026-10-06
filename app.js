@@ -363,7 +363,19 @@
         : null;
 
       if (user) {
-        desbloquearAcessoAoErp(user);
+        if (user.precisaTrocarSenha === true) {
+          // Bloqueio Mandatário: Usuário com senha temporária precisa trocar obrigatoriamente
+          abrirModalTrocaSenhaPrimeiroAcesso(user, null, async () => {
+            user.precisaTrocarSenha = false;
+            if (window.ERP_CLOUD && typeof window.ERP_CLOUD.definirUsuarioLogado === 'function') {
+              window.ERP_CLOUD.definirUsuarioLogado(user);
+            }
+            mostrarToast('Senha pessoal definida com sucesso! Bem-vindo.', 'green');
+            await desbloquearAcessoAoErp(user);
+          });
+        } else {
+          desbloquearAcessoAoErp(user);
+        }
       } else {
         exibirGatekeeperAutenticacao();
       }
@@ -968,7 +980,12 @@
           }
 
           if (res.precisaTrocarSenha) {
+            res.user.precisaTrocarSenha = true;
             abrirModalTrocaSenhaPrimeiroAcesso(res.user, res.colaborador, async () => {
+              res.user.precisaTrocarSenha = false;
+              if (window.ERP_CLOUD && typeof window.ERP_CLOUD.definirUsuarioLogado === 'function') {
+                window.ERP_CLOUD.definirUsuarioLogado(res.user);
+              }
               mostrarToast(`Senha pessoal definida com sucesso! Bem-vindo.`, 'green');
               await desbloquearAcessoAoErp(res.user);
             });
