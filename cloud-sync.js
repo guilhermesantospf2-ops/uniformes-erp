@@ -932,12 +932,29 @@ with check (true);
     // Camada 1.5: Autenticação de Colaborador / Funcionário criado pelo Diretor no Supabase
     try {
       const filter = JSON.stringify([{ email: cleanEmail }]);
-      const { data: rowsColab, error: errColab } = await supabaseClient
+      let rowsColab = null;
+      const { data: qData, error: errColab } = await supabaseClient
         .from('erp_tenants')
         .select('tenant_id, empresa, db')
         .filter('db->equipe', 'cs', filter);
 
-      if (!errColab && rowsColab && rowsColab.length > 0) {
+      if (!errColab && qData && qData.length > 0) {
+        rowsColab = qData;
+      } else {
+        // Fallback robusto: busca entre os tenants e filtra por email na equipe (case-insensitive)
+        const { data: allTenants } = await supabaseClient
+          .from('erp_tenants')
+          .select('tenant_id, empresa, db');
+        if (allTenants) {
+          const match = allTenants.find(t => {
+            const eq = (t.db && Array.isArray(t.db.equipe)) ? t.db.equipe : [];
+            return eq.some(c => (c.email || '').toLowerCase().trim() === cleanEmail);
+          });
+          if (match) rowsColab = [match];
+        }
+      }
+
+      if (rowsColab && rowsColab.length > 0) {
         const tRow = rowsColab[0];
         const equipe = (tRow.db && Array.isArray(tRow.db.equipe)) ? tRow.db.equipe : [];
         const colab = equipe.find(c => (c.email || '').toLowerCase().trim() === cleanEmail);
@@ -953,6 +970,17 @@ with check (true);
             if (testHash === colab.auth.hash) senhaCorreta = true;
           } else if (colab.senha && colab.senha === senhaStr) {
             senhaCorreta = true;
+          } else if (!colab.auth && !colab.senha) {
+            // Conta legada ou cadastrada sem senha inicial: permite primeiro acesso com senha padrão
+            if (senhaStr === 'Bravvi@2026' || senhaStr === 'Temp@2026') {
+              senhaCorreta = true;
+              colab.precisaTrocarSenha = true;
+            } else {
+              return {
+                sucesso: false,
+                erro: 'Este funcionário ainda não possui senha configurada. Acesse com a senha temporária "Temp@2026" ou solicite à diretoria que defina uma senha.'
+              };
+            }
           }
 
           if (senhaCorreta) {
@@ -996,7 +1024,7 @@ with check (true);
 
     // 1.5.2: Fallback para autenticação de colaborador local (offline / localStorage)
     try {
-      const localDbRaw = localStorage.getItem('UNIFORMES_ERP_DATABASE_V8');
+      const localDbRaw = localStorage.getItem('bravvi_erp_prod_v8') || localStorage.getItem('texpro_erp_prod_v8');
       if (localDbRaw) {
         const localDb = JSON.parse(localDbRaw);
         if (localDb && Array.isArray(localDb.equipe)) {
@@ -1012,6 +1040,9 @@ with check (true);
               if (testHash === colab.auth.hash) senhaCorreta = true;
             } else if (colab.senha && colab.senha === senhaStr) {
               senhaCorreta = true;
+            } else if (!colab.auth && !colab.senha && (senhaStr === 'Bravvi@2026' || senhaStr === 'Temp@2026')) {
+              senhaCorreta = true;
+              colab.precisaTrocarSenha = true;
             }
 
             if (senhaCorreta) {
@@ -1121,7 +1152,7 @@ with check (true);
           }
         }
       }
-      const raw = localStorage.getItem('UNIFORMES_ERP_DATABASE_V8');
+      const raw = localStorage.getItem('bravvi_erp_prod_v8') || localStorage.getItem('texpro_erp_prod_v8');
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && Array.isArray(parsed.equipe)) {
@@ -1132,7 +1163,7 @@ with check (true);
             colab.senhaAlteradaEm = new Date().toISOString();
             delete colab.senha;
             delete colab.senhaTemporaria;
-            localStorage.setItem('UNIFORMES_ERP_DATABASE_V8', JSON.stringify(parsed));
+            localStorage.setItem('bravvi_erp_prod_v8', JSON.stringify(parsed));
           }
         }
       }
@@ -1173,44 +1204,40 @@ with check (true);
       }
     }
 
-    // 3. Atualiza também as credenciais master do Dono / Administrador da fábrica
-    try {
-      const empAtual = obterEmpresaConfig() || {};
-      if (!empAtual.auth) empAtual.auth = {};
-      empAtual.auth.salt = salt;
-      empAtual.auth.hash = hash;
-      empAtual.auth.precisaTrocarSenha = false;
-      salvarEmpresaConfig(empAtual);
+    // 3. Atualiza as credenciais master do Dono / Administrador da fábrica APENAS se for o Dono alterando a própria senha
+    const usuarioLogado = obterUsuarioLogado();
+    const isDono = !colaboradorId || colaboradorId === tId || usuarioLogado?.primeiroAcessoDono || usuarioLogado?.user_metadata?.perfil === 'dono';
+    if (isDono) {
+      try {
+        const empAtual = obterEmpresaConfig() || {};
+        if (!empAtual.auth) empAtual.auth = {};
+        empAtual.auth.salt = salt;
+        empAtual.auth.hash = hash;
+        empAtual.auth.precisaTrocarSenha = false;
+        salvarEmpresaConfig(empAtual);
 
-      if (tId && supabaseClient) {
-        const { error: errUpd } = await supabaseClient
-          .from('erp_tenants')
-          .update({
-            empresa: empAtual,
-            ultima_atualizacao_ms: Date.now()
-          })
-          .eq('tenant_id', tId);
-
-        if (errUpd) {
-          console.warn('Aviso no update de erp_tenants, tentando upsert com fallback db: {}', errUpd);
-          await supabaseClient
+        if (tId && supabaseClient) {
+          const { error: errUpd } = await supabaseClient
             .from('erp_tenants')
-            .upsert({
-              tenant_id: tId,
-              db: {},
+            .update({
               empresa: empAtual,
               ultima_atualizacao_ms: Date.now()
-            });
-        }
+            })
+            .eq('tenant_id', tId);
 
-        // Marca token como consumido para não permitir reuso
-        await supabaseClient
-          .from('erp_tokens')
-          .update({ usado: true, usado_em: new Date().toISOString() })
-          .eq('tenant_id', tId);
+          if (errUpd) {
+            console.warn('Aviso no update de erp_tenants:', errUpd);
+          }
+
+          // Marca token como consumido para não permitir reuso
+          await supabaseClient
+            .from('erp_tokens')
+            .update({ usado: true, usado_em: new Date().toISOString() })
+            .eq('tenant_id', tId);
+        }
+      } catch (eDono) {
+        console.warn('Aviso ao sincronizar credenciais master do dono:', eDono);
       }
-    } catch (eDono) {
-      console.warn('Aviso ao sincronizar credenciais master do dono:', eDono);
     }
 
     return { sucesso: true, auth: novaAuth };
@@ -1426,6 +1453,16 @@ with check (true);
   }
 
   async function fazerLogout() {
+    // 1. Força gravação imediata na nuvem antes de sair se houver dados locais não sincronizados
+    try {
+      const dbLocal = (window.ERP && typeof window.ERP.obterDb === 'function') ? window.ERP.obterDb() : null;
+      if (dbLocal && !isModoDemo()) {
+        await sincronizarImediatoComNuvem(dbLocal);
+      }
+    } catch (eSync) {
+      console.warn('Aviso ao sincronizar antes de logout:', eSync);
+    }
+
     definirUsuarioLogado(null);
     tenantAuthAtivo = null;
     if (supabaseClient) {
@@ -1437,7 +1474,6 @@ with check (true);
       localStorage.removeItem('BRAVVI_ERP_USER_SESSION');
       localStorage.removeItem(STORAGE_KEY_AUTH_USER);
       localStorage.removeItem(STORAGE_KEY_EMPRESA);
-      localStorage.removeItem('bravvi_erp_prod_v8');
       sessionStorage.clear();
     } catch (e) {}
     window.location.reload();
@@ -1611,6 +1647,84 @@ with check (true);
 
   function isNuvemAtiva() {
     return (supabaseClient !== null || firestoreDb !== null) && navigator.onLine;
+  }
+
+  // --- SINCRONIZAÇÃO EM NUVEM IMEDIATA (SEM DEBOUNCE - USADA EM CADASTROS CRÍTICOS / LOGOUT) ---
+  async function sincronizarImediatoComNuvem(dbAtual) {
+    if (syncDebounceTimer) {
+      clearTimeout(syncDebounceTimer);
+      syncDebounceTimer = null;
+    }
+    if (isModoDemo()) {
+      atualizarStatusNuvem();
+      return { sucesso: true };
+    }
+    const tenantId = obterTenantId();
+    if (!tenantId) {
+      atualizarStatusNuvem();
+      return { sucesso: false, erro: 'Sem tenant autenticado' };
+    }
+    const provedor = obterProvedorAtivo();
+    if (provedor === 'local' || !navigator.onLine) {
+      atualizarStatusNuvem();
+      return { sucesso: true };
+    }
+
+    const agora = Date.now();
+    ultimaAtualizacaoRemota = agora;
+
+    definirTextoStatusNuvem('🔄 Gravando na nuvem...', '#dbeafe', '#1d4ed8');
+
+    if (provedor === 'supabase' && supabaseClient) {
+      const empParaSalvar = Object.assign({}, obterEmpresaConfig());
+      if (tenantAuthAtivo) {
+        empParaSalvar.auth = tenantAuthAtivo;
+      }
+      try {
+        const { error } = await supabaseClient
+          .from('erp_tenants')
+          .upsert({
+            tenant_id: tenantId,
+            db: dbAtual,
+            empresa: empParaSalvar,
+            ultima_atualizacao_ms: agora,
+            versao_erp: "8.5.0",
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'tenant_id' });
+
+        if (error) {
+          console.warn('Erro ao salvar no Supabase (sincronização imediata):', error);
+          atualizarStatusNuvem();
+          return { sucesso: false, erro: error.message };
+        }
+        atualizarStatusNuvem();
+        return { sucesso: true };
+      } catch (err) {
+        console.warn('Exceção ao sincronizar Supabase imediato:', err);
+        atualizarStatusNuvem();
+        return { sucesso: false, erro: err.message };
+      }
+    } else if (provedor === 'firebase' && firestoreDb) {
+      try {
+        const docRef = firestoreDb.collection('empresas_erp').doc(tenantId);
+        await docRef.set({
+          db: dbAtual,
+          empresa: obterEmpresaConfig(),
+          ultimaAtualizacaoMs: agora,
+          versaoErp: "8.4.0",
+          dispositivo: navigator.userAgent.substring(0, 40)
+        }, { merge: true });
+        atualizarStatusNuvem();
+        return { sucesso: true };
+      } catch (e) {
+        console.warn('Exceção ao sincronizar Firebase imediato:', e);
+        atualizarStatusNuvem();
+        return { sucesso: false, erro: e.message };
+      }
+    }
+
+    atualizarStatusNuvem();
+    return { sucesso: true };
   }
 
   // --- SINCRONIZAÇÃO EM NUVEM (DEBOUNCE 1.2s) ---
@@ -2120,6 +2234,7 @@ with check (true);
     obterProvedorAtivo,
     isNuvemAtiva,
     sincronizarComNuvem,
+    sincronizarImediatoComNuvem,
     iniciarEscutaRealtime,
     abrirModalConfigNuvem,
     atualizarStatusNuvem

@@ -11267,12 +11267,14 @@
                   ? '<span class="status-pill status-blue" style="font-weight: 800; background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">💼 Vendedor</span>'
                   : '<span class="status-pill status-orange" style="font-weight: 800; background: #fef3c7; color: #92400e; border-color: #fde68a;">✂️ Oficina / Fábrica</span>');
 
-              const statusSenha = u.precisaTrocarSenha
-                ? `<div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
-                     <span class="status-pill status-orange" title="Funcionário precisa trocar no 1º login" style="font-size: 10px; background: #fff7ed; color: #c2410c; border: 1px dashed #fdba74;">🔑 Provisória</span>
-                     ${u.senha ? `<span style="font-family: monospace; font-size: 11px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-weight: 700; color: #1e293b; border: 1px solid #cbd5e1;" title="Senha provisória inicial">${u.senha}</span>` : ''}
-                   </div>`
-                : '<span class="status-pill status-green" title="Senha definitiva configurada" style="font-size: 10px;">✓ Senha Pessoal Criada</span>';
+              const statusSenha = (!u.auth && !u.senha && !u.precisaTrocarSenha)
+                ? '<span class="status-pill status-orange" style="font-size: 10px; background: #fff7ed; color: #c2410c; border: 1px dashed #fdba74;" title="Nenhuma senha provisória foi configurada">⚠️ Sem Senha Definida</span>'
+                : (u.precisaTrocarSenha
+                  ? `<div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
+                       <span class="status-pill status-orange" title="Funcionário precisa trocar no 1º login" style="font-size: 10px; background: #fff7ed; color: #c2410c; border: 1px dashed #fdba74;">🔑 Provisória</span>
+                       ${u.senha ? `<span style="font-family: monospace; font-size: 11px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-weight: 700; color: #1e293b; border: 1px solid #cbd5e1;" title="Senha provisória inicial">${u.senha}</span>` : ''}
+                     </div>`
+                  : '<span class="status-pill status-green" title="Senha definitiva configurada" style="font-size: 10px;">✓ Senha Pessoal Criada</span>');
 
               return `
                 <tr>
@@ -11364,8 +11366,9 @@
 
     const perfilAtual = col.perfil || (col.nivelAcesso === 'Admin' ? 'dono' : (col.nivelAcesso === 'Comercial' ? 'vendedor' : 'oficina'));
 
-    // Sugestão de senha temporária para novo colaborador
-    const sugestaoSenha = isEdit ? '' : ('Temp@' + Math.floor(1000 + Math.random() * 9000));
+    // Sugestão de senha temporária para novo colaborador ou se o colaborador não tiver senha
+    const usuarioSemSenha = isEdit && (!col.auth || !col.auth.hash) && !col.senha;
+    const sugestaoSenha = (!isEdit || usuarioSemSenha) ? ('Temp@' + Math.floor(1000 + Math.random() * 9000)) : '';
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active" id="modalNovoColaboradorInlineOverlay">
@@ -11382,6 +11385,11 @@
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
           <div class="modal-body" style="padding: 20px;">
+            ${usuarioSemSenha ? `
+              <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: 12px; color: #92400e; font-weight: 600;">
+                ⚠️ Este usuário ainda não possui senha provisória definida no sistema. Preencha uma senha abaixo para liberar o acesso dele.
+              </div>
+            ` : ''}
             <!-- Linha 1: Nome e WhatsApp -->
             <div class="form-row">
               <div class="form-group" style="flex: 2;">
@@ -11409,7 +11417,7 @@
                     ${isEdit ? 'Redefinir Senha Temporária' : 'Senha Temporária Inicial *'}
                   </label>
                   <div style="display: flex; gap: 4px;">
-                    <input type="text" id="cadColSenhaTemp" class="form-input text-mono" placeholder="${isEdit ? 'Deixe vazio p/ manter' : 'Ex: Temp@2026'}" value="${sugestaoSenha}" style="background: #ffffff; font-weight: 700; letter-spacing: 0.5px;">
+                    <input type="text" id="cadColSenhaTemp" class="form-input text-mono" placeholder="${isEdit && !usuarioSemSenha ? 'Deixe vazio p/ manter' : 'Ex: Temp@2026'}" value="${sugestaoSenha}" style="background: #ffffff; font-weight: 700; letter-spacing: 0.5px;">
                     <button type="button" class="btn btn-secondary btn-sm" id="btnGerarNovaSenhaTemp" title="Gerar outra senha temporária" style="padding: 0 10px; background: #ffffff;">🎲</button>
                   </div>
                 </div>
@@ -11518,7 +11526,7 @@
 
       const btnSalvar = modalEl.querySelector('#btnSalvarColaborador');
       btnSalvar.disabled = true;
-      btnSalvar.textContent = 'Salvando...';
+      btnSalvar.textContent = 'Salvando na nuvem...';
 
       // Criptografia da senha temporária (se informada)
       let authObj = col.auth || null;
@@ -11564,6 +11572,9 @@
         }
 
         salvarEstado();
+        if (window.ERP_CLOUD && typeof window.ERP_CLOUD.sincronizarImediatoComNuvem === 'function') {
+          await window.ERP_CLOUD.sincronizarImediatoComNuvem(db);
+        }
         fecharModal(modalEl);
         mostrarToast(`Usuário "${col.nome}" atualizado com sucesso!`, 'green');
         if (callback) callback(col);
@@ -11594,8 +11605,11 @@
         db.equipe.unshift(novoCol);
         db.costureiras.unshift(novoCol);
         salvarEstado();
+        if (window.ERP_CLOUD && typeof window.ERP_CLOUD.sincronizarImediatoComNuvem === 'function') {
+          await window.ERP_CLOUD.sincronizarImediatoComNuvem(db);
+        }
         fecharModal(modalEl);
-        mostrarToast(`Usuário "${novoCol.nome}" cadastrado! Passe o e-mail (${novoCol.email}) e a senha temporária para ele.`, 'green');
+        mostrarToast(`Usuário "${novoCol.nome}" cadastrado com sucesso! E-mail: ${novoCol.email} | Senha: ${novoCol.senha}`, 'green');
         if (callback) callback(novoCol);
       }
     });
