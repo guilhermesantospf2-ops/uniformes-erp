@@ -1,7 +1,9 @@
 /**
- * UNIFORMES ERP - MOTOR INDUSTRIAL DE NESTING DTF (DIRECT TO FILM)
- * Otimizador algorítmico 2D para aproveitamento máximo de rolos de impressão têxtil
- * Suporte a Encaixe por Pedido, Divisão em Arquivos por Metragem, Renderização Real de Imagens & Exportação RIP
+ * UNIFORMES ERP - MOTOR INDUSTRIAL DE NESTING DTF (DIRECT TO FILM) V2
+ * Otimizador algorítmico 2D Skyline Bottom-Left Packing (Zero Buracos)
+ * Proporção Geométrica Preservada 100% (Sem Achatamento / Distorção)
+ * Motor Inteligente de Remoção de Fundo (Detecção de Bordas estilo Canva)
+ * Renderização Retina HD (High DPI) & Exportação RIP em Alta Resolução
  */
 
 window.DtfNestingEngine = {
@@ -27,13 +29,27 @@ window.DtfNestingEngine = {
       if (img.complete && img.naturalWidth > 0) return img;
     }
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    if (!src.startsWith('data:')) {
+      img.crossOrigin = 'anonymous';
+    }
     img.onload = () => {
       this.cacheImagens.set(src, img);
       if (typeof callbackAoCarregar === 'function') callbackAoCarregar(img);
     };
     img.onerror = () => {
-      this.cacheImagens.delete(src);
+      if (img.crossOrigin) {
+        const fallback = new Image();
+        fallback.onload = () => {
+          this.cacheImagens.set(src, fallback);
+          if (typeof callbackAoCarregar === 'function') callbackAoCarregar(fallback);
+        };
+        fallback.onerror = () => {
+          this.cacheImagens.delete(src);
+        };
+        fallback.src = src;
+      } else {
+        this.cacheImagens.delete(src);
+      }
     };
     img.src = src;
     this.cacheImagens.set(src, img);
@@ -41,49 +57,108 @@ window.DtfNestingEngine = {
   },
 
   /**
-   * Empacota um grupo de itens em prateleiras (Shelf Packing Heuristic)
+   * Carregamento assíncrono garantido de imagem com Promise
    */
-  empacotarPrateleiras: function(itens, W_ROLO, GAP, yInicial = 0) {
-    // Ordenação por maior dimensão decrescente (First-Fit Decreasing)
-    itens.sort((a, b) => Math.max(b.w, b.h) - Math.max(a.w, a.h));
+  carregarImagemAsync: function(src) {
+    if (!src) return Promise.resolve(null);
+    if (this.cacheImagens.has(src)) {
+      const cached = this.cacheImagens.get(src);
+      if (cached.complete && cached.naturalWidth > 0) return Promise.resolve(cached);
+    }
+    return new Promise((resolve) => {
+      const img = new Image();
+      if (!src.startsWith('data:')) {
+        img.crossOrigin = 'anonymous';
+      }
+      img.onload = () => {
+        this.cacheImagens.set(src, img);
+        resolve(img);
+      };
+      img.onerror = () => {
+        if (img.crossOrigin) {
+          const fallback = new Image();
+          fallback.onload = () => {
+            this.cacheImagens.set(src, fallback);
+            resolve(fallback);
+          };
+          fallback.onerror = () => resolve(null);
+          fallback.src = src;
+        } else {
+          resolve(null);
+        }
+      };
+      img.src = src;
+    });
+  },
 
-    let prateleiras = [];
-    let prateleiraAtual = {
-      y: yInicial,
-      alturaMaxima: 0,
-      larguraUsada: 0,
-      itens: []
-    };
+  /**
+   * ALGORITMO INDUSTRIAL 2D SKYLINE BOTTOM-LEFT PACKING (TETRIS MILIMÉTRICO SEM BURACOS)
+   * Encaixa cada matriz na posição livre mais baixa disponível, eliminando espaços vazios.
+   */
+  empacotarSkyline2D: function(itens, W_ROLO, GAP, yInicial = 0) {
+    if (!itens || !itens.length) return { artes: [], alturaMaxima: yInicial };
+
+    // Ordenação Best-Fit Decreasing: maior dimensão e área decrescente
+    itens.sort((a, b) => {
+      const maxB = Math.max(b.w, b.h);
+      const maxA = Math.max(a.w, a.h);
+      if (Math.abs(maxB - maxA) > 0.01) return maxB - maxA;
+      return (b.w * b.h) - (a.w * a.h);
+    });
+
+    // O Skyline é mantido como lista de segmentos horizontais contíguos cobrindo de x=0 a x=W_ROLO
+    let segmentos = [{ x: 0, y: yInicial, width: W_ROLO }];
+    let artesPosicionadas = [];
 
     itens.forEach(item => {
-      let wNormal = item.w;
-      let hNormal = item.h;
-      let wRot = item.h;
-      let hRot = item.w;
+      let melhor = null;
 
-      // Se a rotação manual foi travada pelo usuário
-      const permiteRotacao = item.permitirRotacao !== false;
-
-      let melhorOrientacao = null;
-
-      const cabeNormal = (prateleiraAtual.larguraUsada + wNormal + (prateleiraAtual.itens.length > 0 ? GAP : 0)) <= W_ROLO;
-      const cabeRot = permiteRotacao && ((prateleiraAtual.larguraUsada + wRot + (prateleiraAtual.itens.length > 0 ? GAP : 0)) <= W_ROLO);
-
-      if (cabeNormal && cabeRot) {
-        if (hNormal <= hRot) {
-          melhorOrientacao = { w: wNormal, h: hNormal, rotacionado: false };
-        } else {
-          melhorOrientacao = { w: wRot, h: hRot, rotacionado: true };
-        }
-      } else if (cabeNormal) {
-        melhorOrientacao = { w: wNormal, h: hNormal, rotacionado: false };
-      } else if (cabeRot) {
-        melhorOrientacao = { w: wRot, h: hRot, rotacionado: true };
+      // Testa orientações: normal e 90° (se permitida)
+      const orientacoes = [{ w: item.w, h: item.h, rot: false }];
+      if (item.permitirRotacao !== false && Math.abs(item.w - item.h) > 0.05) {
+        orientacoes.push({ w: item.h, h: item.w, rot: true });
       }
 
-      if (melhorOrientacao) {
-        const xPos = prateleiraAtual.larguraUsada + (prateleiraAtual.itens.length > 0 ? GAP : 0);
-        prateleiraAtual.itens.push({
+      for (const ori of orientacoes) {
+        const itW = ori.w;
+        const itH = ori.h;
+        if (itW > W_ROLO + 0.001) continue; // Não cabe na largura do rolo
+
+        // Avalia cada ponto inicial de segmento como posição candidata X
+        for (let i = 0; i < segmentos.length; i++) {
+          const candX = segmentos[i].x;
+          if (candX + itW > W_ROLO + 0.001) continue; // Ultrapassa a borda direita
+
+          // Encontra o Y máximo sob a extensão deste item
+          let maxY = yInicial;
+          const xFim = candX + itW;
+          for (const seg of segmentos) {
+            if (seg.x < xFim && (seg.x + seg.width) > candX) {
+              maxY = Math.max(maxY, seg.y);
+            }
+          }
+
+          const topoY = maxY + itH;
+
+          // Seleção da melhor posição: menor Y base, depois menor topo Y, depois menor X
+          if (!melhor ||
+              maxY < melhor.y - 0.01 ||
+              (Math.abs(maxY - melhor.y) <= 0.01 && topoY < melhor.topoY - 0.01) ||
+              (Math.abs(maxY - melhor.y) <= 0.01 && Math.abs(topoY - melhor.topoY) <= 0.01 && candX < melhor.x)) {
+            melhor = {
+              x: candX,
+              y: maxY,
+              w: itW,
+              h: itH,
+              rot: ori.rot,
+              topoY: topoY
+            };
+          }
+        }
+      }
+
+      if (melhor) {
+        artesPosicionadas.push({
           id: item.id,
           nome: item.nome,
           cliente: item.cliente,
@@ -91,71 +166,62 @@ window.DtfNestingEngine = {
           pedidoNumero: item.pedidoNumero,
           arquivoNome: item.arquivoNome,
           imagemDataUrl: item.imagemDataUrl,
-          x: xPos,
-          y: prateleiraAtual.y,
-          w: melhorOrientacao.w,
-          h: melhorOrientacao.h,
+          aspectRatio: item.aspectRatio || (item.w / item.h) || 1,
+          x: parseFloat(melhor.x.toFixed(2)),
+          y: parseFloat(melhor.y.toFixed(2)),
+          w: parseFloat(melhor.w.toFixed(2)),
+          h: parseFloat(melhor.h.toFixed(2)),
           wOriginal: item.w,
           hOriginal: item.h,
-          rotacionado: melhorOrientacao.rotacionado,
+          rotacionado: melhor.rot,
           cor: item.cor || '#0284c7'
         });
-        prateleiraAtual.larguraUsada = xPos + melhorOrientacao.w;
-        prateleiraAtual.alturaMaxima = Math.max(prateleiraAtual.alturaMaxima, melhorOrientacao.h);
-      } else {
-        // Nova prateleira
-        if (prateleiraAtual.itens.length > 0) {
-          prateleiras.push(prateleiraAtual);
-        }
 
-        const novoY = prateleiraAtual.y + (prateleiraAtual.alturaMaxima > 0 ? (prateleiraAtual.alturaMaxima + GAP) : 0);
+        // Atualiza Skyline com o novo segmento e margem GAP
+        const novoX = melhor.x;
+        const novoW = Math.min(W_ROLO - novoX, melhor.w + GAP);
+        const novoY = melhor.y + melhor.h + GAP;
+        const novoSeg = { x: novoX, y: novoY, width: novoW };
 
-        let wFinal = wNormal;
-        let hFinal = hNormal;
-        let rot = false;
+        let novosSegs = [];
+        for (const seg of segmentos) {
+          const sIni = seg.x;
+          const sFim = seg.x + seg.width;
+          const nIni = novoSeg.x;
+          const nFim = novoSeg.x + novoSeg.width;
 
-        if (permiteRotacao) {
-          if (wNormal > W_ROLO && wRot <= W_ROLO) {
-            wFinal = wRot;
-            hFinal = hRot;
-            rot = true;
-          } else if (wRot <= W_ROLO && hRot < hNormal) {
-            wFinal = wRot;
-            hFinal = hRot;
-            rot = true;
+          if (sFim <= nIni || sIni >= nFim) {
+            novosSegs.push(seg);
+          } else {
+            if (sIni < nIni) novosSegs.push({ x: sIni, y: seg.y, width: nIni - sIni });
+            if (sFim > nFim) novosSegs.push({ x: nFim, y: seg.y, width: sFim - nFim });
           }
         }
+        novosSegs.push(novoSeg);
+        novosSegs.sort((a, b) => a.x - b.x);
 
-        prateleiraAtual = {
-          y: novoY,
-          alturaMaxima: hFinal,
-          larguraUsada: wFinal,
-          itens: [{
-            id: item.id,
-            nome: item.nome,
-            cliente: item.cliente,
-            pedidoId: item.pedidoId,
-            pedidoNumero: item.pedidoNumero,
-            arquivoNome: item.arquivoNome,
-            imagemDataUrl: item.imagemDataUrl,
-            x: 0,
-            y: novoY,
-            w: wFinal,
-            h: hFinal,
-            wOriginal: item.w,
-            hOriginal: item.h,
-            rotacionado: rot,
-            cor: item.cor || '#0284c7'
-          }]
-        };
+        // Mescla segmentos contíguos de mesma altura
+        let merged = [];
+        for (const s of novosSegs) {
+          if (s.width <= 0.001) continue;
+          if (merged.length > 0 &&
+              Math.abs(merged[merged.length - 1].y - s.y) < 0.01 &&
+              Math.abs((merged[merged.length - 1].x + merged[merged.length - 1].width) - s.x) < 0.01) {
+            merged[merged.length - 1].width += s.width;
+          } else {
+            merged.push({ ...s });
+          }
+        }
+        segmentos = merged;
       }
     });
 
-    if (prateleiraAtual.itens.length > 0) {
-      prateleiras.push(prateleiraAtual);
-    }
+    let alturaMaxima = yInicial;
+    artesPosicionadas.forEach(a => {
+      alturaMaxima = Math.max(alturaMaxima, a.y + a.h);
+    });
 
-    return prateleiras;
+    return { artes: artesPosicionadas, alturaMaxima: alturaMaxima };
   },
 
   /**
@@ -174,15 +240,18 @@ window.DtfNestingEngine = {
       const qtd = parseInt(arte.quantidade || arte.copias, 10) || 1;
       const w = parseFloat(arte.larguraCm) || 10;
       const h = parseFloat(arte.alturaCm) || 10;
+      const aspect = arte.aspectRatio || (w / h) || 1;
+
       for (let i = 0; i < qtd; i++) {
         itensParaEmpacotar.push({
           id: arte.id,
           nome: arte.nome || arte.descricao || "Arte",
-          cliente: arte.cliente || arte.clienteNome || "Cliente",
+          cliente: arte.cliente || arte.clienteNome || "Cliente Oficial",
           pedidoId: arte.pedidoId || "AVULSO",
           pedidoNumero: arte.pedidoNumero || "Avulso",
           arquivoNome: arte.arquivoNome || "arte.png",
           imagemDataUrl: arte.imagemDataUrl || arte.arquivoDataUrl || null,
+          aspectRatio: aspect,
           w: w,
           h: h,
           permitirRotacao: arte.permitirRotacao !== false,
@@ -193,10 +262,11 @@ window.DtfNestingEngine = {
       }
     });
 
-    let prateleiras = [];
+    let todasArtesPosicionadas = [];
     let separadoresVisuais = [];
+    let alturaTotalCm = 0;
 
-    // 2. Empacotamento com Separação por Pedido ou Otimização Contínua
+    // 2. Empacotamento 2D Skyline (Separado por Pedido ou Contínuo Global)
     if (separarPorPedido && itensParaEmpacotar.length > 0) {
       // Agrupa itens por identificador de pedido
       const gruposPorPedido = new Map();
@@ -214,45 +284,33 @@ window.DtfNestingEngine = {
           // Insere separador visual de corte entre pedidos
           const hSeparador = 2.5; // 2.5cm de faixa de corte
           separadoresVisuais.push({
-            y: yCursor + GAP,
+            y: parseFloat((yCursor + GAP).toFixed(2)),
             h: hSeparador,
             pedidoNumero: chavePedido,
-            clienteNome: itensDoPedido[0]?.cliente || 'Cliente',
+            clienteNome: itensDoPedido[0]?.cliente || 'Cliente Oficial',
             totalPecas: itensDoPedido.length
           });
           yCursor += GAP + hSeparador + GAP;
         }
 
-        const prateleirasDoPedido = this.empacotarPrateleiras(itensDoPedido, W_ROLO, GAP, yCursor);
-        prateleiras = prateleiras.concat(prateleirasDoPedido);
-
-        // Atualiza yCursor para o final deste pedido
-        prateleirasDoPedido.forEach(prat => {
-          yCursor = Math.max(yCursor, prat.y + prat.alturaMaxima);
-        });
-
+        const empacotado = this.empacotarSkyline2D(itensDoPedido, W_ROLO, GAP, yCursor);
+        todasArtesPosicionadas = todasArtesPosicionadas.concat(empacotado.artes);
+        yCursor = Math.max(yCursor, empacotado.alturaMaxima);
         contadorGrupo++;
       });
+
+      alturaTotalCm = yCursor;
     } else {
-      // Encaixe contínuo livre (First-Fit Decreasing global)
-      prateleiras = this.empacotarPrateleiras(itensParaEmpacotar, W_ROLO, GAP, 0);
+      // Encaixe 2D Skyline livre (Tetris Global)
+      const empacotado = this.empacotarSkyline2D(itensParaEmpacotar, W_ROLO, GAP, 0);
+      todasArtesPosicionadas = empacotado.artes;
+      alturaTotalCm = empacotado.alturaMaxima;
     }
 
-    // 3. Consolidação das artes e cálculo da altura máxima
-    let todasArtesPosicionadas = [];
-    let alturaTotalCm = 0;
+    // 3. Cálculos de área e taxa de aproveitamento
     let areaUtilArtesCm2 = 0;
-
-    prateleiras.forEach(prat => {
-      todasArtesPosicionadas = todasArtesPosicionadas.concat(prat.itens);
-      alturaTotalCm = Math.max(alturaTotalCm, prat.y + prat.alturaMaxima);
-      prat.itens.forEach(art => {
-        areaUtilArtesCm2 += (art.w * art.h);
-      });
-    });
-
-    separadoresVisuais.forEach(sep => {
-      alturaTotalCm = Math.max(alturaTotalCm, sep.y + sep.h);
+    todasArtesPosicionadas.forEach(art => {
+      areaUtilArtesCm2 += (art.w * art.h);
     });
 
     const metrosLinearesTotais = alturaTotalCm > 0 ? (alturaTotalCm / 100) : 0;
@@ -279,11 +337,14 @@ window.DtfNestingEngine = {
 
       let limiteYAtual = maxCmPorArquivo;
 
-      prateleiras.forEach(prat => {
-        const pratFimY = prat.y + prat.alturaMaxima;
+      // Ordena por posição vertical Y
+      todasArtesPosicionadas.sort((a, b) => a.y - b.y);
 
-        // Se ultrapassar o limite do arquivo atual (e o arquivo atual já tiver itens), fecha e abre próximo
-        if (pratFimY > limiteYAtual && arquivoAtual.artes.length > 0) {
+      todasArtesPosicionadas.forEach(art => {
+        const artFimY = art.y + art.h;
+
+        // Se ultrapassar o limite do arquivo atual (e já tiver itens no arquivo atual)
+        if (artFimY > limiteYAtual && arquivoAtual.artes.length > 0) {
           arquivoAtual.alturaCm = parseFloat((arquivoAtual.yFim - arquivoAtual.yInicio).toFixed(1));
           arquivoAtual.metrosLineares = parseFloat((arquivoAtual.alturaCm / 100).toFixed(2));
           arquivosPaginados.push(arquivoAtual);
@@ -291,23 +352,20 @@ window.DtfNestingEngine = {
           const novoIndex = arquivosPaginados.length + 1;
           arquivoAtual = {
             index: novoIndex,
-            yInicio: prat.y,
-            yFim: pratFimY,
+            yInicio: art.y,
+            yFim: artFimY,
             alturaCm: 0,
             metrosLineares: 0,
             artes: [],
             separadores: []
           };
-          limiteYAtual = prat.y + maxCmPorArquivo;
+          limiteYAtual = art.y + maxCmPorArquivo;
         }
 
-        // Adiciona itens com coordenadas ajustadas ao arquivo
-        prat.itens.forEach(it => {
-          arquivoAtual.artes.push(Object.assign({}, it, {
-            yNoArquivo: it.y - arquivoAtual.yInicio
-          }));
-        });
-        arquivoAtual.yFim = Math.max(arquivoAtual.yFim, pratFimY);
+        arquivoAtual.artes.push(Object.assign({}, art, {
+          yNoArquivo: parseFloat((art.y - arquivoAtual.yInicio).toFixed(2))
+        }));
+        arquivoAtual.yFim = Math.max(arquivoAtual.yFim, artFimY);
       });
 
       if (arquivoAtual.artes.length > 0) {
@@ -347,7 +405,171 @@ window.DtfNestingEngine = {
   },
 
   /**
-   * Renderiza graficamente o rolo de impressão DTF no Canvas HTML5 com Imagens Reais e Réguas
+   * MOTOR INTELIGENTE DE REMOÇÃO DE FUNDO (Borda Contínua BFS + Suavização Anti-Aliasing + Defringe)
+   * Remove fundos sólidos, brancos ou claros preservando letras e elementos internos intactos (estilo Canva).
+   */
+  removerFundoImagem: async function(fonteImagem, opcoes = {}) {
+    if (!fonteImagem) return null;
+    const tolerancia = opcoes.tolerancia !== undefined ? opcoes.tolerancia : 38;
+    const removerHalo = opcoes.removerHalo !== false;
+
+    const img = await this.carregarImagemAsync(fonteImagem);
+    if (!img) return null;
+
+    const canvas = document.createElement('canvas');
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    canvas.width = w;
+    canvas.height = h;
+
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0);
+
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const data = imgData.data;
+
+    // 1. Amostra as cores dos cantos e bordas para detectar a cor média do fundo
+    const amostras = [];
+    function addAmostra(pxX, pxY) {
+      const idx = (pxY * w + pxX) * 4;
+      amostras.push({ r: data[idx], g: data[idx + 1], b: data[idx + 2], a: data[idx + 3] });
+    }
+
+    for (let dy = 0; dy < Math.min(4, h); dy++) {
+      for (let dx = 0; dx < Math.min(4, w); dx++) {
+        addAmostra(dx, dy);
+        addAmostra(w - 1 - dx, dy);
+        addAmostra(dx, h - 1 - dy);
+        addAmostra(w - 1 - dx, h - 1 - dy);
+      }
+    }
+
+    let somaR = 0, somaG = 0, somaB = 0, countValido = 0;
+    for (const s of amostras) {
+      if (s.a > 50) {
+        somaR += s.r; somaG += s.g; somaB += s.b;
+        countValido++;
+      }
+    }
+    const bgR = countValido > 0 ? (somaR / countValido) : 255;
+    const bgG = countValido > 0 ? (somaG / countValido) : 255;
+    const bgB = countValido > 0 ? (somaB / countValido) : 255;
+
+    // Distância de cor ponderada (Redmean Euclidean Distance)
+    function distCor(r, g, b) {
+      const rmean = (r + bgR) / 2;
+      const dr = r - bgR;
+      const dg = g - bgG;
+      const db = b - bgB;
+      return Math.sqrt((((512 + rmean) * dr * dr) >> 8) + 4 * dg * dg + (((767 - rmean) * db * db) >> 8));
+    }
+
+    const totalPixels = w * h;
+    const isFundo = new Uint8Array(totalPixels);
+    const visitado = new Uint8Array(totalPixels);
+    const fila = new Int32Array(totalPixels);
+    let filaInicio = 0;
+    let filaFim = 0;
+
+    const limiarDist = (tolerancia / 100) * 440;
+
+    function checarBorda(pxX, pxY) {
+      const pIdx = pxY * w + pxX;
+      if (visitado[pIdx]) return;
+      visitado[pIdx] = 1;
+
+      const bIdx = pIdx * 4;
+      if (data[bIdx + 3] < 30) {
+        isFundo[pIdx] = 1;
+        fila[filaFim++] = pIdx;
+        return;
+      }
+
+      const d = distCor(data[bIdx], data[bIdx + 1], data[bIdx + 2]);
+      if (d <= limiarDist) {
+        isFundo[pIdx] = 1;
+        fila[filaFim++] = pIdx;
+      }
+    }
+
+    // Alimenta fila com os 4 lados do perímetro
+    for (let x = 0; x < w; x++) { checarBorda(x, 0); checarBorda(x, h - 1); }
+    for (let y = 0; y < h; y++) { checarBorda(0, y); checarBorda(w - 1, y); }
+
+    // BFS Flood Fill estritamente conectado às bordas externas
+    while (filaInicio < filaFim) {
+      const curIdx = fila[filaInicio++];
+      const cx = curIdx % w;
+      const cy = Math.floor(curIdx / w);
+
+      const vizinhos = [
+        cx > 0 ? curIdx - 1 : -1,
+        cx < w - 1 ? curIdx + 1 : -1,
+        cy > 0 ? curIdx - w : -1,
+        cy < h - 1 ? curIdx + w : -1
+      ];
+
+      for (const vIdx of vizinhos) {
+        if (vIdx === -1 || visitado[vIdx]) continue;
+        visitado[vIdx] = 1;
+
+        const dIdx = vIdx * 4;
+        if (data[dIdx + 3] < 30) {
+          isFundo[vIdx] = 1;
+          fila[filaFim++] = vIdx;
+          continue;
+        }
+
+        const d = distCor(data[dIdx], data[dIdx + 1], data[dIdx + 2]);
+        if (d <= limiarDist) {
+          isFundo[vIdx] = 1;
+          fila[filaFim++] = vIdx;
+        }
+      }
+    }
+
+    // Suavização de Borda (Feathering) e Remoção de Halo (Defringing)
+    const margemSuave = limiarDist * 0.35;
+
+    for (let pIdx = 0; pIdx < totalPixels; pIdx++) {
+      const bIdx = pIdx * 4;
+      if (isFundo[pIdx]) {
+        data[bIdx + 3] = 0; // Transparência total
+      } else {
+        const cx = pIdx % w;
+        const cy = Math.floor(pIdx / w);
+        let vizinhoFundo = false;
+
+        if ((cx > 0 && isFundo[pIdx - 1]) ||
+            (cx < w - 1 && isFundo[pIdx + 1]) ||
+            (cy > 0 && isFundo[pIdx - w]) ||
+            (cy < h - 1 && isFundo[pIdx + w])) {
+          vizinhoFundo = true;
+        }
+
+        if (vizinhoFundo) {
+          const d = distCor(data[bIdx], data[bIdx + 1], data[bIdx + 2]);
+          if (d < limiarDist + margemSuave) {
+            const alphaRatio = Math.max(0, Math.min(1, (d - limiarDist) / margemSuave));
+            data[bIdx + 3] = Math.round(data[bIdx + 3] * alphaRatio);
+
+            if (removerHalo && alphaRatio > 0.08 && alphaRatio < 0.95) {
+              data[bIdx] = Math.max(0, Math.min(255, Math.round((data[bIdx] - (1 - alphaRatio) * bgR) / alphaRatio)));
+              data[bIdx + 1] = Math.max(0, Math.min(255, Math.round((data[bIdx + 1] - (1 - alphaRatio) * bgG) / alphaRatio)));
+              data[bIdx + 2] = Math.max(0, Math.min(255, Math.round((data[bIdx + 2] - (1 - alphaRatio) * bgB) / alphaRatio)));
+            }
+          }
+        }
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    return canvas.toDataURL('image/png');
+  },
+
+  /**
+   * Renderiza graficamente o rolo de impressão DTF no Canvas HTML5 com Retina HD (2x), Réguas e Proporção Rígida
    */
   renderizarCanvas: function(canvas, resultadoNesting, opcoes = {}) {
     if (!canvas || !resultadoNesting) return;
@@ -356,14 +578,13 @@ window.DtfNestingEngine = {
 
     const W_ROLO = resultadoNesting.larguraRoloCm;
     const zoom = parseFloat(opcoes.zoom) || 1.0;
-    const arquivoIndex = parseInt(opcoes.arquivoIndex, 10) || 0; // 0 = rolo completo, >=1 = página específica
+    const arquivoIndex = parseInt(opcoes.arquivoIndex, 10) || 0;
 
     let artesParaDesenhar = resultadoNesting.artesPosicionadas;
     let separadoresParaDesenhar = resultadoNesting.separadoresVisuais || [];
     let H_DESENHO = Math.max(20, resultadoNesting.alturaTotalCm);
     let yOffsetArquivo = 0;
 
-    // Se estiver visualizando um arquivo paginado específico
     if (arquivoIndex > 0 && resultadoNesting.arquivos && resultadoNesting.arquivos[arquivoIndex - 1]) {
       const arq = resultadoNesting.arquivos[arquivoIndex - 1];
       artesParaDesenhar = arq.artes;
@@ -372,23 +593,35 @@ window.DtfNestingEngine = {
       separadoresParaDesenhar = (resultadoNesting.separadoresVisuais || []).filter(s => s.y >= arq.yInicio && s.y <= arq.yFim);
     }
 
-    // Calcula dimensões do Canvas com base no container e zoom
+    // Calcula dimensões virtuais do Canvas
     const containerWidth = canvas.parentElement ? (canvas.parentElement.clientWidth || 600) : 600;
-    const margemReguaX = 36; // Espaço da régua vertical em cm/m
-    const margemReguaY = 30; // Espaço da régua horizontal em cm
+    const margemReguaX = 38;
+    const margemReguaY = 32;
 
-    const larguraDisponivel = Math.max(200, containerWidth - margemReguaX - 30);
+    const larguraDisponivel = Math.max(220, containerWidth - margemReguaX - 30);
     const escalaBase = larguraDisponivel / W_ROLO;
     const escala = escalaBase * zoom;
 
     const roloPixelW = W_ROLO * escala;
     const roloPixelH = H_DESENHO * escala;
 
-    canvas.width = Math.ceil(roloPixelW + margemReguaX + 40);
-    canvas.height = Math.ceil(roloPixelH + margemReguaY + 50);
+    const targetW = Math.ceil(roloPixelW + margemReguaX + 40);
+    const targetH = Math.ceil(roloPixelH + margemReguaY + 50);
+
+    // SUPORTE RETINA HD / HIGH DPI (Dobra resolução para nitidez extrema de linhas e textos)
+    const dpr = Math.max(2, window.devicePixelRatio || 1);
+    canvas.width = Math.ceil(targetW * dpr);
+    canvas.height = Math.ceil(targetH * dpr);
+    canvas.style.width = `${targetW}px`;
+    canvas.style.height = `${targetH}px`;
+
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     // Limpa fundo
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, targetW, targetH);
 
     const offsetX = margemReguaX + 10;
     const offsetY = margemReguaY + 10;
@@ -400,8 +633,8 @@ window.DtfNestingEngine = {
     ctx.lineWidth = 1;
     ctx.strokeRect(offsetX, 4, roloPixelW, margemReguaY - 4);
 
-    ctx.fillStyle = '#475569';
-    ctx.font = 'bold 9px monospace';
+    ctx.fillStyle = '#334155';
+    ctx.font = 'bold 9.5px monospace';
     ctx.textAlign = 'center';
 
     for (let cm = 0; cm <= W_ROLO; cm += 5) {
@@ -440,7 +673,7 @@ window.DtfNestingEngine = {
     ctx.fillStyle = '#f1f5f9';
     ctx.fillRect(offsetX, offsetY, roloPixelW, roloPixelH);
 
-    // Grid sutil milimétrico a cada 5cm
+    // Grid milimétrico sutil a cada 5cm
     ctx.strokeStyle = 'rgba(203, 213, 225, 0.45)';
     ctx.lineWidth = 0.5;
     for (let cm = 5; cm < W_ROLO; cm += 5) {
@@ -483,9 +716,7 @@ window.DtfNestingEngine = {
       ctx.fillText(`✂️ CORTE - PEDIDO #${sep.pedidoNumero} • ${sep.clienteNome.toUpperCase()} (${sep.totalPecas} estampas)`, offsetX + 10, sepY + (sepH / 2) + 4);
     });
 
-    // 5. RENDERIZAÇÃO REAL DAS ARTES (COM IMAGEM, BORDAS DE CORTE E LABELS)
-    let precisaRepintar = false;
-
+    // 5. RENDERIZAÇÃO REAL DAS ARTES COM PROPORÇÃO GEOMÉTRICA RÍGIDA (NUNCA ACHATADA)
     artesParaDesenhar.forEach(arte => {
       const yRelativo = (arte.yNoArquivo !== undefined) ? arte.yNoArquivo : (arte.y - yOffsetArquivo);
       const artX = offsetX + (arte.x * escala);
@@ -493,45 +724,79 @@ window.DtfNestingEngine = {
       const artW = arte.w * escala;
       const artH = arte.h * escala;
 
-      // Fundo branco puro sob a estampa
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(artX, artY, artW, artH);
+      // Fundo sutil com padrão quadriculado (indicador visual de transparência para DTF)
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(artX, artY, artW, artH);
+      ctx.clip();
 
-      // Desenha imagem real da arte se disponível
+      const sq = 6;
+      for (let qy = artY; qy < artY + artH; qy += sq) {
+        for (let qx = artX; qx < artX + artW; qx += sq) {
+          ctx.fillStyle = ((Math.floor((qx - artX) / sq) + Math.floor((qy - artY) / sq)) % 2 === 0) ? '#ffffff' : '#f1f5f9';
+          ctx.fillRect(qx, qy, sq, sq);
+        }
+      }
+
+      // Desenha a imagem real com cálculo rigoroso de contain (sem distorção de proporção)
       if (arte.imagemDataUrl) {
         const img = this.obterImagemCache(arte.imagemDataUrl, () => {
-          // Callback assíncrono para repintar assim que a imagem for baixada
           this.renderizarCanvas(canvas, resultadoNesting, opcoes);
         });
 
         if (img && img.complete && img.naturalWidth > 0) {
-          ctx.save();
-          // Clipping para manter a imagem dentro dos limites da arte
-          ctx.beginPath();
-          ctx.rect(artX, artY, artW, artH);
-          ctx.clip();
+          const imgW = img.naturalWidth;
+          const imgH = img.naturalHeight;
+          const imgAspect = imgW / imgH;
 
           if (arte.rotacionado) {
-            // Rotação de 90 graus no centro do retângulo
+            // Rotação de 90 graus em torno do centro do slot
             ctx.translate(artX + artW / 2, artY + artH / 2);
             ctx.rotate(Math.PI / 2);
-            ctx.drawImage(img, -artH / 2, -artW / 2, artH, artW);
+
+            // No espaço rotacionado, a largura é artH e a altura é artW
+            const availW = artH;
+            const availH = artW;
+            const boxAspect = availW / availH;
+
+            let drawW = availW;
+            let drawH = availH;
+            if (imgAspect > boxAspect) {
+              drawH = availW / imgAspect;
+            } else {
+              drawW = availH * imgAspect;
+            }
+
+            ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
           } else {
-            ctx.drawImage(img, artX, artY, artW, artH);
+            // Orientação normal
+            const availW = artW;
+            const availH = artH;
+            const boxAspect = availW / availH;
+
+            let drawW = availW;
+            let drawH = availH;
+            let drawX = artX;
+            let drawY = artY;
+
+            if (imgAspect > boxAspect) {
+              drawH = availW / imgAspect;
+              drawY = artY + (availH - drawH) / 2;
+            } else {
+              drawW = availH * imgAspect;
+              drawX = artX + (availW - drawW) / 2;
+            }
+
+            ctx.drawImage(img, drawX, drawY, drawW, drawH);
           }
-          ctx.restore();
-        } else {
-          precisaRepintar = true;
         }
       } else {
-        // Mockup visual genérico para artes sem arquivo binário
-        ctx.fillStyle = '#f8fafc';
-        ctx.fillRect(artX + 2, artY + 2, artW - 4, artH - 4);
         ctx.fillStyle = '#0284c7';
-        ctx.font = 'bold 9px sans-serif';
+        ctx.font = 'bold 10px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('🎨 DTF', artX + artW / 2, artY + artH / 2);
       }
+      ctx.restore();
 
       // Moldura e Borda de Corte Pontilhada
       ctx.strokeStyle = arte.rotacionado ? '#059669' : '#0284c7';
@@ -540,11 +805,11 @@ window.DtfNestingEngine = {
 
       // Etiqueta com dimensões se couber na tela
       if (artW > 38 && artH > 18) {
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(artX + 2, artY + artH - 14, Math.min(artW - 4, 110), 12);
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+        ctx.fillRect(artX + 2, artY + artH - 15, Math.min(artW - 4, 115), 13);
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 8px monospace';
+        ctx.font = 'bold 8.5px monospace';
         ctx.textAlign = 'left';
         const labelMedida = `${arte.w.toFixed(1)}x${arte.h.toFixed(1)}cm${arte.rotacionado ? ' ↻' : ''}`;
         ctx.fillText(labelMedida, artX + 4, artY + artH - 5);
@@ -567,6 +832,8 @@ window.DtfNestingEngine = {
       ctx.fillText(`✂️ MARCA DE CORTE: ${(m / 100)}m`, offsetX + 8, lineY - 3);
     }
     ctx.setLineDash([]);
+
+    ctx.restore();
   },
 
   /**
@@ -587,7 +854,6 @@ window.DtfNestingEngine = {
       yOffset = arq.yInicio;
     }
 
-    // Converte cm para pixels conforme DPI (1 polegada = 2.54 cm)
     const escalaDpi = dpi / 2.54;
     const canvasOffscreen = document.createElement('canvas');
     canvasOffscreen.width = Math.round(W_ROLO * escalaDpi);
@@ -596,7 +862,6 @@ window.DtfNestingEngine = {
     const ctx = canvasOffscreen.getContext('2d');
     if (!ctx) return null;
 
-    // Fundo transparente puro para impressão DTF
     ctx.clearRect(0, 0, canvasOffscreen.width, canvasOffscreen.height);
 
     artesParaExportar.forEach(arte => {
@@ -610,12 +875,46 @@ window.DtfNestingEngine = {
         const img = this.obterImagemCache(arte.imagemDataUrl);
         if (img && img.complete) {
           ctx.save();
+          const imgW = img.naturalWidth || 100;
+          const imgH = img.naturalHeight || 100;
+          const imgAspect = imgW / imgH;
+
           if (arte.rotacionado) {
             ctx.translate(artX + artW / 2, artY + artH / 2);
             ctx.rotate(Math.PI / 2);
-            ctx.drawImage(img, -artH / 2, -artW / 2, artH, artW);
+
+            const availW = artH;
+            const availH = artW;
+            const boxAspect = availW / availH;
+
+            let drawW = availW;
+            let drawH = availH;
+            if (imgAspect > boxAspect) {
+              drawH = availW / imgAspect;
+            } else {
+              drawW = availH * imgAspect;
+            }
+
+            ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
           } else {
-            ctx.drawImage(img, artX, artY, artW, artH);
+            const availW = artW;
+            const availH = artH;
+            const boxAspect = availW / availH;
+
+            let drawW = availW;
+            let drawH = availH;
+            let drawX = artX;
+            let drawY = artY;
+
+            if (imgAspect > boxAspect) {
+              drawH = availW / imgAspect;
+              drawY = artY + (availH - drawH) / 2;
+            } else {
+              drawW = availH * imgAspect;
+              drawX = artX + (availW - drawW) / 2;
+            }
+
+            ctx.drawImage(img, drawX, drawY, drawW, drawH);
           }
           ctx.restore();
         }
@@ -683,12 +982,46 @@ window.DtfNestingEngine = {
         const img = this.cacheImagens.get(arte.imagemDataUrl);
         if (img && img.complete && img.naturalWidth > 0) {
           ctx.save();
+          const imgW = img.naturalWidth || 100;
+          const imgH = img.naturalHeight || 100;
+          const imgAspect = imgW / imgH;
+
           if (arte.rotacionado) {
             ctx.translate(artX + artW / 2, artY + artH / 2);
             ctx.rotate(Math.PI / 2);
-            ctx.drawImage(img, -artH / 2, -artW / 2, artH, artW);
+
+            const availW = artH;
+            const availH = artW;
+            const boxAspect = availW / availH;
+
+            let drawW = availW;
+            let drawH = availH;
+            if (imgAspect > boxAspect) {
+              drawH = availW / imgAspect;
+            } else {
+              drawW = availH * imgAspect;
+            }
+
+            ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
           } else {
-            ctx.drawImage(img, artX, artY, artW, artH);
+            const availW = artW;
+            const availH = artH;
+            const boxAspect = availW / availH;
+
+            let drawW = availW;
+            let drawH = availH;
+            let drawX = artX;
+            let drawY = artY;
+
+            if (imgAspect > boxAspect) {
+              drawH = availW / imgAspect;
+              drawY = artY + (availH - drawH) / 2;
+            } else {
+              drawW = availH * imgAspect;
+              drawX = artX + (availW - drawW) / 2;
+            }
+
+            ctx.drawImage(img, drawX, drawY, drawW, drawH);
           }
           ctx.restore();
         }

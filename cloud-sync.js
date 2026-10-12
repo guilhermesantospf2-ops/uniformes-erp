@@ -2051,8 +2051,8 @@ with check (true);
       badge.style.borderColor = '#bfdbfe';
       const dot = badge.querySelector('span:first-child');
       if (dot) dot.style.background = '#3b82f6';
-      txt.textContent = '🧪 Test Drive Ativo';
-      badge.title = 'Modo de teste: dados de demonstração interativos, nenhuma alteração é salva na nuvem.';
+      txt.textContent = '🏭 Showroom Ativo';
+      badge.title = 'Ambiente de demonstração interativo da fábrica Bravvi com todas as funções ativas.';
       return;
     }
 

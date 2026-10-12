@@ -9172,6 +9172,7 @@
 
         const qtd = parseInt(a.quantidadePecas || a.copias || totalGrade, 10) || 1;
         const dataUrl = a.arquivoDataUrl || sintetizarSvgArteBadge(pedido.clienteNome, a.local || 'Estampa', `${w.toFixed(1)}x${h.toFixed(1)}cm`);
+        const ratio = (w > 0 && h > 0) ? parseFloat((w / h).toFixed(4)) : 1.0;
 
         artes.push({
           id: `art_${pedido.id}_${idx}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
@@ -9182,8 +9183,12 @@
           local: a.local || 'Estampa',
           arquivoNome: a.arquivoNome || `${a.local || 'arte'}.png`,
           imagemDataUrl: dataUrl,
+          imagemOriginal: dataUrl,
           larguraCm: w,
           alturaCm: h,
+          aspectRatio: ratio,
+          manterProporcao: true,
+          fundoRemovido: false,
           quantidade: qtd,
           copias: qtd,
           permitirRotacao: a.permitirRotacao !== false,
@@ -9197,6 +9202,7 @@
         let h = parseFloat(app.alturaCm) || 10.0;
         const qtd = totalGrade;
         const dataUrl = sintetizarSvgArteBadge(pedido.clienteNome, app.local || 'Estampa', `${w.toFixed(1)}x${h.toFixed(1)}cm`);
+        const ratio = (w > 0 && h > 0) ? parseFloat((w / h).toFixed(4)) : 1.0;
 
         artes.push({
           id: `art_app_${pedido.id}_${idx}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
@@ -9207,8 +9213,12 @@
           local: app.local || 'Estampa',
           arquivoNome: `${app.local || 'arte'}.png`,
           imagemDataUrl: dataUrl,
+          imagemOriginal: dataUrl,
           larguraCm: w,
           alturaCm: h,
+          aspectRatio: ratio,
+          manterProporcao: true,
+          fundoRemovido: false,
           quantidade: qtd,
           copias: qtd,
           permitirRotacao: true,
@@ -9417,10 +9427,10 @@
           <!-- LISTA DINÂMICA DE ARTES -->
           <div id="containerListaArtesNesting" style="max-height: 640px; overflow-y: auto; padding-right: 4px;">
             ${state.artes.length ? state.artes.map((art) => `
-              <div class="card card-item-arte" data-id="${art.id}" style="padding: 10px 12px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+              <div class="card card-item-arte" data-id="${art.id}" style="padding: 12px; margin-bottom: 12px; border: 1.5px solid ${art.fundoRemovido ? '#10b981' : '#cbd5e1'}; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.04); transition: border-color 0.2s ease;">
                 <div style="display: flex; gap: 12px; align-items: center;">
-                  <!-- Thumbnail com clique para ampliação -->
-                  <div style="width: 58px; height: 58px; border: 1.5px solid #cbd5e1; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f8fafc; flex-shrink: 0; position: relative;">
+                  <!-- Thumbnail com clique para ampliação e fundo quadriculado de transparência -->
+                  <div style="width: 64px; height: 64px; border: 1.5px solid #cbd5e1; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: repeating-conic-gradient(#f1f5f9 0% 25%, #ffffff 0% 50%) 50% / 10px 10px; flex-shrink: 0; position: relative;">
                     ${art.imagemDataUrl ? `
                       <img src="${art.imagemDataUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain; cursor: pointer;" alt="${art.nome}" title="Clique para abrir imagem" onclick="window.open('${art.imagemDataUrl}', '_blank')">
                     ` : `
@@ -9429,26 +9439,38 @@
                     ${art.rotacionado ? `
                       <span style="position: absolute; bottom: 2px; right: 2px; background: #059669; color: #ffffff; font-size: 9px; font-weight: 800; border-radius: 3px; padding: 1px 3px;">90°</span>
                     ` : ''}
+                    ${art.fundoRemovido ? `
+                      <span style="position: absolute; top: 2px; left: 2px; background: #10b981; color: #ffffff; font-size: 8px; font-weight: 800; border-radius: 3px; padding: 1px 3px;" title="Fundo transparente">PNG</span>
+                    ` : ''}
                   </div>
 
                   <!-- Dados da Arte e Controles Editáveis -->
                   <div style="flex: 1; min-width: 0;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
-                      <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 230px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                      <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;">
                         <strong style="font-size: 12.5px; color: #0f172a; display: block; overflow: hidden; text-overflow: ellipsis;" title="${art.nome}">${art.nome}</strong>
                         <span style="font-size: 10.5px; color: #64748b;">${art.cliente} ${art.pedidoNumero ? `• Ped #${art.pedidoNumero}` : ''}</span>
                       </div>
-                      <div style="display: flex; gap: 4px;">
+                      <div style="display: flex; gap: 4px; align-items: center;">
+                        <button type="button" class="btn ${art.fundoRemovido ? 'btn-success' : 'btn-secondary'} btn-xs btn-remover-fundo" data-id="${art.id}" style="padding: 2px 7px; font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="${art.fundoRemovido ? 'Fundo removido (clique para restaurar original)' : 'Remover fundo com tecnologia inteligente estilo Canva'}">
+                          ${art.fundoRemovido ? '✓ Sem Fundo' : '✨ Remover Fundo'}
+                        </button>
                         <button type="button" class="btn btn-secondary btn-xs btn-duplicar-arte" data-id="${art.id}" style="padding: 2px 6px; font-size: 11px;" title="Duplicar esta arte">⎘</button>
                         <button type="button" class="btn btn-red btn-xs btn-remover-arte" data-id="${art.id}" style="padding: 2px 6px; font-size: 11px;" title="Remover do rolo">&times;</button>
                       </div>
                     </div>
 
-                    <!-- Campos em linha: Largura, Altura, Cópias e Rotação -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1.35fr auto; gap: 6px; align-items: flex-end;">
+                    <!-- Campos em linha: Largura, Trava Proporcional, Altura, Cópias e Rotação -->
+                    <div style="display: grid; grid-template-columns: 1fr auto 1fr 1.35fr auto; gap: 6px; align-items: flex-end;">
                       <div>
                         <span style="font-size: 9px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">Largura (cm)</span>
                         <input type="number" step="0.5" min="0.5" max="300" class="form-input inp-arte-largura" data-id="${art.id}" value="${art.larguraCm}" style="padding: 2px 6px; font-size: 11px; font-weight: 700; height: 26px;">
+                      </div>
+
+                      <div style="display: flex; align-items: center; padding-bottom: 1px;">
+                        <button type="button" class="btn ${art.manterProporcao !== false ? 'btn-primary' : 'btn-secondary'} btn-xs btn-toggle-proporcao" data-id="${art.id}" style="height: 26px; padding: 0 5px; font-size: 11px;" title="${art.manterProporcao !== false ? 'Proporção travada (100% proporcional)' : 'Proporção livre'}">
+                          ${art.manterProporcao !== false ? '🔗' : '🔓'}
+                        </button>
                       </div>
 
                       <div>
@@ -9532,8 +9554,8 @@
           </div>
 
           <!-- CONTAINER DO CANVAS COM SCROLL INDUSTRIAL -->
-          <div class="nesting-canvas-container" style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 8px; min-height: 480px; max-height: 600px; overflow: auto; display: flex; justify-content: center; align-items: flex-start; box-shadow: inset 0 1px 4px rgba(0,0,0,0.06);">
-            <canvas id="nestingCanvas" style="display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 4px;"></canvas>
+          <div class="nesting-canvas-container" style="background: #0f172a; border: 1.5px solid #334155; border-radius: 8px; padding: 12px; min-height: 480px; max-height: 600px; overflow: auto; display: flex; justify-content: center; align-items: flex-start; box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);">
+            <canvas id="nestingCanvas" style="display: block; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4), 0 8px 10px -6px rgba(0,0,0,0.4); border-radius: 4px;"></canvas>
           </div>
         </div>
       </div>
@@ -9704,7 +9726,20 @@
         const id = inp.getAttribute('data-id');
         const art = state.artes.find(a => a.id === id);
         if (art) {
-          art.larguraCm = Math.max(0.5, parseFloat(e.target.value) || 1);
+          const novaLargura = Math.max(0.5, parseFloat(e.target.value) || 1);
+          art.larguraCm = novaLargura;
+
+          // Se manter proporção estiver ativo, calcula altura correspondente
+          if (art.manterProporcao !== false) {
+            const ratio = art.aspectRatio || (art.larguraCm / art.alturaCm) || 1.0;
+            const novaAltura = parseFloat((novaLargura / ratio).toFixed(1));
+            art.alturaCm = Math.max(0.5, novaAltura);
+            const inpAlt = document.querySelector(`.inp-arte-altura[data-id="${id}"]`);
+            if (inpAlt) inpAlt.value = art.alturaCm;
+          } else {
+            art.aspectRatio = parseFloat((art.larguraCm / art.alturaCm).toFixed(4));
+          }
+
           dispararRecalculoDebounced();
         }
       });
@@ -9715,8 +9750,79 @@
         const id = inp.getAttribute('data-id');
         const art = state.artes.find(a => a.id === id);
         if (art) {
-          art.alturaCm = Math.max(0.5, parseFloat(e.target.value) || 1);
+          const novaAltura = Math.max(0.5, parseFloat(e.target.value) || 1);
+          art.alturaCm = novaAltura;
+
+          // Se manter proporção estiver ativo, calcula largura correspondente
+          if (art.manterProporcao !== false) {
+            const ratio = art.aspectRatio || (art.larguraCm / art.alturaCm) || 1.0;
+            const novaLargura = parseFloat((novaAltura * ratio).toFixed(1));
+            art.larguraCm = Math.max(0.5, novaLargura);
+            const inpLarg = document.querySelector(`.inp-arte-largura[data-id="${id}"]`);
+            if (inpLarg) inpLarg.value = art.larguraCm;
+          } else {
+            art.aspectRatio = parseFloat((art.larguraCm / art.alturaCm).toFixed(4));
+          }
+
           dispararRecalculoDebounced();
+        }
+      });
+    });
+
+    // Toggle Manter Proporção
+    document.querySelectorAll('.btn-toggle-proporcao').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const art = state.artes.find(a => a.id === id);
+        if (art) {
+          art.manterProporcao = (art.manterProporcao === false) ? true : false;
+          art.aspectRatio = parseFloat((art.larguraCm / art.alturaCm).toFixed(4));
+          btn.innerHTML = art.manterProporcao ? '🔗' : '🔓';
+          btn.className = `btn ${art.manterProporcao ? 'btn-primary' : 'btn-secondary'} btn-xs btn-toggle-proporcao`;
+          btn.title = art.manterProporcao ? 'Proporção travada (100% proporcional)' : 'Proporção livre';
+          mostrarToast(art.manterProporcao ? 'Proporção travada: largura e altura ajustam-se juntas.' : 'Proporção livre: dimensões independentes.', 'blue');
+        }
+      });
+    });
+
+    // Remoção Inteligente de Fundo (Estilo Canva)
+    document.querySelectorAll('.btn-remover-fundo').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const art = state.artes.find(a => a.id === id);
+        if (!art) return;
+
+        if (art.fundoRemovido) {
+          // Reverter para a imagem original com fundo
+          art.imagemDataUrl = art.imagemOriginal || art.imagemDataUrl;
+          art.fundoRemovido = false;
+          mostrarToast('Fundo original restaurado.', 'blue');
+          renderizarNestingDTF();
+        } else {
+          btn.disabled = true;
+          btn.innerHTML = '⏳ Processando...';
+          mostrarToast('Processando remoção de fundo com detecção inteligente de borda estilo Canva...', 'blue');
+
+          try {
+            if (!art.imagemOriginal) art.imagemOriginal = art.imagemDataUrl;
+            const dataUrlSemFundo = await window.DtfNestingEngine.removerFundoImagem(art.imagemDataUrl, {
+              tolerancia: 35,
+              removerHalo: true
+            });
+
+            if (dataUrlSemFundo) {
+              art.imagemDataUrl = dataUrlSemFundo;
+              art.fundoRemovido = true;
+              mostrarToast('✓ Fundo removido com sucesso!', 'green');
+            } else {
+              mostrarToast('Não foi possível remover o fundo automaticamente.', 'yellow');
+            }
+          } catch (err) {
+            console.error('Erro na remoção de fundo:', err);
+            mostrarToast('Erro ao remover fundo da imagem.', 'red');
+          }
+
+          renderizarNestingDTF();
         }
       });
     });
@@ -9903,15 +10009,19 @@
    */
   function abrirModalAdicionarArquivoComputador() {
     if (!modalContainer) return;
-    let dataUrlCarregado = null;
+    let dataUrlOriginal = null;
+    let dataUrlAtual = null;
+    let fundoJaRemovido = false;
+    let modalRatio = 2.0; // Padrão 20x10cm (ratio 2:1)
+    let modalManterProporcao = true;
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
-        <div class="modal-box" style="max-width: 560px;">
+        <div class="modal-box" style="max-width: 580px;">
           <div class="modal-header">
             <div>
               <div class="modal-title">Adicionar Arquivo do Computador no Rolo DTF</div>
-              <span style="font-size: 11px; color: var(--text-gray-500);">Importe estampas avulsas, logos ou arquivos de clientes direto da sua máquina</span>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Importe estampas avulsas, logos ou artes reais da fábrica em alta resolução</span>
             </div>
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
@@ -9919,93 +10029,236 @@
           <div class="modal-body">
             <!-- Seleção do Arquivo do PC -->
             <div class="form-group">
-              <label class="form-label">Arquivo de Imagem (PNG com transparência, JPG ou SVG)</label>
+              <label class="form-label">Arquivo de Imagem (PNG, JPG, WebP, SVG ou PDF/AI)</label>
               <input type="file" id="inpArquivoPcNesting" class="form-input" accept="image/png,image/jpeg,image/webp,image/svg+xml,.pdf,.ai">
             </div>
 
-            <!-- Preview da Imagem Selecionada -->
-            <div id="previewImgPcContainer" style="display: none; margin-bottom: 14px; text-align: center; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px;">
-              <img id="previewImgPc" src="" style="max-height: 120px; max-width: 100%; object-fit: contain; border-radius: 4px;" alt="Preview">
-              <span id="previewImgPcNome" style="font-size: 11px; color: #64748b; display: block; margin-top: 4px;"></span>
+            <!-- Preview da Imagem Selecionada com Fundo Quadriculado Transparente -->
+            <div id="previewImgPcContainer" style="display: none; margin-bottom: 14px; text-align: center; background: repeating-conic-gradient(#f1f5f9 0% 25%, #ffffff 0% 50%) 50% / 12px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 14px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
+              <img id="previewImgPc" src="" style="max-height: 140px; max-width: 100%; object-fit: contain; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" alt="Preview">
+              <span id="previewImgPcNome" style="font-size: 11px; color: #475569; display: block; margin-top: 6px; font-weight: 700;"></span>
+              
+              <!-- Botões rápidos de tratamento de imagem no Preview -->
+              <div style="display: flex; gap: 8px; justify-content: center; margin-top: 8px;">
+                <button type="button" class="btn btn-secondary btn-xs" id="btnPreviewRemoverFundo" style="font-weight: 700; color: #0284c7; border-color: #bae6fd;">
+                  ✨ Remover Fundo Agora (Canva-style)
+                </button>
+                <button type="button" class="btn btn-secondary btn-xs" id="btnPreviewRestaurarFundo" style="display: none; font-weight: 700;">
+                  ↺ Restaurar Imagem Original
+                </button>
+              </div>
             </div>
 
             <div class="form-group">
               <label class="form-label">Descrição / Local da Estampa</label>
-              <input type="text" id="inpDescricaoPc" class="form-input" value="Estampa Frente" placeholder="Ex: Peito 9x8cm, Costas 28x12cm...">
+              <input type="text" id="inpDescricaoPc" class="form-input" value="Estampa DTF" placeholder="Ex: Peito 9x8cm, Costas 28x12cm, Logo Manga...">
             </div>
 
             <div class="form-group">
-              <label class="form-label">Cliente / Identificação</label>
-              <input type="text" id="inpClientePc" class="form-input" value="Cliente Externo" placeholder="Ex: Bravvi Uniformes, Cliente Particular...">
+              <label class="form-label">Cliente / Identificação do Pedido</label>
+              <input type="text" id="inpClientePc" class="form-input" value="Cliente Oficial" placeholder="Ex: Atacado das Telas, Bravvi Confecções...">
             </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Largura (cm)</label>
-                <input type="number" id="inpLarguraPc" class="form-input" value="20.0" step="0.5" min="1" max="200">
+            <!-- Dimensões com Proporção Rígida e Quantidade -->
+            <div style="display: grid; grid-template-columns: 1fr auto 1fr 1.2fr; gap: 8px; align-items: flex-end; margin-bottom: 12px;">
+              <div>
+                <label class="form-label" style="margin-bottom: 3px;">Largura (cm)</label>
+                <input type="number" id="inpLarguraPc" class="form-input" value="20.0" step="0.5" min="0.5" max="300" style="font-weight: 700;">
               </div>
 
-              <div class="form-group">
-                <label class="form-label">Altura (cm)</label>
-                <input type="number" id="inpAlturaPc" class="form-input" value="10.0" step="0.5" min="1" max="200">
+              <div style="padding-bottom: 2px;">
+                <button type="button" class="btn btn-primary btn-sm" id="btnModalLockProporcao" style="height: 34px; padding: 0 8px; font-size: 12px;" title="Proporção travada (100% proporcional)">
+                  🔗
+                </button>
               </div>
 
-              <div class="form-group">
-                <label class="form-label">Quantidade de Cópias</label>
-                <input type="number" id="inpCopiasPc" class="form-input" value="10" min="1" max="9999">
+              <div>
+                <label class="form-label" style="margin-bottom: 3px;">Altura (cm)</label>
+                <input type="number" id="inpAlturaPc" class="form-input" value="10.0" step="0.5" min="0.5" max="300" style="font-weight: 700;">
+              </div>
+
+              <div>
+                <label class="form-label" style="margin-bottom: 3px;">Cópias (un)</label>
+                <input type="number" id="inpCopiasPc" class="form-input" value="10" min="1" max="9999" style="font-weight: 700;">
               </div>
             </div>
 
-            <div class="form-group">
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+            <!-- Opções Técnicas -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; margin: 0;">
+                <input type="checkbox" id="chkAutoRemoverFundoPc" style="width: 16px; height: 16px; accent-color: #0284c7;">
+                <div>
+                  <span style="font-size: 12px; font-weight: 800; color: #0f172a; display: block;">Remover fundo automaticamente (Canva-style)</span>
+                  <span style="font-size: 10.5px; color: #64748b;">Elimina bordas brancas/bege sólidas sem alterar letras internas</span>
+                </div>
+              </label>
+
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; margin: 0;">
                 <input type="checkbox" id="chkRotacaoPc" checked style="width: 16px; height: 16px; accent-color: #0284c7;">
-                <span style="font-size: 12px; font-weight: 700; color: #334155;">Permitir rotação automática de 90° para economizar filme</span>
+                <div>
+                  <span style="font-size: 12px; font-weight: 800; color: #0f172a; display: block;">Permitir rotação automática de 90°</span>
+                  <span style="font-size: 10.5px; color: #64748b;">Aproveita melhor a largura de 58cm reduzindo metros de rolo</span>
+                </div>
               </label>
             </div>
           </div>
 
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
-            <button type="button" class="btn btn-primary" id="btnConfirmarArquivoPc">
-              Adicionar ao Rolo & Recalcular
+            <button type="button" class="btn btn-primary" id="btnConfirmarArquivoPc" style="background: #0284c7; font-weight: 800;">
+              Adicionar ao Rolo & Encaixar
             </button>
           </div>
         </div>
       </div>
     `);
 
-    // Leitura do arquivo do computador
+    // Sincronização Proporcional de Dimensões no Modal
+    const inL = document.getElementById('inpLarguraPc');
+    const inA = document.getElementById('inpAlturaPc');
+    const btnLock = document.getElementById('btnModalLockProporcao');
+
+    btnLock?.addEventListener('click', () => {
+      modalManterProporcao = !modalManterProporcao;
+      btnLock.innerHTML = modalManterProporcao ? '🔗' : '🔓';
+      btnLock.className = `btn ${modalManterProporcao ? 'btn-primary' : 'btn-secondary'} btn-sm`;
+      if (modalManterProporcao) {
+        const lw = parseFloat(inL.value) || 1;
+        const lh = parseFloat(inA.value) || 1;
+        modalRatio = lw / lh;
+      }
+    });
+
+    inL?.addEventListener('input', () => {
+      if (modalManterProporcao && modalRatio > 0) {
+        const valL = parseFloat(inL.value) || 1;
+        inA.value = (valL / modalRatio).toFixed(1);
+      }
+    });
+
+    inA?.addEventListener('input', () => {
+      if (modalManterProporcao && modalRatio > 0) {
+        const valA = parseFloat(inA.value) || 1;
+        inL.value = (valA * modalRatio).toFixed(1);
+      }
+    });
+
+    // Leitura do arquivo do computador com medição de proporção natural
     document.getElementById('inpArquivoPcNesting')?.addEventListener('change', async (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
 
       const descInp = document.getElementById('inpDescricaoPc');
-      if (descInp && !descInp.value) {
+      if (descInp && (!descInp.value || descInp.value === 'Estampa DTF')) {
         descInp.value = file.name.replace(/\.[^/.]+$/, "");
       }
 
-      dataUrlCarregado = await comprimirImagemDataUrl(file, 1600, 1600, 0.90);
-      if (dataUrlCarregado) {
+      dataUrlOriginal = await comprimirImagemDataUrl(file, 2000, 2000, 0.95);
+      dataUrlAtual = dataUrlOriginal;
+      fundoJaRemovido = false;
+
+      if (dataUrlAtual) {
         const previewCont = document.getElementById('previewImgPcContainer');
         const previewImg = document.getElementById('previewImgPc');
         const previewNome = document.getElementById('previewImgPcNome');
         if (previewCont && previewImg) {
-          previewImg.src = dataUrlCarregado;
+          previewImg.src = dataUrlAtual;
           if (previewNome) previewNome.textContent = `${file.name} (${formatarTamanhoBytes(file.size)})`;
           previewCont.style.display = 'block';
         }
+
+        // Mede proporção geométrica nativa do arquivo
+        const imgMedir = new Image();
+        imgMedir.onload = () => {
+          const nw = imgMedir.naturalWidth || 800;
+          const nh = imgMedir.naturalHeight || 800;
+          modalRatio = nw / nh;
+          let initW = 20.0;
+          let initH = parseFloat((initW / modalRatio).toFixed(1));
+          if (initH > 40.0) {
+            initH = 20.0;
+            initW = parseFloat((initH * modalRatio).toFixed(1));
+          }
+          if (inL) inL.value = initW.toFixed(1);
+          if (inA) inA.value = initH.toFixed(1);
+        };
+        imgMedir.src = dataUrlAtual;
       }
     });
 
-    document.getElementById('btnConfirmarArquivoPc')?.addEventListener('click', () => {
-      const desc = document.getElementById('inpDescricaoPc')?.value || 'Estampa Avulsa';
-      const cliente = document.getElementById('inpClientePc')?.value || 'Cliente Externo';
+    // Botão de remoção de fundo dentro do preview
+    const btnRemoverFundoPrev = document.getElementById('btnPreviewRemoverFundo');
+    const btnRestaurarFundoPrev = document.getElementById('btnPreviewRestaurarFundo');
+
+    btnRemoverFundoPrev?.addEventListener('click', async () => {
+      if (!dataUrlAtual) return;
+      btnRemoverFundoPrev.disabled = true;
+      btnRemoverFundoPrev.textContent = '⏳ Removendo fundo...';
+      try {
+        const semFundo = await window.DtfNestingEngine.removerFundoImagem(dataUrlAtual, {
+          tolerancia: 35,
+          removerHalo: true
+        });
+        if (semFundo) {
+          dataUrlAtual = semFundo;
+          fundoJaRemovido = true;
+          const previewImg = document.getElementById('previewImgPc');
+          if (previewImg) previewImg.src = dataUrlAtual;
+          btnRemoverFundoPrev.style.display = 'none';
+          if (btnRestaurarFundoPrev) btnRestaurarFundoPrev.style.display = 'inline-flex';
+          mostrarToast('✓ Fundo removido no preview com sucesso!', 'green');
+        }
+      } catch (err) {
+        console.error('Erro na remoção de fundo do preview:', err);
+        mostrarToast('Erro ao remover fundo.', 'red');
+      } finally {
+        btnRemoverFundoPrev.disabled = false;
+        btnRemoverFundoPrev.textContent = '✨ Remover Fundo Agora (Canva-style)';
+      }
+    });
+
+    btnRestaurarFundoPrev?.addEventListener('click', () => {
+      if (dataUrlOriginal) {
+        dataUrlAtual = dataUrlOriginal;
+        fundoJaRemovido = false;
+        const previewImg = document.getElementById('previewImgPc');
+        if (previewImg) previewImg.src = dataUrlAtual;
+        btnRemoverFundoPrev.style.display = 'inline-flex';
+        btnRestaurarFundoPrev.style.display = 'none';
+        mostrarToast('Imagem original restaurada.', 'blue');
+      }
+    });
+
+    document.getElementById('btnConfirmarArquivoPc')?.addEventListener('click', async () => {
+      const desc = document.getElementById('inpDescricaoPc')?.value || 'Estampa DTF';
+      const cliente = document.getElementById('inpClientePc')?.value || 'Cliente Oficial';
       const w = parseFloat(document.getElementById('inpLarguraPc')?.value || 20);
       const h = parseFloat(document.getElementById('inpAlturaPc')?.value || 10);
       const qtd = parseInt(document.getElementById('inpCopiasPc')?.value || 10, 10);
       const rot = document.getElementById('chkRotacaoPc')?.checked !== false;
+      const autoRemoverFundo = document.getElementById('chkAutoRemoverFundoPc')?.checked;
 
-      const imgUrl = dataUrlCarregado || sintetizarSvgArteBadge(cliente, desc, `${w.toFixed(1)}x${h.toFixed(1)}cm`);
+      let finalImgUrl = dataUrlAtual;
+      let finalFundoRemovido = fundoJaRemovido;
+
+      // Se marcou para remover fundo automaticamente e ainda não foi removido
+      if (autoRemoverFundo && !fundoJaRemovido && finalImgUrl) {
+        mostrarToast('Processando remoção inteligente de fundo...', 'blue');
+        try {
+          const semFundo = await window.DtfNestingEngine.removerFundoImagem(finalImgUrl, {
+            tolerancia: 35,
+            removerHalo: true
+          });
+          if (semFundo) {
+            finalImgUrl = semFundo;
+            finalFundoRemovido = true;
+          }
+        } catch (err) {
+          console.warn('Falha na remoção automática de fundo:', err);
+        }
+      }
+
+      const imgUrl = finalImgUrl || sintetizarSvgArteBadge(cliente, desc, `${w.toFixed(1)}x${h.toFixed(1)}cm`);
 
       const novaArte = {
         id: `art_pc_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
@@ -10016,8 +10269,12 @@
         local: desc,
         arquivoNome: `${desc}.png`,
         imagemDataUrl: imgUrl,
+        imagemOriginal: dataUrlOriginal || imgUrl,
         larguraCm: w,
         alturaCm: h,
+        aspectRatio: modalRatio || parseFloat((w / h).toFixed(4)) || 1.0,
+        manterProporcao: true,
+        fundoRemovido: finalFundoRemovido,
         quantidade: qtd,
         copias: qtd,
         permitirRotacao: rot,
