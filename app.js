@@ -9232,6 +9232,324 @@
     return artes;
   }
 
+  /**
+   * ESTÚDIO CIRÚRGICO DE REMOÇÃO DE FUNDO (Canva / Magic Wand Vectorial HD)
+   * Modal Interativo de alta precisão com:
+   * - Canvas interativo com conta-gotas em tempo real (clique em qualquer ponto da imagem)
+   * - Presets de 1 clique: [⬛ Fundo Preto], [⬜ Fundo Branco], [✨ Auto Detecção]
+   * - Slider de tolerância cirúrgica (0 a 100%)
+   * - Limpeza de furos/cavidades de letras (A, B, R, P, O, etc.)
+   * - Proteção absoluta de texto e primeiro plano contrastante
+   * - Eliminador de halos e bordas fantasmas (Anti-Halo & Despeckle)
+   * - Alternância de fundo do preview (Xadrez, Escuro, Claro, Alto Contraste)
+   */
+  function abrirEstudioCirurgicoFundo(imagemFonte, onSalvar) {
+    if (!imagemFonte) {
+      mostrarToast('Nenhuma imagem disponível para o estúdio cirúrgico.', 'yellow');
+      return;
+    }
+
+    const antigo = document.getElementById('modalEstudioCirurgicoBackdrop');
+    if (antigo) antigo.remove();
+
+    const backdrop = document.createElement('div');
+    backdrop.id = 'modalEstudioCirurgicoBackdrop';
+    backdrop.style.cssText = 'position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(5px); z-index: 100050; display: flex; align-items: center; justify-content: center; padding: 16px;';
+
+    backdrop.innerHTML = `
+      <div style="background: #ffffff; border-radius: 14px; width: 100%; max-width: 960px; max-height: 94vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.45); overflow: hidden; border: 1px solid #cbd5e1; animation: modalFadeIn 0.2s ease;">
+        <!-- Header -->
+        <div style="padding: 14px 20px; background: #0f172a; color: #ffffff; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="background: #0284c7; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+              ✂️
+            </div>
+            <div>
+              <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px;">Estúdio Cirúrgico de Fundo DTF</h3>
+              <span style="font-size: 11px; color: #94a3b8;">Tecnologia Canva-Style • Conta-gotas pixel a pixel • Cavidades de letras</span>
+            </div>
+          </div>
+          <button type="button" id="btnFecharEstudioX" style="background: none; border: none; color: #94a3b8; font-size: 22px; cursor: pointer; padding: 0 4px; line-height: 1;">✕</button>
+        </div>
+
+        <!-- Body -->
+        <div style="padding: 16px; display: grid; grid-template-columns: minmax(300px, 1fr) 310px; gap: 16px; overflow-y: auto; flex: 1;">
+          <!-- Coluna Esquerda: Canvas e visualização -->
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; background: #f1f5f9; padding: 6px 10px; border-radius: 8px; flex-wrap: wrap; gap: 6px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 11px; font-weight: 700; color: #475569;">Fundo do Preview:</span>
+                <button type="button" class="btn-bg-preview" data-bg="checker" style="padding: 3px 8px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1.5px solid #0284c7; background: #fff; cursor: pointer;">🏁 Xadrez</button>
+                <button type="button" class="btn-bg-preview" data-bg="dark" style="padding: 3px 8px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #334155; background: #1e293b; color: #fff; cursor: pointer;">⬛ Escuro</button>
+                <button type="button" class="btn-bg-preview" data-bg="light" style="padding: 3px 8px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; color: #000; cursor: pointer;">⬜ Branco</button>
+                <button type="button" class="btn-bg-preview" data-bg="neon" style="padding: 3px 8px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #facc15; background: #fef08a; color: #854d0e; cursor: pointer;">🟡 Contraste</button>
+              </div>
+              <button type="button" id="btnCompararOriginal" style="padding: 3px 10px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #94a3b8; background: #fff; color: #334155; cursor: pointer; user-select: none;">
+                👁️ Segurar p/ Ver Original
+              </button>
+            </div>
+
+            <!-- Viewport do Canvas -->
+            <div id="containerCanvasCirurgico" style="position: relative; flex: 1; min-height: 380px; max-height: 480px; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; background-color: #f8fafc; background-image: repeating-linear-gradient(45deg, #e2e8f0 25%, transparent 25%, transparent 75%, #e2e8f0 75%, #e2e8f0), repeating-linear-gradient(45deg, #e2e8f0 25%, #f8fafc 25%, #f8fafc 75%, #e2e8f0 75%, #e2e8f0); background-position: 0 0, 10px 10px; background-size: 20px 20px; cursor: crosshair;">
+              <canvas id="canvasEstudioCirurgico" style="max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 4px 16px rgba(0,0,0,0.15);"></canvas>
+            </div>
+
+            <div style="font-size: 11px; color: #0369a1; display: flex; align-items: center; gap: 6px; background: #e0f2fe; padding: 7px 10px; border-radius: 6px; border-left: 3px solid #0284c7;">
+              <span style="font-size: 14px;">🎯</span>
+              <span><strong>Conta-gotas Ativo:</strong> Clique em qualquer ponto da imagem acima para eliminar aquela cor exata (ex: no fundo preto ou dentro de uma letra).</span>
+            </div>
+          </div>
+
+          <!-- Coluna Direita: Controles -->
+          <div style="display: flex; flex-direction: column; gap: 12px; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <!-- Presets Rápidos -->
+            <div>
+              <label style="font-size: 11px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">Presets de 1 Clique</label>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                <button type="button" class="btn-preset-fundo" data-preset="preto" style="background: #0f172a; color: #fff; font-weight: 700; font-size: 11px; border: none; padding: 6px 8px; border-radius: 6px; cursor: pointer;">⬛ Fundo Preto</button>
+                <button type="button" class="btn-preset-fundo" data-preset="branco" style="background: #ffffff; color: #0f172a; font-weight: 700; font-size: 11px; border: 1.5px solid #cbd5e1; padding: 6px 8px; border-radius: 6px; cursor: pointer;">⬜ Fundo Branco</button>
+              </div>
+              <button type="button" class="btn-preset-fundo" data-preset="auto" style="width: 100%; margin-top: 6px; background: #e0f2fe; color: #0369a1; font-weight: 700; font-size: 11px; border: 1px solid #bae6fd; padding: 5px 8px; border-radius: 6px; cursor: pointer;">✨ Auto Detecção de Margem</button>
+            </div>
+
+            <!-- Cor Selecionada -->
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                <span style="font-size: 11.5px; font-weight: 700; color: #334155;">Cor Alvo Ativa</span>
+                <div id="swatchCorCirurgica" style="width: 24px; height: 24px; border-radius: 4px; border: 2px solid #cbd5e1; background: #000000; box-shadow: inset 0 0 2px rgba(0,0,0,0.2);"></div>
+              </div>
+              <div id="textoCorCirurgica" style="font-size: 11px; font-family: monospace; color: #64748b; font-weight: 600;">RGB: (0, 0, 0) • Fundo Preto</div>
+            </div>
+
+            <!-- Tolerância -->
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label style="font-size: 11.5px; font-weight: 700; color: #334155; margin: 0;">Tolerância Cirúrgica</label>
+                <span id="labelToleranciaCirurgica" style="font-size: 12px; font-weight: 800; color: #0284c7; background: #f0f9ff; padding: 1px 6px; border-radius: 4px; border: 1px solid #bae6fd;">35%</span>
+              </div>
+              <input type="range" id="rangeToleranciaCirurgica" min="1" max="95" value="35" style="width: 100%; accent-color: #0284c7; cursor: pointer;">
+              <div style="display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; margin-top: 2px;">
+                <span>1% (Rígido)</span>
+                <span>35% (Padrão)</span>
+                <span>95% (Amplo)</span>
+              </div>
+            </div>
+
+            <!-- Ajustes Cirúrgicos -->
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+              <span style="font-size: 11px; font-weight: 800; color: #334155; text-transform: uppercase;">Opções Cirúrgicas</span>
+
+              <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; margin: 0;">
+                <input type="checkbox" id="chkLimparBuracos" checked style="width: 15px; height: 15px; accent-color: #0284c7; margin-top: 2px;">
+                <div>
+                  <span style="font-size: 11.5px; font-weight: 700; color: #0f172a; display: block;">Limpar furos de letras</span>
+                  <span style="font-size: 10px; color: #64748b;">Elimina fundo preso dentro de A, B, R, P, O, etc.</span>
+                </div>
+              </label>
+
+              <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; margin: 0;">
+                <input type="checkbox" id="chkProtegerTexto" checked style="width: 15px; height: 15px; accent-color: #0284c7; margin-top: 2px;">
+                <div>
+                  <span style="font-size: 11.5px; font-weight: 700; color: #0f172a; display: block;">Proteger texto 100% nítido</span>
+                  <span style="font-size: 10px; color: #64748b;">Evita que letras brancas ou claras desbotem</span>
+                </div>
+              </label>
+
+              <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; margin: 0;">
+                <input type="checkbox" id="chkRemoverHalo" checked style="width: 15px; height: 15px; accent-color: #0284c7; margin-top: 2px;">
+                <div>
+                  <span style="font-size: 11.5px; font-weight: 700; color: #0f172a; display: block;">Anti-Halo / Defringe</span>
+                  <span style="font-size: 10px; color: #64748b;">Remove contorno escuro ou claro nas bordas</span>
+                </div>
+              </label>
+
+              <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; margin: 0;">
+                <input type="checkbox" id="chkLimparBordasFantasmas" checked style="width: 15px; height: 15px; accent-color: #0284c7; margin-top: 2px;">
+                <div>
+                  <span style="font-size: 11.5px; font-weight: 700; color: #0f172a; display: block;">Eliminar bordas fantasmas</span>
+                  <span style="font-size: 10px; color: #64748b;">Apaga linhas residuais e ruído do corte anterior</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="padding: 12px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+          <button type="button" id="btnCancelarEstudio" class="btn btn-secondary" style="font-weight: 600;">
+            Cancelar
+          </button>
+          <button type="button" id="btnSalvarEstudioCirurgico" class="btn btn-success" style="background: #10b981; border-color: #059669; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px;">
+            ✓ Aplicar no DTF
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(backdrop);
+
+    const canvas = document.getElementById('canvasEstudioCirurgico');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const swatchCor = document.getElementById('swatchCorCirurgica');
+    const textoCor = document.getElementById('textoCorCirurgica');
+    const rangeTol = document.getElementById('rangeToleranciaCirurgica');
+    const labelTol = document.getElementById('labelToleranciaCirurgica');
+    const chkBuracos = document.getElementById('chkLimparBuracos');
+    const chkTexto = document.getElementById('chkProtegerTexto');
+    const chkHalo = document.getElementById('chkRemoverHalo');
+    const chkBordas = document.getElementById('chkLimparBordasFantasmas');
+    const containerCanvas = document.getElementById('containerCanvasCirurgico');
+
+    let origImageData = null;
+    let processedImageData = null;
+    let corAlvo = null; // null = auto
+    let tolerancia = 35;
+
+    function fechar() {
+      backdrop.remove();
+    }
+
+    document.getElementById('btnFecharEstudioX')?.addEventListener('click', fechar);
+    document.getElementById('btnCancelarEstudio')?.addEventListener('click', fechar);
+
+    // Carrega a imagem original
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
+      ctx.drawImage(img, 0, 0);
+      origImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      atualizarProcessamento();
+    };
+    img.src = imagemFonte;
+
+    function atualizarProcessamento() {
+      if (!origImageData || !window.DtfNestingEngine) return;
+
+      const resultado = window.DtfNestingEngine.processarImageDataCirurgico(origImageData, {
+        corAlvo: corAlvo,
+        tolerancia: tolerancia,
+        limparBuracos: chkBuracos?.checked !== false,
+        protegerTexto: chkTexto?.checked !== false,
+        removerHalo: chkHalo?.checked !== false,
+        limparBordasFantasmas: chkBordas?.checked !== false
+      });
+
+      processedImageData = resultado.imageData;
+      ctx.putImageData(processedImageData, 0, 0);
+
+      // Atualiza o swatch com a cor alvo efetiva
+      const c = corAlvo || resultado.corDetectada;
+      if (c && swatchCor && textoCor) {
+        swatchCor.style.background = `rgb(${c.r}, ${c.g}, ${c.b})`;
+        const lum = 0.299 * c.r + 0.587 * c.g + 0.114 * c.b;
+        const desc = lum < 50 ? 'Fundo Preto / Escuro' : (lum > 200 ? 'Fundo Branco / Claro' : 'Tom Médio');
+        textoCor.textContent = `RGB: (${c.r}, ${c.g}, ${c.b}) • ${desc} ${corAlvo ? '' : '(Auto)'}`;
+      }
+    }
+
+    // Conta-gotas ao clicar no canvas
+    canvas?.addEventListener('click', (e) => {
+      if (!origImageData) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const px = Math.floor((e.clientX - rect.left) * scaleX);
+      const py = Math.floor((e.clientY - rect.top) * scaleY);
+
+      if (px >= 0 && px < canvas.width && py >= 0 && py < canvas.height) {
+        const idx = (py * canvas.width + px) * 4;
+        const r = origImageData.data[idx];
+        const g = origImageData.data[idx + 1];
+        const b = origImageData.data[idx + 2];
+        corAlvo = { r, g, b };
+        mostrarToast(`🎯 Conta-gotas: cor selecionada RGB(${r}, ${g}, ${b})`, 'blue');
+        atualizarProcessamento();
+      }
+    });
+
+    // Slider de Tolerância
+    rangeTol?.addEventListener('input', (e) => {
+      tolerancia = parseInt(e.target.value, 10);
+      if (labelTol) labelTol.textContent = `${tolerancia}%`;
+      atualizarProcessamento();
+    });
+
+    // Presets
+    document.querySelectorAll('.btn-preset-fundo').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const p = btn.getAttribute('data-preset');
+        if (p === 'preto') {
+          corAlvo = { r: 0, g: 0, b: 0 };
+          tolerancia = 35;
+        } else if (p === 'branco') {
+          corAlvo = { r: 255, g: 255, b: 255 };
+          tolerancia = 35;
+        } else {
+          corAlvo = null; // Auto
+          tolerancia = 35;
+        }
+        if (rangeTol) rangeTol.value = tolerancia;
+        if (labelTol) labelTol.textContent = `${tolerancia}%`;
+        mostrarToast(`Preset aplicado: ${btn.textContent.trim()}`, 'blue');
+        atualizarProcessamento();
+      });
+    });
+
+    // Checkboxes
+    [chkBuracos, chkTexto, chkHalo, chkBordas].forEach(chk => {
+      chk?.addEventListener('change', atualizarProcessamento);
+    });
+
+    // Alternador de Fundo do Preview
+    document.querySelectorAll('.btn-bg-preview').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const bg = btn.getAttribute('data-bg');
+        if (!containerCanvas) return;
+        document.querySelectorAll('.btn-bg-preview').forEach(b => b.style.borderColor = '#cbd5e1');
+        btn.style.borderColor = '#0284c7';
+
+        if (bg === 'dark') {
+          containerCanvas.style.backgroundColor = '#0f172a';
+          containerCanvas.style.backgroundImage = 'none';
+        } else if (bg === 'light') {
+          containerCanvas.style.backgroundColor = '#ffffff';
+          containerCanvas.style.backgroundImage = 'none';
+        } else if (bg === 'neon') {
+          containerCanvas.style.backgroundColor = '#fef08a';
+          containerCanvas.style.backgroundImage = 'none';
+        } else {
+          containerCanvas.style.backgroundColor = '#f8fafc';
+          containerCanvas.style.backgroundImage = 'repeating-linear-gradient(45deg, #e2e8f0 25%, transparent 25%, transparent 75%, #e2e8f0 75%, #e2e8f0), repeating-linear-gradient(45deg, #e2e8f0 25%, #f8fafc 25%, #f8fafc 75%, #e2e8f0 75%, #e2e8f0)';
+        }
+      });
+    });
+
+    // Segurar para Ver Original
+    const btnComp = document.getElementById('btnCompararOriginal');
+    if (btnComp) {
+      btnComp.addEventListener('mousedown', () => {
+        if (origImageData) ctx.putImageData(origImageData, 0, 0);
+      });
+      btnComp.addEventListener('mouseup', () => {
+        if (processedImageData) ctx.putImageData(processedImageData, 0, 0);
+      });
+      btnComp.addEventListener('mouseleave', () => {
+        if (processedImageData) ctx.putImageData(processedImageData, 0, 0);
+      });
+    }
+
+    // Salvar e Aplicar
+    document.getElementById('btnSalvarEstudioCirurgico')?.addEventListener('click', () => {
+      const dataUrlFinal = canvas.toDataURL('image/png');
+      fechar();
+      if (typeof onSalvar === 'function') {
+        onSalvar(dataUrlFinal);
+      }
+    });
+  }
+
   function renderizarNestingDTF() {
     pageTitleElem.textContent = 'Gestor de Artes DTF & Nesting Automático';
     pageBreadcrumbElem.textContent = 'SISTEMA > NESTING DE ARTES';
@@ -9454,8 +9772,11 @@
                         <span style="font-size: 10.5px; color: #64748b;">${art.cliente} ${art.pedidoNumero ? `• Ped #${art.pedidoNumero}` : ''}</span>
                       </div>
                       <div style="display: flex; gap: 4px; align-items: center;">
-                        <button type="button" class="btn ${art.fundoRemovido ? 'btn-success' : 'btn-secondary'} btn-xs btn-remover-fundo" data-id="${art.id}" style="padding: 2px 7px; font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="${art.fundoRemovido ? 'Fundo removido (clique para restaurar original)' : 'Remover fundo com tecnologia inteligente estilo Canva'}">
+                        <button type="button" class="btn ${art.fundoRemovido ? 'btn-success' : 'btn-secondary'} btn-xs btn-remover-fundo" data-id="${art.id}" style="padding: 2px 7px; font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="${art.fundoRemovido ? 'Fundo removido (clique para restaurar original)' : 'Remover fundo cirurgicamente estilo Canva'}">
                           ${art.fundoRemovido ? '✓ Sem Fundo' : '✨ Remover Fundo'}
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-xs btn-estudio-cirurgico" data-id="${art.id}" style="padding: 2px 7px; font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px; color: #0284c7; border-color: #bae6fd;" title="Abrir Estúdio Cirúrgico de Fundo (Conta-gotas, tolerância e cavidades)">
+                          ✂️ Cirúrgico
                         </button>
                         <button type="button" class="btn btn-secondary btn-xs btn-duplicar-arte" data-id="${art.id}" style="padding: 2px 6px; font-size: 11px;" title="Duplicar esta arte">⎘</button>
                         <button type="button" class="btn btn-red btn-xs btn-remover-arte" data-id="${art.id}" style="padding: 2px 6px; font-size: 11px;" title="Remover do rolo">&times;</button>
@@ -9787,7 +10108,25 @@
       });
     });
 
-    // Remoção Inteligente de Fundo (Estilo Canva)
+    // Estúdio Cirúrgico de Fundo (Conta-gotas & Ajuste Fino)
+    document.querySelectorAll('.btn-estudio-cirurgico').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const art = state.artes.find(a => a.id === id);
+        if (!art) return;
+
+        const imgFonte = art.imagemOriginal || art.imagemDataUrl;
+        abrirEstudioCirurgicoFundo(imgFonte, (novaDataUrl) => {
+          if (!art.imagemOriginal) art.imagemOriginal = art.imagemDataUrl;
+          art.imagemDataUrl = novaDataUrl;
+          art.fundoRemovido = true;
+          mostrarToast('✓ Fundo tratado cirurgicamente com sucesso!', 'green');
+          renderizarNestingDTF();
+        });
+      });
+    });
+
+    // Remoção Cirúrgica Rápida de Fundo (Estilo Canva)
     document.querySelectorAll('.btn-remover-fundo').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.getAttribute('data-id');
@@ -9803,24 +10142,27 @@
         } else {
           btn.disabled = true;
           btn.innerHTML = '⏳ Processando...';
-          mostrarToast('Processando remoção de fundo com detecção inteligente de borda estilo Canva...', 'blue');
+          mostrarToast('Processando remoção cirúrgica de fundo com limpeza de cavidades...', 'blue');
 
           try {
             if (!art.imagemOriginal) art.imagemOriginal = art.imagemDataUrl;
             const dataUrlSemFundo = await window.DtfNestingEngine.removerFundoImagem(art.imagemDataUrl, {
               tolerancia: 35,
-              removerHalo: true
+              limparBuracos: true,
+              protegerTexto: true,
+              removerHalo: true,
+              limparBordasFantasmas: true
             });
 
             if (dataUrlSemFundo) {
               art.imagemDataUrl = dataUrlSemFundo;
               art.fundoRemovido = true;
-              mostrarToast('✓ Fundo removido com sucesso!', 'green');
+              mostrarToast('✓ Fundo removido cirurgicamente!', 'green');
             } else {
               mostrarToast('Não foi possível remover o fundo automaticamente.', 'yellow');
             }
           } catch (err) {
-            console.error('Erro na remoção de fundo:', err);
+            console.error('Erro na remoção cirúrgica de fundo:', err);
             mostrarToast('Erro ao remover fundo da imagem.', 'red');
           }
 
@@ -10041,12 +10383,15 @@
               <span id="previewImgPcNome" style="font-size: 11px; color: #475569; display: block; margin-top: 6px; font-weight: 700;"></span>
               
               <!-- Botões rápidos de tratamento de imagem no Preview -->
-              <div style="display: flex; gap: 8px; justify-content: center; margin-top: 8px;">
+              <div style="display: flex; gap: 6px; justify-content: center; margin-top: 8px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-primary btn-xs" id="btnPreviewEstudioCirurgico" style="font-weight: 700; background: #0284c7; border-color: #0284c7; display: inline-flex; align-items: center; gap: 4px;">
+                  ✂️ Estúdio Cirúrgico & Conta-gotas
+                </button>
                 <button type="button" class="btn btn-secondary btn-xs" id="btnPreviewRemoverFundo" style="font-weight: 700; color: #0284c7; border-color: #bae6fd;">
-                  ✨ Remover Fundo Agora (Canva-style)
+                  ✨ Remoção Rápida 1-Clique
                 </button>
                 <button type="button" class="btn btn-secondary btn-xs" id="btnPreviewRestaurarFundo" style="display: none; font-weight: 700;">
-                  ↺ Restaurar Imagem Original
+                  ↺ Restaurar Original
                 </button>
               </div>
             </div>
@@ -10188,18 +10533,35 @@
       }
     });
 
-    // Botão de remoção de fundo dentro do preview
+    // Botão de Estúdio Cirúrgico e Remoção Rápida dentro do preview
+    const btnEstudioCirurgicoPrev = document.getElementById('btnPreviewEstudioCirurgico');
     const btnRemoverFundoPrev = document.getElementById('btnPreviewRemoverFundo');
     const btnRestaurarFundoPrev = document.getElementById('btnPreviewRestaurarFundo');
+
+    btnEstudioCirurgicoPrev?.addEventListener('click', () => {
+      if (!dataUrlAtual) return;
+      abrirEstudioCirurgicoFundo(dataUrlOriginal || dataUrlAtual, (novaDataUrl) => {
+        dataUrlAtual = novaDataUrl;
+        fundoJaRemovido = true;
+        const previewImg = document.getElementById('previewImgPc');
+        if (previewImg) previewImg.src = dataUrlAtual;
+        btnRemoverFundoPrev.style.display = 'none';
+        if (btnRestaurarFundoPrev) btnRestaurarFundoPrev.style.display = 'inline-flex';
+        mostrarToast('✓ Fundo tratado cirurgicamente com sucesso!', 'green');
+      });
+    });
 
     btnRemoverFundoPrev?.addEventListener('click', async () => {
       if (!dataUrlAtual) return;
       btnRemoverFundoPrev.disabled = true;
-      btnRemoverFundoPrev.textContent = '⏳ Removendo fundo...';
+      btnRemoverFundoPrev.textContent = '⏳ Removendo cirurgicamente...';
       try {
         const semFundo = await window.DtfNestingEngine.removerFundoImagem(dataUrlAtual, {
           tolerancia: 35,
-          removerHalo: true
+          limparBuracos: true,
+          protegerTexto: true,
+          removerHalo: true,
+          limparBordasFantasmas: true
         });
         if (semFundo) {
           dataUrlAtual = semFundo;
@@ -10208,14 +10570,14 @@
           if (previewImg) previewImg.src = dataUrlAtual;
           btnRemoverFundoPrev.style.display = 'none';
           if (btnRestaurarFundoPrev) btnRestaurarFundoPrev.style.display = 'inline-flex';
-          mostrarToast('✓ Fundo removido no preview com sucesso!', 'green');
+          mostrarToast('✓ Fundo removido cirurgicamente!', 'green');
         }
       } catch (err) {
-        console.error('Erro na remoção de fundo do preview:', err);
+        console.error('Erro na remoção cirúrgica de fundo do preview:', err);
         mostrarToast('Erro ao remover fundo.', 'red');
       } finally {
         btnRemoverFundoPrev.disabled = false;
-        btnRemoverFundoPrev.textContent = '✨ Remover Fundo Agora (Canva-style)';
+        btnRemoverFundoPrev.textContent = '✨ Remoção Rápida 1-Clique';
       }
     });
 
@@ -10245,18 +10607,21 @@
 
       // Se marcou para remover fundo automaticamente e ainda não foi removido
       if (autoRemoverFundo && !fundoJaRemovido && finalImgUrl) {
-        mostrarToast('Processando remoção inteligente de fundo...', 'blue');
+        mostrarToast('Processando remoção cirúrgica de fundo...', 'blue');
         try {
           const semFundo = await window.DtfNestingEngine.removerFundoImagem(finalImgUrl, {
             tolerancia: 35,
-            removerHalo: true
+            limparBuracos: true,
+            protegerTexto: true,
+            removerHalo: true,
+            limparBordasFantasmas: true
           });
           if (semFundo) {
             finalImgUrl = semFundo;
             finalFundoRemovido = true;
           }
         } catch (err) {
-          console.warn('Falha na remoção automática de fundo:', err);
+          console.warn('Falha na remoção cirúrgica automática de fundo:', err);
         }
       }
 

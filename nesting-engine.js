@@ -405,14 +405,274 @@ window.DtfNestingEngine = {
   },
 
   /**
-   * MOTOR INTELIGENTE DE REMOÇÃO DE FUNDO (Borda Contínua BFS + Suavização Anti-Aliasing + Defringe)
-   * Remove fundos sólidos, brancos ou claros preservando letras e elementos internos intactos (estilo Canva).
+   * MOTOR CIRÚRGICO DE REMOÇÃO DE FUNDO (Canva / Magic Wand Vectorial)
+   * Processa ImageData com precisão cirúrgica:
+   * - Elimina fundo externo conectado
+   * - Limpa furos e cavidades fechadas de letras (A, B, R, P, O, D, Q...)
+   * - Proteção absoluta de texto e cores contrastantes (sem desbotar ou ficar transparente)
+   * - Eliminação cirúrgica de contornos/halos residuais (Anti-Halo & Despeckle)
+   */
+  processarImageDataCirurgico: function(imgDataOriginal, opcoes = {}) {
+    const w = imgDataOriginal.width;
+    const h = imgDataOriginal.height;
+    const totalPixels = w * h;
+    const srcData = imgDataOriginal.data;
+
+    // Cria cópia dos pixels para não mutar o original
+    const saida = new ImageData(new Uint8ClampedArray(srcData), w, h);
+    const data = saida.data;
+
+    const tolerancia = opcoes.tolerancia !== undefined ? Math.max(1, Math.min(100, opcoes.tolerancia)) : 35;
+    const limparBuracos = opcoes.limparBuracos !== false;
+    const protegerTexto = opcoes.protegerTexto !== false;
+    const removerHalo = opcoes.removerHalo !== false;
+    const limparBordasFantasmas = opcoes.limparBordasFantasmas !== false;
+    const modo = opcoes.modo || 'inteligente'; // 'inteligente' | 'global' | 'apenas_exterior'
+
+    // 1. Determina a cor alvo (manual via conta-gotas ou detecção de perímetro)
+    let bgR = 0, bgG = 0, bgB = 0;
+    if (opcoes.corAlvo && typeof opcoes.corAlvo.r === 'number') {
+      bgR = Math.max(0, Math.min(255, Math.round(opcoes.corAlvo.r)));
+      bgG = Math.max(0, Math.min(255, Math.round(opcoes.corAlvo.g)));
+      bgB = Math.max(0, Math.min(255, Math.round(opcoes.corAlvo.b)));
+    } else {
+      const cores = [];
+      const stepX = Math.max(1, Math.floor(w / 35));
+      const stepY = Math.max(1, Math.floor(h / 35));
+      function amostrar(px, py) {
+        if (px < 0 || px >= w || py < 0 || py >= h) return;
+        const idx = (py * w + px) * 4;
+        if (srcData[idx + 3] > 40) {
+          cores.push({ r: srcData[idx], g: srcData[idx + 1], b: srcData[idx + 2] });
+        }
+      }
+      for (let x = 0; x < w; x += stepX) {
+        amostrar(x, 0); amostrar(x, 1); amostrar(x, 2);
+        amostrar(x, h - 1); amostrar(x, h - 2); amostrar(x, h - 3);
+      }
+      for (let y = 0; y < h; y += stepY) {
+        amostrar(0, y); amostrar(1, y); amostrar(2, y);
+        amostrar(w - 1, y); amostrar(w - 2, y); amostrar(w - 3, y);
+      }
+
+      if (cores.length === 0) {
+        bgR = 255; bgG = 255; bgB = 255;
+      } else {
+        let sr = 0, sg = 0, sb = 0;
+        cores.forEach(c => { sr += c.r; sg += c.g; sb += c.b; });
+        const mr = sr / cores.length;
+        const mg = sg / cores.length;
+        const mb = sb / cores.length;
+        const mlum = 0.299 * mr + 0.587 * mg + 0.114 * mb;
+        if (mlum < 45) {
+          bgR = Math.round(mr * 0.4);
+          bgG = Math.round(mg * 0.4);
+          bgB = Math.round(mb * 0.4);
+        } else if (mlum > 225) {
+          bgR = 255; bgG = 255; bgB = 255;
+        } else {
+          bgR = Math.round(mr);
+          bgG = Math.round(mg);
+          bgB = Math.round(mb);
+        }
+      }
+    }
+
+    const bgLum = 0.299 * bgR + 0.587 * bgG + 0.114 * bgB;
+    const isFundoEscuro = bgLum < 85;
+    const isFundoClaro = bgLum > 175;
+
+    function distCor(r, g, b) {
+      const rmean = (r + bgR) >> 1;
+      const dr = r - bgR;
+      const dg = g - bgG;
+      const db = b - bgB;
+      return Math.sqrt((((512 + rmean) * dr * dr) >> 8) + 4 * dg * dg + (((767 - rmean) * db * db) >> 8));
+    }
+
+    const limiarDist = (tolerancia / 100) * 550;
+
+    // 2. Classificação de candidatos a fundo com Proteção de Primeiro Plano
+    const isCandidato = new Uint8Array(totalPixels);
+    for (let i = 0; i < totalPixels; i++) {
+      const idx = i * 4;
+      const a = srcData[idx + 3];
+      if (a < 25) {
+        isCandidato[i] = 1;
+        continue;
+      }
+      const r = srcData[idx];
+      const g = srcData[idx + 1];
+      const b = srcData[idx + 2];
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+      let protegido = false;
+      if (protegerTexto) {
+        if (isFundoEscuro) {
+          // No fundo preto, pixels com lum > 55 (texto branco/cinza claro) são 100% protegidos
+          if (lum > 55) protegido = true;
+        } else if (isFundoClaro) {
+          // No fundo branco, pixels com lum < 185 (texto escuro) são 100% protegidos
+          if (lum < 185) protegido = true;
+        }
+
+        // Checagem de saturação cromática (ex: ícones ciano/azul/vermelho vívidos)
+        if (!protegido) {
+          const maxC = Math.max(r, g, b);
+          const minC = Math.min(r, g, b);
+          const sat = maxC > 0 ? (maxC - minC) / maxC : 0;
+          if (sat > 0.22 && Math.abs(lum - bgLum) > 18) {
+            protegido = true;
+          }
+        }
+      }
+
+      if (!protegido) {
+        const d = distCor(r, g, b);
+        if (d <= limiarDist) {
+          isCandidato[i] = 1;
+        }
+      }
+    }
+
+    // 3. Resolução Espacial (BFS Flood Fill e Cavidades de Letras)
+    const isFundoFinal = new Uint8Array(totalPixels);
+
+    if (modo === 'global') {
+      for (let i = 0; i < totalPixels; i++) {
+        if (isCandidato[i]) isFundoFinal[i] = 1;
+      }
+    } else {
+      const visitado = new Uint8Array(totalPixels);
+      const fila = new Int32Array(totalPixels);
+      let filaInicio = 0, filaFim = 0;
+
+      function checarBorda(pxX, pxY) {
+        const pIdx = pxY * w + pxX;
+        if (visitado[pIdx]) return;
+        visitado[pIdx] = 1;
+        if (isCandidato[pIdx]) {
+          isFundoFinal[pIdx] = 1;
+          fila[filaFim++] = pIdx;
+        }
+      }
+
+      for (let x = 0; x < w; x++) { checarBorda(x, 0); checarBorda(x, h - 1); }
+      for (let y = 0; y < h; y++) { checarBorda(0, y); checarBorda(w - 1, y); }
+
+      while (filaInicio < filaFim) {
+        const curIdx = fila[filaInicio++];
+        const cx = curIdx % w;
+        const cy = Math.floor(curIdx / w);
+
+        const vizinhos = [
+          cx > 0 ? curIdx - 1 : -1,
+          cx < w - 1 ? curIdx + 1 : -1,
+          cy > 0 ? curIdx - w : -1,
+          cy < h - 1 ? curIdx + w : -1
+        ];
+
+        for (const vIdx of vizinhos) {
+          if (vIdx === -1 || visitado[vIdx]) continue;
+          visitado[vIdx] = 1;
+          if (isCandidato[vIdx]) {
+            isFundoFinal[vIdx] = 1;
+            fila[filaFim++] = vIdx;
+          }
+        }
+      }
+
+      // Purga cirúrgica de cavidades internas (letras A, B, R, P, O, D, Q...)
+      if (limparBuracos) {
+        for (let i = 0; i < totalPixels; i++) {
+          if (isCandidato[i] && !isFundoFinal[i]) {
+            isFundoFinal[i] = 1;
+          }
+        }
+      }
+    }
+
+    // 4. Aplica transparência e correção de borda (Anti-Halo / Defringe)
+    for (let pIdx = 0; pIdx < totalPixels; pIdx++) {
+      const bIdx = pIdx * 4;
+      if (isFundoFinal[pIdx]) {
+        data[bIdx + 3] = 0; // Transparência cirúrgica 100%
+      } else {
+        const cx = pIdx % w;
+        const cy = Math.floor(pIdx / w);
+        let temVizinhoFundo = false;
+
+        if ((cx > 0 && isFundoFinal[pIdx - 1]) ||
+            (cx < w - 1 && isFundoFinal[pIdx + 1]) ||
+            (cy > 0 && isFundoFinal[pIdx - w]) ||
+            (cy < h - 1 && isFundoFinal[pIdx + w])) {
+          temVizinhoFundo = true;
+        }
+
+        if (temVizinhoFundo && removerHalo) {
+          const r = data[bIdx];
+          const g = data[bIdx + 1];
+          const b = data[bIdx + 2];
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+          if (isFundoEscuro && lum > 45) {
+            // Clareia bordas anti-aliased de texto branco para remover contorno escuro sujo
+            const boost = Math.min(1.4, 255 / Math.max(1, lum));
+            data[bIdx] = Math.min(255, Math.round(r * boost));
+            data[bIdx + 1] = Math.min(255, Math.round(g * boost));
+            data[bIdx + 2] = Math.min(255, Math.round(b * boost));
+            data[bIdx + 3] = 255;
+          } else if (isFundoClaro && lum < 210) {
+            // Escurece bordas de texto escuro para remover contorno esbranquiçado
+            const factor = Math.max(0.65, lum / 255);
+            data[bIdx] = Math.max(0, Math.round(r * factor));
+            data[bIdx + 1] = Math.max(0, Math.round(g * factor));
+            data[bIdx + 2] = Math.max(0, Math.round(b * factor));
+            data[bIdx + 3] = 255;
+          }
+        }
+      }
+    }
+
+    // 5. Despeckle de bordas fantasmas residuais
+    if (limparBordasFantasmas) {
+      for (let y = 1; y < h - 1; y++) {
+        for (let x = 1; x < w - 1; x++) {
+          const pIdx = y * w + x;
+          const bIdx = pIdx * 4;
+          if (data[bIdx + 3] > 0) {
+            let vizTransp = 0;
+            if (data[((y - 1) * w + (x - 1)) * 4 + 3] === 0) vizTransp++;
+            if (data[((y - 1) * w + x) * 4 + 3] === 0) vizTransp++;
+            if (data[((y - 1) * w + (x + 1)) * 4 + 3] === 0) vizTransp++;
+            if (data[(y * w + (x - 1)) * 4 + 3] === 0) vizTransp++;
+            if (data[(y * w + (x + 1)) * 4 + 3] === 0) vizTransp++;
+            if (data[((y + 1) * w + (x - 1)) * 4 + 3] === 0) vizTransp++;
+            if (data[((y + 1) * w + x) * 4 + 3] === 0) vizTransp++;
+            if (data[((y + 1) * w + (x + 1)) * 4 + 3] === 0) vizTransp++;
+
+            if (vizTransp >= 6) {
+              const d = distCor(data[bIdx], data[bIdx + 1], data[bIdx + 2]);
+              if (d <= limiarDist * 1.3) {
+                data[bIdx + 3] = 0;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      imageData: saida,
+      corDetectada: { r: bgR, g: bgG, b: bgB }
+    };
+  },
+
+  /**
+   * Remove fundo de uma imagem e retorna DataURL PNG com transparência
    */
   removerFundoImagem: async function(fonteImagem, opcoes = {}) {
     if (!fonteImagem) return null;
-    const tolerancia = opcoes.tolerancia !== undefined ? opcoes.tolerancia : 38;
-    const removerHalo = opcoes.removerHalo !== false;
-
     const img = await this.carregarImagemAsync(fonteImagem);
     if (!img) return null;
 
@@ -427,144 +687,9 @@ window.DtfNestingEngine = {
     ctx.drawImage(img, 0, 0);
 
     const imgData = ctx.getImageData(0, 0, w, h);
-    const data = imgData.data;
+    const resultado = this.processarImageDataCirurgico(imgData, opcoes);
+    ctx.putImageData(resultado.imageData, 0, 0);
 
-    // 1. Amostra as cores dos cantos e bordas para detectar a cor média do fundo
-    const amostras = [];
-    function addAmostra(pxX, pxY) {
-      const idx = (pxY * w + pxX) * 4;
-      amostras.push({ r: data[idx], g: data[idx + 1], b: data[idx + 2], a: data[idx + 3] });
-    }
-
-    for (let dy = 0; dy < Math.min(4, h); dy++) {
-      for (let dx = 0; dx < Math.min(4, w); dx++) {
-        addAmostra(dx, dy);
-        addAmostra(w - 1 - dx, dy);
-        addAmostra(dx, h - 1 - dy);
-        addAmostra(w - 1 - dx, h - 1 - dy);
-      }
-    }
-
-    let somaR = 0, somaG = 0, somaB = 0, countValido = 0;
-    for (const s of amostras) {
-      if (s.a > 50) {
-        somaR += s.r; somaG += s.g; somaB += s.b;
-        countValido++;
-      }
-    }
-    const bgR = countValido > 0 ? (somaR / countValido) : 255;
-    const bgG = countValido > 0 ? (somaG / countValido) : 255;
-    const bgB = countValido > 0 ? (somaB / countValido) : 255;
-
-    // Distância de cor ponderada (Redmean Euclidean Distance)
-    function distCor(r, g, b) {
-      const rmean = (r + bgR) / 2;
-      const dr = r - bgR;
-      const dg = g - bgG;
-      const db = b - bgB;
-      return Math.sqrt((((512 + rmean) * dr * dr) >> 8) + 4 * dg * dg + (((767 - rmean) * db * db) >> 8));
-    }
-
-    const totalPixels = w * h;
-    const isFundo = new Uint8Array(totalPixels);
-    const visitado = new Uint8Array(totalPixels);
-    const fila = new Int32Array(totalPixels);
-    let filaInicio = 0;
-    let filaFim = 0;
-
-    const limiarDist = (tolerancia / 100) * 440;
-
-    function checarBorda(pxX, pxY) {
-      const pIdx = pxY * w + pxX;
-      if (visitado[pIdx]) return;
-      visitado[pIdx] = 1;
-
-      const bIdx = pIdx * 4;
-      if (data[bIdx + 3] < 30) {
-        isFundo[pIdx] = 1;
-        fila[filaFim++] = pIdx;
-        return;
-      }
-
-      const d = distCor(data[bIdx], data[bIdx + 1], data[bIdx + 2]);
-      if (d <= limiarDist) {
-        isFundo[pIdx] = 1;
-        fila[filaFim++] = pIdx;
-      }
-    }
-
-    // Alimenta fila com os 4 lados do perímetro
-    for (let x = 0; x < w; x++) { checarBorda(x, 0); checarBorda(x, h - 1); }
-    for (let y = 0; y < h; y++) { checarBorda(0, y); checarBorda(w - 1, y); }
-
-    // BFS Flood Fill estritamente conectado às bordas externas
-    while (filaInicio < filaFim) {
-      const curIdx = fila[filaInicio++];
-      const cx = curIdx % w;
-      const cy = Math.floor(curIdx / w);
-
-      const vizinhos = [
-        cx > 0 ? curIdx - 1 : -1,
-        cx < w - 1 ? curIdx + 1 : -1,
-        cy > 0 ? curIdx - w : -1,
-        cy < h - 1 ? curIdx + w : -1
-      ];
-
-      for (const vIdx of vizinhos) {
-        if (vIdx === -1 || visitado[vIdx]) continue;
-        visitado[vIdx] = 1;
-
-        const dIdx = vIdx * 4;
-        if (data[dIdx + 3] < 30) {
-          isFundo[vIdx] = 1;
-          fila[filaFim++] = vIdx;
-          continue;
-        }
-
-        const d = distCor(data[dIdx], data[dIdx + 1], data[dIdx + 2]);
-        if (d <= limiarDist) {
-          isFundo[vIdx] = 1;
-          fila[filaFim++] = vIdx;
-        }
-      }
-    }
-
-    // Suavização de Borda (Feathering) e Remoção de Halo (Defringing)
-    const margemSuave = limiarDist * 0.35;
-
-    for (let pIdx = 0; pIdx < totalPixels; pIdx++) {
-      const bIdx = pIdx * 4;
-      if (isFundo[pIdx]) {
-        data[bIdx + 3] = 0; // Transparência total
-      } else {
-        const cx = pIdx % w;
-        const cy = Math.floor(pIdx / w);
-        let vizinhoFundo = false;
-
-        if ((cx > 0 && isFundo[pIdx - 1]) ||
-            (cx < w - 1 && isFundo[pIdx + 1]) ||
-            (cy > 0 && isFundo[pIdx - w]) ||
-            (cy < h - 1 && isFundo[pIdx + w])) {
-          vizinhoFundo = true;
-        }
-
-        if (vizinhoFundo) {
-          const d = distCor(data[bIdx], data[bIdx + 1], data[bIdx + 2]);
-          if (d < limiarDist + margemSuave) {
-            const alphaRatio = Math.max(0, Math.min(1, (d - limiarDist) / margemSuave));
-            data[bIdx + 3] = Math.round(data[bIdx + 3] * alphaRatio);
-
-            if (removerHalo && alphaRatio > 0.08 && alphaRatio < 0.95) {
-              data[bIdx] = Math.max(0, Math.min(255, Math.round((data[bIdx] - (1 - alphaRatio) * bgR) / alphaRatio)));
-              data[bIdx + 1] = Math.max(0, Math.min(255, Math.round((data[bIdx + 1] - (1 - alphaRatio) * bgG) / alphaRatio)));
-              data[bIdx + 2] = Math.max(0, Math.min(255, Math.round((data[bIdx + 2] - (1 - alphaRatio) * bgB) / alphaRatio)));
-            }
-          }
-        }
-      }
-    }
-
-    ctx.putImageData(imgData, 0, 0);
     return canvas.toDataURL('image/png');
   },
 
