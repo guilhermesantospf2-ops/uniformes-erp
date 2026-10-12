@@ -636,12 +636,12 @@ with check (true);
   function obterUsuarioLogado() {
     if (usuarioAutenticado) return usuarioAutenticado;
     try {
-      // Limpa chave legada de localStorage se presente
-      if (localStorage.getItem(STORAGE_KEY_AUTH_USER)) {
-        localStorage.removeItem(STORAGE_KEY_AUTH_USER);
+      // 1. Busca em sessionStorage (sessão da aba ativa)
+      let raw = sessionStorage.getItem(STORAGE_KEY_AUTH_USER);
+      // 2. Se a aba acabou de ser aberta, restaura da sessão persistente protegida de localStorage
+      if (!raw) {
+        raw = localStorage.getItem('BRAVVI_ERP_PERSISTENT_SESSION');
       }
-      // Sessão ativa da aba: persiste no F5 (recarregar página), mas expira ao fechar a aba/navegador
-      const raw = sessionStorage.getItem(STORAGE_KEY_AUTH_USER);
       if (raw) {
         const sessao = JSON.parse(raw);
         if (sessao && sessao.user) {
@@ -654,7 +654,7 @@ with check (true);
         }
       }
     } catch (e) {
-      console.warn('Erro ao restaurar sessão da aba:', e);
+      console.warn('Erro ao restaurar sessão:', e);
     }
     return null;
   }
@@ -669,6 +669,7 @@ with check (true);
         // Blindagem rigorosa: Se o usuário precisa trocar a senha temporária, NUNCA persiste sessão liberada
         if (user.precisaTrocarSenha === true || (authData && authData.precisaTrocarSenha === true)) {
           sessionStorage.removeItem(STORAGE_KEY_AUTH_USER);
+          localStorage.removeItem('BRAVVI_ERP_PERSISTENT_SESSION');
           return;
         }
 
@@ -677,14 +678,17 @@ with check (true);
           auth: authData || tenantAuthAtivo || null,
           salvoEm: Date.now()
         };
-        // Salva em sessionStorage para permitir F5 sem pedir senha novamente
+        // Salva em sessionStorage para permitir F5 sem pedir senha
         sessionStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(sessao));
+        // Guarda também de forma persistente para que fechar o navegador não perca o tenant da fábrica
+        localStorage.setItem('BRAVVI_ERP_PERSISTENT_SESSION', JSON.stringify(sessao));
         // Guarda o e-mail em localStorage para vir pré-preenchido no próximo acesso
         if (user.email) {
           localStorage.setItem('BRAVVI_REMEMBERED_EMAIL', user.email);
         }
       } else {
         sessionStorage.removeItem(STORAGE_KEY_AUTH_USER);
+        localStorage.removeItem('BRAVVI_ERP_PERSISTENT_SESSION');
       }
     } catch (e) {}
     atualizarVisuaisUsuarioLogado();
@@ -1471,6 +1475,7 @@ with check (true);
       } catch (e) {}
     }
     try {
+      localStorage.removeItem('BRAVVI_ERP_PERSISTENT_SESSION');
       localStorage.removeItem('BRAVVI_ERP_USER_SESSION');
       localStorage.removeItem(STORAGE_KEY_AUTH_USER);
       localStorage.removeItem(STORAGE_KEY_EMPRESA);
@@ -1498,10 +1503,24 @@ with check (true);
           }
           salvarEmpresaConfig(data.empresa);
         }
+
+        // Fusão inteligente com qualquer dado offline/local prévio no dispositivo
+        let dbFinal = data.db;
+        try {
+          const chaveTenant = 'bravvi_erp_tenant_' + tenantId;
+          const rawLocal = localStorage.getItem(chaveTenant) || localStorage.getItem('bravvi_erp_prod_v8');
+          if (rawLocal) {
+            const dbLocal = JSON.parse(rawLocal);
+            if (dbLocal && Array.isArray(dbLocal.pedidos)) {
+              dbFinal = fundirBancosCompletos(dbLocal, data.db);
+            }
+          }
+        } catch (eLoc) {}
+
         if (typeof onSucesso === 'function') {
-          onSucesso(data.db);
+          onSucesso(dbFinal);
         }
-        return data.db;
+        return dbFinal;
       } else if (!error && !data) {
         // Tenant recém-criado sem registros anteriores: inicializa banco isolado e exclusivo
         const user = obterUsuarioLogado();
@@ -1649,6 +1668,85 @@ with check (true);
     return (supabaseClient !== null || firestoreDb !== null) && navigator.onLine;
   }
 
+  // ==========================================================================
+  // MOTOR DE FUSÃO INTELIGENTE BIDIRECIONAL & PREVENÇÃO TOTAL DE PERDA DE DADOS
+  // ==========================================================================
+  function fundirColecaoPorId(localLista = [], remotaLista = [], chaveId = 'id') {
+    if (!Array.isArray(localLista)) localLista = [];
+    if (!Array.isArray(remotaLista)) remotaLista = [];
+
+    const mapa = new Map();
+
+    // 1. Carrega itens da nuvem
+    remotaLista.forEach(item => {
+      if (!item) return;
+      const id = String(item[chaveId] || item.numero || item.id || JSON.stringify(item));
+      mapa.set(id, item);
+    });
+
+    // 2. Mescla itens locais de forma não-destrutiva
+    localLista.forEach(item => {
+      if (!item) return;
+      const id = String(item[chaveId] || item.numero || item.id || JSON.stringify(item));
+      const existente = mapa.get(id);
+      if (!existente) {
+        // Pedido/item novo inserido neste dispositivo
+        mapa.set(id, item);
+      } else {
+        // Se existe em ambos, preserva o mais recente e respeita soft-delete
+        const tsLocal = item.ultimaModificacaoMs || item.updatedAtMs || 0;
+        const tsRemoto = existente.ultimaModificacaoMs || existente.updatedAtMs || 0;
+        if (item.deletado === true && (item.deletadoEm || 0) >= tsRemoto) {
+          mapa.set(id, Object.assign({}, existente, item));
+        } else if (existente.deletado === true && (existente.deletadoEm || 0) >= tsLocal) {
+          mapa.set(id, Object.assign({}, item, existente));
+        } else if (tsLocal >= tsRemoto) {
+          mapa.set(id, Object.assign({}, existente, item));
+        } else {
+          mapa.set(id, Object.assign({}, item, existente));
+        }
+      }
+    });
+
+    return Array.from(mapa.values());
+  }
+
+  function fundirBancosCompletos(local, remoto) {
+    if (!local && !remoto) return { pedidos: [] };
+    if (!remoto) return local;
+    if (!local) return remoto;
+
+    const base = Object.assign({}, remoto, local);
+
+    // Fusão blindada de todas as coleções operacionais
+    base.pedidos = fundirColecaoPorId(local.pedidos, remoto.pedidos, 'id');
+    base.clientes = fundirColecaoPorId(local.clientes, remoto.clientes, 'id');
+    base.ordensServico = fundirColecaoPorId(local.ordensServico, remoto.ordensServico, 'id');
+    base.lancamentosFinanceiros = fundirColecaoPorId(local.lancamentosFinanceiros, remoto.lancamentosFinanceiros, 'id');
+    base.quarentena = fundirColecaoPorId(local.quarentena, remoto.quarentena, 'id');
+    base.despesasFixas = fundirColecaoPorId(local.despesasFixas, remoto.despesasFixas, 'id');
+    base.compras = fundirColecaoPorId(local.compras, remoto.compras, 'id');
+    base.notasFiscais = fundirColecaoPorId(local.notasFiscais, remoto.notasFiscais, 'id');
+
+    // Catálogos e estoques
+    if (!Array.isArray(base.produtosBase) || base.produtosBase.length === 0) {
+      base.produtosBase = remoto.produtosBase || local.produtosBase || [];
+    }
+    if (!Array.isArray(base.estoque) || base.estoque.length === 0) {
+      base.estoque = remoto.estoque || local.estoque || [];
+    }
+
+    // Se o banco local estava com menos registros do que a fusão, hidrata o local em memória
+    if (local && Array.isArray(local.pedidos) && base.pedidos.length > local.pedidos.length) {
+      local.pedidos = base.pedidos;
+      if (Array.isArray(base.clientes)) local.clientes = base.clientes;
+      if (Array.isArray(base.lancamentosFinanceiros)) local.lancamentosFinanceiros = base.lancamentosFinanceiros;
+      if (Array.isArray(base.ordensServico)) local.ordensServico = base.ordensServico;
+    }
+
+    return base;
+  }
+
   // --- SINCRONIZAÇÃO EM NUVEM IMEDIATA (SEM DEBOUNCE - USADA EM CADASTROS CRÍTICOS / LOGOUT) ---
   async function sincronizarImediatoComNuvem(dbAtual) {
     if (syncDebounceTimer) {
@@ -1663,6 +1761,11 @@ with check (true);
     if (!tenantId) {
       atualizarStatusNuvem();
       return { sucesso: false, erro: 'Sem tenant autenticado' };
+    }
+    if (!dbAtual || !Array.isArray(dbAtual.pedidos)) {
+      console.warn('[BLINDAGEM] Sincronização imediata ignorada: estrutura de banco inválida.');
+      atualizarStatusNuvem();
+      return { sucesso: false, erro: 'Estrutura inválida' };
     }
     const provedor = obterProvedorAtivo();
     if (provedor === 'local' || !navigator.onLine) {
@@ -1681,14 +1784,30 @@ with check (true);
         empParaSalvar.auth = tenantAuthAtivo;
       }
       try {
+        // Blindagem anti-sobrescrita: sempre faz merge com dados existentes da nuvem antes de gravar
+        let dbFinal = dbAtual;
+        try {
+          const { data: rowNuvem } = await supabaseClient
+            .from('erp_tenants')
+            .select('db')
+            .eq('tenant_id', tenantId)
+            .maybeSingle();
+
+          if (rowNuvem && rowNuvem.db) {
+            dbFinal = fundirBancosCompletos(dbAtual, rowNuvem.db);
+          }
+        } catch (eMerge) {
+          console.warn('[BLINDAGEM] Aviso ao buscar dados para fusão prévia:', eMerge);
+        }
+
         const { error } = await supabaseClient
           .from('erp_tenants')
           .upsert({
             tenant_id: tenantId,
-            db: dbAtual,
+            db: dbFinal,
             empresa: empParaSalvar,
             ultima_atualizacao_ms: agora,
-            versao_erp: "8.5.0",
+            versao_erp: "8.5.0_BLINDADO",
             updated_at: new Date().toISOString()
           }, { onConflict: 'tenant_id' });
 
@@ -1727,7 +1846,7 @@ with check (true);
     return { sucesso: true };
   }
 
-  // --- SINCRONIZAÇÃO EM NUVEM (DEBOUNCE 1.2s) ---
+  // --- SINCRONIZAÇÃO EM NUVEM (DEBOUNCE 1.2s COM GUARDA ANTI-PERDA DE DADOS) ---
   function sincronizarComNuvem(dbAtual) {
     if (isModoDemo()) {
       atualizarStatusNuvem();
@@ -1735,7 +1854,11 @@ with check (true);
     }
     const tenantId = obterTenantId();
     if (!tenantId) {
-      // Bloqueio rigoroso: nada é sincronizado sem tenant autenticado
+      atualizarStatusNuvem();
+      return;
+    }
+    if (!dbAtual || !Array.isArray(dbAtual.pedidos)) {
+      console.warn('[BLINDAGEM] Sincronização agendada ignorada: estrutura de banco inválida.');
       atualizarStatusNuvem();
       return;
     }
@@ -1749,8 +1872,9 @@ with check (true);
 
     definirTextoStatusNuvem('🔄 Sincronizando...', '#dbeafe', '#1d4ed8');
 
-    syncDebounceTimer = setTimeout(() => {
+    syncDebounceTimer = setTimeout(async () => {
       const tenantId = obterTenantId();
+      if (!tenantId) return;
       const agora = Date.now();
       ultimaAtualizacaoRemota = agora;
 
@@ -1759,14 +1883,31 @@ with check (true);
         if (tenantAuthAtivo) {
           empParaSalvar.auth = tenantAuthAtivo;
         }
+
+        // Blindagem anti-sobrescrita: sempre faz merge com dados existentes da nuvem antes de gravar
+        let dbFinal = dbAtual;
+        try {
+          const { data: rowNuvem } = await supabaseClient
+            .from('erp_tenants')
+            .select('db')
+            .eq('tenant_id', tenantId)
+            .maybeSingle();
+
+          if (rowNuvem && rowNuvem.db) {
+            dbFinal = fundirBancosCompletos(dbAtual, rowNuvem.db);
+          }
+        } catch (eMerge) {
+          console.warn('[BLINDAGEM] Aviso ao buscar dados para fusão prévia em debounce:', eMerge);
+        }
+
         supabaseClient
           .from('erp_tenants')
           .upsert({
             tenant_id: tenantId,
-            db: dbAtual,
+            db: dbFinal,
             empresa: empParaSalvar,
             ultima_atualizacao_ms: agora,
-            versao_erp: "8.5.0",
+            versao_erp: "8.5.0_BLINDADO",
             updated_at: new Date().toISOString()
           }, { onConflict: 'tenant_id' })
           .then(({ error }) => {
@@ -2236,6 +2377,8 @@ with check (true);
     sincronizarComNuvem,
     sincronizarImediatoComNuvem,
     iniciarEscutaRealtime,
+    fundirBancosCompletos,
+    fundirColecaoPorId,
     abrirModalConfigNuvem,
     atualizarStatusNuvem
   };

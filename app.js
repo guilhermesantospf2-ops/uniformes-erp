@@ -12,66 +12,272 @@
                  (window.TEXPRO_IS_DEMO === true) || 
                  (window.location && window.location.search && window.location.search.includes('demo=1')) || 
                  (window.location && window.location.pathname && (window.location.pathname.includes('/demo') || window.location.pathname.includes('demo.html')));
-  const ERP_VERSION = isDemo ? 'DEMO_SANDBOX_V1' : '8.0_ZERO_PROD';
-  const STORAGE_KEY = isDemo ? 'bravvi_erp_demo_temp' : 'bravvi_erp_prod_v8';
+  const ERP_VERSION = isDemo ? 'DEMO_SANDBOX_V1' : '8.5_PROD_BLINDADO';
   let db = null;
+  // FLAG DE SEGURANÇA CRÍTICA: Durante o boot, a sincronização com a nuvem fica bloqueada
+  // para impedir que qualquer estado local temporário ou vazio sobrescreva o banco real do cliente!
+  let sincronizacaoNuvemHabilitada = false;
 
+  function obterChaveStorageTenant() {
+    if (isDemo) return 'bravvi_erp_demo_temp';
+    const tenantId = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterTenantId === 'function')
+      ? window.ERP_CLOUD.obterTenantId()
+      : null;
+    return tenantId ? `bravvi_erp_tenant_${tenantId}` : 'bravvi_erp_prod_v8';
+  }
+
+  /**
+   * COMPRESSÃO AUTOMÁTICA DE IMAGENS & PREVENÇÃO DE ESTOURO DE MEMÓRIA (5MB)
+   * Reduz fotos pesadas de celulares/mockups para ~40KB sem perder qualidade visual
+   */
+  function comprimirImagemDataUrl(file, maxWidth = 800, maxHeight = 800, quality = 0.75) {
+    return new Promise((resolve) => {
+      if (!file) return resolve(null);
+      if (!file.type || !file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(file);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          if (width > maxWidth || height > maxHeight) {
+            if (width / height > maxWidth / maxHeight) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = function() {
+          resolve(e.target.result);
+        };
+        img.src = e.target.result;
+      };
+      reader.onerror = function() {
+        resolve(null);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /**
+   * MOTOR DE MIGRAÇÃO NÃO-DESTRUTIVA & PRESERVAÇÃO TOTAL
+   * REGRA DE OURO: NUNCA descarta pedidos, clientes ou financeiro inseridos pelo usuário!
+   * Quando o código é atualizado ou uma nova função é adicionada, apenas mescla os novos campos.
+   */
+  function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
+    if (!bancoExistente || typeof bancoExistente !== 'object') {
+      const novo = JSON.parse(JSON.stringify(templatePadrao || {}));
+      novo.versao = ERP_VERSION;
+      return novo;
+    }
+
+    const banco = Object.assign({}, bancoExistente);
+
+    // 1. Preservação Intocável de Coleções Operacionais do Cliente
+    const colecoes = [
+      'pedidos', 'clientes', 'ordensServico', 'lancamentosFinanceiros',
+      'despesasFixas', 'compras', 'equipe', 'costureiras', 'nestingFila',
+      'notasFiscais', 'historicoEstoque', 'quarentena'
+    ];
+
+    colecoes.forEach(col => {
+      if (Array.isArray(banco[col])) {
+        // Mantém 100% dos dados reais do cliente
+      } else {
+        banco[col] = [];
+      }
+    });
+
+    // 2. Catálogos e Tabelas Base (Não sobrescreve se o cliente já possui)
+    if (!Array.isArray(banco.produtosBase) || banco.produtosBase.length === 0) {
+      banco.produtosBase = JSON.parse(JSON.stringify(templatePadrao?.produtosBase || []));
+    }
+    if (!banco.insumosCatalogoMestre) {
+      banco.insumosCatalogoMestre = JSON.parse(JSON.stringify(templatePadrao?.insumosCatalogoMestre || {}));
+    }
+    if (!banco.capacidadesProducao || !Array.isArray(banco.capacidadesProducao) || banco.capacidadesProducao.length === 0) {
+      banco.capacidadesProducao = JSON.parse(JSON.stringify(templatePadrao?.capacidadesProducao || []));
+    }
+    if (!banco.historicoFinanceiroMensal || !Array.isArray(banco.historicoFinanceiroMensal) || banco.historicoFinanceiroMensal.length === 0) {
+      banco.historicoFinanceiroMensal = JSON.parse(JSON.stringify(templatePadrao?.historicoFinanceiroMensal || []));
+    }
+    if (!Array.isArray(banco.estoque) || banco.estoque.length === 0) {
+      banco.estoque = JSON.parse(JSON.stringify(templatePadrao?.estoque || []));
+    }
+
+    // 3. Atualiza a versão do schema de forma pacífica
+    banco.versao = ERP_VERSION;
+    return banco;
+  }
+
+  /**
+   * CRIAÇÃO DE SNAPSHOT LOCAL DE EMERGÊNCIA (CAIXA PRETA ROTATIVA)
+   * Mantém os últimos 5 pontos de restauração no dispositivo do cliente
+   */
+  function criarSnapshotSegurancaLocal(dbParaSalvar) {
+    if (isDemo || !dbParaSalvar) return;
+    try {
+      const tId = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterTenantId === 'function') ? window.ERP_CLOUD.obterTenantId() : 'master';
+      const chaveSnap = 'bravvi_snapshots_' + (tId || 'master');
+      let historico = [];
+      try {
+        historico = JSON.parse(localStorage.getItem(chaveSnap) || '[]');
+      } catch (e) {}
+
+      const totalPedidos = Array.isArray(dbParaSalvar.pedidos) ? dbParaSalvar.pedidos.length : 0;
+      const totalClientes = Array.isArray(dbParaSalvar.clientes) ? dbParaSalvar.clientes.length : 0;
+      if (totalPedidos === 0 && totalClientes === 0) return;
+
+      const ultimo = historico[0];
+      const agora = Date.now();
+      if (ultimo && (agora - ultimo.timestamp < 30000)) return;
+
+      historico.unshift({
+        timestamp: agora,
+        dataHora: new Date().toLocaleString('pt-BR'),
+        pedidosCount: totalPedidos,
+        clientesCount: totalClientes,
+        db: JSON.parse(JSON.stringify(dbParaSalvar))
+      });
+
+      if (historico.length > 5) historico = historico.slice(0, 5);
+      localStorage.setItem(chaveSnap, JSON.stringify(historico));
+    } catch (e) {}
+  }
+
+  /**
+   * AUTO-REPARO & INTEGRAÇÃO DE VENDAS NO FINANCEIRO:
+   * Garante que toda e qualquer venda cadastrada (seja com sinal ou "A Faturar / Pagamento na Entrega")
+   * possua seu registro no Livro Caixa / Contas a Receber, impedindo que vendas "sumam" do financeiro.
+   */
+  function sincronizarPedidosComFinanceiro(banco) {
+    if (!banco || !Array.isArray(banco.pedidos)) return false;
+    if (!Array.isArray(banco.lancamentosFinanceiros)) banco.lancamentosFinanceiros = [];
+
+    let alterado = false;
+    banco.pedidos.forEach(p => {
+      if (p.status === 'Cancelado' || p.tipoRegistro === 'Orcamento') return;
+      const num = p.numero;
+      const jaExiste = banco.lancamentosFinanceiros.some(l => 
+        l.pedidoNumero === num || 
+        (l.descricao && l.descricao.includes(`Pedido #${num}`))
+      );
+
+      if (!jaExiste) {
+        const total = Number(p.valorTotalVenda) || 0;
+        const sinal = Number(p.valorSinalPago) || 0;
+        const saldo = Math.max(0, total - sinal);
+        const cliNome = p.clienteNome || 'Cliente';
+
+        if (sinal > 0) {
+          banco.lancamentosFinanceiros.push({
+            id: `LAN-${Math.floor(100 + Math.random() * 9000)}`,
+            pedidoId: p.id,
+            pedidoNumero: num,
+            data: p.dataCriacao || new Date().toISOString().split('T')[0],
+            tipo: "Entrada",
+            status: "Confirmado",
+            descricao: `Sinal Entrada Pedido #${num} (${p.grade?.total || ''}x ${p.produtoNome || 'Uniformes'})`,
+            cliente: cliNome,
+            valor: sinal,
+            formaPagamento: p.condicaoPagamento?.includes('PIX') ? 'PIX' : 'Boleto',
+            categoria: "Vendas de Uniformes"
+          });
+          alterado = true;
+        }
+
+        if (saldo > 0 || sinal === 0) {
+          const valSaldo = saldo > 0 ? saldo : total;
+          banco.lancamentosFinanceiros.push({
+            id: `LAN-${Math.floor(100 + Math.random() * 9000)}`,
+            pedidoId: p.id,
+            pedidoNumero: num,
+            data: p.dataPrevisaoEntrega || p.dataCriacao || new Date().toISOString().split('T')[0],
+            tipo: "A Receber",
+            status: "Pendente",
+            descricao: `Venda Pedido #${num} (${p.grade?.total || ''}x ${p.produtoNome || 'Uniformes'}) - A Receber na Entrega`,
+            cliente: cliNome,
+            valor: valSaldo,
+            formaPagamento: p.condicaoPagamento || "A Receber na Entrega",
+            categoria: "Vendas de Uniformes"
+          });
+          alterado = true;
+        }
+      }
+    });
+
+    return alterado;
+  }
+
+  // Inicialização Local Segura (Sem reset destrutivo)
   if (isDemo) {
     db = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA));
     db.versao = ERP_VERSION;
   } else {
     try {
-      const salvo = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('texpro_erp_prod_v8');
+      const chaveTenant = obterChaveStorageTenant();
+      const salvo = localStorage.getItem(chaveTenant) ||
+                    localStorage.getItem('bravvi_erp_prod_v8') ||
+                    localStorage.getItem('texpro_erp_prod_v8');
       if (salvo) {
         db = JSON.parse(salvo);
       }
     } catch (e) {
-      console.error('Erro ao ler localStorage', e);
+      console.warn('Aviso ao ler storage local:', e);
     }
 
-    if (!db || db.versao !== ERP_VERSION || !db.produtosBase || db.produtosBase.length < 20 || !db.insumosCatalogoMestre) {
-      db = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA));
-      db.versao = ERP_VERSION;
-      salvarEstado();
-    }
+    // Aplica a migração não-destrutiva garantindo 100% de integridade
+    db = migrarOuPreservarBanco(db, window.ERP_INITIAL_DATA);
   }
 
-  // Garantir integridade de arrays e ausência de dados fictícios
-  if (!db.capacidadesProducao || !Array.isArray(db.capacidadesProducao) || db.capacidadesProducao.length === 0) {
-    db.capacidadesProducao = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA.capacidadesProducao || []));
-  }
-  if (!db.historicoFinanceiroMensal || !Array.isArray(db.historicoFinanceiroMensal) || db.historicoFinanceiroMensal.length === 0) {
-    db.historicoFinanceiroMensal = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA.historicoFinanceiroMensal || []));
-  }
-  if (!Array.isArray(db.despesasFixas)) db.despesasFixas = [];
-  if (!Array.isArray(db.costureiras)) db.costureiras = [];
-  if (!Array.isArray(db.equipe)) db.equipe = [];
-  if (!Array.isArray(db.pedidos)) db.pedidos = [];
-  if (!Array.isArray(db.clientes)) db.clientes = [];
-  if (!Array.isArray(db.ordensServico)) db.ordensServico = [];
-  if (!Array.isArray(db.lancamentosFinanceiros)) db.lancamentosFinanceiros = [];
-  if (!Array.isArray(db.nestingFila)) db.nestingFila = [];
-  if (!Array.isArray(db.notasFiscais)) db.notasFiscais = [];
-  if (!Array.isArray(db.compras)) db.compras = [];
-  salvarEstado();
-
-  function salvarEstado() {
+  function salvarEstado(forcarImediato = false) {
     if (isDemo) {
-      // No modo demonstração, salva apenas na sessão temporária do navegador
-      // NUNCA salva no banco oficial de produção e NUNCA envia para a nuvem Supabase!
       try {
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+        sessionStorage.setItem('bravvi_erp_demo_temp', JSON.stringify(db));
       } catch (e) {}
       return;
     }
 
+    const chaveEfetiva = obterChaveStorageTenant();
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      localStorage.setItem(chaveEfetiva, JSON.stringify(db));
+      // Espelho legado para compatibilidade de transição
+      localStorage.setItem('bravvi_erp_prod_v8', JSON.stringify(db));
     } catch (e) {
-      console.error('Erro ao salvar no localStorage', e);
+      console.warn('Alerta de cota local ao salvar no localStorage (limpando cache não-essencial):', e);
+      try {
+        localStorage.removeItem('bravvi_erp_prod_v8');
+        localStorage.setItem(chaveEfetiva, JSON.stringify(db));
+      } catch (errRetry) {
+        console.warn('Armazenamento local lotado: salvando com prioridade na nuvem.');
+      }
     }
-    if (window.ERP_CLOUD && typeof window.ERP_CLOUD.sincronizarComNuvem === 'function') {
-      window.ERP_CLOUD.sincronizarComNuvem(db);
+
+    // Grava ponto de segurança rotativo
+    criarSnapshotSegurancaLocal(db);
+
+    // BLINDAGEM: Nuvem só pode ser atualizada se o boot inicial e autenticação já tiverem hidratado os dados!
+    if (sincronizacaoNuvemHabilitada && window.ERP_CLOUD) {
+      if (forcarImediato && typeof window.ERP_CLOUD.sincronizarImediatoComNuvem === 'function') {
+        window.ERP_CLOUD.sincronizarImediatoComNuvem(db);
+      } else if (typeof window.ERP_CLOUD.sincronizarComNuvem === 'function') {
+        window.ERP_CLOUD.sincronizarComNuvem(db);
+      }
     }
   }
 
@@ -353,6 +559,7 @@
     configurarCliqueGlobalMockups();
     configurarFechamentoModaisGlobal();
     inicializarBarraRolagemFixa();
+    inicializarSidebarToggle();
 
     if (isDemo) {
       document.body.classList.add('bravvi-demo-mode');
@@ -408,13 +615,23 @@
     // 3. Carrega exclusivamente o banco isolado deste tenant
     if (window.ERP_CLOUD && typeof window.ERP_CLOUD.carregarBancoTenant === 'function') {
       await window.ERP_CLOUD.carregarBancoTenant((novoDb) => {
-        if (novoDb && Array.isArray(novoDb.pedidos)) {
-          db = novoDb;
+        if (novoDb) {
+          // BLINDAGEM MESTRE: Mesclagem não-destrutiva garantindo preservação de pedidos e clientes
+          if (window.ERP_CLOUD && typeof window.ERP_CLOUD.fundirBancosCompletos === 'function') {
+            db = window.ERP_CLOUD.fundirBancosCompletos(db, novoDb);
+          } else {
+            db = migrarOuPreservarBanco(novoDb, window.ERP_INITIAL_DATA);
+          }
+          // Auto-reparo imediato: se houver pedidos que não tinham lançamento financeiro, gera agora!
+          sincronizarPedidosComFinanceiro(db);
           salvarEstado();
           atualizarBadges();
         }
       });
     }
+
+    // Libera a sincronização contínua com a nuvem APENAS agora, com os dados da nuvem confirmados
+    sincronizacaoNuvemHabilitada = true;
 
     // 4. Inicia a escuta em tempo real apenas para este tenant autenticado
     configurarEscutaNuvemRealtime();
@@ -1228,14 +1445,21 @@
   function configurarEscutaNuvemRealtime() {
     if (window.ERP_CLOUD && typeof window.ERP_CLOUD.iniciarEscutaRealtime === 'function') {
       window.ERP_CLOUD.iniciarEscutaRealtime((novoDb) => {
-        if (novoDb && Array.isArray(novoDb.pedidos)) {
-          db = novoDb;
+        if (novoDb) {
+          if (window.ERP_CLOUD && typeof window.ERP_CLOUD.fundirBancosCompletos === 'function') {
+            db = window.ERP_CLOUD.fundirBancosCompletos(db, novoDb);
+          } else {
+            db = migrarOuPreservarBanco(novoDb, window.ERP_INITIAL_DATA);
+          }
+          sincronizarPedidosComFinanceiro(db);
+          // Salva no storage local sem disparar loop de eco de rede
           try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-          } catch (e) {}
+            const k = obterChaveStorageTenant();
+            localStorage.setItem(k, JSON.stringify(db));
+          } catch(e) {}
           atualizarBadges();
           navegarPara(abaAtiva);
-          mostrarToast('Dados atualizados em tempo real pela Nuvem!', 'green');
+          mostrarToast('Dados sincronizados em tempo real pela Nuvem!', 'green');
         }
       });
     }
@@ -2152,6 +2376,68 @@
           navegarPara(aba);
         }
       });
+    });
+  }
+
+  // =========================================================================
+  // CONTROLE DE RECOLHIMENTO DA SIDEBAR (ESCONDER / MOSTRAR MENU LATERAL)
+  // =========================================================================
+  function alternarSidebar(forcarEstado = null) {
+    const estaRecolhido = document.body.classList.contains('sidebar-collapsed');
+    const novoEstado = forcarEstado !== null ? forcarEstado : !estaRecolhido;
+
+    if (novoEstado) {
+      document.body.classList.add('sidebar-collapsed');
+      localStorage.setItem('bravvi_sidebar_collapsed', '1');
+      mostrarToast('Menu lateral recolhido. Clique no botão superior ou pressione Ctrl+B para reabrir.', 'blue');
+    } else {
+      document.body.classList.remove('sidebar-collapsed');
+      localStorage.setItem('bravvi_sidebar_collapsed', '0');
+    }
+
+    const btnToggle = document.getElementById('btnToggleSidebar');
+    if (btnToggle) {
+      btnToggle.title = novoEstado ? 'Mostrar Menu Lateral (Ctrl+B)' : 'Esconder Menu Lateral (Ctrl+B)';
+      btnToggle.setAttribute('aria-expanded', novoEstado ? 'false' : 'true');
+    }
+  }
+
+  function inicializarSidebarToggle() {
+    // Restaura preferência salva do usuário
+    const salvo = localStorage.getItem('bravvi_sidebar_collapsed');
+    if (salvo === '1') {
+      document.body.classList.add('sidebar-collapsed');
+      const btnToggle = document.getElementById('btnToggleSidebar');
+      if (btnToggle) {
+        btnToggle.title = 'Mostrar Menu Lateral (Ctrl+B)';
+        btnToggle.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    // Configura botões de alternância
+    document.getElementById('btnToggleSidebar')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      alternarSidebar();
+    });
+
+    document.getElementById('btnCollapseSidebar')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      alternarSidebar(true);
+    });
+
+    document.getElementById('btnFloatingSidebarOpen')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      alternarSidebar(false);
+    });
+
+    // Atalho global Ctrl+B ou Cmd+B (ignora se estiver digitando em campos de texto)
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+        const tag = (e.target?.tagName || '').toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return;
+        e.preventDefault();
+        alternarSidebar();
+      }
     });
   }
 
@@ -3136,6 +3422,13 @@
                       ` : ''}
                     `}
                     <span style="display: block; font-size: 10.5px; color: var(--text-gray-500); margin-top: 3px;">${p.tipoPersonalizacao || 'Estampa Conforme Arte'}</span>
+                    ${(p.artesAnexadas && p.artesAnexadas.length > 0) ? `
+                      <div style="margin-top: 4px;">
+                        <button type="button" class="btn btn-secondary btn-xs btn-ver-artes-pedido" data-id="${p.id}" style="font-size: 10px; padding: 2px 7px; color: #0284c7; background: #f0f9ff; border-color: #bae6fd; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;" title="Localizar e baixar arquivos de arte deste pedido">
+                          🎨 Artes (${p.artesAnexadas.length}) ⬇️
+                        </button>
+                      </div>
+                    ` : ''}
                   </td>
                   <td class="text-mono">
                     <div style="font-size: 11px; line-height: 1.3;">
@@ -3280,6 +3573,11 @@
                         </button>
                       ` : `
                         <button class="btn btn-secondary btn-sm btn-ver-os" data-id="${p.id}">OS</button>
+                        ${(p.artesAnexadas && p.artesAnexadas.length > 0) ? `
+                          <button class="btn btn-secondary btn-sm btn-ver-artes-pedido" data-id="${p.id}" style="color: #0369a1; border-color: #bae6fd; background: #f0f9ff; font-weight: 700;" title="Ver e baixar arquivos de arte da peça">
+                            🎨 Artes (${p.artesAnexadas.length})
+                          </button>
+                        ` : ''}
                         ${nfExistente ? `
                           <button class="btn btn-secondary btn-sm btn-abrir-nfe-pedido" data-nfe-id="${nfExistente.id}" style="font-weight: 700; color: #047857; border-color: #a7f3d0; background: #ecfdf5;" title="Visualizar DANFE Oficial A4 / XML da NF-e #${nfExistente.numero}">
                             ✓ NF #${nfExistente.numero}
@@ -3425,6 +3723,11 @@
                           <button class="btn btn-primary btn-sm btn-ver-os" data-id="${p.id}" style="flex: 1;">
                             Ficha OS
                           </button>
+                          ${(p.artesAnexadas && p.artesAnexadas.length > 0) ? `
+                            <button class="btn btn-secondary btn-sm btn-ver-artes-pedido" data-id="${p.id}" style="flex: 1; font-weight: 700; color: #0284c7; border-color: #bae6fd; background: #f0f9ff;" title="Ver e baixar artes deste pedido">
+                              🎨 Artes (${p.artesAnexadas.length})
+                            </button>
+                          ` : ''}
                           <button class="btn btn-secondary btn-sm btn-cancelar-pedido" data-id="${p.id}" style="padding: 3px 6px; color: #dc2626; border-color: #fca5a5;" title="Cancelar este Pedido">
                             ✕
                           </button>
@@ -3467,6 +3770,15 @@
             abrirFichaTecnicaPorPedido(p);
           }
         }
+      });
+    });
+
+    // Ver e Baixar Artes Anexadas do Pedido
+    document.querySelectorAll('.btn-ver-artes-pedido').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        abrirModalArtesPedido(id);
       });
     });
 
@@ -4406,13 +4718,13 @@
      ========================================================================== */
 
   const LOCAIS_PERSONALIZACAO = [
-    { id: 'peito_esq', rotulo: 'Peito Frente (Logo Esquerdo)', padraoW: 10, padraoH: 8, padraoPontos: 6000 },
-    { id: 'peito_centro', rotulo: 'Peito Central (Grande)', padraoW: 24, padraoH: 14, padraoPontos: 16000 },
-    { id: 'costas_sup', rotulo: 'Costas Superior (Pala / Ombro)', padraoW: 26, padraoH: 8, padraoPontos: 9000 },
-    { id: 'costas_tot', rotulo: 'Costas Total (Grande / Central)', padraoW: 28, padraoH: 18, padraoPontos: 25000 },
-    { id: 'manga_dir', rotulo: 'Manga Direita', padraoW: 8, padraoH: 5, padraoPontos: 4500 },
-    { id: 'manga_esq', rotulo: 'Manga Esquerda', padraoW: 8, padraoH: 5, padraoPontos: 4500 },
-    { id: 'barra_outro', rotulo: 'Barra / Outro Local', padraoW: 12, padraoH: 6, padraoPontos: 5000 }
+    { id: 'peito_esq', rotulo: 'Peito Frente (Logo Esquerdo)', padraoW: 10, padraoH: 8, padraoPontos: 6000, padraoValorBordado: 4.50 },
+    { id: 'peito_centro', rotulo: 'Peito Central (Grande)', padraoW: 24, padraoH: 14, padraoPontos: 16000, padraoValorBordado: 9.00 },
+    { id: 'costas_sup', rotulo: 'Costas Superior (Pala / Ombro)', padraoW: 26, padraoH: 8, padraoPontos: 9000, padraoValorBordado: 6.50 },
+    { id: 'costas_tot', rotulo: 'Costas Total (Grande / Central)', padraoW: 28, padraoH: 18, padraoPontos: 25000, padraoValorBordado: 12.00 },
+    { id: 'manga_dir', rotulo: 'Manga Direita', padraoW: 8, padraoH: 5, padraoPontos: 4500, padraoValorBordado: 3.50 },
+    { id: 'manga_esq', rotulo: 'Manga Esquerda', padraoW: 8, padraoH: 5, padraoPontos: 4500, padraoValorBordado: 3.50 },
+    { id: 'barra_outro', rotulo: 'Barra / Outro Local', padraoW: 12, padraoH: 6, padraoPontos: 5000, padraoValorBordado: 4.00 }
   ];
 
   function calcularCustoUnitarioAplicacao(app, totalPecas = 1) {
@@ -4435,14 +4747,19 @@
     }
 
     if (app.tecnica === 'Bordado') {
-      const pontos = parseFloat(app.borPontos) || 6000;
-      const milPontos = parseFloat(app.borMilPontos !== undefined ? app.borMilPontos : 0.45);
-      const taxaMatriz = parseFloat(app.borMatriz !== undefined ? app.borMatriz : 35.00);
-      const entretela = parseFloat(app.borEntretela !== undefined ? app.borEntretela : 1.00);
+      let valorBordado = parseFloat(app.borValorUnitario);
+      if (isNaN(valorBordado) || valorBordado < 0) {
+        if (app.borPontos) {
+          valorBordado = (parseFloat(app.borPontos) / 1000) * (parseFloat(app.borMilPontos) || 0.45);
+        } else {
+          valorBordado = 4.50;
+        }
+      }
+      const taxaMatriz = parseFloat(app.borMatriz) || 0;
+      const entretela = parseFloat(app.borEntretela) || 0;
 
-      const custoPontos = (pontos / 1000) * milPontos;
-      const amortizacaoMatriz = taxaMatriz / qtd;
-      return custoPontos + amortizacaoMatriz + entretela;
+      const amortizacaoMatriz = (qtd > 0 && taxaMatriz > 0) ? (taxaMatriz / qtd) : 0;
+      return valorBordado + amortizacaoMatriz + entretela;
     }
 
     if (app.tecnica === 'Silk') {
@@ -4486,10 +4803,9 @@
       dtfAlturaArte: 8,
       dtfMetroLinear: dtfMetro,
       dtfPrensagem: pdr.dtfPrensagem !== undefined ? pdr.dtfPrensagem : 1.50,
-      borPontos: 6000,
-      borMilPontos: 0.45,
-      borMatriz: 35.00,
-      borEntretela: 1.00,
+      borValorUnitario: 4.50,
+      borMatriz: 0.00,
+      borEntretela: 0.00,
       silkCores: 2,
       silkTaxaTela: 35.00,
       silkBatida: 1.80,
@@ -4610,25 +4926,22 @@
             </div>
           ` : tec === 'Bordado' ? `
             <div class="form-row" style="margin-bottom: 2px;">
-              <div class="form-group" style="flex: 1.2;">
-                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Pontos Matriz (ex: 6.000)</label>
-                <input type="number" class="form-input inp-bor-pts" value="${app.borPontos || 6000}" step="500" style="font-size: 11px; padding: 3px 6px;">
-              </div>
-              <div class="form-group" style="flex: 1;">
-                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">R$ / 1.000 pts</label>
-                <input type="number" class="form-input inp-bor-mil" value="${(app.borMilPontos !== undefined ? app.borMilPontos : 0.45).toFixed(2)}" step="0.05" style="font-size: 11px; padding: 3px 6px;">
+              <div class="form-group" style="flex: 1.5;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px; font-weight: 700; color: #1e3a8a;">Valor por Bordado (R$/un)</label>
+                <input type="number" class="form-input inp-bor-valor" value="${(app.borValorUnitario !== undefined ? app.borValorUnitario : (app.borPontos ? ((app.borPontos / 1000) * (app.borMilPontos || 0.45)) : 4.50)).toFixed(2)}" step="0.50" min="0" style="font-size: 11.5px; font-weight: 700; padding: 3px 6px; border-color: #93c5fd; background: #f0f7ff;">
               </div>
               <div class="form-group" style="flex: 1.1;">
-                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;" title="Taxa de matriz rateada entre as peças deste modelo">Taxa Matriz (R$)</label>
-                <input type="number" class="form-input inp-bor-matriz" value="${(app.borMatriz !== undefined ? app.borMatriz : 35.00).toFixed(2)}" step="5" style="font-size: 11px; padding: 3px 6px;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;" title="Taxa única da matriz (rateada entre as peças). Deixe 0 se o cliente já tiver matriz ou for grátis">Taxa Matriz (R$)</label>
+                <input type="number" class="form-input inp-bor-matriz" value="${(app.borMatriz !== undefined ? app.borMatriz : 0.00).toFixed(2)}" step="5" min="0" style="font-size: 11px; padding: 3px 6px;">
               </div>
               <div class="form-group" style="flex: 0.9;">
-                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Entretela (R$)</label>
-                <input type="number" class="form-input inp-bor-entretela" value="${(app.borEntretela !== undefined ? app.borEntretela : 1.00).toFixed(2)}" step="0.20" style="font-size: 11px; padding: 3px 6px;">
+                <label class="form-label" style="font-size: 10px; margin-bottom: 2px;" title="Custo de entretela ou acabamento especial se houver">Entretela (R$)</label>
+                <input type="number" class="form-input inp-bor-entretela" value="${(app.borEntretela !== undefined ? app.borEntretela : 0.00).toFixed(2)}" step="0.20" min="0" style="font-size: 11px; padding: 3px 6px;">
               </div>
             </div>
-            <div style="font-size: 10px; color: var(--text-gray-500);">
-              🪡 <strong>Bordado:</strong> Pontos: ${formatarMoeda(((app.borPontos || 6000) / 1000) * (app.borMilPontos || 0.45))} + Rateio Matriz (${formatarMoeda((app.borMatriz || 35) / Math.max(1, totalPecasGrade))}) + Entretela (${formatarMoeda(app.borEntretela || 1.00)})
+            <div style="font-size: 10px; color: var(--text-gray-500); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+              <span>🪡 <strong>Bordado:</strong> ${formatarMoeda(app.borValorUnitario !== undefined ? app.borValorUnitario : (app.borPontos ? ((app.borPontos / 1000) * (app.borMilPontos || 0.45)) : 4.50))}/peça${(parseFloat(app.borMatriz) > 0 ? ` + Rateio Matriz (${formatarMoeda(parseFloat(app.borMatriz) / Math.max(1, totalPecasGrade))})` : '')}${(parseFloat(app.borEntretela) > 0 ? ` + Entretela (${formatarMoeda(parseFloat(app.borEntretela))})` : '')}</span>
+              <span style="font-size: 9.5px; color: #166534; font-weight: 600;">✓ Preço direto por bordado</span>
             </div>
           ` : tec === 'Silk' ? `
             <div class="form-row" style="margin-bottom: 2px;">
@@ -4713,10 +5026,9 @@
             dtfAlturaArte: 8,
             dtfMetroLinear: 60,
             dtfPrensagem: 1.50,
-            borPontos: 7000,
-            borMilPontos: 0.45,
-            borMatriz: 35,
-            borEntretela: 1.00,
+            borValorUnitario: 4.50,
+            borMatriz: 0,
+            borEntretela: 0,
             custoUnitario: 4.50
           }))
         : [
@@ -4851,14 +5163,70 @@
             <div id="orcContainerModeloAtivo">
               <!-- Linha do Modelo Têxtil Selecionado e Mockup 3x4 -->
               <div class="form-row">
-                <div class="form-group" style="flex: 2;">
-                  <label class="form-label" style="font-weight: 700;">Modelo Têxtil / Base (Deste Modelo)</label>
-                  <div class="inline-input-group">
-                    <select id="orcProdutoSelect" class="form-select">
+                <div class="form-group" style="flex: 2; position: relative;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                    <label class="form-label" style="font-weight: 700; margin: 0;">Modelo Têxtil / Base (Deste Modelo)</label>
+                    <span style="font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 4px;">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                      Busca rápida
+                    </span>
+                  </div>
+                  <div class="inline-input-group" style="position: relative;">
+                    <!-- Select original invisível para 100% de compatibilidade com rotinas do ERP -->
+                    <select id="orcProdutoSelect" style="display: none;">
                       ${db.produtosBase.map(pr => `
                         <option value="${pr.id}">${pr.nome} [${pr.tipoMalhaPadrao}]</option>
                       `).join('')}
                     </select>
+
+                    <!-- Gatilho Visual do Combobox com Busca Integrada -->
+                    <div id="btnComboboxModeloTrigger" tabindex="0" role="combobox" aria-expanded="false" class="form-select combobox-custom-trigger" style="flex: 1; display: flex; align-items: center; justify-content: space-between; background: #ffffff; cursor: pointer; user-select: none; padding: 7px 12px; border: 1.5px solid var(--border-medium); border-radius: var(--radius-sm); min-height: 38px; gap: 8px; transition: all 0.2s ease;">
+                      <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; min-width: 0; flex: 1;">
+                        <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 4px; background: #eff6ff; color: #1d4ed8; flex-shrink: 0;">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z"/></svg>
+                        </span>
+                        <span id="labelNomeModeloCombobox" style="font-weight: 600; font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                          Selecione um Modelo
+                        </span>
+                        <span id="badgeMalhaModeloCombobox" style="font-size: 10.5px; background: #f1f5f9; color: #475569; padding: 2px 7px; border-radius: 12px; font-weight: 600; white-space: nowrap; flex-shrink: 0; border: 1px solid #e2e8f0;">
+                          Malha
+                        </span>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 6px; color: var(--text-muted); flex-shrink: 0;">
+                        <span style="font-size: 10px; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 4px; padding: 1.5px 6px; font-weight: 600; display: flex; align-items: center; gap: 3px;">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                          Pesquisar
+                        </span>
+                        <svg id="chevronComboboxModelo" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="transition: transform 0.2s;"><path d="M6 9l6 6 6-6"/></svg>
+                      </div>
+                    </div>
+
+                    <!-- Dropdown Flutuante de Busca de Modelos -->
+                    <div id="popoverComboboxModelo" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 99999; background: #ffffff; border: 1.5px solid #0284c7; border-radius: 8px; box-shadow: 0 14px 35px -5px rgba(0,0,0,0.25), 0 8px 16px -4px rgba(0,0,0,0.15); overflow: hidden;">
+                      <!-- Barra de Pesquisa com Input com Foco Automático -->
+                      <div style="padding: 8px 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.4"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                        <input type="text" id="inputBuscaModeloCombobox" placeholder="Digite para buscar modelo (ex: polo, dry fit, moletom, jaleco, brim)..." style="flex: 1; border: none; background: transparent; font-size: 13px; font-weight: 500; outline: none; color: #0f172a; padding: 3px 0;" autocomplete="off">
+                        <button type="button" id="btnLimparBuscaModeloCombobox" style="display: none; border: none; background: #e2e8f0; color: #475569; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 11px; line-height: 20px; text-align: center; padding: 0;" title="Limpar busca">✕</button>
+                      </div>
+
+                      <!-- Filtro Rápido por Categorias Têxteis -->
+                      <div id="chipsCategoriasModelo" style="display: flex; gap: 5px; padding: 6px 10px; background: #ffffff; border-bottom: 1px solid #f1f5f9; overflow-x: auto; scrollbar-width: none;">
+                        <!-- Chips dinâmicos -->
+                      </div>
+
+                      <!-- Lista com Rolagem dos Modelos Filtrados -->
+                      <div id="listaItensComboboxModelo" style="max-height: 250px; overflow-y: auto; padding: 4px; display: flex; flex-direction: column; gap: 2px;">
+                        <!-- Opções renderizadas dinamicamente -->
+                      </div>
+
+                      <!-- Rodapé de Apoio e Atalhos -->
+                      <div style="padding: 7px 10px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #64748b;">
+                        <span id="contagemModelosCombobox">Carregando modelos...</span>
+                        <span style="font-size: 10px; color: #94a3b8;">Navegue com ↑ ↓ e Enter</span>
+                      </div>
+                    </div>
+
                     <button type="button" class="btn btn-secondary btn-inline-add" id="btnCadastrarModeloInline">
                       + Cadastrar Modelo
                     </button>
@@ -5031,7 +5399,7 @@
                   </div>
 
                   <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-                    <button type="button" class="btn btn-secondary btn-sm btn-quick-add-app" data-tipo="bor-peito" style="font-size: 10px; padding: 2px 7px; font-weight: 700; color: #1e40af; border-color: #bfdbfe; background: #eff6ff;" title="Adiciona bordado de peito 6k pts">
+                    <button type="button" class="btn btn-secondary btn-sm btn-quick-add-app" data-tipo="bor-peito" style="font-size: 10px; padding: 2px 7px; font-weight: 700; color: #1e40af; border-color: #bfdbfe; background: #eff6ff;" title="Adiciona bordado de peito R$ 4,50">
                       + Bordado Peito
                     </button>
                     <button type="button" class="btn btn-secondary btn-sm btn-quick-add-app" data-tipo="dtf-costas" style="font-size: 10px; padding: 2px 7px; font-weight: 700; color: #7c3aed; border-color: #ddd6fe; background: #f5f3ff;" title="Adiciona DTF nas costas 26x9cm">
@@ -5252,14 +5620,12 @@
           const inpPrensa = card.querySelector('.inp-dtf-prensa');
           if (inpPrensa) app.dtfPrensagem = parseFloat(inpPrensa.value) || 1.50;
         } else if (app.tecnica === 'Bordado') {
-          const inpPts = card.querySelector('.inp-bor-pts');
-          if (inpPts) app.borPontos = parseFloat(inpPts.value) || 6000;
-          const inpMil = card.querySelector('.inp-bor-mil');
-          if (inpMil) app.borMilPontos = parseFloat(inpMil.value) || 0.45;
+          const inpVal = card.querySelector('.inp-bor-valor');
+          if (inpVal) app.borValorUnitario = parseFloat(inpVal.value) || 0;
           const inpMatriz = card.querySelector('.inp-bor-matriz');
-          if (inpMatriz) app.borMatriz = parseFloat(inpMatriz.value) || 35;
+          if (inpMatriz) app.borMatriz = parseFloat(inpMatriz.value) || 0;
           const inpEnt = card.querySelector('.inp-bor-entretela');
-          if (inpEnt) app.borEntretela = parseFloat(inpEnt.value) || 1.00;
+          if (inpEnt) app.borEntretela = parseFloat(inpEnt.value) || 0;
         } else if (app.tecnica === 'Silk') {
           const inpCores = card.querySelector('.inp-silk-cores');
           if (inpCores) app.silkCores = parseFloat(inpCores.value) || 2;
@@ -5341,6 +5707,328 @@
       });
     }
 
+    // =========================================================================
+    // COMBOBOX COM PESQUISA EM TEMPO REAL PARA MODELO TÊXTIL
+    // =========================================================================
+    let categoriaFiltroAtiva = 'Todos';
+    let indiceFocoTeclado = 0;
+    let listaFiltradaAtual = [];
+
+    function normalizarBusca(txt) {
+      return (txt || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    }
+
+    function atualizarVisualComboboxModelo(produtoId) {
+      const prod = (db.produtosBase || []).find(p => p.id === produtoId);
+      const lblNome = document.getElementById('labelNomeModeloCombobox');
+      const badgeMalha = document.getElementById('badgeMalhaModeloCombobox');
+      if (prod) {
+        if (lblNome) lblNome.textContent = prod.nome;
+        if (badgeMalha) badgeMalha.textContent = prod.tipoMalhaPadrao || prod.categoria || 'Padrão';
+      } else {
+        const selProd = document.getElementById('orcProdutoSelect');
+        const opt = selProd?.options[selProd.selectedIndex];
+        if (lblNome) lblNome.textContent = opt ? opt.text.split('[')[0].trim() : 'Modelo Têxtil';
+        if (badgeMalha) badgeMalha.textContent = opt ? (opt.text.split('[')[1] || '').replace(']', '').trim() : 'Padrão';
+      }
+    }
+
+    function renderizarCategoriasChips() {
+      const containerChips = document.getElementById('chipsCategoriasModelo');
+      if (!containerChips) return;
+
+      const categorias = ['Todos', ...new Set((db.produtosBase || []).map(p => p.categoria).filter(Boolean))];
+      containerChips.innerHTML = categorias.map(cat => {
+        const isAtivo = cat === categoriaFiltroAtiva;
+        return `
+          <button type="button" class="btn-chip-cat-modelo" data-cat="${cat}" style="border: 1px solid ${isAtivo ? '#0284c7' : '#e2e8f0'}; background: ${isAtivo ? '#e0f2fe' : '#f8fafc'}; color: ${isAtivo ? '#0369a1' : '#475569'}; font-size: 10.5px; font-weight: ${isAtivo ? '700' : '500'}; padding: 2px 8px; border-radius: 12px; cursor: pointer; white-space: nowrap; transition: all 0.15s ease;">
+            ${cat}
+          </button>
+        `;
+      }).join('');
+
+      containerChips.querySelectorAll('.btn-chip-cat-modelo').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          categoriaFiltroAtiva = btn.getAttribute('data-cat') || 'Todos';
+          renderizarCategoriasChips();
+          filtrarERenderizarModelos();
+        });
+      });
+    }
+
+    function destacarTexto(textoOriginal, query) {
+      if (!query || !textoOriginal) return textoOriginal || '';
+      const termos = normalizarBusca(query).split(/\s+/).filter(Boolean);
+      if (termos.length === 0) return textoOriginal;
+      
+      let resultado = textoOriginal;
+      try {
+        termos.forEach(termo => {
+          const regex = new RegExp(`(${termo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+          resultado = resultado.replace(regex, '<mark style="background: #fef08a; color: #854d0e; padding: 0 1px; border-radius: 2px; font-weight: 700;">$1</mark>');
+        });
+      } catch (e) {
+        return textoOriginal;
+      }
+      return resultado;
+    }
+
+    function selecionarModeloNoCombobox(produtoId) {
+      const selProd = document.getElementById('orcProdutoSelect');
+      if (selProd) {
+        selProd.value = produtoId;
+        selProd.dispatchEvent(new Event('change'));
+      }
+      atualizarVisualComboboxModelo(produtoId);
+      fecharPopoverComboboxModelo();
+    }
+
+    function abrirPopoverComboboxModelo() {
+      const popover = document.getElementById('popoverComboboxModelo');
+      const chevron = document.getElementById('chevronComboboxModelo');
+      const trigger = document.getElementById('btnComboboxModeloTrigger');
+      const input = document.getElementById('inputBuscaModeloCombobox');
+
+      if (!popover) return;
+      popover.style.display = 'block';
+      if (chevron) chevron.style.transform = 'rotate(180deg)';
+      if (trigger) {
+        trigger.style.borderColor = '#0284c7';
+        trigger.style.boxShadow = '0 0 0 3px rgba(2, 132, 199, 0.15)';
+        trigger.setAttribute('aria-expanded', 'true');
+      }
+
+      renderizarCategoriasChips();
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+      const btnLimpar = document.getElementById('btnLimparBuscaModeloCombobox');
+      if (btnLimpar) btnLimpar.style.display = 'none';
+
+      filtrarERenderizarModelos('');
+    }
+
+    function fecharPopoverComboboxModelo() {
+      const popover = document.getElementById('popoverComboboxModelo');
+      const chevron = document.getElementById('chevronComboboxModelo');
+      const trigger = document.getElementById('btnComboboxModeloTrigger');
+
+      if (popover) popover.style.display = 'none';
+      if (chevron) chevron.style.transform = 'rotate(0deg)';
+      if (trigger) {
+        trigger.style.borderColor = 'var(--border-medium)';
+        trigger.style.boxShadow = 'none';
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    function filtrarERenderizarModelos(termo = null) {
+      const input = document.getElementById('inputBuscaModeloCombobox');
+      const query = termo !== null ? termo : (input ? input.value : '');
+      const listaContainer = document.getElementById('listaItensComboboxModelo');
+      const lblContagem = document.getElementById('contagemModelosCombobox');
+      const selProd = document.getElementById('orcProdutoSelect');
+      const idSelecionado = selProd ? selProd.value : '';
+
+      if (!listaContainer) return;
+
+      const termosBusca = normalizarBusca(query).split(/\s+/).filter(Boolean);
+
+      listaFiltradaAtual = (db.produtosBase || []).filter(prod => {
+        // Filtro por Categoria se selecionada
+        if (categoriaFiltroAtiva !== 'Todos' && prod.categoria !== categoriaFiltroAtiva) {
+          return false;
+        }
+
+        // Filtro por Termo de Busca
+        if (termosBusca.length === 0) return true;
+        const textoBuscaAlvo = normalizarBusca(`${prod.nome} ${prod.tipoMalhaPadrao} ${prod.categoria || ''} ${prod.codigo || ''}`);
+        return termosBusca.every(t => textoBuscaAlvo.includes(t));
+      });
+
+      if (lblContagem) {
+        const total = (db.produtosBase || []).length;
+        if (query || categoriaFiltroAtiva !== 'Todos') {
+          lblContagem.textContent = `${listaFiltradaAtual.length} de ${total} modelos`;
+        } else {
+          lblContagem.textContent = `${total} modelos disponíveis`;
+        }
+      }
+
+      if (listaFiltradaAtual.length === 0) {
+        listaContainer.innerHTML = `
+          <div style="padding: 16px 12px; text-align: center; color: #64748b;">
+            <div style="font-size: 20px; margin-bottom: 4px;">🔍</div>
+            <div style="font-size: 12.5px; font-weight: 700; color: #1e293b;">Nenhum modelo encontrado</div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Não encontramos nenhum modelo para "<strong>${query}</strong>"</div>
+            <div style="margin-top: 10px;">
+              <button type="button" class="btn btn-primary btn-sm" id="btnCadastrarModeloComTermo" style="font-size: 11px; padding: 4px 10px;">
+                + Cadastrar "${query}" agora
+              </button>
+            </div>
+          </div>
+        `;
+
+        document.getElementById('btnCadastrarModeloComTermo')?.addEventListener('click', () => {
+          fecharPopoverComboboxModelo();
+          abrirModalNovoModeloInline((novoMod) => {
+            const sel = document.getElementById('orcProdutoSelect');
+            if (sel) {
+              const opt = document.createElement('option');
+              opt.value = novoMod.id;
+              opt.textContent = `${novoMod.nome} [${novoMod.tipoMalhaPadrao}]`;
+              opt.selected = true;
+              sel.prepend(opt);
+              const it = itensOrcamento[itemAtivoIndex];
+              if (it) {
+                it.produtoId = novoMod.id;
+                it.produtoNome = novoMod.nome;
+                it.tipoMalhaPadrao = novoMod.tipoMalhaPadrao;
+                it.custoCostura = novoMod.custoMaoDeObraBase || 7.50;
+                it.consumoTecido = novoMod.consumoMalhaKgPorPeca || 0.28;
+              }
+              carregarItemAtivoNoDOM();
+              atualizarVisualComboboxModelo(novoMod.id);
+              renderizarCategoriasChips();
+              recalcularBenchmarkModal();
+            }
+          }, query);
+        });
+        return;
+      }
+
+      if (indiceFocoTeclado >= listaFiltradaAtual.length) {
+        indiceFocoTeclado = 0;
+      }
+
+      listaContainer.innerHTML = listaFiltradaAtual.map((prod, idx) => {
+        const isSel = prod.id === idSelecionado;
+        const isFocado = idx === indiceFocoTeclado;
+        return `
+          <div class="combobox-opcao-item" data-id="${prod.id}" data-idx="${idx}" style="display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: 6px; cursor: pointer; transition: all 0.15s ease; background: ${isSel ? '#eff6ff' : (isFocado ? '#f8fafc' : '#ffffff')}; border: 1px solid ${isSel ? '#bfdbfe' : (isFocado ? '#e2e8f0' : 'transparent')};">
+            <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+              <span style="font-family: monospace; font-size: 10px; background: #f1f5f9; color: #475569; padding: 2px 5px; border-radius: 4px; font-weight: 700; flex-shrink: 0;">
+                ${prod.codigo || 'MOD'}
+              </span>
+              <div style="min-width: 0; flex: 1;">
+                <div style="font-size: 12.5px; font-weight: 600; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  ${destacarTexto(prod.nome, query)}
+                </div>
+                <div style="font-size: 11px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; gap: 6px; align-items: center;">
+                  <span>${destacarTexto(prod.tipoMalhaPadrao, query)}</span>
+                  ${prod.categoria ? `<span style="font-size: 10px; color: #94a3b8;">• ${prod.categoria}</span>` : ''}
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: 8px;">
+              ${isSel ? `<span style="color: #0284c7; font-weight: 800; font-size: 13px;">✓</span>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Eventos de clique e hover nos itens
+      listaContainer.querySelectorAll('.combobox-opcao-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const pId = el.getAttribute('data-id');
+          if (pId) selecionarModeloNoCombobox(pId);
+        });
+        el.addEventListener('mouseenter', () => {
+          indiceFocoTeclado = parseInt(el.getAttribute('data-idx') || 0, 10);
+          listaContainer.querySelectorAll('.combobox-opcao-item').forEach((item, i) => {
+            if (item !== el && !item.classList.contains('selecionado')) {
+              item.style.background = item.getAttribute('data-id') === idSelecionado ? '#eff6ff' : '#ffffff';
+            }
+          });
+          el.style.background = el.getAttribute('data-id') === idSelecionado ? '#eff6ff' : '#f8fafc';
+        });
+      });
+    }
+
+    function configurarEventosComboboxModelo() {
+      const btnTriggerCombobox = document.getElementById('btnComboboxModeloTrigger');
+      const inputBuscaCombobox = document.getElementById('inputBuscaModeloCombobox');
+      const btnLimparCombobox = document.getElementById('btnLimparBuscaModeloCombobox');
+
+      btnTriggerCombobox?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const popover = document.getElementById('popoverComboboxModelo');
+        if (popover && popover.style.display === 'block') {
+          fecharPopoverComboboxModelo();
+        } else {
+          abrirPopoverComboboxModelo();
+        }
+      });
+
+      btnTriggerCombobox?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          abrirPopoverComboboxModelo();
+        }
+      });
+
+      inputBuscaCombobox?.addEventListener('input', (e) => {
+        const val = e.target.value;
+        if (btnLimparCombobox) {
+          btnLimparCombobox.style.display = val.length > 0 ? 'inline-block' : 'none';
+        }
+        indiceFocoTeclado = 0;
+        filtrarERenderizarModelos(val);
+      });
+
+      inputBuscaCombobox?.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (listaFiltradaAtual.length > 0) {
+            indiceFocoTeclado = (indiceFocoTeclado + 1) % listaFiltradaAtual.length;
+            filtrarERenderizarModelos();
+            const itemFocado = document.querySelector(`.combobox-opcao-item[data-idx="${indiceFocoTeclado}"]`);
+            if (itemFocado) itemFocado.scrollIntoView({ block: 'nearest' });
+          }
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (listaFiltradaAtual.length > 0) {
+            indiceFocoTeclado = (indiceFocoTeclado - 1 + listaFiltradaAtual.length) % listaFiltradaAtual.length;
+            filtrarERenderizarModelos();
+            const itemFocado = document.querySelector(`.combobox-opcao-item[data-idx="${indiceFocoTeclado}"]`);
+            if (itemFocado) itemFocado.scrollIntoView({ block: 'nearest' });
+          }
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (listaFiltradaAtual[indiceFocoTeclado]) {
+            selecionarModeloNoCombobox(listaFiltradaAtual[indiceFocoTeclado].id);
+          }
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          fecharPopoverComboboxModelo();
+          btnTriggerCombobox?.focus();
+        }
+      });
+
+      btnLimparCombobox?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (inputBuscaCombobox) {
+          inputBuscaCombobox.value = '';
+          inputBuscaCombobox.focus();
+        }
+        if (btnLimparCombobox) btnLimparCombobox.style.display = 'none';
+        indiceFocoTeclado = 0;
+        filtrarERenderizarModelos('');
+      });
+
+      const tratarCliqueForaCombobox = (e) => {
+        const popover = document.getElementById('popoverComboboxModelo');
+        if (!popover || popover.style.display !== 'block') return;
+        const wrap = document.getElementById('btnComboboxModeloTrigger')?.parentElement;
+        if (wrap && !wrap.contains(e.target)) {
+          fecharPopoverComboboxModelo();
+        }
+      };
+      document.addEventListener('click', tratarCliqueForaCombobox);
+    }
+
     // Carrega os dados do item ativo para os inputs do DOM
     function carregarItemAtivoNoDOM() {
       const it = itensOrcamento[itemAtivoIndex];
@@ -5349,6 +6037,7 @@
       // Select do Produto
       const selProd = document.getElementById('orcProdutoSelect');
       if (selProd) selProd.value = it.produtoId;
+      atualizarVisualComboboxModelo(it.produtoId);
 
       // Seletor de Cores Industrial
       const boxCores = document.getElementById('boxSeletorCoresModelo');
@@ -5458,8 +6147,11 @@
             if (novaTec === 'DTF' && (!app.dtfLarguraArte || app.dtfLarguraArte < 5)) {
               app.dtfLarguraArte = app.local.includes('Costas') ? 26 : 10;
               app.dtfAlturaArte = app.local.includes('Costas') ? 10 : 8;
-            } else if (novaTec === 'Bordado' && !app.borPontos) {
-              app.borPontos = app.local.includes('Costas') ? 18000 : 6000;
+            } else if (novaTec === 'Bordado') {
+              const locConfig = LOCAIS_PERSONALIZACAO.find(l => l.rotulo === app.local);
+              app.borValorUnitario = (locConfig && locConfig.padraoValorBordado) ? locConfig.padraoValorBordado : (app.local.includes('Costas') ? 8.50 : 4.50);
+              if (app.borMatriz === undefined) app.borMatriz = 0;
+              if (app.borEntretela === undefined) app.borEntretela = 0;
             }
             renderizarAplicacoes();
             recalcularBenchmarkModal();
@@ -5476,7 +6168,9 @@
               app.dtfLarguraArte = locConfig.padraoW;
               app.dtfAlturaArte = locConfig.padraoH;
             } else if (app.tecnica === 'Bordado') {
-              app.borPontos = locConfig.padraoPontos;
+              if (locConfig.padraoValorBordado) {
+                app.borValorUnitario = locConfig.padraoValorBordado;
+              }
             }
           }
           renderizarAplicacoes();
@@ -5529,10 +6223,9 @@
             id: 'APP-' + Date.now(),
             local: 'Peito Frente (Logo Esquerdo)',
             tecnica: 'Bordado',
-            borPontos: 6000,
-            borMilPontos: 0.45,
-            borMatriz: 35.00,
-            borEntretela: 1.00
+            borValorUnitario: 4.50,
+            borMatriz: 0.00,
+            borEntretela: 0.00
           });
         } else if (tipo === 'dtf-costas') {
           it.aplicacoes.push({
@@ -5657,19 +6350,18 @@
       recalcularBenchmarkModal();
     });
 
-    // Upload de mockup personalizado para o modelo ativo
-    document.getElementById('inputUploadMockupOrc')?.addEventListener('change', (e) => {
+    // Upload de mockup personalizado otimizado para o modelo ativo
+    document.getElementById('inputUploadMockupOrc')?.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (file && itensOrcamento[itemAtivoIndex]) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          itensOrcamento[itemAtivoIndex].mockupUrl = evt.target.result;
+        const base64Otimizado = await comprimirImagemDataUrl(file, 800, 800, 0.75);
+        if (base64Otimizado) {
+          itensOrcamento[itemAtivoIndex].mockupUrl = base64Otimizado;
           itensOrcamento[itemAtivoIndex].mockupUploadPersonalizado = true;
           const prev = document.getElementById('previewMockup3x4Orc');
-          if (prev) prev.src = evt.target.result;
-          mostrarToast('Mockup do cliente anexado para este modelo!', 'green');
-        };
-        reader.readAsDataURL(file);
+          if (prev) prev.src = base64Otimizado;
+          mostrarToast('Mockup otimizado e anexado com sucesso!', 'green');
+        }
       }
     });
 
@@ -5791,6 +6483,8 @@
             it.consumoTecido = novoMod.consumoMalhaKgPorPeca || 0.28;
           }
           carregarItemAtivoNoDOM();
+          atualizarVisualComboboxModelo(novoMod.id);
+          renderizarCategoriasChips();
           recalcularBenchmarkModal();
         }
       });
@@ -6229,6 +6923,7 @@
 
     // Inicializa o primeiro modelo e cálculos
     atualizarLabelsPrazos();
+    configurarEventosComboboxModelo();
     carregarItemAtivoNoDOM();
     recalcularBenchmarkModal();
   }
@@ -6336,6 +7031,40 @@
           });
         }
       });
+    } else if (dadosBase.aplicacoes && Array.isArray(dadosBase.aplicacoes) && dadosBase.aplicacoes.length > 0) {
+      dadosBase.aplicacoes.forEach((app, appIdx) => {
+        if (app.tecnica !== 'lisa') {
+          todasAplicacoes.push({
+            idGlobal: `app_0_${appIdx}`,
+            modeloNome: dadosBase.produtoNome || (dadosBase.prod ? dadosBase.prod.nome : 'Modelo 1'),
+            itemIndex: 0,
+            appIndex: appIdx,
+            local: app.local || 'Peito Esquerdo',
+            tecnica: app.tecnica || 'DTF Digital',
+            larguraCm: app.larguraCm || 10,
+            alturaCm: app.alturaCm || 10,
+            dimensoes: (app.larguraCm && app.alturaCm) ? `${app.larguraCm} x ${app.alturaCm} cm` : (app.dimensoes || '10 x 10 cm'),
+            quantidadePecas: dadosBase.grade?.total || 0,
+            detalhes: app.tecnica === 'bordado' ? `${app.pontosMilhares || 5}k pontos` : app.tecnica === 'silk' ? `${app.numTelas || 2} telas` : `${app.larguraCm || 10}x${app.alturaCm || 10} cm`
+          });
+        }
+      });
+    } else if (dadosBase.artesAnexadas && Array.isArray(dadosBase.artesAnexadas) && dadosBase.artesAnexadas.length > 0) {
+      dadosBase.artesAnexadas.forEach((art, artIdx) => {
+        todasAplicacoes.push({
+          idGlobal: `app_art_${artIdx}`,
+          modeloNome: art.modeloNome || dadosBase.produtoNome || 'Modelo 1',
+          itemIndex: 0,
+          appIndex: artIdx,
+          local: art.local || 'Peito Esquerdo',
+          tecnica: art.tecnica || 'DTF Digital',
+          larguraCm: art.larguraCm || 10,
+          alturaCm: art.alturaCm || 10,
+          dimensoes: art.dimensoes || '10 x 10 cm',
+          quantidadePecas: art.quantidadePecas || (dadosBase.grade?.total || 0),
+          detalhes: art.detalhes || ''
+        });
+      });
     }
 
     const ehApenasPecaLisa = todasAplicacoes.length === 0 && (
@@ -6360,6 +7089,27 @@
           </div>
 
           <div class="modal-body">
+            <!-- Resumo Informativo da Proposta (Carregado Automaticamente) -->
+            <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                ${mockupDataUrl ? `
+                  <img src="${mockupDataUrl}" style="width: 40px; height: 52px; aspect-ratio: 3/4; object-fit: contain; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.08);" alt="Mockup">
+                ` : ''}
+                <div>
+                  <div style="font-weight: 800; font-size: 13px; color: var(--text-primary);">
+                    ${dadosBase.prod ? dadosBase.prod.nome : dadosBase.produtoNome}
+                  </div>
+                  <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
+                    Cor Principal: <strong style="color: #0f172a;">${dadosBase.corPrincipal || dadosBase.corTecido || 'Azul Marinho'}</strong>
+                    ${dadosBase.observacoesCoresDetalhes ? ` • <em>${dadosBase.observacoesCoresDetalhes}</em>` : ''}
+                  </div>
+                </div>
+              </div>
+              <span class="status-pill status-blue" style="font-size: 10px; font-weight: 700;">
+                ✓ Definido na Proposta
+              </span>
+            </div>
+
             <!-- 1. Qual Costureira / Facção vai costurar -->
             <div class="form-group">
               <label class="form-label">
@@ -6379,16 +7129,15 @@
               </div>
             </div>
 
-            <!-- Cores do Uniforme & Especificações de Detalhes Contrastantes -->
-            ${gerarHTMLSeletorCoresIndustrial('avanco', dadosBase.corPrincipal || dadosBase.corTecido || 'Azul Marinho', dadosBase.observacoesCoresDetalhes || '')}
-
             <!-- 2. Artes da Camiseta em Alta Resolução (Checklist com Locais Obrigatórios) -->
             <div class="form-group" style="margin-top: 14px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 4px;">
                 <label class="form-label" style="margin-bottom: 0;">
-                  <strong>Artes da Peça & Personalizações em Alta Resolução</strong> ${todasAplicacoes.length > 0 ? `(${todasAplicacoes.length} aplicações configuradas)` : ''}
+                  <strong style="color: #0f172a; font-size: 13px;">Artes da Peça & Personalizações em Alta Resolução</strong> ${todasAplicacoes.length > 0 ? `<span style="color: #dc2626; font-weight: 800;">(${todasAplicacoes.length} aplicações obrigatórias)</span>` : ''}
                 </label>
-                <span style="font-size: 11px; color: var(--text-gray-500);">Anexe os arquivos ou informe as especificações finais de cada estampa/bordado</span>
+                <span style="font-size: 11px; color: #dc2626; font-weight: 700; background: #fef2f2; border: 1px solid #fecaca; padding: 2px 8px; border-radius: 4px;">
+                  ⚠️ Anexo Obrigatório: Não é permitido dar entrada sem os arquivos das artes
+                </span>
               </div>
               
               ${ehApenasPecaLisa ? `
@@ -6397,107 +7146,123 @@
                   <p style="margin: 4px 0 0 0; color: #15803d; font-size: 11.5px;">Este pedido foi configurado como peça lisa. Não há necessidade de envio de matrizes ou arquivos de estamparia para o chão de fábrica.</p>
                 </div>
               ` : todasAplicacoes.length > 0 ? `
-                <div class="art-location-grid">
+                <div class="art-location-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 12px;">
                   ${todasAplicacoes.map((app, idx) => `
-                    <div class="art-location-card" id="cardArteApp_${idx}" style="border-left: 3px solid var(--brand-primary); background: #fdfdfd; padding: 10px;">
-                      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;">
+                    <div class="art-location-card card-arte-obrigatoria" id="cardArteApp_${idx}" data-idx="${idx}" style="border: 1.5px solid #fecaca; border-left: 5px solid #dc2626; background: #fffdfd; padding: 12px; border-radius: 6px; transition: all 0.25s ease;">
+                      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px;">
                         <div style="display: flex; align-items: center; gap: 8px;">
-                          <input type="checkbox" id="chkArteApp_${idx}" class="quarentena-checkbox chk-arte-dinamica" checked data-idx="${idx}">
-                          <label for="chkArteApp_${idx}" style="font-weight: 700; font-size: 12px; cursor: pointer; color: #0f172a;">
-                            ${(dadosBase.itens && dadosBase.itens.length > 1) ? `<span style="color:#64748b; font-size:10.5px;">[${app.modeloNome.split(' ')[0]}]</span> ` : ''}<strong>${app.local}</strong>
-                          </label>
+                          <span style="font-size: 16px;">🎨</span>
+                          <div>
+                            <span style="font-weight: 800; font-size: 12.5px; color: #0f172a;">
+                              ${(dadosBase.itens && dadosBase.itens.length > 1) ? `<span style="color:#64748b; font-size:11px;">[${app.modeloNome.split(' ')[0]}]</span> ` : ''}<strong>${app.local}</strong>
+                            </span>
+                            ${app.detalhes ? `<span style="font-size: 10.5px; color: #64748b; display: block;">Especificação: ${app.detalhes}</span>` : ''}
+                          </div>
                         </div>
-                        <span style="font-size: 10px; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">
-                          ${app.tecnica} • ${app.quantidadePecas} un
-                        </span>
+                        <div style="text-align: right;">
+                          <span style="font-size: 10px; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; display: inline-block;">
+                            ${app.tecnica} • ${app.quantidadePecas} un
+                          </span>
+                          <div id="statusBadgeArteApp_${idx}" style="font-size: 10px; font-weight: 800; color: #dc2626; margin-top: 3px;">
+                            ⚠️ Obrigatório Anexar
+                          </div>
+                        </div>
                       </div>
-                      <div style="display: flex; gap: 6px; align-items: center;">
-                        <input type="file" id="fileArteApp_${idx}" class="form-input" style="font-size: 11px; padding: 4px; flex: 1.3;" accept="image/*,.pdf,.ai,.pes,.dst">
-                        <input type="text" id="dimArteApp_${idx}" class="form-input" value="${app.dimensoes}" placeholder="Dimensões (LxA cm)" style="font-size: 11px; flex: 1;">
+
+                      <div style="display: flex; gap: 8px; align-items: center; margin-top: 6px;">
+                        <div style="flex: 1.5;">
+                          <input type="file" id="fileArteApp_${idx}" class="form-input inp-file-arte-dinamica" data-idx="${idx}" style="font-size: 11px; padding: 6px;" accept="image/*,.pdf,.ai,.eps,.cdr,.pes,.dst,.jef" required>
+                        </div>
+                        <div style="flex: 1;">
+                          <input type="text" id="dimArteApp_${idx}" class="form-input" value="${app.dimensoes}" placeholder="Dimensões (LxA cm)" style="font-size: 11px; padding: 6px;">
+                        </div>
                       </div>
-                      ${app.detalhes ? `<span style="font-size: 10px; color: #64748b; margin-top: 3px; display: block;">Especificação: ${app.detalhes}</span>` : ''}
+
+                      <!-- Mini Container de Pré-visualização da Arte Carregada -->
+                      <div id="previewContainerArteApp_${idx}" style="display: none; margin-top: 8px; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 5px; padding: 6px 10px; align-items: center; justify-content: space-between; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
+                          <img id="imgThumbArteApp_${idx}" src="" style="width: 38px; height: 38px; object-fit: contain; border-radius: 3px; border: 1px solid #e2e8f0; background: #fafafa; display: none;" alt="Preview Arte">
+                          <span id="iconDocArteApp_${idx}" style="font-size: 22px; display: none;">📄</span>
+                          <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            <span id="nomeArquivoArteApp_${idx}" style="font-size: 11.5px; font-weight: 700; color: #166534; display: block; overflow: hidden; text-overflow: ellipsis;">arquivo.png</span>
+                            <span id="tamanhoArquivoArteApp_${idx}" style="font-size: 10px; color: #64748b;">120 KB</span>
+                          </div>
+                        </div>
+                        <div style="display: flex; gap: 4px; align-items: center;">
+                          <button type="button" class="btn btn-secondary btn-xs btn-limpar-arte-app" data-idx="${idx}" style="padding: 2px 6px; font-size: 10px; color: #dc2626; border-color: #fca5a5;" title="Remover e escolher outro arquivo">✕ Trocar</button>
+                        </div>
+                      </div>
                     </div>
                   `).join('')}
                 </div>
               ` : `
                 <div class="art-location-grid">
                   <!-- Peito -->
-                  <div class="art-location-card" id="cardArtePeito">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <input type="checkbox" id="chkArtePeito" class="quarentena-checkbox" checked>
-                      <label for="chkArtePeito" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Peito (Frente)</label>
+                  <div class="art-location-card card-arte-obrigatoria" id="cardArtePeito" style="border: 1.5px solid #fecaca; border-left: 5px solid #dc2626; padding: 10px; border-radius: 6px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="chkArtePeito" class="quarentena-checkbox chk-arte-fallback" checked data-key="peito">
+                        <label for="chkArtePeito" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Peito (Frente)</label>
+                      </div>
+                      <span id="statusBadgeArtePeito" style="font-size: 10px; font-weight: 800; color: #dc2626;">⚠️ Obrigatório</span>
                     </div>
-                    <input type="file" id="fileArtePeito" class="form-input" style="font-size: 11px; padding: 4px;" accept="image/*,.pdf,.ai,.pes,.dst">
-                    <input type="text" id="dimArtePeito" class="form-input" value="9.0 x 7.5 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px;">
+                    <div style="display: flex; gap: 6px;">
+                      <input type="file" id="fileArtePeito" class="form-input inp-file-arte-fallback" data-key="peito" style="font-size: 11px; padding: 4px; flex: 1.3;" accept="image/*,.pdf,.ai,.eps,.cdr,.pes,.dst">
+                      <input type="text" id="dimArtePeito" class="form-input" value="9.0 x 7.5 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px; flex: 1;">
+                    </div>
+                    <div id="previewContainerArtePeito" style="display: none; margin-top: 6px; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 4px; padding: 4px 8px; font-size: 11px; color: #166534; font-weight: 700;"></div>
                   </div>
 
                   <!-- Costas -->
-                  <div class="art-location-card" id="cardArteCostas">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <input type="checkbox" id="chkArteCostas" class="quarentena-checkbox">
-                      <label for="chkArteCostas" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Costas</label>
+                  <div class="art-location-card card-arte-obrigatoria" id="cardArteCostas" style="border: 1.5px solid #e2e8f0; border-left: 5px solid #94a3b8; padding: 10px; border-radius: 6px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="chkArteCostas" class="quarentena-checkbox chk-arte-fallback" data-key="costas">
+                        <label for="chkArteCostas" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Costas</label>
+                      </div>
+                      <span id="statusBadgeArteCostas" style="font-size: 10px; font-weight: 800; color: #64748b;">Opcional</span>
                     </div>
-                    <input type="file" id="fileArteCostas" class="form-input" style="font-size: 11px; padding: 4px;" accept="image/*,.pdf,.ai,.pes,.dst">
-                    <input type="text" id="dimArteCostas" class="form-input" value="28.0 x 12.0 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px;">
+                    <div style="display: flex; gap: 6px;">
+                      <input type="file" id="fileArteCostas" class="form-input inp-file-arte-fallback" data-key="costas" style="font-size: 11px; padding: 4px; flex: 1.3;" accept="image/*,.pdf,.ai,.eps,.cdr,.pes,.dst">
+                      <input type="text" id="dimArteCostas" class="form-input" value="28.0 x 12.0 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px; flex: 1;">
+                    </div>
+                    <div id="previewContainerArteCostas" style="display: none; margin-top: 6px; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 4px; padding: 4px 8px; font-size: 11px; color: #166534; font-weight: 700;"></div>
                   </div>
 
                   <!-- Manga / Ombro -->
-                  <div class="art-location-card" id="cardArteOmbro">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <input type="checkbox" id="chkArteOmbro" class="quarentena-checkbox">
-                      <label for="chkArteOmbro" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Ombro / Manga</label>
+                  <div class="art-location-card card-arte-obrigatoria" id="cardArteOmbro" style="border: 1.5px solid #e2e8f0; border-left: 5px solid #94a3b8; padding: 10px; border-radius: 6px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="chkArteOmbro" class="quarentena-checkbox chk-arte-fallback" data-key="ombro">
+                        <label for="chkArteOmbro" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Ombro / Manga</label>
+                      </div>
+                      <span id="statusBadgeArteOmbro" style="font-size: 10px; font-weight: 800; color: #64748b;">Opcional</span>
                     </div>
-                    <input type="file" id="fileArteOmbro" class="form-input" style="font-size: 11px; padding: 4px;" accept="image/*,.pdf,.ai,.pes,.dst">
-                    <input type="text" id="dimArteOmbro" class="form-input" value="8.0 x 4.0 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px;">
+                    <div style="display: flex; gap: 6px;">
+                      <input type="file" id="fileArteOmbro" class="form-input inp-file-arte-fallback" data-key="ombro" style="font-size: 11px; padding: 4px; flex: 1.3;" accept="image/*,.pdf,.ai,.eps,.cdr,.pes,.dst">
+                      <input type="text" id="dimArteOmbro" class="form-input" value="8.0 x 4.0 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px; flex: 1;">
+                    </div>
+                    <div id="previewContainerArteOmbro" style="display: none; margin-top: 6px; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 4px; padding: 4px 8px; font-size: 11px; color: #166534; font-weight: 700;"></div>
                   </div>
 
                   <!-- Outro Local -->
-                  <div class="art-location-card" id="cardArteOutro">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <input type="checkbox" id="chkArteOutro" class="quarentena-checkbox">
-                      <label for="chkArteOutro" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Outro Local</label>
+                  <div class="art-location-card card-arte-obrigatoria" id="cardArteOutro" style="border: 1.5px solid #e2e8f0; border-left: 5px solid #94a3b8; padding: 10px; border-radius: 6px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="chkArteOutro" class="quarentena-checkbox chk-arte-fallback" data-key="outro">
+                        <label for="chkArteOutro" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Outro Local</label>
+                      </div>
+                      <span id="statusBadgeArteOutro" style="font-size: 10px; font-weight: 800; color: #64748b;">Opcional</span>
                     </div>
-                    <input type="text" id="descArteOutro" class="form-input" placeholder="Descreva o local (ex: Gola, Barra, Bolso)" style="font-size: 11px;">
-                    <input type="file" id="fileArteOutro" class="form-input" style="font-size: 11px; padding: 4px;" accept="image/*,.pdf,.ai,.pes,.dst">
+                    <input type="text" id="descArteOutro" class="form-input" placeholder="Descreva o local (ex: Gola, Barra, Bolso)" style="font-size: 11px; margin-bottom: 6px;">
+                    <input type="file" id="fileArteOutro" class="form-input inp-file-arte-fallback" data-key="outro" style="font-size: 11px; padding: 4px;" accept="image/*,.pdf,.ai,.eps,.cdr,.pes,.dst">
+                    <div id="previewContainerArteOutro" style="display: none; margin-top: 6px; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 4px; padding: 4px 8px; font-size: 11px; color: #166534; font-weight: 700;"></div>
                   </div>
                 </div>
               `}
             </div>
 
-            <!-- 3. Mockup 3x4 Obrigatório -->
-            <div class="form-group" style="margin-top: 14px; background: #f8fafc; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); padding: 14px;">
-              <label class="form-label" style="font-weight: 800; color: var(--text-primary);">
-                Mockup da Camiseta em Proporção 3x4 (Aparecerá na Aba de Pedidos e na Ficha de Corte)
-              </label>
-
-              <div style="display: flex; gap: 16px; align-items: center;">
-                <div>
-                  <img id="previewMockup3x4" src="${mockupDataUrl}" style="width: 75px; height: 100px; aspect-ratio: 3/4; object-fit: contain; border: 1px solid var(--border-medium); border-radius: 4px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.1);" alt="Preview 3x4">
-                  <span style="display: block; font-size: 10px; color: var(--text-gray-500); text-align: center; margin-top: 4px;">Miniatura 3x4</span>
-                </div>
-
-                <div style="flex: 1;">
-                  <span style="font-size: 12px; color: var(--text-gray-600); display: block; margin-bottom: 6px;">
-                    Você pode anexar um mockup pronto fornecido pelo cliente ou utilizar a renderização vetorial industrial de alta fidelidade:
-                  </span>
-                  
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <label class="btn btn-secondary btn-sm" style="cursor: pointer;">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                      Anexar Imagem Mockup (Arquivo)
-                      <input type="file" id="inputUploadMockupReal" accept="image/*" style="display: none;">
-                    </label>
-
-                    <button type="button" class="btn btn-secondary btn-sm" id="btnGerarMockupAzul">Polo Marinho</button>
-                    <button type="button" class="btn btn-secondary btn-sm" id="btnGerarMockupCinza">Brim Cinza</button>
-                    <button type="button" class="btn btn-secondary btn-sm" id="btnGerarMockupBranco">Branco Neve</button>
-                    <button type="button" class="btn btn-secondary btn-sm" id="btnGerarMockupPreto">Preto Reativo</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 4. Dados Financeiros & Entrada de Sinal (Valor ou Porcentagem) -->
+            <!-- 3. Dados Financeiros & Entrada de Sinal (Valor ou Porcentagem) -->
             <div style="background: #ffffff; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); padding: 14px; margin-top: 14px;">
               <span class="form-label" style="font-weight: 800; color: var(--text-primary); margin-bottom: 8px; display: block;">
                 Condições Comerciais, Entrada de Sinal & Saldo Remanescente:
@@ -6570,54 +7335,7 @@
       </div>
     `);
 
-    // Leitor de Mockup do Usuário
-    const inputUpload = document.getElementById('inputUploadMockupReal');
-    inputUpload?.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          mockupDataUrl = evt.target.result;
-          const prev = document.getElementById('previewMockup3x4');
-          if (prev) prev.src = mockupDataUrl;
-          mostrarToast('Mockup 3x4 do cliente carregado com sucesso!', 'green');
-        };
-        reader.readAsDataURL(file);
-      }
-    });
 
-    // Geradores Rápidos de Cores
-    const prodNome = dadosBase.prod ? dadosBase.prod.nome : dadosBase.produtoNome;
-    const cliNome = (dadosBase.cliente ? dadosBase.cliente.nomeFantasia : dadosBase.clienteNome);
-
-    document.getElementById('btnGerarMockupAzul')?.addEventListener('click', () => {
-      mockupDataUrl = window.ERP_MOCKUPS.gerarMockupSvg(prodNome, "#1e3a8a", "#ffffff", cliNome.substring(0, 6));
-      document.getElementById('previewMockup3x4').src = mockupDataUrl;
-    });
-
-    document.getElementById('btnGerarMockupCinza')?.addEventListener('click', () => {
-      mockupDataUrl = window.ERP_MOCKUPS.gerarMockupSvg("brim", "#475569", "#eab308", cliNome.substring(0, 6));
-      document.getElementById('previewMockup3x4').src = mockupDataUrl;
-    });
-
-    document.getElementById('btnGerarMockupBranco')?.addEventListener('click', () => {
-      mockupDataUrl = window.ERP_MOCKUPS.gerarMockupSvg("jaleco", "#ffffff", "#047857", cliNome.substring(0, 6));
-      document.getElementById('previewMockup3x4').src = mockupDataUrl;
-    });
-
-    document.getElementById('btnGerarMockupPreto')?.addEventListener('click', () => {
-      mockupDataUrl = window.ERP_MOCKUPS.gerarMockupSvg("camiseta", "#0f172a", "#ffffff", cliNome.substring(0, 6));
-      document.getElementById('previewMockup3x4').src = mockupDataUrl;
-    });
-
-    // Configura o seletor industrial de cores e sincroniza com o mockup 3x4
-    configurarEventosSeletorCores('avanco', (corNome, corHex) => {
-      const pNome = dadosBase.prod ? dadosBase.prod.nome : dadosBase.produtoNome;
-      const cNome = (dadosBase.cliente ? (dadosBase.cliente.nomeFantasia || dadosBase.cliente.nome) : dadosBase.clienteNome);
-      mockupDataUrl = window.ERP_MOCKUPS.gerarMockupSvg(pNome, corHex, "#ffffff", (cNome || "BRAVVI").toString().substring(0, 6));
-      const prev = document.getElementById('previewMockup3x4');
-      if (prev) prev.src = mockupDataUrl;
-    });
 
     // Cadastro de costureira inline
     document.getElementById('btnCadastrarCostureiraInline')?.addEventListener('click', () => {
@@ -6692,6 +7410,184 @@
       });
     });
 
+    // Estrutura de armazenamento em memória dos arquivos de arte lidos (DataUrl)
+    const artesArquivosCarregados = {};
+
+    // Pré-carrega artes caso o pedido já possua arquivos anexados previamente
+    if (dadosBase.artesAnexadas && Array.isArray(dadosBase.artesAnexadas)) {
+      dadosBase.artesAnexadas.forEach((art, aIdx) => {
+        if (art && (art.arquivoDataUrl || art.arquivoNome)) {
+          artesArquivosCarregados[aIdx] = {
+            name: art.arquivoNome || `arte_${aIdx + 1}.png`,
+            type: art.arquivoTipo || 'image/png',
+            size: art.arquivoTamanho || 0,
+            dataUrl: art.arquivoDataUrl || ''
+          };
+          setTimeout(() => {
+            const card = document.getElementById(`cardArteApp_${aIdx}`);
+            const statusBadge = document.getElementById(`statusBadgeArteApp_${aIdx}`);
+            const prevCont = document.getElementById(`previewContainerArteApp_${aIdx}`);
+            const imgThumb = document.getElementById(`imgThumbArteApp_${aIdx}`);
+            const iconDoc = document.getElementById(`iconDocArteApp_${aIdx}`);
+            const nomeArq = document.getElementById(`nomeArquivoArteApp_${aIdx}`);
+            const tamArq = document.getElementById(`tamanhoArquivoArteApp_${aIdx}`);
+            if (card) {
+              card.style.borderColor = '#86efac';
+              card.style.borderLeft = '5px solid #16a34a';
+              card.style.background = '#f0fdf4';
+            }
+            if (statusBadge) {
+              statusBadge.innerHTML = '✓ Arquivo Já Anexado';
+              statusBadge.style.color = '#16a34a';
+            }
+            if (prevCont) {
+              prevCont.style.display = 'flex';
+              if (nomeArq) nomeArq.textContent = art.arquivoNome || 'Arte Anexa';
+              if (tamArq) tamArq.textContent = formatarTamanhoBytes(art.arquivoTamanho);
+              if (art.arquivoDataUrl && (art.arquivoTipo?.startsWith('image/') || art.arquivoDataUrl.startsWith('data:image/'))) {
+                if (imgThumb) { imgThumb.src = art.arquivoDataUrl; imgThumb.style.display = 'block'; }
+                if (iconDoc) iconDoc.style.display = 'none';
+              } else {
+                if (imgThumb) imgThumb.style.display = 'none';
+                if (iconDoc) { iconDoc.style.display = 'block'; iconDoc.textContent = '📄'; }
+              }
+            }
+          }, 30);
+        }
+      });
+    }
+
+    // Listener para inputs de artes dinâmicas (processa arquivo, gera DataURL e atualiza status)
+    document.querySelectorAll('.inp-file-arte-dinamica').forEach(inp => {
+      inp.addEventListener('change', async (e) => {
+        const idx = inp.getAttribute('data-idx');
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        const card = document.getElementById(`cardArteApp_${idx}`);
+        const statusBadge = document.getElementById(`statusBadgeArteApp_${idx}`);
+        const prevCont = document.getElementById(`previewContainerArteApp_${idx}`);
+        const imgThumb = document.getElementById(`imgThumbArteApp_${idx}`);
+        const iconDoc = document.getElementById(`iconDocArteApp_${idx}`);
+        const nomeArq = document.getElementById(`nomeArquivoArteApp_${idx}`);
+        const tamArq = document.getElementById(`tamanhoArquivoArteApp_${idx}`);
+
+        if (file.size > 8 * 1024 * 1024) {
+          mostrarToast(`O arquivo "${file.name}" tem ${(file.size / (1024*1024)).toFixed(1)}MB. O limite máximo é 8MB.`, 'red');
+          inp.value = '';
+          return;
+        }
+
+        try {
+          if (statusBadge) {
+            statusBadge.innerHTML = '⏳ Processando arte...';
+            statusBadge.style.color = '#0284c7';
+          }
+
+          const dataUrl = await comprimirImagemDataUrl(file, 1600, 1600, 0.85);
+
+          artesArquivosCarregados[idx] = {
+            name: file.name,
+            type: file.type || 'application/octet-stream',
+            size: file.size,
+            dataUrl: dataUrl
+          };
+
+          if (card) {
+            card.style.borderColor = '#86efac';
+            card.style.borderLeft = '5px solid #16a34a';
+            card.style.background = '#f0fdf4';
+            card.style.boxShadow = '';
+          }
+          if (statusBadge) {
+            statusBadge.innerHTML = '✓ Arquivo Pronto';
+            statusBadge.style.color = '#16a34a';
+          }
+          if (prevCont) {
+            prevCont.style.display = 'flex';
+            if (nomeArq) nomeArq.textContent = file.name;
+            if (tamArq) tamArq.textContent = formatarTamanhoBytes(file.size);
+            if (file.type && file.type.startsWith('image/')) {
+              if (imgThumb) { imgThumb.src = dataUrl; imgThumb.style.display = 'block'; }
+              if (iconDoc) iconDoc.style.display = 'none';
+            } else {
+              if (imgThumb) imgThumb.style.display = 'none';
+              if (iconDoc) {
+                iconDoc.style.display = 'block';
+                iconDoc.textContent = file.name.endsWith('.pdf') ? '📕' : file.name.endsWith('.ai') ? '🎨' : '📁';
+              }
+            }
+          }
+          mostrarToast(`✓ Arte "${file.name}" anexada com sucesso!`, 'green');
+        } catch (err) {
+          console.error('Erro ao ler arquivo de arte:', err);
+          mostrarToast('Erro ao ler o arquivo de arte. Tente novamente.', 'red');
+        }
+      });
+    });
+
+    // Botão Limpar / Trocar Arte
+    document.querySelectorAll('.btn-limpar-arte-app').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = btn.getAttribute('data-idx');
+        delete artesArquivosCarregados[idx];
+        const inp = document.getElementById(`fileArteApp_${idx}`);
+        if (inp) inp.value = '';
+        const card = document.getElementById(`cardArteApp_${idx}`);
+        const statusBadge = document.getElementById(`statusBadgeArteApp_${idx}`);
+        const prevCont = document.getElementById(`previewContainerArteApp_${idx}`);
+        if (card) {
+          card.style.borderColor = '#fecaca';
+          card.style.borderLeft = '5px solid #dc2626';
+          card.style.background = '#fffdfd';
+        }
+        if (statusBadge) {
+          statusBadge.innerHTML = '⚠️ Obrigatório Anexar';
+          statusBadge.style.color = '#dc2626';
+        }
+        if (prevCont) prevCont.style.display = 'none';
+      });
+    });
+
+    // Fallback file handlers para propostas sem lista prévia de aplicações
+    document.querySelectorAll('.inp-file-arte-fallback').forEach(inp => {
+      inp.addEventListener('change', async (e) => {
+        const key = inp.getAttribute('data-key');
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const cardKey = key.charAt(0).toUpperCase() + key.slice(1);
+        const card = document.getElementById(`cardArte${cardKey}`);
+        const statusBadge = document.getElementById(`statusBadgeArte${cardKey}`);
+        const prevCont = document.getElementById(`previewContainerArte${cardKey}`);
+
+        try {
+          const dataUrl = await comprimirImagemDataUrl(file, 1600, 1600, 0.85);
+          artesArquivosCarregados[key] = {
+            name: file.name,
+            type: file.type || 'application/octet-stream',
+            size: file.size,
+            dataUrl: dataUrl
+          };
+          if (card) {
+            card.style.borderColor = '#86efac';
+            card.style.borderLeft = '5px solid #16a34a';
+            card.style.background = '#f0fdf4';
+          }
+          if (statusBadge) {
+            statusBadge.innerHTML = '✓ Arquivo Pronto';
+            statusBadge.style.color = '#16a34a';
+          }
+          if (prevCont) {
+            prevCont.style.display = 'block';
+            prevCont.innerHTML = `✓ ${file.name} (${formatarTamanhoBytes(file.size)})`;
+          }
+          mostrarToast(`✓ Arte de ${key} anexada!`, 'green');
+        } catch (err) {
+          console.error(err);
+        }
+      });
+    });
+
     // Botão Salvar Pedido Final com Validações Estritas
     document.getElementById('btnConfirmarSalvarPedidoFinal')?.addEventListener('click', () => {
       // 1. Validação da Costureira
@@ -6706,15 +7602,30 @@
         return;
       }
 
-      // 2. Validação Obrigatória das Artes
+      // 2. Validação Obrigatória das Artes (BLOQUEIA ENTRADA SE FALTAR ARQUIVO)
       let artesLista = [];
 
-      if (todasAplicacoes.length > 0) {
-        todasAplicacoes.forEach((app, idx) => {
-          const chk = document.getElementById(`chkArteApp_${idx}`);
-          if (chk && chk.checked) {
+      if (!ehApenasPecaLisa) {
+        if (todasAplicacoes.length > 0) {
+          for (let idx = 0; idx < todasAplicacoes.length; idx++) {
+            const app = todasAplicacoes[idx];
+            const arquivoCarregado = artesArquivosCarregados[idx];
+            const cardEl = document.getElementById(`cardArteApp_${idx}`);
+
+            if (!arquivoCarregado || !arquivoCarregado.dataUrl) {
+              if (cardEl) {
+                cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                cardEl.style.borderColor = '#dc2626';
+                cardEl.style.boxShadow = '0 0 0 4px rgba(220, 38, 38, 0.4)';
+                setTimeout(() => {
+                  if (cardEl) cardEl.style.boxShadow = '';
+                }, 3500);
+              }
+              mostrarToast(`⚠️ ARQUIVO OBRIGATÓRIO: Anexe a arte para "${app.local} (${app.tecnica})". Não é permitido dar entrada sem os arquivos das artes.`, 'red');
+              return;
+            }
+
             const dim = document.getElementById(`dimArteApp_${idx}`)?.value || app.dimensoes || 'Padrão';
-            const file = document.getElementById(`fileArteApp_${idx}`)?.files[0];
             artesLista.push({
               local: app.local,
               tecnica: app.tecnica,
@@ -6723,84 +7634,129 @@
               larguraCm: app.larguraCm || 10,
               alturaCm: app.alturaCm || 10,
               quantidadePecas: app.quantidadePecas,
-              arquivoNome: file ? file.name : `arte_${app.local.toLowerCase().replace(/[^a-z0-9]/g, '_')}_vetor.ai`
+              arquivoNome: arquivoCarregado.name,
+              arquivoTipo: arquivoCarregado.type,
+              arquivoTamanho: arquivoCarregado.size,
+              arquivoDataUrl: arquivoCarregado.dataUrl,
+              dataAnexo: new Date().toISOString()
             });
           }
-        });
+        } else {
+          // Fallback (Peito, Costas, Ombro, Outro)
+          const chkPeito = document.getElementById('chkArtePeito')?.checked;
+          const chkCostas = document.getElementById('chkArteCostas')?.checked;
+          const chkOmbro = document.getElementById('chkArteOmbro')?.checked;
+          const chkOutro = document.getElementById('chkArteOutro')?.checked;
 
-        if (!ehApenasPecaLisa && artesLista.length === 0) {
-          mostrarToast('Por favor, selecione ao menos 1 estampa/bordado para o pedido ou confirme se é Peça Lisa.', 'red');
-          return;
-        }
-      } else if (!ehApenasPecaLisa) {
-        const chkPeito = document.getElementById('chkArtePeito')?.checked;
-        const chkCostas = document.getElementById('chkArteCostas')?.checked;
-        const chkOmbro = document.getElementById('chkArteOmbro')?.checked;
-        const chkOutro = document.getElementById('chkArteOutro')?.checked;
-
-        if (!chkPeito && !chkCostas && !chkOmbro && !chkOutro) {
-          mostrarToast('É obrigatório selecionar ao menos 1 local de aplicação de arte (Peito, Costas, Ombro ou Outro).', 'red');
-          return;
-        }
-
-        if (chkPeito) {
-          const dim = document.getElementById('dimArtePeito')?.value || '9.0 x 7.5 cm';
-          const file = document.getElementById('fileArtePeito')?.files[0];
-          artesLista.push({
-            local: "Peito Esquerdo",
-            tecnica: "Bordado / DTF Peito",
-            dimensoes: dim,
-            larguraCm: 9,
-            alturaCm: 7.5,
-            quantidadePecas: dadosBase.grade?.total || 0,
-            arquivoNome: file ? file.name : "arte_peito_alta_resolucao.pdf"
-          });
-        }
-
-        if (chkCostas) {
-          const dim = document.getElementById('dimArteCostas')?.value || '28.0 x 12.0 cm';
-          const file = document.getElementById('fileArteCostas')?.files[0];
-          artesLista.push({
-            local: "Costas",
-            tecnica: "DTF / Silk Costas",
-            dimensoes: dim,
-            larguraCm: 28,
-            alturaCm: 12,
-            quantidadePecas: dadosBase.grade?.total || 0,
-            arquivoNome: file ? file.name : "arte_costas_vetor.ai"
-          });
-        }
-
-        if (chkOmbro) {
-          const dim = document.getElementById('dimArteOmbro')?.value || '8.0 x 4.0 cm';
-          const file = document.getElementById('fileArteOmbro')?.files[0];
-          artesLista.push({
-            local: "Manga / Ombro",
-            tecnica: "Aplicação Manga",
-            dimensoes: dim,
-            larguraCm: 8,
-            alturaCm: 4,
-            quantidadePecas: dadosBase.grade?.total || 0,
-            arquivoNome: file ? file.name : "logo_manga_patrocinio.png"
-          });
-        }
-
-        if (chkOutro) {
-          const desc = document.getElementById('descArteOutro')?.value;
-          if (!desc) {
-            mostrarToast('Por favor, descreva qual é o outro local da arte selecionada.', 'red');
+          if (!chkPeito && !chkCostas && !chkOmbro && !chkOutro) {
+            mostrarToast('É obrigatório selecionar ao menos 1 local e anexar a respectiva arte.', 'red');
             return;
           }
-          const file = document.getElementById('fileArteOutro')?.files[0];
-          artesLista.push({
-            local: desc,
-            tecnica: "Personalização Especial",
-            dimensoes: "Conforme Especificação",
-            larguraCm: 10,
-            alturaCm: 10,
-            quantidadePecas: dadosBase.grade?.total || 0,
-            arquivoNome: file ? file.name : "arte_especial_alta_res.pdf"
-          });
+
+          if (chkPeito) {
+            const arq = artesArquivosCarregados['peito'];
+            if (!arq || !arq.dataUrl) {
+              const card = document.getElementById('cardArtePeito');
+              if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              mostrarToast('⚠️ ARQUIVO OBRIGATÓRIO: Anexe o arquivo de arte para o Peito (Frente).', 'red');
+              return;
+            }
+            const dim = document.getElementById('dimArtePeito')?.value || '9.0 x 7.5 cm';
+            artesLista.push({
+              local: "Peito Esquerdo",
+              tecnica: "Bordado / DTF Peito",
+              dimensoes: dim,
+              larguraCm: 9,
+              alturaCm: 7.5,
+              quantidadePecas: dadosBase.grade?.total || 0,
+              arquivoNome: arq.name,
+              arquivoTipo: arq.type,
+              arquivoTamanho: arq.size,
+              arquivoDataUrl: arq.dataUrl,
+              dataAnexo: new Date().toISOString()
+            });
+          }
+
+          if (chkCostas) {
+            const arq = artesArquivosCarregados['costas'];
+            if (!arq || !arq.dataUrl) {
+              const card = document.getElementById('cardArteCostas');
+              if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              mostrarToast('⚠️ ARQUIVO OBRIGATÓRIO: Anexe o arquivo de arte para as Costas.', 'red');
+              return;
+            }
+            const dim = document.getElementById('dimArteCostas')?.value || '28.0 x 12.0 cm';
+            artesLista.push({
+              local: "Costas",
+              tecnica: "DTF / Silk Costas",
+              dimensoes: dim,
+              larguraCm: 28,
+              alturaCm: 12,
+              quantidadePecas: dadosBase.grade?.total || 0,
+              arquivoNome: arq.name,
+              arquivoTipo: arq.type,
+              arquivoTamanho: arq.size,
+              arquivoDataUrl: arq.dataUrl,
+              dataAnexo: new Date().toISOString()
+            });
+          }
+
+          if (chkOmbro) {
+            const arq = artesArquivosCarregados['ombro'];
+            if (!arq || !arq.dataUrl) {
+              const card = document.getElementById('cardArteOmbro');
+              if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              mostrarToast('⚠️ ARQUIVO OBRIGATÓRIO: Anexe o arquivo de arte para o Ombro / Manga.', 'red');
+              return;
+            }
+            const dim = document.getElementById('dimArteOmbro')?.value || '8.0 x 4.0 cm';
+            artesLista.push({
+              local: "Manga / Ombro",
+              tecnica: "Aplicação Manga",
+              dimensoes: dim,
+              larguraCm: 8,
+              alturaCm: 4,
+              quantidadePecas: dadosBase.grade?.total || 0,
+              arquivoNome: arq.name,
+              arquivoTipo: arq.type,
+              arquivoTamanho: arq.size,
+              arquivoDataUrl: arq.dataUrl,
+              dataAnexo: new Date().toISOString()
+            });
+          }
+
+          if (chkOutro) {
+            const desc = document.getElementById('descArteOutro')?.value;
+            if (!desc) {
+              mostrarToast('Por favor, descreva qual é o outro local da arte selecionada.', 'red');
+              return;
+            }
+            const arq = artesArquivosCarregados['outro'];
+            if (!arq || !arq.dataUrl) {
+              const card = document.getElementById('cardArteOutro');
+              if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              mostrarToast(`⚠️ ARQUIVO OBRIGATÓRIO: Anexe o arquivo de arte para "${desc}".`, 'red');
+              return;
+            }
+            artesLista.push({
+              local: desc,
+              tecnica: "Personalização Especial",
+              dimensoes: "Conforme Especificação",
+              larguraCm: 10,
+              alturaCm: 10,
+              quantidadePecas: dadosBase.grade?.total || 0,
+              arquivoNome: arq.name,
+              arquivoTipo: arq.type,
+              arquivoTamanho: arq.size,
+              arquivoDataUrl: arq.dataUrl,
+              dataAnexo: new Date().toISOString()
+            });
+          }
+        }
+
+        if (artesLista.length === 0) {
+          mostrarToast('⚠️ É obrigatório anexar as artes em alta resolução para oficializar a entrada do pedido.', 'red');
+          return;
         }
       }
 
@@ -6834,8 +7790,8 @@
       const saldoRestante = Math.max(0, totalVendaFinal - valorEfetivoPago);
       const isQuitadoNaEntrada = valorEfetivoPago >= totalVendaFinal;
 
-      const corFinal = (document.getElementById('avancoCorPrincipalTecido')?.value || dadosBase.corPrincipal || dadosBase.corTecido || 'A Definir').trim();
-      const obsCoresFinal = (document.getElementById('avancoObservacoesCoresDetalhes')?.value || dadosBase.observacoesCoresDetalhes || '').trim();
+      const corFinal = (dadosBase.corPrincipal || dadosBase.corTecido || 'Azul Marinho').trim();
+      const obsCoresFinal = (dadosBase.observacoesCoresDetalhes || '').trim();
 
       // Cria ou atualiza pedido oficial
       const pedidoOficial = {
@@ -6900,18 +7856,44 @@
       }
       db.pedidos.unshift(pedidoOficial);
 
-      // 4. LANÇAMENTO AUTOMÁTICO NO FINANCEIRO (COM NOME DO CLIENTE)
+      // 4. LANÇAMENTO AUTOMÁTICO NO FINANCEIRO (ENTRADAS & CONTAS A RECEBER)
+      if (!Array.isArray(db.lancamentosFinanceiros)) db.lancamentosFinanceiros = [];
+
+      // 4.1 Lançamento do Sinal ou Pagamento à Vista Recebido
       if (valorEfetivoPago > 0) {
         db.lancamentosFinanceiros.unshift({
-          id: `LAN-${Math.floor(100 + Math.random() * 900)}`,
+          id: `LAN-${Math.floor(100 + Math.random() * 9000)}`,
+          pedidoId: pedidoOficial.id,
+          pedidoNumero: pedidoOficial.numero,
           data: new Date().toISOString().split('T')[0],
           tipo: "Entrada",
+          status: "Confirmado",
           descricao: isQuitadoNaEntrada
             ? `Quitação 100% Pedido #${pedidoOficial.numero} (${pedidoOficial.grade.total}x ${pedidoOficial.produtoNome})`
             : `Sinal Entrada Pedido #${pedidoOficial.numero} (${pedidoOficial.grade.total}x ${pedidoOficial.produtoNome})`,
           cliente: clienteNomeFinal,
           valor: valorEfetivoPago,
           formaPagamento: formaPagamento,
+          categoria: "Vendas de Uniformes"
+        });
+      }
+
+      // 4.2 Lançamento de Contas a Receber / Saldo Restante / Vendas A Faturar
+      // BLINDAGEM: Garante que vendas a prazo nunca sumam do Financeiro!
+      if (saldoRestante > 0) {
+        db.lancamentosFinanceiros.unshift({
+          id: `LAN-${Math.floor(100 + Math.random() * 9000)}`,
+          pedidoId: pedidoOficial.id,
+          pedidoNumero: pedidoOficial.numero,
+          data: pedidoOficial.dataPrevisaoEntrega || new Date().toISOString().split('T')[0],
+          tipo: valorEfetivoPago > 0 ? "A Receber" : "Venda A Faturar",
+          status: "Pendente",
+          descricao: valorEfetivoPago > 0
+            ? `Saldo a Receber Pedido #${pedidoOficial.numero} (${pedidoOficial.grade.total}x ${pedidoOficial.produtoNome})`
+            : `Venda A Faturar Pedido #${pedidoOficial.numero} (${pedidoOficial.grade.total}x ${pedidoOficial.produtoNome})`,
+          cliente: clienteNomeFinal,
+          valor: saldoRestante,
+          formaPagamento: formaPagamento || "A Receber na Entrega",
           categoria: "Vendas de Uniformes"
         });
       }
@@ -7486,6 +8468,367 @@
     });
   }
 
+  /**
+   * FORMATAÇÃO DE TAMANHO DE ARQUIVOS (BYTES -> KB / MB)
+   */
+  function formatarTamanhoBytes(bytes) {
+    if (!bytes || isNaN(bytes)) return 'Arquivo pronto';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  }
+
+  /**
+   * DOWNLOAD DIRETO DE ARTE DO PEDIDO
+   */
+  function baixarArteDoPedido(dataUrl, nomeArquivo = 'arte_uniforme.png') {
+    if (!dataUrl) {
+      mostrarToast('Arquivo de arte não possui dados salvos para download.', 'red');
+      return;
+    }
+    try {
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = nomeArquivo || 'arte_uniforme.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      mostrarToast(`✓ Iniciando download: "${nomeArquivo}"`, 'green');
+    } catch (err) {
+      console.error('Erro ao baixar arte:', err);
+      window.open(dataUrl, '_blank');
+    }
+  }
+
+  /**
+   * DOWNLOAD DE TODAS AS ARTES DO PEDIDO EM LOTE
+   */
+  function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
+    const p = db.pedidos.find(x => x.id === pedidoIdOuNumero || x.numero.toString() === pedidoIdOuNumero.toString());
+    if (!p || !p.artesAnexadas || !p.artesAnexadas.length) {
+      mostrarToast('Nenhuma arte anexada neste pedido para download.', 'red');
+      return;
+    }
+    const artesComArquivo = p.artesAnexadas.filter(a => a.arquivoDataUrl);
+    if (!artesComArquivo.length) {
+      mostrarToast('Nenhum arquivo de arte encontrado.', 'red');
+      return;
+    }
+
+    artesComArquivo.forEach((arte, i) => {
+      setTimeout(() => {
+        baixarArteDoPedido(arte.arquivoDataUrl, arte.arquivoNome || `arte_${i + 1}.png`);
+      }, i * 350);
+    });
+    mostrarToast(`Baixando ${artesComArquivo.length} arquivos de arte do Pedido #${p.numero}...`, 'green');
+  }
+
+  /**
+   * CENTRAL DE ARTES & ARQUIVOS DE PRODUÇÃO DO PEDIDO
+   * Local no pedido onde é possível localizar qualquer arte e baixar quando quiser!
+   */
+  function abrirModalArtesPedido(pedidoIdOuNumero) {
+    if (!modalContainer) return;
+    const p = db.pedidos.find(x => x.id === pedidoIdOuNumero || x.numero.toString() === pedidoIdOuNumero.toString());
+    if (!p) {
+      mostrarToast('Pedido não encontrado.', 'red');
+      return;
+    }
+
+    const artes = Array.isArray(p.artesAnexadas) ? p.artesAnexadas : [];
+    const artesComArquivo = artes.filter(a => a.arquivoDataUrl);
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active" id="modalArtesPedidoOverlay">
+        <div class="modal-box" style="max-width: 860px; max-height: 90vh; display: flex; flex-direction: column;">
+          <div class="modal-header" style="background: linear-gradient(135deg, #0f172a, #1e293b); color: #ffffff; border-bottom: none; border-radius: 8px 8px 0 0; padding: 16px 20px;">
+            <div>
+              <div class="modal-title" style="color: #ffffff; display: flex; align-items: center; gap: 8px; font-size: 16px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                <span>Central de Artes & Vetores • Pedido #${p.numero}</span>
+              </div>
+              <span style="font-size: 12px; color: #94a3b8; display: block; margin-top: 2px;">
+                Cliente: <strong style="color: #f1f5f9;">${p.clienteNome}</strong> • Peça: <strong style="color: #f1f5f9;">${p.produtoNome}</strong> (${p.grade?.total || 0} peças) • Status: <strong style="color: #38bdf8;">${p.etapaProducao || p.status}</strong>
+              </span>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()" style="color: #cbd5e1; font-size: 22px;">&times;</button>
+          </div>
+
+          <!-- Barra de Ações Rápidas -->
+          <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div style="font-size: 12px; color: #475569; display: flex; align-items: center; gap: 8px;">
+              <span class="status-pill status-blue" style="font-size: 10.5px; font-weight: 800;">
+                ${artes.length} Aplicação(ões) Registrada(s)
+              </span>
+              <span>•</span>
+              <span style="color: #166534; font-weight: 700;">
+                ✓ ${artesComArquivo.length} arquivo(s) prontos para download
+              </span>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+              ${artesComArquivo.length > 0 ? `
+                <button type="button" class="btn btn-primary btn-sm" id="btnBaixarTodasArtesModal" style="background: #0284c7; border-color: #0284c7; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  Baixar Todas as Artes (${artesComArquivo.length})
+                </button>
+              ` : ''}
+              <button type="button" class="btn btn-secondary btn-sm" id="btnAdicionarArteAvulsaModal" style="font-weight: 700; color: #047857; border-color: #a7f3d0; background: #ecfdf5;">
+                + Anexar Nova Arte
+              </button>
+            </div>
+          </div>
+
+          <div class="modal-body" style="overflow-y: auto; padding: 18px 20px; flex: 1;">
+            ${artes.length === 0 ? `
+              <div style="text-align: center; padding: 40px 20px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; color: #64748b;">
+                <div style="font-size: 36px; margin-bottom: 8px;">🎨</div>
+                <h4 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">Nenhuma arte anexada neste pedido</h4>
+                <p style="font-size: 12px; max-width: 440px; margin: 0 auto 14px auto;">Este pedido foi registrado como Peça Lisa ou não continha personalizações. Você pode anexar arquivos de estamparia ou bordado a qualquer momento abaixo.</p>
+                <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('formNovaArteAvulsa').style.display='block';">
+                  + Anexar Arquivo de Arte Agora
+                </button>
+              </div>
+            ` : `
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 14px;">
+                ${artes.map((art, idx) => {
+                  const temDataUrl = !!art.arquivoDataUrl;
+                  const isImg = temDataUrl && (
+                    (art.arquivoTipo && art.arquivoTipo.startsWith('image/')) ||
+                    art.arquivoDataUrl.startsWith('data:image/') ||
+                    (art.arquivoNome && /\.(png|jpg|jpeg|webp|svg)$/i.test(art.arquivoNome))
+                  );
+                  return `
+                    <div class="card" style="border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px; background: #ffffff; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                      <div>
+                        <!-- Cabeçalho do Card da Arte -->
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+                          <div>
+                            <span style="font-size: 13px; font-weight: 800; color: #0f172a; display: block;">
+                              📍 ${art.local}
+                            </span>
+                            ${art.modeloNome ? `<span style="font-size: 11px; color: #64748b;">${art.modeloNome}</span>` : ''}
+                          </div>
+                          <span style="font-size: 10px; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 2px 7px; border-radius: 4px; text-transform: uppercase;">
+                            ${art.tecnica || 'DTF'} • ${art.quantidadePecas || p.grade?.total || 0} un
+                          </span>
+                        </div>
+
+                        <!-- Área Visual de Pré-Visualização / Ícone -->
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; min-height: 140px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; position: relative; overflow: hidden;">
+                          ${isImg ? `
+                            <img src="${art.arquivoDataUrl}" style="max-height: 130px; max-width: 100%; object-fit: contain; border-radius: 4px; cursor: pointer;" alt="${art.arquivoNome}" title="Clique para abrir imagem em tamanho real" onclick="window.open('${art.arquivoDataUrl}', '_blank')">
+                          ` : temDataUrl ? `
+                            <div style="text-align: center; padding: 14px;">
+                              <div style="font-size: 38px; margin-bottom: 4px;">
+                                ${art.arquivoNome?.endsWith('.pdf') ? '📕' : art.arquivoNome?.endsWith('.ai') ? '🎨' : '📁'}
+                              </div>
+                              <span style="font-size: 12px; font-weight: 700; color: #0f172a; display: block;">
+                                ${art.arquivoNome || 'Arquivo de Vetor/Bordado'}
+                              </span>
+                              <span style="font-size: 11px; color: #64748b;">Formato Vetorial / Produção</span>
+                            </div>
+                          ` : `
+                            <div style="text-align: center; color: #94a3b8; padding: 14px;">
+                              <div style="font-size: 28px;">⚠️</div>
+                              <span style="font-size: 11px; display: block; margin-top: 4px;">Arquivo não anexado nesta versão</span>
+                            </div>
+                          `}
+                          <span style="position: absolute; bottom: 6px; right: 8px; font-size: 10px; font-weight: 800; background: rgba(15,23,42,0.75); color: #ffffff; padding: 2px 6px; border-radius: 3px;">
+                            📐 ${art.dimensoes || 'Padrão'}
+                          </span>
+                        </div>
+
+                        <!-- Metadados do Arquivo -->
+                        <div style="font-size: 11.5px; color: #334155; line-height: 1.45; margin-bottom: 12px; background: #fdfdfd; padding: 8px; border-radius: 4px; border: 1px solid #f1f5f9;">
+                          <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #64748b;">Nome:</span>
+                            <strong style="color: #0f172a; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${art.arquivoNome}">${art.arquivoNome || 'Sem nome'}</strong>
+                          </div>
+                          <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #64748b;">Tamanho:</span>
+                            <span style="font-weight: 700;">${formatarTamanhoBytes(art.arquivoTamanho)}</span>
+                          </div>
+                          <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #64748b;">Data do Anexo:</span>
+                            <span>${art.dataAnexo ? new Date(art.dataAnexo).toLocaleDateString('pt-BR') : p.dataCriacao || '-'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Botões de Ação do Card -->
+                      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        ${temDataUrl ? `
+                          <button type="button" class="btn btn-primary btn-sm btn-baixar-arte-card" data-idx="${idx}" style="flex: 1.2; font-weight: 700; background: #0284c7; border-color: #0284c7; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            Baixar Arte
+                          </button>
+                          ${isImg ? `
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="window.open('${art.arquivoDataUrl}', '_blank')" style="font-size: 11px; padding: 4px 8px;" title="Ver em tela cheia">
+                              👁️
+                            </button>
+                          ` : ''}
+                        ` : ''}
+                        <label class="btn btn-secondary btn-sm" style="flex: 1; font-size: 11px; cursor: pointer; text-align: center; margin: 0; display: inline-flex; align-items: center; justify-content: center;" title="Substituir por nova versão">
+                          🔄 Trocar
+                          <input type="file" class="inp-trocar-arte-existente" data-idx="${idx}" style="display: none;" accept="image/*,.pdf,.ai,.eps,.cdr,.pes,.dst">
+                        </label>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `}
+
+            <!-- Formulário Recolhível para Anexar Nova Arte Avulsa -->
+            <div id="formNovaArteAvulsa" style="display: none; margin-top: 18px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <strong style="font-size: 13px; color: #166534;">+ Adicionar Nova Aplicação / Arte no Pedido #${p.numero}</strong>
+                <button type="button" class="btn btn-secondary btn-xs" onclick="document.getElementById('formNovaArteAvulsa').style.display='none';" style="font-size: 10px;">✕ Fechar</button>
+              </div>
+              <div class="grid-cards-3" style="gap: 8px; margin-bottom: 10px;">
+                <div>
+                  <label class="form-label" style="font-size: 11px;">Local</label>
+                  <input type="text" id="novoLocalArteAvulsa" class="form-input" placeholder="Ex: Peito Esquerdo, Manga..." value="Peito Esquerdo" style="font-size: 11px;">
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 11px;">Técnica</label>
+                  <select id="novoTecnicaArteAvulsa" class="form-select" style="font-size: 11px;">
+                    <option value="DTF Digital">DTF Digital</option>
+                    <option value="Bordado">Bordado Computadorizado</option>
+                    <option value="Silk Screen">Silk Screen</option>
+                    <option value="Sublimação">Sublimação Total / Local</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 11px;">Dimensões (LxA cm)</label>
+                  <input type="text" id="novoDimArteAvulsa" class="form-input" placeholder="10 x 10 cm" value="10 x 10 cm" style="font-size: 11px;">
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="file" id="novoFileArteAvulsa" class="form-input" style="font-size: 11px; padding: 6px; flex: 1.5;" accept="image/*,.pdf,.ai,.eps,.cdr,.pes,.dst">
+                <button type="button" class="btn btn-green btn-sm" id="btnSalvarNovaArteAvulsa" style="font-weight: 700; flex: 1;">
+                  Salvar Arte no Pedido
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="background: #ffffff; border-top: 1px solid #e2e8f0; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 11px; color: #64748b;">
+              Arquivos salvos e vinculados permanentemente à Ordem de Serviço da Confecção.
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.fecharModal()">
+              Fechar
+            </button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    // Eventos do Modal de Artes
+    document.getElementById('btnBaixarTodasArtesModal')?.addEventListener('click', () => {
+      baixarTodasArtesDoPedido(p.id);
+    });
+
+    document.getElementById('btnAdicionarArteAvulsaModal')?.addEventListener('click', () => {
+      const f = document.getElementById('formNovaArteAvulsa');
+      if (f) {
+        f.style.display = f.style.display === 'none' ? 'block' : 'none';
+        if (f.style.display === 'block') f.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+
+    // Download individual de cada arte
+    modalEl.querySelectorAll('.btn-baixar-arte-card').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-idx'), 10);
+        const art = artes[idx];
+        if (art && art.arquivoDataUrl) {
+          baixarArteDoPedido(art.arquivoDataUrl, art.arquivoNome || `arte_${art.local || 'estamparia'}.png`);
+        }
+      });
+    });
+
+    // Trocar arte existente
+    modalEl.querySelectorAll('.inp-trocar-arte-existente').forEach(inp => {
+      inp.addEventListener('change', async (e) => {
+        const idx = parseInt(inp.getAttribute('data-idx'), 10);
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        try {
+          const dataUrl = await comprimirImagemDataUrl(file, 1600, 1600, 0.85);
+          if (!p.artesAnexadas) p.artesAnexadas = [];
+          if (p.artesAnexadas[idx]) {
+            p.artesAnexadas[idx].arquivoNome = file.name;
+            p.artesAnexadas[idx].arquivoTipo = file.type || 'application/octet-stream';
+            p.artesAnexadas[idx].arquivoTamanho = file.size;
+            p.artesAnexadas[idx].arquivoDataUrl = dataUrl;
+            p.artesAnexadas[idx].dataAnexo = new Date().toISOString();
+          }
+          salvarEstado();
+          fecharModal();
+          abrirModalArtesPedido(p.id);
+          mostrarToast(`✓ Arte substituída com sucesso: "${file.name}"`, 'green');
+        } catch (err) {
+          console.error(err);
+          mostrarToast('Erro ao atualizar arte.', 'red');
+        }
+      });
+    });
+
+    // Salvar nova arte avulsa
+    document.getElementById('btnSalvarNovaArteAvulsa')?.addEventListener('click', async () => {
+      const fileInput = document.getElementById('novoFileArteAvulsa');
+      const file = fileInput?.files && fileInput.files[0];
+      if (!file) {
+        mostrarToast('Selecione um arquivo de imagem ou vetor para anexar.', 'red');
+        return;
+      }
+      const local = document.getElementById('novoLocalArteAvulsa')?.value || 'Peito Esquerdo';
+      const tecnica = document.getElementById('novoTecnicaArteAvulsa')?.value || 'DTF Digital';
+      const dim = document.getElementById('novoDimArteAvulsa')?.value || '10 x 10 cm';
+
+      try {
+        const dataUrl = await comprimirImagemDataUrl(file, 1600, 1600, 0.85);
+        if (!Array.isArray(p.artesAnexadas)) p.artesAnexadas = [];
+        p.artesAnexadas.push({
+          local: local,
+          tecnica: tecnica,
+          modeloNome: p.produtoNome,
+          dimensoes: dim,
+          larguraCm: 10,
+          alturaCm: 10,
+          quantidadePecas: p.grade?.total || 1,
+          arquivoNome: file.name,
+          arquivoTipo: file.type || 'application/octet-stream',
+          arquivoTamanho: file.size,
+          arquivoDataUrl: dataUrl,
+          dataAnexo: new Date().toISOString()
+        });
+        salvarEstado();
+        fecharModal();
+        abrirModalArtesPedido(p.id);
+        renderizarPedidos();
+        mostrarToast(`✓ Nova arte "${file.name}" adicionada ao pedido!`, 'green');
+      } catch (err) {
+        console.error(err);
+        mostrarToast('Erro ao salvar nova arte.', 'red');
+      }
+    });
+  }
+
+  function baixarArteDoPedidoDireta(pedidoIdOuNumero, arteIdx) {
+    const p = db.pedidos.find(x => x.id === pedidoIdOuNumero || x.numero.toString() === pedidoIdOuNumero.toString());
+    if (!p || !p.artesAnexadas || !p.artesAnexadas[arteIdx]) {
+      mostrarToast('Arquivo de arte não localizado para este pedido.', 'red');
+      return;
+    }
+    const arte = p.artesAnexadas[arteIdx];
+    baixarArteDoPedido(arte.arquivoDataUrl, arte.arquivoNome);
+  }
+
   function gerarHtmlCorpoFichaTecnica(os) {
     const pedido = db.pedidos.find(p => p.numero === os.pedidoNumero) || {};
     const itensLista = (os.itens && os.itens.length > 0) ? os.itens : (pedido.itens && pedido.itens.length > 0 ? pedido.itens : []);
@@ -7630,18 +8973,28 @@
 
       <!-- 2. Especificações de Estamparia / DTF (Bobina & Arquivos) -->
       <div style="margin-bottom: 10px; background: #fafafa; border: 1px dashed #cbd5e1; padding: 8px 10px; border-radius: 4px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
           <strong style="color: #0f172a; font-size: 11.5px;">2. ESPECIFICAÇÃO DE ARTES & DTF DIGITAL:</strong>
-          <span class="status-pill status-gray" style="font-size: 10px;">
-            Bobina DTF: <strong>${larguraDTF} cm Útil</strong> ${larguraDTF == 28 ? '(Bobina Estreita 30cm/A3)' : '(Bobina Industrial 60cm)'}
-          </span>
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.abrirModalArtesPedido('${pedido.id || os.pedidoNumero}')" style="font-size: 10px; font-weight: 700; color: #0284c7; border-color: #bae6fd; background: #ffffff; padding: 2px 7px; cursor: pointer;" title="Abrir galeria de artes e baixar em alta resolução">
+              🎨 Central de Downloads das Artes
+            </button>
+            <span class="status-pill status-gray" style="font-size: 10px;">
+              Bobina DTF: <strong>${larguraDTF} cm Útil</strong> ${larguraDTF == 28 ? '(Bobina Estreita 30cm/A3)' : '(Bobina Industrial 60cm)'}
+            </span>
+          </div>
         </div>
         <ul style="padding-left: 18px; color: #475569; font-size: 11px; margin-top: 4px;">
-          ${(os.artesAplicacao && os.artesAplicacao.length > 0) ? os.artesAplicacao.map(a => `
-            <li>
+          ${(os.artesAplicacao && os.artesAplicacao.length > 0) ? os.artesAplicacao.map((a, aIdx) => `
+            <li style="margin-bottom: 4px;">
               ${a.modeloNome ? `<strong>[${a.modeloNome.split(' ')[0]}]</strong> ` : ''}
-              <strong>${a.local}:</strong> ${a.dimensoes || a.dimensao || 'Padrão'} • Técnica/Arquivo: <strong>${a.arquivoNome || a.tecnica || 'Vetor Fechado'}</strong>
+              <strong>${a.local}:</strong> ${a.dimensoes || a.dimensao || 'Padrão'} • Técnica: <strong>${a.tecnica || 'DTF / Bordado'}</strong> • Arquivo: <strong>${a.arquivoNome || 'Arte Anexa'}</strong>
               ${a.quantidadePecas ? ` (${a.quantidadePecas} un)` : ''}
+              ${a.arquivoDataUrl ? `
+                <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.baixarArteDoPedidoDireta('${pedido.id || os.pedidoNumero}', ${aIdx})" style="margin-left: 6px; padding: 1px 6px; font-size: 9.5px; font-weight: 700; color: #0284c7; border-color: #bae6fd; background: #ffffff; cursor: pointer;" title="Baixar este arquivo original">
+                  ⬇️ Baixar Arte
+                </button>
+              ` : ''}
             </li>
           `).join('') : `
             <li>Personalização padrão conforme ficha de estampa e bordado aprovada.</li>
@@ -7764,268 +9117,917 @@
   /* ==========================================================================
      MÓDULO 4: NESTING DTF (OTIMIZAÇÃO 2D DE ROLO 58CM + ARTES DE PEDIDOS)
      ========================================================================== */
+
+  /**
+   * Sintetiza uma miniatura gráfica vetorial em SVG para artes que não possuem arquivo binário
+   */
+  function sintetizarSvgArteBadge(cliente, local, dimensoes) {
+    const cliFormatado = (cliente || 'CLIENTE').toUpperCase();
+    const locFormatado = (local || 'ESTAMPA').toUpperCase();
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200">
+      <defs>
+        <linearGradient id="gNesting" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#0f172a"/>
+          <stop offset="100%" stop-color="#1e293b"/>
+        </linearGradient>
+      </defs>
+      <rect width="300" height="200" fill="url(#gNesting)" rx="10"/>
+      <rect x="8" y="8" width="284" height="184" fill="none" stroke="#38bdf8" stroke-width="2" stroke-dasharray="6,4" rx="6"/>
+      <text x="150" y="52" fill="#38bdf8" font-family="sans-serif" font-weight="900" font-size="18" text-anchor="middle">🎨 DTF PRINT</text>
+      <text x="150" y="92" fill="#ffffff" font-family="sans-serif" font-weight="800" font-size="16" text-anchor="middle">${cliFormatado}</text>
+      <text x="150" y="128" fill="#94a3b8" font-family="sans-serif" font-weight="700" font-size="13" text-anchor="middle">${locFormatado}</text>
+      <text x="150" y="165" fill="#38bdf8" font-family="monospace" font-weight="bold" font-size="12" text-anchor="middle">📐 ${dimensoes || ''}</text>
+    </svg>`;
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+
+  /**
+   * Extrai com precisão as artes cadastradas no pedido oficial com dimensões, cópias e imagens
+   */
+  function extrairArtesDoPedido(pedido) {
+    if (!pedido) return [];
+    const artes = [];
+    const totalGrade = (pedido.grade && pedido.grade.total > 0) ? pedido.grade.total : 1;
+
+    if (Array.isArray(pedido.artesAnexadas) && pedido.artesAnexadas.length > 0) {
+      pedido.artesAnexadas.forEach((a, idx) => {
+        let w = parseFloat(a.larguraCm);
+        let h = parseFloat(a.alturaCm);
+        if (!w || !h) {
+          if (a.dimensoes) {
+            const m = a.dimensoes.match(/([0-9]+[.,]?[0-9]*)\s*[xX*]\s*([0-9]+[.,]?[0-9]*)/);
+            if (m) {
+              w = parseFloat(m[1].replace(',', '.'));
+              h = parseFloat(m[2].replace(',', '.'));
+            }
+          }
+        }
+        if (!w || !h) {
+          const loc = (a.local || '').toLowerCase();
+          if (loc.includes('costas')) { w = 28.0; h = 12.0; }
+          else if (loc.includes('peito')) { w = 9.0; h = 7.5; }
+          else if (loc.includes('manga') || loc.includes('ombro')) { w = 8.0; h = 4.0; }
+          else { w = 12.0; h = 12.0; }
+        }
+
+        const qtd = parseInt(a.quantidadePecas || a.copias || totalGrade, 10) || 1;
+        const dataUrl = a.arquivoDataUrl || sintetizarSvgArteBadge(pedido.clienteNome, a.local || 'Estampa', `${w.toFixed(1)}x${h.toFixed(1)}cm`);
+
+        artes.push({
+          id: `art_${pedido.id}_${idx}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+          pedidoId: pedido.id,
+          pedidoNumero: pedido.numero,
+          cliente: pedido.clienteNome,
+          nome: a.local ? `${a.local} [Ped #${pedido.numero}]` : `Estampa [Ped #${pedido.numero}]`,
+          local: a.local || 'Estampa',
+          arquivoNome: a.arquivoNome || `${a.local || 'arte'}.png`,
+          imagemDataUrl: dataUrl,
+          larguraCm: w,
+          alturaCm: h,
+          quantidade: qtd,
+          copias: qtd,
+          permitirRotacao: a.permitirRotacao !== false,
+          cor: '#0284c7'
+        });
+      });
+    } else if (Array.isArray(pedido.aplicacoes) && pedido.aplicacoes.length > 0) {
+      pedido.aplicacoes.forEach((app, idx) => {
+        if (app.tecnica === 'lisa') return;
+        let w = parseFloat(app.larguraCm) || 10.0;
+        let h = parseFloat(app.alturaCm) || 10.0;
+        const qtd = totalGrade;
+        const dataUrl = sintetizarSvgArteBadge(pedido.clienteNome, app.local || 'Estampa', `${w.toFixed(1)}x${h.toFixed(1)}cm`);
+
+        artes.push({
+          id: `art_app_${pedido.id}_${idx}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+          pedidoId: pedido.id,
+          pedidoNumero: pedido.numero,
+          cliente: pedido.clienteNome,
+          nome: `${app.local || 'Estampa'} [Ped #${pedido.numero}]`,
+          local: app.local || 'Estampa',
+          arquivoNome: `${app.local || 'arte'}.png`,
+          imagemDataUrl: dataUrl,
+          larguraCm: w,
+          alturaCm: h,
+          quantidade: qtd,
+          copias: qtd,
+          permitirRotacao: true,
+          cor: '#0284c7'
+        });
+      });
+    }
+
+    return artes;
+  }
+
   function renderizarNestingDTF() {
     pageTitleElem.textContent = 'Gestor de Artes DTF & Nesting Automático';
     pageBreadcrumbElem.textContent = 'SISTEMA > NESTING DE ARTES';
 
-    let larguraRoloCustom = 58.0;
-    const resultado = window.DtfNestingEngine.processarNesting(db.nestingFila, { larguraRoloCm: larguraRoloCustom });
+    // Inicialização do estado de Nesting em sessão
+    window.ERP_NESTING_STATE = window.ERP_NESTING_STATE || {
+      pedidosSelecionadosIds: [],
+      larguraRoloCm: 58.0,
+      maxMetrosPorArquivo: 0,
+      espacamentoCm: 0.5,
+      custoMetroLinear: 60.00,
+      separarPorPedido: true,
+      artes: [],
+      zoom: 1.0,
+      arquivoAtivoIndex: 0
+    };
+
+    const state = window.ERP_NESTING_STATE;
+
+    // Se nenhum pedido foi selecionado ainda, auto-seleciona o primeiro pedido com artes anexadas ou o mais recente
+    if (!state.pedidosSelecionadosIds.length && Array.isArray(db.pedidos) && db.pedidos.length > 0) {
+      const pedidoComArtes = db.pedidos.find(p => Array.isArray(p.artesAnexadas) && p.artesAnexadas.length > 0) || db.pedidos[0];
+      if (pedidoComArtes) {
+        state.pedidosSelecionadosIds = [pedidoComArtes.id];
+        state.artes = extrairArtesDoPedido(pedidoComArtes);
+      }
+    }
+
+    // Processa o nesting algorítmico 2D
+    const resultado = window.DtfNestingEngine.processarNesting(state.artes, {
+      larguraRoloCm: state.larguraRoloCm,
+      espacamentoEntreArtesCm: state.espacamentoCm,
+      custoMetroLinear: state.custoMetroLinear,
+      separarPorPedido: state.separarPorPedido,
+      maxMetrosPorArquivo: state.maxMetrosPorArquivo
+    });
+
+    // Mapeamento dos pedidos atualmente carregados
+    const pedidosCarregados = (db.pedidos || []).filter(p => state.pedidosSelecionadosIds.includes(p.id));
+    const todosPedidos = db.pedidos || [];
 
     contentArea.innerHTML = `
-      <div class="grid-cards-4">
+      <!-- BARRA DE SELEÇÃO DE PEDIDOS & CONFIGURAÇÕES TÉCNICAS DO ROLO -->
+      <div class="card" style="margin-bottom: 16px; border: 1.5px solid #cbd5e1; background: #ffffff;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="background: #e0f2fe; color: #0284c7; width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+              🖨️
+            </div>
+            <div>
+              <div style="font-weight: 800; font-size: 14px; color: #0f172a;">Configuração do Rolo DTF & Pedido em Produção</div>
+              <span style="font-size: 11px; color: #64748b;">Encaixe milimétrico automático de matrizes têxteis sem desperdício de filme</span>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button type="button" class="btn btn-primary btn-sm" id="btnAdicionarArquivoPC" style="background: #0284c7; border-color: #0284c7; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+              + Adicionar Arquivo do Computador
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnAdicionarOutroPedido" style="font-weight: 700; color: #0369a1; border-color: #bae6fd; background: #f0f9ff;">
+              + Incluir Outro Pedido no Rolo
+            </button>
+          </div>
+        </div>
+
+        <!-- LINHA 1: SELETOR DE PEDIDO E BADGES DE PEDIDOS ATIVOS -->
+        <div style="display: grid; grid-template-columns: minmax(280px, 1.4fr) minmax(300px, 2fr); gap: 14px; align-items: center; margin-bottom: 14px;">
+          <div>
+            <label class="form-label" style="font-size: 11px; font-weight: 800; color: #334155; margin-bottom: 4px;">
+              Selecionar Pedido Principal:
+            </label>
+            <select id="selNestingPedidoPrincipal" class="form-select" style="font-weight: 600; font-size: 12px;">
+              ${todosPedidos.length ? todosPedidos.map(p => {
+                const totalArtes = (p.artesAnexadas || []).length;
+                const selecionado = state.pedidosSelecionadosIds.length === 1 && state.pedidosSelecionadosIds[0] === p.id;
+                return `<option value="${p.id}" ${selecionado ? 'selected' : ''}>Ped #${p.numero} • ${p.clienteNome} [${p.grade?.total || 0} pçs - ${totalArtes} artes]</option>`;
+              }).join('') : `<option value="">Nenhum pedido cadastrado</option>`}
+            </select>
+          </div>
+
+          <div>
+            <label class="form-label" style="font-size: 11px; font-weight: 800; color: #334155; margin-bottom: 4px;">
+              Pedidos Atualmente no Rolo:
+            </label>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-height: 32px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px;">
+              ${pedidosCarregados.length ? pedidosCarregados.map(p => `
+                <span class="status-pill status-blue" style="font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px;">
+                  <span>#${p.numero} • ${p.clienteNome}</span>
+                  <button type="button" class="btn-remover-pedido-tag" data-id="${p.id}" style="background: none; border: none; color: #dc2626; font-weight: 900; cursor: pointer; padding: 0 2px; font-size: 13px;" title="Remover pedido deste rolo">&times;</button>
+                </span>
+              `).join('') : `
+                <span style="font-size: 11px; color: #94a3b8; font-style: italic;">Nenhum pedido selecionado. Selecione um pedido ao lado.</span>
+              `}
+            </div>
+          </div>
+        </div>
+
+        <!-- LINHA 2: PARÂMETROS TÉCNICOS (LARGURA DO PAPEL, METRAGEM POR ARQUIVO, SEPARAR POR PEDIDO) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; align-items: flex-end;">
+          <div>
+            <label class="form-label" style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 3px;">Largura do Rolo / Papel</label>
+            <select id="selLarguraRolo" class="form-select" style="font-size: 12px; font-weight: 700;">
+              <option value="58.0" ${state.larguraRoloCm === 58.0 ? 'selected' : ''}>58.0 cm (Rolo Padrão 60 com borda)</option>
+              <option value="60.0" ${state.larguraRoloCm === 60.0 ? 'selected' : ''}>60.0 cm (Sem borda de corte)</option>
+              <option value="30.0" ${state.larguraRoloCm === 30.0 ? 'selected' : ''}>30.0 cm (Formato A3 / Mini Rolo)</option>
+              <option value="100.0" ${state.larguraRoloCm === 100.0 ? 'selected' : ''}>100.0 cm (Rolo Industrial 1 Metro)</option>
+              <option value="custom" ${![58, 60, 30, 100].includes(state.larguraRoloCm) ? 'selected' : ''}>Personalizado...</option>
+            </select>
+          </div>
+
+          <div id="divLarguraCustom" style="display: ${![58, 60, 30, 100].includes(state.larguraRoloCm) ? 'block' : 'none'};">
+            <label class="form-label" style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 3px;">Largura Custom (cm)</label>
+            <input type="number" id="inpLarguraRoloCustom" class="form-input" value="${state.larguraRoloCm}" step="0.5" min="10" max="320" style="font-size: 12px; font-weight: 700;">
+          </div>
+
+          <div>
+            <label class="form-label" style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 3px;">Metros por Arquivo (Quebra)</label>
+            <select id="selMaxMetrosArquivo" class="form-select" style="font-size: 12px; font-weight: 700;">
+              <option value="0" ${state.maxMetrosPorArquivo === 0 ? 'selected' : ''}>Contínuo (Rolo Único sem quebra)</option>
+              <option value="1.0" ${state.maxMetrosPorArquivo === 1.0 ? 'selected' : ''}>1.0 metro por arquivo</option>
+              <option value="1.5" ${state.maxMetrosPorArquivo === 1.5 ? 'selected' : ''}>1.5 metros por arquivo</option>
+              <option value="2.0" ${state.maxMetrosPorArquivo === 2.0 ? 'selected' : ''}>2.0 metros por arquivo</option>
+              <option value="3.0" ${state.maxMetrosPorArquivo === 3.0 ? 'selected' : ''}>3.0 metros por arquivo</option>
+              <option value="5.0" ${state.maxMetrosPorArquivo === 5.0 ? 'selected' : ''}>5.0 metros por arquivo</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="form-label" style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 3px;">Espaçamento / Sangria</label>
+            <select id="selEspacamentoArtes" class="form-select" style="font-size: 12px; font-weight: 700;">
+              <option value="0.3" ${state.espacamentoCm === 0.3 ? 'selected' : ''}>0.3 cm (3mm econômico)</option>
+              <option value="0.5" ${state.espacamentoCm === 0.5 ? 'selected' : ''}>0.5 cm (5mm padrão corte)</option>
+              <option value="1.0" ${state.espacamentoCm === 1.0 ? 'selected' : ''}>1.0 cm (10mm folga grande)</option>
+            </select>
+          </div>
+
+          <div style="display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 4px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; margin: 0;">
+              <input type="checkbox" id="chkSepararPorPedido" ${state.separarPorPedido ? 'checked' : ''} style="width: 17px; height: 17px; accent-color: #0284c7; cursor: pointer;">
+              <div>
+                <span style="font-size: 12px; font-weight: 800; color: #0f172a; display: block;">Separar por Pedido</span>
+                <span style="font-size: 10px; color: #64748b;">Agrupa com linha de corte identificada</span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARDS KPI DE APROVEITAMENTO & CUSTOS EM TEMPO REAL -->
+      <div class="grid-cards-4" style="margin-bottom: 16px;">
         <div class="card">
           <div class="kpi-title">Metros Lineares de Rolo</div>
-          <div class="kpi-value text-primary">${resultado.metrosLinearesTotais} m</div>
+          <div class="kpi-value text-primary" id="nestingKpiMetros">${resultado.metrosLinearesTotais} m</div>
           <div class="kpi-desc">Largura útil de ${resultado.larguraRoloCm} cm</div>
         </div>
 
         <div class="card">
           <div class="kpi-title">Taxa de Aproveitamento</div>
-          <div class="kpi-value text-green">${resultado.taxaAproveitamentoPercentual}%</div>
+          <div class="kpi-value text-green" id="nestingKpiAproveitamento">${resultado.taxaAproveitamentoPercentual}%</div>
           <div class="kpi-desc">Desperdício reduzido: ${resultado.taxaDesperdicioPercentual}%</div>
         </div>
 
         <div class="card">
           <div class="kpi-title">Custo Total DTF (Filme + Tinta)</div>
-          <div class="kpi-value text-primary">${formatarMoeda(resultado.custoTotalRolo)}</div>
+          <div class="kpi-value text-primary" id="nestingKpiCusto">${formatarMoeda(resultado.custoTotalRolo)}</div>
           <div class="kpi-desc">Base de custo: R$ 60,00 por metro linear</div>
         </div>
 
         <div class="card">
           <div class="kpi-title">Total de Cópias Encaixadas</div>
-          <div class="kpi-value text-primary">${resultado.totalItensProcessados} un</div>
+          <div class="kpi-value text-primary" id="nestingKpiCopias">${resultado.totalItensProcessados} un</div>
           <div class="kpi-desc">Custo médio unitário: ${formatarMoeda(resultado.custoMedioPorArte)}</div>
         </div>
       </div>
 
-      <div class="grid-cards-2">
-        <div class="card">
-          <div class="table-header-bar" style="padding: 0 0 12px 0;">
-            <div class="table-title">Fila de Artes no Rolo DTF</div>
-            <button class="btn btn-primary btn-sm" id="btnAdicionarArteNesting">
-              + Selecionar Arte de Pedido ou Arquivo Externo
+      <!-- GRID DE TRABALHO INDUSTRIAL: FILA EDITÁVEL DE ARTES (ESQ) & VISUALIZADOR DE ROLO (DIR) -->
+      <div class="grid-cards-2" style="grid-template-columns: minmax(360px, 1.05fr) minmax(400px, 1.35fr); gap: 16px; align-items: flex-start;">
+        
+        <!-- COLUNA DA ESQUERDA: LISTA EDITÁVEL DE ARTES DO(S) PEDIDO(S) SELECIONADO(S) -->
+        <div class="card" style="padding: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <div style="font-weight: 800; font-size: 14px; color: #0f172a;">
+                Artes do Rolo DTF (${state.artes.length})
+              </div>
+              <span style="font-size: 11px; color: #64748b;">Edição em tempo real de dimensões, quantidades e rotação</span>
+            </div>
+            
+            <button type="button" class="btn btn-secondary btn-xs" id="btnRecalcularNestingManual" style="font-weight: 700; color: #0284c7; border-color: #bae6fd;">
+              ↺ Re-otimizar
             </button>
           </div>
 
-          <div style="max-height: 400px; overflow-y: auto;">
-            <table class="erp-table">
-              <thead>
-                <tr>
-                  <th>Cliente</th>
-                  <th>Descrição / Arte</th>
-                  <th>Dimensões (LxA)</th>
-                  <th>Cópias</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${db.nestingFila.length ? db.nestingFila.map((art, idx) => `
-                  <tr>
-                    <td><strong>${art.cliente}</strong></td>
-                    <td>${art.descricao}</td>
-                    <td class="text-mono">${art.larguraCm} x ${art.alturaCm} cm</td>
-                    <td class="text-mono"><strong>${art.copias} un</strong></td>
-                    <td>
-                      <button class="btn btn-red btn-sm btn-remover-arte-nesting" data-index="${idx}">Remover</button>
-                    </td>
-                  </tr>
-                `).join('') : `
-                  <tr>
-                    <td colspan="5" style="text-align: center; padding: 30px 10px; color: var(--text-gray-500);">
-                      Nenhuma arte na fila de impressão DTF. Clique em "+ Adicionar Arte à Fila" ou gere orçamentos com técnicas DTF.
-                    </td>
-                  </tr>
-                `}
-              </tbody>
-            </table>
+          <!-- LISTA DINÂMICA DE ARTES -->
+          <div id="containerListaArtesNesting" style="max-height: 640px; overflow-y: auto; padding-right: 4px;">
+            ${state.artes.length ? state.artes.map((art) => `
+              <div class="card card-item-arte" data-id="${art.id}" style="padding: 10px 12px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+                <div style="display: flex; gap: 12px; align-items: center;">
+                  <!-- Thumbnail com clique para ampliação -->
+                  <div style="width: 58px; height: 58px; border: 1.5px solid #cbd5e1; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f8fafc; flex-shrink: 0; position: relative;">
+                    ${art.imagemDataUrl ? `
+                      <img src="${art.imagemDataUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain; cursor: pointer;" alt="${art.nome}" title="Clique para abrir imagem" onclick="window.open('${art.imagemDataUrl}', '_blank')">
+                    ` : `
+                      <span style="font-size: 20px;">🎨</span>
+                    `}
+                    ${art.rotacionado ? `
+                      <span style="position: absolute; bottom: 2px; right: 2px; background: #059669; color: #ffffff; font-size: 9px; font-weight: 800; border-radius: 3px; padding: 1px 3px;">90°</span>
+                    ` : ''}
+                  </div>
+
+                  <!-- Dados da Arte e Controles Editáveis -->
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                      <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 230px;">
+                        <strong style="font-size: 12.5px; color: #0f172a; display: block; overflow: hidden; text-overflow: ellipsis;" title="${art.nome}">${art.nome}</strong>
+                        <span style="font-size: 10.5px; color: #64748b;">${art.cliente} ${art.pedidoNumero ? `• Ped #${art.pedidoNumero}` : ''}</span>
+                      </div>
+                      <div style="display: flex; gap: 4px;">
+                        <button type="button" class="btn btn-secondary btn-xs btn-duplicar-arte" data-id="${art.id}" style="padding: 2px 6px; font-size: 11px;" title="Duplicar esta arte">⎘</button>
+                        <button type="button" class="btn btn-red btn-xs btn-remover-arte" data-id="${art.id}" style="padding: 2px 6px; font-size: 11px;" title="Remover do rolo">&times;</button>
+                      </div>
+                    </div>
+
+                    <!-- Campos em linha: Largura, Altura, Cópias e Rotação -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1.35fr auto; gap: 6px; align-items: flex-end;">
+                      <div>
+                        <span style="font-size: 9px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">Largura (cm)</span>
+                        <input type="number" step="0.5" min="0.5" max="300" class="form-input inp-arte-largura" data-id="${art.id}" value="${art.larguraCm}" style="padding: 2px 6px; font-size: 11px; font-weight: 700; height: 26px;">
+                      </div>
+
+                      <div>
+                        <span style="font-size: 9px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">Altura (cm)</span>
+                        <input type="number" step="0.5" min="0.5" max="300" class="form-input inp-arte-altura" data-id="${art.id}" value="${art.alturaCm}" style="padding: 2px 6px; font-size: 11px; font-weight: 700; height: 26px;">
+                      </div>
+
+                      <div>
+                        <span style="font-size: 9px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">Cópias (un)</span>
+                        <div style="display: flex; align-items: center;">
+                          <button type="button" class="btn btn-secondary btn-xs btn-qtd-diminuir" data-id="${art.id}" style="padding: 1px 6px; height: 26px; border-radius: 4px 0 0 4px; font-weight: 800;">-</button>
+                          <input type="number" min="1" max="9999" class="form-input inp-arte-copias" data-id="${art.id}" value="${art.copias || art.quantidade || 1}" style="padding: 1px 4px; font-size: 11px; font-weight: 800; height: 26px; text-align: center; border-radius: 0; width: 44px; border-left: none; border-right: none;">
+                          <button type="button" class="btn btn-secondary btn-xs btn-qtd-aumentar" data-id="${art.id}" style="padding: 1px 6px; height: 26px; border-radius: 0 4px 4px 0; font-weight: 800;">+</button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <span style="font-size: 9px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">Girar 90°</span>
+                        <button type="button" class="btn ${art.permitirRotacao !== false ? 'btn-primary' : 'btn-secondary'} btn-xs btn-toggle-rotacao" data-id="${art.id}" style="padding: 3px 6px; font-size: 10px; height: 26px; font-weight: 700;" title="${art.permitirRotacao !== false ? 'Rotação 90° habilitada para otimizar espaço' : 'Orientação original travada'}">
+                          ${art.permitirRotacao !== false ? '↻ Auto' : '🔒 Fixo'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `).join('') : `
+              <div style="text-align: center; padding: 40px 16px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; color: #64748b;">
+                <div style="font-size: 32px; margin-bottom: 8px;">📭</div>
+                <strong style="color: #0f172a; font-size: 13px; display: block; margin-bottom: 4px;">Nenhuma arte carregada neste rolo</strong>
+                <p style="font-size: 11px; margin: 0 0 12px 0;">Selecione um pedido cadastrado no seletor acima ou importe arquivos do seu computador.</p>
+                <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('btnAdicionarArquivoPC').click()">
+                  + Adicionar Arquivo do Computador
+                </button>
+              </div>
+            `}
           </div>
         </div>
 
-        <div class="card">
-          <div class="table-header-bar" style="padding: 0 0 12px 0;">
-            <div class="table-title">Mapa Visual do Rolo DTF (Escala 1:1)</div>
-            <button class="btn btn-primary btn-sm" id="btnExportarPlanoCorte">
-              Salvar & Exportar Arquivo DTF para Impressão
-            </button>
+        <!-- COLUNA DA DIREITA: MAPA VISUAL DO ROLO DTF (CANVAS ESCALA 1:1, RÉGUAS, ZOOM E EXPORTAÇÃO) -->
+        <div class="card" style="padding: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <div style="font-weight: 800; font-size: 14px; color: #0f172a;">Mapa Visual do Rolo DTF (Escala 1:1)</div>
+              <span style="font-size: 11px; color: #64748b;">Visualização completa das matrizes, réguas em cm/metros e marcas de corte</span>
+            </div>
+
+            <!-- AÇÕES DE EXPORTAÇÃO RIP E IMPRESSÃO DE FICHA -->
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <button type="button" class="btn btn-secondary btn-sm" id="btnImprimirFichaDTF" style="font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                🖨️ Ficha DTF
+              </button>
+              <button type="button" class="btn btn-primary btn-sm" id="btnExportarPlanoCorte" style="background: #0284c7; border-color: #0284c7; font-weight: 800; display: inline-flex; align-items: center; gap: 5px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Salvar & Exportar PNG (RIP)
+              </button>
+            </div>
           </div>
-          
-          <div class="nesting-canvas-container" style="background: #ffffff; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); padding: 10px;">
-            <canvas id="nestingCanvas"></canvas>
+
+          <!-- BARRA DE FERRAMENTAS DO CANVAS: ABAS DE ARQUIVOS (SE HOUVER DIVISÃO) & CONTROLES DE ZOOM -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 10px;">
+            <!-- Abas de Paginação por Metros -->
+            <div style="display: flex; gap: 4px; align-items: center; overflow-x: auto; max-width: 65%;">
+              <button type="button" class="btn btn-xs ${state.arquivoAtivoIndex === 0 ? 'btn-primary' : 'btn-secondary'} btn-tab-arquivo" data-idx="0" style="font-weight: 700; white-space: nowrap;">
+                Rolo Completo (${resultado.metrosLinearesTotais}m)
+              </button>
+              ${(resultado.arquivos && resultado.arquivos.length > 1) ? resultado.arquivos.map(arq => `
+                <button type="button" class="btn btn-xs ${state.arquivoAtivoIndex === arq.index ? 'btn-primary' : 'btn-secondary'} btn-tab-arquivo" data-idx="${arq.index}" style="font-weight: 700; white-space: nowrap;">
+                  Arquivo ${arq.index} (${arq.metrosLineares}m • ${arq.artes.length} pçs)
+                </button>
+              `).join('') : ''}
+            </div>
+
+            <!-- Controles de Zoom -->
+            <div style="display: flex; gap: 3px; align-items: center;">
+              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomMenos" style="font-weight: 800; padding: 2px 7px;" title="Reduzir Zoom">-</button>
+              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomReset" style="font-size: 10.5px; font-weight: 700; padding: 2px 6px;" title="Zoom 100%">${Math.round(state.zoom * 100)}%</button>
+              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomMais" style="font-weight: 800; padding: 2px 7px;" title="Aumentar Zoom">+</button>
+              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomFit" style="font-size: 10px; font-weight: 700; padding: 2px 6px;" title="Ajustar à largura">Ajustar</button>
+            </div>
+          </div>
+
+          <!-- CONTAINER DO CANVAS COM SCROLL INDUSTRIAL -->
+          <div class="nesting-canvas-container" style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 8px; min-height: 480px; max-height: 600px; overflow: auto; display: flex; justify-content: center; align-items: flex-start; box-shadow: inset 0 1px 4px rgba(0,0,0,0.06);">
+            <canvas id="nestingCanvas" style="display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 4px;"></canvas>
           </div>
         </div>
       </div>
     `;
 
-    // Renderiza o canvas
-    setTimeout(() => {
+    // Renderiza o Canvas após montagem do DOM
+    function atualizarDesenhoCanvas() {
       const canvas = document.getElementById('nestingCanvas');
       if (canvas) {
-        window.DtfNestingEngine.renderizarCanvas(canvas, resultado);
+        window.DtfNestingEngine.renderizarCanvas(canvas, resultado, {
+          zoom: state.zoom,
+          arquivoIndex: state.arquivoAtivoIndex
+        });
       }
-    }, 60);
+    }
 
-    document.getElementById('btnAdicionarArteNesting')?.addEventListener('click', abrirModalAdicionarArteNesting);
+    setTimeout(atualizarDesenhoCanvas, 50);
 
-    document.querySelectorAll('.btn-remover-arte-nesting').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = parseInt(btn.getAttribute('data-index'), 10);
-        db.nestingFila.splice(idx, 1);
-        salvarEstado();
+    // =========================================================================
+    // EVENTOS INTERATIVOS DO MÓDULO DE NESTING
+    // =========================================================================
+
+    // 1. Mudança de Pedido Principal
+    document.getElementById('selNestingPedidoPrincipal')?.addEventListener('change', (e) => {
+      const pedId = e.target.value;
+      const pedido = db.pedidos.find(p => p.id === pedId);
+      if (pedido) {
+        state.pedidosSelecionadosIds = [pedido.id];
+        state.artes = extrairArtesDoPedido(pedido);
+        state.arquivoAtivoIndex = 0;
         renderizarNestingDTF();
-        mostrarToast('Arte removida da fila de impressão DTF.', 'green');
+        mostrarToast(`Pedido #${pedido.numero} carregado com ${state.artes.length} arte(s) e dimensões oficiais.`, 'green');
+      }
+    });
+
+    // 2. Incluir Outro Pedido no Rolo (+ Multi-pedidos)
+    document.getElementById('btnAdicionarOutroPedido')?.addEventListener('click', () => {
+      abrirModalIncluirOutroPedidoNesting();
+    });
+
+    // 3. Remover Pedido da lista de selecionados
+    document.querySelectorAll('.btn-remover-pedido-tag').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pedId = btn.getAttribute('data-id');
+        state.pedidosSelecionadosIds = state.pedidosSelecionadosIds.filter(id => id !== pedId);
+        state.artes = state.artes.filter(a => a.pedidoId !== pedId);
+        renderizarNestingDTF();
+        mostrarToast('Pedido removido do rolo atual.', 'blue');
       });
     });
 
-    document.getElementById('btnExportarPlanoCorte')?.addEventListener('click', () => {
-      const canvas = document.getElementById('nestingCanvas');
-      if (canvas) {
-        const link = document.createElement('a');
-        link.download = `plano_impressao_dtf_${new Date().toISOString().split('T')[0]}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
+    // 4. Alteração da Largura do Rolo
+    const selLargura = document.getElementById('selLarguraRolo');
+    selLargura?.addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (val === 'custom') {
+        document.getElementById('divLarguraCustom').style.display = 'block';
+      } else {
+        document.getElementById('divLarguraCustom').style.display = 'none';
+        state.larguraRoloCm = parseFloat(val) || 58.0;
+        renderizarNestingDTF();
       }
-      mostrarToast(`Plano de corte DTF exportado com ${resultado.metrosLinearesTotais} metros lineares prontos para o RIP.`, 'green');
+    });
+
+    document.getElementById('inpLarguraRoloCustom')?.addEventListener('change', (e) => {
+      const w = parseFloat(e.target.value);
+      if (w >= 10 && w <= 320) {
+        state.larguraRoloCm = w;
+        renderizarNestingDTF();
+      }
+    });
+
+    // 5. Quebra de Metros por Arquivo
+    document.getElementById('selMaxMetrosArquivo')?.addEventListener('change', (e) => {
+      state.maxMetrosPorArquivo = parseFloat(e.target.value) || 0;
+      state.arquivoAtivoIndex = 0;
+      renderizarNestingDTF();
+    });
+
+    // 6. Espaçamento entre Artes
+    document.getElementById('selEspacamentoArtes')?.addEventListener('change', (e) => {
+      state.espacamentoCm = parseFloat(e.target.value) || 0.5;
+      renderizarNestingDTF();
+    });
+
+    // 7. Toggle "Separar por Pedido"
+    document.getElementById('chkSepararPorPedido')?.addEventListener('change', (e) => {
+      state.separarPorPedido = e.target.checked;
+      renderizarNestingDTF();
+      mostrarToast(state.separarPorPedido ? 'Artes agrupadas por pedido com linhas de corte.' : 'Encaixe livre sem divisão por pedido.', 'blue');
+    });
+
+    // 8. Botão Adicionar Arquivo do Computador
+    document.getElementById('btnAdicionarArquivoPC')?.addEventListener('click', () => {
+      abrirModalAdicionarArquivoComputador();
+    });
+
+    // 9. Re-otimizar / Recalcular Manual
+    document.getElementById('btnRecalcularNestingManual')?.addEventListener('click', () => {
+      renderizarNestingDTF();
+      mostrarToast('Encaixe do rolo recalculado com algoritmo First-Fit.', 'green');
+    });
+
+    // 10. Abas de Paginação de Arquivos
+    document.querySelectorAll('.btn-tab-arquivo').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.arquivoAtivoIndex = parseInt(btn.getAttribute('data-idx'), 10) || 0;
+        renderizarNestingDTF();
+      });
+    });
+
+    // 11. Controles de Zoom do Canvas
+    document.getElementById('btnZoomMais')?.addEventListener('click', () => {
+      state.zoom = Math.min(2.5, parseFloat((state.zoom + 0.15).toFixed(2)));
+      renderizarNestingDTF();
+    });
+
+    document.getElementById('btnZoomMenos')?.addEventListener('click', () => {
+      state.zoom = Math.max(0.4, parseFloat((state.zoom - 0.15).toFixed(2)));
+      renderizarNestingDTF();
+    });
+
+    document.getElementById('btnZoomReset')?.addEventListener('click', () => {
+      state.zoom = 1.0;
+      renderizarNestingDTF();
+    });
+
+    document.getElementById('btnZoomFit')?.addEventListener('click', () => {
+      state.zoom = 0.85;
+      renderizarNestingDTF();
+    });
+
+    // 12. Edição Inline de Dimensões e Quantidades (Com Recálculo Instantâneo)
+    let timerDebounce = null;
+    function dispararRecalculoDebounced() {
+      clearTimeout(timerDebounce);
+      timerDebounce = setTimeout(() => {
+        // Recalcula nesting e atualiza canvas + KPIs sem perder o foco dos inputs
+        const resNovo = window.DtfNestingEngine.processarNesting(state.artes, {
+          larguraRoloCm: state.larguraRoloCm,
+          espacamentoEntreArtesCm: state.espacamentoCm,
+          custoMetroLinear: state.custoMetroLinear,
+          separarPorPedido: state.separarPorPedido,
+          maxMetrosPorArquivo: state.maxMetrosPorArquivo
+        });
+
+        const elMetros = document.getElementById('nestingKpiMetros');
+        if (elMetros) elMetros.textContent = `${resNovo.metrosLinearesTotais} m`;
+        const elAprov = document.getElementById('nestingKpiAproveitamento');
+        if (elAprov) elAprov.textContent = `${resNovo.taxaAproveitamentoPercentual}%`;
+        const elCusto = document.getElementById('nestingKpiCusto');
+        if (elCusto) elCusto.textContent = formatarMoeda(resNovo.custoTotalRolo);
+        const elCopias = document.getElementById('nestingKpiCopias');
+        if (elCopias) elCopias.textContent = `${resNovo.totalItensProcessados} un`;
+
+        const canvas = document.getElementById('nestingCanvas');
+        if (canvas) {
+          window.DtfNestingEngine.renderizarCanvas(canvas, resNovo, {
+            zoom: state.zoom,
+            arquivoIndex: state.arquivoAtivoIndex
+          });
+        }
+      }, 150);
+    }
+
+    document.querySelectorAll('.inp-arte-largura').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const id = inp.getAttribute('data-id');
+        const art = state.artes.find(a => a.id === id);
+        if (art) {
+          art.larguraCm = Math.max(0.5, parseFloat(e.target.value) || 1);
+          dispararRecalculoDebounced();
+        }
+      });
+    });
+
+    document.querySelectorAll('.inp-arte-altura').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const id = inp.getAttribute('data-id');
+        const art = state.artes.find(a => a.id === id);
+        if (art) {
+          art.alturaCm = Math.max(0.5, parseFloat(e.target.value) || 1);
+          dispararRecalculoDebounced();
+        }
+      });
+    });
+
+    document.querySelectorAll('.inp-arte-copias').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const id = inp.getAttribute('data-id');
+        const art = state.artes.find(a => a.id === id);
+        if (art) {
+          const val = Math.max(1, parseInt(e.target.value, 10) || 1);
+          art.copias = val;
+          art.quantidade = val;
+          dispararRecalculoDebounced();
+        }
+      });
+    });
+
+    document.querySelectorAll('.btn-qtd-diminuir').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const art = state.artes.find(a => a.id === id);
+        if (art) {
+          const atual = art.copias || art.quantidade || 1;
+          if (atual > 1) {
+            art.copias = atual - 1;
+            art.quantidade = art.copias;
+            const inp = document.querySelector(`.inp-arte-copias[data-id="${id}"]`);
+            if (inp) inp.value = art.copias;
+            dispararRecalculoDebounced();
+          }
+        }
+      });
+    });
+
+    document.querySelectorAll('.btn-qtd-aumentar').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const art = state.artes.find(a => a.id === id);
+        if (art) {
+          const atual = art.copias || art.quantidade || 1;
+          art.copias = atual + 1;
+          art.quantidade = art.copias;
+          const inp = document.querySelector(`.inp-arte-copias[data-id="${id}"]`);
+          if (inp) inp.value = art.copias;
+          dispararRecalculoDebounced();
+        }
+      });
+    });
+
+    // 13. Toggle Rotação 90°
+    document.querySelectorAll('.btn-toggle-rotacao').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const art = state.artes.find(a => a.id === id);
+        if (art) {
+          art.permitirRotacao = art.permitirRotacao === false;
+          renderizarNestingDTF();
+        }
+      });
+    });
+
+    // 14. Duplicar Arte
+    document.querySelectorAll('.btn-duplicar-arte').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const art = state.artes.find(a => a.id === id);
+        if (art) {
+          const clone = Object.assign({}, art, {
+            id: `art_dup_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+            nome: `${art.nome} (Cópia)`
+          });
+          state.artes.push(clone);
+          renderizarNestingDTF();
+          mostrarToast('Arte duplicada na fila de impressão.', 'green');
+        }
+      });
+    });
+
+    // 15. Remover Arte Individual
+    document.querySelectorAll('.btn-remover-arte').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        state.artes = state.artes.filter(a => a.id !== id);
+        renderizarNestingDTF();
+        mostrarToast('Arte removida do rolo.', 'blue');
+      });
+    });
+
+    // 16. Exportar PNG Alta Resolução para RIP
+    document.getElementById('btnExportarPlanoCorte')?.addEventListener('click', async () => {
+      mostrarToast('Gerando arquivo PNG de alta resolução para impressão DTF...', 'blue');
+      const pngData = await window.DtfNestingEngine.exportarImagemAltaResolucaoAsync(resultado, state.arquivoAtivoIndex, 150);
+      if (pngData) {
+        const link = document.createElement('a');
+        const nomeArquivo = state.arquivoAtivoIndex > 0
+          ? `dtf_arquivo_${state.arquivoAtivoIndex}_${resultado.larguraRoloCm}cm_${new Date().toISOString().split('T')[0]}.png`
+          : `dtf_rolo_completo_${resultado.larguraRoloCm}cm_${resultado.metrosLinearesTotais}m_${new Date().toISOString().split('T')[0]}.png`;
+        link.download = nomeArquivo;
+        link.href = pngData;
+        link.click();
+        mostrarToast(`✓ Arquivo DTF pronto para o software RIP exportado (${resultado.metrosLinearesTotais}m)!`, 'green');
+      } else {
+        mostrarToast('Erro ao exportar arquivo de alta resolução.', 'red');
+      }
+    });
+
+    // 17. Imprimir Ficha Técnica de Produção DTF
+    document.getElementById('btnImprimirFichaDTF')?.addEventListener('click', () => {
+      const htmlFicha = window.DtfNestingEngine.gerarFichaImpressaoHTML(resultado);
+      const janela = window.open('', '_blank');
+      if (janela) {
+        janela.document.write(htmlFicha);
+        janela.document.close();
+      }
     });
   }
 
-  function abrirModalAdicionarArteNesting() {
+  /**
+   * Modal para Selecionar e Incluir Outro Pedido ao Rolo de DTF
+   */
+  function abrirModalIncluirOutroPedidoNesting() {
     if (!modalContainer) return;
-
-    // Coleta todas as artes cadastradas nos pedidos ativos
-    let artesDosPedidos = [];
-    db.pedidos.forEach(p => {
-      if (p.artesAnexadas && p.artesAnexadas.length) {
-        p.artesAnexadas.forEach(a => {
-          artesDosPedidos.push({
-            pedidoNumero: p.numero,
-            clienteNome: p.clienteNome,
-            local: a.local,
-            arquivoNome: a.arquivoNome,
-            dimensoes: a.dimensoes,
-            quantidadePadrao: p.grade?.total || 50
-          });
-        });
-      }
-    });
+    const pedidosDisponiveis = (db.pedidos || []).filter(p => !window.ERP_NESTING_STATE.pedidosSelecionadosIds.includes(p.id));
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
-        <div class="modal-box" style="max-width: 580px;">
+        <div class="modal-box" style="max-width: 520px;">
           <div class="modal-header">
             <div>
-              <div class="modal-title">Adicionar Arte na Fila de Nesting DTF</div>
-              <span style="font-size: 11px; color: var(--text-gray-500);">Importe artes dos pedidos ou anexe um arquivo externo</span>
+              <div class="modal-title">Incluir Outro Pedido no Rolo DTF</div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Adicione matrizes de outros pedidos no mesmo arquivo com corte organizado</span>
             </div>
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
 
           <div class="modal-body">
-            <!-- Origem da Arte -->
-            <div class="form-group">
-              <label class="form-label">Origem da Arte</label>
-              <select id="nestOrigemSelect" class="form-select">
-                <option value="PEDIDO">Selecionar Arte de Pedido Cadastrado</option>
-                <option value="EXTERNO">Adicionar de Pasta / Arquivo Externo</option>
-              </select>
-            </div>
-
-            <!-- Seção Pedido Cadastrado -->
-            <div id="secaoArtePedido" class="form-group">
-              <label class="form-label">Selecione o Pedido & Arte</label>
-              <select id="nestPedidoArteSelect" class="form-select">
-                ${artesDosPedidos.map((a, idx) => `
-                  <option value="${idx}">Pedido #${a.pedidoNumero} • ${a.clienteNome} [${a.local}] - ${a.arquivoNome}</option>
-                `).join('')}
-              </select>
-            </div>
-
-            <!-- Seção Arquivo Externo -->
-            <div id="secaoArteExterna" class="form-group" style="display: none;">
+            ${pedidosDisponiveis.length ? `
               <div class="form-group">
-                <label class="form-label">Nome do Cliente / Identificação</label>
-                <input type="text" id="nestClienteExterno" class="form-input" placeholder="Ex: Gráfica Alfa">
+                <label class="form-label">Selecione o Pedido para Adicionar</label>
+                <select id="selOutroPedidoNesting" class="form-select">
+                  ${pedidosDisponiveis.map(p => `
+                    <option value="${p.id}">Pedido #${p.numero} • ${p.clienteNome} (${p.grade?.total || 0} pçs - ${(p.artesAnexadas || []).length} artes)</option>
+                  `).join('')}
+                </select>
               </div>
-              <div class="form-group">
-                <label class="form-label">Arquivo de Pasta Externa (PNG / PDF / AI)</label>
-                <input type="file" id="nestArquivoExterno" class="form-input" accept="image/*,.pdf,.ai">
+              <p style="font-size: 11.5px; color: #64748b; margin-top: 8px;">
+                💡 Dica: Mantenha a opção <strong>"Separar por Pedido"</strong> ativada para que cada pedido receba sua própria faixa de corte no rolo.
+              </p>
+            ` : `
+              <div style="text-align: center; padding: 24px 10px; color: #64748b;">
+                Todos os pedidos cadastrados já estão incluídos neste rolo.
               </div>
+            `}
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
+            ${pedidosDisponiveis.length ? `
+              <button type="button" class="btn btn-primary" id="btnConfirmarIncluirOutroPedido">
+                Adicionar Matrizes ao Rolo
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `);
+
+    document.getElementById('btnConfirmarIncluirOutroPedido')?.addEventListener('click', () => {
+      const pedId = document.getElementById('selOutroPedidoNesting')?.value;
+      const pedido = db.pedidos.find(p => p.id === pedId);
+      if (pedido) {
+        window.ERP_NESTING_STATE.pedidosSelecionadosIds.push(pedido.id);
+        const novasArtes = extrairArtesDoPedido(pedido);
+        window.ERP_NESTING_STATE.artes = window.ERP_NESTING_STATE.artes.concat(novasArtes);
+        fecharModal();
+        renderizarNestingDTF();
+        mostrarToast(`Pedido #${pedido.numero} incluído com sucesso no rolo!`, 'green');
+      }
+    });
+  }
+
+  /**
+   * Modal para Importar Arquivo de Imagem Diretamente do Computador (PNG, JPG, SVG, etc.)
+   */
+  function abrirModalAdicionarArquivoComputador() {
+    if (!modalContainer) return;
+    let dataUrlCarregado = null;
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 560px;">
+          <div class="modal-header">
+            <div>
+              <div class="modal-title">Adicionar Arquivo do Computador no Rolo DTF</div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Importe estampas avulsas, logos ou arquivos de clientes direto da sua máquina</span>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+          </div>
+
+          <div class="modal-body">
+            <!-- Seleção do Arquivo do PC -->
+            <div class="form-group">
+              <label class="form-label">Arquivo de Imagem (PNG com transparência, JPG ou SVG)</label>
+              <input type="file" id="inpArquivoPcNesting" class="form-input" accept="image/png,image/jpeg,image/webp,image/svg+xml,.pdf,.ai">
+            </div>
+
+            <!-- Preview da Imagem Selecionada -->
+            <div id="previewImgPcContainer" style="display: none; margin-bottom: 14px; text-align: center; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px;">
+              <img id="previewImgPc" src="" style="max-height: 120px; max-width: 100%; object-fit: contain; border-radius: 4px;" alt="Preview">
+              <span id="previewImgPcNome" style="font-size: 11px; color: #64748b; display: block; margin-top: 4px;"></span>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Descrição da Estampa</label>
-              <input type="text" id="nestDesc" class="form-input" value="Estampa Frente" placeholder="Ex: Peito 9x8cm">
+              <label class="form-label">Descrição / Local da Estampa</label>
+              <input type="text" id="inpDescricaoPc" class="form-input" value="Estampa Frente" placeholder="Ex: Peito 9x8cm, Costas 28x12cm...">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Cliente / Identificação</label>
+              <input type="text" id="inpClientePc" class="form-input" value="Cliente Externo" placeholder="Ex: Bravvi Uniformes, Cliente Particular...">
             </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label class="form-label">Largura da Arte (cm)</label>
-                <input type="number" id="nestLargura" class="form-input" value="26.0" step="0.5" min="1">
+                <label class="form-label">Largura (cm)</label>
+                <input type="number" id="inpLarguraPc" class="form-input" value="20.0" step="0.5" min="1" max="200">
               </div>
 
               <div class="form-group">
-                <label class="form-label">Altura da Arte (cm)</label>
-                <input type="number" id="nestAltura" class="form-input" value="8.0" step="0.5" min="1">
+                <label class="form-label">Altura (cm)</label>
+                <input type="number" id="inpAlturaPc" class="form-input" value="10.0" step="0.5" min="1" max="200">
               </div>
 
               <div class="form-group">
                 <label class="form-label">Quantidade de Cópias</label>
-                <input type="number" id="nestQtd" class="form-input" value="50" min="1">
+                <input type="number" id="inpCopiasPc" class="form-input" value="10" min="1" max="9999">
               </div>
+            </div>
+
+            <div class="form-group">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="chkRotacaoPc" checked style="width: 16px; height: 16px; accent-color: #0284c7;">
+                <span style="font-size: 12px; font-weight: 700; color: #334155;">Permitir rotação automática de 90° para economizar filme</span>
+              </label>
             </div>
           </div>
 
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
-            <button type="button" class="btn btn-primary" id="btnConfirmarArteNesting">
-              Adicionar ao Rolo & Otimizar Espaço
+            <button type="button" class="btn btn-primary" id="btnConfirmarArquivoPc">
+              Adicionar ao Rolo & Recalcular
             </button>
           </div>
         </div>
       </div>
     `);
 
-    const selOrigem = document.getElementById('nestOrigemSelect');
-    selOrigem?.addEventListener('change', () => {
-      const isExt = selOrigem.value === 'EXTERNO';
-      document.getElementById('secaoArtePedido').style.display = isExt ? 'none' : 'block';
-      document.getElementById('secaoArteExterna').style.display = isExt ? 'block' : 'none';
-    });
+    // Leitura do arquivo do computador
+    document.getElementById('inpArquivoPcNesting')?.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
 
-    document.getElementById('btnConfirmarArteNesting')?.addEventListener('click', () => {
-      const isExt = selOrigem.value === 'EXTERNO';
-      let clienteNome = "Cliente Geral";
-      let desc = document.getElementById('nestDesc')?.value || "Arte Têxtil";
-      let w = parseFloat(document.getElementById('nestLargura')?.value || 20);
-      let h = parseFloat(document.getElementById('nestAltura')?.value || 10);
-      let qtd = parseInt(document.getElementById('nestQtd')?.value || 10, 10);
-
-      if (isExt) {
-        clienteNome = document.getElementById('nestClienteExterno')?.value || "Cliente Externo";
-        const fileExt = document.getElementById('nestArquivoExterno')?.files[0];
-        if (fileExt) desc = `${desc} (${fileExt.name})`;
-      } else {
-        const idx = parseInt(document.getElementById('nestPedidoArteSelect')?.value || 0, 10);
-        const artPed = artesDosPedidos[idx];
-        if (artPed) {
-          clienteNome = artPed.clienteNome;
-          desc = `${artPed.local} [Ped #${artPed.pedidoNumero}]`;
-        }
+      const descInp = document.getElementById('inpDescricaoPc');
+      if (descInp && !descInp.value) {
+        descInp.value = file.name.replace(/\.[^/.]+$/, "");
       }
 
-      db.nestingFila.unshift({
-        id: `ART-${Math.floor(10 + Math.random() * 90)}`,
-        cliente: clienteNome,
-        descricao: desc,
+      dataUrlCarregado = await comprimirImagemDataUrl(file, 1600, 1600, 0.90);
+      if (dataUrlCarregado) {
+        const previewCont = document.getElementById('previewImgPcContainer');
+        const previewImg = document.getElementById('previewImgPc');
+        const previewNome = document.getElementById('previewImgPcNome');
+        if (previewCont && previewImg) {
+          previewImg.src = dataUrlCarregado;
+          if (previewNome) previewNome.textContent = `${file.name} (${formatarTamanhoBytes(file.size)})`;
+          previewCont.style.display = 'block';
+        }
+      }
+    });
+
+    document.getElementById('btnConfirmarArquivoPc')?.addEventListener('click', () => {
+      const desc = document.getElementById('inpDescricaoPc')?.value || 'Estampa Avulsa';
+      const cliente = document.getElementById('inpClientePc')?.value || 'Cliente Externo';
+      const w = parseFloat(document.getElementById('inpLarguraPc')?.value || 20);
+      const h = parseFloat(document.getElementById('inpAlturaPc')?.value || 10);
+      const qtd = parseInt(document.getElementById('inpCopiasPc')?.value || 10, 10);
+      const rot = document.getElementById('chkRotacaoPc')?.checked !== false;
+
+      const imgUrl = dataUrlCarregado || sintetizarSvgArteBadge(cliente, desc, `${w.toFixed(1)}x${h.toFixed(1)}cm`);
+
+      const novaArte = {
+        id: `art_pc_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        pedidoId: 'AVULSO',
+        pedidoNumero: 'Avulso',
+        cliente: cliente,
+        nome: desc,
+        local: desc,
+        arquivoNome: `${desc}.png`,
+        imagemDataUrl: imgUrl,
         larguraCm: w,
         alturaCm: h,
+        quantidade: qtd,
         copias: qtd,
-        roloLarguraCm: 58.0
-      });
+        permitirRotacao: rot,
+        cor: '#0284c7'
+      };
 
-      salvarEstado();
+      window.ERP_NESTING_STATE.artes.push(novaArte);
       fecharModal();
       renderizarNestingDTF();
-      mostrarToast('Arte adicionada com sucesso! O rolo foi recalculado com rotação ótima.', 'green');
+      mostrarToast('Arquivo adicionado com sucesso ao rolo de impressão DTF!', 'green');
     });
   }
 
@@ -8863,7 +10865,7 @@
     });
   }
 
-  function abrirModalNovoModeloInline(callback) {
+  function abrirModalNovoModeloInline(callback, nomeInicial = '') {
     if (!modalContainer) return;
 
     const modalEl = criarModalCamada(`
@@ -8881,7 +10883,7 @@
               </div>
               <div class="form-group" style="flex: 2;">
                 <label class="form-label">Nome da Peça / Modelo</label>
-                <input type="text" id="cadModNome" class="form-input" placeholder="Ex: Calça Térmica Frigorífico">
+                <input type="text" id="cadModNome" class="form-input" value="${(nomeInicial || '').replace(/"/g, '&quot;')}" placeholder="Ex: Calça Térmica Frigorífico">
               </div>
             </div>
 
@@ -9416,17 +11418,18 @@
                 <tr>
                   <td class="text-mono" style="font-size: 11px;">${lan.data}</td>
                   <td>
-                    <span class="status-pill ${(lan.tipo === 'Entrada' || lan.tipo === 'Receita') ? 'status-green' : 'status-red'}" style="font-size: 9.5px;">
+                    <span class="status-pill ${(lan.tipo === 'Entrada' || lan.tipo === 'Receita') ? 'status-green' : (lan.tipo && (lan.tipo.includes('Receber') || lan.tipo.includes('Venda')) ? 'status-blue' : 'status-red')}" style="font-size: 9.5px;">
                       ${lan.tipo.toUpperCase()}
                     </span>
                   </td>
                   <td>
-                    <strong>${lan.cliente || lan.favorecido || 'Bravvi'}</strong>
+                    <strong>${lan.cliente || lan.favorecido || 'Confecção'}</strong>
                     <span style="display: block; font-size: 11px; color: var(--text-gray-500);">${lan.descricao}</span>
                   </td>
                   <td class="text-mono" style="font-size: 11px;">${lan.formaPagamento}</td>
-                  <td class="text-mono ${(lan.tipo === 'Entrada' || lan.tipo === 'Receita') ? 'text-green' : 'text-red'}" style="text-align: right; font-weight: 700;">
-                    ${(lan.tipo === 'Entrada' || lan.tipo === 'Receita') ? '+' : '-'} ${formatarMoeda(lan.valor)}
+                  <td class="text-mono ${(lan.tipo === 'Entrada' || lan.tipo === 'Receita' || (lan.tipo && (lan.tipo.includes('Receber') || lan.tipo.includes('Venda')))) ? 'text-green' : 'text-red'}" style="text-align: right; font-weight: 700;">
+                    ${(lan.tipo === 'Entrada' || lan.tipo === 'Receita' || (lan.tipo && (lan.tipo.includes('Receber') || lan.tipo.includes('Venda')))) ? '+' : '-'} ${formatarMoeda(lan.valor)}
+                    ${lan.status === 'Pendente' ? '<span style="display: block; font-size: 10px; font-weight: 600; color: #0284c7;">Previsto</span>' : ''}
                   </td>
                   <td style="text-align: right;">
                     <button class="btn btn-red btn-xs btn-excluir-lancamento" data-id="${lan.id}" title="Excluir este lançamento">
@@ -11065,6 +13068,11 @@
                   ${p.observacoesCoresDetalhes ? ` • <span style="color: #b45309; font-weight: 700;">Detalhes: ${p.observacoesCoresDetalhes}</span>` : ''}<br>
                   Valor Total: <strong>${formatarMoeda(p.valorTotalVenda)}</strong> • Margem Líquida: <strong class="${p.margemLucroPercentual >= 20 ? 'text-green' : 'text-red'}">${(p.margemLucroPercentual || 0).toFixed(1)}%</strong><br>
                   Costureira: <strong>${p.costureiraNome || 'Oficina Interna'}</strong> • Artes Anexadas: <strong>${(p.artesAnexadas || []).length} locais</strong>
+                  ${(p.artesAnexadas && p.artesAnexadas.length > 0) ? `
+                    <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.abrirModalArtesPedido('${p.id}')" style="margin-left: 6px; padding: 1px 7px; font-size: 10px; color: #0284c7; border-color: #bae6fd; background: #ffffff; font-weight: 700; cursor: pointer;">
+                      🎨 Ver & Baixar Artes
+                    </button>
+                  ` : ''}
                 </div>
               </div>
             </div>
@@ -11097,7 +13105,16 @@
                 <input type="checkbox" id="chkQuarentena2" class="quarentena-checkbox">
                 <div>
                   <label for="chkQuarentena2" class="quarentena-label">2. Mockup 3x4 e Artes de Alta Resolução Aprovadas</label>
-                  <div class="quarentena-desc">Confirmo que o cliente aprovou formalmente por e-mail ou WhatsApp a disposição das estampas no peito, costas e mangas.</div>
+                  <div class="quarentena-desc">
+                    Confirmo que o cliente aprovou formalmente por e-mail ou WhatsApp a disposição das estampas no peito, costas e mangas.
+                    ${(p.artesAnexadas && p.artesAnexadas.length > 0) ? `
+                      <div style="margin-top: 6px;">
+                        <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.abrirModalArtesPedido('${p.id}')" style="color: #0284c7; border-color: #bae6fd; background: #ffffff; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; padding: 2px 8px;">
+                          🎨 Inspecionar e Baixar ${p.artesAnexadas.length} Arquivo(s) de Arte
+                        </button>
+                      </div>
+                    ` : ''}
+                  </div>
                 </div>
               </div>
 
@@ -13684,6 +15701,11 @@
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               ${pedido ? `
+                ${(pedido && pedido.artesAnexadas && pedido.artesAnexadas.length > 0) ? `
+                  <button type="button" class="btn btn-secondary btn-sm" id="btnModalMockupArtes" style="color: #0284c7; border-color: #bae6fd; font-weight: 700;">
+                    🎨 Ver & Baixar Artes (${pedido.artesAnexadas.length})
+                  </button>
+                ` : ''}
                 <button type="button" class="btn btn-secondary btn-sm" id="btnModalMockupWpp">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                   Disparar no WhatsApp
@@ -13711,6 +15733,9 @@
     });
 
     if (pedido) {
+      document.getElementById('btnModalMockupArtes')?.addEventListener('click', () => {
+        abrirModalArtesPedido(pedido.id);
+      });
       document.getElementById('btnModalMockupCancelar')?.addEventListener('click', () => {
         abrirModalCancelarPedido(pedido.id);
       });
@@ -14774,6 +16799,19 @@
   }
 
   function zerarBancoProducaoReal() {
+    const totalRegistros = (db.pedidos?.length || 0) + (db.clientes?.length || 0);
+    if (totalRegistros > 0) {
+      const conf1 = confirm(`ATENÇÃO DE SEGURANÇA:\n\nVocê possui ${db.pedidos?.length || 0} pedidos e ${db.clientes?.length || 0} clientes cadastrados.\n\nDeseja realmente apagar todos os registros operacionais da confecção?`);
+      if (!conf1) return;
+      const conf2 = prompt(`Para confirmar a exclusão permanente de todos os dados, digite ZERAR em letras maiúsculas:`);
+      if (conf2 !== 'ZERAR') {
+        mostrarToast('Operação cancelada. Seus dados continuam intactos.', 'blue');
+        return;
+      }
+      // Salva snapshot de emergência antes de zerar caso tenha sido acidental
+      criarSnapshotSegurancaLocal(db);
+    }
+
     db.pedidos = [];
     db.ordensServico = [];
     db.clientes = [];
@@ -14785,10 +16823,10 @@
     if (db.estoque && db.estoque.length > 0) {
       db.estoque.forEach(item => item.saldoAtual = 0);
     }
-    salvarEstado();
+    salvarEstado(true);
     atualizarBadges();
     navegarPara('abertura');
-    mostrarToast('Sistema 100% zerado e pronto para produção real da confecção!', 'green');
+    mostrarToast('Sistema zerado e pronto para produção real da confecção!', 'green');
   }
 
   function renderizarConfiguracoesEmpresa() {
@@ -14993,22 +17031,16 @@
     const inpLogo = document.getElementById('inpUploadLogoEmpresa');
     document.getElementById('btnEscolherLogoEmpresa')?.addEventListener('click', () => inpLogo?.click());
 
-    inpLogo?.addEventListener('change', (e) => {
+    inpLogo?.addEventListener('change', async (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
-      if (file.size > 2 * 1024 * 1024) {
-        mostrarToast('A imagem selecionada é muito pesada (máximo 2MB).', 'red');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const base64 = evt.target.result;
+      const base64 = await comprimirImagemDataUrl(file, 500, 500, 0.85);
+      if (base64) {
         emp.logoUrl = base64;
         salvarFormularioEmpresa();
         renderizarConfiguracoesEmpresa();
-        mostrarToast('Logotipo atualizado e salvo com sucesso!', 'green');
-      };
-      reader.readAsDataURL(file);
+        mostrarToast('Logotipo otimizado e salvo com sucesso!', 'green');
+      }
     });
 
     document.getElementById('btnRemoverLogoEmpresa')?.addEventListener('click', () => {
@@ -15367,6 +17399,10 @@
     salvarPadroesSistema,
     abrirModalWhatsApp,
     abrirModalVisualizarMockup,
+    abrirModalArtesPedido,
+    baixarArteDoPedido,
+    baixarTodasArtesDoPedido,
+    baixarArteDoPedidoDireta,
     abrirModalNovoOrcamento,
     abrirModalEditarOrcamento: (id) => abrirModalNovoOrcamento(id),
     abrirModalCancelarPedido,
@@ -15396,6 +17432,7 @@
     renderizarNotasFiscais,
     carregarDemonstracaoShowroom,
     zerarBancoProducaoReal,
+    alternarSidebar,
     abrirModalAutenticacao,
     confirmarLogout,
     exibirGatekeeperAutenticacao,
@@ -15408,21 +17445,23 @@
       }
     },
     forcarResetarBanco: function() {
+      const conf1 = confirm('ATENÇÃO: Deseja realmente zerar o banco de dados? Todos os dados serão perdidos!');
+      if (!conf1) return;
+      const conf2 = prompt('Digite ZERAR para confirmar:');
+      if (conf2 !== 'ZERAR') {
+        mostrarToast('Operação cancelada.', 'blue');
+        return;
+      }
+      criarSnapshotSegurancaLocal(db);
       try {
-        localStorage.removeItem(STORAGE_KEY);
+        const chaveTenant = obterChaveStorageTenant();
+        localStorage.removeItem(chaveTenant);
         localStorage.removeItem('bravvi_erp_prod_v8');
         localStorage.removeItem('texpro_erp_prod_v8');
-        localStorage.removeItem('texpro_erp_prod_v7');
-        localStorage.removeItem('texpro_erp_prod_v6');
-        localStorage.removeItem('texpro_erp_database_v5');
-        localStorage.removeItem('texpro_erp_database_v4');
-        localStorage.removeItem('texpro_erp_database_v3');
-        localStorage.removeItem('texpro_erp_database_v2');
-        localStorage.removeItem('texpro_erp_database_v1');
       } catch (e) {}
       db = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA));
       db.versao = ERP_VERSION;
-      salvarEstado();
+      salvarEstado(true);
       atualizarBadges();
       navegarPara(abaAtiva);
       mostrarToast('Sistema 100% zerado e pronto para operação real!', 'green');

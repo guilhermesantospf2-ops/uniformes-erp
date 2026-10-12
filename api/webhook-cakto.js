@@ -31,6 +31,14 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    // Blindagem de Segurança: Validação de Assinatura / Token Secreto
+    const secretEsperado = process.env.CAKTO_WEBHOOK_SECRET || process.env.WEBHOOK_SECRET;
+    const secretRecebido = req.headers['x-cakto-secret'] || req.headers['x-webhook-secret'] || (req.query && req.query.secret);
+    if (secretEsperado && secretRecebido !== secretEsperado) {
+      console.warn('[Cakto Webhook] Requisição rejeitada: token secreto inválido.');
+      return res.status(401).json({ error: 'Unauthorized: Invalid webhook secret' });
+    }
+
     let payload = req.body || {};
     if (typeof payload === 'string') {
       try {

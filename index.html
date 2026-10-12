@@ -19,7 +19,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <link rel="stylesheet" href="style.css?v=8.6.0">
+  <link rel="stylesheet" href="style.css?v=8.8.5">
   <script>
     if (window.location.search && window.location.search.includes('demo=1')) {
       window.location.href = '/demo';
@@ -39,7 +39,7 @@
     <!-- SIDEBAR DE NAVEGAÇÃO INDUSTRIAL (EXATA COMO NA REFERÊNCIA) -->
     <aside class="erp-sidebar" aria-label="Navegação do Sistema">
       
-      <div class="sidebar-header">
+      <div class="sidebar-header" style="display: flex; align-items: center; justify-content: space-between;">
         <div class="brand-wrapper" id="sidebarBrandWrapper" style="cursor: pointer;" onclick="window.ERP.navegarPara('empresa')" title="Configurar Dados e Logotipo da sua Confecção">
           <div class="brand-icon" id="sidebarBrandIcon" style="background: transparent; border: none; padding: 0; display: flex; align-items: center; justify-content: center;">
             <img src="assets/bravvi-icon.png" alt="Bravvi" style="width: 40px; height: 40px; object-fit: contain;">
@@ -49,6 +49,11 @@
             <div class="brand-subtitle" id="sidebarBrandSubtitle">ERP TÊXTIL</div>
           </div>
         </div>
+        <button type="button" id="btnCollapseSidebar" class="btn-sidebar-collapse" title="Esconder menu lateral (Ctrl+B)" aria-label="Recolher Menu">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
       </div>
 
       <nav class="sidebar-menu">
@@ -224,13 +229,30 @@
       </div>
     </aside>
 
+    <!-- Botão Flutuante de Reabertura Rápida da Sidebar (visível apenas quando recolhida) -->
+    <button type="button" id="btnFloatingSidebarOpen" class="btn-floating-sidebar-open" title="Mostrar menu lateral (Ctrl+B)" aria-label="Expandir Menu">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+      <span>Menu</span>
+    </button>
+
     <!-- ÁREA PRINCIPAL DO SISTEMA -->
     <main class="erp-main">
       <!-- Navbar Superior Sticky (Limpa & Minimalista) -->
       <header class="top-navbar">
-        <div class="navbar-page-title">
-          <h1 id="pageTitle">Abertura & Visão Geral da Fábrica</h1>
-          <span class="navbar-breadcrumb" id="pageBreadcrumb" style="display: none !important;">SISTEMA > ABERTURA</span>
+        <div class="navbar-page-title" style="display: flex; align-items: center; gap: 12px;">
+          <!-- Botão Toggle Menu Lateral -->
+          <button type="button" id="btnToggleSidebar" class="btn-toggle-sidebar" title="Esconder / Mostrar Menu Lateral (Ctrl+B)" aria-label="Alternar Menu Lateral">
+            <svg id="iconToggleSidebar" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="9" y1="3" x2="9" y2="21"></line>
+            </svg>
+          </button>
+          <div>
+            <h1 id="pageTitle">Abertura & Visão Geral da Fábrica</h1>
+            <span class="navbar-breadcrumb" id="pageBreadcrumb" style="display: none !important;">SISTEMA > ABERTURA</span>
+          </div>
         </div>
 
         <div class="navbar-actions" style="display: flex; align-items: center; gap: 14px;">
@@ -278,14 +300,14 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Scripts do ERP Têxtil com Versionamento Anti-Cache -->
-  <script src="mock-data.js?v=8.7.1"></script>
-  <script src="market-benchmark.js?v=8.7.1"></script>
-  <script src="nesting-engine.js?v=8.7.1"></script>
-  <script src="cloud-sync.js?v=8.7.1"></script>
-  <script src="pwa-install.js?v=8.7.1"></script>
+  <script src="mock-data.js?v=8.8.0"></script>
+  <script src="market-benchmark.js?v=8.8.0"></script>
+  <script src="nesting-engine.js?v=8.8.6"></script>
+  <script src="cloud-sync.js?v=8.8.0"></script>
+  <script src="pwa-install.js?v=8.8.0"></script>
   <script src="pix-qrcode.min.js"></script>
-  <script src="pix-engine.js?v=8.7.1"></script>
-  <script src="infinitepay-engine.js?v=8.7.1"></script>
-  <script src="app.js?v=8.7.1"></script>
+  <script src="pix-engine.js?v=8.8.0"></script>
+  <script src="infinitepay-engine.js?v=8.8.0"></script>
+  <script src="app.js?v=8.8.6"></script>
 </body>
 </html>

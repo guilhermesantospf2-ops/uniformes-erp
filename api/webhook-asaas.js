@@ -31,6 +31,14 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    // Blindagem de Segurança: Validação de Token de Acesso Asaas
+    const tokenEsperado = process.env.ASAAS_WEBHOOK_ACCESS_TOKEN || process.env.ASAAS_TOKEN || process.env.WEBHOOK_SECRET;
+    const tokenRecebido = req.headers['asaas-access-token'] || req.headers['x-webhook-token'] || (req.query && req.query.token);
+    if (tokenEsperado && tokenRecebido !== tokenEsperado) {
+      console.warn('[Asaas Webhook] Requisição rejeitada: token de acesso inválido.');
+      return res.status(401).json({ error: 'Unauthorized: Invalid access token' });
+    }
+
     let payload = req.body || {};
     if (typeof payload === 'string') {
       try {

@@ -34,6 +34,14 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    // Blindagem de Segurança: Validação de Token de Acesso InfinitePay
+    const secretEsperado = process.env.INFINITEPAY_WEBHOOK_SECRET || process.env.WEBHOOK_SECRET;
+    const secretRecebido = req.headers['x-webhook-secret'] || req.headers['authorization'] || (req.query && req.query.secret);
+    if (secretEsperado && secretRecebido !== secretEsperado) {
+      console.warn('[InfinitePay Webhook] Requisição rejeitada: token secreto inválido.');
+      return res.status(401).json({ error: 'Unauthorized: Invalid webhook secret' });
+    }
+
     let payload = req.body || {};
     if (typeof payload === 'string') {
       try {
