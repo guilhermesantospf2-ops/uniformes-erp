@@ -2422,6 +2422,21 @@ button.status-pill:hover {
   border-color: #3b82f6;
 }
 
+/* Grid Responsivo para Seleção de Modelo Têxtil e Mockup 3x4 */
+.grid-modelo-mockup {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.45fr) minmax(280px, 1fr);
+  gap: 14px;
+  margin-bottom: 12px;
+  align-items: stretch;
+}
+
+@media (max-width: 820px) {
+  .grid-modelo-mockup {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Cards de Aplicações de Personalização */
 .aplicacao-card {
   background: #ffffff;

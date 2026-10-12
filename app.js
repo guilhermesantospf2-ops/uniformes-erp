@@ -5149,7 +5149,7 @@
                 </div>
                 <button type="button" class="btn-add-modelo-tab" id="btnAddModeloTab">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                  + Adicionar Outro Modelo ao Pedido
+                  Adicionar Outro Modelo ao Pedido
                 </button>
               </div>
 
@@ -5162,16 +5162,21 @@
             <!-- 3. CONTAINER DO MODELO ATIVO -->
             <div id="orcContainerModeloAtivo">
               <!-- Linha do Modelo Têxtil Selecionado e Mockup 3x4 -->
-              <div class="form-row">
-                <div class="form-group" style="flex: 2; position: relative;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-                    <label class="form-label" style="font-weight: 700; margin: 0;">Modelo Têxtil / Base (Deste Modelo)</label>
-                    <span style="font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 4px;">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                      Busca rápida
-                    </span>
+              <div class="grid-modelo-mockup">
+                
+                <!-- Coluna 1: Modelo Têxtil / Base do Modelo -->
+                <div class="form-group" style="margin-bottom: 0; min-width: 0; position: relative;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <label class="form-label" style="font-weight: 700; margin: 0; font-size: 12px; color: var(--text-primary);">
+                      Modelo Têxtil / Base (Deste Modelo)
+                    </label>
+                    <button type="button" class="btn btn-secondary btn-xs" id="btnCadastrarModeloInline" style="font-size: 11px; padding: 2px 8px; font-weight: 700; color: #0284c7; border: 1px solid #bae6fd; background: #f0f9ff; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="Cadastrar nova modelagem base">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                      + Cadastrar Modelo
+                    </button>
                   </div>
-                  <div class="inline-input-group" style="position: relative;">
+
+                  <div style="position: relative; width: 100%;">
                     <!-- Select original invisível para 100% de compatibilidade com rotinas do ERP -->
                     <select id="orcProdutoSelect" style="display: none;">
                       ${db.produtosBase.map(pr => `
@@ -5180,15 +5185,15 @@
                     </select>
 
                     <!-- Gatilho Visual do Combobox com Busca Integrada -->
-                    <div id="btnComboboxModeloTrigger" tabindex="0" role="combobox" aria-expanded="false" class="form-select combobox-custom-trigger" style="flex: 1; display: flex; align-items: center; justify-content: space-between; background: #ffffff; cursor: pointer; user-select: none; padding: 7px 12px; border: 1.5px solid var(--border-medium); border-radius: var(--radius-sm); min-height: 38px; gap: 8px; transition: all 0.2s ease;">
+                    <div id="btnComboboxModeloTrigger" tabindex="0" role="combobox" aria-expanded="false" class="form-select combobox-custom-trigger" style="width: 100%; display: flex; align-items: center; justify-content: space-between; background: #ffffff; cursor: pointer; user-select: none; padding: 7px 12px; border: 1.5px solid var(--border-medium); border-radius: var(--radius-sm); min-height: 38px; gap: 8px; transition: all 0.2s ease; box-sizing: border-box;">
                       <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; min-width: 0; flex: 1;">
                         <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 4px; background: #eff6ff; color: #1d4ed8; flex-shrink: 0;">
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z"/></svg>
                         </span>
-                        <span id="labelNomeModeloCombobox" style="font-weight: 600; font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        <span id="labelNomeModeloCombobox" style="font-weight: 700; font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">
                           Selecione um Modelo
                         </span>
-                        <span id="badgeMalhaModeloCombobox" style="font-size: 10.5px; background: #f1f5f9; color: #475569; padding: 2px 7px; border-radius: 12px; font-weight: 600; white-space: nowrap; flex-shrink: 0; border: 1px solid #e2e8f0;">
+                        <span id="badgeMalhaModeloCombobox" style="font-size: 10.5px; background: #f1f5f9; color: #475569; padding: 2px 7px; border-radius: 12px; font-weight: 600; white-space: nowrap; flex-shrink: 0; border: 1px solid #e2e8f0; max-width: 170px; overflow: hidden; text-overflow: ellipsis;" title="Tipo de Malha">
                           Malha
                         </span>
                       </div>
@@ -5226,28 +5231,25 @@
                         <span style="font-size: 10px; color: #94a3b8;">Navegue com ↑ ↓ e Enter</span>
                       </div>
                     </div>
-
-                    <button type="button" class="btn btn-secondary btn-inline-add" id="btnCadastrarModeloInline">
-                      + Cadastrar Modelo
-                    </button>
                   </div>
                 </div>
 
-                <!-- Mockup 3x4 do Modelo Ativo -->
-                <div class="form-group" style="flex: 1.8; background: #ffffff; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); padding: 8px 10px;">
-                  <div style="display: flex; gap: 10px; align-items: center;">
-                    <img id="previewMockup3x4Orc" src="" style="width: 52px; height: 68px; aspect-ratio: 3/4; object-fit: contain; border: 1px solid var(--border-medium); border-radius: 4px; background: #ffffff;" alt="Preview 3x4">
-                    <div style="flex: 1;">
-                      <label class="btn btn-secondary btn-sm" style="cursor: pointer; font-size: 10px; padding: 2px 7px; display: inline-block; margin-bottom: 4px;">
+                <!-- Coluna 2: Mockup 3x4 do Modelo Ativo -->
+                <div class="form-group" style="margin-bottom: 0; min-width: 0; background: #ffffff; border: 1.5px solid var(--border-medium); border-radius: var(--radius-sm); padding: 8px 12px; display: flex; flex-direction: column; justify-content: center;">
+                  <div style="display: flex; gap: 10px; align-items: center; min-width: 0;">
+                    <img id="previewMockup3x4Orc" src="" style="width: 52px; height: 68px; aspect-ratio: 3/4; object-fit: contain; border: 1px solid var(--border-medium); border-radius: 4px; background: #ffffff; flex-shrink: 0;" alt="Preview 3x4">
+                    <div style="flex: 1; min-width: 0;">
+                      <label class="btn btn-secondary btn-sm" style="cursor: pointer; font-size: 10.5px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 5px; margin-bottom: 6px; font-weight: 700; white-space: nowrap;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="3"/></svg>
                         Anexar Imagem Mockup
                         <input type="file" id="inputUploadMockupOrc" accept="image/*" style="display: none;">
                       </label>
-                      <div style="display: flex; gap: 3px; flex-wrap: wrap;">
-                        <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="azul" style="font-size: 9px; padding: 1px 5px;">Marinho</button>
-                        <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="cinza" style="font-size: 9px; padding: 1px 5px;">Cinza</button>
-                        <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="branco" style="font-size: 9px; padding: 1px 5px;">Branco</button>
-                        <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="preto" style="font-size: 9px; padding: 1px 5px;">Preto</button>
-                        <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="royal" style="font-size: 9px; padding: 1px 5px;">Royal</button>
+                      <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="azul" style="font-size: 9.5px; padding: 1.5px 6px; font-weight: 600;">Marinho</button>
+                        <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="cinza" style="font-size: 9.5px; padding: 1.5px 6px; font-weight: 600;">Cinza</button>
+                        <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="branco" style="font-size: 9.5px; padding: 1.5px 6px; font-weight: 600;">Branco</button>
+                        <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="preto" style="font-size: 9.5px; padding: 1.5px 6px; font-weight: 600;">Preto</button>
+                        <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="royal" style="font-size: 9.5px; padding: 1.5px 6px; font-weight: 600;">Royal</button>
                       </div>
                     </div>
                   </div>
