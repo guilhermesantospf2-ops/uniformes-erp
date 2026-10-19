@@ -7230,17 +7230,23 @@
                       </div>
 
                       <!-- Mini Container de Pré-visualização da Arte Carregada -->
-                      <div id="previewContainerArteApp_${idx}" style="display: none; margin-top: 8px; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 5px; padding: 6px 10px; align-items: center; justify-content: space-between; gap: 10px;">
-                        <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
-                          <img id="imgThumbArteApp_${idx}" src="" style="width: 38px; height: 38px; object-fit: contain; border-radius: 3px; border: 1px solid #e2e8f0; background: #fafafa; display: none;" alt="Preview Arte">
+                      <div id="previewContainerArteApp_${idx}" style="display: none; margin-top: 8px; background: #ffffff; border: 1.5px solid #86efac; border-radius: 6px; padding: 7px 10px; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; min-width: 140px;">
+                          <img id="imgThumbArteApp_${idx}" src="" style="width: 38px; height: 38px; object-fit: contain; border-radius: 4px; border: 1px solid #cbd5e1; background: #f8fafc; display: none;" alt="Preview Arte">
                           <span id="iconDocArteApp_${idx}" style="font-size: 22px; display: none;">📄</span>
                           <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                             <span id="nomeArquivoArteApp_${idx}" style="font-size: 11.5px; font-weight: 700; color: #166534; display: block; overflow: hidden; text-overflow: ellipsis;">arquivo.png</span>
-                            <span id="tamanhoArquivoArteApp_${idx}" style="font-size: 10px; color: #64748b;">120 KB</span>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                              <span id="tamanhoArquivoArteApp_${idx}" style="font-size: 10px; color: #64748b;">120 KB</span>
+                              <span id="badgeTratamentoApp_${idx}" style="display: none; font-size: 9px; font-weight: 800; background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 1px 5px; border-radius: 3px;">✨ Pronto DTF</span>
+                            </div>
                           </div>
                         </div>
-                        <div style="display: flex; gap: 4px; align-items: center;">
-                          <button type="button" class="btn btn-secondary btn-xs btn-limpar-arte-app" data-idx="${idx}" style="padding: 2px 6px; font-size: 10px; color: #dc2626; border-color: #fca5a5;" title="Remover e escolher outro arquivo">✕ Trocar</button>
+                        <div style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap;">
+                          <button type="button" class="btn btn-xs btn-tratar-arte-app" data-idx="${idx}" id="btnTratarArteApp_${idx}" style="display: none; padding: 4px 9px; font-size: 10.5px; font-weight: 800; background: linear-gradient(135deg, #0d9488, #059669); color: #ffffff; border: none; border-radius: 4px; cursor: pointer; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(13, 148, 136, 0.35);" title="Abrir Estúdio Cirúrgico: Remover fundo, Auto-Trim e Recorte Manual para DTF">
+                            ✂️ Estúdio & Recorte DTF
+                          </button>
+                          <button type="button" class="btn btn-secondary btn-xs btn-limpar-arte-app" data-idx="${idx}" style="padding: 3px 7px; font-size: 10px; color: #dc2626; border-color: #fca5a5; background: #fff;" title="Remover e escolher outro arquivo">✕ Trocar</button>
                         </div>
                       </div>
                     </div>
@@ -7261,7 +7267,19 @@
                       <input type="file" id="fileArtePeito" class="form-input inp-file-arte-fallback" data-key="peito" style="font-size: 11px; padding: 4px; flex: 1.3;" accept="image/*,.pdf,.ai,.eps,.cdr,.pes,.dst">
                       <input type="text" id="dimArtePeito" class="form-input" value="9.0 x 7.5 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px; flex: 1;">
                     </div>
-                    <div id="previewContainerArtePeito" style="display: none; margin-top: 6px; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 4px; padding: 4px 8px; font-size: 11px; color: #166534; font-weight: 700;"></div>
+                    <div id="previewContainerArtePeito" style="display: none; margin-top: 6px; background: #ffffff; border: 1.5px solid #86efac; border-radius: 5px; padding: 6px 8px; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                      <div style="display: flex; align-items: center; gap: 6px;">
+                        <img id="imgThumbArtePeito" src="" style="width: 32px; height: 32px; object-fit: contain; border-radius: 3px; border: 1px solid #cbd5e1; display: none;">
+                        <div>
+                          <span id="nomeArquivoArtePeito" style="font-size: 11px; font-weight: 700; color: #166534; display: block;">arquivo.png</span>
+                          <span id="badgeTratamentoPeito" style="display: none; font-size: 9px; font-weight: 800; background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 1px 5px; border-radius: 3px;">✨ Pronto DTF</span>
+                        </div>
+                      </div>
+                      <div style="display: flex; gap: 5px; align-items: center;">
+                        <button type="button" class="btn btn-xs btn-tratar-arte-fallback" data-key="peito" id="btnTratarArtePeito" style="display: none; padding: 3px 8px; font-size: 10px; font-weight: 800; background: linear-gradient(135deg, #0d9488, #059669); color: #fff; border: none; border-radius: 4px; cursor: pointer;">✂️ Estúdio & Recorte</button>
+                        <button type="button" class="btn btn-secondary btn-xs btn-limpar-arte-fallback" data-key="peito" style="padding: 2px 6px; font-size: 10px; color: #dc2626; border-color: #fca5a5; background:#fff;">✕ Trocar</button>
+                      </div>
+                    </div>
                   </div>
 
                   <!-- Costas -->
@@ -7277,7 +7295,19 @@
                       <input type="file" id="fileArteCostas" class="form-input inp-file-arte-fallback" data-key="costas" style="font-size: 11px; padding: 4px; flex: 1.3;" accept="image/*,.pdf,.ai,.eps,.cdr,.pes,.dst">
                       <input type="text" id="dimArteCostas" class="form-input" value="28.0 x 12.0 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px; flex: 1;">
                     </div>
-                    <div id="previewContainerArteCostas" style="display: none; margin-top: 6px; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 4px; padding: 4px 8px; font-size: 11px; color: #166534; font-weight: 700;"></div>
+                    <div id="previewContainerArteCostas" style="display: none; margin-top: 6px; background: #ffffff; border: 1.5px solid #86efac; border-radius: 5px; padding: 6px 8px; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                      <div style="display: flex; align-items: center; gap: 6px;">
+                        <img id="imgThumbArteCostas" src="" style="width: 32px; height: 32px; object-fit: contain; border-radius: 3px; border: 1px solid #cbd5e1; display: none;">
+                        <div>
+                          <span id="nomeArquivoArteCostas" style="font-size: 11px; font-weight: 700; color: #166534; display: block;">arquivo.png</span>
+                          <span id="badgeTratamentoCostas" style="display: none; font-size: 9px; font-weight: 800; background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 1px 5px; border-radius: 3px;">✨ Pronto DTF</span>
+                        </div>
+                      </div>
+                      <div style="display: flex; gap: 5px; align-items: center;">
+                        <button type="button" class="btn btn-xs btn-tratar-arte-fallback" data-key="costas" id="btnTratarArteCostas" style="display: none; padding: 3px 8px; font-size: 10px; font-weight: 800; background: linear-gradient(135deg, #0d9488, #059669); color: #fff; border: none; border-radius: 4px; cursor: pointer;">✂️ Estúdio & Recorte</button>
+                        <button type="button" class="btn btn-secondary btn-xs btn-limpar-arte-fallback" data-key="costas" style="padding: 2px 6px; font-size: 10px; color: #dc2626; border-color: #fca5a5; background:#fff;">✕ Trocar</button>
+                      </div>
+                    </div>
                   </div>
 
                   <!-- Manga / Ombro -->
@@ -7293,7 +7323,19 @@
                       <input type="file" id="fileArteOmbro" class="form-input inp-file-arte-fallback" data-key="ombro" style="font-size: 11px; padding: 4px; flex: 1.3;" accept="image/*,.pdf,.ai,.eps,.cdr,.pes,.dst">
                       <input type="text" id="dimArteOmbro" class="form-input" value="8.0 x 4.0 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px; flex: 1;">
                     </div>
-                    <div id="previewContainerArteOmbro" style="display: none; margin-top: 6px; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 4px; padding: 4px 8px; font-size: 11px; color: #166534; font-weight: 700;"></div>
+                    <div id="previewContainerArteOmbro" style="display: none; margin-top: 6px; background: #ffffff; border: 1.5px solid #86efac; border-radius: 5px; padding: 6px 8px; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                      <div style="display: flex; align-items: center; gap: 6px;">
+                        <img id="imgThumbArteOmbro" src="" style="width: 32px; height: 32px; object-fit: contain; border-radius: 3px; border: 1px solid #cbd5e1; display: none;">
+                        <div>
+                          <span id="nomeArquivoArteOmbro" style="font-size: 11px; font-weight: 700; color: #166534; display: block;">arquivo.png</span>
+                          <span id="badgeTratamentoOmbro" style="display: none; font-size: 9px; font-weight: 800; background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 1px 5px; border-radius: 3px;">✨ Pronto DTF</span>
+                        </div>
+                      </div>
+                      <div style="display: flex; gap: 5px; align-items: center;">
+                        <button type="button" class="btn btn-xs btn-tratar-arte-fallback" data-key="ombro" id="btnTratarArteOmbro" style="display: none; padding: 3px 8px; font-size: 10px; font-weight: 800; background: linear-gradient(135deg, #0d9488, #059669); color: #fff; border: none; border-radius: 4px; cursor: pointer;">✂️ Estúdio & Recorte</button>
+                        <button type="button" class="btn btn-secondary btn-xs btn-limpar-arte-fallback" data-key="ombro" style="padding: 2px 6px; font-size: 10px; color: #dc2626; border-color: #fca5a5; background:#fff;">✕ Trocar</button>
+                      </div>
+                    </div>
                   </div>
 
                   <!-- Outro Local -->
@@ -7307,7 +7349,19 @@
                     </div>
                     <input type="text" id="descArteOutro" class="form-input" placeholder="Descreva o local (ex: Gola, Barra, Bolso)" style="font-size: 11px; margin-bottom: 6px;">
                     <input type="file" id="fileArteOutro" class="form-input inp-file-arte-fallback" data-key="outro" style="font-size: 11px; padding: 4px;" accept="image/*,.pdf,.ai,.eps,.cdr,.pes,.dst">
-                    <div id="previewContainerArteOutro" style="display: none; margin-top: 6px; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 4px; padding: 4px 8px; font-size: 11px; color: #166534; font-weight: 700;"></div>
+                    <div id="previewContainerArteOutro" style="display: none; margin-top: 6px; background: #ffffff; border: 1.5px solid #86efac; border-radius: 5px; padding: 6px 8px; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                      <div style="display: flex; align-items: center; gap: 6px;">
+                        <img id="imgThumbArteOutro" src="" style="width: 32px; height: 32px; object-fit: contain; border-radius: 3px; border: 1px solid #cbd5e1; display: none;">
+                        <div>
+                          <span id="nomeArquivoArteOutro" style="font-size: 11px; font-weight: 700; color: #166534; display: block;">arquivo.png</span>
+                          <span id="badgeTratamentoOutro" style="display: none; font-size: 9px; font-weight: 800; background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 1px 5px; border-radius: 3px;">✨ Pronto DTF</span>
+                        </div>
+                      </div>
+                      <div style="display: flex; gap: 5px; align-items: center;">
+                        <button type="button" class="btn btn-xs btn-tratar-arte-fallback" data-key="outro" id="btnTratarArteOutro" style="display: none; padding: 3px 8px; font-size: 10px; font-weight: 800; background: linear-gradient(135deg, #0d9488, #059669); color: #fff; border: none; border-radius: 4px; cursor: pointer;">✂️ Estúdio & Recorte</button>
+                        <button type="button" class="btn btn-secondary btn-xs btn-limpar-arte-fallback" data-key="outro" style="padding: 2px 6px; font-size: 10px; color: #dc2626; border-color: #fca5a5; background:#fff;">✕ Trocar</button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               `}
@@ -7464,6 +7518,27 @@
     // Estrutura de armazenamento em memória dos arquivos de arte lidos (DataUrl)
     const artesArquivosCarregados = {};
 
+    // Função auxiliar para recalcular dimensão proporcional após recorte no estúdio
+    function recalcularDimensaoArteProporcional(inputDim, dataUrl) {
+      if (!inputDim || !inputDim.value || !dataUrl) return;
+      const imgTemp = new Image();
+      imgTemp.onload = () => {
+        const wNatural = imgTemp.naturalWidth || imgTemp.width;
+        const hNatural = imgTemp.naturalHeight || imgTemp.height;
+        if (!wNatural || !hNatural) return;
+        const ratio = wNatural / hNatural;
+        const m = inputDim.value.match(/([0-9]+[.,]?[0-9]*)\s*[xX*]\s*([0-9]+[.,]?[0-9]*)/);
+        if (m) {
+          const largCm = parseFloat(m[1].replace(',', '.'));
+          if (largCm > 0 && ratio > 0) {
+            const novaAltCm = parseFloat((largCm / ratio).toFixed(1));
+            inputDim.value = `${largCm.toFixed(1).replace('.', ',')} x ${novaAltCm.toFixed(1).replace('.', ',')} cm`;
+          }
+        }
+      };
+      imgTemp.src = dataUrl;
+    }
+
     // Pré-carrega artes caso o pedido já possua arquivos anexados previamente
     if (dadosBase.artesAnexadas && Array.isArray(dadosBase.artesAnexadas)) {
       dadosBase.artesAnexadas.forEach((art, aIdx) => {
@@ -7472,7 +7547,9 @@
             name: art.arquivoNome || `arte_${aIdx + 1}.png`,
             type: art.arquivoTipo || 'image/png',
             size: art.arquivoTamanho || 0,
-            dataUrl: art.arquivoDataUrl || ''
+            dataUrl: art.arquivoDataUrl || '',
+            fundoRemovido: !!art.fundoRemovido,
+            recortado: !!art.recortado
           };
           setTimeout(() => {
             const card = document.getElementById(`cardArteApp_${aIdx}`);
@@ -7482,25 +7559,32 @@
             const iconDoc = document.getElementById(`iconDocArteApp_${aIdx}`);
             const nomeArq = document.getElementById(`nomeArquivoArteApp_${aIdx}`);
             const tamArq = document.getElementById(`tamanhoArquivoArteApp_${aIdx}`);
+            const btnTratar = document.getElementById(`btnTratarArteApp_${aIdx}`);
+            const badgeTrat = document.getElementById(`badgeTratamentoApp_${aIdx}`);
+
             if (card) {
               card.style.borderColor = '#86efac';
               card.style.borderLeft = '5px solid #16a34a';
               card.style.background = '#f0fdf4';
             }
             if (statusBadge) {
-              statusBadge.innerHTML = '✓ Arquivo Já Anexado';
+              statusBadge.innerHTML = art.fundoRemovido ? '✓ Arte Pronta & Otimizada p/ DTF' : '✓ Arquivo Já Anexado';
               statusBadge.style.color = '#16a34a';
             }
             if (prevCont) {
               prevCont.style.display = 'flex';
               if (nomeArq) nomeArq.textContent = art.arquivoNome || 'Arte Anexa';
               if (tamArq) tamArq.textContent = formatarTamanhoBytes(art.arquivoTamanho);
-              if (art.arquivoDataUrl && (art.arquivoTipo?.startsWith('image/') || art.arquivoDataUrl.startsWith('data:image/'))) {
+              const isImg = art.arquivoDataUrl && (art.arquivoTipo?.startsWith('image/') || art.arquivoDataUrl.startsWith('data:image/'));
+              if (isImg) {
                 if (imgThumb) { imgThumb.src = art.arquivoDataUrl; imgThumb.style.display = 'block'; }
                 if (iconDoc) iconDoc.style.display = 'none';
+                if (btnTratar) btnTratar.style.display = 'inline-flex';
+                if (badgeTrat && (art.fundoRemovido || art.recortado)) badgeTrat.style.display = 'inline-block';
               } else {
                 if (imgThumb) imgThumb.style.display = 'none';
                 if (iconDoc) { iconDoc.style.display = 'block'; iconDoc.textContent = '📄'; }
+                if (btnTratar) btnTratar.style.display = 'none';
               }
             }
           }, 30);
@@ -7522,6 +7606,8 @@
         const iconDoc = document.getElementById(`iconDocArteApp_${idx}`);
         const nomeArq = document.getElementById(`nomeArquivoArteApp_${idx}`);
         const tamArq = document.getElementById(`tamanhoArquivoArteApp_${idx}`);
+        const btnTratar = document.getElementById(`btnTratarArteApp_${idx}`);
+        const badgeTrat = document.getElementById(`badgeTratamentoApp_${idx}`);
 
         if (file.size > 8 * 1024 * 1024) {
           mostrarToast(`O arquivo "${file.name}" tem ${(file.size / (1024*1024)).toFixed(1)}MB. O limite máximo é 8MB.`, 'red');
@@ -7541,7 +7627,9 @@
             name: file.name,
             type: file.type || 'application/octet-stream',
             size: file.size,
-            dataUrl: dataUrl
+            dataUrl: dataUrl,
+            fundoRemovido: false,
+            recortado: false
           };
 
           if (card) {
@@ -7558,18 +7646,22 @@
             prevCont.style.display = 'flex';
             if (nomeArq) nomeArq.textContent = file.name;
             if (tamArq) tamArq.textContent = formatarTamanhoBytes(file.size);
+            if (badgeTrat) badgeTrat.style.display = 'none';
+
             if (file.type && file.type.startsWith('image/')) {
               if (imgThumb) { imgThumb.src = dataUrl; imgThumb.style.display = 'block'; }
               if (iconDoc) iconDoc.style.display = 'none';
+              if (btnTratar) btnTratar.style.display = 'inline-flex';
             } else {
               if (imgThumb) imgThumb.style.display = 'none';
               if (iconDoc) {
                 iconDoc.style.display = 'block';
                 iconDoc.textContent = file.name.endsWith('.pdf') ? '📕' : file.name.endsWith('.ai') ? '🎨' : '📁';
               }
+              if (btnTratar) btnTratar.style.display = 'none';
             }
           }
-          mostrarToast(`✓ Arte "${file.name}" anexada com sucesso!`, 'green');
+          mostrarToast(`✓ Arte "${file.name}" anexada com sucesso! Toque em "✂️ Estúdio & Recorte" para tratar.`, 'green');
         } catch (err) {
           console.error('Erro ao ler arquivo de arte:', err);
           mostrarToast('Erro ao ler o arquivo de arte. Tente novamente.', 'red');
@@ -7577,7 +7669,7 @@
       });
     });
 
-    // Botão Limpar / Trocar Arte
+    // Botão Limpar / Trocar Arte Dinâmica
     document.querySelectorAll('.btn-limpar-arte-app').forEach(btn => {
       btn.addEventListener('click', () => {
         const idx = btn.getAttribute('data-idx');
@@ -7600,6 +7692,43 @@
       });
     });
 
+    // Botão Estúdio Cirúrgico & Recorte DTF na Entrada de Pedidos (Dinâmico)
+    document.querySelectorAll('.btn-tratar-arte-app').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = btn.getAttribute('data-idx');
+        const arq = artesArquivosCarregados[idx];
+        if (!arq || !arq.dataUrl) {
+          mostrarToast('Por favor, anexe uma imagem primeiro.', 'yellow');
+          return;
+        }
+
+        abrirEstudioCirurgicoFundo(arq.dataUrl, (novaDataUrl) => {
+          arq.dataUrl = novaDataUrl;
+          arq.fundoRemovido = true;
+          arq.recortado = true;
+
+          const imgThumb = document.getElementById(`imgThumbArteApp_${idx}`);
+          if (imgThumb) {
+            imgThumb.src = novaDataUrl;
+            imgThumb.style.display = 'block';
+          }
+          const badgeTrat = document.getElementById(`badgeTratamentoApp_${idx}`);
+          if (badgeTrat) badgeTrat.style.display = 'inline-block';
+
+          const statusBadge = document.getElementById(`statusBadgeArteApp_${idx}`);
+          if (statusBadge) {
+            statusBadge.innerHTML = '✓ Arte Pronta & Otimizada p/ DTF';
+            statusBadge.style.color = '#059669';
+          }
+
+          // Recalcula proporção da altura automaticamente
+          recalcularDimensaoArteProporcional(document.getElementById(`dimArteApp_${idx}`), novaDataUrl);
+
+          mostrarToast('✓ Arte tratada com sucesso! Fundo removido e recorte salvo para o pedido.', 'green');
+        }, { textoBotaoSalvar: '✓ Salvar Arte no Pedido' });
+      });
+    });
+
     // Fallback file handlers para propostas sem lista prévia de aplicações
     document.querySelectorAll('.inp-file-arte-fallback').forEach(inp => {
       inp.addEventListener('change', async (e) => {
@@ -7610,6 +7739,10 @@
         const card = document.getElementById(`cardArte${cardKey}`);
         const statusBadge = document.getElementById(`statusBadgeArte${cardKey}`);
         const prevCont = document.getElementById(`previewContainerArte${cardKey}`);
+        const imgThumb = document.getElementById(`imgThumbArte${cardKey}`);
+        const nomeArq = document.getElementById(`nomeArquivoArte${cardKey}`);
+        const btnTratar = document.getElementById(`btnTratarArte${cardKey}`);
+        const badgeTrat = document.getElementById(`badgeTratamento${cardKey}`);
 
         try {
           const dataUrl = await comprimirImagemDataUrl(file, 1600, 1600, 0.85);
@@ -7617,7 +7750,9 @@
             name: file.name,
             type: file.type || 'application/octet-stream',
             size: file.size,
-            dataUrl: dataUrl
+            dataUrl: dataUrl,
+            fundoRemovido: false,
+            recortado: false
           };
           if (card) {
             card.style.borderColor = '#86efac';
@@ -7629,13 +7764,77 @@
             statusBadge.style.color = '#16a34a';
           }
           if (prevCont) {
-            prevCont.style.display = 'block';
-            prevCont.innerHTML = `✓ ${file.name} (${formatarTamanhoBytes(file.size)})`;
+            prevCont.style.display = 'flex';
+            if (nomeArq) nomeArq.textContent = `${file.name} (${formatarTamanhoBytes(file.size)})`;
+            if (badgeTrat) badgeTrat.style.display = 'none';
+
+            if (file.type && file.type.startsWith('image/')) {
+              if (imgThumb) { imgThumb.src = dataUrl; imgThumb.style.display = 'block'; }
+              if (btnTratar) btnTratar.style.display = 'inline-flex';
+            } else {
+              if (imgThumb) imgThumb.style.display = 'none';
+              if (btnTratar) btnTratar.style.display = 'none';
+            }
           }
-          mostrarToast(`✓ Arte de ${key} anexada!`, 'green');
+          mostrarToast(`✓ Arte de ${key} anexada! Toque em "✂️ Estúdio & Recorte" para tratar.`, 'green');
         } catch (err) {
           console.error(err);
         }
+      });
+    });
+
+    // Botão Limpar / Trocar Arte Fallback
+    document.querySelectorAll('.btn-limpar-arte-fallback').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.getAttribute('data-key');
+        delete artesArquivosCarregados[key];
+        const cardKey = key.charAt(0).toUpperCase() + key.slice(1);
+        const inp = document.getElementById(`fileArte${cardKey}`);
+        if (inp) inp.value = '';
+        const prevCont = document.getElementById(`previewContainerArte${cardKey}`);
+        if (prevCont) prevCont.style.display = 'none';
+        const statusBadge = document.getElementById(`statusBadgeArte${cardKey}`);
+        if (statusBadge) {
+          statusBadge.innerHTML = key === 'peito' ? '⚠️ Obrigatório' : 'Opcional';
+          statusBadge.style.color = key === 'peito' ? '#dc2626' : '#64748b';
+        }
+      });
+    });
+
+    // Botão Estúdio Cirúrgico & Recorte DTF Fallback
+    document.querySelectorAll('.btn-tratar-arte-fallback').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.getAttribute('data-key');
+        const arq = artesArquivosCarregados[key];
+        if (!arq || !arq.dataUrl) {
+          mostrarToast('Por favor, anexe uma imagem primeiro.', 'yellow');
+          return;
+        }
+
+        abrirEstudioCirurgicoFundo(arq.dataUrl, (novaDataUrl) => {
+          arq.dataUrl = novaDataUrl;
+          arq.fundoRemovido = true;
+          arq.recortado = true;
+
+          const cardKey = key.charAt(0).toUpperCase() + key.slice(1);
+          const thumb = document.getElementById(`imgThumbArte${cardKey}`);
+          if (thumb) {
+            thumb.src = novaDataUrl;
+            thumb.style.display = 'block';
+          }
+          const badgeTrat = document.getElementById(`badgeTratamento${cardKey}`);
+          if (badgeTrat) badgeTrat.style.display = 'inline-block';
+
+          const statusBadge = document.getElementById(`statusBadgeArte${cardKey}`);
+          if (statusBadge) {
+            statusBadge.innerHTML = '✓ Arte Pronta & Otimizada p/ DTF';
+            statusBadge.style.color = '#059669';
+          }
+
+          recalcularDimensaoArteProporcional(document.getElementById(`dimArte${cardKey}`), novaDataUrl);
+
+          mostrarToast(`✓ Arte de ${key} tratada e salva com sucesso!`, 'green');
+        }, { textoBotaoSalvar: '✓ Salvar Arte no Pedido' });
       });
     });
 
@@ -7655,6 +7854,16 @@
 
       // 2. Validação Obrigatória das Artes (BLOQUEIA ENTRADA SE FALTAR ARQUIVO)
       let artesLista = [];
+      const extrairDimensoesCm = (dimTexto, largPadrao = 10, altPadrao = 10) => {
+        if (!dimTexto) return { larg: largPadrao, alt: altPadrao };
+        const m = String(dimTexto).match(/([0-9]+[.,]?[0-9]*)\s*[xX*]\s*([0-9]+[.,]?[0-9]*)/);
+        if (m) {
+          const l = parseFloat(m[1].replace(',', '.'));
+          const a = parseFloat(m[2].replace(',', '.'));
+          if (l > 0 && a > 0) return { larg: l, alt: a };
+        }
+        return { larg: largPadrao, alt: altPadrao };
+      };
 
       if (!ehApenasPecaLisa) {
         if (todasAplicacoes.length > 0) {
@@ -7677,18 +7886,21 @@
             }
 
             const dim = document.getElementById(`dimArteApp_${idx}`)?.value || app.dimensoes || 'Padrão';
+            const dimsCm = extrairDimensoesCm(dim, app.larguraCm || 10, app.alturaCm || 10);
             artesLista.push({
               local: app.local,
               tecnica: app.tecnica,
               modeloNome: app.modeloNome,
               dimensoes: dim,
-              larguraCm: app.larguraCm || 10,
-              alturaCm: app.alturaCm || 10,
+              larguraCm: dimsCm.larg,
+              alturaCm: dimsCm.alt,
               quantidadePecas: app.quantidadePecas,
               arquivoNome: arquivoCarregado.name,
               arquivoTipo: arquivoCarregado.type,
               arquivoTamanho: arquivoCarregado.size,
               arquivoDataUrl: arquivoCarregado.dataUrl,
+              fundoRemovido: !!arquivoCarregado.fundoRemovido,
+              recortado: !!arquivoCarregado.recortado,
               dataAnexo: new Date().toISOString()
             });
           }
@@ -7713,17 +7925,20 @@
               return;
             }
             const dim = document.getElementById('dimArtePeito')?.value || '9.0 x 7.5 cm';
+            const dimsCm = extrairDimensoesCm(dim, 9, 7.5);
             artesLista.push({
               local: "Peito Esquerdo",
               tecnica: "Bordado / DTF Peito",
               dimensoes: dim,
-              larguraCm: 9,
-              alturaCm: 7.5,
+              larguraCm: dimsCm.larg,
+              alturaCm: dimsCm.alt,
               quantidadePecas: dadosBase.grade?.total || 0,
               arquivoNome: arq.name,
               arquivoTipo: arq.type,
               arquivoTamanho: arq.size,
               arquivoDataUrl: arq.dataUrl,
+              fundoRemovido: !!arq.fundoRemovido,
+              recortado: !!arq.recortado,
               dataAnexo: new Date().toISOString()
             });
           }
@@ -7737,17 +7952,20 @@
               return;
             }
             const dim = document.getElementById('dimArteCostas')?.value || '28.0 x 12.0 cm';
+            const dimsCm = extrairDimensoesCm(dim, 28, 12);
             artesLista.push({
               local: "Costas",
               tecnica: "DTF / Silk Costas",
               dimensoes: dim,
-              larguraCm: 28,
-              alturaCm: 12,
+              larguraCm: dimsCm.larg,
+              alturaCm: dimsCm.alt,
               quantidadePecas: dadosBase.grade?.total || 0,
               arquivoNome: arq.name,
               arquivoTipo: arq.type,
               arquivoTamanho: arq.size,
               arquivoDataUrl: arq.dataUrl,
+              fundoRemovido: !!arq.fundoRemovido,
+              recortado: !!arq.recortado,
               dataAnexo: new Date().toISOString()
             });
           }
@@ -7761,17 +7979,20 @@
               return;
             }
             const dim = document.getElementById('dimArteOmbro')?.value || '8.0 x 4.0 cm';
+            const dimsCm = extrairDimensoesCm(dim, 8, 4);
             artesLista.push({
               local: "Manga / Ombro",
               tecnica: "Aplicação Manga",
               dimensoes: dim,
-              larguraCm: 8,
-              alturaCm: 4,
+              larguraCm: dimsCm.larg,
+              alturaCm: dimsCm.alt,
               quantidadePecas: dadosBase.grade?.total || 0,
               arquivoNome: arq.name,
               arquivoTipo: arq.type,
               arquivoTamanho: arq.size,
               arquivoDataUrl: arq.dataUrl,
+              fundoRemovido: !!arq.fundoRemovido,
+              recortado: !!arq.recortado,
               dataAnexo: new Date().toISOString()
             });
           }
@@ -7800,6 +8021,8 @@
               arquivoTipo: arq.type,
               arquivoTamanho: arq.size,
               arquivoDataUrl: arq.dataUrl,
+              fundoRemovido: !!arq.fundoRemovido,
+              recortado: !!arq.recortado,
               dataAnexo: new Date().toISOString()
             });
           }
@@ -8661,9 +8884,16 @@
                             </span>
                             ${art.modeloNome ? `<span style="font-size: 11px; color: #64748b;">${art.modeloNome}</span>` : ''}
                           </div>
-                          <span style="font-size: 10px; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 2px 7px; border-radius: 4px; text-transform: uppercase;">
-                            ${art.tecnica || 'DTF'} • ${art.quantidadePecas || p.grade?.total || 0} un
-                          </span>
+                          <div style="display: flex; gap: 4px; align-items: center;">
+                            ${art.fundoRemovido ? `
+                              <span style="font-size: 9.5px; font-weight: 800; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">
+                                ✓ Sem Fundo
+                              </span>
+                            ` : ''}
+                            <span style="font-size: 10px; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 2px 7px; border-radius: 4px; text-transform: uppercase;">
+                              ${art.tecnica || 'DTF'} • ${art.quantidadePecas || p.grade?.total || 0} un
+                            </span>
+                          </div>
                         </div>
 
                         <!-- Área Visual de Pré-Visualização / Ícone -->
@@ -8718,6 +8948,9 @@
                           ${isImg ? `
                             <button type="button" class="btn btn-secondary btn-sm" onclick="window.open('${art.arquivoDataUrl}', '_blank')" style="font-size: 11px; padding: 4px 8px;" title="Ver em tela cheia">
                               👁️
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm btn-tratar-arte-existente-card" data-idx="${idx}" style="font-size: 11px; padding: 4px 8px; font-weight: 700; color: #0f766e; background: #f0fdfa; border-color: #99f6e4; display: inline-flex; align-items: center; gap: 4px;" title="Abrir no Estúdio Cirúrgico & Recorte DTF">
+                              ✂️ Estúdio & Recorte
                             </button>
                           ` : ''}
                         ` : ''}
@@ -8799,6 +9032,46 @@
         if (art && art.arquivoDataUrl) {
           baixarArteDoPedido(art.arquivoDataUrl, art.arquivoNome || `arte_${art.local || 'estamparia'}.png`);
         }
+      });
+    });
+
+    // Tratar arte no Estúdio Cirúrgico diretamente do modal de artes
+    modalEl.querySelectorAll('.btn-tratar-arte-existente-card').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-idx'), 10);
+        const art = artes[idx];
+        if (!art || !art.arquivoDataUrl) return;
+
+        abrirEstudioCirurgicoFundo(art.arquivoDataUrl, (novaDataUrl) => {
+          art.arquivoDataUrl = novaDataUrl;
+          art.fundoRemovido = true;
+          art.recortado = true;
+
+          // Se tiver dimensões no formato LxAlt, ajusta proporcionalmente
+          const imgT = new Image();
+          imgT.onload = () => {
+            const wN = imgT.naturalWidth || imgT.width;
+            const hN = imgT.naturalHeight || imgT.height;
+            if (wN && hN && art.dimensoes) {
+              const m = art.dimensoes.match(/([0-9]+[.,]?[0-9]*)\s*[xX*]\s*([0-9]+[.,]?[0-9]*)/);
+              if (m) {
+                const l = parseFloat(m[1].replace(',', '.'));
+                const ratio = wN / hN;
+                if (l > 0 && ratio > 0) {
+                  const altNova = parseFloat((l / ratio).toFixed(1));
+                  art.dimensoes = `${l.toFixed(1).replace('.', ',')} x ${altNova.toFixed(1).replace('.', ',')} cm`;
+                  art.larguraCm = l;
+                  art.alturaCm = altNova;
+                }
+              }
+            }
+            salvarEstado(true);
+            fecharModal();
+            abrirModalArtesPedido(p.id);
+            mostrarToast(`✓ Arte de "${art.local}" tratada e salva com sucesso!`, 'green');
+          };
+          imgT.src = novaDataUrl;
+        }, { textoBotaoSalvar: '✓ Salvar Arte no Pedido' });
       });
     });
 
@@ -9243,7 +9516,8 @@
           alturaCm: h,
           aspectRatio: ratio,
           manterProporcao: true,
-          fundoRemovido: false,
+          fundoRemovido: !!a.fundoRemovido,
+          recortado: !!a.recortado,
           quantidade: qtd,
           copias: qtd,
           permitirRotacao: a.permitirRotacao !== false,
@@ -9334,7 +9608,7 @@
    * - Eliminador de halos e bordas fantasmas (Anti-Halo & Despeckle)
    * - Alternância de fundo do preview (Xadrez, Escuro, Claro, Alto Contraste)
    */
-  function abrirEstudioCirurgicoFundo(imagemFonte, onSalvar) {
+  function abrirEstudioCirurgicoFundo(imagemFonte, onSalvar, opcoesExtras = {}) {
     if (!imagemFonte) {
       mostrarToast('Nenhuma imagem disponível para o estúdio cirúrgico.', 'yellow');
       return;
@@ -9343,207 +9617,223 @@
     const antigo = document.getElementById('modalEstudioCirurgicoBackdrop');
     if (antigo) antigo.remove();
 
+    const textoBotaoSalvar = opcoesExtras?.textoBotaoSalvar || '✓ Aplicar no DTF';
+
     const backdrop = document.createElement('div');
     backdrop.id = 'modalEstudioCirurgicoBackdrop';
-    backdrop.style.cssText = 'position: fixed; inset: 0; background: rgba(2, 22, 29, 0.88); backdrop-filter: blur(8px); z-index: 100050; display: flex; align-items: center; justify-content: center; padding: 16px;';
+    backdrop.style.cssText = 'position: fixed; inset: 0; background: rgba(2, 22, 29, 0.88); backdrop-filter: blur(8px); z-index: 100050; display: flex; align-items: center; justify-content: center; padding: 10px; box-sizing: border-box;';
 
     backdrop.innerHTML = `
-      <div style="background: #041f27; border: 1.5px solid #0d9488; border-radius: 16px; width: 100%; max-width: 1040px; max-height: 95vh; display: flex; flex-direction: column; box-shadow: 0 30px 90px rgba(0,0,0,0.85); overflow: hidden; animation: modalFadeIn 0.2s ease; color: #f1f5f9;">
-        <!-- Header Industrial Moderno -->
-        <div style="padding: 14px 22px; background: linear-gradient(135deg, #02141a 0%, #032b35 100%); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(45, 212, 191, 0.2);">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="background: linear-gradient(135deg, #0d9488, #059669); width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.35);">
+      <div style="background: #041f27; border: 1.5px solid #0d9488; border-radius: 14px; width: 100%; max-width: 1080px; height: 92vh; max-height: 840px; display: flex; flex-direction: column; box-shadow: 0 30px 90px rgba(0,0,0,0.85); overflow: hidden; animation: modalFadeIn 0.2s ease; color: #f1f5f9; box-sizing: border-box;">
+        <!-- Header Industrial Moderno e Compacto -->
+        <div style="padding: 10px 18px; background: linear-gradient(135deg, #02141a 0%, #032b35 100%); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(45, 212, 191, 0.2); flex-shrink: 0;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="background: linear-gradient(135deg, #0d9488, #059669); width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.35);">
               ✂️
             </div>
             <div>
               <div style="display: flex; align-items: center; gap: 8px;">
-                <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: #ffffff; letter-spacing: -0.3px;">Estúdio Cirúrgico & Recorte DTF Pro</h3>
-                <span style="background: rgba(45, 212, 191, 0.15); color: #2dd4bf; border: 1px solid rgba(45, 212, 191, 0.3); font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 999px; text-transform: uppercase;">Zero Espaço Branco</span>
+                <h3 style="margin: 0; font-size: 14.5px; font-weight: 800; color: #ffffff; letter-spacing: -0.3px;">Estúdio Cirúrgico & Recorte DTF Pro</h3>
+                <span style="background: rgba(45, 212, 191, 0.15); color: #2dd4bf; border: 1px solid rgba(45, 212, 191, 0.3); font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 999px; text-transform: uppercase;">Zero Espaço Branco</span>
               </div>
-              <span style="font-size: 11px; color: #94a3b8;">Auto-Trim inteligente • Recorte manual de enquadramento • Remoção cirúrgica de fundo</span>
+              <span style="font-size: 10.5px; color: #94a3b8;">Auto-Trim inteligente • Recorte manual de enquadramento • Remoção cirúrgica de fundo</span>
             </div>
           </div>
-          <button type="button" id="btnFecharEstudioX" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #cbd5e1; font-size: 18px; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">✕</button>
+          <button type="button" id="btnFecharEstudioX" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #cbd5e1; font-size: 16px; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">✕</button>
         </div>
 
-        <!-- Body -->
-        <div style="padding: 16px; display: grid; grid-template-columns: minmax(360px, 1fr) 340px; gap: 16px; overflow-y: auto; flex: 1;">
+        <!-- Body: 2 Colunas com Altura Flexível e Scroll Interno nos Controles -->
+        <div style="padding: 10px 14px; display: grid; grid-template-columns: minmax(0, 1fr) 355px; gap: 12px; flex: 1; min-height: 0; overflow: hidden; box-sizing: border-box;">
           <!-- Coluna Esquerda: Canvas e visualização -->
-          <div style="display: flex; flex-direction: column; gap: 10px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; background: #072630; padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(45, 212, 191, 0.15); flex-wrap: wrap; gap: 6px;">
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="font-size: 11px; font-weight: 700; color: #94a3b8;">Fundo:</span>
-                <button type="button" class="btn-bg-preview" data-bg="checker" style="padding: 3px 8px; font-size: 10.5px; font-weight: 700; border-radius: 4px; border: 1.5px solid #2dd4bf; background: #0b3442; color: #fff; cursor: pointer;">🏁 Xadrez</button>
-                <button type="button" class="btn-bg-preview" data-bg="dark" style="padding: 3px 8px; font-size: 10.5px; font-weight: 700; border-radius: 4px; border: 1px solid #1e4756; background: #021217; color: #94a3b8; cursor: pointer;">⬛ Escuro</button>
-                <button type="button" class="btn-bg-preview" data-bg="light" style="padding: 3px 8px; font-size: 10.5px; font-weight: 700; border-radius: 4px; border: 1px solid #1e4756; background: #ffffff; color: #000; cursor: pointer;">⬜ Branco</button>
-                <button type="button" class="btn-bg-preview" data-bg="neon" style="padding: 3px 8px; font-size: 10.5px; font-weight: 700; border-radius: 4px; border: 1px solid #eab308; background: #fef08a; color: #854d0e; cursor: pointer;">🟡 Contraste</button>
+          <div style="display: flex; flex-direction: column; gap: 8px; height: 100%; min-height: 0; overflow: hidden;">
+            <div style="display: flex; align-items: center; justify-content: space-between; background: #072630; padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(45, 212, 191, 0.15); flex-wrap: wrap; gap: 6px; flex-shrink: 0;">
+              <div style="display: flex; align-items: center; gap: 5px;">
+                <span style="font-size: 10.5px; font-weight: 700; color: #94a3b8;">Fundo:</span>
+                <button type="button" class="btn-bg-preview" data-bg="checker" style="padding: 2px 7px; font-size: 10px; font-weight: 700; border-radius: 4px; border: 1.5px solid #2dd4bf; background: #0b3442; color: #fff; cursor: pointer;">🏁 Xadrez</button>
+                <button type="button" class="btn-bg-preview" data-bg="dark" style="padding: 2px 7px; font-size: 10px; font-weight: 700; border-radius: 4px; border: 1px solid #1e4756; background: #021217; color: #94a3b8; cursor: pointer;">⬛ Escuro</button>
+                <button type="button" class="btn-bg-preview" data-bg="light" style="padding: 2px 7px; font-size: 10px; font-weight: 700; border-radius: 4px; border: 1px solid #1e4756; background: #ffffff; color: #000; cursor: pointer;">⬜ Branco</button>
+                <button type="button" class="btn-bg-preview" data-bg="neon" style="padding: 2px 7px; font-size: 10px; font-weight: 700; border-radius: 4px; border: 1px solid #eab308; background: #fef08a; color: #854d0e; cursor: pointer;">🟡 Contraste</button>
               </div>
               <div style="display: flex; gap: 6px; align-items: center;">
-                <span id="labelDimensoesCanvas" style="font-size: 10.5px; font-family: monospace; font-weight: 700; color: #2dd4bf; background: rgba(45, 212, 191, 0.1); padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(45, 212, 191, 0.2);">0 x 0 px</span>
-                <button type="button" id="btnCompararOriginal" style="padding: 3px 9px; font-size: 10.5px; font-weight: 700; border-radius: 4px; border: 1px solid #336173; background: #072e3b; color: #cbd5e1; cursor: pointer; user-select: none;">
+                <span id="labelDimensoesCanvas" style="font-size: 10px; font-family: monospace; font-weight: 700; color: #2dd4bf; background: rgba(45, 212, 191, 0.1); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(45, 212, 191, 0.2);">0 x 0 px</span>
+                <button type="button" id="btnCompararOriginal" style="padding: 2px 8px; font-size: 10px; font-weight: 700; border-radius: 4px; border: 1px solid #336173; background: #072e3b; color: #cbd5e1; cursor: pointer; user-select: none;">
                   👁️ Ver Original
                 </button>
               </div>
             </div>
 
-            <!-- Viewport do Canvas -->
-            <div id="containerCanvasCirurgico" style="position: relative; flex: 1; min-height: 400px; max-height: 500px; border: 2px dashed rgba(45, 212, 191, 0.3); border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; background-color: #03151b; background-image: repeating-linear-gradient(45deg, #07222c 25%, transparent 25%, transparent 75%, #07222c 75%, #07222c), repeating-linear-gradient(45deg, #07222c 25%, #03151b 25%, #03151b 75%, #07222c 75%, #07222c); background-position: 0 0, 10px 10px; background-size: 20px 20px; cursor: crosshair;">
-              <canvas id="canvasEstudioCirurgico" style="max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 8px 30px rgba(0,0,0,0.6);"></canvas>
+            <!-- Viewport do Canvas: Adapta perfeitamente à altura disponível -->
+            <div id="containerCanvasCirurgico" style="position: relative; flex: 1; min-height: 0; max-height: 100%; border: 2px dashed rgba(45, 212, 191, 0.3); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; background-color: #03151b; background-image: repeating-linear-gradient(45deg, #07222c 25%, transparent 25%, transparent 75%, #07222c 75%, #07222c), repeating-linear-gradient(45deg, #07222c 25%, #03151b 25%, #03151b 75%, #07222c 75%, #07222c); background-position: 0 0, 10px 10px; background-size: 20px 20px; cursor: crosshair;">
+              <canvas id="canvasEstudioCirurgico" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; box-shadow: 0 8px 30px rgba(0,0,0,0.6);"></canvas>
               
               <!-- Overlay Visual de Recorte Manual -->
               <div id="overlayRecorteManual" style="display: none; position: absolute; pointer-events: none; border: 2px dashed #2dd4bf; box-shadow: 0 0 0 9999px rgba(0,0,0,0.65); border-radius: 2px; transition: all 0.05s ease;">
-                <span style="position: absolute; top: -20px; left: 0; background: #2dd4bf; color: #021c23; font-size: 9.5px; font-weight: 900; padding: 1px 5px; border-radius: 3px; letter-spacing: 0.5px;">ÁREA DE RECORTE</span>
+                <span style="position: absolute; top: -18px; left: 0; background: #2dd4bf; color: #021c23; font-size: 9px; font-weight: 900; padding: 1px 4px; border-radius: 3px; letter-spacing: 0.5px;">ÁREA DE RECORTE</span>
               </div>
             </div>
 
-            <div id="barraDicaEstudio" style="font-size: 11px; color: #7dd3fc; display: flex; align-items: center; gap: 8px; background: rgba(2, 132, 199, 0.12); padding: 7px 12px; border-radius: 6px; border-left: 3px solid #0284c7;">
-              <span style="font-size: 14px;">🎯</span>
-              <span><strong>Dica:</strong> Use o <strong>Auto-Corte Inteligente</strong> ao lado para eliminar bordas brancas vazias e fazer o logo ocupar menos rolo DTF.</span>
+            <div id="barraDicaEstudio" style="font-size: 10.5px; color: #7dd3fc; display: flex; align-items: center; gap: 6px; background: rgba(2, 132, 199, 0.12); padding: 5px 10px; border-radius: 6px; border-left: 3px solid #0284c7; flex-shrink: 0;">
+              <span style="font-size: 13px;">🎯</span>
+              <span><strong>Dica:</strong> O <strong>Auto-Corte</strong> elimina automaticamente margens vazias. O <strong>Recorte Manual</strong> apara bordas finas.</span>
             </div>
           </div>
 
-          <!-- Coluna Direita: Controles -->
-          <div style="display: flex; flex-direction: column; gap: 12px; background: #072630; padding: 14px; border-radius: 10px; border: 1px solid rgba(45, 212, 191, 0.15);">
+          <!-- Coluna Direita: Controles e Ferramentas com Rolagem Independente -->
+          <div style="display: flex; flex-direction: column; gap: 8px; background: #072630; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(45, 212, 191, 0.15); height: 100%; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: #0d9488 #041f27;">
             
-            <!-- SEÇÃO 1: RECORTE & ENQUADRAMENTO (AUTO + MANUAL) -->
-            <div style="background: #041f27; border: 1.5px solid rgba(45, 212, 191, 0.25); border-radius: 8px; padding: 12px;">
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                <span style="font-size: 11px; font-weight: 800; color: #2dd4bf; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 5px;">
+            <!-- SEÇÃO 1: RECORTE & ENQUADRAMENTO (AUTO + MANUAL + BOTÕES DE BORDAS) -->
+            <div style="background: #041f27; border: 1.5px solid rgba(45, 212, 191, 0.25); border-radius: 8px; padding: 9px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                <span style="font-size: 10.5px; font-weight: 800; color: #2dd4bf; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 5px;">
                   ✂️ Recorte & Enquadramento
                 </span>
-                <span id="badgeStatusRecorte" style="font-size: 9.5px; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 1px 6px; border-radius: 4px; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.3);">Original</span>
+                <span id="badgeStatusRecorte" style="font-size: 9px; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 1px 5px; border-radius: 3px; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.3);">Original</span>
               </div>
 
               <!-- Botão Auto-Recorte Trim -->
-              <button type="button" id="btnAutoRecorteTrim" style="width: 100%; background: linear-gradient(135deg, #0d9488, #059669); color: #ffffff; font-weight: 800; font-size: 12px; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3); transition: all 0.2s;">
+              <button type="button" id="btnAutoRecorteTrim" style="width: 100%; background: linear-gradient(135deg, #0d9488, #059669); color: #ffffff; font-weight: 800; font-size: 11.5px; border: none; padding: 6px 10px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 3px 10px rgba(13, 148, 136, 0.3); transition: all 0.2s;">
                 <span>⚡ Auto-Corte Inteligente (Trim)</span>
               </button>
-              <span style="font-size: 10px; color: #94a3b8; display: block; margin: 4px 0 10px 0; line-height: 1.3;">
-                Elimina automaticamente o espaço vazio ao redor da logo para economizar espaço no rolo.
-              </span>
+
+              <!-- Botões de Aparo Rápido de Bordas (Atalho Direto) -->
+              <div style="display: flex; gap: 4px; margin-top: 5px;">
+                <button type="button" class="btn-quick-trim" data-trim="2" style="flex: 1; background: #0b3442; border: 1px solid #1e4756; color: #cbd5e1; font-size: 9.5px; font-weight: 700; padding: 4px 2px; border-radius: 4px; cursor: pointer;" title="Aparar 2% em todas as bordas para remover rebarbas">✂️ Aparar -2%</button>
+                <button type="button" class="btn-quick-trim" data-trim="5" style="flex: 1; background: #0b3442; border: 1px solid #1e4756; color: #cbd5e1; font-size: 9.5px; font-weight: 700; padding: 4px 2px; border-radius: 4px; cursor: pointer;" title="Aparar 5% em todas as bordas">✂️ -5%</button>
+                <button type="button" class="btn-quick-trim" data-trim="10" style="flex: 1; background: #0b3442; border: 1px solid #1e4756; color: #cbd5e1; font-size: 9.5px; font-weight: 700; padding: 4px 2px; border-radius: 4px; cursor: pointer;" title="Aparar 10% em todas as bordas">✂️ -10%</button>
+              </div>
 
               <!-- Toggle Recorte Manual -->
-              <button type="button" id="btnToggleRecorteManual" style="width: 100%; background: #0b3442; color: #e2e8f0; font-weight: 700; font-size: 11.5px; border: 1px solid #1e4756; padding: 6px 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <button type="button" id="btnToggleRecorteManual" style="width: 100%; margin-top: 5px; background: #0b3442; color: #e2e8f0; font-weight: 700; font-size: 11px; border: 1px solid #1e4756; padding: 5px 8px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
                 <span>📐 Ativar Recorte Manual</span>
               </button>
 
-              <!-- Painel Deslizante de Recorte Manual -->
-              <div id="painelRecorteManual" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(45, 212, 191, 0.15);">
-                <div style="font-size: 10.5px; font-weight: 700; color: #94a3b8; margin-bottom: 6px;">Ajuste as margens de corte:</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                  <div>
-                    <label style="font-size: 10px; color: #cbd5e1; display: flex; justify-content: space-between;">Topo: <span id="valCropTop">0%</span></label>
-                    <input type="range" id="rangeCropTop" min="0" max="45" value="0" style="width: 100%; accent-color: #2dd4bf;">
+              <!-- Painel Deslizante de Recorte Manual com Botões de Ajuste de Borda -->
+              <div id="painelRecorteManual" style="display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(45, 212, 191, 0.15);">
+                <div style="font-size: 10px; font-weight: 700; color: #94a3b8; margin-bottom: 5px;">Ajuste milimétrico de bordas:</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+                  <div style="background: rgba(11,52,66,0.6); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e4756;">
+                    <div style="font-size: 9.5px; color: #cbd5e1; display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                      <span>Topo: <strong id="valCropTop" style="color:#2dd4bf;">0%</strong></span>
+                      <div style="display: flex; gap: 2px;">
+                        <button type="button" class="btn-step-crop" data-target="rangeCropTop" data-step="-1" style="width: 16px; height: 16px; line-height: 1; padding: 0; font-size: 10px; background: #1e4756; color: #fff; border: none; border-radius: 2px; cursor: pointer;">-</button>
+                        <button type="button" class="btn-step-crop" data-target="rangeCropTop" data-step="1" style="width: 16px; height: 16px; line-height: 1; padding: 0; font-size: 10px; background: #1e4756; color: #fff; border: none; border-radius: 2px; cursor: pointer;">+</button>
+                      </div>
+                    </div>
+                    <input type="range" id="rangeCropTop" min="0" max="45" value="0" style="width: 100%; height: 4px; accent-color: #2dd4bf;">
                   </div>
-                  <div>
-                    <label style="font-size: 10px; color: #cbd5e1; display: flex; justify-content: space-between;">Base: <span id="valCropBottom">0%</span></label>
-                    <input type="range" id="rangeCropBottom" min="0" max="45" value="0" style="width: 100%; accent-color: #2dd4bf;">
+                  <div style="background: rgba(11,52,66,0.6); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e4756;">
+                    <div style="font-size: 9.5px; color: #cbd5e1; display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                      <span>Base: <strong id="valCropBottom" style="color:#2dd4bf;">0%</strong></span>
+                      <div style="display: flex; gap: 2px;">
+                        <button type="button" class="btn-step-crop" data-target="rangeCropBottom" data-step="-1" style="width: 16px; height: 16px; line-height: 1; padding: 0; font-size: 10px; background: #1e4756; color: #fff; border: none; border-radius: 2px; cursor: pointer;">-</button>
+                        <button type="button" class="btn-step-crop" data-target="rangeCropBottom" data-step="1" style="width: 16px; height: 16px; line-height: 1; padding: 0; font-size: 10px; background: #1e4756; color: #fff; border: none; border-radius: 2px; cursor: pointer;">+</button>
+                      </div>
+                    </div>
+                    <input type="range" id="rangeCropBottom" min="0" max="45" value="0" style="width: 100%; height: 4px; accent-color: #2dd4bf;">
                   </div>
-                  <div>
-                    <label style="font-size: 10px; color: #cbd5e1; display: flex; justify-content: space-between;">Esquerda: <span id="valCropLeft">0%</span></label>
-                    <input type="range" id="rangeCropLeft" min="0" max="45" value="0" style="width: 100%; accent-color: #2dd4bf;">
+                  <div style="background: rgba(11,52,66,0.6); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e4756;">
+                    <div style="font-size: 9.5px; color: #cbd5e1; display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                      <span>Esq: <strong id="valCropLeft" style="color:#2dd4bf;">0%</strong></span>
+                      <div style="display: flex; gap: 2px;">
+                        <button type="button" class="btn-step-crop" data-target="rangeCropLeft" data-step="-1" style="width: 16px; height: 16px; line-height: 1; padding: 0; font-size: 10px; background: #1e4756; color: #fff; border: none; border-radius: 2px; cursor: pointer;">-</button>
+                        <button type="button" class="btn-step-crop" data-target="rangeCropLeft" data-step="1" style="width: 16px; height: 16px; line-height: 1; padding: 0; font-size: 10px; background: #1e4756; color: #fff; border: none; border-radius: 2px; cursor: pointer;">+</button>
+                      </div>
+                    </div>
+                    <input type="range" id="rangeCropLeft" min="0" max="45" value="0" style="width: 100%; height: 4px; accent-color: #2dd4bf;">
                   </div>
-                  <div>
-                    <label style="font-size: 10px; color: #cbd5e1; display: flex; justify-content: space-between;">Direita: <span id="valCropRight">0%</span></label>
-                    <input type="range" id="rangeCropRight" min="0" max="45" value="0" style="width: 100%; accent-color: #2dd4bf;">
+                  <div style="background: rgba(11,52,66,0.6); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e4756;">
+                    <div style="font-size: 9.5px; color: #cbd5e1; display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                      <span>Dir: <strong id="valCropRight" style="color:#2dd4bf;">0%</strong></span>
+                      <div style="display: flex; gap: 2px;">
+                        <button type="button" class="btn-step-crop" data-target="rangeCropRight" data-step="-1" style="width: 16px; height: 16px; line-height: 1; padding: 0; font-size: 10px; background: #1e4756; color: #fff; border: none; border-radius: 2px; cursor: pointer;">-</button>
+                        <button type="button" class="btn-step-crop" data-target="rangeCropRight" data-step="1" style="width: 16px; height: 16px; line-height: 1; padding: 0; font-size: 10px; background: #1e4756; color: #fff; border: none; border-radius: 2px; cursor: pointer;">+</button>
+                      </div>
+                    </div>
+                    <input type="range" id="rangeCropRight" min="0" max="45" value="0" style="width: 100%; height: 4px; accent-color: #2dd4bf;">
                   </div>
                 </div>
 
-                <div style="display: flex; gap: 6px;">
-                  <button type="button" id="btnConfirmarRecorteManual" style="flex: 1; background: #0284c7; color: #ffffff; font-weight: 800; font-size: 11px; border: none; padding: 6px 8px; border-radius: 5px; cursor: pointer;">
+                <div style="display: flex; gap: 5px;">
+                  <button type="button" id="btnConfirmarRecorteManual" style="flex: 1; background: #0284c7; color: #ffffff; font-weight: 800; font-size: 10.5px; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer;">
                     ✓ Confirmar Corte
                   </button>
-                  <button type="button" id="btnResetarRecorteManual" style="background: #1e293b; color: #cbd5e1; font-weight: 600; font-size: 11px; border: 1px solid #334155; padding: 6px 10px; border-radius: 5px; cursor: pointer;">
+                  <button type="button" id="btnResetarRecorteManual" style="background: #1e293b; color: #cbd5e1; font-weight: 600; font-size: 10.5px; border: 1px solid #334155; padding: 5px 8px; border-radius: 4px; cursor: pointer;">
                     ↺ Reset
                   </button>
                 </div>
               </div>
 
               <!-- Botão Restaurar Imagem Original se foi recortada -->
-              <button type="button" id="btnRestaurarOriginalCompleto" style="width: 100%; margin-top: 8px; background: transparent; color: #94a3b8; font-size: 10.5px; border: 1px dashed rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 4px; cursor: pointer;">
+              <button type="button" id="btnRestaurarOriginalCompleto" style="width: 100%; margin-top: 5px; background: transparent; color: #94a3b8; font-size: 9.5px; border: 1px dashed rgba(255,255,255,0.15); padding: 3px 6px; border-radius: 4px; cursor: pointer;">
                 ↺ Desfazer Todos os Recortes (Voltar Original)
               </button>
             </div>
 
-            <!-- SEÇÃO 2: PRESETS DE REMOÇÃO DE FUNDO -->
-            <div>
-              <label style="font-size: 11px; font-weight: 800; color: #2dd4bf; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">Remoção de Fundo (1 Clique)</label>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-                <button type="button" class="btn-preset-fundo" data-preset="preto" style="background: #021217; color: #fff; font-weight: 700; font-size: 11px; border: 1px solid #1e4756; padding: 6px 8px; border-radius: 6px; cursor: pointer;">⬛ Fundo Preto</button>
-                <button type="button" class="btn-preset-fundo" data-preset="branco" style="background: #f8fafc; color: #021217; font-weight: 700; font-size: 11px; border: 1px solid #cbd5e1; padding: 6px 8px; border-radius: 6px; cursor: pointer;">⬜ Fundo Branco</button>
+            <!-- SEÇÃO 2: PRESETS DE REMOÇÃO DE FUNDO EM 1 CLIQUE -->
+            <div style="background: #041f27; border: 1px solid rgba(45, 212, 191, 0.15); border-radius: 6px; padding: 8px;">
+              <label style="font-size: 10px; font-weight: 800; color: #2dd4bf; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 5px;">Remoção de Fundo (1 Clique)</label>
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 4px;">
+                <button type="button" class="btn-preset-fundo" data-preset="preto" style="background: #021217; color: #fff; font-weight: 700; font-size: 10px; border: 1px solid #1e4756; padding: 5px 4px; border-radius: 4px; cursor: pointer;">⬛ Preto</button>
+                <button type="button" class="btn-preset-fundo" data-preset="branco" style="background: #f8fafc; color: #021217; font-weight: 700; font-size: 10px; border: 1px solid #cbd5e1; padding: 5px 4px; border-radius: 4px; cursor: pointer;">⬜ Branco</button>
+                <button type="button" class="btn-preset-fundo" data-preset="auto" style="background: rgba(45, 212, 191, 0.12); color: #2dd4bf; font-weight: 700; font-size: 10px; border: 1px solid rgba(45, 212, 191, 0.3); padding: 5px 4px; border-radius: 4px; cursor: pointer;">✨ Auto Detecção</button>
               </div>
-              <button type="button" class="btn-preset-fundo" data-preset="auto" style="width: 100%; margin-top: 6px; background: rgba(45, 212, 191, 0.12); color: #2dd4bf; font-weight: 700; font-size: 11px; border: 1px solid rgba(45, 212, 191, 0.3); padding: 5px 8px; border-radius: 6px; cursor: pointer;">✨ Auto Detecção de Margem</button>
             </div>
 
-            <!-- Cor Selecionada -->
-            <div style="background: #041f27; border: 1px solid rgba(45, 212, 191, 0.15); border-radius: 6px; padding: 9px;">
+            <!-- SEÇÃO 3: COR ALVO & TOLERÂNCIA (CARD UNIFICADO COMPACTO) -->
+            <div style="background: #041f27; border: 1px solid rgba(45, 212, 191, 0.15); border-radius: 6px; padding: 8px;">
               <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                <span style="font-size: 11px; font-weight: 700; color: #cbd5e1;">Cor Alvo Ativa</span>
-                <div id="swatchCorCirurgica" style="width: 20px; height: 20px; border-radius: 4px; border: 1.5px solid #2dd4bf; background: #000000; box-shadow: inset 0 0 2px rgba(0,0,0,0.5);"></div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <div id="swatchCorCirurgica" style="width: 16px; height: 16px; border-radius: 3px; border: 1.5px solid #2dd4bf; background: #000000; box-shadow: inset 0 0 2px rgba(0,0,0,0.5);"></div>
+                  <span id="textoCorCirurgica" style="font-size: 10px; font-family: monospace; color: #cbd5e1; font-weight: 600;">RGB: (0, 0, 0)</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <span style="font-size: 9.5px; color: #94a3b8;">Tolerância:</span>
+                  <span id="labelToleranciaCirurgica" style="font-size: 10px; font-weight: 800; color: #2dd4bf; background: rgba(45, 212, 191, 0.12); padding: 1px 5px; border-radius: 3px; border: 1px solid rgba(45, 212, 191, 0.3);">35%</span>
+                </div>
               </div>
-              <div id="textoCorCirurgica" style="font-size: 10.5px; font-family: monospace; color: #94a3b8; font-weight: 600;">RGB: (0, 0, 0) • Fundo Preto</div>
-            </div>
-
-            <!-- Tolerância -->
-            <div style="background: #041f27; border: 1px solid rgba(45, 212, 191, 0.15); border-radius: 6px; padding: 9px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <label style="font-size: 11px; font-weight: 700; color: #cbd5e1; margin: 0;">Tolerância Cirúrgica</label>
-                <span id="labelToleranciaCirurgica" style="font-size: 11px; font-weight: 800; color: #2dd4bf; background: rgba(45, 212, 191, 0.12); padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(45, 212, 191, 0.3);">35%</span>
-              </div>
-              <input type="range" id="rangeToleranciaCirurgica" min="1" max="95" value="35" style="width: 100%; accent-color: #2dd4bf; cursor: pointer;">
-              <div style="display: flex; justify-content: space-between; font-size: 9.5px; color: #64748b; margin-top: 2px;">
+              <input type="range" id="rangeToleranciaCirurgica" min="1" max="95" value="35" style="width: 100%; height: 4px; accent-color: #2dd4bf; cursor: pointer;">
+              <div style="display: flex; justify-content: space-between; font-size: 9px; color: #64748b; margin-top: 1px;">
                 <span>1% (Rígido)</span>
                 <span>35% (Padrão)</span>
                 <span>95% (Amplo)</span>
               </div>
             </div>
 
-            <!-- Ajustes Cirúrgicos -->
-            <div style="background: #041f27; border: 1px solid rgba(45, 212, 191, 0.15); border-radius: 6px; padding: 9px; display: flex; flex-direction: column; gap: 7px;">
-              <span style="font-size: 10.5px; font-weight: 800; color: #2dd4bf; text-transform: uppercase;">Opções Cirúrgicas</span>
+            <!-- SEÇÃO 4: OPÇÕES CIRÚRGICAS EM GRID COMPACTO 2x2 -->
+            <div style="background: #041f27; border: 1px solid rgba(45, 212, 191, 0.15); border-radius: 6px; padding: 8px;">
+              <span style="font-size: 9.5px; font-weight: 800; color: #2dd4bf; text-transform: uppercase; display: block; margin-bottom: 5px;">Opções Cirúrgicas de Limpeza</span>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; background: rgba(11,52,66,0.5); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(45,212,191,0.1);" title="Elimina fundo preso dentro de letras como A, B, R, P, O">
+                  <input type="checkbox" id="chkLimparBuracos" checked style="width: 13px; height: 13px; accent-color: #2dd4bf; margin: 0;">
+                  <span style="font-size: 10px; font-weight: 700; color: #f1f5f9;">Furos Letras</span>
+                </label>
 
-              <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; margin: 0;">
-                <input type="checkbox" id="chkLimparBuracos" checked style="width: 14px; height: 14px; accent-color: #2dd4bf; margin-top: 2px;">
-                <div>
-                  <span style="font-size: 11px; font-weight: 700; color: #f1f5f9; display: block;">Limpar furos de letras</span>
-                  <span style="font-size: 9.5px; color: #94a3b8;">Elimina fundo preso dentro de A, B, R, P, O</span>
-                </div>
-              </label>
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; background: rgba(11,52,66,0.5); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(45,212,191,0.1);" title="Evita que letras brancas ou claras desbotem ou desapareçam">
+                  <input type="checkbox" id="chkProtegerTexto" checked style="width: 13px; height: 13px; accent-color: #2dd4bf; margin: 0;">
+                  <span style="font-size: 10px; font-weight: 700; color: #f1f5f9;">Proteger Texto</span>
+                </label>
 
-              <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; margin: 0;">
-                <input type="checkbox" id="chkProtegerTexto" checked style="width: 14px; height: 14px; accent-color: #2dd4bf; margin-top: 2px;">
-                <div>
-                  <span style="font-size: 11px; font-weight: 700; color: #f1f5f9; display: block;">Proteger texto 100% nítido</span>
-                  <span style="font-size: 9.5px; color: #94a3b8;">Evita que letras brancas ou claras desbotem</span>
-                </div>
-              </label>
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; background: rgba(11,52,66,0.5); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(45,212,191,0.1);" title="Remove contorno escuro ou claro indesejado nas bordas das estampas">
+                  <input type="checkbox" id="chkRemoverHalo" checked style="width: 13px; height: 13px; accent-color: #2dd4bf; margin: 0;">
+                  <span style="font-size: 10px; font-weight: 700; color: #f1f5f9;">Anti-Halo</span>
+                </label>
 
-              <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; margin: 0;">
-                <input type="checkbox" id="chkRemoverHalo" checked style="width: 14px; height: 14px; accent-color: #2dd4bf; margin-top: 2px;">
-                <div>
-                  <span style="font-size: 11px; font-weight: 700; color: #f1f5f9; display: block;">Anti-Halo / Defringe</span>
-                  <span style="font-size: 9.5px; color: #94a3b8;">Remove contorno escuro ou claro nas bordas</span>
-                </div>
-              </label>
-
-              <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; margin: 0;">
-                <input type="checkbox" id="chkLimparBordasFantasmas" checked style="width: 14px; height: 14px; accent-color: #2dd4bf; margin-top: 2px;">
-                <div>
-                  <span style="font-size: 11px; font-weight: 700; color: #f1f5f9; display: block;">Eliminar bordas fantasmas</span>
-                  <span style="font-size: 9.5px; color: #94a3b8;">Apaga ruído e traços residuais do corte</span>
-                </div>
-              </label>
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; background: rgba(11,52,66,0.5); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(45,212,191,0.1);" title="Apaga ruído e traços residuais do corte nas extremidades">
+                  <input type="checkbox" id="chkLimparBordasFantasmas" checked style="width: 13px; height: 13px; accent-color: #2dd4bf; margin: 0;">
+                  <span style="font-size: 10px; font-weight: 700; color: #f1f5f9;">Bordas Limpas</span>
+                </label>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Footer -->
-        <div style="padding: 12px 22px; background: #02141a; border-top: 1px solid rgba(45, 212, 191, 0.2); display: flex; align-items: center; justify-content: space-between;">
-          <button type="button" id="btnCancelarEstudio" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; font-weight: 600; font-size: 12px; padding: 7px 16px; border-radius: 6px; cursor: pointer;">
+        <!-- Footer Sempre Visível e Firme no Fundo -->
+        <div style="padding: 10px 18px; background: #02141a; border-top: 1px solid rgba(45, 212, 191, 0.2); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+          <button type="button" id="btnCancelarEstudio" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; font-weight: 600; font-size: 11.5px; padding: 6px 14px; border-radius: 5px; cursor: pointer;">
             Cancelar
           </button>
-          <button type="button" id="btnSalvarEstudioCirurgico" style="background: linear-gradient(135deg, #0d9488, #10b981); color: #ffffff; border: none; font-weight: 800; font-size: 13px; display: inline-flex; align-items: center; gap: 7px; padding: 9px 22px; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);">
-            ✓ Aplicar no DTF
+          <button type="button" id="btnSalvarEstudioCirurgico" style="background: linear-gradient(135deg, #0d9488, #10b981); color: #ffffff; border: none; font-weight: 800; font-size: 12.5px; display: inline-flex; align-items: center; gap: 7px; padding: 8px 20px; border-radius: 5px; cursor: pointer; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);">
+            ${textoBotaoSalvar}
           </button>
         </div>
       </div>
@@ -9782,6 +10072,50 @@
       });
       atualizarOverlayRecorte();
       mostrarToast('Sliders de corte resetados.', 'blue');
+    });
+
+    // Botões Rápidos de Aparo de Bordas (-2%, -5%, -10%)
+    backdrop.querySelectorAll('.btn-quick-trim').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pct = parseInt(btn.getAttribute('data-trim'), 10) || 2;
+        if (!canvas) return;
+        historicoCortes.push(canvas.toDataURL('image/png'));
+        const pxX = Math.round(canvas.width * (pct / 100));
+        const pxY = Math.round(canvas.height * (pct / 100));
+        const pxW = Math.max(10, canvas.width - (pxX * 2));
+        const pxH = Math.max(10, canvas.height - (pxY * 2));
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = pxW;
+        tempCanvas.height = pxH;
+        const tCtx = tempCanvas.getContext('2d');
+        tCtx.drawImage(canvas, pxX, pxY, pxW, pxH, 0, 0, pxW, pxH);
+
+        canvas.width = pxW;
+        canvas.height = pxH;
+        ctx.drawImage(tempCanvas, 0, 0);
+        origImageData = ctx.getImageData(0, 0, pxW, pxH);
+        atualizarProcessamento();
+        if (badgeRecorte) {
+          badgeRecorte.textContent = `Aparado -${pct}%`;
+          badgeRecorte.style.borderColor = '#10b981';
+        }
+        mostrarToast(`✓ Bordas aparadas em ${pct}% (${pxW}x${pxH}px)`, 'green');
+      });
+    });
+
+    // Botões de Passo (+ / -) nas Bordas
+    backdrop.querySelectorAll('.btn-step-crop').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-target');
+        const step = parseInt(btn.getAttribute('data-step'), 10) || 1;
+        const inp = document.getElementById(targetId);
+        if (inp) {
+          const cur = parseInt(inp.value, 10) || 0;
+          inp.value = Math.max(0, Math.min(45, cur + step));
+          atualizarOverlayRecorte();
+        }
+      });
     });
 
     // 3. RESTAURAR ORIGINAL COMPLETO
