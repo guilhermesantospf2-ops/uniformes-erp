@@ -245,7 +245,55 @@
     db = migrarOuPreservarBanco(db, window.ERP_INITIAL_DATA);
   }
 
+  /**
+   * Identifica se um pedido é registro de teste descartável
+   */
+  function isPedidoTeste(p) {
+    if (!p) return false;
+    const cli = String(p.clienteNome || p.cliente || '').trim().toLowerCase();
+    const prod = String(p.produtoNome || p.produto || '').trim().toLowerCase();
+    const obs = String(p.observacoes || p.obs || '').trim().toLowerCase();
+    const num = String(p.numero || '').trim();
+
+    if (cli === 'teste' || cli.startsWith('teste ') || cli.endsWith(' teste') || cli.includes('teste')) return true;
+    if (prod === 'teste' || prod.includes('teste')) return true;
+    if (obs.includes('teste')) return true;
+    if (num === '1088') return true;
+    return false;
+  }
+
+  /**
+   * Purga completamente pedidos de teste, suas ordens de serviço e lançamentos
+   */
+  function expurgarPedidosTeste(banco) {
+    if (!banco || !Array.isArray(banco.pedidos)) return banco;
+    const idsTeste = banco.pedidos.filter(isPedidoTeste).map(p => p.id);
+    if (idsTeste.length > 0) {
+      banco.pedidos = banco.pedidos.filter(p => !idsTeste.includes(p.id));
+      if (Array.isArray(banco.ordensServico)) {
+        banco.ordensServico = banco.ordensServico.filter(os => !idsTeste.includes(os.pedidoId) && !idsTeste.includes(`PED-${os.pedidoNumero}`));
+      }
+      if (Array.isArray(banco.lancamentosFinanceiros)) {
+        banco.lancamentosFinanceiros = banco.lancamentosFinanceiros.filter(l => !idsTeste.some(id => (l.descricao || '').includes(id)));
+      }
+      if (Array.isArray(banco.nestingFila)) {
+        banco.nestingFila = banco.nestingFila.filter(n => !idsTeste.includes(n.pedidoId));
+      }
+      if (Array.isArray(banco.clientes)) {
+        banco.clientes = banco.clientes.filter(c => {
+          const nom = String(c.nomeFantasia || c.razaoSocial || c.nome || '').toLowerCase();
+          return !nom.includes('teste');
+        });
+      }
+    }
+    return banco;
+  }
+
+  // Purga pedidos teste logo no boot
+  db = expurgarPedidosTeste(db);
+
   function salvarEstado(forcarImediato = false) {
+    db = expurgarPedidosTeste(db);
     if (isDemo) {
       try {
         sessionStorage.setItem('bravvi_erp_demo_temp', JSON.stringify(db));
@@ -6945,7 +6993,8 @@
       return;
     }
 
-    const novoNum = Math.floor(1088 + db.pedidos.length);
+    const maxNum = (db.pedidos || []).reduce((max, p) => Math.max(max, parseInt(p.numero, 10) || 0), 100);
+    const novoNum = maxNum >= 100 ? maxNum + 1 : 101;
     const novoId = tipoRegistro === 'Orcamento' ? `ORC-${novoNum}` : `PED-${novoNum}`;
 
     const novoRegistro = {
@@ -7785,7 +7834,8 @@
       const lucroFinal = dadosBase.lucroLiquido || dadosBase.lucroLiquidoEstimado;
       const margemFinal = dadosBase.margem || dadosBase.margemLucroPercentual;
 
-      const novoNum = dadosBase.numero || Math.floor(1088 + db.pedidos.length);
+      const maxNum = (db.pedidos || []).reduce((max, p) => Math.max(max, parseInt(p.numero, 10) || 0), 100);
+      const novoNum = dadosBase.numero || (maxNum >= 100 ? maxNum + 1 : 101);
       const novoId = `PED-${novoNum}`;
 
       const valorEfetivoPago = (sinalCompensado && valorSinalRecebido > 0) ? valorSinalRecebido : 0;
@@ -9124,21 +9174,24 @@
    * Sintetiza uma miniatura gráfica vetorial em SVG para artes que não possuem arquivo binário
    */
   function sintetizarSvgArteBadge(cliente, local, dimensoes) {
-    const cliFormatado = (cliente || 'CLIENTE').toUpperCase();
+    const cliFormatado = (cliente || 'CONFECÇÃO').toUpperCase();
     const locFormatado = (local || 'ESTAMPA').toUpperCase();
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200">
       <defs>
         <linearGradient id="gNesting" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#0f172a"/>
-          <stop offset="100%" stop-color="#1e293b"/>
+          <stop offset="0%" stop-color="#02141a"/>
+          <stop offset="100%" stop-color="#072b35"/>
         </linearGradient>
       </defs>
       <rect width="300" height="200" fill="url(#gNesting)" rx="10"/>
-      <rect x="8" y="8" width="284" height="184" fill="none" stroke="#38bdf8" stroke-width="2" stroke-dasharray="6,4" rx="6"/>
-      <text x="150" y="52" fill="#38bdf8" font-family="sans-serif" font-weight="900" font-size="18" text-anchor="middle">🎨 DTF PRINT</text>
-      <text x="150" y="92" fill="#ffffff" font-family="sans-serif" font-weight="800" font-size="16" text-anchor="middle">${cliFormatado}</text>
-      <text x="150" y="128" fill="#94a3b8" font-family="sans-serif" font-weight="700" font-size="13" text-anchor="middle">${locFormatado}</text>
-      <text x="150" y="165" fill="#38bdf8" font-family="monospace" font-weight="bold" font-size="12" text-anchor="middle">📐 ${dimensoes || ''}</text>
+      <rect x="8" y="8" width="284" height="184" fill="none" stroke="#0d9488" stroke-width="2" stroke-dasharray="6,4" rx="8"/>
+      <!-- Brasão / Emblema Corporativo Oficial -->
+      <circle cx="150" cy="46" r="16" fill="rgba(45, 212, 191, 0.15)" stroke="#2dd4bf" stroke-width="1.5"/>
+      <path d="M 142 46 L 148 52 L 158 40" fill="none" stroke="#2dd4bf" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="150" y="88" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="15" text-anchor="middle">${cliFormatado}</text>
+      <text x="150" y="118" fill="#5eead4" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="12.5" text-anchor="middle">${locFormatado}</text>
+      <rect x="70" y="142" width="160" height="24" rx="6" fill="#041f27" stroke="rgba(45,212,191,0.3)" stroke-width="1"/>
+      <text x="150" y="158" fill="#94a3b8" font-family="monospace" font-weight="700" font-size="11" text-anchor="middle">${dimensoes || ''} • ALTA DEFINIÇÃO</text>
     </svg>`;
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   }
@@ -9227,6 +9280,44 @@
           cor: '#0284c7'
         });
       });
+    } else {
+      // Se não tem artes anexadas diretamente, busca na OS vinculada
+      const osVinculada = (db.ordensServico || []).find(os => os.pedidoNumero === pedido.numero || os.pedidoId === pedido.id);
+      if (osVinculada && Array.isArray(osVinculada.artesAplicacao) && osVinculada.artesAplicacao.length > 0) {
+        osVinculada.artesAplicacao.forEach((app, idx) => {
+          let w = 12.0, h = 12.0;
+          if (app.dimensao) {
+            const m = app.dimensao.match(/([0-9]+[.,]?[0-9]*)\s*[xX*]\s*([0-9]+[.,]?[0-9]*)/);
+            if (m) {
+              w = parseFloat(m[1].replace(',', '.'));
+              h = parseFloat(m[2].replace(',', '.'));
+            }
+          }
+          const dataUrl = sintetizarSvgArteBadge(pedido.clienteNome, app.local || 'Estampa', `${w.toFixed(1)}x${h.toFixed(1)}cm`);
+          const ratio = (w > 0 && h > 0) ? parseFloat((w / h).toFixed(4)) : 1.0;
+
+          artes.push({
+            id: `art_os_${pedido.id}_${idx}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+            pedidoId: pedido.id,
+            pedidoNumero: pedido.numero,
+            cliente: pedido.clienteNome,
+            nome: `${app.local || 'Estampa'} [Ped #${pedido.numero}]`,
+            local: app.local || 'Estampa',
+            arquivoNome: app.arquivoNome || `${app.local || 'arte'}.png`,
+            imagemDataUrl: dataUrl,
+            imagemOriginal: dataUrl,
+            larguraCm: w,
+            alturaCm: h,
+            aspectRatio: ratio,
+            manterProporcao: true,
+            fundoRemovido: false,
+            quantidade: totalGrade,
+            copias: totalGrade,
+            permitirRotacao: true,
+            cor: '#0284c7'
+          });
+        });
+      }
     }
 
     return artes;
@@ -9254,81 +9345,153 @@
 
     const backdrop = document.createElement('div');
     backdrop.id = 'modalEstudioCirurgicoBackdrop';
-    backdrop.style.cssText = 'position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(5px); z-index: 100050; display: flex; align-items: center; justify-content: center; padding: 16px;';
+    backdrop.style.cssText = 'position: fixed; inset: 0; background: rgba(2, 22, 29, 0.88); backdrop-filter: blur(8px); z-index: 100050; display: flex; align-items: center; justify-content: center; padding: 16px;';
 
     backdrop.innerHTML = `
-      <div style="background: #ffffff; border-radius: 14px; width: 100%; max-width: 960px; max-height: 94vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.45); overflow: hidden; border: 1px solid #cbd5e1; animation: modalFadeIn 0.2s ease;">
-        <!-- Header -->
-        <div style="padding: 14px 20px; background: #0f172a; color: #ffffff; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b;">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <div style="background: #0284c7; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+      <div style="background: #041f27; border: 1.5px solid #0d9488; border-radius: 16px; width: 100%; max-width: 1040px; max-height: 95vh; display: flex; flex-direction: column; box-shadow: 0 30px 90px rgba(0,0,0,0.85); overflow: hidden; animation: modalFadeIn 0.2s ease; color: #f1f5f9;">
+        <!-- Header Industrial Moderno -->
+        <div style="padding: 14px 22px; background: linear-gradient(135deg, #02141a 0%, #032b35 100%); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(45, 212, 191, 0.2);">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="background: linear-gradient(135deg, #0d9488, #059669); width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.35);">
               ✂️
             </div>
             <div>
-              <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px;">Estúdio Cirúrgico de Fundo DTF</h3>
-              <span style="font-size: 11px; color: #94a3b8;">Tecnologia Canva-Style • Conta-gotas pixel a pixel • Cavidades de letras</span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: #ffffff; letter-spacing: -0.3px;">Estúdio Cirúrgico & Recorte DTF Pro</h3>
+                <span style="background: rgba(45, 212, 191, 0.15); color: #2dd4bf; border: 1px solid rgba(45, 212, 191, 0.3); font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 999px; text-transform: uppercase;">Zero Espaço Branco</span>
+              </div>
+              <span style="font-size: 11px; color: #94a3b8;">Auto-Trim inteligente • Recorte manual de enquadramento • Remoção cirúrgica de fundo</span>
             </div>
           </div>
-          <button type="button" id="btnFecharEstudioX" style="background: none; border: none; color: #94a3b8; font-size: 22px; cursor: pointer; padding: 0 4px; line-height: 1;">✕</button>
+          <button type="button" id="btnFecharEstudioX" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #cbd5e1; font-size: 18px; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">✕</button>
         </div>
 
         <!-- Body -->
-        <div style="padding: 16px; display: grid; grid-template-columns: minmax(300px, 1fr) 310px; gap: 16px; overflow-y: auto; flex: 1;">
+        <div style="padding: 16px; display: grid; grid-template-columns: minmax(360px, 1fr) 340px; gap: 16px; overflow-y: auto; flex: 1;">
           <!-- Coluna Esquerda: Canvas e visualização -->
           <div style="display: flex; flex-direction: column; gap: 10px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; background: #f1f5f9; padding: 6px 10px; border-radius: 8px; flex-wrap: wrap; gap: 6px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; background: #072630; padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(45, 212, 191, 0.15); flex-wrap: wrap; gap: 6px;">
               <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="font-size: 11px; font-weight: 700; color: #475569;">Fundo do Preview:</span>
-                <button type="button" class="btn-bg-preview" data-bg="checker" style="padding: 3px 8px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1.5px solid #0284c7; background: #fff; cursor: pointer;">🏁 Xadrez</button>
-                <button type="button" class="btn-bg-preview" data-bg="dark" style="padding: 3px 8px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #334155; background: #1e293b; color: #fff; cursor: pointer;">⬛ Escuro</button>
-                <button type="button" class="btn-bg-preview" data-bg="light" style="padding: 3px 8px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; color: #000; cursor: pointer;">⬜ Branco</button>
-                <button type="button" class="btn-bg-preview" data-bg="neon" style="padding: 3px 8px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #facc15; background: #fef08a; color: #854d0e; cursor: pointer;">🟡 Contraste</button>
+                <span style="font-size: 11px; font-weight: 700; color: #94a3b8;">Fundo:</span>
+                <button type="button" class="btn-bg-preview" data-bg="checker" style="padding: 3px 8px; font-size: 10.5px; font-weight: 700; border-radius: 4px; border: 1.5px solid #2dd4bf; background: #0b3442; color: #fff; cursor: pointer;">🏁 Xadrez</button>
+                <button type="button" class="btn-bg-preview" data-bg="dark" style="padding: 3px 8px; font-size: 10.5px; font-weight: 700; border-radius: 4px; border: 1px solid #1e4756; background: #021217; color: #94a3b8; cursor: pointer;">⬛ Escuro</button>
+                <button type="button" class="btn-bg-preview" data-bg="light" style="padding: 3px 8px; font-size: 10.5px; font-weight: 700; border-radius: 4px; border: 1px solid #1e4756; background: #ffffff; color: #000; cursor: pointer;">⬜ Branco</button>
+                <button type="button" class="btn-bg-preview" data-bg="neon" style="padding: 3px 8px; font-size: 10.5px; font-weight: 700; border-radius: 4px; border: 1px solid #eab308; background: #fef08a; color: #854d0e; cursor: pointer;">🟡 Contraste</button>
               </div>
-              <button type="button" id="btnCompararOriginal" style="padding: 3px 10px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #94a3b8; background: #fff; color: #334155; cursor: pointer; user-select: none;">
-                👁️ Segurar p/ Ver Original
-              </button>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <span id="labelDimensoesCanvas" style="font-size: 10.5px; font-family: monospace; font-weight: 700; color: #2dd4bf; background: rgba(45, 212, 191, 0.1); padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(45, 212, 191, 0.2);">0 x 0 px</span>
+                <button type="button" id="btnCompararOriginal" style="padding: 3px 9px; font-size: 10.5px; font-weight: 700; border-radius: 4px; border: 1px solid #336173; background: #072e3b; color: #cbd5e1; cursor: pointer; user-select: none;">
+                  👁️ Ver Original
+                </button>
+              </div>
             </div>
 
             <!-- Viewport do Canvas -->
-            <div id="containerCanvasCirurgico" style="position: relative; flex: 1; min-height: 380px; max-height: 480px; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; background-color: #f8fafc; background-image: repeating-linear-gradient(45deg, #e2e8f0 25%, transparent 25%, transparent 75%, #e2e8f0 75%, #e2e8f0), repeating-linear-gradient(45deg, #e2e8f0 25%, #f8fafc 25%, #f8fafc 75%, #e2e8f0 75%, #e2e8f0); background-position: 0 0, 10px 10px; background-size: 20px 20px; cursor: crosshair;">
-              <canvas id="canvasEstudioCirurgico" style="max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 4px 16px rgba(0,0,0,0.15);"></canvas>
+            <div id="containerCanvasCirurgico" style="position: relative; flex: 1; min-height: 400px; max-height: 500px; border: 2px dashed rgba(45, 212, 191, 0.3); border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; background-color: #03151b; background-image: repeating-linear-gradient(45deg, #07222c 25%, transparent 25%, transparent 75%, #07222c 75%, #07222c), repeating-linear-gradient(45deg, #07222c 25%, #03151b 25%, #03151b 75%, #07222c 75%, #07222c); background-position: 0 0, 10px 10px; background-size: 20px 20px; cursor: crosshair;">
+              <canvas id="canvasEstudioCirurgico" style="max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 8px 30px rgba(0,0,0,0.6);"></canvas>
+              
+              <!-- Overlay Visual de Recorte Manual -->
+              <div id="overlayRecorteManual" style="display: none; position: absolute; pointer-events: none; border: 2px dashed #2dd4bf; box-shadow: 0 0 0 9999px rgba(0,0,0,0.65); border-radius: 2px; transition: all 0.05s ease;">
+                <span style="position: absolute; top: -20px; left: 0; background: #2dd4bf; color: #021c23; font-size: 9.5px; font-weight: 900; padding: 1px 5px; border-radius: 3px; letter-spacing: 0.5px;">ÁREA DE RECORTE</span>
+              </div>
             </div>
 
-            <div style="font-size: 11px; color: #0369a1; display: flex; align-items: center; gap: 6px; background: #e0f2fe; padding: 7px 10px; border-radius: 6px; border-left: 3px solid #0284c7;">
+            <div id="barraDicaEstudio" style="font-size: 11px; color: #7dd3fc; display: flex; align-items: center; gap: 8px; background: rgba(2, 132, 199, 0.12); padding: 7px 12px; border-radius: 6px; border-left: 3px solid #0284c7;">
               <span style="font-size: 14px;">🎯</span>
-              <span><strong>Conta-gotas Ativo:</strong> Clique em qualquer ponto da imagem acima para eliminar aquela cor exata (ex: no fundo preto ou dentro de uma letra).</span>
+              <span><strong>Dica:</strong> Use o <strong>Auto-Corte Inteligente</strong> ao lado para eliminar bordas brancas vazias e fazer o logo ocupar menos rolo DTF.</span>
             </div>
           </div>
 
           <!-- Coluna Direita: Controles -->
-          <div style="display: flex; flex-direction: column; gap: 12px; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0;">
-            <!-- Presets Rápidos -->
-            <div>
-              <label style="font-size: 11px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">Presets de 1 Clique</label>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-                <button type="button" class="btn-preset-fundo" data-preset="preto" style="background: #0f172a; color: #fff; font-weight: 700; font-size: 11px; border: none; padding: 6px 8px; border-radius: 6px; cursor: pointer;">⬛ Fundo Preto</button>
-                <button type="button" class="btn-preset-fundo" data-preset="branco" style="background: #ffffff; color: #0f172a; font-weight: 700; font-size: 11px; border: 1.5px solid #cbd5e1; padding: 6px 8px; border-radius: 6px; cursor: pointer;">⬜ Fundo Branco</button>
+          <div style="display: flex; flex-direction: column; gap: 12px; background: #072630; padding: 14px; border-radius: 10px; border: 1px solid rgba(45, 212, 191, 0.15);">
+            
+            <!-- SEÇÃO 1: RECORTE & ENQUADRAMENTO (AUTO + MANUAL) -->
+            <div style="background: #041f27; border: 1.5px solid rgba(45, 212, 191, 0.25); border-radius: 8px; padding: 12px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <span style="font-size: 11px; font-weight: 800; color: #2dd4bf; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 5px;">
+                  ✂️ Recorte & Enquadramento
+                </span>
+                <span id="badgeStatusRecorte" style="font-size: 9.5px; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 1px 6px; border-radius: 4px; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.3);">Original</span>
               </div>
-              <button type="button" class="btn-preset-fundo" data-preset="auto" style="width: 100%; margin-top: 6px; background: #e0f2fe; color: #0369a1; font-weight: 700; font-size: 11px; border: 1px solid #bae6fd; padding: 5px 8px; border-radius: 6px; cursor: pointer;">✨ Auto Detecção de Margem</button>
+
+              <!-- Botão Auto-Recorte Trim -->
+              <button type="button" id="btnAutoRecorteTrim" style="width: 100%; background: linear-gradient(135deg, #0d9488, #059669); color: #ffffff; font-weight: 800; font-size: 12px; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3); transition: all 0.2s;">
+                <span>⚡ Auto-Corte Inteligente (Trim)</span>
+              </button>
+              <span style="font-size: 10px; color: #94a3b8; display: block; margin: 4px 0 10px 0; line-height: 1.3;">
+                Elimina automaticamente o espaço vazio ao redor da logo para economizar espaço no rolo.
+              </span>
+
+              <!-- Toggle Recorte Manual -->
+              <button type="button" id="btnToggleRecorteManual" style="width: 100%; background: #0b3442; color: #e2e8f0; font-weight: 700; font-size: 11.5px; border: 1px solid #1e4756; padding: 6px 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <span>📐 Ativar Recorte Manual</span>
+              </button>
+
+              <!-- Painel Deslizante de Recorte Manual -->
+              <div id="painelRecorteManual" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(45, 212, 191, 0.15);">
+                <div style="font-size: 10.5px; font-weight: 700; color: #94a3b8; margin-bottom: 6px;">Ajuste as margens de corte:</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                  <div>
+                    <label style="font-size: 10px; color: #cbd5e1; display: flex; justify-content: space-between;">Topo: <span id="valCropTop">0%</span></label>
+                    <input type="range" id="rangeCropTop" min="0" max="45" value="0" style="width: 100%; accent-color: #2dd4bf;">
+                  </div>
+                  <div>
+                    <label style="font-size: 10px; color: #cbd5e1; display: flex; justify-content: space-between;">Base: <span id="valCropBottom">0%</span></label>
+                    <input type="range" id="rangeCropBottom" min="0" max="45" value="0" style="width: 100%; accent-color: #2dd4bf;">
+                  </div>
+                  <div>
+                    <label style="font-size: 10px; color: #cbd5e1; display: flex; justify-content: space-between;">Esquerda: <span id="valCropLeft">0%</span></label>
+                    <input type="range" id="rangeCropLeft" min="0" max="45" value="0" style="width: 100%; accent-color: #2dd4bf;">
+                  </div>
+                  <div>
+                    <label style="font-size: 10px; color: #cbd5e1; display: flex; justify-content: space-between;">Direita: <span id="valCropRight">0%</span></label>
+                    <input type="range" id="rangeCropRight" min="0" max="45" value="0" style="width: 100%; accent-color: #2dd4bf;">
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 6px;">
+                  <button type="button" id="btnConfirmarRecorteManual" style="flex: 1; background: #0284c7; color: #ffffff; font-weight: 800; font-size: 11px; border: none; padding: 6px 8px; border-radius: 5px; cursor: pointer;">
+                    ✓ Confirmar Corte
+                  </button>
+                  <button type="button" id="btnResetarRecorteManual" style="background: #1e293b; color: #cbd5e1; font-weight: 600; font-size: 11px; border: 1px solid #334155; padding: 6px 10px; border-radius: 5px; cursor: pointer;">
+                    ↺ Reset
+                  </button>
+                </div>
+              </div>
+
+              <!-- Botão Restaurar Imagem Original se foi recortada -->
+              <button type="button" id="btnRestaurarOriginalCompleto" style="width: 100%; margin-top: 8px; background: transparent; color: #94a3b8; font-size: 10.5px; border: 1px dashed rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 4px; cursor: pointer;">
+                ↺ Desfazer Todos os Recortes (Voltar Original)
+              </button>
+            </div>
+
+            <!-- SEÇÃO 2: PRESETS DE REMOÇÃO DE FUNDO -->
+            <div>
+              <label style="font-size: 11px; font-weight: 800; color: #2dd4bf; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">Remoção de Fundo (1 Clique)</label>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                <button type="button" class="btn-preset-fundo" data-preset="preto" style="background: #021217; color: #fff; font-weight: 700; font-size: 11px; border: 1px solid #1e4756; padding: 6px 8px; border-radius: 6px; cursor: pointer;">⬛ Fundo Preto</button>
+                <button type="button" class="btn-preset-fundo" data-preset="branco" style="background: #f8fafc; color: #021217; font-weight: 700; font-size: 11px; border: 1px solid #cbd5e1; padding: 6px 8px; border-radius: 6px; cursor: pointer;">⬜ Fundo Branco</button>
+              </div>
+              <button type="button" class="btn-preset-fundo" data-preset="auto" style="width: 100%; margin-top: 6px; background: rgba(45, 212, 191, 0.12); color: #2dd4bf; font-weight: 700; font-size: 11px; border: 1px solid rgba(45, 212, 191, 0.3); padding: 5px 8px; border-radius: 6px; cursor: pointer;">✨ Auto Detecção de Margem</button>
             </div>
 
             <!-- Cor Selecionada -->
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px;">
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-                <span style="font-size: 11.5px; font-weight: 700; color: #334155;">Cor Alvo Ativa</span>
-                <div id="swatchCorCirurgica" style="width: 24px; height: 24px; border-radius: 4px; border: 2px solid #cbd5e1; background: #000000; box-shadow: inset 0 0 2px rgba(0,0,0,0.2);"></div>
+            <div style="background: #041f27; border: 1px solid rgba(45, 212, 191, 0.15); border-radius: 6px; padding: 9px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                <span style="font-size: 11px; font-weight: 700; color: #cbd5e1;">Cor Alvo Ativa</span>
+                <div id="swatchCorCirurgica" style="width: 20px; height: 20px; border-radius: 4px; border: 1.5px solid #2dd4bf; background: #000000; box-shadow: inset 0 0 2px rgba(0,0,0,0.5);"></div>
               </div>
-              <div id="textoCorCirurgica" style="font-size: 11px; font-family: monospace; color: #64748b; font-weight: 600;">RGB: (0, 0, 0) • Fundo Preto</div>
+              <div id="textoCorCirurgica" style="font-size: 10.5px; font-family: monospace; color: #94a3b8; font-weight: 600;">RGB: (0, 0, 0) • Fundo Preto</div>
             </div>
 
             <!-- Tolerância -->
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <label style="font-size: 11.5px; font-weight: 700; color: #334155; margin: 0;">Tolerância Cirúrgica</label>
-                <span id="labelToleranciaCirurgica" style="font-size: 12px; font-weight: 800; color: #0284c7; background: #f0f9ff; padding: 1px 6px; border-radius: 4px; border: 1px solid #bae6fd;">35%</span>
+            <div style="background: #041f27; border: 1px solid rgba(45, 212, 191, 0.15); border-radius: 6px; padding: 9px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label style="font-size: 11px; font-weight: 700; color: #cbd5e1; margin: 0;">Tolerância Cirúrgica</label>
+                <span id="labelToleranciaCirurgica" style="font-size: 11px; font-weight: 800; color: #2dd4bf; background: rgba(45, 212, 191, 0.12); padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(45, 212, 191, 0.3);">35%</span>
               </div>
-              <input type="range" id="rangeToleranciaCirurgica" min="1" max="95" value="35" style="width: 100%; accent-color: #0284c7; cursor: pointer;">
-              <div style="display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; margin-top: 2px;">
+              <input type="range" id="rangeToleranciaCirurgica" min="1" max="95" value="35" style="width: 100%; accent-color: #2dd4bf; cursor: pointer;">
+              <div style="display: flex; justify-content: space-between; font-size: 9.5px; color: #64748b; margin-top: 2px;">
                 <span>1% (Rígido)</span>
                 <span>35% (Padrão)</span>
                 <span>95% (Amplo)</span>
@@ -9336,38 +9499,38 @@
             </div>
 
             <!-- Ajustes Cirúrgicos -->
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
-              <span style="font-size: 11px; font-weight: 800; color: #334155; text-transform: uppercase;">Opções Cirúrgicas</span>
+            <div style="background: #041f27; border: 1px solid rgba(45, 212, 191, 0.15); border-radius: 6px; padding: 9px; display: flex; flex-direction: column; gap: 7px;">
+              <span style="font-size: 10.5px; font-weight: 800; color: #2dd4bf; text-transform: uppercase;">Opções Cirúrgicas</span>
 
               <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; margin: 0;">
-                <input type="checkbox" id="chkLimparBuracos" checked style="width: 15px; height: 15px; accent-color: #0284c7; margin-top: 2px;">
+                <input type="checkbox" id="chkLimparBuracos" checked style="width: 14px; height: 14px; accent-color: #2dd4bf; margin-top: 2px;">
                 <div>
-                  <span style="font-size: 11.5px; font-weight: 700; color: #0f172a; display: block;">Limpar furos de letras</span>
-                  <span style="font-size: 10px; color: #64748b;">Elimina fundo preso dentro de A, B, R, P, O, etc.</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #f1f5f9; display: block;">Limpar furos de letras</span>
+                  <span style="font-size: 9.5px; color: #94a3b8;">Elimina fundo preso dentro de A, B, R, P, O</span>
                 </div>
               </label>
 
               <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; margin: 0;">
-                <input type="checkbox" id="chkProtegerTexto" checked style="width: 15px; height: 15px; accent-color: #0284c7; margin-top: 2px;">
+                <input type="checkbox" id="chkProtegerTexto" checked style="width: 14px; height: 14px; accent-color: #2dd4bf; margin-top: 2px;">
                 <div>
-                  <span style="font-size: 11.5px; font-weight: 700; color: #0f172a; display: block;">Proteger texto 100% nítido</span>
-                  <span style="font-size: 10px; color: #64748b;">Evita que letras brancas ou claras desbotem</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #f1f5f9; display: block;">Proteger texto 100% nítido</span>
+                  <span style="font-size: 9.5px; color: #94a3b8;">Evita que letras brancas ou claras desbotem</span>
                 </div>
               </label>
 
               <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; margin: 0;">
-                <input type="checkbox" id="chkRemoverHalo" checked style="width: 15px; height: 15px; accent-color: #0284c7; margin-top: 2px;">
+                <input type="checkbox" id="chkRemoverHalo" checked style="width: 14px; height: 14px; accent-color: #2dd4bf; margin-top: 2px;">
                 <div>
-                  <span style="font-size: 11.5px; font-weight: 700; color: #0f172a; display: block;">Anti-Halo / Defringe</span>
-                  <span style="font-size: 10px; color: #64748b;">Remove contorno escuro ou claro nas bordas</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #f1f5f9; display: block;">Anti-Halo / Defringe</span>
+                  <span style="font-size: 9.5px; color: #94a3b8;">Remove contorno escuro ou claro nas bordas</span>
                 </div>
               </label>
 
               <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; margin: 0;">
-                <input type="checkbox" id="chkLimparBordasFantasmas" checked style="width: 15px; height: 15px; accent-color: #0284c7; margin-top: 2px;">
+                <input type="checkbox" id="chkLimparBordasFantasmas" checked style="width: 14px; height: 14px; accent-color: #2dd4bf; margin-top: 2px;">
                 <div>
-                  <span style="font-size: 11.5px; font-weight: 700; color: #0f172a; display: block;">Eliminar bordas fantasmas</span>
-                  <span style="font-size: 10px; color: #64748b;">Apaga linhas residuais e ruído do corte anterior</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #f1f5f9; display: block;">Eliminar bordas fantasmas</span>
+                  <span style="font-size: 9.5px; color: #94a3b8;">Apaga ruído e traços residuais do corte</span>
                 </div>
               </label>
             </div>
@@ -9375,11 +9538,11 @@
         </div>
 
         <!-- Footer -->
-        <div style="padding: 12px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
-          <button type="button" id="btnCancelarEstudio" class="btn btn-secondary" style="font-weight: 600;">
+        <div style="padding: 12px 22px; background: #02141a; border-top: 1px solid rgba(45, 212, 191, 0.2); display: flex; align-items: center; justify-content: space-between;">
+          <button type="button" id="btnCancelarEstudio" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; font-weight: 600; font-size: 12px; padding: 7px 16px; border-radius: 6px; cursor: pointer;">
             Cancelar
           </button>
-          <button type="button" id="btnSalvarEstudioCirurgico" class="btn btn-success" style="background: #10b981; border-color: #059669; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px;">
+          <button type="button" id="btnSalvarEstudioCirurgico" style="background: linear-gradient(135deg, #0d9488, #10b981); color: #ffffff; border: none; font-weight: 800; font-size: 13px; display: inline-flex; align-items: center; gap: 7px; padding: 9px 22px; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);">
             ✓ Aplicar no DTF
           </button>
         </div>
@@ -9399,11 +9562,18 @@
     const chkHalo = document.getElementById('chkRemoverHalo');
     const chkBordas = document.getElementById('chkLimparBordasFantasmas');
     const containerCanvas = document.getElementById('containerCanvasCirurgico');
+    const labelDim = document.getElementById('labelDimensoesCanvas');
+    const badgeRecorte = document.getElementById('badgeStatusRecorte');
+    const overlay = document.getElementById('overlayRecorteManual');
+    const painelManual = document.getElementById('painelRecorteManual');
+    const btnToggleManual = document.getElementById('btnToggleRecorteManual');
 
     let origImageData = null;
     let processedImageData = null;
     let corAlvo = null; // null = auto
     let tolerancia = 35;
+    let historicoCortes = [];
+    let modoManualAtivo = false;
 
     function fechar() {
       backdrop.remove();
@@ -9439,6 +9609,10 @@
       processedImageData = resultado.imageData;
       ctx.putImageData(processedImageData, 0, 0);
 
+      if (labelDim) {
+        labelDim.textContent = `${canvas.width} x ${canvas.height} px`;
+      }
+
       // Atualiza o swatch com a cor alvo efetiva
       const c = corAlvo || resultado.corDetectada;
       if (c && swatchCor && textoCor) {
@@ -9447,11 +9621,195 @@
         const desc = lum < 50 ? 'Fundo Preto / Escuro' : (lum > 200 ? 'Fundo Branco / Claro' : 'Tom Médio');
         textoCor.textContent = `RGB: (${c.r}, ${c.g}, ${c.b}) • ${desc} ${corAlvo ? '' : '(Auto)'}`;
       }
+
+      if (modoManualAtivo) {
+        atualizarOverlayRecorte();
+      }
     }
+
+    // 1. AUTO-RECORTE INTELIGENTE (TRIM DE BORDAS VAZIAS / BRANCAS)
+    document.getElementById('btnAutoRecorteTrim')?.addEventListener('click', () => {
+      if (!canvas || !window.DtfNestingEngine) return;
+
+      const bbox = window.DtfNestingEngine.calcularBoundingBoxConteudo(canvas, {
+        margem: 2,
+        tolerancia: tolerancia
+      });
+
+      if (!bbox) {
+        mostrarToast('Nenhum conteúdo detectado para recortar.', 'yellow');
+        return;
+      }
+
+      if (bbox.w >= canvas.width && bbox.h >= canvas.height && bbox.x === 0 && bbox.y === 0) {
+        mostrarToast('A imagem já está perfeitamente ajustada sem espaços vazios!', 'blue');
+        return;
+      }
+
+      historicoCortes.push(canvas.toDataURL('image/png'));
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = bbox.w;
+      tempCanvas.height = bbox.h;
+      const tCtx = tempCanvas.getContext('2d');
+      tCtx.drawImage(canvas, bbox.x, bbox.y, bbox.w, bbox.h, 0, 0, bbox.w, bbox.h);
+
+      canvas.width = bbox.w;
+      canvas.height = bbox.h;
+      ctx.drawImage(tempCanvas, 0, 0);
+
+      origImageData = ctx.getImageData(0, 0, bbox.w, bbox.h);
+      atualizarProcessamento();
+
+      if (badgeRecorte) {
+        badgeRecorte.textContent = 'Auto-Trim OK';
+        badgeRecorte.style.borderColor = '#10b981';
+      }
+      mostrarToast(`✓ Auto-corte aplicado! Espaços vazios eliminados (${bbox.w}x${bbox.h}px)`, 'green');
+    });
+
+    // 2. RECORTE MANUAL INTERATIVO
+    function atualizarOverlayRecorte() {
+      if (!modoManualAtivo || !overlay || !canvas || !containerCanvas) return;
+      const cRect = canvas.getBoundingClientRect();
+      const contRect = containerCanvas.getBoundingClientRect();
+
+      const topPct = parseInt(document.getElementById('rangeCropTop')?.value || 0, 10);
+      const btmPct = parseInt(document.getElementById('rangeCropBottom')?.value || 0, 10);
+      const lftPct = parseInt(document.getElementById('rangeCropLeft')?.value || 0, 10);
+      const rgtPct = parseInt(document.getElementById('rangeCropRight')?.value || 0, 10);
+
+      const elTop = document.getElementById('valCropTop');
+      const elBtm = document.getElementById('valCropBottom');
+      const elLft = document.getElementById('valCropLeft');
+      const elRgt = document.getElementById('valCropRight');
+
+      if (elTop) elTop.textContent = `${topPct}%`;
+      if (elBtm) elBtm.textContent = `${btmPct}%`;
+      if (elLft) elLft.textContent = `${lftPct}%`;
+      if (elRgt) elRgt.textContent = `${rgtPct}%`;
+
+      const offX = cRect.left - contRect.left;
+      const offY = cRect.top - contRect.top;
+
+      const cropX = offX + (cRect.width * (lftPct / 100));
+      const cropY = offY + (cRect.height * (topPct / 100));
+      const cropW = cRect.width * (1 - (lftPct + rgtPct) / 100);
+      const cropH = cRect.height * (1 - (topPct + btmPct) / 100);
+
+      overlay.style.left = `${cropX}px`;
+      overlay.style.top = `${cropY}px`;
+      overlay.style.width = `${Math.max(10, cropW)}px`;
+      overlay.style.height = `${Math.max(10, cropH)}px`;
+      overlay.style.display = 'block';
+    }
+
+    btnToggleManual?.addEventListener('click', () => {
+      modoManualAtivo = !modoManualAtivo;
+      if (modoManualAtivo) {
+        if (painelManual) painelManual.style.display = 'block';
+        btnToggleManual.style.background = '#0284c7';
+        btnToggleManual.style.color = '#ffffff';
+        btnToggleManual.textContent = '✕ Ocultar Recorte Manual';
+        atualizarOverlayRecorte();
+      } else {
+        if (painelManual) painelManual.style.display = 'none';
+        btnToggleManual.style.background = '#0b3442';
+        btnToggleManual.style.color = '#e2e8f0';
+        btnToggleManual.textContent = '📐 Ativar Recorte Manual';
+        if (overlay) overlay.style.display = 'none';
+      }
+    });
+
+    ['rangeCropTop', 'rangeCropBottom', 'rangeCropLeft', 'rangeCropRight'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', atualizarOverlayRecorte);
+    });
+
+    document.getElementById('btnConfirmarRecorteManual')?.addEventListener('click', () => {
+      const topPct = parseInt(document.getElementById('rangeCropTop')?.value || 0, 10);
+      const btmPct = parseInt(document.getElementById('rangeCropBottom')?.value || 0, 10);
+      const lftPct = parseInt(document.getElementById('rangeCropLeft')?.value || 0, 10);
+      const rgtPct = parseInt(document.getElementById('rangeCropRight')?.value || 0, 10);
+
+      if (topPct === 0 && btmPct === 0 && lftPct === 0 && rgtPct === 0) {
+        mostrarToast('Nenhum corte manual definido nos sliders.', 'yellow');
+        return;
+      }
+
+      historicoCortes.push(canvas.toDataURL('image/png'));
+
+      const pxX = Math.round(canvas.width * (lftPct / 100));
+      const pxY = Math.round(canvas.height * (topPct / 100));
+      const pxW = Math.max(10, Math.round(canvas.width * (1 - (lftPct + rgtPct) / 100)));
+      const pxH = Math.max(10, Math.round(canvas.height * (1 - (topPct + btmPct) / 100)));
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = pxW;
+      tempCanvas.height = pxH;
+      const tCtx = tempCanvas.getContext('2d');
+      tCtx.drawImage(canvas, pxX, pxY, pxW, pxH, 0, 0, pxW, pxH);
+
+      canvas.width = pxW;
+      canvas.height = pxH;
+      ctx.drawImage(tempCanvas, 0, 0);
+
+      origImageData = ctx.getImageData(0, 0, pxW, pxH);
+
+      // Reseta sliders
+      ['rangeCropTop', 'rangeCropBottom', 'rangeCropLeft', 'rangeCropRight'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = 0;
+      });
+      modoManualAtivo = false;
+      if (painelManual) painelManual.style.display = 'none';
+      btnToggleManual.style.background = '#0b3442';
+      btnToggleManual.style.color = '#e2e8f0';
+      btnToggleManual.textContent = '📐 Ativar Recorte Manual';
+      if (overlay) overlay.style.display = 'none';
+
+      atualizarProcessamento();
+      if (badgeRecorte) {
+        badgeRecorte.textContent = 'Recortado';
+        badgeRecorte.style.borderColor = '#10b981';
+      }
+      mostrarToast(`✓ Recorte manual aplicado com sucesso! (${pxW}x${pxH}px)`, 'green');
+    });
+
+    document.getElementById('btnResetarRecorteManual')?.addEventListener('click', () => {
+      ['rangeCropTop', 'rangeCropBottom', 'rangeCropLeft', 'rangeCropRight'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = 0;
+      });
+      atualizarOverlayRecorte();
+      mostrarToast('Sliders de corte resetados.', 'blue');
+    });
+
+    // 3. RESTAURAR ORIGINAL COMPLETO
+    document.getElementById('btnRestaurarOriginalCompleto')?.addEventListener('click', () => {
+      const imgOrig = new Image();
+      imgOrig.crossOrigin = 'anonymous';
+      imgOrig.onload = () => {
+        canvas.width = imgOrig.naturalWidth || imgOrig.width;
+        canvas.height = imgOrig.naturalHeight || imgOrig.height;
+        ctx.drawImage(imgOrig, 0, 0);
+        origImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        corAlvo = null;
+        tolerancia = 35;
+        if (rangeTol) rangeTol.value = 35;
+        if (labelTol) labelTol.textContent = '35%';
+        atualizarProcessamento();
+        if (badgeRecorte) {
+          badgeRecorte.textContent = 'Original';
+          badgeRecorte.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+        }
+        mostrarToast('Imagem restaurada ao formato e dimensões originais.', 'blue');
+      };
+      imgOrig.src = imagemFonte;
+    });
 
     // Conta-gotas ao clicar no canvas
     canvas?.addEventListener('click', (e) => {
-      if (!origImageData) return;
+      if (!origImageData || modoManualAtivo) return;
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
@@ -9507,11 +9865,15 @@
       btn.addEventListener('click', () => {
         const bg = btn.getAttribute('data-bg');
         if (!containerCanvas) return;
-        document.querySelectorAll('.btn-bg-preview').forEach(b => b.style.borderColor = '#cbd5e1');
-        btn.style.borderColor = '#0284c7';
+        document.querySelectorAll('.btn-bg-preview').forEach(b => {
+          b.style.borderColor = '#1e4756';
+          b.style.color = '#94a3b8';
+        });
+        btn.style.borderColor = '#2dd4bf';
+        btn.style.color = '#ffffff';
 
         if (bg === 'dark') {
-          containerCanvas.style.backgroundColor = '#0f172a';
+          containerCanvas.style.backgroundColor = '#021217';
           containerCanvas.style.backgroundImage = 'none';
         } else if (bg === 'light') {
           containerCanvas.style.backgroundColor = '#ffffff';
@@ -9520,8 +9882,8 @@
           containerCanvas.style.backgroundColor = '#fef08a';
           containerCanvas.style.backgroundImage = 'none';
         } else {
-          containerCanvas.style.backgroundColor = '#f8fafc';
-          containerCanvas.style.backgroundImage = 'repeating-linear-gradient(45deg, #e2e8f0 25%, transparent 25%, transparent 75%, #e2e8f0 75%, #e2e8f0), repeating-linear-gradient(45deg, #e2e8f0 25%, #f8fafc 25%, #f8fafc 75%, #e2e8f0 75%, #e2e8f0)';
+          containerCanvas.style.backgroundColor = '#03151b';
+          containerCanvas.style.backgroundImage = 'repeating-linear-gradient(45deg, #07222c 25%, transparent 25%, transparent 75%, #07222c 75%, #07222c), repeating-linear-gradient(45deg, #07222c 25%, #03151b 25%, #03151b 75%, #07222c 75%, #07222c)';
         }
       });
     });
@@ -9556,6 +9918,7 @@
 
     // Inicialização do estado de Nesting em sessão
     window.ERP_NESTING_STATE = window.ERP_NESTING_STATE || {
+      inicializado: false,
       pedidosSelecionadosIds: [],
       larguraRoloCm: 58.0,
       maxMetrosPorArquivo: 0,
@@ -9569,12 +9932,29 @@
 
     const state = window.ERP_NESTING_STATE;
 
-    // Se nenhum pedido foi selecionado ainda, auto-seleciona o primeiro pedido com artes anexadas ou o mais recente
-    if (!state.pedidosSelecionadosIds.length && Array.isArray(db.pedidos) && db.pedidos.length > 0) {
-      const pedidoComArtes = db.pedidos.find(p => Array.isArray(p.artesAnexadas) && p.artesAnexadas.length > 0) || db.pedidos[0];
-      if (pedidoComArtes) {
-        state.pedidosSelecionadosIds = [pedidoComArtes.id];
-        state.artes = extrairArtesDoPedido(pedidoComArtes);
+    // Purga qualquer resquício de pedido de teste
+    db = expurgarPedidosTeste(db);
+    state.pedidosSelecionadosIds = (state.pedidosSelecionadosIds || []).filter(id => {
+      const p = db.pedidos.find(x => x.id === id);
+      return p && !isPedidoTeste(p);
+    });
+    state.artes = (state.artes || []).filter(a => {
+      const cli = String(a.cliente || '').toLowerCase();
+      const nome = String(a.nome || '').toLowerCase();
+      return !cli.includes('teste') && !nome.includes('teste');
+    });
+
+    const todosPedidos = (db.pedidos || []).filter(p => !isPedidoTeste(p));
+
+    // Se nenhum pedido foi selecionado ainda (apenas na PRIMEIRA carga da sessão), auto-seleciona o primeiro pedido real
+    if (!state.inicializado) {
+      state.inicializado = true;
+      if (!state.pedidosSelecionadosIds.length && todosPedidos.length > 0) {
+        const pedidoComArtes = todosPedidos.find(p => Array.isArray(p.artesAnexadas) && p.artesAnexadas.length > 0) || todosPedidos[0];
+        if (pedidoComArtes) {
+          state.pedidosSelecionadosIds = [pedidoComArtes.id];
+          state.artes = extrairArtesDoPedido(pedidoComArtes);
+        }
       }
     }
 
@@ -9588,179 +9968,202 @@
     });
 
     // Mapeamento dos pedidos atualmente carregados
-    const pedidosCarregados = (db.pedidos || []).filter(p => state.pedidosSelecionadosIds.includes(p.id));
-    const todosPedidos = db.pedidos || [];
+    const pedidosCarregados = todosPedidos.filter(p => state.pedidosSelecionadosIds.includes(p.id));
 
     contentArea.innerHTML = `
-      <!-- BARRA DE SELEÇÃO DE PEDIDOS & CONFIGURAÇÕES TÉCNICAS DO ROLO -->
-      <div class="card" style="margin-bottom: 16px; border: 1.5px solid #cbd5e1; background: #ffffff;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="background: #e0f2fe; color: #0284c7; width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+      <!-- BARRA DE SELEÇÃO DE PEDIDOS & CONFIGURAÇÕES TÉCNICAS DO ROLO (HEADER INDUSTRIAL MODERNO) -->
+      <div style="margin-bottom: 20px; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05); overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #032b35 0%, #06404f 100%); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid rgba(45, 212, 191, 0.2);">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="background: linear-gradient(135deg, #0d9488, #2dd4bf); width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.35);">
               🖨️
             </div>
             <div>
-              <div style="font-weight: 800; font-size: 14px; color: #0f172a;">Configuração do Rolo DTF & Pedido em Produção</div>
-              <span style="font-size: 11px; color: #64748b;">Encaixe milimétrico automático de matrizes têxteis sem desperdício de filme</span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <h2 style="font-size: 15px; font-weight: 800; color: #ffffff; margin: 0; letter-spacing: -0.3px;">Configuração do Rolo DTF & Engenharia de Encaixe</h2>
+                <span style="background: rgba(45, 212, 191, 0.18); color: #2dd4bf; border: 1px solid rgba(45, 212, 191, 0.35); font-size: 9.5px; font-weight: 800; padding: 2px 8px; border-radius: 999px; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 5px;">
+                  <span style="width: 6px; height: 6px; border-radius: 50%; background: #2dd4bf; display: inline-block; box-shadow: 0 0 6px #2dd4bf;"></span>
+                  MOTOR 2D SKYLINE ATIVO
+                </span>
+              </div>
+              <span style="font-size: 11.5px; color: #94a3b8;">Encaixe First-Fit milimétrico para zero desperdício de filme PET e economia direta de tinta</span>
             </div>
           </div>
 
-          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-            <button type="button" class="btn btn-primary btn-sm" id="btnAdicionarArquivoPC" style="background: #0284c7; border-color: #0284c7; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button type="button" class="btn btn-primary btn-sm" id="btnAdicionarArquivoPC" style="background: linear-gradient(135deg, #0284c7, #0369a1); border: 1px solid #0284c7; font-weight: 800; display: inline-flex; align-items: center; gap: 7px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3); border-radius: 8px; padding: 7px 14px; color: #ffffff; cursor: pointer; transition: all 0.2s;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
               + Adicionar Arquivo do Computador
             </button>
-            <button type="button" class="btn btn-secondary btn-sm" id="btnAdicionarOutroPedido" style="font-weight: 700; color: #0369a1; border-color: #bae6fd; background: #f0f9ff;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btnAdicionarOutroPedido" style="font-weight: 800; color: #2dd4bf; border: 1px solid rgba(45, 212, 191, 0.4); background: rgba(13, 148, 136, 0.15); border-radius: 8px; padding: 7px 14px; cursor: pointer; transition: all 0.2s;">
               + Incluir Outro Pedido no Rolo
             </button>
           </div>
         </div>
 
-        <!-- LINHA 1: SELETOR DE PEDIDO E BADGES DE PEDIDOS ATIVOS -->
-        <div style="display: grid; grid-template-columns: minmax(280px, 1.4fr) minmax(300px, 2fr); gap: 14px; align-items: center; margin-bottom: 14px;">
-          <div>
-            <label class="form-label" style="font-size: 11px; font-weight: 800; color: #334155; margin-bottom: 4px;">
-              Selecionar Pedido Principal:
-            </label>
-            <select id="selNestingPedidoPrincipal" class="form-select" style="font-weight: 600; font-size: 12px;">
-              ${todosPedidos.length ? todosPedidos.map(p => {
-                const totalArtes = (p.artesAnexadas || []).length;
-                const selecionado = state.pedidosSelecionadosIds.length === 1 && state.pedidosSelecionadosIds[0] === p.id;
-                return `<option value="${p.id}" ${selecionado ? 'selected' : ''}>Ped #${p.numero} • ${p.clienteNome} [${p.grade?.total || 0} pçs - ${totalArtes} artes]</option>`;
-              }).join('') : `<option value="">Nenhum pedido cadastrado</option>`}
-            </select>
+        <div style="padding: 16px 20px;">
+          <!-- LINHA 1: SELETOR DE PEDIDO E BADGES DE PEDIDOS ATIVOS -->
+          <div style="display: grid; grid-template-columns: minmax(280px, 1.4fr) minmax(300px, 2fr); gap: 16px; align-items: center; margin-bottom: 14px;">
+            <div>
+              <label class="form-label" style="font-size: 11px; font-weight: 800; color: #334155; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">
+                Selecionar Pedido Principal:
+              </label>
+              <select id="selNestingPedidoPrincipal" class="form-select" style="font-weight: 700; font-size: 12.5px; border: 1.5px solid #cbd5e1; border-radius: 8px; height: 38px; color: #0f172a;">
+                <option value="" ${state.pedidosSelecionadosIds.length === 0 ? 'selected' : ''}>-- Nenhum Pedido Selecionado (Em Branco) --</option>
+                ${todosPedidos.length ? todosPedidos.map(p => {
+                  const totalArtes = (p.artesAnexadas || []).length;
+                  const selecionado = state.pedidosSelecionadosIds.length === 1 && state.pedidosSelecionadosIds[0] === p.id;
+                  return `<option value="${p.id}" ${selecionado ? 'selected' : ''}>Ped #${p.numero} • ${p.clienteNome} [${p.grade?.total || 0} pçs - ${totalArtes} artes]</option>`;
+                }).join('') : ''}
+              </select>
+            </div>
+
+            <div>
+              <label class="form-label" style="font-size: 11px; font-weight: 800; color: #334155; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">
+                Pedidos Atualmente no Rolo:
+              </label>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; min-height: 38px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 5px 10px;">
+                ${pedidosCarregados.length ? pedidosCarregados.map(p => `
+                  <span style="font-size: 11.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; border-radius: 6px; box-shadow: 0 1px 2px rgba(2, 132, 199, 0.08);">
+                    <span>#${p.numero} • ${p.clienteNome}</span>
+                    <button type="button" class="btn-remover-pedido-tag" data-id="${p.id}" style="background: none; border: none; color: #dc2626; font-weight: 900; cursor: pointer; padding: 0 2px; font-size: 14px; line-height: 1;" title="Remover pedido deste rolo">&times;</button>
+                  </span>
+                `).join('') : `
+                  <span style="font-size: 11.5px; color: #94a3b8; font-style: italic;">Nenhum pedido selecionado. Selecione um pedido ao lado.</span>
+                `}
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label class="form-label" style="font-size: 11px; font-weight: 800; color: #334155; margin-bottom: 4px;">
-              Pedidos Atualmente no Rolo:
-            </label>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-height: 32px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px;">
-              ${pedidosCarregados.length ? pedidosCarregados.map(p => `
-                <span class="status-pill status-blue" style="font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px;">
-                  <span>#${p.numero} • ${p.clienteNome}</span>
-                  <button type="button" class="btn-remover-pedido-tag" data-id="${p.id}" style="background: none; border: none; color: #dc2626; font-weight: 900; cursor: pointer; padding: 0 2px; font-size: 13px;" title="Remover pedido deste rolo">&times;</button>
-                </span>
-              `).join('') : `
-                <span style="font-size: 11px; color: #94a3b8; font-style: italic;">Nenhum pedido selecionado. Selecione um pedido ao lado.</span>
-              `}
+          <!-- LINHA 2: PARÂMETROS TÉCNICOS (LARGURA DO PAPEL, METRAGEM POR ARQUIVO, SEPARAR POR PEDIDO) -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 14px; align-items: flex-end;">
+            <div>
+              <label class="form-label" style="font-size: 10.5px; font-weight: 800; color: #475569; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Largura do Rolo / Papel</label>
+              <select id="selLarguraRolo" class="form-select" style="font-size: 12px; font-weight: 700; border: 1.5px solid #cbd5e1; border-radius: 7px; height: 35px;">
+                <option value="58.0" ${state.larguraRoloCm === 58.0 ? 'selected' : ''}>58.0 cm (Rolo Padrão 60 com borda)</option>
+                <option value="60.0" ${state.larguraRoloCm === 60.0 ? 'selected' : ''}>60.0 cm (Sem borda de corte)</option>
+                <option value="30.0" ${state.larguraRoloCm === 30.0 ? 'selected' : ''}>30.0 cm (Formato A3 / Mini Rolo)</option>
+                <option value="100.0" ${state.larguraRoloCm === 100.0 ? 'selected' : ''}>100.0 cm (Rolo Industrial 1 Metro)</option>
+                <option value="custom" ${![58, 60, 30, 100].includes(state.larguraRoloCm) ? 'selected' : ''}>Personalizado...</option>
+              </select>
+            </div>
+
+            <div id="divLarguraCustom" style="display: ${![58, 60, 30, 100].includes(state.larguraRoloCm) ? 'block' : 'none'};">
+              <label class="form-label" style="font-size: 10.5px; font-weight: 800; color: #475569; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Largura Custom (cm)</label>
+              <input type="number" id="inpLarguraRoloCustom" class="form-input" value="${state.larguraRoloCm}" step="0.5" min="10" max="320" style="font-size: 12px; font-weight: 700; border: 1.5px solid #cbd5e1; border-radius: 7px; height: 35px;">
+            </div>
+
+            <div>
+              <label class="form-label" style="font-size: 10.5px; font-weight: 800; color: #475569; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Metros por Arquivo (Quebra)</label>
+              <select id="selMaxMetrosArquivo" class="form-select" style="font-size: 12px; font-weight: 700; border: 1.5px solid #cbd5e1; border-radius: 7px; height: 35px;">
+                <option value="0" ${state.maxMetrosPorArquivo === 0 ? 'selected' : ''}>Contínuo (Rolo Único sem quebra)</option>
+                <option value="1.0" ${state.maxMetrosPorArquivo === 1.0 ? 'selected' : ''}>1.0 metro por arquivo</option>
+                <option value="1.5" ${state.maxMetrosPorArquivo === 1.5 ? 'selected' : ''}>1.5 metros por arquivo</option>
+                <option value="2.0" ${state.maxMetrosPorArquivo === 2.0 ? 'selected' : ''}>2.0 metros por arquivo</option>
+                <option value="3.0" ${state.maxMetrosPorArquivo === 3.0 ? 'selected' : ''}>3.0 metros por arquivo</option>
+                <option value="5.0" ${state.maxMetrosPorArquivo === 5.0 ? 'selected' : ''}>5.0 metros por arquivo</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="form-label" style="font-size: 10.5px; font-weight: 800; color: #475569; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Espaçamento / Sangria</label>
+              <select id="selEspacamentoArtes" class="form-select" style="font-size: 12px; font-weight: 700; border: 1.5px solid #cbd5e1; border-radius: 7px; height: 35px;">
+                <option value="0.3" ${state.espacamentoCm === 0.3 ? 'selected' : ''}>0.3 cm (3mm econômico)</option>
+                <option value="0.5" ${state.espacamentoCm === 0.5 ? 'selected' : ''}>0.5 cm (5mm padrão corte)</option>
+                <option value="1.0" ${state.espacamentoCm === 1.0 ? 'selected' : ''}>1.0 cm (10mm folga grande)</option>
+              </select>
+            </div>
+
+            <div style="display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 2px;">
+              <label style="display: flex; align-items: center; gap: 9px; cursor: pointer; user-select: none; margin: 0; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 7px; padding: 6px 10px; height: 35px;">
+                <input type="checkbox" id="chkSepararPorPedido" ${state.separarPorPedido ? 'checked' : ''} style="width: 17px; height: 17px; accent-color: #0284c7; cursor: pointer; margin: 0;">
+                <div style="line-height: 1.1;">
+                  <span style="font-size: 11.5px; font-weight: 800; color: #0f172a; display: block;">Separar por Pedido</span>
+                  <span style="font-size: 9.5px; color: #64748b;">Agrupa com linha de corte</span>
+                </div>
+              </label>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- LINHA 2: PARÂMETROS TÉCNICOS (LARGURA DO PAPEL, METRAGEM POR ARQUIVO, SEPARAR POR PEDIDO) -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; align-items: flex-end;">
-          <div>
-            <label class="form-label" style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 3px;">Largura do Rolo / Papel</label>
-            <select id="selLarguraRolo" class="form-select" style="font-size: 12px; font-weight: 700;">
-              <option value="58.0" ${state.larguraRoloCm === 58.0 ? 'selected' : ''}>58.0 cm (Rolo Padrão 60 com borda)</option>
-              <option value="60.0" ${state.larguraRoloCm === 60.0 ? 'selected' : ''}>60.0 cm (Sem borda de corte)</option>
-              <option value="30.0" ${state.larguraRoloCm === 30.0 ? 'selected' : ''}>30.0 cm (Formato A3 / Mini Rolo)</option>
-              <option value="100.0" ${state.larguraRoloCm === 100.0 ? 'selected' : ''}>100.0 cm (Rolo Industrial 1 Metro)</option>
-              <option value="custom" ${![58, 60, 30, 100].includes(state.larguraRoloCm) ? 'selected' : ''}>Personalizado...</option>
-            </select>
+      <!-- CARDS KPI DE APROVEITAMENTO & CUSTOS EM TEMPO REAL (DESIGN FINTECH / INDUSTRIAL) -->
+      <div class="grid-cards-4" style="margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px;">
+        <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-top: 4px solid #0d9488; border-radius: 10px; padding: 14px 16px; box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03); transition: transform 0.2s, box-shadow 0.2s;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <div style="font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Metros Lineares de Rolo</div>
+            <div style="background: #f0fdfa; color: #0d9488; width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 1px solid #ccfbf1;">📏</div>
           </div>
+          <div style="font-size: 24px; font-weight: 900; color: #032b35; letter-spacing: -0.5px; line-height: 1.1; margin-bottom: 4px;" id="nestingKpiMetros">${resultado.metrosLinearesTotais} m</div>
+          <div style="font-size: 11px; color: #64748b; font-weight: 600;">Largura útil de ${resultado.larguraRoloCm} cm</div>
+        </div>
 
-          <div id="divLarguraCustom" style="display: ${![58, 60, 30, 100].includes(state.larguraRoloCm) ? 'block' : 'none'};">
-            <label class="form-label" style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 3px;">Largura Custom (cm)</label>
-            <input type="number" id="inpLarguraRoloCustom" class="form-input" value="${state.larguraRoloCm}" step="0.5" min="10" max="320" style="font-size: 12px; font-weight: 700;">
+        <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-top: 4px solid #10b981; border-radius: 10px; padding: 14px 16px; box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03); transition: transform 0.2s, box-shadow 0.2s;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <div style="font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Taxa de Aproveitamento</div>
+            <div style="background: #ecfdf5; color: #10b981; width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 1px solid #d1fae5;">🎯</div>
           </div>
+          <div style="font-size: 24px; font-weight: 900; color: #047857; letter-spacing: -0.5px; line-height: 1.1; margin-bottom: 4px;" id="nestingKpiAproveitamento">${resultado.taxaAproveitamentoPercentual}%</div>
+          <div style="font-size: 11px; color: #059669; font-weight: 700;">Desperdício reduzido: ${resultado.taxaDesperdicioPercentual}%</div>
+        </div>
 
-          <div>
-            <label class="form-label" style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 3px;">Metros por Arquivo (Quebra)</label>
-            <select id="selMaxMetrosArquivo" class="form-select" style="font-size: 12px; font-weight: 700;">
-              <option value="0" ${state.maxMetrosPorArquivo === 0 ? 'selected' : ''}>Contínuo (Rolo Único sem quebra)</option>
-              <option value="1.0" ${state.maxMetrosPorArquivo === 1.0 ? 'selected' : ''}>1.0 metro por arquivo</option>
-              <option value="1.5" ${state.maxMetrosPorArquivo === 1.5 ? 'selected' : ''}>1.5 metros por arquivo</option>
-              <option value="2.0" ${state.maxMetrosPorArquivo === 2.0 ? 'selected' : ''}>2.0 metros por arquivo</option>
-              <option value="3.0" ${state.maxMetrosPorArquivo === 3.0 ? 'selected' : ''}>3.0 metros por arquivo</option>
-              <option value="5.0" ${state.maxMetrosPorArquivo === 5.0 ? 'selected' : ''}>5.0 metros por arquivo</option>
-            </select>
+        <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-top: 4px solid #0284c7; border-radius: 10px; padding: 14px 16px; box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03); transition: transform 0.2s, box-shadow 0.2s;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <div style="font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Custo DTF (Filme + Tinta)</div>
+            <div style="background: #f0f9ff; color: #0284c7; width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 1px solid #e0f2fe;">💰</div>
           </div>
+          <div style="font-size: 24px; font-weight: 900; color: #0369a1; letter-spacing: -0.5px; line-height: 1.1; margin-bottom: 4px;" id="nestingKpiCusto">${formatarMoeda(resultado.custoTotalRolo)}</div>
+          <div style="font-size: 11px; color: #64748b; font-weight: 600;">Base: R$ 60,00 por metro linear</div>
+        </div>
 
-          <div>
-            <label class="form-label" style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 3px;">Espaçamento / Sangria</label>
-            <select id="selEspacamentoArtes" class="form-select" style="font-size: 12px; font-weight: 700;">
-              <option value="0.3" ${state.espacamentoCm === 0.3 ? 'selected' : ''}>0.3 cm (3mm econômico)</option>
-              <option value="0.5" ${state.espacamentoCm === 0.5 ? 'selected' : ''}>0.5 cm (5mm padrão corte)</option>
-              <option value="1.0" ${state.espacamentoCm === 1.0 ? 'selected' : ''}>1.0 cm (10mm folga grande)</option>
-            </select>
+        <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-top: 4px solid #6366f1; border-radius: 10px; padding: 14px 16px; box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03); transition: transform 0.2s, box-shadow 0.2s;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <div style="font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Total Cópias Encaixadas</div>
+            <div style="background: #eef2ff; color: #6366f1; width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 1px solid #e0e7ff;">🗂️</div>
           </div>
-
-          <div style="display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 4px;">
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; margin: 0;">
-              <input type="checkbox" id="chkSepararPorPedido" ${state.separarPorPedido ? 'checked' : ''} style="width: 17px; height: 17px; accent-color: #0284c7; cursor: pointer;">
-              <div>
-                <span style="font-size: 12px; font-weight: 800; color: #0f172a; display: block;">Separar por Pedido</span>
-                <span style="font-size: 10px; color: #64748b;">Agrupa com linha de corte identificada</span>
-              </div>
-            </label>
-          </div>
+          <div style="font-size: 24px; font-weight: 900; color: #4338ca; letter-spacing: -0.5px; line-height: 1.1; margin-bottom: 4px;" id="nestingKpiCopias">${resultado.totalItensProcessados} un</div>
+          <div style="font-size: 11px; color: #64748b; font-weight: 600;">Custo médio: ${formatarMoeda(resultado.custoMedioPorArte)} / peça</div>
         </div>
       </div>
 
-      <!-- CARDS KPI DE APROVEITAMENTO & CUSTOS EM TEMPO REAL -->
-      <div class="grid-cards-4" style="margin-bottom: 16px;">
-        <div class="card">
-          <div class="kpi-title">Metros Lineares de Rolo</div>
-          <div class="kpi-value text-primary" id="nestingKpiMetros">${resultado.metrosLinearesTotais} m</div>
-          <div class="kpi-desc">Largura útil de ${resultado.larguraRoloCm} cm</div>
-        </div>
-
-        <div class="card">
-          <div class="kpi-title">Taxa de Aproveitamento</div>
-          <div class="kpi-value text-green" id="nestingKpiAproveitamento">${resultado.taxaAproveitamentoPercentual}%</div>
-          <div class="kpi-desc">Desperdício reduzido: ${resultado.taxaDesperdicioPercentual}%</div>
-        </div>
-
-        <div class="card">
-          <div class="kpi-title">Custo Total DTF (Filme + Tinta)</div>
-          <div class="kpi-value text-primary" id="nestingKpiCusto">${formatarMoeda(resultado.custoTotalRolo)}</div>
-          <div class="kpi-desc">Base de custo: R$ 60,00 por metro linear</div>
-        </div>
-
-        <div class="card">
-          <div class="kpi-title">Total de Cópias Encaixadas</div>
-          <div class="kpi-value text-primary" id="nestingKpiCopias">${resultado.totalItensProcessados} un</div>
-          <div class="kpi-desc">Custo médio unitário: ${formatarMoeda(resultado.custoMedioPorArte)}</div>
-        </div>
-      </div>
-
-      <!-- GRID DE TRABALHO INDUSTRIAL: FILA EDITÁVEL DE ARTES (ESQ) & VISUALIZADOR DE ROLO (DIR) -->
-      <div class="grid-cards-2" style="grid-template-columns: minmax(360px, 1.05fr) minmax(400px, 1.35fr); gap: 16px; align-items: flex-start;">
+      <!-- GRID DE TRABALHO INDUSTRIAL: FILA EDITÁVEL DE ARTES (ESQ) & VISUALIZADOR DE ROLO DTF (DIR) -->
+      <div class="grid-cards-2" style="grid-template-columns: minmax(370px, 1.05fr) minmax(420px, 1.35fr); gap: 18px; align-items: flex-start; display: grid;">
         
         <!-- COLUNA DA ESQUERDA: LISTA EDITÁVEL DE ARTES DO(S) PEDIDO(S) SELECIONADO(S) -->
-        <div class="card" style="padding: 16px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+        <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 18px; box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03);">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
             <div>
-              <div style="font-weight: 800; font-size: 14px; color: #0f172a;">
-                Artes do Rolo DTF (${state.artes.length})
+              <div style="font-weight: 800; font-size: 14.5px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                <span>Artes no Rolo DTF</span>
+                <span style="background: #f0fdfa; color: #0d9488; border: 1px solid #99f6e4; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px;">
+                  ${state.artes.length} matrizes
+                </span>
               </div>
-              <span style="font-size: 11px; color: #64748b;">Edição em tempo real de dimensões, quantidades e rotação</span>
+              <span style="font-size: 11px; color: #64748b;">Ajuste dimensões, quantidades e recorte cirúrgico</span>
             </div>
             
-            <button type="button" class="btn btn-secondary btn-xs" id="btnRecalcularNestingManual" style="font-weight: 700; color: #0284c7; border-color: #bae6fd;">
+            <button type="button" class="btn btn-secondary btn-xs" id="btnRecalcularNestingManual" style="font-weight: 800; color: #0d9488; border: 1.5px solid #99f6e4; background: #f0fdfa; padding: 5px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s;" title="Reexecutar algoritmo 2D Skyline">
               ↺ Re-otimizar
             </button>
           </div>
 
           <!-- LISTA DINÂMICA DE ARTES -->
-          <div id="containerListaArtesNesting" style="max-height: 640px; overflow-y: auto; padding-right: 4px;">
+          <div id="containerListaArtesNesting" style="max-height: 660px; overflow-y: auto; padding-right: 4px;">
             ${state.artes.length ? state.artes.map((art) => `
-              <div class="card card-item-arte" data-id="${art.id}" style="padding: 12px; margin-bottom: 12px; border: 1.5px solid ${art.fundoRemovido ? '#10b981' : '#cbd5e1'}; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.04); transition: border-color 0.2s ease;">
+              <div class="card card-item-arte" data-id="${art.id}" style="padding: 12px; margin-bottom: 12px; border: 1.5px solid ${art.fundoRemovido ? '#a7f3d0' : '#e2e8f0'}; border-left: 5px solid ${art.fundoRemovido ? '#10b981' : '#0284c7'}; border-radius: 10px; background: #ffffff; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04); transition: all 0.2s ease;">
                 <div style="display: flex; gap: 12px; align-items: center;">
                   <!-- Thumbnail com clique para ampliação e fundo quadriculado de transparência -->
-                  <div style="width: 64px; height: 64px; border: 1.5px solid #cbd5e1; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: repeating-conic-gradient(#f1f5f9 0% 25%, #ffffff 0% 50%) 50% / 10px 10px; flex-shrink: 0; position: relative;">
+                  <div style="width: 68px; height: 68px; border: 1.5px solid #cbd5e1; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: repeating-conic-gradient(#f1f5f9 0% 25%, #ffffff 0% 50%) 50% / 10px 10px; flex-shrink: 0; position: relative; box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);">
                     ${art.imagemDataUrl ? `
                       <img src="${art.imagemDataUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain; cursor: pointer;" alt="${art.nome}" title="Clique para abrir imagem" onclick="window.open('${art.imagemDataUrl}', '_blank')">
                     ` : `
-                      <span style="font-size: 20px;">🎨</span>
+                      <span style="font-size: 22px;">🎨</span>
                     `}
                     ${art.rotacionado ? `
-                      <span style="position: absolute; bottom: 2px; right: 2px; background: #059669; color: #ffffff; font-size: 9px; font-weight: 800; border-radius: 3px; padding: 1px 3px;">90°</span>
+                      <span style="position: absolute; bottom: 3px; right: 3px; background: #0f172a; color: #38bdf8; font-size: 8.5px; font-weight: 900; border-radius: 4px; padding: 1px 4px; border: 1px solid #0284c7;">90°</span>
                     ` : ''}
                     ${art.fundoRemovido ? `
-                      <span style="position: absolute; top: 2px; left: 2px; background: #10b981; color: #ffffff; font-size: 8px; font-weight: 800; border-radius: 3px; padding: 1px 3px;" title="Fundo transparente">PNG</span>
+                      <span style="position: absolute; top: 3px; left: 3px; background: #064e3b; color: #34d399; font-size: 8px; font-weight: 900; border-radius: 4px; padding: 1px 4px; border: 1px solid #059669;" title="Fundo transparente">PNG</span>
                     ` : ''}
                   </div>
 
@@ -9768,51 +10171,51 @@
                   <div style="flex: 1; min-width: 0;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
                       <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;">
-                        <strong style="font-size: 12.5px; color: #0f172a; display: block; overflow: hidden; text-overflow: ellipsis;" title="${art.nome}">${art.nome}</strong>
-                        <span style="font-size: 10.5px; color: #64748b;">${art.cliente} ${art.pedidoNumero ? `• Ped #${art.pedidoNumero}` : ''}</span>
+                        <strong style="font-size: 13px; color: #0f172a; display: block; overflow: hidden; text-overflow: ellipsis;" title="${art.nome}">${art.nome}</strong>
+                        <span style="font-size: 10.5px; color: #64748b; font-weight: 600;">${art.cliente} ${art.pedidoNumero ? `• Ped #${art.pedidoNumero}` : ''}</span>
                       </div>
                       <div style="display: flex; gap: 4px; align-items: center;">
-                        <button type="button" class="btn ${art.fundoRemovido ? 'btn-success' : 'btn-secondary'} btn-xs btn-remover-fundo" data-id="${art.id}" style="padding: 2px 7px; font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="${art.fundoRemovido ? 'Fundo removido (clique para restaurar original)' : 'Remover fundo cirurgicamente estilo Canva'}">
+                        <button type="button" class="btn ${art.fundoRemovido ? 'btn-success' : 'btn-secondary'} btn-xs btn-remover-fundo" data-id="${art.id}" style="padding: 3px 8px; font-size: 10.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; border-radius: 6px;" title="${art.fundoRemovido ? 'Fundo removido (clique para restaurar original)' : 'Remover fundo estilo Canva'}">
                           ${art.fundoRemovido ? '✓ Sem Fundo' : '✨ Remover Fundo'}
                         </button>
-                        <button type="button" class="btn btn-secondary btn-xs btn-estudio-cirurgico" data-id="${art.id}" style="padding: 2px 7px; font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px; color: #0284c7; border-color: #bae6fd;" title="Abrir Estúdio Cirúrgico de Fundo (Conta-gotas, tolerância e cavidades)">
-                          ✂️ Cirúrgico
+                        <button type="button" class="btn btn-secondary btn-xs btn-estudio-cirurgico" data-id="${art.id}" style="padding: 3px 9px; font-size: 10.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; color: #0f766e; background: #f0fdfa; border: 1.5px solid #0d9488; border-radius: 6px; box-shadow: 0 1px 3px rgba(13, 148, 136, 0.15);" title="Abrir Estúdio Cirúrgico de Fundo (Auto-Corte Trim, conta-gotas e recorte manual)">
+                          ✂️ Recorte & Fundo
                         </button>
-                        <button type="button" class="btn btn-secondary btn-xs btn-duplicar-arte" data-id="${art.id}" style="padding: 2px 6px; font-size: 11px;" title="Duplicar esta arte">⎘</button>
-                        <button type="button" class="btn btn-red btn-xs btn-remover-arte" data-id="${art.id}" style="padding: 2px 6px; font-size: 11px;" title="Remover do rolo">&times;</button>
+                        <button type="button" class="btn btn-secondary btn-xs btn-duplicar-arte" data-id="${art.id}" style="padding: 3px 7px; font-size: 11px; font-weight: 700; border-radius: 6px; background: #f8fafc; border: 1px solid #cbd5e1;" title="Duplicar esta arte">⎘</button>
+                        <button type="button" class="btn btn-red btn-xs btn-remover-arte" data-id="${art.id}" style="padding: 3px 7px; font-size: 13px; font-weight: 900; border-radius: 6px; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; line-height: 1;" title="Remover do rolo">&times;</button>
                       </div>
                     </div>
 
                     <!-- Campos em linha: Largura, Trava Proporcional, Altura, Cópias e Rotação -->
                     <div style="display: grid; grid-template-columns: 1fr auto 1fr 1.35fr auto; gap: 6px; align-items: flex-end;">
                       <div>
-                        <span style="font-size: 9px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">Largura (cm)</span>
-                        <input type="number" step="0.5" min="0.5" max="300" class="form-input inp-arte-largura" data-id="${art.id}" value="${art.larguraCm}" style="padding: 2px 6px; font-size: 11px; font-weight: 700; height: 26px;">
+                        <span style="font-size: 9.5px; font-weight: 800; color: #475569; display: block; margin-bottom: 2px; text-transform: uppercase;">Largura (cm)</span>
+                        <input type="number" step="0.5" min="0.5" max="300" class="form-input inp-arte-largura" data-id="${art.id}" value="${art.larguraCm}" style="padding: 2px 6px; font-size: 11.5px; font-weight: 700; height: 28px; border: 1.5px solid #cbd5e1; border-radius: 6px;">
                       </div>
 
                       <div style="display: flex; align-items: center; padding-bottom: 1px;">
-                        <button type="button" class="btn ${art.manterProporcao !== false ? 'btn-primary' : 'btn-secondary'} btn-xs btn-toggle-proporcao" data-id="${art.id}" style="height: 26px; padding: 0 5px; font-size: 11px;" title="${art.manterProporcao !== false ? 'Proporção travada (100% proporcional)' : 'Proporção livre'}">
+                        <button type="button" class="btn ${art.manterProporcao !== false ? 'btn-primary' : 'btn-secondary'} btn-xs btn-toggle-proporcao" data-id="${art.id}" style="height: 28px; padding: 0 6px; font-size: 11px; border-radius: 6px;" title="${art.manterProporcao !== false ? 'Proporção travada (100% proporcional)' : 'Proporção livre'}">
                           ${art.manterProporcao !== false ? '🔗' : '🔓'}
                         </button>
                       </div>
 
                       <div>
-                        <span style="font-size: 9px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">Altura (cm)</span>
-                        <input type="number" step="0.5" min="0.5" max="300" class="form-input inp-arte-altura" data-id="${art.id}" value="${art.alturaCm}" style="padding: 2px 6px; font-size: 11px; font-weight: 700; height: 26px;">
+                        <span style="font-size: 9.5px; font-weight: 800; color: #475569; display: block; margin-bottom: 2px; text-transform: uppercase;">Altura (cm)</span>
+                        <input type="number" step="0.5" min="0.5" max="300" class="form-input inp-arte-altura" data-id="${art.id}" value="${art.alturaCm}" style="padding: 2px 6px; font-size: 11.5px; font-weight: 700; height: 28px; border: 1.5px solid #cbd5e1; border-radius: 6px;">
                       </div>
 
                       <div>
-                        <span style="font-size: 9px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">Cópias (un)</span>
+                        <span style="font-size: 9.5px; font-weight: 800; color: #475569; display: block; margin-bottom: 2px; text-transform: uppercase;">Cópias (un)</span>
                         <div style="display: flex; align-items: center;">
-                          <button type="button" class="btn btn-secondary btn-xs btn-qtd-diminuir" data-id="${art.id}" style="padding: 1px 6px; height: 26px; border-radius: 4px 0 0 4px; font-weight: 800;">-</button>
-                          <input type="number" min="1" max="9999" class="form-input inp-arte-copias" data-id="${art.id}" value="${art.copias || art.quantidade || 1}" style="padding: 1px 4px; font-size: 11px; font-weight: 800; height: 26px; text-align: center; border-radius: 0; width: 44px; border-left: none; border-right: none;">
-                          <button type="button" class="btn btn-secondary btn-xs btn-qtd-aumentar" data-id="${art.id}" style="padding: 1px 6px; height: 26px; border-radius: 0 4px 4px 0; font-weight: 800;">+</button>
+                          <button type="button" class="btn btn-secondary btn-xs btn-qtd-diminuir" data-id="${art.id}" style="padding: 1px 7px; height: 28px; border-radius: 6px 0 0 6px; font-weight: 800; border: 1.5px solid #cbd5e1; border-right: none;">-</button>
+                          <input type="number" min="1" max="9999" class="form-input inp-arte-copias" data-id="${art.id}" value="${art.copias || art.quantidade || 1}" style="padding: 1px 4px; font-size: 11.5px; font-weight: 800; height: 28px; text-align: center; border-radius: 0; width: 44px; border: 1.5px solid #cbd5e1; border-left: none; border-right: none;">
+                          <button type="button" class="btn btn-secondary btn-xs btn-qtd-aumentar" data-id="${art.id}" style="padding: 1px 7px; height: 28px; border-radius: 0 6px 6px 0; font-weight: 800; border: 1.5px solid #cbd5e1; border-left: none;">+</button>
                         </div>
                       </div>
 
                       <div>
-                        <span style="font-size: 9px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">Girar 90°</span>
-                        <button type="button" class="btn ${art.permitirRotacao !== false ? 'btn-primary' : 'btn-secondary'} btn-xs btn-toggle-rotacao" data-id="${art.id}" style="padding: 3px 6px; font-size: 10px; height: 26px; font-weight: 700;" title="${art.permitirRotacao !== false ? 'Rotação 90° habilitada para otimizar espaço' : 'Orientação original travada'}">
+                        <span style="font-size: 9.5px; font-weight: 800; color: #475569; display: block; margin-bottom: 2px; text-transform: uppercase;">Girar 90°</span>
+                        <button type="button" class="btn ${art.permitirRotacao !== false ? 'btn-primary' : 'btn-secondary'} btn-xs btn-toggle-rotacao" data-id="${art.id}" style="padding: 3px 8px; font-size: 10px; height: 28px; font-weight: 800; border-radius: 6px;" title="${art.permitirRotacao !== false ? 'Rotação 90° habilitada para otimizar espaço' : 'Orientação original travada'}">
                           ${art.permitirRotacao !== false ? '↻ Auto' : '🔒 Fixo'}
                         </button>
                       </div>
@@ -9821,11 +10224,11 @@
                 </div>
               </div>
             `).join('') : `
-              <div style="text-align: center; padding: 40px 16px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; color: #64748b;">
-                <div style="font-size: 32px; margin-bottom: 8px;">📭</div>
-                <strong style="color: #0f172a; font-size: 13px; display: block; margin-bottom: 4px;">Nenhuma arte carregada neste rolo</strong>
-                <p style="font-size: 11px; margin: 0 0 12px 0;">Selecione um pedido cadastrado no seletor acima ou importe arquivos do seu computador.</p>
-                <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('btnAdicionarArquivoPC').click()">
+              <div style="text-align: center; padding: 48px 16px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; color: #64748b;">
+                <div style="font-size: 36px; margin-bottom: 8px;">📭</div>
+                <strong style="color: #0f172a; font-size: 14px; display: block; margin-bottom: 4px;">Nenhuma arte carregada neste rolo</strong>
+                <p style="font-size: 11.5px; margin: 0 0 16px 0; max-width: 320px; margin-left: auto; margin-right: auto;">Selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo DTF.</p>
+                <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('btnAdicionarArquivoPC').click()" style="background: #0284c7; font-weight: 800; border-radius: 8px; padding: 8px 16px;">
                   + Adicionar Arquivo do Computador
                 </button>
               </div>
@@ -9834,51 +10237,53 @@
         </div>
 
         <!-- COLUNA DA DIREITA: MAPA VISUAL DO ROLO DTF (CANVAS ESCALA 1:1, RÉGUAS, ZOOM E EXPORTAÇÃO) -->
-        <div class="card" style="padding: 16px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+        <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 18px; box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03);">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
             <div>
-              <div style="font-weight: 800; font-size: 14px; color: #0f172a;">Mapa Visual do Rolo DTF (Escala 1:1)</div>
+              <div style="font-weight: 800; font-size: 14.5px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                <span>Mapa Visual do Rolo DTF (Escala 1:1)</span>
+              </div>
               <span style="font-size: 11px; color: #64748b;">Visualização completa das matrizes, réguas em cm/metros e marcas de corte</span>
             </div>
 
             <!-- AÇÕES DE EXPORTAÇÃO RIP E IMPRESSÃO DE FICHA -->
-            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-              <button type="button" class="btn btn-secondary btn-sm" id="btnImprimirFichaDTF" style="font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <button type="button" class="btn btn-secondary btn-sm" id="btnImprimirFichaDTF" style="font-weight: 800; display: inline-flex; align-items: center; gap: 5px; border-radius: 8px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #0f172a; padding: 7px 12px;">
                 🖨️ Ficha DTF
               </button>
-              <button type="button" class="btn btn-primary btn-sm" id="btnExportarPlanoCorte" style="background: #0284c7; border-color: #0284c7; font-weight: 800; display: inline-flex; align-items: center; gap: 5px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              <button type="button" class="btn btn-primary btn-sm" id="btnExportarPlanoCorte" style="background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%); border: none; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; padding: 7px 16px; box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35); color: #ffffff;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 Salvar & Exportar PNG (RIP)
               </button>
             </div>
           </div>
 
           <!-- BARRA DE FERRAMENTAS DO CANVAS: ABAS DE ARQUIVOS (SE HOUVER DIVISÃO) & CONTROLES DE ZOOM -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; background: #03232c; border: 1.5px solid #083c4b; border-radius: 8px; padding: 8px 12px;">
             <!-- Abas de Paginação por Metros -->
-            <div style="display: flex; gap: 4px; align-items: center; overflow-x: auto; max-width: 65%;">
-              <button type="button" class="btn btn-xs ${state.arquivoAtivoIndex === 0 ? 'btn-primary' : 'btn-secondary'} btn-tab-arquivo" data-idx="0" style="font-weight: 700; white-space: nowrap;">
+            <div style="display: flex; gap: 6px; align-items: center; overflow-x: auto; max-width: 65%;">
+              <button type="button" class="btn btn-xs ${state.arquivoAtivoIndex === 0 ? 'btn-primary' : 'btn-secondary'} btn-tab-arquivo" data-idx="0" style="font-weight: 800; white-space: nowrap; border-radius: 6px; padding: 4px 10px; ${state.arquivoAtivoIndex === 0 ? 'background: #0d9488; color: #ffffff; border: 1px solid #2dd4bf;' : 'background: #072630; color: #94a3b8; border: 1px solid #1e4756;'}">
                 Rolo Completo (${resultado.metrosLinearesTotais}m)
               </button>
               ${(resultado.arquivos && resultado.arquivos.length > 1) ? resultado.arquivos.map(arq => `
-                <button type="button" class="btn btn-xs ${state.arquivoAtivoIndex === arq.index ? 'btn-primary' : 'btn-secondary'} btn-tab-arquivo" data-idx="${arq.index}" style="font-weight: 700; white-space: nowrap;">
+                <button type="button" class="btn btn-xs ${state.arquivoAtivoIndex === arq.index ? 'btn-primary' : 'btn-secondary'} btn-tab-arquivo" data-idx="${arq.index}" style="font-weight: 800; white-space: nowrap; border-radius: 6px; padding: 4px 10px; ${state.arquivoAtivoIndex === arq.index ? 'background: #0d9488; color: #ffffff; border: 1px solid #2dd4bf;' : 'background: #072630; color: #94a3b8; border: 1px solid #1e4756;'}">
                   Arquivo ${arq.index} (${arq.metrosLineares}m • ${arq.artes.length} pçs)
                 </button>
               `).join('') : ''}
             </div>
 
             <!-- Controles de Zoom -->
-            <div style="display: flex; gap: 3px; align-items: center;">
-              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomMenos" style="font-weight: 800; padding: 2px 7px;" title="Reduzir Zoom">-</button>
-              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomReset" style="font-size: 10.5px; font-weight: 700; padding: 2px 6px;" title="Zoom 100%">${Math.round(state.zoom * 100)}%</button>
-              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomMais" style="font-weight: 800; padding: 2px 7px;" title="Aumentar Zoom">+</button>
-              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomFit" style="font-size: 10px; font-weight: 700; padding: 2px 6px;" title="Ajustar à largura">Ajustar</button>
+            <div style="display: flex; gap: 4px; align-items: center;">
+              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomMenos" style="font-weight: 800; padding: 3px 8px; background: #072630; border: 1px solid #1e4756; color: #e2e8f0; border-radius: 5px;" title="Reduzir Zoom">-</button>
+              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomReset" style="font-size: 11px; font-weight: 800; padding: 3px 8px; background: #072630; border: 1px solid #1e4756; color: #2dd4bf; border-radius: 5px;" title="Zoom 100%">${Math.round(state.zoom * 100)}%</button>
+              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomMais" style="font-weight: 800; padding: 3px 8px; background: #072630; border: 1px solid #1e4756; color: #e2e8f0; border-radius: 5px;" title="Aumentar Zoom">+</button>
+              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomFit" style="font-size: 10.5px; font-weight: 800; padding: 3px 8px; background: #072630; border: 1px solid #1e4756; color: #e2e8f0; border-radius: 5px;" title="Ajustar à largura">Ajustar</button>
             </div>
           </div>
 
           <!-- CONTAINER DO CANVAS COM SCROLL INDUSTRIAL -->
-          <div class="nesting-canvas-container" style="background: #0f172a; border: 1.5px solid #334155; border-radius: 8px; padding: 12px; min-height: 480px; max-height: 600px; overflow: auto; display: flex; justify-content: center; align-items: flex-start; box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);">
-            <canvas id="nestingCanvas" style="display: block; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4), 0 8px 10px -6px rgba(0,0,0,0.4); border-radius: 4px;"></canvas>
+          <div class="nesting-canvas-container" style="background: radial-gradient(circle at 50% 25%, #052631 0%, #021217 100%); border: 2px solid #083c4b; border-radius: 10px; padding: 16px; min-height: 520px; max-height: 640px; overflow: auto; display: flex; justify-content: center; align-items: flex-start; box-shadow: inset 0 4px 16px rgba(0,0,0,0.7); position: relative;">
+            <canvas id="nestingCanvas" style="display: block; box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 0 1px rgba(45, 212, 191, 0.25); border-radius: 4px;"></canvas>
           </div>
         </div>
       </div>
@@ -9904,6 +10309,14 @@
     // 1. Mudança de Pedido Principal
     document.getElementById('selNestingPedidoPrincipal')?.addEventListener('change', (e) => {
       const pedId = e.target.value;
+      if (!pedId) {
+        state.pedidosSelecionadosIds = [];
+        state.artes = [];
+        state.arquivoAtivoIndex = 0;
+        renderizarNestingDTF();
+        mostrarToast('Rolo DTF esvaziado. Nenhum pedido selecionado.', 'blue');
+        return;
+      }
       const pedido = db.pedidos.find(p => p.id === pedId);
       if (pedido) {
         state.pedidosSelecionadosIds = [pedido.id];
@@ -9921,7 +10334,9 @@
 
     // 3. Remover Pedido da lista de selecionados
     document.querySelectorAll('.btn-remover-pedido-tag').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
         const pedId = btn.getAttribute('data-id');
         state.pedidosSelecionadosIds = state.pedidosSelecionadosIds.filter(id => id !== pedId);
         state.artes = state.artes.filter(a => a.pedidoId !== pedId);
@@ -10120,8 +10535,21 @@
           if (!art.imagemOriginal) art.imagemOriginal = art.imagemDataUrl;
           art.imagemDataUrl = novaDataUrl;
           art.fundoRemovido = true;
-          mostrarToast('✓ Fundo tratado cirurgicamente com sucesso!', 'green');
-          renderizarNestingDTF();
+
+          // Mede o novo enquadramento e recalcula dimensões sem espaço em branco no rolo DTF
+          const imgMedir = new Image();
+          imgMedir.onload = () => {
+            if (imgMedir.naturalWidth > 0 && imgMedir.naturalHeight > 0) {
+              const novoRatio = imgMedir.naturalWidth / imgMedir.naturalHeight;
+              art.aspectRatio = parseFloat(novoRatio.toFixed(4));
+              if (art.manterProporcao !== false) {
+                art.alturaCm = parseFloat((art.larguraCm / novoRatio).toFixed(1));
+              }
+            }
+            mostrarToast('✓ Imagem recortada e fundo tratado com sucesso!', 'green');
+            renderizarNestingDTF();
+          };
+          imgMedir.src = novaDataUrl;
         });
       });
     });
@@ -10249,7 +10677,17 @@
     document.querySelectorAll('.btn-remover-arte').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
+        const arteRemovida = state.artes.find(a => a.id === id);
         state.artes = state.artes.filter(a => a.id !== id);
+
+        // Se todas as artes de um pedido foram removidas, remove o pedido dos selecionados
+        if (arteRemovida && arteRemovida.pedidoId) {
+          const aindaTemArteDoPedido = state.artes.some(a => a.pedidoId === arteRemovida.pedidoId);
+          if (!aindaTemArteDoPedido) {
+            state.pedidosSelecionadosIds = state.pedidosSelecionadosIds.filter(pId => pId !== arteRemovida.pedidoId);
+          }
+        }
+
         renderizarNestingDTF();
         mostrarToast('Arte removida do rolo.', 'blue');
       });
@@ -10547,7 +10985,20 @@
         if (previewImg) previewImg.src = dataUrlAtual;
         btnRemoverFundoPrev.style.display = 'none';
         if (btnRestaurarFundoPrev) btnRestaurarFundoPrev.style.display = 'inline-flex';
-        mostrarToast('✓ Fundo tratado cirurgicamente com sucesso!', 'green');
+
+        // Atualiza proporção geométrica nativa e dimensões após o recorte
+        const imgMedir = new Image();
+        imgMedir.onload = () => {
+          if (imgMedir.naturalWidth > 0 && imgMedir.naturalHeight > 0) {
+            modalRatio = imgMedir.naturalWidth / imgMedir.naturalHeight;
+            if (modalManterProporcao && modalRatio > 0) {
+              const valL = parseFloat(inL.value) || 20.0;
+              inA.value = (valL / modalRatio).toFixed(1);
+            }
+          }
+        };
+        imgMedir.src = dataUrlAtual;
+        mostrarToast('✓ Imagem recortada e fundo tratado no preview!', 'green');
       });
     });
 
@@ -16937,6 +17388,10 @@
         tecidoEspecificacao: "Piquet PA (50% Algodão / 50% Poliéster) Azul Marinho",
         tipoPersonalizacao: "Bordado Computadorizado Peito + DTF Costas",
         dtfLarguraRolo: 58,
+        artesAnexadas: [
+          { local: "Peito Frente (Logo TransBrasil)", larguraCm: 9.0, alturaCm: 4.5, quantidadePecas: 150, arquivoNome: "logo_transbrasil_peito.png", permitirRotacao: true },
+          { local: "Costas (TransBrasil Logística DTF)", larguraCm: 26.0, alturaCm: 12.0, quantidadePecas: 150, arquivoNome: "transbrasil_costas_dtf.png", permitirRotacao: true }
+        ],
         grade: { pp: 10, p: 30, m: 50, g: 40, gg: 15, xg: 5, total: 150 },
         precoUnitarioVenda: 58.00,
         valorTotalVenda: 8700.00,
@@ -16969,6 +17424,10 @@
         tecidoEspecificacao: "Malha Dry Fit Poliéster 130g Preto com Detalhe Dourado",
         tipoPersonalizacao: "Impressão DTF Digital Frente e Costas",
         dtfLarguraRolo: 58,
+        artesAnexadas: [
+          { local: "Peito Esquerdo (Alpha Cross)", larguraCm: 9.0, alturaCm: 7.5, quantidadePecas: 120, arquivoNome: "alpha_peito.png", permitirRotacao: true },
+          { local: "Costas (Cross & Fitness Pro)", larguraCm: 28.0, alturaCm: 14.0, quantidadePecas: 120, arquivoNome: "alpha_costas_dtf.png", permitirRotacao: true }
+        ],
         grade: { pp: 5, p: 25, m: 45, g: 35, gg: 10, xg: 0, total: 120 },
         precoUnitarioVenda: 38.00,
         valorTotalVenda: 4560.00,

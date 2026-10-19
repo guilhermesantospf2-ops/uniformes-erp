@@ -694,6 +694,110 @@ window.DtfNestingEngine = {
   },
 
   /**
+   * Calcula o Bounding Box de conteúdo de uma imagem (Auto-Trim de bordas vazias/transparentes)
+   */
+  calcularBoundingBoxConteudo: function(fonteCanvasOuImgData, opcoes = {}) {
+    let w, h, data;
+    if (fonteCanvasOuImgData instanceof ImageData) {
+      w = fonteCanvasOuImgData.width;
+      h = fonteCanvasOuImgData.height;
+      data = fonteCanvasOuImgData.data;
+    } else if (fonteCanvasOuImgData && fonteCanvasOuImgData.getContext) {
+      const ctx = fonteCanvasOuImgData.getContext('2d', { willReadFrequently: true });
+      w = fonteCanvasOuImgData.width;
+      h = fonteCanvasOuImgData.height;
+      data = ctx.getImageData(0, 0, w, h).data;
+    } else {
+      return null;
+    }
+
+    const margem = typeof opcoes.margem === 'number' ? opcoes.margem : 2;
+    let minX = w, minY = h, maxX = -1, maxY = -1;
+
+    // Detecta se há canal alfa com transparência
+    let temTransparencia = false;
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] < 240) {
+        temTransparencia = true;
+        break;
+      }
+    }
+
+    if (temTransparencia) {
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const idx = (y * w + x) * 4;
+          if (data[idx + 3] > 18) { // pixel visível
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+    } else {
+      // Se for 100% opaco, detecta cor de fundo dos cantos
+      const bgR = data[0], bgG = data[1], bgB = data[2];
+      const tol = (opcoes.tolerancia || 30) * 2.55;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const idx = (y * w + x) * 4;
+          const diff = Math.max(
+            Math.abs(data[idx] - bgR),
+            Math.abs(data[idx + 1] - bgG),
+            Math.abs(data[idx + 2] - bgB)
+          );
+          if (diff > tol) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+    }
+
+    if (maxX < minX || maxY < minY) {
+      return null;
+    }
+
+    minX = Math.max(0, minX - margem);
+    minY = Math.max(0, minY - margem);
+    maxX = Math.min(w - 1, maxX + margem);
+    maxY = Math.min(h - 1, maxY + margem);
+
+    return {
+      x: minX,
+      y: minY,
+      w: maxX - minX + 1,
+      h: maxY - minY + 1,
+      larguraOriginal: w,
+      alturaOriginal: h
+    };
+  },
+
+  /**
+   * Recorta um Canvas para uma região retangular e retorna novo Canvas
+   */
+  recortarCanvas: function(canvasOrigem, x, y, largura, altura) {
+    if (!canvasOrigem || largura <= 0 || altura <= 0) return null;
+    const destCanvas = document.createElement('canvas');
+    destCanvas.width = Math.round(largura);
+    destCanvas.height = Math.round(altura);
+    const destCtx = destCanvas.getContext('2d');
+    if (!destCtx) return null;
+
+    destCtx.drawImage(
+      canvasOrigem,
+      Math.round(x), Math.round(y), Math.round(largura), Math.round(altura),
+      0, 0, Math.round(largura), Math.round(altura)
+    );
+
+    return destCanvas;
+  },
+
+  /**
    * Renderiza graficamente o rolo de impressão DTF no Canvas HTML5 com Retina HD (2x), Réguas e Proporção Rígida
    */
   renderizarCanvas: function(canvas, resultadoNesting, opcoes = {}) {

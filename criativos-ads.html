@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Central de Criativos & Anúncios de Alta Conversão • Bravvi ERP Têxtil</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Outfit:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="shortcut icon" href="favicon.ico">
+  <style>
+    :root {
+      --bg-dark: #03232c;
+      --bg-card: #082d38;
+      --bg-surface: #0c3846;
+      --bg-subtle: #0f4556;
+      --border-subtle: rgba(45, 212, 191, 0.18);
+      --border-highlight: #0d9488;
+      --brand-teal: #0d9488;
+      --brand-cyan: #2dd4bf;
+      --brand-yellow: #f59e0b;
+      --brand-red: #ef4444;
+      --brand-green: #10b981;
+      --text-white: #ffffff;
+      --text-muted: #94a3b8;
+      --text-soft: #cbd5e1;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      --font-heading: 'Outfit', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-soft);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      padding-bottom: 80px;
+    }
+
+    header {
+      background: linear-gradient(180deg, #021a21 0%, #03232c 100%);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 28px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+
+    .header-inner {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: rgba(13, 148, 136, 0.2);
+      border: 1px solid var(--border-highlight);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-icon-box img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+    }
+
+    .brand-text h1 {
+      font-family: var(--font-heading);
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text-white);
+      letter-spacing: 0.5px;
+    }
+
+    .brand-text span {
+      font-size: 12px;
+      color: var(--brand-cyan);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--brand-teal);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(13, 148, 136, 0.4);
+    }
+
+    .btn-primary:hover {
+      background: #0f766e;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-white);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .container {
+      max-width: 1300px;
+      margin: 32px auto 0;
+      padding: 0 24px;
+    }
+
+    /* HERO BANNER */
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(13, 148, 136, 0.15) 0%, rgba(3, 43, 53, 0.6) 100%);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .hero-banner h2 {
+      font-family: var(--font-heading);
+      font-size: 24px;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+
+    .hero-banner p {
+      font-size: 14.5px;
+      color: var(--text-soft);
+      max-width: 720px;
+    }
+
+    .stats-pill-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .stat-pill {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(45, 212, 191, 0.25);
+      border-radius: 10px;
+      padding: 10px 16px;
+      text-align: center;
+    }
+
+    .stat-pill strong {
+      display: block;
+      font-size: 18px;
+      color: var(--brand-cyan);
+      font-family: var(--font-mono);
+    }
+
+    .stat-pill span {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* SEÇÃO DE CRIATIVOS VISUAIS */
+    .section-title {
+      font-family: var(--font-heading);
+      font-size: 20px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .badge-tag {
+      background: rgba(45, 212, 191, 0.15);
+      color: var(--brand-cyan);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-family: var(--font-sans);
+    }
+
+    .grid-creatives {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+
+    .creative-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.25s ease;
+      box-shadow: var(--shadow-card);
+    }
+
+    .creative-card:hover {
+      border-color: var(--brand-cyan);
+      transform: translateY(-4px);
+    }
+
+    .creative-img-wrapper {
+      position: relative;
+      background: #000;
+      overflow: hidden;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .creative-img-wrapper.story-ratio {
+      aspect-ratio: 9 / 16;
+      max-height: 520px;
+    }
+
+    .creative-img-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+
+    .creative-card:hover .creative-img-wrapper img {
+      transform: scale(1.02);
+    }
+
+    .creative-badge-float {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      background: rgba(3, 35, 44, 0.9);
+      border: 1px solid var(--brand-cyan);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 5px 10px;
+      border-radius: 6px;
+      backdrop-filter: blur(8px);
+      text-transform: uppercase;
+    }
+
+    .creative-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      justify-content: space-between;
+    }
+
+    .creative-title {
+      font-family: var(--font-heading);
+      font-size: 17px;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+
+    .creative-desc {
+      font-size: 13px;
+      color: var(--text-soft);
+      margin-bottom: 16px;
+    }
+
+    .creative-specs {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .creative-specs span strong {
+      color: var(--brand-cyan);
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-card {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    /* SEÇÃO DE COPYS & SCRIPTS */
+    .tabs-wrapper {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 48px;
+    }
+
+    .tabs-nav {
+      display: flex;
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(0, 0, 0, 0.25);
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      padding: 16px 24px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .tab-btn.active {
+      color: var(--brand-cyan);
+      border-bottom-color: var(--brand-cyan);
+      background: rgba(13, 148, 136, 0.1);
+    }
+
+    .tab-content {
+      padding: 28px;
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .copy-box {
+      background: #021a21;
+      border: 1px solid rgba(45, 212, 191, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .copy-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .copy-meta strong {
+      color: #ffffff;
+      font-size: 14px;
+    }
+
+    .copy-meta span {
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-left: 8px;
+    }
+
+    .btn-copy-code {
+      background: rgba(13, 148, 136, 0.2);
+      border: 1px solid var(--brand-teal);
+      color: var(--brand-cyan);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-copy-code:hover {
+      background: var(--brand-teal);
+      color: #ffffff;
+    }
+
+    .copy-text {
+      font-family: var(--font-sans);
+      font-size: 13.5px;
+      color: var(--text-soft);
+      white-space: pre-line;
+      line-height: 1.7;
+    }
+
+    .highlight-yellow {
+      color: var(--brand-yellow);
+      font-weight: 700;
+    }
+
+    /* ROTEIRO DE VÍDEO */
+    .timeline-script {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .timeline-step {
+      display: grid;
+      grid-template-columns: 90px 1fr 1fr;
+      gap: 16px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 16px;
+      align-items: center;
+    }
+
+    @media (max-width: 768px) {
+      .timeline-step {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .step-time {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--brand-cyan);
+      background: rgba(45, 212, 191, 0.1);
+      padding: 6px 8px;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .step-visual {
+      font-size: 13px;
+      color: #ffffff;
+    }
+
+    .step-visual strong {
+      display: block;
+      color: var(--text-muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .step-audio {
+      font-size: 13px;
+      color: var(--text-soft);
+      font-style: italic;
+    }
+
+    .step-audio strong {
+      display: block;
+      color: var(--brand-yellow);
+      font-size: 11px;
+      text-transform: uppercase;
+      font-style: normal;
+      margin-bottom: 4px;
+    }
+
+    /* CONFIGURAÇÃO META ADS */
+    .meta-config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .config-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .config-box h4 {
+      font-size: 15px;
+      color: #ffffff;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .config-box ul {
+      list-style: none;
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .config-box ul li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .config-box ul li span {
+      color: var(--brand-cyan);
+      font-weight: 700;
+    }
+
+    /* MODAL DE PREVIEW */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-box {
+      max-width: 900px;
+      width: 100%;
+      background: var(--bg-dark);
+      border: 1px solid var(--border-highlight);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+      position: relative;
+    }
+
+    .modal-img-container {
+      max-height: 75vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+    }
+
+    .modal-img-container img {
+      max-width: 100%;
+      max-height: 75vh;
+      object-fit: contain;
+    }
+
+    .modal-footer {
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .btn-close-modal {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    /* NOTIFICAÇÃO TOAST */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--brand-green);
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 700;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      display: none;
+      align-items: center;
+      gap: 8px;
+      z-index: 2000;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-inner">
+      <div class="brand-group">
+        <div class="brand-icon-box">
+          <img src="assets/bravvi-icon.png" alt="Bravvi">
+        </div>
+        <div class="brand-text">
+          <h1>Central de Criativos & Mídia Paga</h1>
+          <span>Bravvi ERP Têxtil • Conversão Direta</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="index.html" class="btn-action btn-secondary" target="_blank">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          Abrir ERP ao Vivo
+        </a>
+        <a href="lp.html" class="btn-action btn-secondary" target="_blank">
+          Página de Vendas (LP)
+        </a>
+        <a href="https://adsmanager.facebook.com/" target="_blank" class="btn-action btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          Subir no Meta Ads
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- HERO SUMMARY -->
+    <section class="hero-banner">
+      <div>
+        <h2>Pack de Criativos de Alta Conversão Pronto</h2>
+        <p>Artes em alta resolução (1:1 Feed e 9:16 Story/Reels) com ganchos visuais comprovados para donos de confecções, estamparias e bordados. Basta baixar as imagens e copiar as copys abaixo.</p>
+      </div>
+      <div class="stats-pill-group">
+        <div class="stat-pill">
+          <strong>3 Modelos</strong>
+          <span>Formatos Prontos</span>
+        </div>
+        <div class="stat-pill">
+          <strong>4 Copys</strong>
+          <span>Validadas</span>
+        </div>
+        <div class="stat-pill">
+          <strong>R$ 35/dia</strong>
+          <span>Budget Sugerido</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 1. OS CRIATIVOS VISUAIS -->
+    <h3 class="section-title">
+      1. Criativos Visuais Oficiais (Feed & Stories)
+      <span class="badge-tag">Alta Definição</span>
+    </h3>
+
+    <div class="grid-creatives">
+
+      <!-- CARD 1: COMPARATIVO ANTES VS DEPOIS -->
+      <article class="creative-card">
+        <div class="creative-img-wrapper">
+          <span class="creative-badge-float">🔥 Maior CTR no Feed</span>
+          <img src="assets/ads/feed-antes-depois.jpg" alt="Comparativo Antes vs Depois Bravvi ERP">
+        </div>
+        <div class="creative-body">
+          <div>
+            <h4 class="creative-title">Ângulo 1: Antes vs. Depois (Caos vs. Bravvi)</h4>
+            <p class="creative-desc">Mostra a dor do dono de confecção soterrado em planilhas e retalhos vs. a tranquilidade e lucro com a tela do ERP.</p>
+            <div class="creative-specs">
+              <span>Formato: <strong>1:1 Feed (1080x1080)</strong></span>
+              <span>Canal: <strong>Instagram & Face</strong></span>
+              <span>Gatilho: <strong>Contraste Imediato</strong></span>
+              <span>Conversão: <strong>WhatsApp Direto</strong></span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="btn-card btn-secondary" onclick="abrirPreview('assets/ads/feed-antes-depois.jpg', 'Comparativo Antes vs Depois')">🔍 Ampliar</button>
+            <a href="assets/ads/feed-antes-depois.jpg" download="criativo-antes-depois.jpg" class="btn-card btn-primary">⬇️ Baixar Imagem</a>
+          </div>
+        </div>
+      </article>
+
+      <!-- CARD 2: COCKPIT INDUSTRIAL COM ERP -->
+      <article class="creative-card">
+        <div class="creative-img-wrapper">
+          <span class="creative-badge-float">💎 Autoridade & B2B</span>
+          <img src="assets/ads/feed-dashboard.jpg" alt="Cockpit Bravvi ERP Têxtil">
+        </div>
+        <div class="creative-body">
+          <div>
+            <h4 class="creative-title">Ângulo 2: Cockpit Industrial & Radar de Prazos</h4>
+            <p class="creative-desc">Mockup hiper-realista no iPad e MacBook mostrando o dashboard de rendimento de tecido, corte e cronômetros de entrega.</p>
+            <div class="creative-specs">
+              <span>Formato: <strong>1:1 Feed (1080x1080)</strong></span>
+              <span>Canal: <strong>Feed / Carrossel</strong></span>
+              <span>Gatilho: <strong>Profissionalismo</strong></span>
+              <span>Conversão: <strong>Solicitar Demo</strong></span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="btn-card btn-secondary" onclick="abrirPreview('assets/ads/feed-dashboard.jpg', 'Cockpit Bravvi ERP')">🔍 Ampliar</button>
+            <a href="assets/ads/feed-dashboard.jpg" download="criativo-feed-cockpit.jpg" class="btn-card btn-primary">⬇️ Baixar Imagem</a>
+          </div>
+        </div>
+      </article>
+
+      <!-- CARD 3: STORY / REELS VERTICAL -->
+      <article class="creative-card">
+        <div class="creative-img-wrapper story-ratio">
+          <span class="creative-badge-float">📱 Stories & Reels 9:16</span>
+          <img src="assets/ads/story-radar.jpg" alt="Stories Radar de Prazos Mobile">
+        </div>
+        <div class="creative-body">
+          <div>
+            <h4 class="creative-title">Ângulo 3: Radar de Prazos na Palma da Mão</h4>
+            <p class="creative-desc">Celular em primeiro plano com o alarme de prazos do pedido #1234 dentro de uma fábrica ativa de bordado e uniformes.</p>
+            <div class="creative-specs">
+              <span>Formato: <strong>9:16 Vertical</strong></span>
+              <span>Canal: <strong>Stories / Reels / TikTok</strong></span>
+              <span>Gatilho: <strong>Controle Móvel</strong></span>
+              <span>Conversão: <strong>Arrasta pra Cima</strong></span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="btn-card btn-secondary" onclick="abrirPreview('assets/ads/story-radar.jpg', 'Stories Radar Mobile')">🔍 Ampliar</button>
+            <a href="assets/ads/story-radar.jpg" download="criativo-story-radar.jpg" class="btn-card btn-primary">⬇️ Baixar Imagem</a>
+          </div>
+        </div>
+      </article>
+
+    </div>
+
+    <!-- 2. COPYS PRONTAS PARA O META ADS -->
+    <h3 class="section-title">
+      2. Copys Validadas para Legenda e Anúncio (Copie com 1 Clique)
+      <span class="badge-tag">Pronto para Colar</span>
+    </h3>
+
+    <div class="tabs-wrapper">
+      <nav class="tabs-nav">
+        <button class="tab-btn active" onclick="trocarTab('copy1', this)">🧵 Copy 1: Desperdício de Tecido (Mais Forte)</button>
+        <button class="tab-btn" onclick="trocarTab('copy2', this)">⏰ Copy 2: Caos de Prazos & Entregas</button>
+        <button class="tab-btn" onclick="trocarTab('copy3', this)">🚀 Copy 3: Oferta Direta Sem Fidelidade</button>
+        <button class="tab-btn" onclick="trocarTab('copy4', this)">🎬 Roteiro de Vídeo (Reels 40s)</button>
+        <button class="tab-btn" onclick="trocarTab('copy5', this)">🎯 Configuração no Meta Ads</button>
+      </nav>
+
+      <!-- TAB 1 -->
+      <div id="copy1" class="tab-content active">
+        <div class="copy-box">
+          <div class="copy-header">
+            <div class="copy-meta">
+              <strong>Texto Principal para Feed e Carrossel</strong>
+              <span>Ideal com a imagem 'Antes vs Depois' ou 'Cockpit'</span>
+            </div>
+            <button class="btn-copy-code" onclick="copiarTexto('textoCopy1', this)">📋 Copiar Copy</button>
+          </div>
+          <div class="copy-text" id="textoCopy1">Dono de confecção de uniformes: você sabe exatamente quantos reais perdeu em retalho de tecido esse mês? 🧵📉
+
+Cobrar no "olhômetro" ou calcular tecido em tabela de Excel antiga é o que mais drena o lucro da sua fábrica. Na hora de cortar 150 polos ou camisas de brim, se faltar 1 metro de tecido ou errar a metragem do DTF, o prejuízo sai direto do seu bolso.
+
+O Bravvi ERP Têxtil foi feito exclusivamente para confecções e estamparias de uniformes:
+
+✅ Cálculo automático de rendimento de tecido por kg com margem de segurança
+✅ Otimizador de rolo DTF (58cm e 28cm) para não desperdiçar filme
+✅ Contagem regressiva visual dos pedidos (você vê de longe o que vence hoje)
+✅ Orçamento com foto da peça em 30 segundos direto pelo WhatsApp
+✅ Ficha Técnica A4 sem vazar seus custos para a facção ou costureira
+
+Deixe de perder dinheiro com planilha desatualizada.
+👉 Toque no botão abaixo e teste uma demonstração ao vivo agora mesmo pelo WhatsApp!</div>
+        </div>
+
+        <div class="meta-config-grid">
+          <div class="config-box">
+            <h4>📌 Título do Anúncio (Headline no Meta Ads)</h4>
+            <p style="font-size: 13.5px; color: #fff; margin-bottom: 8px;"><strong>Opção A:</strong> O Fim do Prejuízo em Retalho de Tecido 🧵</p>
+            <p style="font-size: 13.5px; color: #fff;"><strong>Opção B:</strong> Sistema de Gestão para Fábricas de Uniformes</p>
+          </div>
+          <div class="config-box">
+            <h4>🔘 Botão de Ação (CTA)</h4>
+            <p style="font-size: 13.5px; color: var(--brand-cyan);"><strong>"Enviar mensagem pelo WhatsApp"</strong></p>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Mensagem padrão: <em>"Olá! Vi o anúncio do Bravvi ERP e quero ver a demonstração para minha confecção."</em></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2 -->
+      <div id="copy2" class="tab-content">
+        <div class="copy-box">
+          <div class="copy-header">
+            <div class="copy-meta">
+              <strong>Texto Focado no Caos de Prazos e Falta de Controle</strong>
+              <span>Ideal para o anúncio Story/Reels ou Feed</span>
+            </div>
+            <button class="btn-copy-code" onclick="copiarTexto('textoCopy2', this)">📋 Copiar Copy</button>
+          </div>
+          <div class="copy-text" id="textoCopy2">Cliente cobrando entrega no WhatsApp, costureira perguntando o tamanho da grade e o cortador sem saber qual pedido cortar primeiro? 😰
+
+Se a sua confecção vive esse fogo cruzado todos os dias, você precisa de um chão de fábrica que ande sozinho.
+
+Com o Bravvi ERP Têxtil:
+1. Nenhum pedido entra em corte sem aprovação de arte e sinal de 50% pago (Trava de Quarentena).
+2. O painel Kanban mostra em tempo real o que está no corte, estamparia, costura e expedição.
+3. Alertas por cores mostram os prazos estourando antes que o cliente reclame.
+4. O vendedor lança o orçamento no celular e a oficina já vê na hora no computador.
+
+Chega de dor de cabeça e atrasos de entrega. Profissionalize sua confecção hoje.
+👉 Fale com nosso consultor no WhatsApp e veja funcionando em 5 minutos.</div>
+        </div>
+      </div>
+
+      <!-- TAB 3 -->
+      <div id="copy3" class="tab-content">
+        <div class="copy-box">
+          <div class="copy-header">
+            <div class="copy-meta">
+              <strong>Oferta Direta de Implantação e Transição de Planilhas</strong>
+              <span>Ideal para público que já está buscando software</span>
+            </div>
+            <button class="btn-copy-code" onclick="copiarTexto('textoCopy3', this)">📋 Copiar Copy</button>
+          </div>
+          <div class="copy-text" id="textoCopy3">Sistema de gestão específico para fábrica de uniformes profissionais, escolares e esportivos.
+
+❌ Sem mensalidades abusivas de R$ 800+
+❌ Sem contratos de fidelidade de 12 meses
+❌ Sem necessidade de instalar servidor pesado
+✅ Pronto para rodar no mesmo dia no celular e PC
+
+Inclui: gerador de propostas comerciais em PDF com chave PIX, fichas técnicas para cortador e facção, controle de insumos e DRE de lucro líquido real.
+
+🎁 Bônus desta semana: Implantação guiada e cadastro do catálogo inicial da sua fábrica.
+👉 Clique no botão abaixo e chame no WhatsApp para garantir sua vaga com desconto de lançamento.</div>
+        </div>
+      </div>
+
+      <!-- TAB 4: ROTEIRO DE VÍDEO -->
+      <div id="copy4" class="tab-content">
+        <h4 style="color: #fff; margin-bottom: 14px;">🎬 Roteiro de Vídeo para Reels / TikTok (35 a 45 Segundos)</h4>
+        <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 20px;">Você pode gravar a tela do computador/celular mostrando o Bravvi ERP enquanto fala, ou filmar sua mesa de corte:</p>
+        
+        <div class="timeline-script">
+          <div class="timeline-step">
+            <div class="step-time">00s - 05s</div>
+            <div class="step-visual">
+              <strong>Visual na Tela</strong>
+              Mostra uma pilha de retalhos ou várias ordens de papel na mesa de corte.
+            </div>
+            <div class="step-audio">
+              <strong>O que Falar (Gancho)</strong>
+              "Se você é dono de confecção de uniformes, me responde uma coisa: quanto dinheiro a sua mesa de corte jogou no lixo esse mês?"
+            </div>
+          </div>
+
+          <div class="timeline-step">
+            <div class="step-time">05s - 15s</div>
+            <div class="step-visual">
+              <strong>Visual na Tela</strong>
+              Corta para a tela do computador ou tablet abrindo o Bravvi ERP.
+            </div>
+            <div class="step-audio">
+              <strong>O que Falar (Agitação da Dor)</strong>
+              "Calcular metro de tecido no olhômetro e esperar o cliente reclamar de prazo no WhatsApp é o jeito mais rápido de queimar o lucro da fábrica."
+            </div>
+          </div>
+
+          <div class="timeline-step">
+            <div class="step-time">15s - 30s</div>
+            <div class="step-visual">
+              <strong>Visual na Tela</strong>
+              Mostra o clique no Radar de Prazos (verde/vermelho) e a impressão da Ficha Técnica A4 com 1 clique.
+            </div>
+            <div class="step-audio">
+              <strong>O que Falar (Solução)</strong>
+              "Foi por isso que a gente criou o Bravvi ERP. Ele calcula o rendimento exato por kg de malha, otimiza o rolo DTF e avisa em tempo real o que precisa ser costurado hoje."
+            </div>
+          </div>
+
+          <div class="timeline-step">
+            <div class="step-time">30s - 40s</div>
+            <div class="step-visual">
+              <strong>Visual na Tela</strong>
+              Mostra o link da demonstração funcionando no celular e a logo Bravvi.
+            </div>
+            <div class="step-audio">
+              <strong>O que Falar (Chamada de Ação)</strong>
+              "Clica no botão aqui embaixo e me chama no WhatsApp. Eu vou te mandar um link para você testar ao vivo com as peças da sua fábrica agora mesmo!"
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: SEGMENTAÇÃO NO META ADS -->
+      <div id="copy5" class="tab-content">
+        <h4 style="color: #fff; margin-bottom: 14px;">🎯 Configuração Exata do Gerenciador de Anúncios (Meta Ads)</h4>
+        
+        <div class="meta-config-grid">
+          <div class="config-box">
+            <h4>📍 Localização & Demografia</h4>
+            <ul>
+              <li><span>Idade:</span> 28 a 58 anos</li>
+              <li><span>Gênero:</span> Todos (Homens e Mulheres)</li>
+              <li><span>Polos Fortes:</span> SP (Americana, Brás, Bom Retiro), SC (Brusque, Blumenau), GO (Goiânia, Jaraguá), CE (Fortaleza), MG (Divinópolis) ou Brasil Todo.</li>
+            </ul>
+          </div>
+
+          <div class="config-box">
+            <h4>💡 Interesses Principais</h4>
+            <ul>
+              <li><span>Segmento:</span> Confecção de Roupas, Uniforme, Silk-screen, Sublimação, Bordado Computadorizado.</li>
+              <li><span>Equipamentos:</span> Máquinas Brother, Tajima, Siruba, Barudan, Plotter DTF.</li>
+              <li><span>Cargos:</span> Proprietário, Sócio, Fundador, Gerente Geral, Encarregado de Confecção.</li>
+            </ul>
+          </div>
+
+          <div class="config-box">
+            <h4>💰 Orçamento & Lance</h4>
+            <ul>
+              <li><span>Orçamento Inicial:</span> R$ 25 a R$ 40 por dia no conjunto de anúncios.</li>
+              <li><span>Otimização:</span> Conversas no WhatsApp (Engajamento) ou Tráfego para Link de WhatsApp.</li>
+              <li><span>Posicionamentos:</span> Advantage+ (Automático) ou Feed Instagram + Reels.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- MODAL DE PREVIEW -->
+  <div id="modalPreview" class="modal-backdrop" onclick="fecharModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <button class="btn-close-modal" onclick="fecharModalDirect()">✕</button>
+      <div class="modal-img-container">
+        <img id="imgModalTarget" src="" alt="Preview Criativo">
+      </div>
+      <div class="modal-footer">
+        <strong id="modalTitulo" style="color: #fff; font-size: 15px;">Criativo</strong>
+        <a id="btnDownloadModal" href="" download class="btn-action btn-primary">⬇️ Baixar Imagem Oficial</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST FEEDBACK -->
+  <div id="toastNotif" class="toast">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span>Texto copiado para a área de transferência!</span>
+  </div>
+
+  <script>
+    function trocarTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    function copiarTexto(elementId, btn) {
+      const text = document.getElementById(elementId).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const toast = document.getElementById('toastNotif');
+        toast.style.display = 'flex';
+        setTimeout(() => { toast.style.display = 'none'; }, 2800);
+        
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '✅ Copiado!';
+        setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+      });
+    }
+
+    function abrirPreview(imgSrc, titulo) {
+      document.getElementById('imgModalTarget').src = imgSrc;
+      document.getElementById('modalTitulo').innerText = titulo;
+      document.getElementById('btnDownloadModal').href = imgSrc;
+      document.getElementById('modalPreview').classList.add('open');
+    }
+
+    function fecharModal(e) {
+      if (e.target.id === 'modalPreview') {
+        document.getElementById('modalPreview').classList.remove('open');
+      }
+    }
+
+    function fecharModalDirect() {
+      document.getElementById('modalPreview').classList.remove('open');
+    }
+  </script>
+</body>
+</html>
