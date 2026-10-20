@@ -10388,13 +10388,17 @@
       custoMetroLinear: 60.00,
       separarPorPedido: true,
       artes: [],
-      zoom: 1.0,
+      zoom: 0.40, // 40% Padrão conforme anexo 2 (Visão Geral Panorâmica sem cortar o início do arquivo)
       arquivoAtivoIndex: 0
     };
 
     const state = window.ERP_NESTING_STATE;
     if (state.maxMetrosPorArquivo === undefined) {
       state.maxMetrosPorArquivo = 1.0;
+    }
+    // Garante que o zoom inicial ou resetado esteja em 40%
+    if (state.zoom === undefined || state.zoom >= 0.85) {
+      state.zoom = 0.40;
     }
 
     // Purga qualquer resquício de pedido de teste
@@ -10746,22 +10750,23 @@
 
             <!-- Controles de Zoom -->
             <div style="display: flex; gap: 4px; align-items: center;">
-              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomMenos" style="font-weight: 800; padding: 3px 8px; background: #072630; border: 1px solid #1e4756; color: #e2e8f0; border-radius: 5px;" title="Reduzir Zoom">-</button>
-              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomReset" style="font-size: 11px; font-weight: 800; padding: 3px 8px; background: #072630; border: 1px solid #1e4756; color: #2dd4bf; border-radius: 5px;" title="Zoom 100%">${Math.round(state.zoom * 100)}%</button>
-              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomMais" style="font-weight: 800; padding: 3px 8px; background: #072630; border: 1px solid #1e4756; color: #e2e8f0; border-radius: 5px;" title="Aumentar Zoom">+</button>
-              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomFit" style="font-size: 10.5px; font-weight: 800; padding: 3px 8px; background: #072630; border: 1px solid #1e4756; color: #e2e8f0; border-radius: 5px;" title="Ajustar à largura">Ajustar</button>
+              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomMenos" style="font-weight: 800; padding: 4px 8px; background: #072630; border: 1px solid #1e4756; color: #e2e8f0; border-radius: 5px; cursor: pointer;" title="Reduzir Zoom (-5%)">-</button>
+              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomReset" style="font-size: 11px; font-weight: 800; padding: 4px 8px; background: #072630; border: 1px solid #1e4756; color: #2dd4bf; border-radius: 5px; cursor: pointer;" title="Restaurar Zoom Padrão (40%)">${Math.round(state.zoom * 100)}%</button>
+              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomMais" style="font-weight: 800; padding: 4px 8px; background: #072630; border: 1px solid #1e4756; color: #e2e8f0; border-radius: 5px; cursor: pointer;" title="Aumentar Zoom (+5%)">+</button>
+              <button type="button" class="btn btn-secondary btn-xs" id="btnZoomFit" style="font-size: 10.5px; font-weight: 800; padding: 4px 10px; background: #072630; border: 1px solid #1e4756; color: #2dd4bf; border-radius: 5px; cursor: pointer;" title="Ajustar Visão Panorâmica Padrão (40%)">Padrão (40%)</button>
+              <button type="button" class="btn btn-secondary btn-xs" id="btnZoom100" style="font-size: 10.5px; font-weight: 800; padding: 4px 9px; background: #072630; border: 1px solid #1e4756; color: #94a3b8; border-radius: 5px; cursor: pointer;" title="Zoom Tamanho Real (100%)">100%</button>
             </div>
           </div>
 
-          <!-- CONTAINER DO CANVAS COM SCROLL INDUSTRIAL -->
-          <div class="nesting-canvas-container" style="background: radial-gradient(circle at 50% 25%, #052631 0%, #021217 100%); border: 2px solid #083c4b; border-radius: 10px; padding: 16px; min-height: 520px; max-height: 640px; overflow: auto; display: flex; justify-content: center; align-items: flex-start; box-shadow: inset 0 4px 16px rgba(0,0,0,0.7); position: relative;">
+          <!-- CONTAINER DO CANVAS COM SCROLL INDUSTRIAL E DRAG-TO-PAN -->
+          <div class="nesting-canvas-container" style="background: radial-gradient(circle at 50% 25%, #052631 0%, #021217 100%); border: 2px solid #083c4b; border-radius: 10px; padding: 16px; min-height: 520px; max-height: 640px; overflow: auto; display: flex; justify-content: center; align-items: flex-start; box-shadow: inset 0 4px 16px rgba(0,0,0,0.7); position: relative; cursor: grab; user-select: none; scrollbar-width: thin; scrollbar-color: #0d9488 #021217;">
             <canvas id="nestingCanvas" style="display: block; box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 0 1px rgba(45, 212, 191, 0.25); border-radius: 4px;"></canvas>
           </div>
         </div>
       </div>
     `;
 
-    // Renderiza o Canvas após montagem do DOM
+    // Renderiza o Canvas após montagem do DOM e ativa navegação fluida por arrasto
     function atualizarDesenhoCanvas() {
       const canvas = document.getElementById('nestingCanvas');
       if (canvas) {
@@ -10772,7 +10777,63 @@
       }
     }
 
-    setTimeout(atualizarDesenhoCanvas, 50);
+    function ativarPanEZoomInterativoCanvas() {
+      const container = document.querySelector('.nesting-canvas-container');
+      if (!container || container.dataset.panAtivo === 'true') return;
+      container.dataset.panAtivo = 'true';
+
+      let isDragging = false;
+      let startX, startY, scrollLeft, scrollTop;
+
+      container.addEventListener('mousedown', (e) => {
+        if (e.button === 0 || e.button === 1) {
+          isDragging = true;
+          container.style.cursor = 'grabbing';
+          startX = e.pageX - container.offsetLeft;
+          startY = e.pageY - container.offsetTop;
+          scrollLeft = container.scrollLeft;
+          scrollTop = container.scrollTop;
+        }
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (isDragging) {
+          isDragging = false;
+          if (container) container.style.cursor = 'grab';
+        }
+      });
+
+      container.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const x = e.pageX - container.offsetLeft;
+        const y = e.pageY - container.offsetTop;
+        const walkX = (x - startX) * 1.2;
+        const walkY = (y - startY) * 1.2;
+        container.scrollLeft = scrollLeft - walkX;
+        container.scrollTop = scrollTop - walkY;
+      });
+
+      // Zoom suave com a rodinha do mouse (Ctrl + Wheel)
+      container.addEventListener('wheel', (e) => {
+        if (e.ctrlKey || e.metaKey || e.altKey) {
+          e.preventDefault();
+          const delta = e.deltaY < 0 ? 0.05 : -0.05;
+          const novoZoom = Math.min(2.5, Math.max(0.15, parseFloat((state.zoom + delta).toFixed(2))));
+          if (novoZoom !== state.zoom) {
+            state.zoom = novoZoom;
+            const btnZ = document.getElementById('btnZoomReset');
+            if (btnZ) btnZ.textContent = `${Math.round(state.zoom * 100)}%`;
+            atualizarDesenhoCanvas();
+          }
+        }
+      }, { passive: false });
+    }
+
+    setTimeout(() => {
+      atualizarDesenhoCanvas();
+      ativarPanEZoomInterativoCanvas();
+    }, 50);
 
     // =========================================================================
     // EVENTOS INTERATIVOS DO MÓDULO DE NESTING
@@ -10895,24 +10956,29 @@
       });
     });
 
-    // 11. Controles de Zoom do Canvas
+    // 11. Controles de Zoom do Canvas (Padrão 40% Visão Geral Panorâmica)
     document.getElementById('btnZoomMais')?.addEventListener('click', () => {
-      state.zoom = Math.min(2.5, parseFloat((state.zoom + 0.15).toFixed(2)));
+      state.zoom = Math.min(2.5, parseFloat((state.zoom + 0.05).toFixed(2)));
       renderizarNestingDTF();
     });
 
     document.getElementById('btnZoomMenos')?.addEventListener('click', () => {
-      state.zoom = Math.max(0.4, parseFloat((state.zoom - 0.15).toFixed(2)));
+      state.zoom = Math.max(0.15, parseFloat((state.zoom - 0.05).toFixed(2)));
       renderizarNestingDTF();
     });
 
     document.getElementById('btnZoomReset')?.addEventListener('click', () => {
-      state.zoom = 1.0;
+      state.zoom = 0.40;
       renderizarNestingDTF();
     });
 
     document.getElementById('btnZoomFit')?.addEventListener('click', () => {
-      state.zoom = 0.85;
+      state.zoom = 0.40;
+      renderizarNestingDTF();
+    });
+
+    document.getElementById('btnZoom100')?.addEventListener('click', () => {
+      state.zoom = 1.0;
       renderizarNestingDTF();
     });
 

@@ -972,18 +972,21 @@ window.DtfNestingEngine = {
 
     // Calcula dimensões virtuais do Canvas
     const containerWidth = canvas.parentElement ? (canvas.parentElement.clientWidth || 600) : 600;
-    const margemReguaX = 38;
-    const margemReguaY = 32;
+    const margemReguaX = 26; // Design fino e elegante (reduzido de 38px)
+    const margemReguaY = 20; // Design fino e elegante (reduzido de 32px)
 
-    const larguraDisponivel = Math.max(220, containerWidth - margemReguaX - 30);
+    const larguraDisponivel = Math.max(220, containerWidth - margemReguaX - 36);
     const escalaBase = larguraDisponivel / W_ROLO;
     const escala = escalaBase * zoom;
 
     const roloPixelW = W_ROLO * escala;
     const roloPixelH = H_DESENHO * escala;
 
-    const targetW = Math.ceil(roloPixelW + margemReguaX + 40);
-    const targetH = Math.ceil(roloPixelH + margemReguaY + 50);
+    const offsetX = margemReguaX + 6;
+    const offsetY = margemReguaY + 6;
+
+    const targetW = Math.ceil(roloPixelW + offsetX + 24);
+    const targetH = Math.ceil(roloPixelH + offsetY + 30);
 
     // SUPORTE RETINA HD / HIGH DPI (Dobra resolução para nitidez extrema de linhas e textos)
     const dpr = Math.max(2, window.devicePixelRatio || 1);
@@ -1000,49 +1003,120 @@ window.DtfNestingEngine = {
     // Limpa fundo
     ctx.clearRect(0, 0, targetW, targetH);
 
-    const offsetX = margemReguaX + 10;
-    const offsetY = margemReguaY + 10;
-
-    // 1. RÉGUA HORIZONTAL (Centímetros no Topo)
-    ctx.fillStyle = '#f8fafc';
-    ctx.fillRect(offsetX, 4, roloPixelW, margemReguaY - 4);
-    ctx.strokeStyle = '#cbd5e1';
+    // 0. CANTO SUPERIOR ESQUERDO (JUNÇÃO DAS RÉGUAS COM IDENTIFICADOR 'cm')
+    ctx.fillStyle = '#061c24';
+    ctx.fillRect(4, 4, margemReguaX, margemReguaY);
+    ctx.strokeStyle = '#083c4b';
     ctx.lineWidth = 1;
-    ctx.strokeRect(offsetX, 4, roloPixelW, margemReguaY - 4);
+    ctx.strokeRect(4, 4, margemReguaX, margemReguaY);
 
-    ctx.fillStyle = '#334155';
-    ctx.font = 'bold 9.5px monospace';
+    ctx.fillStyle = '#2dd4bf';
+    ctx.font = 'bold 8.5px monospace';
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('cm', 4 + (margemReguaX / 2), 4 + (margemReguaY / 2));
 
-    for (let cm = 0; cm <= W_ROLO; cm += 5) {
+    // 1. RÉGUA HORIZONTAL (Centímetros no Topo - Design CAD Fino & Moderno)
+    ctx.fillStyle = '#061c24';
+    ctx.fillRect(offsetX, 4, roloPixelW, margemReguaY);
+    ctx.strokeStyle = '#083c4b';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(offsetX, 4, roloPixelW, margemReguaY);
+
+    // Linha de base inferior da régua
+    ctx.strokeStyle = 'rgba(45, 212, 191, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(offsetX, 4 + margemReguaY);
+    ctx.lineTo(offsetX + roloPixelW, 4 + margemReguaY);
+    ctx.stroke();
+
+    for (let cm = 0; cm <= W_ROLO; cm += 1) {
       const xPos = offsetX + (cm * escala);
-      ctx.beginPath();
-      ctx.moveTo(xPos, margemReguaY - 2);
-      ctx.lineTo(xPos, cm % 10 === 0 ? 12 : 20);
-      ctx.stroke();
+      const isMajor = (cm % 10 === 0 || cm === Math.round(W_ROLO));
+      const isMid = (!isMajor && cm % 5 === 0);
 
-      if (cm % 10 === 0 || cm === Math.round(W_ROLO)) {
-        ctx.fillText(`${cm}cm`, xPos, 11);
+      ctx.beginPath();
+      if (isMajor) {
+        ctx.strokeStyle = '#2dd4bf';
+        ctx.lineWidth = 1;
+        ctx.moveTo(xPos, 4 + margemReguaY);
+        ctx.lineTo(xPos, 4 + margemReguaY - 7);
+        ctx.stroke();
+
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '700 7.5px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(`${cm}`, xPos, 5);
+      } else if (isMid) {
+        ctx.strokeStyle = 'rgba(45, 212, 191, 0.6)';
+        ctx.lineWidth = 0.8;
+        ctx.moveTo(xPos, 4 + margemReguaY);
+        ctx.lineTo(xPos, 4 + margemReguaY - 4.5);
+        ctx.stroke();
+      } else if (escala >= 3.0) {
+        // Ticks milimétricos finos a cada 1cm
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.3)';
+        ctx.lineWidth = 0.6;
+        ctx.moveTo(xPos, 4 + margemReguaY);
+        ctx.lineTo(xPos, 4 + margemReguaY - 2.5);
+        ctx.stroke();
       }
     }
 
-    // 2. RÉGUA VERTICAL (Metros/Centímetros na Esquerda)
-    ctx.fillStyle = '#f8fafc';
-    ctx.fillRect(4, offsetY, margemReguaX - 4, roloPixelH);
-    ctx.strokeStyle = '#cbd5e1';
-    ctx.strokeRect(4, offsetY, margemReguaX - 4, roloPixelH);
+    // 2. RÉGUA VERTICAL (Metros/Centímetros na Esquerda - Design CAD Fino & Moderno)
+    ctx.fillStyle = '#061c24';
+    ctx.fillRect(4, offsetY, margemReguaX, roloPixelH);
+    ctx.strokeStyle = '#083c4b';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(4, offsetY, margemReguaX, roloPixelH);
 
-    ctx.textAlign = 'right';
-    for (let cm = 0; cm <= H_DESENHO; cm += 10) {
+    // Linha de base da régua vertical
+    ctx.strokeStyle = 'rgba(45, 212, 191, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(4 + margemReguaX, offsetY);
+    ctx.lineTo(4 + margemReguaX, offsetY + roloPixelH);
+    ctx.stroke();
+
+    for (let cm = 0; cm <= H_DESENHO; cm += 5) {
       const yPos = offsetY + (cm * escala);
-      ctx.beginPath();
-      ctx.moveTo(margemReguaX - 2, yPos);
-      ctx.lineTo(cm % 50 === 0 ? 10 : 22, yPos);
-      ctx.stroke();
+      const isMeter = (cm > 0 && cm % 100 === 0);
+      const isMajor = (cm % 10 === 0 || isMeter);
 
-      if (cm % 50 === 0 || cm === Math.round(H_DESENHO)) {
-        const m = (cm / 100).toFixed(1);
-        ctx.fillText(`${m}m`, margemReguaX - 6, yPos + 3);
+      ctx.beginPath();
+      if (isMeter) {
+        // Linha marcando metro completo
+        ctx.strokeStyle = '#2dd4bf';
+        ctx.lineWidth = 1.2;
+        ctx.moveTo(4 + margemReguaX, yPos);
+        ctx.lineTo(4, yPos);
+        ctx.stroke();
+
+        ctx.fillStyle = '#2dd4bf';
+        ctx.font = 'bold 8px monospace';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${cm / 100}m`, 4 + margemReguaX - 2, yPos - 5);
+      } else if (isMajor) {
+        ctx.strokeStyle = 'rgba(45, 212, 191, 0.7)';
+        ctx.lineWidth = 0.9;
+        ctx.moveTo(4 + margemReguaX, yPos);
+        ctx.lineTo(4 + margemReguaX - 6, yPos);
+        ctx.stroke();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '600 7.5px monospace';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${cm}`, 4 + margemReguaX - 7, yPos);
+      } else {
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+        ctx.lineWidth = 0.6;
+        ctx.moveTo(4 + margemReguaX, yPos);
+        ctx.lineTo(4 + margemReguaX - 3.5, yPos);
+        ctx.stroke();
       }
     }
 
