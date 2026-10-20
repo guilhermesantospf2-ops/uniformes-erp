@@ -10383,7 +10383,7 @@
       inicializado: false,
       pedidosSelecionadosIds: [],
       larguraRoloCm: 58.0,
-      maxMetrosPorArquivo: 0,
+      maxMetrosPorArquivo: 1.0, // 1.0 metro por arquivo por padrão
       espacamentoCm: 0.5,
       custoMetroLinear: 60.00,
       separarPorPedido: true,
@@ -10393,6 +10393,9 @@
     };
 
     const state = window.ERP_NESTING_STATE;
+    if (state.maxMetrosPorArquivo === undefined) {
+      state.maxMetrosPorArquivo = 1.0;
+    }
 
     // Purga qualquer resquício de pedido de teste
     db = expurgarPedidosTeste(db);
@@ -10516,15 +10519,22 @@
             </div>
 
             <div>
-              <label class="form-label" style="font-size: 10.5px; font-weight: 800; color: #475569; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Metros por Arquivo (Quebra)</label>
+              <label class="form-label" style="font-size: 10.5px; font-weight: 800; color: #475569; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Metragem por Arquivo</label>
               <select id="selMaxMetrosArquivo" class="form-select" style="font-size: 12px; font-weight: 700; border: 1.5px solid #cbd5e1; border-radius: 7px; height: 35px;">
-                <option value="0" ${state.maxMetrosPorArquivo === 0 ? 'selected' : ''}>Contínuo (Rolo Único sem quebra)</option>
-                <option value="1.0" ${state.maxMetrosPorArquivo === 1.0 ? 'selected' : ''}>1.0 metro por arquivo</option>
-                <option value="1.5" ${state.maxMetrosPorArquivo === 1.5 ? 'selected' : ''}>1.5 metros por arquivo</option>
-                <option value="2.0" ${state.maxMetrosPorArquivo === 2.0 ? 'selected' : ''}>2.0 metros por arquivo</option>
-                <option value="3.0" ${state.maxMetrosPorArquivo === 3.0 ? 'selected' : ''}>3.0 metros por arquivo</option>
-                <option value="5.0" ${state.maxMetrosPorArquivo === 5.0 ? 'selected' : ''}>5.0 metros por arquivo</option>
+                <option value="1.0" ${state.maxMetrosPorArquivo === 1.0 ? 'selected' : ''}>1.0 metro (Padrão DTF)</option>
+                <option value="0.5" ${state.maxMetrosPorArquivo === 0.5 ? 'selected' : ''}>0.5 metro (50 cm)</option>
+                <option value="1.2" ${state.maxMetrosPorArquivo === 1.2 ? 'selected' : ''}>1.2 metros (120 cm)</option>
+                <option value="1.5" ${state.maxMetrosPorArquivo === 1.5 ? 'selected' : ''}>1.5 metros (150 cm)</option>
+                <option value="2.0" ${state.maxMetrosPorArquivo === 2.0 ? 'selected' : ''}>2.0 metros (200 cm)</option>
+                <option value="3.0" ${state.maxMetrosPorArquivo === 3.0 ? 'selected' : ''}>3.0 metros (300 cm)</option>
+                <option value="custom" ${![0, 0.5, 1.0, 1.2, 1.5, 2.0, 3.0].includes(state.maxMetrosPorArquivo) ? 'selected' : ''}>Personalizado...</option>
+                <option value="0" ${state.maxMetrosPorArquivo === 0 ? 'selected' : ''}>Contínuo (Rolo Único sem corte)</option>
               </select>
+            </div>
+
+            <div id="divMaxMetrosCustom" style="display: ${![0, 0.5, 1.0, 1.2, 1.5, 2.0, 3.0].includes(state.maxMetrosPorArquivo) ? 'block' : 'none'};">
+              <label class="form-label" style="font-size: 10.5px; font-weight: 800; color: #475569; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Metragem Custom (m)</label>
+              <input type="number" id="inpMaxMetrosCustom" class="form-input" value="${state.maxMetrosPorArquivo || 1.0}" step="0.1" min="0.2" max="50" style="font-size: 12px; font-weight: 700; border: 1.5px solid #cbd5e1; border-radius: 7px; height: 35px;">
             </div>
 
             <div>
@@ -10725,11 +10735,11 @@
             <!-- Abas de Paginação por Metros -->
             <div style="display: flex; gap: 6px; align-items: center; overflow-x: auto; max-width: 65%;">
               <button type="button" class="btn btn-xs ${state.arquivoAtivoIndex === 0 ? 'btn-primary' : 'btn-secondary'} btn-tab-arquivo" data-idx="0" style="font-weight: 800; white-space: nowrap; border-radius: 6px; padding: 4px 10px; ${state.arquivoAtivoIndex === 0 ? 'background: #0d9488; color: #ffffff; border: 1px solid #2dd4bf;' : 'background: #072630; color: #94a3b8; border: 1px solid #1e4756;'}">
-                Rolo Completo (${resultado.metrosLinearesTotais}m)
+                Visão Geral (${resultado.arquivos ? resultado.arquivos.length : 1} arq • ${resultado.metrosLinearesTotais}m)
               </button>
               ${(resultado.arquivos && resultado.arquivos.length > 1) ? resultado.arquivos.map(arq => `
                 <button type="button" class="btn btn-xs ${state.arquivoAtivoIndex === arq.index ? 'btn-primary' : 'btn-secondary'} btn-tab-arquivo" data-idx="${arq.index}" style="font-weight: 800; white-space: nowrap; border-radius: 6px; padding: 4px 10px; ${state.arquivoAtivoIndex === arq.index ? 'background: #0d9488; color: #ffffff; border: 1px solid #2dd4bf;' : 'background: #072630; color: #94a3b8; border: 1px solid #1e4756;'}">
-                  Arquivo ${arq.index} (${arq.metrosLineares}m • ${arq.artes.length} pçs)
+                  📄 Arquivo ${arq.index} (${arq.metrosLineares}m • ${arq.artes.length} pçs)
                 </button>
               `).join('') : ''}
             </div>
@@ -10828,11 +10838,29 @@
       }
     });
 
-    // 5. Quebra de Metros por Arquivo
-    document.getElementById('selMaxMetrosArquivo')?.addEventListener('change', (e) => {
-      state.maxMetrosPorArquivo = parseFloat(e.target.value) || 0;
-      state.arquivoAtivoIndex = 0;
-      renderizarNestingDTF();
+    // 5. Quebra de Metros por Arquivo (Customizável ou Padrão)
+    const selMetros = document.getElementById('selMaxMetrosArquivo');
+    selMetros?.addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (val === 'custom') {
+        const divCustom = document.getElementById('divMaxMetrosCustom');
+        if (divCustom) divCustom.style.display = 'block';
+      } else {
+        const divCustom = document.getElementById('divMaxMetrosCustom');
+        if (divCustom) divCustom.style.display = 'none';
+        state.maxMetrosPorArquivo = parseFloat(val) || 0;
+        state.arquivoAtivoIndex = 0;
+        renderizarNestingDTF();
+      }
+    });
+
+    document.getElementById('inpMaxMetrosCustom')?.addEventListener('change', (e) => {
+      const m = parseFloat(e.target.value);
+      if (m >= 0.2 && m <= 50) {
+        state.maxMetrosPorArquivo = m;
+        state.arquivoAtivoIndex = 0;
+        renderizarNestingDTF();
+      }
     });
 
     // 6. Espaçamento entre Artes
@@ -11155,21 +11183,41 @@
       });
     });
 
-    // 16. Exportar PNG Alta Resolução para RIP
+    // 16. Exportar PNG Alta Resolução para RIP (Individual ou em Lote por Metro)
     document.getElementById('btnExportarPlanoCorte')?.addEventListener('click', async () => {
-      mostrarToast('Gerando arquivo PNG de alta resolução para impressão DTF...', 'blue');
-      const pngData = await window.DtfNestingEngine.exportarImagemAltaResolucaoAsync(resultado, state.arquivoAtivoIndex, 150);
-      if (pngData) {
-        const link = document.createElement('a');
-        const nomeArquivo = state.arquivoAtivoIndex > 0
-          ? `dtf_arquivo_${state.arquivoAtivoIndex}_${resultado.larguraRoloCm}cm_${new Date().toISOString().split('T')[0]}.png`
-          : `dtf_rolo_completo_${resultado.larguraRoloCm}cm_${resultado.metrosLinearesTotais}m_${new Date().toISOString().split('T')[0]}.png`;
-        link.download = nomeArquivo;
-        link.href = pngData;
-        link.click();
-        mostrarToast(`✓ Arquivo DTF pronto para o software RIP exportado (${resultado.metrosLinearesTotais}m)!`, 'green');
+      const temMultiplos = (resultado.arquivos && resultado.arquivos.length > 1);
+      if (state.arquivoAtivoIndex > 0) {
+        // Baixa diretamente o arquivo selecionado
+        const idx = state.arquivoAtivoIndex;
+        const arq = resultado.arquivos && resultado.arquivos[idx - 1];
+        mostrarToast(`Gerando Arquivo ${idx} (${arq ? arq.metrosLineares : 1}m) para impressão DTF...`, 'blue');
+        const pngData = await window.DtfNestingEngine.exportarImagemAltaResolucaoAsync(resultado, idx, 150);
+        if (pngData) {
+          const link = document.createElement('a');
+          link.download = `dtf_arquivo_${idx}_${resultado.larguraRoloCm}x${arq ? arq.alturaCm : 100}cm_${new Date().toISOString().split('T')[0]}.png`;
+          link.href = pngData;
+          link.click();
+          mostrarToast(`✓ Arquivo ${idx} pronto para RIP exportado!`, 'green');
+        } else {
+          mostrarToast('Erro ao exportar arquivo de alta resolução.', 'red');
+        }
+      } else if (temMultiplos) {
+        // Múltiplos arquivos: abre modal para escolher baixar todos em lote ou individualmente
+        abrirModalExportarArquivosDTF(resultado);
       } else {
-        mostrarToast('Erro ao exportar arquivo de alta resolução.', 'red');
+        // Arquivo único contínuo
+        mostrarToast('Gerando arquivo PNG de alta resolução para impressão DTF...', 'blue');
+        const pngData = await window.DtfNestingEngine.exportarImagemAltaResolucaoAsync(resultado, 0, 150);
+        if (pngData) {
+          const link = document.createElement('a');
+          const arq = (resultado.arquivos && resultado.arquivos[0]);
+          link.download = `dtf_arquivo_1_${resultado.larguraRoloCm}x${arq ? arq.alturaCm : resultado.alturaTotalCm}cm_${new Date().toISOString().split('T')[0]}.png`;
+          link.href = pngData;
+          link.click();
+          mostrarToast(`✓ Arquivo DTF pronto para o software RIP exportado (${resultado.metrosLinearesTotais}m)!`, 'green');
+        } else {
+          mostrarToast('Erro ao exportar arquivo de alta resolução.', 'red');
+        }
       }
     });
 
@@ -11245,6 +11293,95 @@
         renderizarNestingDTF();
         mostrarToast(`Pedido #${pedido.numero} incluído com sucesso no rolo!`, 'green');
       }
+    });
+  }
+
+  /**
+   * Modal para Exportação em Lote ou Individual de Arquivos DTF por Metragem
+   */
+  function abrirModalExportarArquivosDTF(resultado) {
+    if (!modalContainer) return;
+    const arquivos = resultado.arquivos || [];
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 580px;">
+          <div class="modal-header">
+            <div>
+              <div class="modal-title">Exportar Arquivos DTF para Software RIP</div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">${arquivos.length} arquivos de ${resultado.config.maxMetrosPorArquivo || 1.0}m gerados • Largura ${resultado.larguraRoloCm}cm</span>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+          </div>
+
+          <div class="modal-body" style="padding: 16px 20px;">
+            <div style="background: #f0fdfa; border: 1.5px solid #99f6e4; border-radius: 8px; padding: 12px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+              <div>
+                <div style="font-weight: 800; font-size: 13px; color: #0f766e;">⚡ Baixar Todos os Arquivos em Lote</div>
+                <div style="font-size: 11px; color: #0d9488;">Faz o download automático dos ${arquivos.length} arquivos PNG separados (1 por metro)</div>
+              </div>
+              <button type="button" class="btn btn-primary btn-sm" id="btnBaixarTodosArquivosLote" style="background: linear-gradient(135deg, #0d9488, #0284c7); border: none; font-weight: 800; white-space: nowrap; padding: 8px 16px; border-radius: 8px; cursor: pointer;">
+                ⬇️ Baixar Todos (${arquivos.length})
+              </button>
+            </div>
+
+            <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">Ou baixe cada arquivo individualmente:</div>
+            <div style="display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto;">
+              ${arquivos.map(arq => `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;">
+                  <div>
+                    <div style="font-weight: 800; font-size: 13px; color: #0f172a;">📄 Arquivo ${arq.index} (${arq.metrosLineares}m)</div>
+                    <div style="font-size: 11px; color: #64748b;">${resultado.larguraRoloCm} x ${arq.alturaCm} cm • ${arq.artes.length} estampas</div>
+                  </div>
+                  <button type="button" class="btn btn-secondary btn-sm btn-baixar-arquivo-individual" data-index="${arq.index}" style="font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 12px; color: #0284c7; cursor: pointer;">
+                    ⬇️ Baixar Arquivo ${arq.index}
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    // Evento Baixar Todos os Arquivos em Lote
+    document.getElementById('btnBaixarTodosArquivosLote')?.addEventListener('click', async () => {
+      mostrarToast(`Iniciando download de ${arquivos.length} arquivos DTF...`, 'blue');
+      for (let i = 0; i < arquivos.length; i++) {
+        const arq = arquivos[i];
+        mostrarToast(`Exportando Arquivo ${arq.index} de ${arquivos.length}...`, 'blue');
+        const pngData = await window.DtfNestingEngine.exportarImagemAltaResolucaoAsync(resultado, arq.index, 150);
+        if (pngData) {
+          const link = document.createElement('a');
+          link.download = `dtf_arquivo_${arq.index}_${resultado.larguraRoloCm}x${arq.alturaCm}cm_${new Date().toISOString().split('T')[0]}.png`;
+          link.href = pngData;
+          link.click();
+        }
+        await new Promise(r => setTimeout(r, 450));
+      }
+      mostrarToast(`✓ Todos os ${arquivos.length} arquivos DTF exportados com sucesso!`, 'green');
+      fecharModal();
+    });
+
+    // Evento Baixar Arquivo Individual
+    document.querySelectorAll('.btn-baixar-arquivo-individual').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const idx = parseInt(btn.getAttribute('data-index'), 10);
+        const arq = arquivos[idx - 1];
+        mostrarToast(`Exportando Arquivo ${idx} em alta resolução...`, 'blue');
+        const pngData = await window.DtfNestingEngine.exportarImagemAltaResolucaoAsync(resultado, idx, 150);
+        if (pngData) {
+          const link = document.createElement('a');
+          link.download = `dtf_arquivo_${idx}_${resultado.larguraRoloCm}x${arq ? arq.alturaCm : 100}cm_${new Date().toISOString().split('T')[0]}.png`;
+          link.href = pngData;
+          link.click();
+          mostrarToast(`✓ Arquivo ${idx} pronto para RIP exportado!`, 'green');
+        }
+      });
     });
   }
 

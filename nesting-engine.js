@@ -13,7 +13,7 @@ window.DtfNestingEngine = {
     espacamentoEntreArtesCm: 0.5, // Margem de segurança de corte (5mm)
     custoMetroLinear: 60.00,      // Custo médio por metro linear de impressão DTF profissional
     separarPorPedido: true,       // Agrupa artes por pedido para organização de corte
-    maxMetrosPorArquivo: 0        // 0 = contínuo, >0 divide em arquivos de X metros (ex: 2.0m)
+    maxMetrosPorArquivo: 1.0      // Padrão DTF: 1.0 metro por arquivo literalmente. 0 = contínuo.
   },
 
   // Cache de imagens em memória para renderização fluida no Canvas
@@ -95,11 +95,12 @@ window.DtfNestingEngine = {
    * ALGORITMO INDUSTRIAL 2D SKYLINE BOTTOM-LEFT PACKING (TETRIS MILIMÉTRICO SEM BURACOS)
    * Encaixa cada matriz na posição livre mais baixa disponível, eliminando espaços vazios.
    */
-  empacotarSkyline2D: function(itens, W_ROLO, GAP, yInicial = 0) {
-    if (!itens || !itens.length) return { artes: [], alturaMaxima: yInicial };
+  empacotarSkyline2D: function(itens, W_ROLO, GAP, yInicial = 0, maxH = 0) {
+    if (!itens || !itens.length) return { artes: [], itensNaoEncaixados: [], alturaMaxima: yInicial };
 
-    // Ordenação Best-Fit Decreasing: maior dimensão e área decrescente
-    itens.sort((a, b) => {
+    // Clona e ordena os itens: maior dimensão e área decrescente (Best-Fit Decreasing)
+    let lista = [...itens];
+    lista.sort((a, b) => {
       const maxB = Math.max(b.w, b.h);
       const maxA = Math.max(a.w, a.h);
       if (Math.abs(maxB - maxA) > 0.01) return maxB - maxA;
@@ -109,8 +110,9 @@ window.DtfNestingEngine = {
     // O Skyline é mantido como lista de segmentos horizontais contíguos cobrindo de x=0 a x=W_ROLO
     let segmentos = [{ x: 0, y: yInicial, width: W_ROLO }];
     let artesPosicionadas = [];
+    let itensNaoEncaixados = [];
 
-    itens.forEach(item => {
+    lista.forEach(item => {
       let melhor = null;
 
       // Testa orientações: normal e 90° (se permitida)
@@ -140,6 +142,12 @@ window.DtfNestingEngine = {
 
           const topoY = maxY + itH;
 
+          // SE HOUVER LIMITE DE ALTURA POR ARQUIVO (ex: 100cm):
+          // A estampa NÃO pode ultrapassar a metragem da folha!
+          if (maxH > 0 && topoY > (yInicial + maxH + 0.001)) {
+            continue; // Não cabe nesta folha/metro atual. Será alocada na próxima folha!
+          }
+
           // Seleção da melhor posição: menor Y base, depois menor topo Y, depois menor X
           if (!melhor ||
               maxY < melhor.y - 0.01 ||
@@ -159,6 +167,7 @@ window.DtfNestingEngine = {
 
       if (melhor) {
         artesPosicionadas.push({
+          uid: item.uid,
           id: item.id,
           nome: item.nome,
           cliente: item.cliente,
@@ -213,6 +222,9 @@ window.DtfNestingEngine = {
           }
         }
         segmentos = merged;
+      } else {
+        // NÃO COUBE NESTE METRO/ARQUIVO: Passa para o próximo arquivo!
+        itensNaoEncaixados.push(item);
       }
     });
 
@@ -221,21 +233,27 @@ window.DtfNestingEngine = {
       alturaMaxima = Math.max(alturaMaxima, a.y + a.h);
     });
 
-    return { artes: artesPosicionadas, alturaMaxima: alturaMaxima };
+    return {
+      artes: artesPosicionadas,
+      itensNaoEncaixados: itensNaoEncaixados,
+      alturaMaxima: alturaMaxima
+    };
   },
 
   /**
-   * Executa o algoritmo completo de encaixe 2D com suporte a separação por pedido e quebra de páginas
+   * Executa o algoritmo completo de encaixe 2D com suporte a divisão estrita por metro/arquivo
    */
   processarNesting: function(listaArtes, configCustom) {
     const config = Object.assign({}, this.configPadrao, configCustom || {});
     const W_ROLO = parseFloat(config.larguraRoloCm) || 58.0;
     const GAP = parseFloat(config.espacamentoEntreArtesCm) || 0.5;
     const separarPorPedido = config.separarPorPedido !== false;
-    const maxMetrosPorArquivo = parseFloat(config.maxMetrosPorArquivo) || 0;
+    const maxMetrosPorArquivo = (config.maxMetrosPorArquivo !== undefined) ? parseFloat(config.maxMetrosPorArquivo) : 1.0;
+    const maxCmPorArquivo = maxMetrosPorArquivo > 0 ? (maxMetrosPorArquivo * 100) : 0;
 
-    // 1. Desmembrar as quantidades em itens individuais para alocação
+    // 1. Desmembrar as quantidades em cópias individuais com identificadores únicos
     let itensParaEmpacotar = [];
+    let contadorUid = 1;
     (listaArtes || []).forEach(arte => {
       const qtd = parseInt(arte.quantidade || arte.copias, 10) || 1;
       const w = parseFloat(arte.larguraCm) || 10;
@@ -244,6 +262,7 @@ window.DtfNestingEngine = {
 
       for (let i = 0; i < qtd; i++) {
         itensParaEmpacotar.push({
+          uid: 'art_' + (arte.id || 'item') + '_' + contadorUid++,
           id: arte.id,
           nome: arte.nome || arte.descricao || "Arte",
           cliente: arte.cliente || arte.clienteNome || "Cliente Oficial",
@@ -262,134 +281,161 @@ window.DtfNestingEngine = {
       }
     });
 
-    let todasArtesPosicionadas = [];
-    let separadoresVisuais = [];
-    let alturaTotalCm = 0;
-
-    // 2. Empacotamento 2D Skyline (Separado por Pedido ou Contínuo Global)
-    if (separarPorPedido && itensParaEmpacotar.length > 0) {
-      // Agrupa itens por identificador de pedido
-      const gruposPorPedido = new Map();
-      itensParaEmpacotar.forEach(item => {
-        const chave = String(item.pedidoNumero || item.pedidoId || 'Avulso');
-        if (!gruposPorPedido.has(chave)) gruposPorPedido.set(chave, []);
-        gruposPorPedido.get(chave).push(item);
+    // Se separar por pedido, ordena agrupando por pedido para manter estampas do mesmo pedido juntas
+    if (separarPorPedido) {
+      itensParaEmpacotar.sort((a, b) => {
+        const pedA = String(a.pedidoNumero || a.pedidoId || '');
+        const pedB = String(b.pedidoNumero || b.pedidoId || '');
+        if (pedA !== pedB) return pedA.localeCompare(pedB);
+        const maxB = Math.max(b.w, b.h);
+        const maxA = Math.max(a.w, a.h);
+        return maxB - maxA;
       });
+    }
 
-      let yCursor = 0;
-      let contadorGrupo = 0;
+    let arquivosPaginados = [];
+    let todasArtesPosicionadasGlobal = [];
+    let itensRestantes = [...itensParaEmpacotar];
+    let fileIndex = 1;
+    const sheetGap = 6.0; // cm de intervalo visual entre folhas na visualização geral
 
-      gruposPorPedido.forEach((itensDoPedido, chavePedido) => {
-        if (contadorGrupo > 0) {
-          // Insere separador visual de corte entre pedidos
-          const hSeparador = 2.5; // 2.5cm de faixa de corte
-          separadoresVisuais.push({
-            y: parseFloat((yCursor + GAP).toFixed(2)),
-            h: hSeparador,
-            pedidoNumero: chavePedido,
-            clienteNome: itensDoPedido[0]?.cliente || 'Cliente Oficial',
-            totalPecas: itensDoPedido.length
-          });
-          yCursor += GAP + hSeparador + GAP;
+    if (maxCmPorArquivo > 0) {
+      // 2. ENCAIXE FÍSICO ARQUIVO POR ARQUIVO (LITERALMENTE 1 METRO POR ARQUIVO SEM CORTAR ESTAMPAS)
+      while (itensRestantes.length > 0) {
+        // Empacota no arquivo atual respeitando rigorosamente o limite de maxCmPorArquivo (ex: 100cm)
+        let resSheet = this.empacotarSkyline2D(itensRestantes, W_ROLO, GAP, 0, maxCmPorArquivo);
+
+        // Se nenhum item coube (ex: estampa oversize cuja menor dimensão é maior que maxCmPorArquivo)
+        if (resSheet.artes.length === 0 && itensRestantes.length > 0) {
+          const minD = Math.min(itensRestantes[0].w, itensRestantes[0].h);
+          const altExt = Math.max(maxCmPorArquivo, minD + GAP * 2);
+          resSheet = this.empacotarSkyline2D(itensRestantes, W_ROLO, GAP, 0, altExt);
+
+          if (resSheet.artes.length === 0) {
+            // Força o item para evitar travamento infinito
+            const itemForcado = itensRestantes.shift();
+            resSheet.artes.push({
+              uid: itemForcado.uid,
+              id: itemForcado.id,
+              nome: itemForcado.nome,
+              cliente: itemForcado.cliente,
+              pedidoId: itemForcado.pedidoId,
+              pedidoNumero: itemForcado.pedidoNumero,
+              arquivoNome: itemForcado.arquivoNome,
+              imagemDataUrl: itemForcado.imagemDataUrl,
+              aspectRatio: itemForcado.aspectRatio,
+              x: 0,
+              y: 0,
+              w: Math.min(itemForcado.w, W_ROLO),
+              h: itemForcado.h,
+              wOriginal: itemForcado.w,
+              hOriginal: itemForcado.h,
+              rotacionado: false,
+              cor: itemForcado.cor
+            });
+            resSheet.alturaMaxima = itemForcado.h;
+          }
         }
 
-        const empacotado = this.empacotarSkyline2D(itensDoPedido, W_ROLO, GAP, yCursor);
-        todasArtesPosicionadas = todasArtesPosicionadas.concat(empacotado.artes);
-        yCursor = Math.max(yCursor, empacotado.alturaMaxima);
-        contadorGrupo++;
-      });
+        const colocadosUids = new Set(resSheet.artes.map(a => a.uid));
+        itensRestantes = itensRestantes.filter(it => !colocadosUids.has(it.uid));
 
-      alturaTotalCm = yCursor;
+        const altOcupada = resSheet.alturaMaxima;
+        // Cada arquivo tem LITERALMENTE a metragem solicitada (ex: 100cm = 1.0 metro)
+        const altArquivo = Math.max(maxCmPorArquivo, parseFloat(altOcupada.toFixed(1)));
+        const metrosArquivo = parseFloat((altArquivo / 100).toFixed(2));
+
+        const yOffsetGlobal = arquivosPaginados.reduce((acc, arq) => acc + arq.alturaCm + sheetGap, 0);
+
+        const artesDoArquivo = resSheet.artes.map(art => ({
+          ...art,
+          arquivoIndex: fileIndex,
+          yNoArquivo: parseFloat(art.y.toFixed(2)),
+          yGlobal: parseFloat((yOffsetGlobal + art.y).toFixed(2))
+        }));
+
+        const arquivoObj = {
+          index: fileIndex,
+          yInicioGlobal: yOffsetGlobal,
+          yFimGlobal: yOffsetGlobal + altArquivo,
+          alturaCm: altArquivo,
+          alturaOcupadaCm: parseFloat(altOcupada.toFixed(1)),
+          metrosLineares: metrosArquivo,
+          artes: artesDoArquivo,
+          separadores: []
+        };
+
+        arquivosPaginados.push(arquivoObj);
+
+        artesDoArquivo.forEach(art => {
+          todasArtesPosicionadasGlobal.push({
+            ...art,
+            y: art.yGlobal
+          });
+        });
+
+        fileIndex++;
+        if (fileIndex > 200) break; // Segurança
+      }
+
+      if (arquivosPaginados.length === 0) {
+        arquivosPaginados.push({
+          index: 1,
+          yInicioGlobal: 0,
+          yFimGlobal: maxCmPorArquivo,
+          alturaCm: maxCmPorArquivo,
+          alturaOcupadaCm: 0,
+          metrosLineares: maxMetrosPorArquivo,
+          artes: [],
+          separadores: []
+        });
+      }
     } else {
-      // Encaixe 2D Skyline livre (Tetris Global)
-      const empacotado = this.empacotarSkyline2D(itensParaEmpacotar, W_ROLO, GAP, 0);
-      todasArtesPosicionadas = empacotado.artes;
-      alturaTotalCm = empacotado.alturaMaxima;
+      // CONTÍNUO (ROLO ÚNICO SEM DIVISÃO DE METRAGEM)
+      const resContinuo = this.empacotarSkyline2D(itensRestantes, W_ROLO, GAP, 0, 0);
+      const altTotal = Math.max(10, resContinuo.alturaMaxima);
+      const metrosTotais = parseFloat((altTotal / 100).toFixed(2));
+
+      const artesDoArquivo = resContinuo.artes.map(art => ({
+        ...art,
+        arquivoIndex: 1,
+        yNoArquivo: parseFloat(art.y.toFixed(2)),
+        yGlobal: parseFloat(art.y.toFixed(2))
+      }));
+
+      todasArtesPosicionadasGlobal = artesDoArquivo;
+
+      arquivosPaginados.push({
+        index: 1,
+        yInicioGlobal: 0,
+        yFimGlobal: altTotal,
+        alturaCm: parseFloat(altTotal.toFixed(1)),
+        alturaOcupadaCm: parseFloat(resContinuo.alturaMaxima.toFixed(1)),
+        metrosLineares: metrosTotais,
+        artes: artesDoArquivo,
+        separadores: []
+      });
     }
 
     // 3. Cálculos de área e taxa de aproveitamento
     let areaUtilArtesCm2 = 0;
-    todasArtesPosicionadas.forEach(art => {
+    todasArtesPosicionadasGlobal.forEach(art => {
       areaUtilArtesCm2 += (art.w * art.h);
     });
 
-    const metrosLinearesTotais = alturaTotalCm > 0 ? (alturaTotalCm / 100) : 0;
-    const areaTotalRoloCm2 = W_ROLO * alturaTotalCm;
+    const alturaTotalSomaArquivos = arquivosPaginados.reduce((acc, arq) => acc + arq.alturaCm, 0);
+    const metrosLinearesTotais = parseFloat((alturaTotalSomaArquivos / 100).toFixed(2));
+    const areaTotalRoloCm2 = W_ROLO * alturaTotalSomaArquivos;
     const taxaAproveitamento = areaTotalRoloCm2 > 0 ? (areaUtilArtesCm2 / areaTotalRoloCm2) * 100 : 0;
     const taxaDesperdicio = Math.max(0, 100 - taxaAproveitamento);
     const custoTotalRolo = metrosLinearesTotais * config.custoMetroLinear;
-    const totalItens = todasArtesPosicionadas.length;
+    const totalItens = todasArtesPosicionadasGlobal.length;
     const custoMedioPorArte = totalItens > 0 ? (custoTotalRolo / totalItens) : 0;
-
-    // 4. Divisão em Páginas/Arquivos caso haja limite de metros por arquivo
-    let arquivosPaginados = [];
-    if (maxMetrosPorArquivo > 0 && metrosLinearesTotais > 0) {
-      const maxCmPorArquivo = maxMetrosPorArquivo * 100;
-      let arquivoAtual = {
-        index: 1,
-        yInicio: 0,
-        yFim: 0,
-        alturaCm: 0,
-        metrosLineares: 0,
-        artes: [],
-        separadores: []
-      };
-
-      let limiteYAtual = maxCmPorArquivo;
-
-      // Ordena por posição vertical Y
-      todasArtesPosicionadas.sort((a, b) => a.y - b.y);
-
-      todasArtesPosicionadas.forEach(art => {
-        const artFimY = art.y + art.h;
-
-        // Se ultrapassar o limite do arquivo atual (e já tiver itens no arquivo atual)
-        if (artFimY > limiteYAtual && arquivoAtual.artes.length > 0) {
-          arquivoAtual.alturaCm = parseFloat((arquivoAtual.yFim - arquivoAtual.yInicio).toFixed(1));
-          arquivoAtual.metrosLineares = parseFloat((arquivoAtual.alturaCm / 100).toFixed(2));
-          arquivosPaginados.push(arquivoAtual);
-
-          const novoIndex = arquivosPaginados.length + 1;
-          arquivoAtual = {
-            index: novoIndex,
-            yInicio: art.y,
-            yFim: artFimY,
-            alturaCm: 0,
-            metrosLineares: 0,
-            artes: [],
-            separadores: []
-          };
-          limiteYAtual = art.y + maxCmPorArquivo;
-        }
-
-        arquivoAtual.artes.push(Object.assign({}, art, {
-          yNoArquivo: parseFloat((art.y - arquivoAtual.yInicio).toFixed(2))
-        }));
-        arquivoAtual.yFim = Math.max(arquivoAtual.yFim, artFimY);
-      });
-
-      if (arquivoAtual.artes.length > 0) {
-        arquivoAtual.alturaCm = parseFloat((arquivoAtual.yFim - arquivoAtual.yInicio).toFixed(1));
-        arquivoAtual.metrosLineares = parseFloat((arquivoAtual.alturaCm / 100).toFixed(2));
-        arquivosPaginados.push(arquivoAtual);
-      }
-    } else {
-      // Arquivo único contínuo
-      arquivosPaginados.push({
-        index: 1,
-        yInicio: 0,
-        yFim: alturaTotalCm,
-        alturaCm: parseFloat(alturaTotalCm.toFixed(1)),
-        metrosLineares: parseFloat(metrosLinearesTotais.toFixed(2)),
-        artes: todasArtesPosicionadas.map(it => Object.assign({}, it, { yNoArquivo: it.y })),
-        separadores: separadoresVisuais
-      });
-    }
 
     return {
       larguraRoloCm: W_ROLO,
-      alturaTotalCm: parseFloat(alturaTotalCm.toFixed(1)),
-      metrosLinearesTotais: parseFloat(metrosLinearesTotais.toFixed(2)),
+      alturaTotalCm: parseFloat(alturaTotalSomaArquivos.toFixed(1)),
+      metrosLinearesTotais: metrosLinearesTotais,
       areaUtilArtesCm2: parseFloat(areaUtilArtesCm2.toFixed(1)),
       areaTotalRoloCm2: parseFloat(areaTotalRoloCm2.toFixed(1)),
       taxaAproveitamentoPercentual: parseFloat(taxaAproveitamento.toFixed(1)),
@@ -397,8 +443,8 @@ window.DtfNestingEngine = {
       custoTotalRolo: parseFloat(custoTotalRolo.toFixed(2)),
       custoMedioPorArte: parseFloat(custoMedioPorArte.toFixed(2)),
       totalItensProcessados: totalItens,
-      artesPosicionadas: todasArtesPosicionadas,
-      separadoresVisuais: separadoresVisuais,
+      artesPosicionadas: todasArtesPosicionadasGlobal,
+      separadoresVisuais: [],
       arquivos: arquivosPaginados,
       config: config
     };
@@ -912,12 +958,16 @@ window.DtfNestingEngine = {
     let H_DESENHO = Math.max(20, resultadoNesting.alturaTotalCm);
     let yOffsetArquivo = 0;
 
+    const temMultiplosArquivos = (resultadoNesting.arquivos && resultadoNesting.arquivos.length > 1);
     if (arquivoIndex > 0 && resultadoNesting.arquivos && resultadoNesting.arquivos[arquivoIndex - 1]) {
       const arq = resultadoNesting.arquivos[arquivoIndex - 1];
       artesParaDesenhar = arq.artes;
       H_DESENHO = Math.max(20, arq.alturaCm);
-      yOffsetArquivo = arq.yInicio;
-      separadoresParaDesenhar = (resultadoNesting.separadoresVisuais || []).filter(s => s.y >= arq.yInicio && s.y <= arq.yFim);
+      yOffsetArquivo = 0;
+      separadoresParaDesenhar = [];
+    } else if (temMultiplosArquivos) {
+      H_DESENHO = Math.max(20, resultadoNesting.arquivos[resultadoNesting.arquivos.length - 1].yFimGlobal);
+      artesParaDesenhar = resultadoNesting.artesPosicionadas;
     }
 
     // Calcula dimensões virtuais do Canvas
@@ -996,56 +1046,81 @@ window.DtfNestingEngine = {
       }
     }
 
-    // 3. FUNDO DO ROLO DTF (Filme Translúcido com Grid Sutil)
-    ctx.fillStyle = '#f1f5f9';
-    ctx.fillRect(offsetX, offsetY, roloPixelW, roloPixelH);
+    // 3. FUNDO DAS FOLHAS FÍSICAS DE DTF (CADA UMA COM SUA METRAGEM INDEPENDENTE)
+    if (arquivoIndex === 0 && temMultiplosArquivos) {
+      // Visão Geral: Desenha cada arquivo como uma folha física delimitada
+      resultadoNesting.arquivos.forEach(arq => {
+        const sheetY = offsetY + (arq.yInicioGlobal * escala);
+        const sheetH = arq.alturaCm * escala;
 
-    // Grid milimétrico sutil a cada 5cm
-    ctx.strokeStyle = 'rgba(203, 213, 225, 0.45)';
-    ctx.lineWidth = 0.5;
-    for (let cm = 5; cm < W_ROLO; cm += 5) {
-      const x = offsetX + (cm * escala);
-      ctx.beginPath();
-      ctx.moveTo(x, offsetY);
-      ctx.lineTo(x, offsetY + roloPixelH);
-      ctx.stroke();
+        // Fundo da folha
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(offsetX, sheetY, roloPixelW, sheetH);
+
+        // Borda destacada do arquivo
+        ctx.strokeStyle = '#0284c7';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(offsetX, sheetY, roloPixelW, sheetH);
+
+        // Barra superior de identificação do Arquivo
+        ctx.fillStyle = 'rgba(2, 132, 199, 0.12)';
+        ctx.fillRect(offsetX, sheetY, roloPixelW, 20);
+        ctx.strokeStyle = 'rgba(2, 132, 199, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(offsetX, sheetY + 20);
+        ctx.lineTo(offsetX + roloPixelW, sheetY + 20);
+        ctx.stroke();
+
+        ctx.fillStyle = '#0369a1';
+        ctx.font = 'bold 10px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(`📄 ARQUIVO ${arq.index} (${arq.metrosLineares}m • ${W_ROLO}x${arq.alturaCm}cm) — ${arq.artes.length} estampas`, offsetX + 8, sheetY + 14);
+
+        // Rodapé da folha indicando final do metro
+        ctx.fillStyle = '#64748b';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText(`Limite de ${arq.metrosLineares}m do Arquivo ${arq.index}`, offsetX + roloPixelW - 8, sheetY + sheetH - 5);
+      });
+    } else {
+      // Arquivo único ou folha isolada
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(offsetX, offsetY, roloPixelW, roloPixelH);
+
+      // Grid milimétrico sutil a cada 5cm
+      ctx.strokeStyle = 'rgba(203, 213, 225, 0.45)';
+      ctx.lineWidth = 0.5;
+      for (let cm = 5; cm < W_ROLO; cm += 5) {
+        const x = offsetX + (cm * escala);
+        ctx.beginPath();
+        ctx.moveTo(x, offsetY);
+        ctx.lineTo(x, offsetY + roloPixelH);
+        ctx.stroke();
+      }
+
+      // Borda sólida da folha
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(offsetX, offsetY, roloPixelW, roloPixelH);
+
+      if (arquivoIndex > 0 && resultadoNesting.arquivos && resultadoNesting.arquivos[arquivoIndex - 1]) {
+        const arq = resultadoNesting.arquivos[arquivoIndex - 1];
+        ctx.fillStyle = 'rgba(2, 132, 199, 0.12)';
+        ctx.fillRect(offsetX, offsetY, roloPixelW, 20);
+        ctx.fillStyle = '#0369a1';
+        ctx.font = 'bold 10px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(`📄 ARQUIVO ${arq.index} (${arq.metrosLineares}m • ${W_ROLO}x${arq.alturaCm}cm) — ${arq.artes.length} estampas`, offsetX + 8, offsetY + 14);
+      }
     }
 
-    // Borda sólida do rolo
-    ctx.strokeStyle = '#0284c7';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(offsetX, offsetY, roloPixelW, roloPixelH);
-
-    // 4. SEPARADORES VISUAIS DE PEDIDO (quando ativar "Separar por Pedido")
-    separadoresParaDesenhar.forEach(sep => {
-      const sepY = offsetY + ((sep.y - yOffsetArquivo) * escala);
-      const sepH = sep.h * escala;
-
-      ctx.fillStyle = '#fef2f2';
-      ctx.fillRect(offsetX, sepY, roloPixelW, sepH);
-
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([6, 4]);
-      ctx.beginPath();
-      ctx.moveTo(offsetX, sepY);
-      ctx.lineTo(offsetX + roloPixelW, sepY);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(offsetX, sepY + sepH);
-      ctx.lineTo(offsetX + roloPixelW, sepY + sepH);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      ctx.fillStyle = '#dc2626';
-      ctx.font = 'bold 10px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(`✂️ CORTE - PEDIDO #${sep.pedidoNumero} • ${sep.clienteNome.toUpperCase()} (${sep.totalPecas} estampas)`, offsetX + 10, sepY + (sepH / 2) + 4);
-    });
-
-    // 5. RENDERIZAÇÃO REAL DAS ARTES COM PROPORÇÃO GEOMÉTRICA RÍGIDA (NUNCA ACHATADA)
+    // 4. RENDERIZAÇÃO REAL DAS ARTES COM PROPORÇÃO GEOMÉTRICA RÍGIDA (NUNCA ACHATADA)
     artesParaDesenhar.forEach(arte => {
-      const yRelativo = (arte.yNoArquivo !== undefined) ? arte.yNoArquivo : (arte.y - yOffsetArquivo);
+      const yRelativo = (arquivoIndex > 0)
+        ? (arte.yNoArquivo !== undefined ? arte.yNoArquivo : arte.y)
+        : (arte.yGlobal !== undefined ? arte.yGlobal : arte.y);
+
       const artX = offsetX + (arte.x * escala);
       const artY = offsetY + (yRelativo * escala);
       const artW = arte.w * escala;
@@ -1125,7 +1200,7 @@ window.DtfNestingEngine = {
       }
       ctx.restore();
 
-      // Moldura e Borda de Corte Pontilhada
+      // Moldura e Borda
       ctx.strokeStyle = arte.rotacionado ? '#059669' : '#0284c7';
       ctx.lineWidth = 1.2;
       ctx.strokeRect(artX, artY, artW, artH);
@@ -1142,23 +1217,6 @@ window.DtfNestingEngine = {
         ctx.fillText(labelMedida, artX + 4, artY + artH - 5);
       }
     });
-
-    // 6. LINHAS DE CORTE A CADA 1 METRO LINEAR
-    ctx.strokeStyle = 'rgba(220, 38, 38, 0.7)';
-    ctx.setLineDash([5, 4]);
-    for (let m = 100; m < H_DESENHO; m += 100) {
-      const lineY = offsetY + (m * escala);
-      ctx.beginPath();
-      ctx.moveTo(offsetX, lineY);
-      ctx.lineTo(offsetX + roloPixelW, lineY);
-      ctx.stroke();
-
-      ctx.fillStyle = '#dc2626';
-      ctx.font = 'bold 9px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(`✂️ MARCA DE CORTE: ${(m / 100)}m`, offsetX + 8, lineY - 3);
-    }
-    ctx.setLineDash([]);
 
     ctx.restore();
   },
@@ -1178,7 +1236,7 @@ window.DtfNestingEngine = {
       const arq = resultadoNesting.arquivos[arquivoIndex - 1];
       artesParaExportar = arq.artes;
       H_EXPORT = arq.alturaCm;
-      yOffset = arq.yInicio;
+      yOffset = 0;
     }
 
     const escalaDpi = dpi / 2.54;
@@ -1266,7 +1324,7 @@ window.DtfNestingEngine = {
       const arq = resultadoNesting.arquivos[arquivoIndex - 1];
       artesParaExportar = arq.artes;
       H_EXPORT = Math.max(10, arq.alturaCm);
-      yOffset = arq.yInicio;
+      yOffset = 0;
     }
 
     // Pré-carrega todas as imagens de forma assíncrona
