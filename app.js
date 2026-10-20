@@ -9691,8 +9691,9 @@
               </div>
 
               <!-- Botão Auto-Recorte Trim -->
-              <button type="button" id="btnAutoRecorteTrim" style="width: 100%; background: linear-gradient(135deg, #0d9488, #059669); color: #ffffff; font-weight: 800; font-size: 11.5px; border: none; padding: 6px 10px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 3px 10px rgba(13, 148, 136, 0.3); transition: all 0.2s;">
-                <span>⚡ Auto-Corte Inteligente (Trim)</span>
+              <button type="button" id="btnAutoRecorteTrim" style="width: 100%; background: linear-gradient(135deg, #0d9488, #059669); color: #ffffff; font-weight: 800; font-size: 11.5px; border: none; padding: 7px 10px; border-radius: 6px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; box-shadow: 0 4px 14px rgba(13, 148, 136, 0.4); transition: all 0.2s;">
+                <span style="display: flex; align-items: center; gap: 6px; font-size: 12px;">⚡ Auto-Corte Inteligente (Trim)</span>
+                <span style="font-size: 9.5px; opacity: 0.92; font-weight: 600;">Recorta certinho ao redor da logo • Zero desperdício</span>
               </button>
 
               <!-- Botões de Aparo Rápido de Bordas (Atalho Direto) -->
@@ -9704,12 +9705,20 @@
 
               <!-- Toggle Recorte Manual -->
               <button type="button" id="btnToggleRecorteManual" style="width: 100%; margin-top: 5px; background: #0b3442; color: #e2e8f0; font-weight: 700; font-size: 11px; border: 1px solid #1e4756; padding: 5px 8px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
-                <span>📐 Ativar Recorte Manual</span>
+                <span>📐 Ativar Recorte Manual / Arrastar Mouse</span>
               </button>
 
-              <!-- Painel Deslizante de Recorte Manual com Botões de Ajuste de Borda -->
+              <!-- Painel Deslizante de Recorte Manual com Botões de Ajuste de Borda Sem Limites -->
               <div id="painelRecorteManual" style="display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(45, 212, 191, 0.15);">
-                <div style="font-size: 10px; font-weight: 700; color: #94a3b8; margin-bottom: 5px;">Ajuste milimétrico de bordas:</div>
+                <!-- Botão para Enquadrar a Caixa Exatamente na Logo -->
+                <button type="button" id="btnAjustarCaixaNaLogo" style="width: 100%; margin-bottom: 7px; background: linear-gradient(135deg, #0284c7, #0369a1); color: #ffffff; font-size: 10.5px; font-weight: 800; border: none; padding: 6px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);">
+                  <span>🎯 Auto-Enquadrar Caixa na Logo</span>
+                </button>
+
+                <div style="font-size: 9px; color: #7dd3fc; margin-bottom: 6px; line-height: 1.3;">
+                  💡 <strong>Arraste o mouse</strong> sobre o desenho ou use os sliders abaixo (0% a 95%):
+                </div>
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
                   <div style="background: rgba(11,52,66,0.6); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e4756;">
                     <div style="font-size: 9.5px; color: #cbd5e1; display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
@@ -9719,7 +9728,7 @@
                         <button type="button" class="btn-step-crop" data-target="rangeCropTop" data-step="1" style="width: 16px; height: 16px; line-height: 1; padding: 0; font-size: 10px; background: #1e4756; color: #fff; border: none; border-radius: 2px; cursor: pointer;">+</button>
                       </div>
                     </div>
-                    <input type="range" id="rangeCropTop" min="0" max="45" value="0" style="width: 100%; height: 4px; accent-color: #2dd4bf;">
+                    <input type="range" id="rangeCropTop" min="0" max="95" value="0" style="width: 100%; height: 4px; accent-color: #2dd4bf;">
                   </div>
                   <div style="background: rgba(11,52,66,0.6); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e4756;">
                     <div style="font-size: 9.5px; color: #cbd5e1; display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
@@ -9729,7 +9738,7 @@
                         <button type="button" class="btn-step-crop" data-target="rangeCropBottom" data-step="1" style="width: 16px; height: 16px; line-height: 1; padding: 0; font-size: 10px; background: #1e4756; color: #fff; border: none; border-radius: 2px; cursor: pointer;">+</button>
                       </div>
                     </div>
-                    <input type="range" id="rangeCropBottom" min="0" max="45" value="0" style="width: 100%; height: 4px; accent-color: #2dd4bf;">
+                    <input type="range" id="rangeCropBottom" min="0" max="95" value="0" style="width: 100%; height: 4px; accent-color: #2dd4bf;">
                   </div>
                   <div style="background: rgba(11,52,66,0.6); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e4756;">
                     <div style="font-size: 9.5px; color: #cbd5e1; display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
@@ -9739,7 +9748,7 @@
                         <button type="button" class="btn-step-crop" data-target="rangeCropLeft" data-step="1" style="width: 16px; height: 16px; line-height: 1; padding: 0; font-size: 10px; background: #1e4756; color: #fff; border: none; border-radius: 2px; cursor: pointer;">+</button>
                       </div>
                     </div>
-                    <input type="range" id="rangeCropLeft" min="0" max="45" value="0" style="width: 100%; height: 4px; accent-color: #2dd4bf;">
+                    <input type="range" id="rangeCropLeft" min="0" max="95" value="0" style="width: 100%; height: 4px; accent-color: #2dd4bf;">
                   </div>
                   <div style="background: rgba(11,52,66,0.6); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e4756;">
                     <div style="font-size: 9.5px; color: #cbd5e1; display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
@@ -9749,7 +9758,7 @@
                         <button type="button" class="btn-step-crop" data-target="rangeCropRight" data-step="1" style="width: 16px; height: 16px; line-height: 1; padding: 0; font-size: 10px; background: #1e4756; color: #fff; border: none; border-radius: 2px; cursor: pointer;">+</button>
                       </div>
                     </div>
-                    <input type="range" id="rangeCropRight" min="0" max="45" value="0" style="width: 100%; height: 4px; accent-color: #2dd4bf;">
+                    <input type="range" id="rangeCropRight" min="0" max="95" value="0" style="width: 100%; height: 4px; accent-color: #2dd4bf;">
                   </div>
                 </div>
 
@@ -9917,13 +9926,14 @@
       }
     }
 
-    // 1. AUTO-RECORTE INTELIGENTE (TRIM DE BORDAS VAZIAS / BRANCAS)
+    // 1. AUTO-RECORTE INTELIGENTE (TRIM DE BORDAS VAZIAS / BRANCAS AO REDOR DA LOGO)
     document.getElementById('btnAutoRecorteTrim')?.addEventListener('click', () => {
       if (!canvas || !window.DtfNestingEngine) return;
 
       const bbox = window.DtfNestingEngine.calcularBoundingBoxConteudo(canvas, {
         margem: 2,
-        tolerancia: tolerancia
+        tolerancia: tolerancia,
+        corAlvo: corAlvo
       });
 
       if (!bbox) {
@@ -9932,9 +9942,12 @@
       }
 
       if (bbox.w >= canvas.width && bbox.h >= canvas.height && bbox.x === 0 && bbox.y === 0) {
-        mostrarToast('A imagem já está perfeitamente ajustada sem espaços vazios!', 'blue');
+        mostrarToast('A logo já ocupa todo o espaço do arquivo (sem bordas para cortar)!', 'blue');
         return;
       }
+
+      const largAntes = canvas.width;
+      const altAntes = canvas.height;
 
       historicoCortes.push(canvas.toDataURL('image/png'));
 
@@ -9951,14 +9964,28 @@
       origImageData = ctx.getImageData(0, 0, bbox.w, bbox.h);
       atualizarProcessamento();
 
+      // Desativa modo manual se estivesse aberto
+      modoManualAtivo = false;
+      if (painelManual) painelManual.style.display = 'none';
+      if (overlay) overlay.style.display = 'none';
+      if (btnToggleManual) {
+        btnToggleManual.style.background = '#0b3442';
+        btnToggleManual.style.color = '#e2e8f0';
+        btnToggleManual.textContent = '📐 Ativar Recorte Manual / Arrastar Mouse';
+      }
+      ['rangeCropTop', 'rangeCropBottom', 'rangeCropLeft', 'rangeCropRight'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = 0;
+      });
+
       if (badgeRecorte) {
-        badgeRecorte.textContent = 'Auto-Trim OK';
+        badgeRecorte.textContent = `${bbox.w}x${bbox.h}px`;
         badgeRecorte.style.borderColor = '#10b981';
       }
-      mostrarToast(`✓ Auto-corte aplicado! Espaços vazios eliminados (${bbox.w}x${bbox.h}px)`, 'green');
+      mostrarToast(`✓ Logo recortada certinho! De ${largAntes}x${altAntes}px para ${bbox.w}x${bbox.h}px (Zero desperdício)`, 'green');
     });
 
-    // 2. RECORTE MANUAL INTERATIVO
+    // 2. RECORTE MANUAL INTERATIVO (SLIDERS LIVRES 0% A 95% + ARRASTAR NO CANVAS)
     function atualizarOverlayRecorte() {
       if (!modoManualAtivo || !overlay || !canvas || !containerCanvas) return;
       const cRect = canvas.getBoundingClientRect();
@@ -9994,6 +10021,26 @@
       overlay.style.display = 'block';
     }
 
+    const ajustarLimitesSliders = (mudouId) => {
+      const elTop = document.getElementById('rangeCropTop');
+      const elBtm = document.getElementById('rangeCropBottom');
+      const elLft = document.getElementById('rangeCropLeft');
+      const elRgt = document.getElementById('rangeCropRight');
+      if (!elTop || !elBtm || !elLft || !elRgt) return;
+
+      let top = parseInt(elTop.value || 0, 10);
+      let btm = parseInt(elBtm.value || 0, 10);
+      let lft = parseInt(elLft.value || 0, 10);
+      let rgt = parseInt(elRgt.value || 0, 10);
+
+      if (mudouId === 'rangeCropTop' && top + btm > 97) elBtm.value = 97 - top;
+      if (mudouId === 'rangeCropBottom' && top + btm > 97) elTop.value = 97 - btm;
+      if (mudouId === 'rangeCropLeft' && lft + rgt > 97) elRgt.value = 97 - lft;
+      if (mudouId === 'rangeCropRight' && lft + rgt > 97) elLft.value = 97 - rgt;
+
+      atualizarOverlayRecorte();
+    };
+
     btnToggleManual?.addEventListener('click', () => {
       modoManualAtivo = !modoManualAtivo;
       if (modoManualAtivo) {
@@ -10006,13 +10053,94 @@
         if (painelManual) painelManual.style.display = 'none';
         btnToggleManual.style.background = '#0b3442';
         btnToggleManual.style.color = '#e2e8f0';
-        btnToggleManual.textContent = '📐 Ativar Recorte Manual';
+        btnToggleManual.textContent = '📐 Ativar Recorte Manual / Arrastar Mouse';
         if (overlay) overlay.style.display = 'none';
       }
     });
 
+    // Botão para posicionar caixa exata ao redor da logo no modo manual
+    document.getElementById('btnAjustarCaixaNaLogo')?.addEventListener('click', () => {
+      if (!canvas || !window.DtfNestingEngine) return;
+      const bbox = window.DtfNestingEngine.calcularBoundingBoxConteudo(canvas, {
+        margem: 4,
+        tolerancia: tolerancia,
+        corAlvo: corAlvo
+      });
+
+      if (!bbox) {
+        mostrarToast('Nenhum conteúdo detectado para enquadrar.', 'yellow');
+        return;
+      }
+
+      const topPct = Math.max(0, Math.min(95, Math.round((bbox.y / canvas.height) * 100)));
+      const btmPct = Math.max(0, Math.min(95, Math.round(((canvas.height - (bbox.y + bbox.h)) / canvas.height) * 100)));
+      const lftPct = Math.max(0, Math.min(95, Math.round((bbox.x / canvas.width) * 100)));
+      const rgtPct = Math.max(0, Math.min(95, Math.round(((canvas.width - (bbox.x + bbox.w)) / canvas.width) * 100)));
+
+      const elTop = document.getElementById('rangeCropTop');
+      const elBtm = document.getElementById('rangeCropBottom');
+      const elLft = document.getElementById('rangeCropLeft');
+      const elRgt = document.getElementById('rangeCropRight');
+      if (elTop) elTop.value = topPct;
+      if (elBtm) elBtm.value = btmPct;
+      if (elLft) elLft.value = lftPct;
+      if (elRgt) elRgt.value = rgtPct;
+
+      atualizarOverlayRecorte();
+      mostrarToast('✓ Caixa ajustada certinho ao redor da logo! Clique em "Confirmar Corte" para aplicar.', 'green');
+    });
+
+    // Arrastar mouse diretamente sobre o Canvas para desenhar caixa de recorte
+    let isDraggingCrop = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+
+    containerCanvas?.addEventListener('mousedown', (e) => {
+      if (!modoManualAtivo || e.button !== 0) return;
+      const cRect = canvas.getBoundingClientRect();
+      if (e.clientX < cRect.left || e.clientX > cRect.right || e.clientY < cRect.top || e.clientY > cRect.bottom) return;
+
+      isDraggingCrop = true;
+      dragStartX = (e.clientX - cRect.left) / cRect.width;
+      dragStartY = (e.clientY - cRect.top) / cRect.height;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDraggingCrop || !modoManualAtivo) return;
+      const cRect = canvas.getBoundingClientRect();
+      const curX = Math.max(0, Math.min(1, (e.clientX - cRect.left) / cRect.width));
+      const curY = Math.max(0, Math.min(1, (e.clientY - cRect.top) / cRect.height));
+
+      const minX = Math.min(dragStartX, curX);
+      const maxX = Math.max(dragStartX, curX);
+      const minY = Math.min(dragStartY, curY);
+      const maxY = Math.max(dragStartY, curY);
+
+      const topPct = Math.max(0, Math.min(95, Math.round(minY * 100)));
+      const btmPct = Math.max(0, Math.min(95, Math.round((1 - maxY) * 100)));
+      const lftPct = Math.max(0, Math.min(95, Math.round(minX * 100)));
+      const rgtPct = Math.max(0, Math.min(95, Math.round((1 - maxX) * 100)));
+
+      const elTop = document.getElementById('rangeCropTop');
+      const elBtm = document.getElementById('rangeCropBottom');
+      const elLft = document.getElementById('rangeCropLeft');
+      const elRgt = document.getElementById('rangeCropRight');
+      if (elTop) elTop.value = topPct;
+      if (elBtm) elBtm.value = btmPct;
+      if (elLft) elLft.value = lftPct;
+      if (elRgt) elRgt.value = rgtPct;
+
+      atualizarOverlayRecorte();
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isDraggingCrop) {
+        isDraggingCrop = false;
+      }
+    });
+
     ['rangeCropTop', 'rangeCropBottom', 'rangeCropLeft', 'rangeCropRight'].forEach(id => {
-      document.getElementById(id)?.addEventListener('input', atualizarOverlayRecorte);
+      document.getElementById(id)?.addEventListener('input', () => ajustarLimitesSliders(id));
     });
 
     document.getElementById('btnConfirmarRecorteManual')?.addEventListener('click', () => {
@@ -10054,12 +10182,12 @@
       if (painelManual) painelManual.style.display = 'none';
       btnToggleManual.style.background = '#0b3442';
       btnToggleManual.style.color = '#e2e8f0';
-      btnToggleManual.textContent = '📐 Ativar Recorte Manual';
+      btnToggleManual.textContent = '📐 Ativar Recorte Manual / Arrastar Mouse';
       if (overlay) overlay.style.display = 'none';
 
       atualizarProcessamento();
       if (badgeRecorte) {
-        badgeRecorte.textContent = 'Recortado';
+        badgeRecorte.textContent = `${pxW}x${pxH}px`;
         badgeRecorte.style.borderColor = '#10b981';
       }
       mostrarToast(`✓ Recorte manual aplicado com sucesso! (${pxW}x${pxH}px)`, 'green');
@@ -10104,7 +10232,7 @@
       });
     });
 
-    // Botões de Passo (+ / -) nas Bordas
+    // Botões de Passo (+ / -) nas Bordas (Sem limite de 45%, vai de 0% a 95%)
     backdrop.querySelectorAll('.btn-step-crop').forEach(btn => {
       btn.addEventListener('click', () => {
         const targetId = btn.getAttribute('data-target');
@@ -10112,8 +10240,8 @@
         const inp = document.getElementById(targetId);
         if (inp) {
           const cur = parseInt(inp.value, 10) || 0;
-          inp.value = Math.max(0, Math.min(45, cur + step));
-          atualizarOverlayRecorte();
+          inp.value = Math.max(0, Math.min(95, cur + step));
+          ajustarLimitesSliders(targetId);
         }
       });
     });

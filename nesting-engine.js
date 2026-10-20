@@ -711,54 +711,152 @@ window.DtfNestingEngine = {
       return null;
     }
 
-    const margem = typeof opcoes.margem === 'number' ? opcoes.margem : 2;
-    let minX = w, minY = h, maxX = -1, maxY = -1;
+    if (w <= 0 || h <= 0) return null;
 
-    // Detecta se há canal alfa com transparência
-    let temTransparencia = false;
-    for (let i = 3; i < data.length; i += 4) {
-      if (data[i] < 240) {
-        temTransparencia = true;
+    const margem = typeof opcoes.margem === 'number' ? opcoes.margem : 2;
+    const tol = (typeof opcoes.tolerancia === 'number' ? opcoes.tolerancia : 35) * 2.55;
+
+    // 1. Detecta cor de fundo das bordas para isolar a logo com precisão
+    let bgR = 0, bgG = 0, bgB = 0;
+    if (opcoes.corAlvo && typeof opcoes.corAlvo.r === 'number') {
+      bgR = opcoes.corAlvo.r;
+      bgG = opcoes.corAlvo.g;
+      bgB = opcoes.corAlvo.b;
+    } else {
+      // Coleta amostras das quinas e bordas para detectar o tom do fundo
+      const amostras = [];
+      const addSample = (sx, sy) => {
+        const xClamped = Math.max(0, Math.min(w - 1, sx));
+        const yClamped = Math.max(0, Math.min(h - 1, sy));
+        const i = (yClamped * w + xClamped) * 4;
+        amostras.push({ r: data[i], g: data[i + 1], b: data[i + 2], a: data[i + 3] });
+      };
+
+      addSample(0, 0);
+      addSample(Math.min(w - 1, 2), Math.min(h - 1, 2));
+      addSample(w - 1, 0);
+      addSample(0, h - 1);
+      addSample(w - 1, h - 1);
+      addSample(Math.floor(w / 2), 0);
+      addSample(Math.floor(w / 2), h - 1);
+      addSample(0, Math.floor(h / 2));
+      addSample(w - 1, Math.floor(h / 2));
+
+      let sumR = 0, sumG = 0, sumB = 0, count = 0;
+      for (const s of amostras) {
+        if (s.a > 120) {
+          sumR += s.r;
+          sumG += s.g;
+          sumB += s.b;
+          count++;
+        }
+      }
+      if (count > 0) {
+        bgR = Math.round(sumR / count);
+        bgG = Math.round(sumG / count);
+        bgB = Math.round(sumB / count);
+      }
+    }
+
+    // 2. Detecta se a imagem possui transparência evidente
+    let temTransparenciaSignificativa = false;
+    let countTransp = 0;
+    for (let i = 3; i < data.length; i += 16) {
+      if (data[i] < 200) {
+        countTransp++;
+        if (countTransp > 10) {
+          temTransparenciaSignificativa = true;
+          break;
+        }
+      }
+    }
+
+    // 3. Histograma de linhas (y) e colunas (x) com conteúdo real da logo
+    const rowContentCount = new Int32Array(h);
+    const colContentCount = new Int32Array(w);
+
+    for (let y = 0; y < h; y++) {
+      const yOffset = y * w * 4;
+      for (let x = 0; x < w; x++) {
+        const idx = yOffset + (x * 4);
+        let isContent = false;
+
+        if (temTransparenciaSignificativa) {
+          // Imagem já tratada ou PNG com canal alfa: pixel é conteúdo se alfa for nítido
+          const a = data[idx + 3];
+          if (a >= 35) {
+            const r = data[idx], g = data[idx + 1], b = data[idx + 2];
+            const diff = Math.max(Math.abs(r - bgR), Math.abs(g - bgG), Math.abs(b - bgB));
+            if (a > 60 || diff > 15) {
+              isContent = true;
+            }
+          }
+        } else {
+          // Imagem opaca: pixel é conteúdo se difere da cor do fundo com tolerância
+          const r = data[idx], g = data[idx + 1], b = data[idx + 2];
+          const diff = Math.max(Math.abs(r - bgR), Math.abs(g - bgG), Math.abs(b - bgB));
+          if (diff > tol) {
+            isContent = true;
+          }
+        }
+
+        if (isContent) {
+          rowContentCount[y]++;
+          colContentCount[x]++;
+        }
+      }
+    }
+
+    // Filtro anti-ruído: linhas ou colunas precisam ter pelo menos um limite mínimo de pixels
+    // para evitar que um único pixel fantasma / poeira de compressão trave o corte na borda
+    const minPixelsRow = Math.max(2, Math.min(8, Math.floor(w * 0.003)));
+    const minPixelsCol = Math.max(2, Math.min(8, Math.floor(h * 0.003)));
+
+    let minY = -1, maxY = -1, minX = -1, maxX = -1;
+
+    for (let y = 0; y < h; y++) {
+      if (rowContentCount[y] >= minPixelsRow) {
+        minY = y;
+        break;
+      }
+    }
+    for (let y = h - 1; y >= 0; y--) {
+      if (rowContentCount[y] >= minPixelsRow) {
+        maxY = y;
         break;
       }
     }
 
-    if (temTransparencia) {
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          const idx = (y * w + x) * 4;
-          if (data[idx + 3] > 18) { // pixel visível
-            if (x < minX) minX = x;
-            if (x > maxX) maxX = x;
-            if (y < minY) minY = y;
-            if (y > maxY) maxY = y;
-          }
-        }
+    for (let x = 0; x < w; x++) {
+      if (colContentCount[x] >= minPixelsCol) {
+        minX = x;
+        break;
       }
-    } else {
-      // Se for 100% opaco, detecta cor de fundo dos cantos
-      const bgR = data[0], bgG = data[1], bgB = data[2];
-      const tol = (opcoes.tolerancia || 30) * 2.55;
-
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          const idx = (y * w + x) * 4;
-          const diff = Math.max(
-            Math.abs(data[idx] - bgR),
-            Math.abs(data[idx + 1] - bgG),
-            Math.abs(data[idx + 2] - bgB)
-          );
-          if (diff > tol) {
-            if (x < minX) minX = x;
-            if (x > maxX) maxX = x;
-            if (y < minY) minY = y;
-            if (y > maxY) maxY = y;
-          }
-        }
+    }
+    for (let x = w - 1; x >= 0; x--) {
+      if (colContentCount[x] >= minPixelsCol) {
+        maxX = x;
+        break;
       }
     }
 
-    if (maxX < minX || maxY < minY) {
+    // Se o filtro estrito não encontrou, tenta com limite mais permissivo (>= 1)
+    if (minY === -1 || maxY === -1 || minX === -1 || maxX === -1 || minY > maxY || minX > maxX) {
+      for (let y = 0; y < h; y++) {
+        if (rowContentCount[y] >= 1) { minY = y; break; }
+      }
+      for (let y = h - 1; y >= 0; y--) {
+        if (rowContentCount[y] >= 1) { maxY = y; break; }
+      }
+      for (let x = 0; x < w; x++) {
+        if (colContentCount[x] >= 1) { minX = x; break; }
+      }
+      for (let x = w - 1; x >= 0; x--) {
+        if (colContentCount[x] >= 1) { maxX = x; break; }
+      }
+    }
+
+    if (minY === -1 || maxY === -1 || minX === -1 || maxX === -1 || minY > maxY || minX > maxX) {
       return null;
     }
 
