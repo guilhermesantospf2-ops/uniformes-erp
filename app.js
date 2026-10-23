@@ -3495,6 +3495,13 @@
                         </span>
                       ` : ''}
                     `}
+                    ${((p.jogadores && p.jogadores.length > 0) || p.tipoPedidoModalidade === 'time') ? `
+                      <div style="margin-top: 3px;">
+                        <span class="status-pill status-gray" style="font-size: 9.5px; padding: 1px 6px; font-weight: 700; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; display: inline-flex; align-items: center; gap: 4px;">
+                          ⚽ Time (${(p.jogadores || []).length} atletas)
+                        </span>
+                      </div>
+                    ` : ''}
                     <span style="display: block; font-size: 10.5px; color: var(--text-gray-500); margin-top: 3px;">${p.tipoPersonalizacao || 'Estampa Conforme Arte'}</span>
                     ${(p.artesAnexadas && p.artesAnexadas.length > 0) ? `
                       <div style="margin-top: 4px;">
@@ -3727,7 +3734,7 @@
                             `}
                           </div>
                           <div class="kanban-card-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.clienteNome}</div>
-                          <div class="kanban-card-sub">${(p.itens && p.itens.length > 1) ? `<strong>📦 ${p.itens.length} Modelos:</strong> ${p.grade?.total || 0} pçs` : `${p.grade?.total || 0}x ${p.produtoNome}`}</div>
+                          <div class="kanban-card-sub">${(p.jogadores && p.jogadores.length > 0) ? `<strong>⚽ Time (${p.jogadores.length} atletas):</strong> ${p.grade?.total || 0} pçs` : (p.itens && p.itens.length > 1) ? `<strong>📦 ${p.itens.length} Modelos:</strong> ${p.grade?.total || 0} pçs` : `${p.grade?.total || 0}x ${p.produtoNome}`}</div>
 
                           <!-- CONTAGEM REGRESSIVA NO CARD KANBAN -->
                           <div style="margin-top: 5px;">
@@ -8709,6 +8716,8 @@
         mockupUrl: mockupDataUrl,
         artesAnexadas: artesLista,
         grade: gradeFinal,
+        tipoPedidoModalidade: dadosBase.tipoPedidoModalidade || 'padrao',
+        jogadores: Array.isArray(dadosBase.jogadores) ? JSON.parse(JSON.stringify(dadosBase.jogadores)) : [],
         precoUnitarioVenda: precoUnitFinal,
         valorTotalVenda: totalVendaFinal,
         custoTotalEstimado: custoTotalFinal,
@@ -8800,6 +8809,8 @@
         mockupUrl: mockupDataUrl,
         quantidadeTotal: pedidoOficial.grade.total,
         grade: pedidoOficial.grade,
+        tipoPedidoModalidade: pedidoOficial.tipoPedidoModalidade || dadosBase.tipoPedidoModalidade || 'padrao',
+        jogadores: Array.isArray(pedidoOficial.jogadores) ? JSON.parse(JSON.stringify(pedidoOficial.jogadores)) : (Array.isArray(dadosBase.jogadores) ? JSON.parse(JSON.stringify(dadosBase.jogadores)) : []),
         etapaAtual: "Quarentena",
         costureiraDesignada: costureiraObj.nome,
         responsavelCorte: "Vanderlei Souza",
@@ -9160,6 +9171,44 @@
         })()}
       `}
 
+      <!-- Relação Oficial de Atletas / Uniforme de Time na Proposta Comercial -->
+      ${(p.jogadores && Array.isArray(p.jogadores) && p.jogadores.length > 0) ? `
+        <div style="background: #ffffff; border: 1.5px solid #0f172a; border-radius: 4px; padding: 10px; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <strong style="color: #0f172a; font-size: 11.5px; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+              ⚽ NOMINATA OFICIAL DE ATLETAS (NOMES & NUMERAÇÕES):
+            </strong>
+            <span style="font-weight: 800; color: #0284c7; font-size: 11px;">
+              ${p.jogadores.length} ATLETAS (${p.jogadores.reduce((s, j) => s + Math.max(1, parseInt(j.quantidade || 1, 10)), 0)} PEÇAS)
+            </span>
+          </div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 10.5px; text-align: left;">
+            <thead>
+              <tr style="background: #0f172a; color: #ffffff;">
+                <th style="padding: 4px 6px; width: 6%; text-align: center;">#</th>
+                <th style="padding: 4px 6px; width: 44%;">Nome na Camisa</th>
+                <th style="padding: 4px 6px; width: 14%; text-align: center;">Número</th>
+                <th style="padding: 4px 6px; width: 14%; text-align: center;">Tamanho</th>
+                <th style="padding: 4px 6px; width: 8%; text-align: center;">Qtd</th>
+                <th style="padding: 4px 6px; width: 14%;">Posição / Obs</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${p.jogadores.map((jog, jIdx) => `
+                <tr style="border-bottom: 1px solid #cbd5e1; background: ${jIdx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+                  <td style="padding: 4px 6px; text-align: center; font-weight: 700; color: #64748b;">${jIdx + 1}</td>
+                  <td style="padding: 4px 6px; font-weight: 800; color: #0f172a; text-transform: uppercase;">${jog.nome || 'SEM NOME'}</td>
+                  <td style="padding: 4px 6px; text-align: center; font-weight: 800; font-family: monospace; font-size: 11.5px; color: #0284c7;">${jog.numero || '-'}</td>
+                  <td style="padding: 4px 6px; text-align: center;"><span style="background: #e0f2fe; color: #0369a1; padding: 1px 6px; border-radius: 3px; font-weight: 800;">${jog.tamanho}</span></td>
+                  <td style="padding: 4px 6px; text-align: center; font-weight: 800; color: #047857; font-family: monospace;">${jog.quantidade || 1} un</td>
+                  <td style="padding: 4px 6px; color: #475569;">${jog.posicao || 'Linha'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      ` : ''}
+
       <!-- Resumo de Valores -->
       <div style="border-top: 1px solid #cbd5e1; padding-top: 8px; display: flex; justify-content: flex-end; margin-bottom: 12px;">
         <div style="width: 260px; display: flex; flex-direction: column; gap: 4px;">
@@ -9291,7 +9340,8 @@
           <tbody>
             ${db.ordensServico.length ? db.ordensServico.map(os => {
               const mockup = os.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(os.produto, "#1e3a8a", "#ffffff", os.cliente.substring(0, 6));
-              const pOrig = db.pedidos.find(x => x.numero === os.pedidoNumero) || {};
+              const pOrig = (db.pedidos || []).find(x => (x.numero != null && os.pedidoNumero != null && x.numero.toString() === os.pedidoNumero.toString()) || (x.id && (x.id === os.pedidoId || x.id === os.pedidoNumero))) || {};
+              const listaJogOS = (os.jogadores && os.jogadores.length > 0) ? os.jogadores : (pOrig.jogadores || []);
               const countdown = calcularContagemRegressivaPedido(pOrig.id ? pOrig : {
                 dataPrevisaoEntrega: os.dataPrevisaoEntrega,
                 dataMetaInterna: os.dataMetaInterna,
@@ -9300,7 +9350,7 @@
               return `
                 <tr>
                   <td>
-                    <img src="${mockup}" class="mockup-thumb-3x4" data-os-id="${os.id}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela">
+                    <img src="${mockup}" class="mockup-thumb-3x4" data-os-id="${os.id}" data-pedido-id="${os.pedidoNumero || pOrig.id || ''}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela" style="cursor: pointer;">
                   </td>
                   <td class="text-mono"><strong>${os.id}</strong></td>
                   <td class="text-mono">#${os.pedidoNumero}</td>
@@ -9314,6 +9364,13 @@
                       <span class="badge-obs-textil" title="${os.observacoesCoresDetalhes || pOrig.observacoesCoresDetalhes}">
                         <strong>Detalhes:</strong> ${os.observacoesCoresDetalhes || pOrig.observacoesCoresDetalhes}
                       </span>
+                    ` : ''}
+                    ${listaJogOS.length > 0 ? `
+                      <div style="margin-top: 3px;">
+                        <span class="status-pill status-gray" style="font-size: 9.5px; padding: 1px 6px; font-weight: 700; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; display: inline-flex; align-items: center; gap: 4px;">
+                          ⚽ ${listaJogOS.length} Atletas (${os.quantidadeTotal} pçs)
+                        </span>
+                      </div>
                     ` : ''}
                   </td>
                   <td class="text-mono">${os.quantidadeTotal} peças</td>
@@ -9771,7 +9828,10 @@
   }
 
   function gerarHtmlCorpoFichaTecnica(os) {
-    const pedido = db.pedidos.find(p => p.numero === os.pedidoNumero) || {};
+    const pedido = (db.pedidos || []).find(p => (p.numero != null && os.pedidoNumero != null && p.numero.toString() === os.pedidoNumero.toString()) || (p.id && (p.id === os.pedidoId || p.id === os.pedidoNumero))) || {};
+    const listaJogadores = (pedido.jogadores && Array.isArray(pedido.jogadores) && pedido.jogadores.length > 0)
+      ? pedido.jogadores
+      : ((os.jogadores && Array.isArray(os.jogadores) && os.jogadores.length > 0) ? os.jogadores : []);
     const itensLista = (os.itens && os.itens.length > 0) ? os.itens : (pedido.itens && pedido.itens.length > 0 ? pedido.itens : []);
     const prazoCli = os.prazoPedidoDias || pedido.prazoPedidoDias || 15;
     const prazoInt = os.prazoInternoDias || pedido.prazoInternoDias || 10;
@@ -9822,7 +9882,7 @@
 
       <!-- Detalhamento Têxtil & Mockup 3x4 -->
       <div style="display: flex; gap: 14px; margin-bottom: 12px; align-items: flex-start;">
-        <img src="${os.mockupUrl}" class="mockup-thumb-3x4" alt="Mockup 3x4">
+        <img src="${os.mockupUrl}" class="mockup-thumb-3x4" data-os-id="${os.id}" data-pedido-id="${os.pedidoNumero || (pedido && pedido.id) || ''}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 ampliado na tela" style="cursor: pointer;">
         
         <div style="flex: 1;">
           <div class="grid-cards-2" style="gap: 8px; font-size: 11.5px;">
@@ -9907,14 +9967,14 @@
       `}
 
       <!-- Relação Oficial de Atletas / Uniforme de Time (se houver) -->
-      ${(pedido.jogadores && Array.isArray(pedido.jogadores) && pedido.jogadores.length > 0) ? `
+      ${(listaJogadores && listaJogadores.length > 0) ? `
         <div style="background: #ffffff; border: 1.5px solid #0f172a; border-radius: 4px; padding: 10px; margin-bottom: 12px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <strong style="color: #0f172a; font-size: 11.5px; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
               ⚽ RELAÇÃO OFICIAL DOS ATLETAS (CORTE & ESTAMPA / SUBLIMAÇÃO):
             </strong>
             <span style="font-weight: 800; color: #0284c7; font-size: 11px;">
-              ${pedido.jogadores.length} ATLETAS (${pedido.jogadores.reduce((s, j) => s + Math.max(1, parseInt(j.quantidade || 1, 10)), 0)} PEÇAS)
+              ${listaJogadores.length} ATLETAS (${listaJogadores.reduce((s, j) => s + Math.max(1, parseInt(j.quantidade || 1, 10)), 0)} PEÇAS)
             </span>
           </div>
           <table style="width: 100%; border-collapse: collapse; font-size: 10.5px; text-align: left;">
@@ -9929,7 +9989,7 @@
               </tr>
             </thead>
             <tbody>
-              ${pedido.jogadores.map((jog, jIdx) => `
+              ${listaJogadores.map((jog, jIdx) => `
                 <tr style="border-bottom: 1px solid #cbd5e1; background: ${jIdx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
                   <td style="padding: 4px 6px; text-align: center; font-weight: 700; color: #64748b;">${jIdx + 1}</td>
                   <td style="padding: 4px 6px; font-weight: 800; color: #0f172a; text-transform: uppercase;">${jog.nome || 'SEM NOME'}</td>
@@ -10071,6 +10131,8 @@
       mockupUrl: p.mockupUrl,
       quantidadeTotal: p.grade?.total || 0,
       grade: p.grade,
+      tipoPedidoModalidade: p.tipoPedidoModalidade || 'padrao',
+      jogadores: Array.isArray(p.jogadores) ? JSON.parse(JSON.stringify(p.jogadores)) : [],
       etapaAtual: p.etapaProducao,
       costureiraDesignada: p.costureiraNome || "Oficina Interna",
       responsavelCorte: "Vanderlei Souza",
@@ -15400,6 +15462,13 @@
                         <strong>Detalhes:</strong> ${p.observacoesCoresDetalhes}
                       </span>
                     ` : ''}
+                    ${(p.jogadores && p.jogadores.length > 0) ? `
+                      <div style="margin-top: 2px;">
+                        <span class="status-pill status-gray" style="font-size: 9.5px; padding: 1px 6px; font-weight: 700; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; display: inline-flex; align-items: center; gap: 3px;">
+                          ⚽ ${p.jogadores.length} Atletas
+                        </span>
+                      </div>
+                    ` : ''}
                   </td>
                   <td class="text-mono">${p.grade?.total || 0} pçs</td>
                   <td class="text-mono"><strong>${formatarMoeda(p.valorTotalVenda)}</strong></td>
@@ -15473,6 +15542,13 @@
                     <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.abrirModalArtesPedido('${p.id}')" style="margin-left: 6px; padding: 1px 7px; font-size: 10px; color: #0284c7; border-color: #bae6fd; background: #ffffff; font-weight: 700; cursor: pointer;">
                       🎨 Ver & Baixar Artes
                     </button>
+                  ` : ''}
+                  ${(p.jogadores && p.jogadores.length > 0) ? `
+                    <div style="margin-top: 4px;">
+                      <span class="status-pill status-green" style="font-size: 10px; font-weight: 800; padding: 2px 7px; display: inline-flex; align-items: center; gap: 4px;">
+                        ⚽ Uniforme de Time: ${p.jogadores.length} Atletas (${p.grade?.total || 0} peças)
+                      </span>
+                    </div>
                   ` : ''}
                 </div>
               </div>
@@ -17919,13 +17995,13 @@
 
     if (params) {
       if (typeof params === 'string') {
-        pedido = db.pedidos.find(p => p.id === params || p.numero.toString() === params);
+        pedido = db.pedidos.find(p => p.id === params || (p.numero != null && p.numero.toString() === params.toString()));
         if (!pedido) {
-          os = db.ordensServico.find(o => o.id === params);
+          os = db.ordensServico.find(o => o.id === params || (o.pedidoNumero != null && o.pedidoNumero.toString() === params.toString()));
         }
       } else {
         if (params.pedidoId) {
-          pedido = db.pedidos.find(p => p.id === params.pedidoId || p.numero.toString() === params.pedidoId);
+          pedido = db.pedidos.find(p => p.id === params.pedidoId || (p.numero != null && p.numero.toString() === params.pedidoId.toString()));
         }
         if (!pedido && params.osId) {
           os = db.ordensServico.find(o => o.id === params.osId);
@@ -17935,6 +18011,26 @@
         }
       }
     }
+
+    // Vinculação bidirecional de Pedido e OS para garantir carregamento de atletas
+    if (pedido && !os) {
+      os = (db.ordensServico || []).find(o => (o.pedidoNumero != null && pedido.numero != null && o.pedidoNumero.toString() === pedido.numero.toString()) || o.pedidoId === pedido.id);
+    }
+    if (os && !pedido && os.pedidoNumero) {
+      pedido = (db.pedidos || []).find(p => (p.numero != null && p.numero.toString() === os.pedidoNumero.toString()) || p.id === os.pedidoNumero);
+    }
+    // Fallback por imagem de mockup se ID não tiver sido passado
+    if (!pedido && !os && mockupSrc) {
+      pedido = (db.pedidos || []).find(p => p.mockupUrl === mockupSrc);
+      if (!pedido) {
+        os = (db.ordensServico || []).find(o => o.mockupUrl === mockupSrc);
+      }
+    }
+
+    const listaJogadores = (pedido && Array.isArray(pedido.jogadores) && pedido.jogadores.length > 0)
+      ? pedido.jogadores
+      : ((os && Array.isArray(os.jogadores) && os.jogadores.length > 0) ? os.jogadores : []);
+    const totalPecasJogadores = listaJogadores.reduce((s, j) => s + Math.max(1, parseInt(j.quantidade || 1, 10)), 0);
 
     if (pedido) {
       mockupSrc = pedido.mockupUrl || mockupSrc || window.ERP_MOCKUPS.gerarMockupSvg(pedido.produtoNome, "#1e3a8a", "#ffffff", pedido.clienteNome.substring(0, 6));
@@ -17958,7 +18054,7 @@
       produtoNome = os.produto || produtoNome;
       clienteNome = os.cliente || clienteNome;
       costureiraNome = os.costureiraDesignada || costureiraNome;
-      grade = { total: os.quantidadeTotal || 0 };
+      grade = os.grade || { total: os.quantidadeTotal || 0 };
       statusEtapa = os.etapaAtual || statusEtapa;
       numeroPedido = os.pedidoNumero || "---";
     }
@@ -18065,6 +18161,45 @@
                     </div>
                   </div>
                 </div>
+
+                ${(listaJogadores && listaJogadores.length > 0) ? `
+                  <div class="mockup-spec-card" style="border-left: 4px solid #16a34a; background: #f0fdf4;">
+                    <div class="mockup-spec-title" style="display: flex; justify-content: space-between; align-items: center; color: #166534; font-weight: 800;">
+                      <span style="display: flex; align-items: center; gap: 6px;">
+                        ⚽ Relação dos Atletas & Numerações
+                      </span>
+                      <span class="status-pill status-green" style="font-size: 10px; font-weight: 800;">
+                        ${listaJogadores.length} atletas • ${totalPecasJogadores} un
+                      </span>
+                    </div>
+                    <div style="max-height: 220px; overflow-y: auto; margin-top: 8px; border: 1.5px solid #86efac; border-radius: 4px; background: #ffffff;">
+                      <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead>
+                          <tr style="background: #14532d; color: #ffffff;">
+                            <th style="padding: 5px 6px; width: 6%; text-align: center;">#</th>
+                            <th style="padding: 5px 6px; text-align: left;">Nome do Atleta</th>
+                            <th style="padding: 5px 6px; width: 14%; text-align: center;">Nº</th>
+                            <th style="padding: 5px 6px; width: 15%; text-align: center;">Tam</th>
+                            <th style="padding: 5px 6px; width: 12%; text-align: center;">Qtd</th>
+                            <th style="padding: 5px 6px; width: 20%; text-align: left;">Posição</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${listaJogadores.map((jog, jIdx) => `
+                            <tr style="border-bottom: 1px solid #e2e8f0; background: ${jIdx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+                              <td style="padding: 5px 6px; text-align: center; color: #64748b; font-weight: 700;">${jIdx + 1}</td>
+                              <td style="padding: 5px 6px; font-weight: 800; color: #0f172a; text-transform: uppercase;">${jog.nome || 'SEM NOME'}</td>
+                              <td style="padding: 5px 6px; text-align: center; font-weight: 800; color: #0284c7; font-family: monospace; font-size: 11.5px;">${jog.numero || '-'}</td>
+                              <td style="padding: 5px 6px; text-align: center;"><span style="background: #e0f2fe; color: #0369a1; padding: 1px 6px; border-radius: 3px; font-weight: 800;">${jog.tamanho}</span></td>
+                              <td style="padding: 5px 6px; text-align: center; font-weight: 800; color: #047857; font-family: monospace;">${jog.quantidade || 1} un</td>
+                              <td style="padding: 5px 6px; color: #475569; font-size: 10.5px;">${jog.posicao || 'Linha'}</td>
+                            </tr>
+                          `).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ` : ''}
 
                 ${valorTotal > 0 ? `
                   <div class="mockup-spec-card">

@@ -476,15 +476,15 @@ window.DtfNestingEngine = {
     const modo = opcoes.modo || 'inteligente'; // 'inteligente' | 'global' | 'apenas_exterior'
 
     // 1. Determina a cor alvo (manual via conta-gotas ou detecção de perímetro)
-    let bgR = 0, bgG = 0, bgB = 0;
+    let bgR = 255, bgG = 255, bgB = 255;
     if (opcoes.corAlvo && typeof opcoes.corAlvo.r === 'number') {
       bgR = Math.max(0, Math.min(255, Math.round(opcoes.corAlvo.r)));
       bgG = Math.max(0, Math.min(255, Math.round(opcoes.corAlvo.g)));
       bgB = Math.max(0, Math.min(255, Math.round(opcoes.corAlvo.b)));
     } else {
       const cores = [];
-      const stepX = Math.max(1, Math.floor(w / 35));
-      const stepY = Math.max(1, Math.floor(h / 35));
+      const stepX = Math.max(1, Math.floor(w / 40));
+      const stepY = Math.max(1, Math.floor(h / 40));
       function amostrar(px, py) {
         if (px < 0 || px >= w || py < 0 || py >= h) return;
         const idx = (py * w + px) * 4;
@@ -510,12 +510,10 @@ window.DtfNestingEngine = {
         const mg = sg / cores.length;
         const mb = sb / cores.length;
         const mlum = 0.299 * mr + 0.587 * mg + 0.114 * mb;
-        if (mlum < 45) {
-          bgR = Math.round(mr * 0.4);
-          bgG = Math.round(mg * 0.4);
-          bgB = Math.round(mb * 0.4);
-        } else if (mlum > 225) {
+        if (mlum > 238 && Math.abs(mr - mg) < 10 && Math.abs(mg - mb) < 10) {
           bgR = 255; bgG = 255; bgB = 255;
+        } else if (mlum < 25 && mr < 30 && mg < 30 && mb < 30) {
+          bgR = 0; bgG = 0; bgB = 0;
         } else {
           bgR = Math.round(mr);
           bgG = Math.round(mg);
@@ -525,9 +523,10 @@ window.DtfNestingEngine = {
     }
 
     const bgLum = 0.299 * bgR + 0.587 * bgG + 0.114 * bgB;
-    const isFundoEscuro = bgLum < 85;
-    const isFundoClaro = bgLum > 175;
+    const isFundoEscuro = bgLum < 80;
+    const isFundoClaro = bgLum > 180;
 
+    // Distância euclidiana com compensação perceptual humana (redmean)
     function distCor(r, g, b) {
       const rmean = (r + bgR) >> 1;
       const dr = r - bgR;
@@ -536,9 +535,10 @@ window.DtfNestingEngine = {
       return Math.sqrt((((512 + rmean) * dr * dr) >> 8) + 4 * dg * dg + (((767 - rmean) * db * db) >> 8));
     }
 
-    const limiarDist = (tolerancia / 100) * 550;
+    // Escala calibrada: 35% ~ 168 (elimina ruído JPG sem agredir tons médios)
+    const limiarDist = (tolerancia / 100) * 480;
 
-    // 2. Classificação de candidatos a fundo com Proteção de Primeiro Plano
+    // 2. Classificação de pixels candidatos a fundo
     const isCandidato = new Uint8Array(totalPixels);
     for (let i = 0; i < totalPixels; i++) {
       const idx = i * 4;
@@ -552,36 +552,30 @@ window.DtfNestingEngine = {
       const b = srcData[idx + 2];
       const lum = 0.299 * r + 0.587 * g + 0.114 * b;
 
-      let protegido = false;
+      // Proteção de texto e grafismo de alto contraste
       if (protegerTexto) {
-        if (isFundoEscuro) {
-          // No fundo preto, pixels com lum > 55 (texto branco/cinza claro) são 100% protegidos
-          if (lum > 55) protegido = true;
-        } else if (isFundoClaro) {
-          // No fundo branco, pixels com lum < 185 (texto escuro) são 100% protegidos
-          if (lum < 185) protegido = true;
+        if (isFundoClaro && lum < 135) {
+          continue; // Cores escuras em fundo branco nunca são candidatas
         }
-
-        // Checagem de saturação cromática (ex: ícones ciano/azul/vermelho vívidos)
-        if (!protegido) {
-          const maxC = Math.max(r, g, b);
-          const minC = Math.min(r, g, b);
-          const sat = maxC > 0 ? (maxC - minC) / maxC : 0;
-          if (sat > 0.22 && Math.abs(lum - bgLum) > 18) {
-            protegido = true;
-          }
+        if (isFundoEscuro && lum > 120) {
+          continue; // Cores claras em fundo preto nunca são candidatas
+        }
+        // Elementos fortemente saturados (ex: vermelho, verde, azul)
+        const maxC = Math.max(r, g, b);
+        const minC = Math.min(r, g, b);
+        const sat = maxC > 0 ? (maxC - minC) / maxC : 0;
+        if (sat > 0.25 && Math.abs(lum - bgLum) > 20) {
+          continue;
         }
       }
 
-      if (!protegido) {
-        const d = distCor(r, g, b);
-        if (d <= limiarDist) {
-          isCandidato[i] = 1;
-        }
+      const d = distCor(r, g, b);
+      if (d <= limiarDist) {
+        isCandidato[i] = 1;
       }
     }
 
-    // 3. Resolução Espacial (BFS Flood Fill e Cavidades de Letras)
+    // 3. Resolução Espacial: BFS Flood Fill estritamente no perímetro externo
     const isFundoFinal = new Uint8Array(totalPixels);
 
     if (modo === 'global') {
@@ -589,118 +583,334 @@ window.DtfNestingEngine = {
         if (isCandidato[i]) isFundoFinal[i] = 1;
       }
     } else {
-      const visitado = new Uint8Array(totalPixels);
       const fila = new Int32Array(totalPixels);
       let filaInicio = 0, filaFim = 0;
 
-      function checarBorda(pxX, pxY) {
-        const pIdx = pxY * w + pxX;
-        if (visitado[pIdx]) return;
-        visitado[pIdx] = 1;
-        if (isCandidato[pIdx]) {
+      function enfileirarBorda(px, py) {
+        const pIdx = py * w + px;
+        if (!isFundoFinal[pIdx] && (isCandidato[pIdx] || srcData[pIdx * 4 + 3] < 25)) {
           isFundoFinal[pIdx] = 1;
           fila[filaFim++] = pIdx;
         }
       }
 
-      for (let x = 0; x < w; x++) { checarBorda(x, 0); checarBorda(x, h - 1); }
-      for (let y = 0; y < h; y++) { checarBorda(0, y); checarBorda(w - 1, y); }
+      for (let x = 0; x < w; x++) { enfileirarBorda(x, 0); enfileirarBorda(x, h - 1); }
+      for (let y = 0; y < h; y++) { enfileirarBorda(0, y); enfileirarBorda(w - 1, y); }
 
       while (filaInicio < filaFim) {
         const curIdx = fila[filaInicio++];
         const cx = curIdx % w;
-        const cy = Math.floor(curIdx / w);
+        const cy = (curIdx / w) | 0;
 
-        const vizinhos = [
-          cx > 0 ? curIdx - 1 : -1,
-          cx < w - 1 ? curIdx + 1 : -1,
-          cy > 0 ? curIdx - w : -1,
-          cy < h - 1 ? curIdx + w : -1
-        ];
-
-        for (const vIdx of vizinhos) {
-          if (vIdx === -1 || visitado[vIdx]) continue;
-          visitado[vIdx] = 1;
-          if (isCandidato[vIdx]) {
-            isFundoFinal[vIdx] = 1;
-            fila[filaFim++] = vIdx;
+        if (cx > 0) {
+          const left = curIdx - 1;
+          if (!isFundoFinal[left] && (isCandidato[left] || srcData[left * 4 + 3] < 25)) {
+            isFundoFinal[left] = 1;
+            fila[filaFim++] = left;
+          }
+        }
+        if (cx < w - 1) {
+          const right = curIdx + 1;
+          if (!isFundoFinal[right] && (isCandidato[right] || srcData[right * 4 + 3] < 25)) {
+            isFundoFinal[right] = 1;
+            fila[filaFim++] = right;
+          }
+        }
+        if (cy > 0) {
+          const up = curIdx - w;
+          if (!isFundoFinal[up] && (isCandidato[up] || srcData[up * 4 + 3] < 25)) {
+            isFundoFinal[up] = 1;
+            fila[filaFim++] = up;
+          }
+        }
+        if (cy < h - 1) {
+          const down = curIdx + w;
+          if (!isFundoFinal[down] && (isCandidato[down] || srcData[down * 4 + 3] < 25)) {
+            isFundoFinal[down] = 1;
+            fila[filaFim++] = down;
           }
         }
       }
 
-      // Purga cirúrgica de cavidades internas (letras A, B, R, P, O, D, Q...)
-      if (limparBuracos) {
+      // 4. Detecção Topológica de Furos de Letras Soltas (O, A, P, R, D...)
+      // REGRA DE OURO: Só é furo de letra se a parede que envolve a cavidade for FINA (traço de letra)
+      // e fizer fronteira com o exterior. Se estiver dentro de um escudo ou badge fechado,
+      // a parede é espessa (dezenas/centenas de pixels) -> 100% PROTEGIDO, NUNCA É FURADO!
+      if (limparBuracos && modo !== 'apenas_exterior') {
+        const maxDistTraço = Math.max(20, Math.min(38, Math.round(Math.min(w, h) * 0.045)));
+        const distExterior = new Uint8Array(totalPixels);
+        const qDist = new Int32Array(totalPixels);
+        let qDistIni = 0, qDistFim = 0;
+
+        // Identifica pixels de primeiro plano que tocam diretamente o fundo externo
         for (let i = 0; i < totalPixels; i++) {
-          if (isCandidato[i] && !isFundoFinal[i]) {
-            isFundoFinal[i] = 1;
+          if (!isFundoFinal[i]) {
+            const cx = i % w;
+            const cy = (i / w) | 0;
+            if ((cx > 0 && isFundoFinal[i - 1]) ||
+                (cx < w - 1 && isFundoFinal[i + 1]) ||
+                (cy > 0 && isFundoFinal[i - w]) ||
+                (cy < h - 1 && isFundoFinal[i + w])) {
+              distExterior[i] = 1;
+              qDist[qDistFim++] = i;
+            }
+          }
+        }
+
+        // Propaga a distância através do primeiro plano até o limite do traço de letra
+        while (qDistIni < qDistFim) {
+          const cur = qDist[qDistIni++];
+          const curDist = distExterior[cur];
+          if (curDist >= maxDistTraço) continue;
+
+          const cx = cur % w;
+          const cy = (cur / w) | 0;
+          const viz = [
+            cx > 0 ? cur - 1 : -1,
+            cx < w - 1 ? cur + 1 : -1,
+            cy > 0 ? cur - w : -1,
+            cy < h - 1 ? cur + w : -1
+          ];
+
+          for (const v of viz) {
+            if (v !== -1 && !isFundoFinal[v] && distExterior[v] === 0) {
+              distExterior[v] = curDist + 1;
+              qDist[qDistFim++] = v;
+            }
+          }
+        }
+
+        // Analisa cavidades fechadas (candidatos não alcançados pelo exterior)
+        const visitadoCavidades = new Uint8Array(totalPixels);
+        const maxAreaCavidade = Math.round(totalPixels * 0.035); // Max 3.5% da arte
+        const qCav = new Int32Array(totalPixels);
+
+        for (let i = 0; i < totalPixels; i++) {
+          if (isCandidato[i] && !isFundoFinal[i] && !visitadoCavidades[i]) {
+            let cIni = 0, cFim = 0;
+            qCav[cFim++] = i;
+            visitadoCavidades[i] = 1;
+
+            let minX = i % w, maxX = minX;
+            let minY = (i / w) | 0, maxY = minY;
+            let vizinhosBordaTotal = 0;
+            let vizinhosBordaPertoExterior = 0;
+
+            while (cIni < cFim) {
+              const cur = qCav[cIni++];
+              const cx = cur % w;
+              const cy = (cur / w) | 0;
+
+              if (cx < minX) minX = cx;
+              if (cx > maxX) maxX = cx;
+              if (cy < minY) minY = cy;
+              if (cy > maxY) maxY = cy;
+
+              const viz4 = [
+                cx > 0 ? cur - 1 : -1,
+                cx < w - 1 ? cur + 1 : -1,
+                cy > 0 ? cur - w : -1,
+                cy < h - 1 ? cur + w : -1
+              ];
+
+              for (const v of viz4) {
+                if (v === -1) continue;
+                if (isCandidato[v] && !isFundoFinal[v]) {
+                  if (!visitadoCavidades[v]) {
+                    visitadoCavidades[v] = 1;
+                    qCav[cFim++] = v;
+                  }
+                } else if (!isFundoFinal[v]) {
+                  vizinhosBordaTotal++;
+                  if (distExterior[v] > 0 && distExterior[v] <= maxDistTraço) {
+                    vizinhosBordaPertoExterior++;
+                  }
+                }
+              }
+            }
+
+            const count = cFim;
+            const largCav = maxX - minX + 1;
+            const altCav = maxY - minY + 1;
+
+            // Só libera remoção se a cavidade for comprovadamente um furo de letra solta
+            // cercada por um traço fino cuja outra borda é o fundo externo!
+            const ehFuroLegitimo = (count <= maxAreaCavidade) &&
+                                  (largCav < w * 0.3) &&
+                                  (altCav < h * 0.3) &&
+                                  (vizinhosBordaTotal > 0) &&
+                                  ((vizinhosBordaPertoExterior / vizinhosBordaTotal) >= 0.85);
+
+            if (ehFuroLegitimo) {
+              for (let k = 0; k < count; k++) {
+                isFundoFinal[qCav[k]] = 1;
+              }
+            }
           }
         }
       }
     }
 
-    // 4. Aplica transparência e correção de borda (Anti-Halo / Defringe)
-    for (let pIdx = 0; pIdx < totalPixels; pIdx++) {
-      const bIdx = pIdx * 4;
-      if (isFundoFinal[pIdx]) {
+    // 5. Tratamento de Bordas, Anti-Halo e Descontaminação de Cor (Defringe HD)
+    const isBordaForeground = new Uint8Array(totalPixels);
+    const vizFundoCount = new Uint8Array(totalPixels);
+
+    for (let y = 0; y < h; y++) {
+      const yOff = y * w;
+      for (let x = 0; x < w; x++) {
+        const p = yOff + x;
+        if (!isFundoFinal[p]) {
+          let bgNeighbors = 0;
+          for (let dy = -1; dy <= 1; dy++) {
+            const ny = y + dy;
+            if (ny < 0 || ny >= h) { bgNeighbors++; continue; }
+            const nOff = ny * w;
+            for (let dx = -1; dx <= 1; dx++) {
+              if (dx === 0 && dy === 0) continue;
+              const nx = x + dx;
+              if (nx < 0 || nx >= w || isFundoFinal[nOff + nx]) {
+                bgNeighbors++;
+              }
+            }
+          }
+          if (bgNeighbors > 0) {
+            isBordaForeground[p] = 1;
+            vizFundoCount[p] = bgNeighbors;
+          }
+        }
+      }
+    }
+
+    // Aplica a transparência no fundo e refina o contorno do primeiro plano
+    for (let p = 0; p < totalPixels; p++) {
+      const bIdx = p * 4;
+      if (isFundoFinal[p]) {
         data[bIdx + 3] = 0; // Transparência cirúrgica 100%
       } else {
-        const cx = pIdx % w;
-        const cy = Math.floor(pIdx / w);
-        let temVizinhoFundo = false;
+        if (removerHalo && isBordaForeground[p]) {
+          const r = srcData[bIdx];
+          const g = srcData[bIdx + 1];
+          const b = srcData[bIdx + 2];
+          const bgNeigh = vizFundoCount[p];
 
-        if ((cx > 0 && isFundoFinal[pIdx - 1]) ||
-            (cx < w - 1 && isFundoFinal[pIdx + 1]) ||
-            (cy > 0 && isFundoFinal[pIdx - w]) ||
-            (cy < h - 1 && isFundoFinal[pIdx + w])) {
-          temVizinhoFundo = true;
-        }
+          // Pontas excessivamente isoladas (serrilhados ou poeira de corte)
+          const d = distCor(r, g, b);
+          if (bgNeigh >= 6 && d <= limiarDist * 1.3) {
+            data[bIdx + 3] = 0;
+            continue;
+          }
 
-        if (temVizinhoFundo && removerHalo) {
-          const r = data[bIdx];
-          const g = data[bIdx + 1];
-          const b = data[bIdx + 2];
-          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+          // Descontaminação de cor (substitui contaminação de halo pela cor autêntica interna da estampa)
+          const cx = p % w;
+          const cy = (p / w) | 0;
+          let bestInnerR = r, bestInnerG = g, bestInnerB = b;
+          let achouInterior = false;
 
-          if (isFundoEscuro && lum > 45) {
-            // Clareia bordas anti-aliased de texto branco para remover contorno escuro sujo
-            const boost = Math.min(1.4, 255 / Math.max(1, lum));
-            data[bIdx] = Math.min(255, Math.round(r * boost));
-            data[bIdx + 1] = Math.min(255, Math.round(g * boost));
-            data[bIdx + 2] = Math.min(255, Math.round(b * boost));
-            data[bIdx + 3] = 255;
-          } else if (isFundoClaro && lum < 210) {
-            // Escurece bordas de texto escuro para remover contorno esbranquiçado
-            const factor = Math.max(0.65, lum / 255);
-            data[bIdx] = Math.max(0, Math.round(r * factor));
-            data[bIdx + 1] = Math.max(0, Math.round(g * factor));
-            data[bIdx + 2] = Math.max(0, Math.round(b * factor));
+          for (let dy = -2; dy <= 2 && !achouInterior; dy++) {
+            const ny = cy + dy;
+            if (ny < 0 || ny >= h) continue;
+            for (let dx = -2; dx <= 2 && !achouInterior; dx++) {
+              if (dx === 0 && dy === 0) continue;
+              const nx = cx + dx;
+              if (nx < 0 || nx >= w) continue;
+              const np = ny * w + nx;
+              if (!isFundoFinal[np] && !isBordaForeground[np]) {
+                const ni = np * 4;
+                bestInnerR = srcData[ni];
+                bestInnerG = srcData[ni + 1];
+                bestInnerB = srcData[ni + 2];
+                achouInterior = true;
+              }
+            }
+          }
+
+          if (achouInterior) {
+            const blend = bgNeigh >= 4 ? 0.85 : 0.65;
+            data[bIdx] = Math.round(r * (1 - blend) + bestInnerR * blend);
+            data[bIdx + 1] = Math.round(g * (1 - blend) + bestInnerG * blend);
+            data[bIdx + 2] = Math.round(b * (1 - blend) + bestInnerB * blend);
+          } else {
+            const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+            if (isFundoClaro && lum > 140) {
+              const escurecer = Math.max(0.35, (255 - lum) / 255);
+              data[bIdx] = Math.round(r * escurecer);
+              data[bIdx + 1] = Math.round(g * escurecer);
+              data[bIdx + 2] = Math.round(b * escurecer);
+            } else if (isFundoEscuro && lum < 60) {
+              const clarear = Math.min(2.2, 100 / Math.max(1, lum));
+              data[bIdx] = Math.min(255, Math.round(r * clarear));
+              data[bIdx + 1] = Math.min(255, Math.round(g * clarear));
+              data[bIdx + 2] = Math.min(255, Math.round(b * clarear));
+            }
+          }
+
+          // Anti-aliasing suave no canal alfa
+          if (bgNeigh >= 4) {
+            data[bIdx + 3] = Math.min(255, Math.max(120, Math.round(255 * (1 - (bgNeigh - 3) * 0.16))));
+          } else {
             data[bIdx + 3] = 255;
           }
+        } else {
+          // O miolo da arte permanece 100% opaco e vibrante
+          data[bIdx + 3] = 255;
         }
       }
     }
 
-    // 5. Despeckle de bordas fantasmas residuais
+    // 6. Despeckle Cirúrgico (elimina pontinhos isolados, poeira de JPG e sujeira flutuante)
     if (limparBordasFantasmas) {
-      for (let y = 1; y < h - 1; y++) {
-        for (let x = 1; x < w - 1; x++) {
-          const pIdx = y * w + x;
-          const bIdx = pIdx * 4;
-          if (data[bIdx + 3] > 0) {
-            let vizTransp = 0;
-            if (data[((y - 1) * w + (x - 1)) * 4 + 3] === 0) vizTransp++;
-            if (data[((y - 1) * w + x) * 4 + 3] === 0) vizTransp++;
-            if (data[((y - 1) * w + (x + 1)) * 4 + 3] === 0) vizTransp++;
-            if (data[(y * w + (x - 1)) * 4 + 3] === 0) vizTransp++;
-            if (data[(y * w + (x + 1)) * 4 + 3] === 0) vizTransp++;
-            if (data[((y + 1) * w + (x - 1)) * 4 + 3] === 0) vizTransp++;
-            if (data[((y + 1) * w + x) * 4 + 3] === 0) vizTransp++;
-            if (data[((y + 1) * w + (x + 1)) * 4 + 3] === 0) vizTransp++;
+      const visSpeckle = new Uint8Array(totalPixels);
+      const qSpeckle = new Int32Array(350);
 
-            if (vizTransp >= 6) {
-              const d = distCor(data[bIdx], data[bIdx + 1], data[bIdx + 2]);
-              if (d <= limiarDist * 1.3) {
-                data[bIdx + 3] = 0;
+      for (let y = 0; y < h; y++) {
+        const yOff = y * w;
+        for (let x = 0; x < w; x++) {
+          const p = yOff + x;
+          const bIdx = p * 4;
+          if (data[bIdx + 3] > 0 && !visSpeckle[p]) {
+            let sIni = 0, sFim = 0;
+            qSpeckle[sFim++] = p;
+            visSpeckle[p] = 1;
+
+            let minSx = x, maxSx = x;
+            let minSy = y, maxSy = y;
+            let estourou = false;
+
+            while (sIni < sFim) {
+              const sp = qSpeckle[sIni++];
+              const sx = sp % w;
+              const sy = (sp / w) | 0;
+              if (sx < minSx) minSx = sx;
+              if (sx > maxSx) maxSx = sx;
+              if (sy < minSy) minSy = sy;
+              if (sy > maxSy) maxSy = sy;
+
+              for (let dy = -1; dy <= 1; dy++) {
+                const ny = sy + dy;
+                if (ny < 0 || ny >= h) continue;
+                for (let dx = -1; dx <= 1; dx++) {
+                  if (dx === 0 && dy === 0) continue;
+                  const nx = sx + dx;
+                  if (nx < 0 || nx >= w) continue;
+                  const np = ny * w + nx;
+                  if (data[np * 4 + 3] > 0 && !visSpeckle[np]) {
+                    if (sFim >= 300) {
+                      estourou = true;
+                      break;
+                    }
+                    visSpeckle[np] = 1;
+                    qSpeckle[sFim++] = np;
+                  }
+                }
+                if (estourou) break;
+              }
+              if (estourou) break;
+            }
+
+            // Se for um bloco menor que 30 pixels e com dimensões <= 7x7px solto no vazio, apaga!
+            if (!estourou && sFim <= 30 && (maxSx - minSx <= 7) && (maxSy - minSy <= 7)) {
+              for (let k = 0; k < sFim; k++) {
+                data[qSpeckle[k] * 4 + 3] = 0;
               }
             }
           }
