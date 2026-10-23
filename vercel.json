@@ -9,7 +9,11 @@
     { "source": "/gerar-acesso", "destination": "/gerar-acesso.html" },
     { "source": "/cliente", "destination": "/cliente.html" },
     { "source": "/time", "destination": "/cliente.html" },
-    { "source": "/coleta", "destination": "/cliente.html" }
+    { "source": "/coleta", "destination": "/cliente.html" },
+    { "source": "/index/cliente", "destination": "/cliente.html" },
+    { "source": "/demo/cliente", "destination": "/cliente.html" },
+    { "source": "/(.*)/cliente", "destination": "/cliente.html" },
+    { "source": "/(.*)/time", "destination": "/cliente.html" }
   ],
   "headers": [
     {

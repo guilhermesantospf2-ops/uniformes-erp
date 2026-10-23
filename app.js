@@ -5475,15 +5475,11 @@
 
       // Constrói o link do portal
       const loc = window.location;
-      let pathDir = loc.pathname;
-      if (pathDir.includes('.html')) {
-        pathDir = pathDir.substring(0, pathDir.lastIndexOf('/') + 1);
-      } else if (!pathDir.endsWith('/')) {
-        pathDir += '/';
+      let baseUrl = 'https://uniformes-erp.vercel.app';
+      if (loc && loc.origin && loc.origin !== 'null' && loc.protocol && loc.protocol.startsWith('http') && !loc.hostname.includes('localhost') && !loc.hostname.includes('127.0.0.1')) {
+        baseUrl = loc.origin.replace(/\/+$/, '');
       }
-      const baseUrl = loc.origin + pathDir;
-      const paginaDestino = (loc.protocol === 'file:') ? 'cliente.html' : 'cliente';
-      const linkFinal = `${baseUrl}${paginaDestino}?pedidoId=${pedId}&cliente=${encodeURIComponent(nomeFinal)}&tipo=${modalidade}&tel=${encodeURIComponent(emp.telefone || '')}`;
+      const linkFinal = `${baseUrl}/cliente?pedidoId=${pedId}&cliente=${encodeURIComponent(nomeFinal)}&tipo=${modalidade}&tel=${encodeURIComponent(emp.telefone || '')}`;
 
       // Monta texto formatado do WhatsApp
       const saudacao = (new Date().getHours() < 12) ? 'Bom dia' : (new Date().getHours() < 18) ? 'Boa tarde' : 'Boa noite';
@@ -8412,8 +8408,12 @@
       const empConfig = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function') ? window.ERP_CLOUD.obterEmpresaConfig() : {};
       const zapFabrica = empConfig.telefone || '11987654321';
 
-      const urlBase = window.location.origin;
-      const linkPublico = `${urlBase}/time.html?p=${numPed}&c=${encodeURIComponent(nomeCli)}&t=${tenantId}&zap=${zapFabrica}`;
+      const loc = window.location;
+      let baseUrl = 'https://uniformes-erp.vercel.app';
+      if (loc && loc.origin && loc.origin !== 'null' && loc.protocol && loc.protocol.startsWith('http') && !loc.hostname.includes('localhost') && !loc.hostname.includes('127.0.0.1')) {
+        baseUrl = loc.origin.replace(/\/+$/, '');
+      }
+      const linkPublico = `${baseUrl}/cliente?pedidoId=${numPed}&cliente=${encodeURIComponent(nomeCli)}&tipo=time&tel=${encodeURIComponent(zapFabrica)}&t=${tenantId}`;
 
       const msgZap = `⚽ *Olá, ${nomeCli}!*\n\nPara garantir que o uniforme do seu time saia perfeito e sem nenhum erro de digitação, acesse o link oficial abaixo para preencher a relação dos atletas (nomes, números e tamanhos):\n\n👉 ${linkPublico}\n\nAssim que você confirmar, a lista entra automaticamente na nossa linha de corte e estampa!`;
 
