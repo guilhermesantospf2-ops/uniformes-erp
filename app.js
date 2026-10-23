@@ -107,6 +107,25 @@
     if (!Array.isArray(banco.produtosBase) || banco.produtosBase.length === 0) {
       banco.produtosBase = JSON.parse(JSON.stringify(templatePadrao?.produtosBase || []));
     }
+    // Assegura que todos os modelos cadastrados no banco possuam a grade de gramas por tamanho de acordo com o tecido
+    if (Array.isArray(banco.produtosBase)) {
+      banco.produtosBase.forEach(p => {
+        if (!p.consumosPorTamanho || Object.keys(p.consumosPorTamanho).length === 0) {
+          const base = parseFloat(p.consumoMalhaKgPorPeca) || 0.28;
+          const mapa = {};
+          const FATORES_ABNT = {
+            'pp': 0.88, 'p': 0.94, 'm': 1.00, 'g': 1.06, 'gg': 1.15, 'xg': 1.25,
+            'g1': 1.35, 'g2': 1.45, 'g3': 1.55, 'g4': 1.65, 'g5': 1.75,
+            'inf2': 0.45, 'inf4': 0.52, 'inf6': 0.60, 'inf8': 0.68, 'inf10': 0.76, 'inf12': 0.84, 'inf14': 0.90, 'inf16': 0.95,
+            'bl_pp': 0.78, 'bl_p': 0.84, 'bl_m': 0.90, 'bl_g': 0.96, 'bl_gg': 1.05, 'bl_xg': 1.12
+          };
+          Object.keys(FATORES_ABNT).forEach(tam => {
+            mapa[tam] = parseFloat((base * (FATORES_ABNT[tam] || 1.0)).toFixed(3));
+          });
+          p.consumosPorTamanho = mapa;
+        }
+      });
+    }
     if (!banco.insumosCatalogoMestre) {
       banco.insumosCatalogoMestre = JSON.parse(JSON.stringify(templatePadrao?.insumosCatalogoMestre || {}));
     }
@@ -3212,6 +3231,169 @@
     'slim_p': 0.90, 'slim_m': 0.95, 'slim_g': 1.00, 'slim_gg': 1.10, 'slim_xg': 1.20
   };
 
+  // Garante que qualquer modelagem possua sua tabela de consumo em gramas por tamanho
+  function garantirConsumosPorTamanhoProduto(prod) {
+    if (!prod) return {};
+    if (prod.consumosPorTamanho && Object.keys(prod.consumosPorTamanho).length > 0) {
+      return prod.consumosPorTamanho;
+    }
+    const base = parseFloat(prod.consumoMalhaKgPorPeca) || 0.28;
+    const mapa = {};
+    Object.keys(FATORES_CONSUMO_TAMANHO).forEach(tam => {
+      const fator = FATORES_CONSUMO_TAMANHO[tam] || 1.0;
+      mapa[tam] = parseFloat((base * fator).toFixed(3));
+    });
+    prod.consumosPorTamanho = mapa;
+    return mapa;
+  }
+
+  // Componente de formulário para configurar gramas de consumo por tamanho
+  function gerarHtmlGradeConsumosTamanhoForm(consumosExistentes, baseM = 0.28, isMetros = false, prefixId = 'cad') {
+    const siglaUn = isMetros ? 'm' : 'g';
+    const secoes = [
+      {
+        titulo: '👕 Adulto Regular (Comercial)',
+        chaves: ['pp', 'p', 'm', 'g', 'gg', 'xg']
+      },
+      {
+        titulo: '⚡ Tamanhos Especiais / Plus Size',
+        chaves: ['g1', 'g2', 'g3', 'g4', 'g5']
+      },
+      {
+        titulo: '👶 Grade Infantil & Juvenil',
+        chaves: ['inf2', 'inf4', 'inf6', 'inf8', 'inf10', 'inf12', 'inf14', 'inf16']
+      },
+      {
+        titulo: '👚 Baby Look Feminina',
+        chaves: ['bl_pp', 'bl_p', 'bl_m', 'bl_g', 'bl_gg', 'bl_xg']
+      }
+    ];
+
+    return `
+      <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-top: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <strong style="font-size: 13px; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1e40af" stroke-width="2.2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              Consumo de Tecido por Tamanho de Acordo com o Tecido *Obrigatório
+            </strong>
+            <span style="font-size: 11px; color: #64748b; display: block; margin-top: 2px;">
+              ${isMetros ? 'Informe quantos metros lineares cada tamanho consome de corte' : 'Informe quantas gramas cada tamanho consome de malha (ex: 280g = 0.280 kg)'}
+            </span>
+          </div>
+          <button type="button" class="btn btn-secondary btn-xs" id="${prefixId}_btnRecalcularProporcional" style="font-size: 11px; font-weight: 700; color: #1e40af; background: #eff6ff; border-color: #bfdbfe;" title="Recalcular todos os tamanhos a partir da modelagem M">
+            ⚡ Preencher Todos da Base M
+          </button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto; padding-right: 4px;">
+          ${secoes.map(sec => `
+            <div>
+              <div style="font-size: 10.5px; font-weight: 700; color: #334155; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.3px;">
+                ${sec.titulo}
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 6px;">
+                ${sec.chaves.map(ch => {
+                  const itemCat = CATALOGO_TAMANHOS_MESTRE.find(x => x.chave === ch);
+                  const rotulo = itemCat ? itemCat.rotulo : ch.toUpperCase();
+                  const fator = FATORES_CONSUMO_TAMANHO[ch] || 1.0;
+                  const valSalvoKg = (consumosExistentes && consumosExistentes[ch] != null)
+                    ? parseFloat(consumosExistentes[ch])
+                    : parseFloat((baseM * fator).toFixed(3));
+
+                  const valorInput = isMetros
+                    ? valSalvoKg.toFixed(2)
+                    : Math.round(valSalvoKg * 1000);
+
+                  const isBase = ch === 'm';
+
+                  return `
+                    <div style="background: ${isBase ? '#eff6ff' : '#ffffff'}; border: 1.5px solid ${isBase ? '#93c5fd' : '#e2e8f0'}; border-radius: 6px; padding: 5px 6px; text-align: center;">
+                      <div style="font-size: 11px; font-weight: 800; color: ${isBase ? '#1e40af' : '#1e293b'}; margin-bottom: 3px;">
+                        ${rotulo} ${isBase ? '<span style="font-size: 9px; color: #2563eb;">(BASE)</span>' : ''}
+                      </div>
+                      <div style="display: flex; align-items: center; justify-content: center; gap: 2px;">
+                        <input type="number" 
+                               step="${isMetros ? '0.01' : '1'}" 
+                               min="${isMetros ? '0.1' : '10'}" 
+                               class="form-input text-mono ${prefixId}-inp-tam-consumo" 
+                               data-chave="${ch}" 
+                               data-fator="${fator}"
+                               style="width: 58px; text-align: center; font-weight: 800; font-size: 12px; padding: 3px 2px; border-radius: 4px; border: 1px solid #cbd5e1;" 
+                               value="${valorInput}">
+                        <span style="font-size: 10px; font-weight: 700; color: #64748b;">${siglaUn}</span>
+                      </div>
+                      <span class="${prefixId}-span-kg-tam" data-chave="${ch}" style="font-size: 9.5px; color: #64748b; display: block; margin-top: 2px; font-family: monospace;">
+                        ${isMetros ? `${valSalvoKg.toFixed(2)}m` : `${valSalvoKg.toFixed(3)}kg`}
+                      </span>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function configurarEventosGradeConsumosForm(modalEl, prefixId, isMetros = false) {
+    modalEl.querySelectorAll(`.${prefixId}-inp-tam-consumo`).forEach(inp => {
+      inp.addEventListener('input', () => {
+        const ch = inp.getAttribute('data-chave');
+        const val = parseFloat(inp.value) || 0;
+        const valKg = isMetros ? val : (val / 1000);
+        const spanKg = modalEl.querySelector(`.${prefixId}-span-kg-tam[data-chave="${ch}"]`);
+        if (spanKg) {
+          spanKg.textContent = isMetros ? `${valKg.toFixed(2)}m` : `${valKg.toFixed(3)}kg`;
+        }
+      });
+    });
+
+    modalEl.querySelector(`#${prefixId}_btnRecalcularProporcional`)?.addEventListener('click', () => {
+      const inpM = modalEl.querySelector(`.${prefixId}-inp-tam-consumo[data-chave="m"]`);
+      const valM = parseFloat(inpM?.value) || (isMetros ? 0.75 : 280);
+      modalEl.querySelectorAll(`.${prefixId}-inp-tam-consumo`).forEach(inp => {
+        const fator = parseFloat(inp.getAttribute('data-fator')) || 1.0;
+        const novoVal = isMetros ? parseFloat((valM * fator).toFixed(2)) : Math.round(valM * fator);
+        inp.value = novoVal;
+        const ch = inp.getAttribute('data-chave');
+        const valKg = isMetros ? novoVal : (novoVal / 1000);
+        const spanKg = modalEl.querySelector(`.${prefixId}-span-kg-tam[data-chave="${ch}"]`);
+        if (spanKg) {
+          spanKg.textContent = isMetros ? `${valKg.toFixed(2)}m` : `${valKg.toFixed(3)}kg`;
+        }
+      });
+    });
+  }
+
+  function extrairConsumosGradeForm(modalEl, prefixId, isMetros = false) {
+    const mapa = {};
+    let temErro = false;
+    let totalPreenchidos = 0;
+
+    modalEl.querySelectorAll(`.${prefixId}-inp-tam-consumo`).forEach(inp => {
+      const ch = inp.getAttribute('data-chave');
+      const val = parseFloat(inp.value);
+      if (isNaN(val) || val <= 0) {
+        temErro = true;
+        inp.style.borderColor = '#ef4444';
+        inp.style.background = '#fef2f2';
+      } else {
+        inp.style.borderColor = '#cbd5e1';
+        inp.style.background = '#ffffff';
+        const valKg = isMetros ? val : parseFloat((val / 1000).toFixed(3));
+        mapa[ch] = valKg;
+        totalPreenchidos++;
+      }
+    });
+
+    if (temErro || totalPreenchidos === 0) {
+      return null;
+    }
+    return mapa;
+  }
+
   function obterTamanhosSelecionadosGrade(grade) {
     if (!grade) return [];
     const res = [];
@@ -4910,6 +5092,8 @@
       ? window.ERP_MOCKUPS.gerarMockupSvg(prod.nome, "#1e3a8a", "#ffffff", sigla)
       : '';
 
+    const mapaCons = garantirConsumosPorTamanhoProduto(prod);
+
     return {
       id: 'ITEM-' + Date.now() + '-' + idNum,
       produtoId: prod.id,
@@ -4919,7 +5103,8 @@
       observacoesCoresDetalhes: '',
       grade: { pp: 0, p: 0, m: 0, g: 0, gg: 0, xg: 0, total: 0 },
       aplicacoes: [appInicial],
-      unidadeTecido: 'kg', // 'kg' (Quilos) ou 'metro' (Metros)
+      unidadeTecido: prod.unidadeTecido || 'kg', // 'kg' (Quilos) ou 'metro' (Metros)
+      consumosCustomizadosPorTamanho: mapaCons ? JSON.parse(JSON.stringify(mapaCons)) : null,
       consumoTotalTecido: 0,
       consumoUnitarioPonderado: prod.consumoMalhaKgPorPeca || 0.28,
       custoTecidoKg: pdr.custoTecidoKg || 48.50,
@@ -5886,9 +6071,27 @@
                     <input type="number" id="inputCustoTecido" class="form-input" value="${padroes.custoTecidoKg.toFixed(2)}" step="0.50">
                   </div>
 
-                  <div class="form-group" style="flex: 1;">
-                    <label class="form-label" id="labelInputConsumoTecido" title="Consumo têxtil base do tamanho M">Consumo Base M (kg/un)</label>
-                    <input type="number" id="inputConsumoTecido" class="form-input" value="0.28" step="0.01" min="0.05">
+                  <div class="form-group" style="flex: 1.35; min-width: 175px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                      <label class="form-label" id="labelInputConsumoTecido" style="margin-bottom: 0; font-size: 11px;" title="Consumo têxtil base do tamanho M">
+                        Consumo Base M <span id="labelUnidadeConsumoBase">(kg/un)</span>
+                      </label>
+                      <button type="button" class="btn btn-secondary btn-xs" id="btnAtalhoVerConsumoTamanhos" style="font-size: 10px; font-weight: 800; padding: 1px 6px; color: #1e40af; background: #eff6ff; border-color: #bfdbfe; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Ver e editar o consumo em gramas de cada tamanho da grade">
+                        📊 Grade (g) ✏️
+                      </button>
+                    </div>
+                    <div style="position: relative;">
+                      <input type="number" id="inputConsumoTecido" class="form-input text-mono" value="0.28" step="0.01" min="0.01" style="font-weight: 800; font-size: 13px; padding-right: 52px;">
+                      <span id="badgeConsumoEquivGramas" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: 800; color: #1e40af; background: #eff6ff; padding: 1px 6px; border-radius: 4px; border: 1px solid #bfdbfe; pointer-events: none;">
+                        280g
+                      </span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; font-size: 10px;">
+                      <span id="spanConsumoGramasDica" style="color: #64748b; font-family: monospace;">280g = 0.28 kg</span>
+                      <span id="badgeConsumoPonderadoReal" class="status-pill status-blue" style="font-size: 9.5px; padding: 1px 6px; font-weight: 700; cursor: pointer;" title="Média real calculada pela grade deste pedido. Clique para ver/editar todos os tamanhos.">
+                        Grade: 0.280 kg
+                      </span>
+                    </div>
                   </div>
 
                   <div class="form-group" style="flex: 1;">
@@ -6045,7 +6248,29 @@
       }
 
       it.custoTecidoKg = parseFloat(document.getElementById('inputCustoTecido')?.value || padroes.custoTecidoKg || 48.50);
-      it.consumoTecido = parseFloat(document.getElementById('inputConsumoTecido')?.value || 0.28);
+      let consumoLido = parseFloat(document.getElementById('inputConsumoTecido')?.value || 0.28);
+      // Se digitou em gramas (> 10, ex: 280), converte automaticamente para kg (0.28)
+      if (it.unidadeTecido !== 'metro' && consumoLido > 10) {
+        consumoLido = parseFloat((consumoLido / 1000).toFixed(3));
+        const inpCons = document.getElementById('inputConsumoTecido');
+        if (inpCons) inpCons.value = consumoLido.toFixed(2);
+      }
+
+      const anteriorConsumo = it.consumoTecido || 0.28;
+      if (Math.abs(consumoLido - anteriorConsumo) > 0.0001) {
+        it.consumoTecido = consumoLido;
+        // Se já possui consumos customizados por tamanho, escala proporcionalmente
+        if (it.consumosCustomizadosPorTamanho && anteriorConsumo > 0) {
+          const escala = consumoLido / anteriorConsumo;
+          if (escala > 0 && Math.abs(escala - 1.0) > 0.001) {
+            Object.keys(it.consumosCustomizadosPorTamanho).forEach(tam => {
+              it.consumosCustomizadosPorTamanho[tam] = parseFloat((it.consumosCustomizadosPorTamanho[tam] * escala).toFixed(3));
+            });
+          }
+        }
+      } else {
+        it.consumoTecido = consumoLido;
+      }
       it.margemErroTecido = parseFloat(document.getElementById('inputMargemErroTecido')?.value || 8.0);
       it.custoAviamento = parseFloat(document.getElementById('inputCustoAviamento')?.value || 4.80);
       it.custoCostura = parseFloat(document.getElementById('inputCustoCostura')?.value || 7.50);
@@ -6350,8 +6575,12 @@
                 it.produtoId = novoMod.id;
                 it.produtoNome = novoMod.nome;
                 it.tipoMalhaPadrao = novoMod.tipoMalhaPadrao;
+                it.unidadeTecido = novoMod.unidadeTecido || 'kg';
                 it.custoCostura = novoMod.custoMaoDeObraBase || 7.50;
                 it.consumoTecido = novoMod.consumoMalhaKgPorPeca || 0.28;
+                if (novoMod.consumosPorTamanho) {
+                  it.consumosCustomizadosPorTamanho = JSON.parse(JSON.stringify(novoMod.consumosPorTamanho));
+                }
               }
               carregarItemAtivoNoDOM();
               atualizarVisualComboboxModelo(novoMod.id);
@@ -6559,6 +6788,19 @@
       if (inpTec) inpTec.value = (it.custoTecidoKg || padroes.custoTecidoKg || 48.50).toFixed(2);
       const inpCons = document.getElementById('inputConsumoTecido');
       if (inpCons) inpCons.value = (it.consumoTecido || 0.28).toFixed(2);
+      const isMet = (it.unidadeTecido === 'metro');
+      const badgeGramas = document.getElementById('badgeConsumoEquivGramas');
+      if (badgeGramas) {
+        badgeGramas.textContent = isMet ? `${(it.consumoTecido || 0.75).toFixed(2)}m` : `${Math.round((it.consumoTecido || 0.28) * 1000)}g`;
+      }
+      const spanDica = document.getElementById('spanConsumoGramasDica');
+      if (spanDica) {
+        spanDica.textContent = isMet ? 'Metros lineares tam M' : `${Math.round((it.consumoTecido || 0.28) * 1000)}g = ${(it.consumoTecido || 0.28).toFixed(2)} kg`;
+      }
+      const lblUnidadeBase = document.getElementById('labelUnidadeConsumoBase');
+      if (lblUnidadeBase) {
+        lblUnidadeBase.textContent = isMet ? '(m/un)' : '(kg/un)';
+      }
       const inpMarg = document.getElementById('inputMargemErroTecido');
       if (inpMarg) inpMarg.value = (it.margemErroTecido || 8.0).toFixed(1);
       const inpAv = document.getElementById('inputCustoAviamento');
@@ -6796,8 +7038,13 @@
         it.produtoId = prod.id;
         it.produtoNome = prod.nome;
         it.tipoMalhaPadrao = prod.tipoMalhaPadrao;
+        it.unidadeTecido = prod.unidadeTecido || 'kg';
         it.consumoTecido = prod.consumoMalhaKgPorPeca || 0.28;
         it.custoCostura = prod.custoMaoDeObraBase || 7.50;
+        const mapaCons = garantirConsumosPorTamanhoProduto(prod);
+        if (mapaCons) {
+          it.consumosCustomizadosPorTamanho = JSON.parse(JSON.stringify(mapaCons));
+        }
 
         const inpConsumo = document.getElementById('inputConsumoTecido');
         if (inpConsumo) inpConsumo.value = it.consumoTecido.toFixed(2);
@@ -6946,8 +7193,12 @@
             it.produtoId = novoMod.id;
             it.produtoNome = novoMod.nome;
             it.tipoMalhaPadrao = novoMod.tipoMalhaPadrao;
+            it.unidadeTecido = novoMod.unidadeTecido || 'kg';
             it.custoCostura = novoMod.custoMaoDeObraBase || 7.50;
             it.consumoTecido = novoMod.consumoMalhaKgPorPeca || 0.28;
+            if (novoMod.consumosPorTamanho) {
+              it.consumosCustomizadosPorTamanho = JSON.parse(JSON.stringify(novoMod.consumosPorTamanho));
+            }
           }
           carregarItemAtivoNoDOM();
           atualizarVisualComboboxModelo(novoMod.id);
@@ -7031,12 +7282,12 @@
                     <tr style="background: #0f172a; color: #ffffff; position: sticky; top: 0; z-index: 2;">
                       <th style="padding: 7px 8px; width: 13%;">Tamanho</th>
                       <th style="padding: 7px 8px; width: 7%; text-align: center;">Qtd</th>
-                      <th style="padding: 7px 8px; width: 18%; text-align: right; background: #1e293b; color: #38bdf8;">Consumo (${siglaUn}) ✏️</th>
+                      <th style="padding: 7px 8px; width: 19%; text-align: right; background: #1e293b; color: #38bdf8;">Consumo (${siglaUn} / g) ✏️</th>
                       <th style="padding: 7px 8px; width: 12%; text-align: right;">Tecido (R$)</th>
                       <th style="padding: 7px 8px; width: 10%; text-align: right;">Costura (R$)</th>
                       <th style="padding: 7px 8px; width: 10%; text-align: right;">Estampa (R$)</th>
                       <th style="padding: 7px 8px; width: 10%; text-align: right;">Aviam./Emb.</th>
-                      <th style="padding: 7px 8px; width: 20%; text-align: right; background: #1e3a8a; color: #ffffff;">Custo Unitário Final (R$) ✏️</th>
+                      <th style="padding: 7px 8px; width: 19%; text-align: right; background: #1e3a8a; color: #ffffff;">Custo Unitário Final (R$) ✏️</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -7082,16 +7333,21 @@
                           </td>
                           <td style="padding: 5px 8px; text-align: right; background: #f8fafc;">
                             <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; width: 100%;">
-                              <input type="number" step="0.005" min="0.01" class="form-input inp-consumo-tam-manual text-mono" 
+                              <input type="number" step="${unidadeTec === 'metro' ? '0.01' : '0.005'}" min="0.01" class="form-input inp-consumo-tam-manual text-mono" 
                                      style="width: 78px; text-align: right; font-weight: 800; font-size: 12px; padding: 3px 5px; color: #0f172a; border: 1.5px solid #cbd5e1; border-radius: 4px; background: #ffffff;" 
                                      data-chave="${ch}" 
                                      data-auto-consumo="${consumoCalculadoAuto.toFixed(3)}"
                                      value="${consumoSalvo.toFixed(3)}">
                               <span style="font-size: 10.5px; font-weight: 600; color: #64748b;">${siglaUn}</span>
                             </div>
-                            <span class="perc-var-label" data-chave="${ch}" style="font-size: 9px; color: #64748b; display: block; text-align: right; margin-top: 1px;">
-                              (${diffPercStr})
-                            </span>
+                            <div style="display: flex; justify-content: flex-end; gap: 4px; align-items: center; margin-top: 1px;">
+                              <span class="span-equiv-gramas-tam" data-chave="${ch}" style="font-size: 9.5px; font-weight: 800; color: #1e40af; font-family: monospace;">
+                                ${unidadeTec === 'metro' ? `${consumoSalvo.toFixed(2)}m` : `${Math.round(consumoSalvo * 1000)}g`}
+                              </span>
+                              <span class="perc-var-label" data-chave="${ch}" style="font-size: 9px; color: #64748b;">
+                                (${diffPercStr})
+                              </span>
+                            </div>
                           </td>
                           <td class="col-custo-tecido-val" data-chave="${ch}" style="padding: 6px 8px; text-align: right; font-family: monospace; font-weight: 700; color: #1e40af;">
                             ${formatarMoeda(custoTecTam)}
@@ -7147,7 +7403,11 @@
       modalEl.querySelectorAll('.inp-consumo-tam-manual').forEach(inpConsumo => {
         inpConsumo.addEventListener('input', () => {
           const ch = inpConsumo.getAttribute('data-chave');
-          const novoConsumo = parseFloat(inpConsumo.value) || 0;
+          let novoConsumo = parseFloat(inpConsumo.value) || 0;
+          if (unidadeTec !== 'metro' && novoConsumo > 10) {
+            novoConsumo = parseFloat((novoConsumo / 1000).toFixed(3));
+            inpConsumo.value = novoConsumo.toFixed(3);
+          }
           const novoCustoTec = novoConsumo * custoTecKg;
 
           // 1. Atualiza a célula Tecido (R$)
@@ -7168,7 +7428,12 @@
           const labelPrecoSug = modalEl.querySelector(`.label-preco-sug-tam[data-chave="${ch}"]`);
           if (labelPrecoSug) labelPrecoSug.textContent = `Sugerido: ${formatarMoeda(novoPrecoSug)}`;
 
-          // 4. Atualiza o badge percentual de variação vs Base M
+          // 4. Atualiza a indicação em gramas / metros e o badge percentual
+          const spanEquiv = modalEl.querySelector(`.span-equiv-gramas-tam[data-chave="${ch}"]`);
+          if (spanEquiv) {
+            spanEquiv.textContent = (unidadeTec === 'metro') ? `${novoConsumo.toFixed(2)}m` : `${Math.round(novoConsumo * 1000)}g`;
+          }
+
           if (basePadraoM > 0) {
             const perc = ((novoConsumo - basePadraoM) / basePadraoM) * 100;
             const labelPerc = modalEl.querySelector(`.perc-var-label[data-chave="${ch}"]`);
@@ -7202,7 +7467,12 @@
           const labelPrecoSug = modalEl.querySelector(`.label-preco-sug-tam[data-chave="${ch}"]`);
           if (labelPrecoSug) labelPrecoSug.textContent = `Sugerido: ${formatarMoeda(novoPrecoSug)}`;
 
-          // 4. Atualiza o badge percentual de variação vs Base M
+          // 4. Atualiza a indicação em gramas / metros e o badge percentual
+          const spanEquiv = modalEl.querySelector(`.span-equiv-gramas-tam[data-chave="${ch}"]`);
+          if (spanEquiv) {
+            spanEquiv.textContent = (unidadeTec === 'metro') ? `${novoConsumo.toFixed(2)}m` : `${Math.round(novoConsumo * 1000)}g`;
+          }
+
           if (basePadraoM > 0) {
             const perc = ((novoConsumo - basePadraoM) / basePadraoM) * 100;
             const labelPerc = modalEl.querySelector(`.perc-var-label[data-chave="${ch}"]`);
@@ -7222,6 +7492,10 @@
           const novoCustoTec = autoConsumo * custoTecKg;
           const celulaTec = modalEl.querySelector(`.col-custo-tecido-val[data-chave="${ch}"]`);
           if (celulaTec) celulaTec.textContent = formatarMoeda(novoCustoTec);
+          const spanEquiv = modalEl.querySelector(`.span-equiv-gramas-tam[data-chave="${ch}"]`);
+          if (spanEquiv) {
+            spanEquiv.textContent = (unidadeTec === 'metro') ? `${autoConsumo.toFixed(2)}m` : `${Math.round(autoConsumo * 1000)}g`;
+          }
           if (basePadraoM > 0) {
             const perc = ((autoConsumo - basePadraoM) / basePadraoM) * 100;
             const labelPerc = modalEl.querySelector(`.perc-var-label[data-chave="${ch}"]`);
@@ -7253,9 +7527,10 @@
 
         modalEl.querySelectorAll('.inp-consumo-tam-manual').forEach(inp => {
           const ch = inp.getAttribute('data-chave');
-          const cVal = parseFloat(inp.value);
+          let cVal = parseFloat(inp.value);
+          if (unidadeTec !== 'metro' && cVal > 10) cVal = cVal / 1000;
           if (ch && !isNaN(cVal) && cVal > 0) {
-            it.consumosCustomizadosPorTamanho[ch] = cVal;
+            it.consumosCustomizadosPorTamanho[ch] = parseFloat(cVal.toFixed(3));
           }
         });
 
@@ -7348,6 +7623,29 @@
       itAtivo.consumoUnitarioPonderado = consumoRealComPerdaMedio;
       itAtivo.custoTecidoUnitarioPonderado = custoTecidoUnitario;
       itAtivo.unidadeTecido = unidadeTec;
+
+      // Atualiza badges dinâmicos de consumo base e média da grade no DOM
+      const badgePonderado = document.getElementById('badgeConsumoPonderadoReal');
+      if (badgePonderado) {
+        if (isMetros) {
+          badgePonderado.textContent = `Grade: ${consumoRealComPerdaMedio.toFixed(2)}m`;
+        } else {
+          badgePonderado.textContent = `Grade: ${consumoRealComPerdaMedio.toFixed(3)}kg (${Math.round(consumoRealComPerdaMedio * 1000)}g)`;
+        }
+        badgePonderado.title = `Consumo médio ponderado com perda de corte (${margemErro.toFixed(1)}%) considerando os tamanhos da grade. Clique para ver/editar todos os tamanhos.`;
+      }
+      const badgeGramas = document.getElementById('badgeConsumoEquivGramas');
+      if (badgeGramas) {
+        badgeGramas.textContent = isMetros ? `${consumoBaseM.toFixed(2)}m` : `${Math.round(consumoBaseM * 1000)}g`;
+      }
+      const spanDica = document.getElementById('spanConsumoGramasDica');
+      if (spanDica) {
+        spanDica.textContent = isMetros ? 'Metragem linear por peça M' : `${Math.round(consumoBaseM * 1000)}g = ${consumoBaseM.toFixed(2)} kg`;
+      }
+      const lblUnidadeBase = document.getElementById('labelUnidadeConsumoBase');
+      if (lblUnidadeBase) {
+        lblUnidadeBase.textContent = isMetros ? '(m/un)' : '(kg/un)';
+      }
 
       const boxRendimento = document.getElementById('boxRendimentoTecido');
       if (boxRendimento) {
@@ -7678,6 +7976,16 @@
     inputsRecalculo.forEach(id => {
       document.getElementById(id)?.addEventListener('input', recalcularBenchmarkModal);
       document.getElementById(id)?.addEventListener('change', recalcularBenchmarkModal);
+    });
+
+    // Atalho direto para abrir a engenharia de consumo por tamanho em gramas
+    document.getElementById('btnAtalhoVerConsumoTamanhos')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      abrirModalDetalhamentoCustosPorPeca();
+    });
+    document.getElementById('badgeConsumoPonderadoReal')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      abrirModalDetalhamentoCustosPorPeca();
     });
 
     // Atalhos de preenchimento rápido de grade
@@ -14056,127 +14364,400 @@
     pageTitleElem.textContent = 'Catálogo de Modelagens & Produtos Têxteis';
     pageBreadcrumbElem.textContent = 'SISTEMA > PRODUTOS';
 
+    // Garante consumos pré-definidos para todos os modelos da base
+    (db.produtosBase || []).forEach(p => garantirConsumosPorTamanhoProduto(p));
+
     contentArea.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <p style="color: var(--text-gray-500);">Catálogo completo com todas as modelagens têxteis profissionais, corporativas e operacionais.</p>
-        <button class="btn btn-primary" id="btnNovoModeloCatalogo">+ Nova Modelagem Têxtil</button>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <h2 style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin: 0;">Catálogo de Modelagens & Engenharia de Consumo</h2>
+          <p style="color: var(--text-gray-500); font-size: 12px; margin: 2px 0 0 0;">
+            Configure o consumo em gramas/metros de cada tamanho de acordo com o tecido para alimentar os pedidos automaticamente.
+          </p>
+        </div>
+        <button class="btn btn-primary" id="btnNovoModeloCatalogo" style="font-weight: 700;">+ Nova Modelagem Têxtil</button>
       </div>
 
       <div class="grid-cards-3">
-        ${db.produtosBase.map(prod => `
-          <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <span class="status-pill status-gray">${prod.codigo}</span>
-              <span class="text-mono" style="font-size: 11px; color: var(--text-gray-500);">${prod.categoria}</span>
-            </div>
-            
-            <h3 style="font-size: 14.5px; font-weight: 800; color: var(--text-primary); margin-bottom: 8px;">${prod.nome}</h3>
-            
-            <div style="font-size: 12px; color: var(--text-gray-600); margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
-              <div><strong>Malha/Tecido Base:</strong> ${prod.tipoMalhaPadrao}</div>
-              <div><strong>Consumo Médio por Peça:</strong> <span class="text-mono" style="font-weight: 700; color: var(--text-primary);">${prod.consumoMalhaKgPorPeca} kg/m</span></div>
-              <div><strong>Mão de Obra de Costura:</strong> <span class="text-mono" style="font-weight: 700; color: var(--text-primary);">${formatarMoeda(prod.custoMaoDeObraBase)}</span></div>
-            </div>
+        ${db.produtosBase.map(prod => {
+          const mapaCons = garantirConsumosPorTamanhoProduto(prod);
+          const isMetros = (prod.unidadeTecido === 'metro') || (prod.consumoMalhaKgPorPeca > 0.8 && !prod.tipoMalhaPadrao.toLowerCase().includes('malha'));
+          const baseM = prod.consumoMalhaKgPorPeca || 0.28;
+          const rotuloBase = isMetros ? `${baseM.toFixed(2)}m` : `${Math.round(baseM * 1000)}g (${baseM.toFixed(3)}kg)`;
 
-            <div style="border-top: 1px solid var(--border-subtle); padding-top: 10px; font-size: 11.5px;">
-              <strong style="color: var(--text-gray-600); display: block; margin-bottom: 4px;">Aviamentos Fixos:</strong>
-              <ul style="list-style: none; padding-left: 0; color: var(--text-gray-500);">
-                ${(prod.aviamentosPadrao || []).map(a => `<li>• ${a.nome} (${a.qtd}x) - ${formatarMoeda(a.custoUnitario)}</li>`).join('')}
-              </ul>
+          return `
+            <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span class="status-pill status-gray">${prod.codigo}</span>
+                  <span class="text-mono" style="font-size: 11px; color: var(--text-gray-500);">${prod.categoria}</span>
+                </div>
+                
+                <h3 style="font-size: 14.5px; font-weight: 800; color: var(--text-primary); margin-bottom: 8px;">${prod.nome}</h3>
+                
+                <div style="font-size: 12px; color: var(--text-gray-600); margin-bottom: 10px; display: flex; flex-direction: column; gap: 4px;">
+                  <div><strong>Malha/Tecido:</strong> <span style="color: #1e40af; font-weight: 600;">${prod.tipoMalhaPadrao}</span></div>
+                  <div><strong>Consumo Base M:</strong> <span class="text-mono" style="font-weight: 800; color: #047857;">${rotuloBase}</span></div>
+                  <div><strong>Mão de Obra Costura:</strong> <span class="text-mono" style="font-weight: 700; color: var(--text-primary);">${formatarMoeda(prod.custoMaoDeObraBase)}</span></div>
+                </div>
+
+                <!-- Resumo dos Consumos por Tamanho em Gramas/Metros -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 7px 9px; margin-bottom: 10px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #475569;">Consumo por Tamanho (${isMetros ? 'Metros' : 'Gramas'}):</span>
+                    <span style="font-size: 9.5px; color: #0284c7; font-weight: 700;">${isMetros ? 'Metragem linear' : 'Gramatura'}</span>
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 3px;">
+                    ${['pp', 'p', 'm', 'g', 'gg', 'xg', 'g1', 'g2'].map(ch => {
+                      const cTam = mapaCons[ch] || (baseM * (FATORES_CONSUMO_TAMANHO[ch] || 1.0));
+                      const lbl = isMetros ? `${cTam.toFixed(2)}m` : `${Math.round(cTam * 1000)}g`;
+                      const isM = ch === 'm';
+                      return `<span style="background: ${isM ? '#eff6ff' : '#ffffff'}; border: 1px solid ${isM ? '#93c5fd' : '#cbd5e1'}; padding: 1px 5px; border-radius: 3px; font-family: monospace; font-size: 10px; color: ${isM ? '#1e40af' : '#334155'};"><strong>${ch.toUpperCase()}:</strong> ${lbl}</span>`;
+                    }).join('')}
+                  </div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: 8px; font-size: 11px;">
+                  <strong style="color: var(--text-gray-600); display: block; margin-bottom: 2px;">Aviamentos Fixos:</strong>
+                  <ul style="list-style: none; padding-left: 0; color: var(--text-gray-500); margin: 0;">
+                    ${(prod.aviamentosPadrao || []).map(a => `<li>• ${a.nome} (${a.qtd}x) - ${formatarMoeda(a.custoUnitario)}</li>`).join('')}
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Ações da Modelagem -->
+              <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-subtle); display: flex; gap: 6px;">
+                <button type="button" class="btn btn-secondary btn-sm btn-editar-modelo-catalogo" data-id="${prod.id}" style="width: 100%; font-size: 11.5px; font-weight: 700; color: #1e40af; background: #eff6ff; border-color: #bfdbfe; display: flex; align-items: center; justify-content: center; gap: 5px;" title="Editar gramas consumidas por tamanho e custos da modelagem">
+                  ✏️ Editar Gramas por Tamanho & Custos
+                </button>
+              </div>
             </div>
-          </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
     `;
 
     document.getElementById('btnNovoModeloCatalogo')?.addEventListener('click', () => {
       abrirModalNovoModeloInline(() => renderizarProdutos());
     });
+
+    contentArea.querySelectorAll('.btn-editar-modelo-catalogo').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pId = btn.getAttribute('data-id');
+        const prod = (db.produtosBase || []).find(p => p.id === pId);
+        if (prod) {
+          abrirModalEditarModelo(prod, () => renderizarProdutos());
+        }
+      });
+    });
   }
 
-  function abrirModalNovoModeloInline(callback, nomeInicial = '') {
-    if (!modalContainer) return;
+  function abrirModalEditarModelo(prod, callback) {
+    if (!modalContainer || !prod) return;
+    garantirConsumosPorTamanhoProduto(prod);
+
+    const isMetrosInicial = (prod.unidadeTecido === 'metro') || (prod.consumoMalhaKgPorPeca > 0.8 && !prod.tipoMalhaPadrao.toLowerCase().includes('malha'));
+    const baseM = prod.consumoMalhaKgPorPeca || 0.28;
 
     const modalEl = criarModalCamada(`
-      <div class="modal-overlay active" id="modalNovoModeloInlineOverlay">
-        <div class="modal-box" style="max-width: 580px;">
+      <div class="modal-overlay active" id="modalEditarModeloOverlay" style="z-index: 10000;">
+        <div class="modal-box" style="max-width: 840px;">
           <div class="modal-header">
-            <div class="modal-title">Cadastrar Nova Modelagem Têxtil</div>
-            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+            <div>
+              <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1e40af" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                <span>Editar Modelagem Têxtil • ${prod.nome}</span>
+              </div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">
+                Ajuste os dados técnicos e a grade de consumo em gramas por tamanho de acordo com o tecido
+              </span>
+            </div>
+            <button class="modal-close" id="btnFecharModalEditarModelo">&times;</button>
           </div>
-          <div class="modal-body">
+
+          <div class="modal-body" style="padding-top: 10px;">
             <div class="form-row">
               <div class="form-group" style="flex: 1;">
-                <label class="form-label">Código Interno</label>
-                <input type="text" id="cadModCodigo" class="form-input" value="MOD-${Math.floor(10 + Math.random() * 90)}">
+                <label class="form-label">Código</label>
+                <input type="text" id="editModCodigo" class="form-input" value="${(prod.codigo || '').replace(/"/g, '&quot;')}">
               </div>
-              <div class="form-group" style="flex: 2;">
-                <label class="form-label">Nome da Peça / Modelo</label>
-                <input type="text" id="cadModNome" class="form-input" value="${(nomeInicial || '').replace(/"/g, '&quot;')}" placeholder="Ex: Calça Térmica Frigorífico">
+              <div class="form-group" style="flex: 2.5;">
+                <label class="form-label">Nome da Peça / Modelo *</label>
+                <input type="text" id="editModNome" class="form-input" value="${(prod.nome || '').replace(/"/g, '&quot;')}">
+              </div>
+              <div class="form-group" style="flex: 1.5;">
+                <label class="form-label">Categoria Têxtil</label>
+                <select id="editModCategoria" class="form-select">
+                  ${['Linha Corporativa', 'Promocional & Uniforme Leve', 'Linha Pesada & Operacional', 'Linha Saúde & Laboratorial', 'Linha Esportiva & Escolar', 'Linha Inverno & Escolar', 'Gastronomia & Serviços', 'Acessórios'].map(cat => `
+                    <option value="${cat}" ${prod.categoria === cat ? 'selected' : ''}>${cat}</option>
+                  `).join('')}
+                </select>
               </div>
             </div>
 
             <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Categoria Têxtil</label>
-                <select id="cadModCategoria" class="form-select">
-                  <option value="Linha Corporativa">Linha Corporativa</option>
-                  <option value="Linha Pesada & Operacional">Linha Pesada & Operacional</option>
-                  <option value="Linha Saúde & Laboratorial">Linha Saúde & Laboratorial</option>
-                  <option value="Linha Esportiva & Escolar">Linha Esportiva & Escolar</option>
-                  <option value="Gastronomia & Serviços">Gastronomia & Serviços</option>
-                  <option value="Acessórios">Acessórios</option>
+              <div class="form-group" style="flex: 2;">
+                <label class="form-label">Tipo de Malha / Tecido Padrão *</label>
+                <input type="text" id="editModMalha" class="form-input" value="${(prod.tipoMalhaPadrao || '').replace(/"/g, '&quot;')}">
+              </div>
+
+              <div class="form-group" style="flex: 1.2;">
+                <label class="form-label">Unidade de Medida</label>
+                <select id="editModUnidade" class="form-select">
+                  <option value="kg" ${!isMetrosInicial ? 'selected' : ''}>Quilos / Gramas (kg / g)</option>
+                  <option value="metro" ${isMetrosInicial ? 'selected' : ''}>Metros lineares (m)</option>
                 </select>
               </div>
 
-              <div class="form-group">
-                <label class="form-label">Tipo de Malha / Tecido Padrão</label>
-                <input type="text" id="cadModMalha" class="form-input" value="Malha Especial" placeholder="Ex: Brim Pesado 100% Alg">
+              <div class="form-group" style="flex: 1.2;">
+                <label class="form-label" id="lblEditModConsumoBase">Consumo Base M (${isMetrosInicial ? 'm' : 'g'})</label>
+                <input type="number" id="editModConsumoBase" class="form-input text-mono" style="font-weight: 800;" 
+                       value="${isMetrosInicial ? baseM.toFixed(2) : Math.round(baseM * 1000)}" 
+                       step="${isMetrosInicial ? '0.01' : '5'}">
+              </div>
+
+              <div class="form-group" style="flex: 1.2;">
+                <label class="form-label">Costura & MDO (R$)</label>
+                <input type="number" id="editModCostura" class="form-input" value="${(prod.custoMaoDeObraBase || 7.50).toFixed(2)}" step="0.50">
               </div>
             </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Consumo de Tecido (kg ou m / peça)</label>
-                <input type="number" id="cadModConsumo" class="form-input" value="0.30" step="0.05">
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Custo Mão de Obra Costura (R$)</label>
-                <input type="number" id="cadModCostura" class="form-input" value="8.00" step="0.50">
-              </div>
+            <!-- Grade de Consumos por Tamanho -->
+            <div id="containerGradeConsumoEditMod">
+              ${gerarHtmlGradeConsumosTamanhoForm(prod.consumosPorTamanho, baseM, isMetrosInicial, 'editmod')}
             </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
-            <button type="button" class="btn btn-primary" id="btnSalvarNovoModelo">Cadastrar e Selecionar</button>
+
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+            <button type="button" class="btn btn-secondary" id="btnCancelarEditarModelo">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnSalvarEditarModelo" style="font-weight: 800; background: var(--color-green); border-color: var(--color-green);">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Salvar Alterações da Modelagem
+            </button>
           </div>
         </div>
       </div>
     `);
 
+    document.getElementById('btnFecharModalEditarModelo')?.addEventListener('click', () => modalEl.remove());
+    document.getElementById('btnCancelarEditarModelo')?.addEventListener('click', () => modalEl.remove());
+
+    configurarEventosGradeConsumosForm(modalEl, 'editmod', isMetrosInicial);
+
+    // Mudança de unidade (kg vs metro)
+    document.getElementById('editModUnidade')?.addEventListener('change', () => {
+      const isM = document.getElementById('editModUnidade')?.value === 'metro';
+      const lbl = document.getElementById('lblEditModConsumoBase');
+      if (lbl) lbl.textContent = `Consumo Base M (${isM ? 'm' : 'g'})`;
+      const inpBase = document.getElementById('editModConsumoBase');
+      const valAtual = parseFloat(inpBase?.value) || 0;
+      if (isM && valAtual > 5) {
+        inpBase.value = (valAtual / 1000).toFixed(2);
+      } else if (!isM && valAtual <= 5) {
+        inpBase.value = Math.round(valAtual * 1000);
+      }
+      const bM = parseFloat(inpBase?.value) || (isM ? 0.75 : 0.28);
+      const container = document.getElementById('containerGradeConsumoEditMod');
+      if (container) {
+        container.innerHTML = gerarHtmlGradeConsumosTamanhoForm(prod.consumosPorTamanho, isM ? bM : (bM / 1000), isM, 'editmod');
+        configurarEventosGradeConsumosForm(modalEl, 'editmod', isM);
+      }
+    });
+
+    // Ao alterar o Consumo Base M, atualiza o campo de tamanho M na grade
+    document.getElementById('editModConsumoBase')?.addEventListener('input', () => {
+      const isM = document.getElementById('editModUnidade')?.value === 'metro';
+      const val = parseFloat(document.getElementById('editModConsumoBase')?.value) || 0;
+      const inpM = modalEl.querySelector('.editmod-inp-tam-consumo[data-chave="m"]');
+      if (inpM) {
+        inpM.value = val;
+        inpM.dispatchEvent(new Event('input'));
+      }
+    });
+
+    document.getElementById('btnSalvarEditarModelo')?.addEventListener('click', () => {
+      const nome = document.getElementById('editModNome')?.value.trim();
+      if (!nome) {
+        mostrarToast('Informe o nome da modelagem têxtil.', 'red');
+        return;
+      }
+      const isM = document.getElementById('editModUnidade')?.value === 'metro';
+      const consumosValidados = extrairConsumosGradeForm(modalEl, 'editmod', isM);
+      if (!consumosValidados) {
+        mostrarToast('É obrigatório preencher o consumo de tecido (em gramas) para todos os tamanhos!', 'red');
+        return;
+      }
+
+      prod.nome = nome;
+      prod.codigo = document.getElementById('editModCodigo')?.value.trim() || prod.codigo;
+      prod.categoria = document.getElementById('editModCategoria')?.value || prod.categoria;
+      prod.tipoMalhaPadrao = document.getElementById('editModMalha')?.value.trim() || prod.tipoMalhaPadrao;
+      prod.unidadeTecido = isM ? 'metro' : 'kg';
+      prod.custoMaoDeObraBase = parseFloat(document.getElementById('editModCostura')?.value || 7.50);
+      prod.consumosPorTamanho = consumosValidados;
+      prod.consumoMalhaKgPorPeca = consumosValidados['m'] || (isM ? 0.75 : 0.28);
+
+      salvarEstado();
+      modalEl.remove();
+      mostrarToast(`Modelagem "${prod.nome}" e consumos em gramas salvos com sucesso!`, 'green');
+      if (callback) callback(prod);
+    });
+  }
+
+  function abrirModalNovoModeloInline(callback, nomeInicial = '') {
+    if (!modalContainer) return;
+
+    const baseMPadraoKg = 0.28;
+    const mapaPadrao = {};
+    Object.keys(FATORES_CONSUMO_TAMANHO).forEach(tam => {
+      const fator = FATORES_CONSUMO_TAMANHO[tam] || 1.0;
+      mapaPadrao[tam] = parseFloat((baseMPadraoKg * fator).toFixed(3));
+    });
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active" id="modalNovoModeloInlineOverlay" style="z-index: 10000;">
+        <div class="modal-box" style="max-width: 840px;">
+          <div class="modal-header">
+            <div>
+              <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1e40af" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                <span>Cadastrar Nova Modelagem Têxtil</span>
+              </div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">
+                Cadastre a peça e configure as gramas de consumo por tamanho de acordo com o tecido
+              </span>
+            </div>
+            <button class="modal-close" id="btnFecharModalNovoModelo">&times;</button>
+          </div>
+          <div class="modal-body" style="padding-top: 10px;">
+            <div class="form-row">
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">Código Interno</label>
+                <input type="text" id="cadModCodigo" class="form-input" value="MOD-${Math.floor(10 + Math.random() * 90)}">
+              </div>
+              <div class="form-group" style="flex: 2.5;">
+                <label class="form-label">Nome da Peça / Modelo *</label>
+                <input type="text" id="cadModNome" class="form-input" value="${(nomeInicial || '').replace(/"/g, '&quot;')}" placeholder="Ex: Camisa Polo Esportiva Dry">
+              </div>
+              <div class="form-group" style="flex: 1.5;">
+                <label class="form-label">Categoria Têxtil</label>
+                <select id="cadModCategoria" class="form-select">
+                  <option value="Linha Corporativa">Linha Corporativa</option>
+                  <option value="Promocional & Uniforme Leve">Promocional & Uniforme Leve</option>
+                  <option value="Linha Pesada & Operacional">Linha Pesada & Operacional</option>
+                  <option value="Linha Saúde & Laboratorial">Linha Saúde & Laboratorial</option>
+                  <option value="Linha Esportiva & Escolar">Linha Esportiva & Escolar</option>
+                  <option value="Linha Inverno & Escolar">Linha Inverno & Escolar</option>
+                  <option value="Gastronomia & Serviços">Gastronomia & Serviços</option>
+                  <option value="Acessórios">Acessórios</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" style="flex: 2;">
+                <label class="form-label">Tipo de Malha / Tecido Padrão *</label>
+                <input type="text" id="cadModMalha" class="form-input" value="Meia Malha 30.1 Penteada" placeholder="Ex: Piquet PA, Brim Pesado, Dry Fit">
+              </div>
+
+              <div class="form-group" style="flex: 1.2;">
+                <label class="form-label">Unidade de Medida</label>
+                <select id="cadModUnidade" class="form-select">
+                  <option value="kg" selected>Quilos / Gramas (kg / g)</option>
+                  <option value="metro">Metros lineares (m)</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="flex: 1.2;">
+                <label class="form-label" id="lblCadModConsumoBase">Consumo Base M (g)</label>
+                <input type="number" id="cadModConsumo" class="form-input text-mono" value="280" step="5" style="font-weight: 800;">
+              </div>
+
+              <div class="form-group" style="flex: 1.2;">
+                <label class="form-label">Custo Mão de Obra Costura (R$)</label>
+                <input type="number" id="cadModCostura" class="form-input" value="7.50" step="0.50">
+              </div>
+            </div>
+
+            <!-- Grade Obrigatória de Consumo por Tamanho -->
+            <div id="containerGradeConsumoCadMod">
+              ${gerarHtmlGradeConsumosTamanhoForm(mapaPadrao, baseMPadraoKg, false, 'cadmod')}
+            </div>
+          </div>
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+            <button type="button" class="btn btn-secondary" id="btnCancelarNovoModelo">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnSalvarNovoModelo" style="font-weight: 800; background: var(--color-green); border-color: var(--color-green);">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Cadastrar Modelagem com Consumos
+            </button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    document.getElementById('btnFecharModalNovoModelo')?.addEventListener('click', () => modalEl.remove());
+    document.getElementById('btnCancelarNovoModelo')?.addEventListener('click', () => modalEl.remove());
+
+    configurarEventosGradeConsumosForm(modalEl, 'cadmod', false);
+
+    // Mudança de unidade
+    document.getElementById('cadModUnidade')?.addEventListener('change', () => {
+      const isM = document.getElementById('cadModUnidade')?.value === 'metro';
+      const lbl = document.getElementById('lblCadModConsumoBase');
+      if (lbl) lbl.textContent = `Consumo Base M (${isM ? 'm' : 'g'})`;
+      const inp = document.getElementById('cadModConsumo');
+      if (inp) inp.value = isM ? '0.75' : '280';
+      const bM = parseFloat(inp?.value) || (isM ? 0.75 : 280);
+      const container = document.getElementById('containerGradeConsumoCadMod');
+      if (container) {
+        container.innerHTML = gerarHtmlGradeConsumosTamanhoForm(null, isM ? bM : (bM / 1000), isM, 'cadmod');
+        configurarEventosGradeConsumosForm(modalEl, 'cadmod', isM);
+      }
+    });
+
+    // Ao alterar o Consumo Base M no cadastro, atualiza e sincroniza a grade
+    document.getElementById('cadModConsumo')?.addEventListener('input', () => {
+      const isM = document.getElementById('cadModUnidade')?.value === 'metro';
+      const val = parseFloat(document.getElementById('cadModConsumo')?.value) || 0;
+      const inpM = modalEl.querySelector('.cadmod-inp-tam-consumo[data-chave="m"]');
+      if (inpM) {
+        inpM.value = val;
+        inpM.dispatchEvent(new Event('input'));
+      }
+    });
+
     document.getElementById('btnSalvarNovoModelo')?.addEventListener('click', () => {
-      const nome = document.getElementById('cadModNome')?.value;
+      const nome = document.getElementById('cadModNome')?.value.trim();
       if (!nome) {
         mostrarToast('Informe o nome da nova modelagem.', 'red');
         return;
       }
+      const isM = document.getElementById('cadModUnidade')?.value === 'metro';
+      const consumosValidados = extrairConsumosGradeForm(modalEl, 'cadmod', isM);
+      if (!consumosValidados) {
+        mostrarToast('É obrigatório preencher o consumo de tecido (em gramas) para todos os tamanhos!', 'red');
+        return;
+      }
+
+      const consumoM = consumosValidados['m'] || (isM ? 0.75 : 0.28);
 
       const novoMod = {
         id: `PROD-${Math.floor(100 + db.produtosBase.length + 1)}`,
-        codigo: document.getElementById('cadModCodigo')?.value || 'MOD-01',
+        codigo: document.getElementById('cadModCodigo')?.value.trim() || 'MOD-01',
         nome: nome,
         categoria: document.getElementById('cadModCategoria')?.value || 'Linha Corporativa',
-        tipoMalhaPadrao: document.getElementById('cadModMalha')?.value || 'Malha Padrão',
-        consumoMalhaKgPorPeca: parseFloat(document.getElementById('cadModConsumo')?.value || 0.30),
+        tipoMalhaPadrao: document.getElementById('cadModMalha')?.value.trim() || 'Malha Padrão',
+        unidadeTecido: isM ? 'metro' : 'kg',
+        consumoMalhaKgPorPeca: consumoM,
+        consumosPorTamanho: consumosValidados,
         custoMaoDeObraBase: parseFloat(document.getElementById('cadModCostura')?.value || 8.00),
         aviamentosPadrao: [{ nome: "Aviamentos Básicos", qtd: 1, custoUnitario: 2.00 }]
       };
 
       db.produtosBase.unshift(novoMod);
       salvarEstado();
-      fecharModal(modalEl);
-      mostrarToast(`Modelo "${novoMod.nome}" cadastrado com sucesso!`, 'green');
+      modalEl.remove();
+      mostrarToast(`Modelo "${novoMod.nome}" cadastrado com sucesso com grade de consumo!`, 'green');
       if (callback) callback(novoMod);
     });
   }
