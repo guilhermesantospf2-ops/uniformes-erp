@@ -6088,8 +6088,7 @@
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; font-size: 10px;">
                       <span id="spanConsumoGramasDica" style="color: #64748b; font-family: monospace;">280g = 0.28 kg</span>
-                      <span id="badgeConsumoPonderadoReal" class="status-pill status-blue" style="font-size: 9.5px; padding: 1px 6px; font-weight: 700; cursor: pointer;" title="Média real calculada pela grade deste pedido. Clique para ver/editar todos os tamanhos.">
-                        Grade: 0.280 kg
+                      <span id="badgeConsumoPonderadoReal" class="status-pill status-blue" style="font-size: 9.5px; padding: 1px 6px; font-weight: 700; cursor: pointer; display: none;" title="Média real calculada pela grade deste pedido. Clique para ver/editar todos os tamanhos.">
                       </span>
                     </div>
                   </div>
@@ -6801,6 +6800,11 @@
       if (lblUnidadeBase) {
         lblUnidadeBase.textContent = isMet ? '(m/un)' : '(kg/un)';
       }
+      const badgePonderado = document.getElementById('badgeConsumoPonderadoReal');
+      if (badgePonderado) {
+        const totalGrade = it.grade?.total || 0;
+        badgePonderado.style.display = totalGrade > 0 ? 'inline-block' : 'none';
+      }
       const inpMarg = document.getElementById('inputMargemErroTecido');
       if (inpMarg) inpMarg.value = (it.margemErroTecido || 8.0).toFixed(1);
       const inpAv = document.getElementById('inputCustoAviamento');
@@ -7233,22 +7237,17 @@
       const unidadeTec = it.unidadeTecido || 'kg';
       const siglaUn = unidadeTec === 'metro' ? 'm' : 'kg';
 
-      // Lista de tamanhos ativos na grade (ou padrão comercial se grade vazia)
-      let tamanhosExibicao = [];
+      // Lista de tamanhos ativos na grade do pedido (apenas tamanhos com quantidade > 0)
       const grade = it.grade || {};
-      const chavesAtivas = Object.keys(grade).filter(k => k !== 'total' && (parseInt(grade[k], 10) || 0) > 0);
-
-      if (chavesAtivas.length > 0) {
-        tamanhosExibicao = chavesAtivas;
-      } else {
-        tamanhosExibicao = ['inf6', 'inf10', 'pp', 'p', 'm', 'g', 'gg', 'xg', 'g1', 'g2', 'g3'];
-      }
+      const tamanhosExibicao = Object.keys(grade).filter(k => k !== 'total' && (parseInt(grade[k], 10) || 0) > 0);
 
       tamanhosExibicao.sort((a, b) => {
         const idxA = CATALOGO_TAMANHOS_MESTRE.findIndex(x => x.chave === a);
         const idxB = CATALOGO_TAMANHOS_MESTRE.findIndex(x => x.chave === b);
         return (idxA !== -1 ? idxA : 999) - (idxB !== -1 ? idxB : 999);
       });
+
+      const temTamanhosNaGrade = tamanhosExibicao.length > 0;
 
       const modalEl = criarModalCamada(`
         <div class="modal-overlay active" id="modalDetalhamentoCustosOverlay" style="z-index: 10000;">
@@ -7267,133 +7266,152 @@
             </div>
 
             <div class="modal-body" style="padding-top: 10px;">
-              <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; font-size: 11.5px; color: #166534; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                <div>
-                  <strong>⚡ Recálculo em Tempo Real:</strong> Altere o <strong>Consumo (${siglaUn})</strong> de qualquer peça e o <strong>preço/custo final muda automaticamente na hora!</strong> Se preferir, você também pode alterar o <strong>Custo Unitário Final</strong> e o consumo é calculado reversamente.
-                </div>
-                <button type="button" class="btn btn-secondary btn-xs" id="btnRestaurarAutomaticoTamanhos" style="font-weight: 700; color: #b45309; background: #fffbeb; border-color: #fde68a;">
-                  🔄 Restaurar Padrão ABNT
-                </button>
-              </div>
-
-              <div style="max-height: 390px; overflow-y: auto; overflow-x: auto; border: 1px solid #cbd5e1; border-radius: 6px;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; min-width: 680px;">
-                  <thead>
-                    <tr style="background: #0f172a; color: #ffffff; position: sticky; top: 0; z-index: 2;">
-                      <th style="padding: 7px 8px; width: 13%;">Tamanho</th>
-                      <th style="padding: 7px 8px; width: 7%; text-align: center;">Qtd</th>
-                      <th style="padding: 7px 8px; width: 19%; text-align: right; background: #1e293b; color: #38bdf8;">Consumo (${siglaUn} / g) ✏️</th>
-                      <th style="padding: 7px 8px; width: 12%; text-align: right;">Tecido (R$)</th>
-                      <th style="padding: 7px 8px; width: 10%; text-align: right;">Costura (R$)</th>
-                      <th style="padding: 7px 8px; width: 10%; text-align: right;">Estampa (R$)</th>
-                      <th style="padding: 7px 8px; width: 10%; text-align: right;">Aviam./Emb.</th>
-                      <th style="padding: 7px 8px; width: 19%; text-align: right; background: #1e3a8a; color: #ffffff;">Custo Unitário Final (R$) ✏️</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${tamanhosExibicao.map(ch => {
-                      const itemCat = CATALOGO_TAMANHOS_MESTRE.find(x => x.chave === ch);
-                      const rotulo = itemCat ? itemCat.rotulo : ch.toUpperCase();
-                      const qtd = parseInt(grade[ch], 10) || 0;
-                      const fator = FATORES_CONSUMO_TAMANHO[ch] || 1.00;
-                      const consumoCalculadoAuto = (consumoBaseM * fator) * fatorPerda;
-                      
-                      const consumoSalvo = (it.consumosCustomizadosPorTamanho && it.consumosCustomizadosPorTamanho[ch] != null)
-                        ? parseFloat(it.consumosCustomizadosPorTamanho[ch])
-                        : consumoCalculadoAuto;
-
-                      const custoTecTam = consumoSalvo * custoTecKg;
-                      const custoAviamEmb = custoAviamento + custoEmbalagem;
-                      const custoCalculadoAuto = (consumoCalculadoAuto * custoTecKg) + custoCostura + custoEstampa + custoAviamEmb;
-
-                      const custoSalvo = (it.custosCustomizadosPorTamanho && it.custosCustomizadosPorTamanho[ch] != null)
-                        ? parseFloat(it.custosCustomizadosPorTamanho[ch])
-                        : (custoTecTam + custoCostura + custoEstampa + custoAviamEmb);
-
-                      const precoSugeridoTam = custoSalvo / divisorMarkup;
-
-                      const isPlus = ['g1', 'g2', 'g3', 'g4', 'g5'].includes(ch);
-                      const isBase = ch === 'm';
-
-                      let diffPercStr = `${fator >= 1 ? `+${((fator - 1) * 100).toFixed(0)}%` : `${((fator - 1) * 100).toFixed(0)}%`}`;
-                      if (basePadraoM > 0 && Math.abs(consumoSalvo - consumoCalculadoAuto) > 0.001) {
-                        const dPerc = ((consumoSalvo - basePadraoM) / basePadraoM) * 100;
-                        diffPercStr = `${dPerc >= 0 ? `+${dPerc.toFixed(0)}%` : `${dPerc.toFixed(0)}%`}`;
-                      }
-
-                      return `
-                        <tr style="border-bottom: 1px solid #e2e8f0; background: ${isPlus ? '#fffbeb' : isBase ? '#eff6ff' : '#ffffff'};">
-                          <td style="padding: 6px 8px; font-weight: 700;">
-                            ${rotulo}
-                            ${isPlus ? '<span class="status-pill status-amber" style="font-size: 8.5px; padding: 1px 4px; margin-left: 4px;">PLUS</span>' : ''}
-                            ${isBase ? '<span class="status-pill status-blue" style="font-size: 8.5px; padding: 1px 4px; margin-left: 4px;">BASE M</span>' : ''}
-                          </td>
-                          <td style="padding: 6px 8px; text-align: center; font-weight: 800; color: ${qtd > 0 ? '#047857' : '#94a3b8'}; font-family: monospace;">
-                            ${qtd > 0 ? `${qtd} un` : '-'}
-                          </td>
-                          <td style="padding: 5px 8px; text-align: right; background: #f8fafc;">
-                            <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; width: 100%;">
-                              <input type="number" step="${unidadeTec === 'metro' ? '0.01' : '0.005'}" min="0.01" class="form-input inp-consumo-tam-manual text-mono" 
-                                     style="width: 78px; text-align: right; font-weight: 800; font-size: 12px; padding: 3px 5px; color: #0f172a; border: 1.5px solid #cbd5e1; border-radius: 4px; background: #ffffff;" 
-                                     data-chave="${ch}" 
-                                     data-auto-consumo="${consumoCalculadoAuto.toFixed(3)}"
-                                     value="${consumoSalvo.toFixed(3)}">
-                              <span style="font-size: 10.5px; font-weight: 600; color: #64748b;">${siglaUn}</span>
-                            </div>
-                            <div style="display: flex; justify-content: flex-end; gap: 4px; align-items: center; margin-top: 1px;">
-                              <span class="span-equiv-gramas-tam" data-chave="${ch}" style="font-size: 9.5px; font-weight: 800; color: #1e40af; font-family: monospace;">
-                                ${unidadeTec === 'metro' ? `${consumoSalvo.toFixed(2)}m` : `${Math.round(consumoSalvo * 1000)}g`}
-                              </span>
-                              <span class="perc-var-label" data-chave="${ch}" style="font-size: 9px; color: #64748b;">
-                                (${diffPercStr})
-                              </span>
-                            </div>
-                          </td>
-                          <td class="col-custo-tecido-val" data-chave="${ch}" style="padding: 6px 8px; text-align: right; font-family: monospace; font-weight: 700; color: #1e40af;">
-                            ${formatarMoeda(custoTecTam)}
-                          </td>
-                          <td style="padding: 6px 8px; text-align: right; font-family: monospace; color: #475569;">
-                            ${formatarMoeda(custoCostura)}
-                          </td>
-                          <td style="padding: 6px 8px; text-align: right; font-family: monospace; color: #475569;">
-                            ${formatarMoeda(custoEstampa)}
-                          </td>
-                          <td style="padding: 6px 8px; text-align: right; font-family: monospace; color: #475569;">
-                            ${formatarMoeda(custoAviamEmb)}
-                          </td>
-                          <td style="padding: 5px 8px; text-align: right; background: #f0f9ff;">
-                            <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; width: 100%;">
-                              <span style="font-size: 11px; font-weight: 700; color: #1e3a8a;">R$</span>
-                              <input type="number" step="0.10" min="0.01" class="form-input inp-custo-tam-manual text-mono" 
-                                     style="width: 82px; text-align: right; font-weight: 800; font-size: 12.5px; padding: 4px 6px; color: #1e3a8a; border: 1.5px solid #93c5fd; border-radius: 4px; background: #ffffff;" 
-                                     data-chave="${ch}" 
-                                     data-auto-custo="${custoCalculadoAuto.toFixed(2)}"
-                                     value="${custoSalvo.toFixed(2)}">
-                            </div>
-                            <span class="label-preco-sug-tam" data-chave="${ch}" style="font-size: 9.5px; color: #15803d; font-weight: 700; display: block; text-align: right; margin-top: 2px;">
-                              Sugerido: ${formatarMoeda(precoSugeridoTam)}
-                            </span>
-                          </td>
-                        </tr>
-                      `;
-                    }).join('')}
-                  </tbody>
-                </table>
-              </div>
-
-              <!-- Rodapé de Ações do Modal -->
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; flex-wrap: wrap; gap: 8px;">
-                <span style="font-size: 11px; color: #64748b;">
-                  * Os consumos e custos alterados recalculam automaticamente o consumo total de tecido, preço sugerido e margem real do pedido.
-                </span>
-                <div style="display: flex; gap: 8px;">
-                  <button type="button" class="btn btn-secondary" id="btnCancelarDetalhamento">Fechar</button>
-                  <button type="button" class="btn btn-primary" id="btnSalvarCustosDetalhamento" style="font-weight: 800; background: var(--color-green); border-color: var(--color-green);">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                    Salvar Consumos & Custos por Peça
+              ${temTamanhosNaGrade ? `
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; font-size: 11.5px; color: #166534; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                  <div>
+                    <strong>⚡ Recálculo em Tempo Real:</strong> Altere o <strong>Consumo (${siglaUn})</strong> de qualquer peça e o <strong>preço/custo final muda automaticamente na hora!</strong> Se preferir, você também pode alterar o <strong>Custo Unitário Final</strong> e o consumo é calculado reversamente.
+                  </div>
+                  <button type="button" class="btn btn-secondary btn-xs" id="btnRestaurarAutomaticoTamanhos" style="font-weight: 700; color: #b45309; background: #fffbeb; border-color: #fde68a;">
+                    🔄 Restaurar Padrão ABNT
                   </button>
                 </div>
-              </div>
+
+                <div style="max-height: 390px; overflow-y: auto; overflow-x: auto; border: 1px solid #cbd5e1; border-radius: 6px;">
+                  <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; min-width: 680px;">
+                    <thead>
+                      <tr style="background: #0f172a; color: #ffffff; position: sticky; top: 0; z-index: 2;">
+                        <th style="padding: 7px 8px; width: 13%;">Tamanho</th>
+                        <th style="padding: 7px 8px; width: 7%; text-align: center;">Qtd</th>
+                        <th style="padding: 7px 8px; width: 19%; text-align: right; background: #1e293b; color: #38bdf8;">Consumo (${siglaUn} / g) ✏️</th>
+                        <th style="padding: 7px 8px; width: 12%; text-align: right;">Tecido (R$)</th>
+                        <th style="padding: 7px 8px; width: 10%; text-align: right;">Costura (R$)</th>
+                        <th style="padding: 7px 8px; width: 10%; text-align: right;">Estampa (R$)</th>
+                        <th style="padding: 7px 8px; width: 10%; text-align: right;">Aviam./Emb.</th>
+                        <th style="padding: 7px 8px; width: 19%; text-align: right; background: #1e3a8a; color: #ffffff;">Custo Unitário Final (R$) ✏️</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${tamanhosExibicao.map(ch => {
+                        const itemCat = CATALOGO_TAMANHOS_MESTRE.find(x => x.chave === ch);
+                        const rotulo = itemCat ? itemCat.rotulo : ch.toUpperCase();
+                        const qtd = parseInt(grade[ch], 10) || 0;
+                        const fator = FATORES_CONSUMO_TAMANHO[ch] || 1.00;
+                        const consumoCalculadoAuto = (consumoBaseM * fator) * fatorPerda;
+                        
+                        const consumoSalvo = (it.consumosCustomizadosPorTamanho && it.consumosCustomizadosPorTamanho[ch] != null)
+                          ? parseFloat(it.consumosCustomizadosPorTamanho[ch])
+                          : consumoCalculadoAuto;
+
+                        const custoTecTam = consumoSalvo * custoTecKg;
+                        const custoAviamEmb = custoAviamento + custoEmbalagem;
+                        const custoCalculadoAuto = (consumoCalculadoAuto * custoTecKg) + custoCostura + custoEstampa + custoAviamEmb;
+
+                        const custoSalvo = (it.custosCustomizadosPorTamanho && it.custosCustomizadosPorTamanho[ch] != null)
+                          ? parseFloat(it.custosCustomizadosPorTamanho[ch])
+                          : (custoTecTam + custoCostura + custoEstampa + custoAviamEmb);
+
+                        const precoSugeridoTam = custoSalvo / divisorMarkup;
+
+                        const isPlus = ['g1', 'g2', 'g3', 'g4', 'g5'].includes(ch);
+                        const isBase = ch === 'm';
+
+                        let diffPercStr = `${fator >= 1 ? `+${((fator - 1) * 100).toFixed(0)}%` : `${((fator - 1) * 100).toFixed(0)}%`}`;
+                        if (basePadraoM > 0 && Math.abs(consumoSalvo - consumoCalculadoAuto) > 0.001) {
+                          const dPerc = ((consumoSalvo - basePadraoM) / basePadraoM) * 100;
+                          diffPercStr = `${dPerc >= 0 ? `+${dPerc.toFixed(0)}%` : `${dPerc.toFixed(0)}%`}`;
+                        }
+
+                        return `
+                          <tr style="border-bottom: 1px solid #e2e8f0; background: ${isPlus ? '#fffbeb' : isBase ? '#eff6ff' : '#ffffff'};">
+                            <td style="padding: 6px 8px; font-weight: 700;">
+                              ${rotulo}
+                              ${isPlus ? '<span class="status-pill status-amber" style="font-size: 8.5px; padding: 1px 4px; margin-left: 4px;">PLUS</span>' : ''}
+                              ${isBase ? '<span class="status-pill status-blue" style="font-size: 8.5px; padding: 1px 4px; margin-left: 4px;">BASE M</span>' : ''}
+                            </td>
+                            <td style="padding: 6px 8px; text-align: center; font-weight: 800; color: #047857; font-family: monospace;">
+                              ${qtd} un
+                            </td>
+                            <td style="padding: 5px 8px; text-align: right; background: #f8fafc;">
+                              <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; width: 100%;">
+                                <input type="number" step="${unidadeTec === 'metro' ? '0.01' : '0.005'}" min="0.01" class="form-input inp-consumo-tam-manual text-mono" 
+                                       style="width: 78px; text-align: right; font-weight: 800; font-size: 12px; padding: 3px 5px; color: #0f172a; border: 1.5px solid #cbd5e1; border-radius: 4px; background: #ffffff;" 
+                                       data-chave="${ch}" 
+                                       data-auto-consumo="${consumoCalculadoAuto.toFixed(3)}"
+                                       value="${consumoSalvo.toFixed(3)}">
+                                <span style="font-size: 10.5px; font-weight: 600; color: #64748b;">${siglaUn}</span>
+                              </div>
+                              <div style="display: flex; justify-content: flex-end; gap: 4px; align-items: center; margin-top: 1px;">
+                                <span class="span-equiv-gramas-tam" data-chave="${ch}" style="font-size: 9.5px; font-weight: 800; color: #1e40af; font-family: monospace;">
+                                  ${unidadeTec === 'metro' ? `${consumoSalvo.toFixed(2)}m` : `${Math.round(consumoSalvo * 1000)}g`}
+                                </span>
+                                <span class="perc-var-label" data-chave="${ch}" style="font-size: 9px; color: #64748b;">
+                                  (${diffPercStr})
+                                </span>
+                              </div>
+                            </td>
+                            <td class="col-custo-tecido-val" data-chave="${ch}" style="padding: 6px 8px; text-align: right; font-family: monospace; font-weight: 700; color: #1e40af;">
+                              ${formatarMoeda(custoTecTam)}
+                            </td>
+                            <td style="padding: 6px 8px; text-align: right; font-family: monospace; color: #475569;">
+                              ${formatarMoeda(custoCostura)}
+                            </td>
+                            <td style="padding: 6px 8px; text-align: right; font-family: monospace; color: #475569;">
+                              ${formatarMoeda(custoEstampa)}
+                            </td>
+                            <td style="padding: 6px 8px; text-align: right; font-family: monospace; color: #475569;">
+                              ${formatarMoeda(custoAviamEmb)}
+                            </td>
+                            <td style="padding: 5px 8px; text-align: right; background: #f0f9ff;">
+                              <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; width: 100%;">
+                                <span style="font-size: 11px; font-weight: 700; color: #1e3a8a;">R$</span>
+                                <input type="number" step="0.10" min="0.01" class="form-input inp-custo-tam-manual text-mono" 
+                                       style="width: 82px; text-align: right; font-weight: 800; font-size: 12.5px; padding: 4px 6px; color: #1e3a8a; border: 1.5px solid #93c5fd; border-radius: 4px; background: #ffffff;" 
+                                       data-chave="${ch}" 
+                                       data-auto-custo="${custoCalculadoAuto.toFixed(2)}"
+                                       value="${custoSalvo.toFixed(2)}">
+                              </div>
+                              <span class="label-preco-sug-tam" data-chave="${ch}" style="font-size: 9.5px; color: #15803d; font-weight: 700; display: block; text-align: right; margin-top: 2px;">
+                                Sugerido: ${formatarMoeda(precoSugeridoTam)}
+                              </span>
+                            </td>
+                          </tr>
+                        `;
+                      }).join('')}
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Rodapé de Ações do Modal -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; flex-wrap: wrap; gap: 8px;">
+                  <span style="font-size: 11px; color: #64748b;">
+                    * Os consumos e custos alterados recalculam automaticamente o consumo total de tecido, preço sugerido e margem real do pedido.
+                  </span>
+                  <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-secondary" id="btnCancelarDetalhamento">Fechar</button>
+                    <button type="button" class="btn btn-primary" id="btnSalvarCustosDetalhamento" style="font-weight: 800; background: var(--color-green); border-color: var(--color-green);">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                      Salvar Consumos & Custos por Peça
+                    </button>
+                  </div>
+                </div>
+              ` : `
+                <div style="padding: 45px 20px; text-align: center; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 8px; margin: 15px 0;">
+                  <div style="width: 52px; height: 52px; margin: 0 auto 12px auto; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px;">
+                    📏
+                  </div>
+                  <div style="font-weight: 800; font-size: 15px; color: #0f172a; margin-bottom: 6px;">Nenhum tamanho selecionado na grade deste pedido</div>
+                  <p style="font-size: 12px; color: #64748b; max-width: 480px; margin: 0 auto 16px auto; line-height: 1.5;">
+                    Para visualizar o detalhamento e editar os custos individuais por peça, preencha primeiro as quantidades na grade do pedido (ex: P, M, G, GG, etc.).
+                  </p>
+                  <button type="button" class="btn btn-primary" id="btnVoltarEPreencherGrade" style="font-weight: 700; padding: 7px 16px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
+                    ← Preencher Grade do Pedido
+                  </button>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 14px;">
+                  <button type="button" class="btn btn-secondary" id="btnCancelarDetalhamento">Fechar</button>
+                </div>
+              `}
             </div>
           </div>
         </div>
@@ -7483,6 +7501,14 @@
 
       document.getElementById('btnFecharModalDetalhamento')?.addEventListener('click', () => modalEl.remove());
       document.getElementById('btnCancelarDetalhamento')?.addEventListener('click', () => modalEl.remove());
+      document.getElementById('btnVoltarEPreencherGrade')?.addEventListener('click', () => {
+        modalEl.remove();
+        const primeiroCampo = document.getElementById('gradeP') || document.getElementById('gradeM') || document.getElementById('gradeTotal');
+        if (primeiroCampo) {
+          primeiroCampo.focus();
+          primeiroCampo.select?.();
+        }
+      });
 
       document.getElementById('btnRestaurarAutomaticoTamanhos')?.addEventListener('click', () => {
         modalEl.querySelectorAll('.inp-consumo-tam-manual').forEach(inp => {
@@ -7627,12 +7653,17 @@
       // Atualiza badges dinâmicos de consumo base e média da grade no DOM
       const badgePonderado = document.getElementById('badgeConsumoPonderadoReal');
       if (badgePonderado) {
-        if (isMetros) {
-          badgePonderado.textContent = `Grade: ${consumoRealComPerdaMedio.toFixed(2)}m`;
+        if (totalPecasGrade > 0) {
+          if (isMetros) {
+            badgePonderado.textContent = `Grade: ${consumoRealComPerdaMedio.toFixed(2)}m`;
+          } else {
+            badgePonderado.textContent = `Grade: ${consumoRealComPerdaMedio.toFixed(3)}kg (${Math.round(consumoRealComPerdaMedio * 1000)}g)`;
+          }
+          badgePonderado.style.display = 'inline-block';
+          badgePonderado.title = `Consumo médio ponderado com perda de corte (${margemErro.toFixed(1)}%) considerando os tamanhos da grade. Clique para ver/editar todos os tamanhos.`;
         } else {
-          badgePonderado.textContent = `Grade: ${consumoRealComPerdaMedio.toFixed(3)}kg (${Math.round(consumoRealComPerdaMedio * 1000)}g)`;
+          badgePonderado.style.display = 'none';
         }
-        badgePonderado.title = `Consumo médio ponderado com perda de corte (${margemErro.toFixed(1)}%) considerando os tamanhos da grade. Clique para ver/editar todos os tamanhos.`;
       }
       const badgeGramas = document.getElementById('badgeConsumoEquivGramas');
       if (badgeGramas) {
