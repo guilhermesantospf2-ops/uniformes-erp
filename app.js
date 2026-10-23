@@ -5734,12 +5734,14 @@
             tam = 'slim_' + tam.replace('slim-', '').replace('slim_', '');
           }
 
+          const qtd = Math.max(1, parseInt(jog.quantidade || 1, 10));
+
           if (contagem[tam] !== undefined) {
-            contagem[tam]++;
+            contagem[tam] += qtd;
           } else {
-            contagem['m'] = (contagem['m'] || 0) + 1;
+            contagem['m'] = (contagem['m'] || 0) + qtd;
           }
-          contagem.total++;
+          contagem.total += qtd;
         });
         it.grade = contagem;
 
@@ -7102,6 +7104,7 @@
                 numero: String(listaJogadoresTime.length + 1),
                 nome: `ATLETA ${listaJogadoresTime.length + 1}`,
                 tamanho: rot,
+                quantidade: 1,
                 posicao: listaJogadoresTime.length === 0 ? 'Goleiro' : 'Linha'
               });
             }
@@ -7114,6 +7117,7 @@
               numero: i === 1 ? '1' : i === 5 ? '10' : '',
               nome: '',
               tamanho: 'M',
+              quantidade: 1,
               posicao: i === 1 ? 'Goleiro' : 'Linha'
             });
           }
@@ -7155,12 +7159,14 @@
           tam = 'slim_' + tam.replace('slim-', '').replace('slim_', '');
         }
 
+        const qtd = Math.max(1, parseInt(jog.quantidade || 1, 10));
+
         if (contagem[tam] !== undefined) {
-          contagem[tam]++;
+          contagem[tam] += qtd;
         } else {
-          contagem['m'] = (contagem['m'] || 0) + 1;
+          contagem['m'] = (contagem['m'] || 0) + qtd;
         }
-        totalPecas++;
+        totalPecas += qtd;
       });
 
       const itensComQtd = TODOS_CAMPOS_GRADE.filter(c => (contagem[c.chave] || 0) > 0);
@@ -7189,7 +7195,7 @@
           <div style="background: #0f172a; color: #38bdf8; padding: 3px 10px; border-radius: 4px; font-weight: 900; font-size: 11.5px; display: inline-flex; align-items: center; gap: 6px;">
             <span>TOTAL:</span>
             <span style="font-size: 14px; color: #ffffff;">${totalPecas}</span>
-            <span>peças</span>
+            <span>peças (${listaJogadoresTime.length} atletas)</span>
           </div>
         </div>
       `;
@@ -7231,8 +7237,9 @@
             <tr style="background: #f1f5f9; color: #334155; border-bottom: 1.5px solid #cbd5e1;">
               <th style="padding: 4px; width: 35px; text-align: center;">#</th>
               <th style="padding: 4px; text-align: left;">Nome na Camisa</th>
-              <th style="padding: 4px; width: 65px; text-align: center;">Número</th>
-              <th style="padding: 4px; width: 90px; text-align: center;">Tamanho</th>
+              <th style="padding: 4px; width: 60px; text-align: center;">Número</th>
+              <th style="padding: 4px; width: 85px; text-align: center;">Tamanho</th>
+              <th style="padding: 4px; width: 60px; text-align: center;" title="Quantidade de peças para este mesmo nome">Qtd</th>
               <th style="padding: 4px; text-align: left;">Posição / Detalhes</th>
               <th style="padding: 4px; width: 30px; text-align: center;">✕</th>
             </tr>
@@ -7251,6 +7258,9 @@
                   <select class="form-select sel-jog-tam" data-idx="${idx}" style="padding: 3px 4px; font-size: 11px; font-weight: 700;">
                     ${opcoesTam.map(t => `<option value="${t}" ${t.toUpperCase() === (jog.tamanho || 'M').toUpperCase() ? 'selected' : ''}>${t}</option>`).join('')}
                   </select>
+                </td>
+                <td style="padding: 4px; text-align: center;">
+                  <input type="number" class="form-input inp-jog-qtd" data-idx="${idx}" value="${jog.quantidade || 1}" min="1" max="99" style="padding: 3px 2px; font-size: 11px; text-align: center; font-weight: 800; width: 100%; border: 1.5px solid #cbd5e1; border-radius: 4px;" title="Quantidade de peças deste mesmo atleta">
                 </td>
                 <td style="padding: 4px;">
                   <input type="text" class="form-input inp-jog-pos" data-idx="${idx}" value="${jog.posicao || ''}" placeholder="Linha, Goleiro..." style="padding: 3px 6px; font-size: 11px;">
@@ -7288,6 +7298,17 @@
         };
       });
 
+      container.querySelectorAll('.inp-jog-qtd').forEach(inp => {
+        inp.oninput = (e) => {
+          const idx = parseInt(e.target.dataset.idx, 10);
+          if (listaJogadoresTime[idx]) {
+            const val = parseInt(e.target.value, 10);
+            listaJogadoresTime[idx].quantidade = isNaN(val) || val < 1 ? 1 : val;
+            sincronizarGradeComListaJogadores();
+          }
+        };
+      });
+
       container.querySelectorAll('.inp-jog-pos').forEach(inp => {
         inp.oninput = (e) => {
           const idx = parseInt(e.target.dataset.idx, 10);
@@ -7311,6 +7332,7 @@
         numero: '',
         nome: '',
         tamanho: 'M',
+        quantidade: 1,
         posicao: 'Linha'
       });
       renderizarTabelaJogadoresModal();
@@ -7329,7 +7351,7 @@
     });
 
     document.getElementById('btnColarListaZapModal')?.addEventListener('click', () => {
-      const texto = prompt('📋 Cole aqui a lista enviada pelo time no WhatsApp (Ex: "10 - Neymar - G", "1 - Alisson - GG (Goleiro)"):');
+      const texto = prompt('📋 Cole aqui a lista enviada pelo time no WhatsApp (Ex: "10 - Neymar - G", "1 - Alisson - GG (2 peças)"):');
       if (!texto || !texto.trim()) return;
 
       const linhas = texto.split('\n').map(l => l.trim()).filter(l => l.length > 0);
@@ -7347,11 +7369,20 @@
         const matchTam = linha.match(/\b(g[1-5]|x{1,2}g|gg|xg|pp|bl[-_]?[a-z]+|p|m|g|1[0246]|[2468])\b/i);
         if (matchTam) tam = matchTam[1].toUpperCase();
 
+        let qtd = 1;
+        const matchQtd = linha.match(/(?:^|\s|\(|-)(\d{1,2})\s*(?:x|pçs?|pecas?|peças?|unidades?|un\b)/i) ||
+                         linha.match(/(?:qtd|quant|quantidade)[:\s]*(\d{1,2})\b/i);
+        if (matchQtd) {
+          qtd = parseInt(matchQtd[1], 10) || 1;
+        }
+
         let pos = 'Linha';
         if (linha.toLowerCase().includes('gol') || linha.toLowerCase().includes('gk')) pos = 'Goleiro';
         else if (linha.toLowerCase().includes('cap')) pos = 'Capitão';
 
         let nome = linha
+          .replace(/(?:^|\s|\(|-)\d{1,2}\s*(?:x|pçs?|pecas?|peças?|unidades?|un\b)/gi, ' ')
+          .replace(/(?:qtd|quant|quantidade)[:\s]*\d{1,2}\b/gi, ' ')
           .replace(/(?:^|\s|#|-)\d{1,3}(?:\s*[-–.]|\s+)/g, ' ')
           .replace(/\b(g[1-5]|x{1,2}g|gg|xg|pp|bl[-_]?[a-z]+|p|m|g|1[0246]|[2468])\b/gi, ' ')
           .replace(/[()\-–#:]/g, ' ')
@@ -7367,6 +7398,7 @@
           numero: num,
           nome: nome.toUpperCase(),
           tamanho: tam,
+          quantidade: qtd,
           posicao: pos
         });
         adicionados++;
@@ -7375,7 +7407,8 @@
       if (adicionados > 0) {
         renderizarTabelaJogadoresModal();
         sincronizarGradeComListaJogadores();
-        mostrarToast(`⚽ ${adicionados} atletas importados com sucesso! Grade somada automaticamente.`, 'green');
+        const totalPecasImportadas = listaJogadoresTime.reduce((s, j) => s + (j.quantidade || 1), 0);
+        mostrarToast(`⚽ ${adicionados} atletas processados! Grade total: ${totalPecasImportadas} peças.`, 'green');
       } else {
         mostrarToast('Nenhum atleta reconhecido no texto informado.', 'amber');
       }
@@ -9880,16 +9913,19 @@
             <strong style="color: #0f172a; font-size: 11.5px; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
               ⚽ RELAÇÃO OFICIAL DOS ATLETAS (CORTE & ESTAMPA / SUBLIMAÇÃO):
             </strong>
-            <span style="font-weight: 800; color: #0284c7; font-size: 11px;">${pedido.jogadores.length} ATLETAS CONFERIDOS</span>
+            <span style="font-weight: 800; color: #0284c7; font-size: 11px;">
+              ${pedido.jogadores.length} ATLETAS (${pedido.jogadores.reduce((s, j) => s + Math.max(1, parseInt(j.quantidade || 1, 10)), 0)} PEÇAS)
+            </span>
           </div>
           <table style="width: 100%; border-collapse: collapse; font-size: 10.5px; text-align: left;">
             <thead>
               <tr style="background: #0f172a; color: #ffffff;">
-                <th style="padding: 4px 6px; width: 6%; text-align: center;">#</th>
-                <th style="padding: 4px 6px; width: 45%;">Nome na Camisa</th>
-                <th style="padding: 4px 6px; width: 14%; text-align: center;">Número</th>
-                <th style="padding: 4px 6px; width: 15%; text-align: center;">Tamanho</th>
-                <th style="padding: 4px 6px; width: 20%;">Posição / Obs</th>
+                <th style="padding: 4px 6px; width: 5%; text-align: center;">#</th>
+                <th style="padding: 4px 6px; width: 42%;">Nome na Camisa</th>
+                <th style="padding: 4px 6px; width: 13%; text-align: center;">Número</th>
+                <th style="padding: 4px 6px; width: 14%; text-align: center;">Tamanho</th>
+                <th style="padding: 4px 6px; width: 8%; text-align: center;">Qtd</th>
+                <th style="padding: 4px 6px; width: 18%;">Posição / Obs</th>
               </tr>
             </thead>
             <tbody>
@@ -9899,6 +9935,7 @@
                   <td style="padding: 4px 6px; font-weight: 800; color: #0f172a; text-transform: uppercase;">${jog.nome || 'SEM NOME'}</td>
                   <td style="padding: 4px 6px; text-align: center; font-weight: 800; font-family: monospace; font-size: 11.5px; color: #0284c7;">${jog.numero || '-'}</td>
                   <td style="padding: 4px 6px; text-align: center;"><span style="background: #e0f2fe; color: #0369a1; padding: 1px 6px; border-radius: 3px; font-weight: 800;">${jog.tamanho}</span></td>
+                  <td style="padding: 4px 6px; text-align: center; font-weight: 800; color: #047857; font-family: monospace;">${jog.quantidade || 1} un</td>
                   <td style="padding: 4px 6px; color: #475569;">${jog.posicao || 'Linha'}</td>
                 </tr>
               `).join('')}

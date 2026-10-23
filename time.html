@@ -226,16 +226,16 @@
 
     .player-inputs-grid {
       display: grid;
-      grid-template-columns: 2fr 1fr 1fr;
+      grid-template-columns: 2fr 1fr 1.2fr 0.8fr;
       gap: 8px;
     }
 
     @media (max-width: 480px) {
       .player-inputs-grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
       }
       .input-span-full-mobile {
-        grid-column: span 2;
+        grid-column: span 3;
       }
     }
 
@@ -654,6 +654,10 @@
                   ${optionsHtml}
                 </select>
               </div>
+              <div>
+                <label class="form-label-micro">Qtd</label>
+                <input type="number" class="form-input input-atleta-qtd" data-id="${at.id}" value="${at.quantidade || 1}" min="1" max="50" style="text-align: center; font-weight: 800;">
+              </div>
             </div>
             <div>
               <label class="form-label-micro">Posição / Detalhes (Opcional)</label>
@@ -696,6 +700,19 @@
           };
         });
 
+        containerLinhas.querySelectorAll('.input-atleta-qtd').forEach(inp => {
+          inp.oninput = (e) => {
+            const id = e.target.dataset.id;
+            const at = atletas.find(x => x.id === id);
+            if (at) {
+              const val = parseInt(e.target.value, 10);
+              at.quantidade = isNaN(val) || val < 1 ? 1 : val;
+            }
+            atualizarResumoGrade();
+            salvarLocal();
+          };
+        });
+
         containerLinhas.querySelectorAll('.input-atleta-pos').forEach(inp => {
           inp.oninput = (e) => {
             const id = e.target.dataset.id;
@@ -721,11 +738,12 @@
 
         atletas.forEach(at => {
           const tam = (at.tamanho || 'M').toUpperCase();
-          contagem[tam] = (contagem[tam] || 0) + 1;
-          total++;
+          const qtd = Math.max(1, parseInt(at.quantidade || 1, 10));
+          contagem[tam] = (contagem[tam] || 0) + qtd;
+          total += qtd;
         });
 
-        badgeContagem.textContent = `${total} Atleta${total !== 1 ? 's' : ''}`;
+        badgeContagem.textContent = `${total} Camisa${total !== 1 ? 's' : ''} (${atletas.length} atletas)`;
         bottomBarTotalPecas.textContent = `${total} Camisa${total !== 1 ? 's' : ''}`;
 
         if (total === 0) {
@@ -751,6 +769,7 @@
           numero: '',
           nome: '',
           tamanho: 'M',
+          quantidade: 1,
           posicao: 'Linha'
         };
         atletas.push(novo);
@@ -870,21 +889,24 @@
 
         // Gera código de validação
         const hash = 'TIM-' + Math.floor(1000 + Math.random() * 9000);
+        const totalPecasGeral = atletas.reduce((s, a) => s + Math.max(1, parseInt(a.quantidade || 1, 10)), 0);
+
         document.getElementById('sucessoPedidoId').textContent = `#${pedidoIdParam.replace('PED-', '').replace('ORC-', '')}`;
         document.getElementById('sucessoClienteNome').textContent = clienteParam;
-        document.getElementById('sucessoTotalPecas').textContent = `${atletas.length} peças`;
+        document.getElementById('sucessoTotalPecas').textContent = `${totalPecasGeral} peças (${atletas.length} atletas)`;
         document.getElementById('sucessoCodigoHash').textContent = `#${hash}`;
 
         // Monta mensagem de WhatsApp
         let msg = `⚽ *RELAÇÃO OFICIAL DO TIME CONFIRMADA*\n\n`;
         msg += `📋 *Pedido:* #${pedidoIdParam.replace('PED-', '').replace('ORC-', '')}\n`;
         msg += `🏆 *Time/Cliente:* ${clienteParam}\n`;
-        msg += `🔢 *Total de Uniformes:* ${atletas.length} peças\n`;
+        msg += `🔢 *Total de Uniformes:* ${totalPecasGeral} peças (${atletas.length} atletas)\n`;
         msg += `🔑 *Código:* ${hash}\n\n`;
         msg += `*LISTA DOS ATLETAS:*\n`;
 
         atletas.forEach((at, i) => {
-          msg += `${i + 1}. ${at.numero ? '#' + at.numero + ' ' : ''}${at.nome || 'SEM NOME'} — Tam: *${at.tamanho}*${at.posicao && at.posicao !== 'Linha' ? ' (' + at.posicao + ')' : ''}\n`;
+          const qtdStr = (at.quantidade && at.quantidade > 1) ? ` *(x${at.quantidade} peças)*` : '';
+          msg += `${i + 1}. ${at.numero ? '#' + at.numero + ' ' : ''}${at.nome || 'SEM NOME'} — Tam: *${at.tamanho}*${qtdStr}${at.posicao && at.posicao !== 'Linha' ? ' (' + at.posicao + ')' : ''}\n`;
         });
 
         msg += `\n✅ *Lista revisada e aprovada pelo capitão/responsável do time.*`;
