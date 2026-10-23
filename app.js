@@ -5367,8 +5367,8 @@
                 <!-- Preenchido dinamicamente via gerarHTMLSeletorCoresIndustrial -->
               </div>
 
-              <!-- Grade de Tamanhos do Modelo Ativo -->
-              <div class="form-group" style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
+              <!-- Grade de Tamanhos do Modelo Ativo: Manual Padrão (Oculta quando for Uniforme de Time) -->
+              <div id="boxGradeManualPadrao" class="form-group" style="display: ${modalidadePedido === 'time' ? 'none' : 'block'}; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
                   <div>
                     <label class="form-label" style="margin: 0; font-weight: 800; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
@@ -5493,28 +5493,36 @@
                     <div class="grade-col"><div class="grade-label" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Slim-XG</div><input type="number" id="gradeSlimXg" class="grade-input" value="0" min="0"></div>
                   </div>
                 </div>
+              </div>
 
-                <!-- Painel de Relação de Atletas / Uniforme de Time (Visível apenas se modalidade === 'time') -->
-                <div id="painelTimeJogadoresCard" style="display: ${modalidadePedido === 'time' ? 'block' : 'none'}; margin-top: 12px; padding: 12px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius-sm);">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
-                    <div>
-                      <strong style="font-size: 12px; color: #166534; display: flex; align-items: center; gap: 6px;">
-                        ⚽ Relação dos Atletas / Jogadores (Com Nomes & Números):
-                      </strong>
-                      <span style="font-size: 10px; color: #15803d;">
-                        Ao adicionar jogadores, os tamanhos da grade acima são somados automaticamente!
-                      </span>
-                    </div>
-                    <div style="display: flex; gap: 6px; align-items: center;">
-                      <button type="button" class="btn btn-secondary btn-sm" id="btnAdicionarJogadorModal" style="font-size: 10.5px; padding: 2px 8px; font-weight: 700; color: #166534; background: #ffffff; border-color: #86efac;">
-                        + Adicionar Atleta
-                      </button>
-                    </div>
+              <!-- Painel Exclusivo de Uniforme de Time (Grade Nominal Direta via Relação de Atletas) -->
+              <div id="painelTimeJogadoresCard" style="display: ${modalidadePedido === 'time' ? 'block' : 'none'}; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius-sm); padding: 14px; margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+                  <div>
+                    <strong style="font-size: 13px; color: #166534; display: flex; align-items: center; gap: 6px;">
+                      ⚽ Relação dos Atletas / Jogadores (Com Nomes & Números):
+                    </strong>
+                    <span style="font-size: 10.5px; color: #15803d;">
+                      A grade e o consumo de tecido deste modelo são contabilizados diretamente pelos atletas adicionados abaixo:
+                    </span>
                   </div>
+                  <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnAdicionarJogadorModal" style="font-size: 11px; padding: 3px 10px; font-weight: 800; color: #166534; background: #ffffff; border: 1.5px solid #86efac; border-radius: 4px;">
+                      + Adicionar Atleta
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnLimparJogadoresModal" style="font-size: 10px; padding: 3px 8px; font-weight: 700; color: #dc2626; background: #ffffff; border: 1px solid #fca5a5; border-radius: 4px;" title="Limpar todos os atletas da relação">
+                      🗑️ Limpar Relação
+                    </button>
+                  </div>
+                </div>
 
-                  <div id="containerTabelaJogadoresModal" style="max-height: 240px; overflow-y: auto; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 4px; padding: 6px;">
-                    <!-- Renderizado dinamicamente via renderizarTabelaJogadoresModal() -->
-                  </div>
+                <!-- Resumo Visual em Badges em Tempo Real -->
+                <div id="resumoGradeTimeLive" style="margin-bottom: 8px;">
+                  <!-- Preenchido via atualizarResumoGradeTimeLive() -->
+                </div>
+
+                <div id="containerTabelaJogadoresModal" style="max-height: 250px; overflow-y: auto; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 4px; padding: 6px;">
+                  <!-- Renderizado dinamicamente via renderizarTabelaJogadoresModal() -->
                 </div>
               </div>
 
@@ -5711,15 +5719,49 @@
       const inpObs = document.getElementById('orcObservacoesCoresDetalhes');
       if (inpObs) it.observacoesCoresDetalhes = (inpObs.value || '').trim();
 
-      const novaGrade = {};
-      let totalGrade = 0;
-      TODOS_CAMPOS_GRADE.forEach(campo => {
-        const val = parseInt(document.getElementById(campo.id)?.value || 0, 10);
-        novaGrade[campo.chave] = val;
-        totalGrade += val;
-      });
-      novaGrade.total = totalGrade;
-      it.grade = novaGrade;
+      // Contabilização da Grade de Tamanhos do Modelo Ativo
+      if (modalidadePedido === 'time') {
+        // No modo Uniforme de Time, a grade é derivada DIRETAMENTE dos atletas cadastrados
+        const contagem = { total: 0 };
+        TODOS_CAMPOS_GRADE.forEach(c => { contagem[c.chave] = 0; });
+        listaJogadoresTime.forEach(jog => {
+          let tam = (jog.tamanho || 'M').toLowerCase().trim();
+          if (['2', '4', '6', '8', '10', '12', '14', '16'].includes(tam)) {
+            tam = 'inf' + tam;
+          } else if (tam.startsWith('bl-') || tam.startsWith('bl_')) {
+            tam = 'bl_' + tam.replace('bl-', '').replace('bl_', '');
+          } else if (tam.startsWith('slim-') || tam.startsWith('slim_')) {
+            tam = 'slim_' + tam.replace('slim-', '').replace('slim_', '');
+          }
+
+          if (contagem[tam] !== undefined) {
+            contagem[tam]++;
+          } else {
+            contagem['m'] = (contagem['m'] || 0) + 1;
+          }
+          contagem.total++;
+        });
+        it.grade = contagem;
+
+        // Atualiza campos ocultos no DOM para manter coerência caso precise
+        TODOS_CAMPOS_GRADE.forEach(c => {
+          const inp = document.getElementById(c.id);
+          if (inp) inp.value = contagem[c.chave] || 0;
+        });
+        const inpTotal = document.getElementById('gradeTotal');
+        if (inpTotal) inpTotal.value = contagem.total;
+      } else {
+        // No modo Padrão / Corporativo, lê dos inputs manuais da grade
+        const novaGrade = {};
+        let totalGrade = 0;
+        TODOS_CAMPOS_GRADE.forEach(campo => {
+          const val = parseInt(document.getElementById(campo.id)?.value || 0, 10);
+          novaGrade[campo.chave] = val;
+          totalGrade += val;
+        });
+        novaGrade.total = totalGrade;
+        it.grade = novaGrade;
+      }
 
       it.custoTecidoKg = parseFloat(document.getElementById('inputCustoTecido')?.value || padroes.custoTecidoKg || 48.50);
       it.consumoTecido = parseFloat(document.getElementById('inputConsumoTecido')?.value || 0.28);
@@ -6254,6 +6296,9 @@
       // Renderiza as aplicações de personalização
       renderizarAplicacoes();
       renderizarAbasModelos();
+      if (modalidadePedido === 'time') {
+        renderizarTabelaJogadoresModal();
+      }
     }
 
     // Renderiza a lista de aplicações do item ativo
@@ -7031,12 +7076,38 @@
     // =========================================================================
     function alternarModalidadePedido(novaModalidade) {
       modalidadePedido = novaModalidade;
+      const boxManual = document.getElementById('boxGradeManualPadrao');
       const cardJog = document.getElementById('painelTimeJogadoresCard');
       const acoesTime = document.getElementById('acoesTimeContainer');
-      if (cardJog) cardJog.style.display = (novaModalidade === 'time') ? 'block' : 'none';
-      if (acoesTime) acoesTime.style.display = (novaModalidade === 'time') ? 'flex' : 'none';
+
       if (novaModalidade === 'time') {
-        if (listaJogadoresTime.length === 0) {
+        if (boxManual) boxManual.style.display = 'none';
+        if (cardJog) cardJog.style.display = 'block';
+        if (acoesTime) acoesTime.style.display = 'flex';
+
+        const it = itensOrcamento[itemAtivoIndex];
+        // Se a lista de atletas estiver vazia e havia peças digitadas na grade manual anterior, migra para atletas
+        if (listaJogadoresTime.length === 0 && it && it.grade && (it.grade.total || 0) > 0) {
+          TODOS_CAMPOS_GRADE.forEach(c => {
+            const qtd = it.grade[c.chave] || 0;
+            for (let q = 0; q < qtd; q++) {
+              let rot = c.rotulo;
+              if (c.chave.startsWith('inf')) rot = c.chave.replace('inf', '');
+              else if (c.chave.startsWith('bl_')) rot = 'BL-' + c.chave.replace('bl_', '').toUpperCase();
+              else if (c.chave.startsWith('slim_')) rot = 'Slim-' + c.chave.replace('slim_', '').toUpperCase();
+              else rot = c.chave.toUpperCase();
+
+              listaJogadoresTime.push({
+                id: 'jog_' + Date.now() + '_' + (listaJogadoresTime.length + 1),
+                numero: String(listaJogadoresTime.length + 1),
+                nome: `ATLETA ${listaJogadoresTime.length + 1}`,
+                tamanho: rot,
+                posicao: listaJogadoresTime.length === 0 ? 'Goleiro' : 'Linha'
+              });
+            }
+          });
+        } else if (listaJogadoresTime.length === 0) {
+          // Preenche 5 linhas padrão em branco
           for (let i = 1; i <= 5; i++) {
             listaJogadoresTime.push({
               id: 'jog_' + Date.now() + '_' + i,
@@ -7048,6 +7119,13 @@
           }
         }
         renderizarTabelaJogadoresModal();
+        sincronizarGradeComListaJogadores();
+      } else {
+        if (boxManual) boxManual.style.display = 'block';
+        if (cardJog) cardJog.style.display = 'none';
+        if (acoesTime) acoesTime.style.display = 'none';
+        sincronizarItemAtivoDoDOM();
+        recalcularBenchmarkModal();
       }
     }
 
@@ -7059,10 +7137,9 @@
       if (e.target.checked) alternarModalidadePedido('time');
     });
 
-    function sincronizarGradeComListaJogadores() {
-      if (modalidadePedido !== 'time') return;
-      const it = itensOrcamento[itemAtivoIndex];
-      if (!it) return;
+    function atualizarResumoGradeTimeLive() {
+      const elResumo = document.getElementById('resumoGradeTimeLive');
+      if (!elResumo) return;
 
       const contagem = {};
       TODOS_CAMPOS_GRADE.forEach(c => { contagem[c.chave] = 0; });
@@ -7080,30 +7157,48 @@
 
         if (contagem[tam] !== undefined) {
           contagem[tam]++;
-          totalPecas++;
         } else {
           contagem['m'] = (contagem['m'] || 0) + 1;
-          totalPecas++;
         }
+        totalPecas++;
       });
 
-      it.grade = it.grade || {};
-      TODOS_CAMPOS_GRADE.forEach(c => {
-        it.grade[c.chave] = contagem[c.chave] || 0;
-        const elInp = document.getElementById(c.id);
-        if (elInp) elInp.value = contagem[c.chave] || 0;
-      });
-      it.grade.total = totalPecas;
-      const elTotal = document.getElementById('gradeTotal');
-      if (elTotal) elTotal.value = totalPecas;
+      const itensComQtd = TODOS_CAMPOS_GRADE.filter(c => (contagem[c.chave] || 0) > 0);
 
-      // Revela seções de tamanhos especiais se houver na lista
-      SECOES_GRADE_EXTRAS.forEach(sec => {
-        const temQtd = sec.campos.some(c => (it.grade[c.chave] || 0) > 0);
-        const elSec = document.getElementById(sec.id);
-        if (elSec && temQtd) elSec.style.display = 'block';
-      });
+      if (itensComQtd.length === 0) {
+        elResumo.innerHTML = `
+          <div style="font-size: 11px; color: #64748b; font-style: italic; padding: 6px 10px; background: #ffffff; border: 1px dashed #bbf7d0; border-radius: 6px;">
+            Nenhum atleta na relação ainda. Clique em "+ Adicionar Atleta" ou em "📋 Colar Lista do WhatsApp" para contabilizar a grade.
+          </div>
+        `;
+        return;
+      }
 
+      const badgesHtml = itensComQtd.map(c => `
+        <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: #dcfce7; border: 1px solid #86efac; border-radius: 4px; font-size: 11px; font-weight: 700; color: #166534;">
+          ${c.rotulo}: <strong style="font-size: 12px; color: #14532d;">${contagem[c.chave]}</strong>
+        </span>
+      `).join('');
+
+      elResumo.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 6px 10px; background: #ffffff; border: 1.5px solid #86efac; border-radius: 6px;">
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span style="font-size: 11px; font-weight: 800; color: #166534; text-transform: uppercase;">Grade Contabilizada:</span>
+            ${badgesHtml}
+          </div>
+          <div style="background: #0f172a; color: #38bdf8; padding: 3px 10px; border-radius: 4px; font-weight: 900; font-size: 11.5px; display: inline-flex; align-items: center; gap: 6px;">
+            <span>TOTAL:</span>
+            <span style="font-size: 14px; color: #ffffff;">${totalPecas}</span>
+            <span>peças</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function sincronizarGradeComListaJogadores() {
+      if (modalidadePedido !== 'time') return;
+      sincronizarItemAtivoDoDOM();
+      atualizarResumoGradeTimeLive();
       recalcularBenchmarkModal();
     }
 
@@ -7111,10 +7206,12 @@
       const container = document.getElementById('containerTabelaJogadoresModal');
       if (!container) return;
 
+      atualizarResumoGradeTimeLive();
+
       if (listaJogadoresTime.length === 0) {
         container.innerHTML = `
-          <div style="text-align: center; padding: 12px; color: #64748b; font-size: 11px;">
-            Nenhum atleta cadastrado ainda. Clique em "+ Adicionar Atleta" ou em "📋 Colar Lista do WhatsApp".
+          <div style="text-align: center; padding: 16px; color: #64748b; font-size: 11.5px;">
+            Nenhum atleta na relação ainda. Clique no botão verde <strong>"+ Adicionar Atleta"</strong> acima ou em <strong>"📋 Colar Lista do WhatsApp"</strong>.
           </div>
         `;
         return;
@@ -7123,8 +7220,9 @@
       const opcoesTam = [
         'PP', 'P', 'M', 'G', 'GG', 'XG',
         'G1', 'G2', 'G3', 'G4', 'G5',
-        'BL-P', 'BL-M', 'BL-G', 'BL-GG',
-        '2', '4', '6', '8', '10', '12', '14', '16'
+        'BL-PP', 'BL-P', 'BL-M', 'BL-G', 'BL-GG', 'BL-XG',
+        '2', '4', '6', '8', '10', '12', '14', '16',
+        'Slim-P', 'Slim-M', 'Slim-G', 'Slim-GG', 'Slim-XG'
       ];
 
       container.innerHTML = `
@@ -7134,7 +7232,7 @@
               <th style="padding: 4px; width: 35px; text-align: center;">#</th>
               <th style="padding: 4px; text-align: left;">Nome na Camisa</th>
               <th style="padding: 4px; width: 65px; text-align: center;">Número</th>
-              <th style="padding: 4px; width: 85px; text-align: center;">Tamanho</th>
+              <th style="padding: 4px; width: 90px; text-align: center;">Tamanho</th>
               <th style="padding: 4px; text-align: left;">Posição / Detalhes</th>
               <th style="padding: 4px; width: 30px; text-align: center;">✕</th>
             </tr>
@@ -7158,7 +7256,7 @@
                   <input type="text" class="form-input inp-jog-pos" data-idx="${idx}" value="${jog.posicao || ''}" placeholder="Linha, Goleiro..." style="padding: 3px 6px; font-size: 11px;">
                 </td>
                 <td style="padding: 4px; text-align: center;">
-                  <button type="button" class="btn-del-jog" data-idx="${idx}" style="background: transparent; border: none; color: #ef4444; font-weight: 800; cursor: pointer; font-size: 12px;" title="Remover atleta">&times;</button>
+                  <button type="button" class="btn-del-jog" data-idx="${idx}" style="background: transparent; border: none; color: #ef4444; font-weight: 800; cursor: pointer; font-size: 13px;" title="Remover atleta">&times;</button>
                 </td>
               </tr>
             `).join('')}
@@ -7198,7 +7296,7 @@
       });
 
       container.querySelectorAll('.btn-del-jog').forEach(btn => {
-        btn.onclick = (e) => {
+        btn.onclick = () => {
           const idx = parseInt(btn.dataset.idx, 10);
           listaJogadoresTime.splice(idx, 1);
           renderizarTabelaJogadoresModal();
@@ -7219,6 +7317,15 @@
       sincronizarGradeComListaJogadores();
       const elCont = document.getElementById('containerTabelaJogadoresModal');
       if (elCont) elCont.scrollTop = elCont.scrollHeight;
+    });
+
+    document.getElementById('btnLimparJogadoresModal')?.addEventListener('click', () => {
+      if (listaJogadoresTime.length === 0) return;
+      if (confirm(`Deseja realmente limpar todos os ${listaJogadoresTime.length} atletas da relação?`)) {
+        listaJogadoresTime = [];
+        renderizarTabelaJogadoresModal();
+        sincronizarGradeComListaJogadores();
+      }
     });
 
     document.getElementById('btnColarListaZapModal')?.addEventListener('click', () => {
