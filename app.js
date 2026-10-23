@@ -3304,6 +3304,11 @@
             </button>
           </div>
 
+          <button class="btn btn-secondary" id="btnGerarLinkCliente" style="font-weight: 700; color: #0284c7; background: #f0f9ff; border-color: #bae6fd; display: inline-flex; align-items: center; gap: 6px;" title="Gerar link exclusivo para o cliente preencher nomes e tamanhos no celular">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+            Gerar Link do Cliente
+          </button>
+
           <button class="btn btn-primary" id="btnAbrirNovoOrcamento">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Novo Orçamento / Pedido Oficial
@@ -3327,6 +3332,7 @@
       renderizarPedidos();
     });
 
+    document.getElementById('btnGerarLinkCliente')?.addEventListener('click', abrirModalGerarLinkCliente);
     document.getElementById('btnAbrirNovoOrcamento')?.addEventListener('click', abrirModalNovoOrcamento);
 
     const buscaInput = document.getElementById('filtroPedidoBusca');
@@ -5072,6 +5078,271 @@
   }
 
   /* ==========================================================================
+     GERAR LINK DE PREENCHIMENTO EXCLUSIVO DO CLIENTE (PORTAL SELF-SERVICE)
+     ========================================================================== */
+  function abrirModalGerarLinkCliente() {
+    if (!modalContainer) return;
+    fecharTodosModais();
+
+    const clientesOrdenados = [...(db.clientes || [])].sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+    const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
+      ? window.ERP_CLOUD.obterEmpresaConfig()
+      : (db.empresa || {});
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active" id="modalLinkClienteOverlay">
+        <div class="modal-box" style="max-width: 580px;">
+          <div class="modal-header">
+            <div>
+              <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                <span>Gerar Link de Preenchimento para o Cliente</span>
+              </div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">
+                O cliente preenche a relação de nomes e tamanhos no celular e a entrada cai direto no ERP
+              </span>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+          </div>
+
+          <div class="modal-body">
+            <div id="etapaFormLink">
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label" style="font-weight: 800; color: #0f172a;">
+                  Cliente / Empresa / Time <span style="color: #ef4444;">* (Obrigatório)</span>
+                </label>
+                <select id="selectLinkCliente" class="form-select" style="font-weight: 600; font-size: 13px;">
+                  <option value="">-- Selecione o Cliente Cadastrado --</option>
+                  ${clientesOrdenados.map(c => `
+                    <option value="${c.id}" data-nome="${c.nome}" data-tel="${c.telefone || ''}">${c.nome} ${c.telefone ? `(${c.telefone})` : ''}</option>
+                  `).join('')}
+                  <option value="__NOVO__">➕ Cadastrar Novo Cliente Agora...</option>
+                </select>
+              </div>
+
+              <!-- Campos extras se for novo cliente -->
+              <div id="boxNovoClienteLink" style="display: none; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 6px; padding: 12px; margin-bottom: 14px;">
+                <div class="form-row">
+                  <div class="form-group" style="flex: 2;">
+                    <label class="form-label">Nome Completo / Razão Social</label>
+                    <input type="text" id="inputNovoCliNome" class="form-input" placeholder="Ex: Farmácia São Lucas ou Atlético F.C.">
+                  </div>
+                  <div class="form-group" style="flex: 1.2;">
+                    <label class="form-label">WhatsApp (DDD + Número)</label>
+                    <input type="tel" id="inputNovoCliTel" class="form-input text-mono" placeholder="Ex: 11988887777">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row" style="margin-bottom: 14px;">
+                <div class="form-group" style="flex: 1.2;">
+                  <label class="form-label" style="font-weight: 700;">Finalidade da Coleta de Peças</label>
+                  <select id="selectLinkModalidade" class="form-select">
+                    <option value="corporativo">🏢 Uniformes Corporativos / Empresa (Colaboradores)</option>
+                    <option value="time">⚽ Uniformes de Time / Esportivo (Nome & Número)</option>
+                    <option value="geral">👕 Escolar / Eventos / Geral</option>
+                  </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                  <label class="form-label">Identificação / Grupo (Opcional)</label>
+                  <input type="text" id="inputLinkGrupo" class="form-input" placeholder="Ex: Equipe Vendas, Time A, Turma 301">
+                </div>
+              </div>
+
+              <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px; margin-bottom: 16px; font-size: 11.5px; color: #166534; line-height: 1.45;">
+                <strong>🚀 Como funciona:</strong> Ao confirmar, um rascunho de pedido oficial será criado no sistema. Você receberá o link exclusivo para enviar no WhatsApp do cliente. Quando ele confirmar a lista no celular, o pedido entrará automaticamente na sua fábrica com os tamanhos, peças e nomes já contabilizados!
+              </div>
+
+              <button type="button" class="btn btn-primary" id="btnConfirmarGeracaoLink" style="width: 100%; padding: 12px; font-size: 13.5px; font-weight: 800; justify-content: center; gap: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                Criar Pedido Rascunho & Gerar Link Exclusivo
+              </button>
+            </div>
+
+            <!-- Etapa 2: Link Gerado com Sucesso -->
+            <div id="etapaLinkPronto" style="display: none;">
+              <div style="text-align: center; margin-bottom: 16px;">
+                <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: #dcfce7; color: #16a34a; border-radius: 50%; margin-bottom: 10px;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <h3 style="font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 4px;" id="tituloSucessoLink">Pedido # Criado com Sucesso!</h3>
+                <p style="font-size: 12px; color: var(--text-gray-500);" id="descSucessoLink">Envie o link abaixo para o cliente preencher a relação de uniformes</p>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label" style="font-weight: 700;">Link Exclusivo do Cliente</label>
+                <div style="display: flex; gap: 6px;">
+                  <input type="text" id="inputUrlLinkPronto" class="form-input text-mono" readonly style="font-size: 12px; background: #f8fafc; font-weight: 600;">
+                  <button type="button" class="btn btn-secondary" id="btnCopiarLinkGerado" style="font-weight: 800; white-space: nowrap; padding: 0 16px;">
+                    📋 Copiar
+                  </button>
+                </div>
+              </div>
+
+              <div style="margin-bottom: 16px;">
+                <label class="form-label" style="font-weight: 700;">Prévia da Mensagem para WhatsApp:</label>
+                <div id="boxPreviaMsgZap" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; font-size: 11.5px; line-height: 1.4; color: #334155; white-space: pre-wrap; font-family: sans-serif;"></div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <a href="#" target="_blank" class="btn btn-primary" id="btnDispararWhatsAppCliente" style="justify-content: center; background: #25d366; border-color: #25d366; font-size: 13.5px; font-weight: 800; padding: 11px; text-decoration: none;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                  Enviar no WhatsApp do Cliente Agora
+                </a>
+                <div style="display: flex; gap: 8px;">
+                  <button type="button" class="btn btn-secondary" id="btnTestarLinkAba" style="flex: 1; font-weight: 700;">
+                    👁️ Abrir Link em Nova Aba
+                  </button>
+                  <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal(); renderizarPedidos();" style="flex: 1; font-weight: 700;">
+                    Concluir & Ver Pedidos
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+
+    const selCli = document.getElementById('selectLinkCliente');
+    const boxNovo = document.getElementById('boxNovoClienteLink');
+    selCli?.addEventListener('change', () => {
+      if (selCli.value === '__NOVO__') {
+        boxNovo.style.display = 'block';
+        document.getElementById('inputNovoCliNome')?.focus();
+      } else {
+        boxNovo.style.display = 'none';
+      }
+    });
+
+    document.getElementById('btnConfirmarGeracaoLink')?.addEventListener('click', () => {
+      const valCli = selCli.value;
+      let nomeFinal = '';
+      let telFinal = '';
+
+      if (!valCli) {
+        mostrarToast('Selecione ou cadastre o cliente para gerar o link.', 'amber');
+        selCli.focus();
+        return;
+      }
+
+      if (valCli === '__NOVO__') {
+        nomeFinal = document.getElementById('inputNovoCliNome')?.value.trim();
+        telFinal = document.getElementById('inputNovoCliTel')?.value.trim();
+        if (!nomeFinal) {
+          mostrarToast('Por favor, digite o nome do novo cliente.', 'amber');
+          document.getElementById('inputNovoCliNome')?.focus();
+          return;
+        }
+        const novoCli = {
+          id: 'CLI-' + Date.now(),
+          nome: nomeFinal,
+          telefone: telFinal,
+          dataCadastro: new Date().toISOString().split('T')[0]
+        };
+        db.clientes = db.clientes || [];
+        db.clientes.unshift(novoCli);
+      } else {
+        const opt = selCli.options[selCli.selectedIndex];
+        nomeFinal = opt?.getAttribute('data-nome') || opt?.text || 'Cliente';
+        telFinal = opt?.getAttribute('data-tel') || '';
+      }
+
+      const modalidade = document.getElementById('selectLinkModalidade')?.value || 'corporativo';
+      const grupo = document.getElementById('inputLinkGrupo')?.value.trim();
+
+      // Próximo número sequencial do pedido
+      const proxNum = Math.max(100, ...(db.pedidos || []).map(p => parseInt(p.numero, 10) || 0)) + 1;
+      const pedId = `PED-${proxNum}`;
+
+      const novoPed = {
+        id: pedId,
+        numero: proxNum,
+        clienteNome: nomeFinal,
+        clienteTelefone: telFinal,
+        produtoNome: modalidade === 'time' ? 'Uniforme Esportivo / Time' : 'Uniforme Corporativo / Colaboradores',
+        tipoPedidoModalidade: modalidade,
+        nomeTimeOuGrupo: grupo || '',
+        grade: { pp: 0, p: 0, m: 0, g: 0, gg: 0, xg: 0, total: 0 },
+        jogadores: [],
+        quantidadeTotal: 0,
+        etapaProducao: 'Quarentena',
+        etapaAtual: 'Quarentena',
+        status: 'Aguardando Cliente',
+        dataCriacao: new Date().toISOString().split('T')[0],
+        prazoPedidoDias: 15,
+        prazoInternoDias: 10,
+        dataPrevisaoEntrega: calcularDataFuturaDiasUteis(15),
+        dataMetaInterna: calcularDataFuturaDiasUteis(10),
+        precoUnitarioVenda: 0,
+        valorTotalVenda: 0,
+        valorSinalPago: 0,
+        saldoPendente: 0,
+        sinalPago: false,
+        margemLucroPercentual: 0,
+        origemEntrada: 'link_cliente',
+        linkGeradoEm: new Date().toISOString()
+      };
+
+      db.pedidos = db.pedidos || [];
+      db.pedidos.unshift(novoPed);
+      salvarEstado(true);
+
+      // Constrói o link do portal
+      const loc = window.location;
+      let pathDir = loc.pathname;
+      if (pathDir.includes('.html')) {
+        pathDir = pathDir.substring(0, pathDir.lastIndexOf('/') + 1);
+      } else if (!pathDir.endsWith('/')) {
+        pathDir += '/';
+      }
+      const baseUrl = loc.origin + pathDir;
+      const linkFinal = `${baseUrl}time.html?pedidoId=${pedId}&cliente=${encodeURIComponent(nomeFinal)}&tipo=${modalidade}&tel=${encodeURIComponent(emp.telefone || '')}`;
+
+      // Monta texto formatado do WhatsApp
+      const saudacao = (new Date().getHours() < 12) ? 'Bom dia' : (new Date().getHours() < 18) ? 'Boa tarde' : 'Boa noite';
+      let msgZap = `${saudacao}, ${nomeFinal}!\n\n`;
+      msgZap += `Aqui é da *${emp.nomeFantasia || emp.razaoSocial || 'Bravvi Indústria Têxtil'}*.\n\n`;
+      msgZap += `Criamos o seu Pedido *#${proxNum}* no sistema. Segue o seu link exclusivo para preencher a relação de uniformes, nomes e tamanhos:\n\n`;
+      msgZap += `🔗 ${linkFinal}\n\n`;
+      msgZap += `_Basta abrir pelo celular, adicionar os tamanhos/nomes e confirmar. A lista cai direto na nossa fábrica para agilizar sua confecção!_`;
+
+      const linkZapUrl = `https://api.whatsapp.com/send?phone=55${telFinal.replace(/\D/g, '')}&text=${encodeURIComponent(msgZap)}`;
+
+      // Atualiza UI para o link pronto
+      document.getElementById('etapaFormLink').style.display = 'none';
+      const etapaPronto = document.getElementById('etapaLinkPronto');
+      etapaPronto.style.display = 'block';
+
+      document.getElementById('tituloSucessoLink').textContent = `Pedido #${proxNum} Criado com Sucesso!`;
+      document.getElementById('descSucessoLink').textContent = `Cliente: ${nomeFinal} • Modalidade: ${modalidade === 'time' ? 'Time Esportivo' : 'Corporativo'}`;
+      
+      const inpUrl = document.getElementById('inputUrlLinkPronto');
+      inpUrl.value = linkFinal;
+      document.getElementById('boxPreviaMsgZap').textContent = msgZap;
+      document.getElementById('btnDispararWhatsAppCliente').href = linkZapUrl;
+
+      document.getElementById('btnCopiarLinkGerado').onclick = () => {
+        inpUrl.select();
+        navigator.clipboard.writeText(linkFinal).then(() => {
+          mostrarToast('Link copiado para a área de transferência!', 'green');
+          document.getElementById('btnCopiarLinkGerado').textContent = '✓ Copiado!';
+          setTimeout(() => {
+            const btn = document.getElementById('btnCopiarLinkGerado');
+            if (btn) btn.textContent = '📋 Copiar';
+          }, 2500);
+        });
+      };
+
+      document.getElementById('btnTestarLinkAba').onclick = () => {
+        window.open(linkFinal, '_blank');
+      };
+
+      mostrarToast(`Pedido #${proxNum} registrado! Link gerado com sucesso.`, 'green');
+    });
+  }
+
+  /* ==========================================================================
      MODAL DE NOVO ORÇAMENTO / EDIÇÃO COM DUPLO FLUXO & MULTI-MODELOS BRASIL
      ========================================================================== */
   function abrirModalNovoOrcamento(orcamentoIdParam = null) {
@@ -6685,6 +6956,198 @@
       });
     });
 
+    // Modal de Detalhamento & Edição de Custo por Peça / Tamanho
+    function abrirModalDetalhamentoCustosPorPeca() {
+      sincronizarItemAtivoDoDOM();
+      const it = itensOrcamento[itemAtivoIndex];
+      if (!it) return;
+
+      const custoTecKg = parseFloat(document.getElementById('inputCustoTecido')?.value) || it.custoTecidoKg || 48.50;
+      const consumoBaseM = parseFloat(document.getElementById('inputConsumoTecido')?.value) || it.consumoTecido || 0.28;
+      const margemErro = parseFloat(document.getElementById('inputMargemErroTecido')?.value) || it.margemErroTecido || 8.0;
+      const custoAviamento = parseFloat(document.getElementById('inputCustoAviamento')?.value) || it.custoAviamento || 4.80;
+      const custoEstampa = parseFloat(document.getElementById('inputCustoEstampa')?.value) || it.custoEstampaTotal || 0.00;
+      const custoCostura = parseFloat(document.getElementById('inputCustoCostura')?.value) || it.custoCostura || 7.50;
+      const custoEmbalagem = 1.50;
+      const fatorPerda = (1 + (margemErro / 100));
+
+      const unidadeTec = it.unidadeTecido || 'kg';
+      const siglaUn = unidadeTec === 'metro' ? 'm' : 'kg';
+
+      // Lista de tamanhos ativos na grade (ou padrão comercial se grade vazia)
+      let tamanhosExibicao = [];
+      const grade = it.grade || {};
+      const chavesAtivas = Object.keys(grade).filter(k => k !== 'total' && (parseInt(grade[k], 10) || 0) > 0);
+
+      if (chavesAtivas.length > 0) {
+        tamanhosExibicao = chavesAtivas;
+      } else {
+        tamanhosExibicao = ['inf6', 'inf10', 'pp', 'p', 'm', 'g', 'gg', 'xg', 'g1', 'g2', 'g3'];
+      }
+
+      tamanhosExibicao.sort((a, b) => {
+        const idxA = CATALOGO_TAMANHOS_MESTRE.findIndex(x => x.chave === a);
+        const idxB = CATALOGO_TAMANHOS_MESTRE.findIndex(x => x.chave === b);
+        return (idxA !== -1 ? idxA : 999) - (idxB !== -1 ? idxB : 999);
+      });
+
+      const modalEl = criarModalCamada(`
+        <div class="modal-overlay active" id="modalDetalhamentoCustosOverlay" style="z-index: 10000;">
+          <div class="modal-box" style="max-width: 860px;">
+            <div class="modal-header">
+              <div>
+                <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1e40af" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                  <span>Detalhamento & Edição de Custo por Peça • ${it.produtoNome}</span>
+                </div>
+                <span style="font-size: 11px; color: var(--text-gray-500);">
+                  Engenharia de custos têxtil por tamanho com opção de alteração manual direta por peça
+                </span>
+              </div>
+              <button class="modal-close" id="btnFecharModalDetalhamento">&times;</button>
+            </div>
+
+            <div class="modal-body" style="padding-top: 10px;">
+              <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; font-size: 11.5px; color: #166534; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div>
+                  <strong>💡 Como funciona a diferenciação:</strong> Cada tamanho consome mais ou menos tecido conforme a modelagem. Você pode conferir os custos automáticos e <strong>digitar o valor que quiser na coluna Custo Unitário Final</strong> para aplicar no seu fechamento!
+                </div>
+                <button type="button" class="btn btn-secondary btn-xs" id="btnRestaurarAutomaticoTamanhos" style="font-weight: 700; color: #b45309; background: #fffbeb; border-color: #fde68a;">
+                  🔄 Restaurar Cálculo Automático
+                </button>
+              </div>
+
+              <div style="max-height: 380px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 6px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
+                  <thead>
+                    <tr style="background: #0f172a; color: #ffffff; position: sticky; top: 0; z-index: 2;">
+                      <th style="padding: 7px 8px; width: 14%;">Tamanho</th>
+                      <th style="padding: 7px 8px; width: 8%; text-align: center;">Qtd</th>
+                      <th style="padding: 7px 8px; width: 12%; text-align: center;">Consumo (${siglaUn})</th>
+                      <th style="padding: 7px 8px; width: 12%; text-align: right;">Tecido (R$)</th>
+                      <th style="padding: 7px 8px; width: 11%; text-align: right;">Costura (R$)</th>
+                      <th style="padding: 7px 8px; width: 11%; text-align: right;">Estampa (R$)</th>
+                      <th style="padding: 7px 8px; width: 11%; text-align: right;">Aviam./Emb.</th>
+                      <th style="padding: 7px 8px; width: 21%; text-align: right; background: #1e3a8a;">Custo Unitário Final (R$) ✏️</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${tamanhosExibicao.map(ch => {
+                      const itemCat = CATALOGO_TAMANHOS_MESTRE.find(x => x.chave === ch);
+                      const rotulo = itemCat ? itemCat.rotulo : ch.toUpperCase();
+                      const qtd = parseInt(grade[ch], 10) || 0;
+                      const fator = FATORES_CONSUMO_TAMANHO[ch] || 1.00;
+                      const consumoTam = (consumoBaseM * fator) * fatorPerda;
+                      const custoTecTam = consumoTam * custoTecKg;
+                      const custoAviamEmb = custoAviamento + custoEmbalagem;
+                      const custoCalculadoAuto = custoTecTam + custoCostura + custoEstampa + custoAviamEmb;
+
+                      const custoSalvo = (it.custosCustomizadosPorTamanho && it.custosCustomizadosPorTamanho[ch] != null)
+                        ? parseFloat(it.custosCustomizadosPorTamanho[ch])
+                        : custoCalculadoAuto;
+
+                      const isPlus = ['g1', 'g2', 'g3', 'g4', 'g5'].includes(ch);
+                      const isBase = ch === 'm';
+
+                      return `
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: ${isPlus ? '#fffbeb' : isBase ? '#eff6ff' : '#ffffff'};">
+                          <td style="padding: 6px 8px; font-weight: 700;">
+                            ${rotulo}
+                            ${isPlus ? '<span class="status-pill status-amber" style="font-size: 8.5px; padding: 1px 4px; margin-left: 4px;">PLUS</span>' : ''}
+                            ${isBase ? '<span class="status-pill status-blue" style="font-size: 8.5px; padding: 1px 4px; margin-left: 4px;">BASE M</span>' : ''}
+                          </td>
+                          <td style="padding: 6px 8px; text-align: center; font-weight: 800; color: ${qtd > 0 ? '#047857' : '#94a3b8'}; font-family: monospace;">
+                            ${qtd > 0 ? `${qtd} un` : '-'}
+                          </td>
+                          <td style="padding: 6px 8px; text-align: center; font-family: monospace; font-size: 11px;">
+                            ${consumoTam.toFixed(3)} ${siglaUn}
+                            <span style="font-size: 9.5px; color: #64748b; display: block;">(${fator >= 1 ? `+${((fator - 1) * 100).toFixed(0)}%` : `${((fator - 1) * 100).toFixed(0)}%`})</span>
+                          </td>
+                          <td style="padding: 6px 8px; text-align: right; font-family: monospace; font-weight: 700; color: #1e40af;">
+                            ${formatarMoeda(custoTecTam)}
+                          </td>
+                          <td style="padding: 6px 8px; text-align: right; font-family: monospace; color: #475569;">
+                            ${formatarMoeda(custoCostura)}
+                          </td>
+                          <td style="padding: 6px 8px; text-align: right; font-family: monospace; color: #475569;">
+                            ${formatarMoeda(custoEstampa)}
+                          </td>
+                          <td style="padding: 6px 8px; text-align: right; font-family: monospace; color: #475569;">
+                            ${formatarMoeda(custoAviamEmb)}
+                          </td>
+                          <td style="padding: 6px 8px; text-align: right; background: #f0f9ff;">
+                            <input type="number" step="0.10" class="form-input inp-custo-tam-manual text-mono" 
+                                   style="width: 100px; text-align: right; font-weight: 800; font-size: 12.5px; padding: 4px 6px; color: #1e3a8a; border: 1.5px solid #93c5fd; border-radius: 4px; display: inline-block;" 
+                                   data-chave="${ch}" 
+                                   data-auto="${custoCalculadoAuto.toFixed(2)}"
+                                   value="${custoSalvo.toFixed(2)}">
+                          </td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Rodapé de Ações do Modal -->
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; flex-wrap: wrap; gap: 8px;">
+                <span style="font-size: 11px; color: #64748b;">
+                  * Os valores digitados substituem o custo automático e recalculam o preço sugerido e a margem do pedido.
+                </span>
+                <div style="display: flex; gap: 8px;">
+                  <button type="button" class="btn btn-secondary" id="btnCancelarDetalhamento">Fechar</button>
+                  <button type="button" class="btn btn-primary" id="btnSalvarCustosDetalhamento" style="font-weight: 800; background: var(--color-green); border-color: var(--color-green);">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    Salvar Custos por Peça
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `);
+
+      document.getElementById('btnFecharModalDetalhamento')?.addEventListener('click', () => modalEl.remove());
+      document.getElementById('btnCancelarDetalhamento')?.addEventListener('click', () => modalEl.remove());
+
+      document.getElementById('btnRestaurarAutomaticoTamanhos')?.addEventListener('click', () => {
+        document.querySelectorAll('.inp-custo-tam-manual').forEach(inp => {
+          inp.value = inp.getAttribute('data-auto') || inp.value;
+        });
+        delete it.custosCustomizadosPorTamanho;
+        delete it.custoUnitarioCustomizadoPonderado;
+        recalcularBenchmarkModal();
+        mostrarToast('Custos restaurados para o cálculo têxtil automático.', 'blue');
+      });
+
+      document.getElementById('btnSalvarCustosDetalhamento')?.addEventListener('click', () => {
+        it.custosCustomizadosPorTamanho = it.custosCustomizadosPorTamanho || {};
+        let somaCustos = 0;
+        let totalPecasGrade = 0;
+
+        document.querySelectorAll('.inp-custo-tam-manual').forEach(inp => {
+          const ch = inp.getAttribute('data-chave');
+          const val = parseFloat(inp.value);
+          if (ch && !isNaN(val) && val > 0) {
+            it.custosCustomizadosPorTamanho[ch] = val;
+            const q = parseInt(it.grade?.[ch], 10) || 0;
+            if (q > 0) {
+              somaCustos += (q * val);
+              totalPecasGrade += q;
+            }
+          }
+        });
+
+        if (totalPecasGrade > 0) {
+          it.custoUnitarioCustomizadoPonderado = somaCustos / totalPecasGrade;
+        }
+
+        recalcularBenchmarkModal();
+        modalEl.remove();
+        mostrarToast('Custos unitários por tamanho aplicados e recalculados com sucesso!', 'green');
+      });
+    }
+
     // Recálculo Completo: Engenharia Têxtil, Viabilidade e Totais Consolidados do Pedido
     function recalcularBenchmarkModal() {
       sincronizarItemAtivoDoDOM();
@@ -6785,7 +7248,27 @@
               <span><strong>Diferenciação por Tamanho Ativa:</strong> Peças G1 a G5 consomem até 90% mais tecido que a modelagem base M. O custo e o total a enfestar já estão ponderados com precisão!</span>
             </div>
           ` : ''}
+
+          <div style="margin-top: 8px; border-top: 1px dashed #cbd5e1; padding-top: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 11px; color: #475569; font-weight: 600;">
+                Detalhamento dos custos individuais de cada peça:
+              </span>
+              ${(itAtivo.custosCustomizadosPorTamanho && Object.keys(itAtivo.custosCustomizadosPorTamanho).length > 0) ? `
+                <span class="status-pill status-green" style="font-size: 9.5px; font-weight: 800; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">
+                  ✏️ Custos Manuais por Tamanho Ativos
+                </span>
+              ` : ''}
+            </div>
+            <button type="button" class="btn btn-secondary btn-xs" id="btnAbrirDetalhamentoCustosPeca" style="font-size: 11px; padding: 4px 10px; font-weight: 700; color: #1e40af; background: #eff6ff; border-color: #bfdbfe; display: inline-flex; align-items: center; gap: 5px;" title="Ver e editar o custo individual de cada tamanho">
+              📊 Detalhar & Editar Custo por Peça ✏️
+            </button>
+          </div>
         `;
+
+        document.getElementById('btnAbrirDetalhamentoCustosPeca')?.addEventListener('click', () => {
+          abrirModalDetalhamentoCustosPorPeca();
+        });
       }
 
       // Benchmark e Viabilidade Financeira do Modelo Ativo
@@ -6814,10 +7297,35 @@
         recomendacao: 'Valores calculados conforme custo direto de insumos e mão de obra.'
       };
 
+      // Se houver custos manuais salvos por tamanho, utiliza-os para ponderar o custo unitário real
+      let custoProducaoCalculado = viabilidade.custoProducaoUnitario;
+      if (itAtivo.custosCustomizadosPorTamanho && Object.keys(itAtivo.custosCustomizadosPorTamanho).length > 0) {
+        let somaCustosManuais = 0;
+        let pecasComCusto = 0;
+        Object.keys(itAtivo.grade || {}).forEach(k => {
+          if (k === 'total') return;
+          const q = parseInt(itAtivo.grade[k], 10) || 0;
+          if (q > 0) {
+            const cManual = parseFloat(itAtivo.custosCustomizadosPorTamanho[k]);
+            if (!isNaN(cManual) && cManual > 0) {
+              somaCustosManuais += (q * cManual);
+              pecasComCusto += q;
+            }
+          }
+        });
+        if (pecasComCusto > 0) {
+          custoProducaoCalculado = somaCustosManuais / pecasComCusto;
+          itAtivo.custoUnitarioCustomizadoPonderado = custoProducaoCalculado;
+          viabilidade.custoProducaoUnitario = custoProducaoCalculado;
+          viabilidade.lucroLiquidoUnitario = itAtivo.precoVendaUnitario - custoProducaoCalculado - (itAtivo.precoVendaUnitario * (itAtivo.aliquotaImposto / 100));
+          viabilidade.margemLiquidaReal = (viabilidade.lucroLiquidoUnitario / Math.max(1, itAtivo.precoVendaUnitario)) * 100;
+        }
+      }
+
       // Atualiza propriedades financeiras do item ativo
-      itAtivo.custoUnitarioProducao = viabilidade.custoProducaoUnitario;
+      itAtivo.custoUnitarioProducao = custoProducaoCalculado;
       itAtivo.valorTotalVenda = itAtivo.precoVendaUnitario * totalPecasItem;
-      itAtivo.custoTotalProducao = viabilidade.custoProducaoUnitario * totalPecasItem;
+      itAtivo.custoTotalProducao = custoProducaoCalculado * totalPecasItem;
       itAtivo.lucroTotal = itAtivo.valorTotalVenda - itAtivo.custoTotalProducao;
       itAtivo.margemReal = viabilidade.margemLiquidaReal;
 
@@ -10094,8 +10602,15 @@
                 <span class="status-pill status-red" style="font-size: 11px; font-weight: 800;">🚫 FICHA / PEDIDO CANCELADO</span>
               `}
             </div>
-            <div style="display: flex; gap: 8px;">
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; cursor: pointer; color: #475569; font-weight: 600; margin-right: 6px;">
+                <input type="checkbox" id="chkImprimirMockupAnexo" checked>
+                Incluir folha com Mockup grande
+              </label>
               <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
+              <button type="button" class="btn btn-secondary" id="btnImprimirSomenteMockup" onclick="window.ERP.imprimirFolhaMockupGrande('${os.id}')" style="font-weight: 700; color: #0284c7; background: #f0f9ff; border-color: #bae6fd; display: inline-flex; align-items: center; gap: 5px;" title="Imprimir apenas a folha do Mockup ampliado para a bancada">
+                🖼️ Imprimir Somente Mockup (A4)
+              </button>
               <button type="button" class="btn btn-primary" id="btnImprimirFichaDoc" onclick="window.ERP.imprimirFichaTecnicaIsolada('${os.id}')">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                 Imprimir Ordem de Produção (A4)
@@ -10107,13 +10622,118 @@
     `);
   }
 
+  function gerarHtmlFolhaMockupGrande(os) {
+    const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
+      ? window.ERP_CLOUD.obterEmpresaConfig()
+      : (db.empresa || {});
+
+    const mockupSrc = os.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(os.produto || 'Camisa', '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6));
+    const pedido = (db.pedidos || []).find(p => (p.numero != null && os.pedidoNumero != null && p.numero.toString() === os.pedidoNumero.toString()) || p.id === os.pedidoId) || {};
+    const corTecido = os.corTecido || pedido.corTecido || 'A Definir';
+    const obsCores = os.observacoesCoresDetalhes || pedido.observacoesCoresDetalhes || '';
+    const tecnica = os.tipoPersonalizacao || pedido.tipoPersonalizacao || 'Estampa Industrial';
+    const totalPecas = os.quantidadeTotal || pedido.grade?.total || 0;
+
+    return `
+      <div style="width: 100%; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif;">
+        <!-- Cabeçalho Industrial da Folha de Mockup -->
+        <div style="border-bottom: 2.5px solid #0f172a; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <img src="${emp.logoUrl || 'assets/bravvi-logo.png'}" style="max-height: 48px; max-width: 130px; object-fit: contain;">
+            <div>
+              <h2 style="font-size: 16px; font-weight: 800; color: #0f172a; margin: 0; text-transform: uppercase;">
+                GUIA VISUAL DE CHÃO DE FÁBRICA • MOCKUP OFICIAL
+              </h2>
+              <span style="font-size: 12px; font-family: monospace; color: #475569;">
+                PEDIDO: <strong>#${os.pedidoNumero || '---'}</strong> • ORDEM: <strong>${os.id}</strong> • CLIENTE: <strong>${os.cliente}</strong>
+              </span>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 14px; font-weight: 800; color: #0f172a;">${os.produto}</div>
+            <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 12px;">
+              ${totalPecas} PEÇAS
+            </span>
+          </div>
+        </div>
+
+        <!-- Barra de Especificações Rápidas -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 8px 12px; margin-bottom: 10px; font-size: 11px;">
+          <div><span style="color: #64748b; font-size: 9.5px; display: block;">COR PRINCIPAL:</span><strong style="color: #1e40af;">${corTecido}</strong></div>
+          <div><span style="color: #64748b; font-size: 9.5px; display: block;">TÉCNICA DE APLICAÇÃO:</span><strong>${tecnica}</strong></div>
+          <div><span style="color: #64748b; font-size: 9.5px; display: block;">COSTUREIRA / OFICINA:</span><strong style="color: #047857;">${os.costureiraDesignada}</strong></div>
+          <div><span style="color: #64748b; font-size: 9.5px; display: block;">DATA DE ENTRADA:</span><strong>${os.dataEntradaCorte || new Date().toLocaleDateString('pt-BR')}</strong></div>
+        </div>
+
+        ${obsCores ? `
+          <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 4px; padding: 6px 10px; font-size: 11px; color: #92400e; margin-bottom: 10px; line-height: 1.35;">
+            ⚠️ <strong>ATENÇÃO DA BANCADA:</strong> ${obsCores}
+          </div>
+        ` : ''}
+
+        <!-- CONTAINER DO MOCKUP GIGANTE EM PÁGINA CHEIA (PROPORÇÃO 3:4) -->
+        <div style="width: 100%; height: 740px; border: 2px solid #0f172a; border-radius: 6px; background: #ffffff; display: flex; align-items: center; justify-content: center; padding: 12px; box-sizing: border-box; overflow: hidden; position: relative;">
+          <span style="position: absolute; top: 8px; left: 10px; background: #0f172a; color: #ffffff; font-size: 9.5px; font-weight: 800; padding: 2px 8px; border-radius: 3px; letter-spacing: 0.5px;">
+            ENQUADRAMENTO DE PRODUÇÃO 3:4
+          </span>
+          <img src="${mockupSrc}" style="max-width: 100%; max-height: 100%; object-fit: contain;" alt="Mockup Oficial">
+        </div>
+
+        <!-- Rodapé de Alerta de Chão de Fábrica -->
+        <div style="margin-top: 10px; border-top: 1.5px solid #cbd5e1; padding-top: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #64748b;">
+          <span style="font-weight: 800; color: #dc2626;">
+            🚨 CONFERÊNCIA OBRIGATÓRIA ANTES DO CORTE E ESTAMPA: FIXAR ESTA GUIA NA BANCADA
+          </span>
+          <span>Bravvi ERP Têxtil • Documento de Produção</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function imprimirFolhaMockupGrande(osIdOuObjeto) {
+    let os = typeof osIdOuObjeto === 'object' ? osIdOuObjeto : (db.ordensServico || []).find(o => o.id === osIdOuObjeto || (o.pedidoNumero != null && o.pedidoNumero.toString() === osIdOuObjeto.toString()));
+    if (!os && typeof osIdOuObjeto === 'string') {
+      const ped = (db.pedidos || []).find(p => p.id === osIdOuObjeto || (p.numero != null && p.numero.toString() === osIdOuObjeto.toString()));
+      if (ped) {
+        os = {
+          id: `OS-${ped.numero}`,
+          pedidoNumero: ped.numero,
+          cliente: ped.clienteNome,
+          produto: ped.produtoNome,
+          corTecido: ped.corTecido || 'A Definir',
+          observacoesCoresDetalhes: ped.observacoesCoresDetalhes || '',
+          mockupUrl: ped.mockupUrl,
+          quantidadeTotal: ped.grade?.total || 0,
+          costureiraDesignada: ped.costureiraNome || 'Oficina Interna',
+          tipoPersonalizacao: ped.tipoPersonalizacao || 'Conforme Arte'
+        };
+      }
+    }
+    if (!os) {
+      mostrarToast('Mockup do pedido/OS não localizado para impressão.', 'red');
+      return;
+    }
+    const html = gerarHtmlFolhaMockupGrande(os);
+    imprimirDocumentoIsolado(html, `Guia_Visual_Mockup_${os.pedidoNumero || os.id}`);
+  }
+
   function imprimirFichaTecnicaIsolada(osId) {
     const os = db.ordensServico.find(o => o.id === osId);
     if (!os) {
       mostrarToast('Ordem de serviço não encontrada.', 'red');
       return;
     }
-    const html = gerarHtmlCorpoFichaTecnica(os);
+    let html = gerarHtmlCorpoFichaTecnica(os);
+
+    const chkAnexo = document.getElementById('chkImprimirMockupAnexo');
+    if (chkAnexo && chkAnexo.checked) {
+      const htmlMockup = gerarHtmlFolhaMockupGrande(os);
+      html += `
+        <div style="page-break-before: always; margin-top: 20px;"></div>
+        ${htmlMockup}
+      `;
+    }
+
     imprimirDocumentoIsolado(html, `Ficha_Tecnica_${os.id}`);
   }
 
@@ -18088,12 +18708,16 @@
                   <img src="${mockupSrc}" class="mockup-large-img" alt="Mockup Oficial 3x4">
                 </div>
                 
-                <div style="display: flex; gap: 8px; margin-top: 12px;">
-                  <a href="${mockupSrc}" download="Mockup_Pedido_${numeroPedido}.svg" class="btn btn-secondary btn-sm" style="flex: 1;" title="Baixar vetor do mockup em formato SVG">
+                <div style="display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-secondary btn-sm" id="btnImprimirMockupA4Modal" style="flex: 1.1; font-weight: 700; color: #0284c7; background: #f0f9ff; border-color: #bae6fd; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" title="Imprimir somente o mockup em folha A4 cheia para a bancada">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                    Imprimir Folha A4
+                  </button>
+                  <a href="${mockupSrc}" download="Mockup_Pedido_${numeroPedido}.svg" class="btn btn-secondary btn-sm" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" title="Baixar vetor do mockup em formato SVG">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                     Baixar SVG
                   </a>
-                  <button type="button" class="btn btn-secondary btn-sm" id="btnCopiarMockup" style="flex: 1;" title="Copiar código do mockup">
+                  <button type="button" class="btn btn-secondary btn-sm" id="btnCopiarMockup" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" title="Copiar código do mockup">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                     Copiar Arte
                   </button>
@@ -18259,6 +18883,10 @@
         </div>
       </div>
     `);
+
+    document.getElementById('btnImprimirMockupA4Modal')?.addEventListener('click', () => {
+      imprimirFolhaMockupGrande(numeroPedido || (os ? os.id : null));
+    });
 
     document.getElementById('btnCopiarMockup')?.addEventListener('click', () => {
       navigator.clipboard?.writeText(mockupSrc).then(() => {
@@ -19936,6 +20564,9 @@
     fecharTodosModais,
     abrirFichaTecnica,
     imprimirFichaTecnicaIsolada,
+    imprimirFolhaMockupGrande,
+    gerarHtmlFolhaMockupGrande,
+    abrirModalGerarLinkCliente,
     abrirModalPropostaComercial,
     imprimirPropostaComercialIsolada,
     imprimirDocumentoIsolado,

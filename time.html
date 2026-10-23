@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/favicon.png">
+  <!-- Supabase JS Client v2 (Sincronização em Nuvem em Tempo Real) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --bg-main: #f8fafc;
@@ -540,10 +542,11 @@
 
       // Dados e Estado
       const urlParams = new URLSearchParams(window.location.search);
-      const pedidoIdParam = urlParams.get('p') || urlParams.get('pedido') || 'PED-NOVO';
-      const clienteParam = urlParams.get('c') || urlParams.get('cliente') || 'Time / Clube';
+      const pedidoIdParam = urlParams.get('pedidoId') || urlParams.get('p') || urlParams.get('pedido') || 'PED-NOVO';
+      const clienteParam = urlParams.get('cliente') || urlParams.get('c') || 'Cliente / Empresa';
+      const tipoParam = (urlParams.get('tipo') || 'corporativo').toLowerCase();
       const tenantIdParam = urlParams.get('t') || urlParams.get('tenant') || 'default';
-      const zapFabricaParam = urlParams.get('zap') || '11987654321';
+      const zapFabricaParam = urlParams.get('tel') || urlParams.get('zap') || '11987654321';
 
       let atletas = [];
 
@@ -563,6 +566,15 @@
       // Atualiza Cabeçalhos
       labelIdPedido.textContent = `#${pedidoIdParam.replace('PED-', '').replace('ORC-', '')}`;
       labelNomeCliente.textContent = clienteParam;
+
+      if (tipoParam === 'corporativo') {
+        const hBadge = document.querySelector('.header-badge');
+        if (hBadge) hBadge.innerHTML = '🏢 Portal de Uniformes dos Colaboradores';
+        const hTitle = document.querySelector('.header-title');
+        if (hTitle) hTitle.textContent = 'Relação de Uniformes da Empresa';
+        const cTitle = document.querySelector('.card-title');
+        if (cTitle) cTitle.innerHTML = '👥 Relação de Colaboradores & Tamanhos';
+      }
 
       // Opções de Tamanho
       const OPCOES_TAMANHOS = [
@@ -871,16 +883,95 @@
         }
       };
 
+      function sincronizarComErp(atletasConfirmados, totalPecas, gradeCalculada, codigoValidacao) {
+        // 1. Atualiza nos bancos locais do ERP (bravvi_erp_prod_v8 e todos os tenants)
+        const chaves = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k === 'bravvi_erp_prod_v8' || k === 'bravvi_erp_demo_temp' || (k && k.startsWith('bravvi_erp_tenant_'))) {
+            chaves.push(k);
+          }
+        }
+        if (chaves.length === 0) chaves.push('bravvi_erp_prod_v8');
+
+        chaves.forEach(k => {
+          try {
+            const raw = localStorage.getItem(k);
+            if (!raw) return;
+            const dbLocal = JSON.parse(raw);
+            if (!dbLocal || !Array.isArray(dbLocal.pedidos)) return;
+
+            const ped = dbLocal.pedidos.find(p => 
+              p.id === pedidoIdParam || 
+              (p.numero != null && p.numero.toString() === pedidoIdParam.replace('PED-', '').replace('ORC-', ''))
+            );
+
+            if (ped) {
+              ped.jogadores = atletasConfirmados;
+              ped.grade = gradeCalculada;
+              ped.quantidadeTotal = totalPecas;
+              ped.status = 'Entrada Pendente';
+              ped.etapaProducao = 'Quarentena';
+              ped.etapaAtual = 'Quarentena';
+              ped.origemEntrada = 'preenchido_cliente';
+              ped.dataPreenchimentoCliente = new Date().toISOString();
+              ped.codigoValidacao = codigoValidacao;
+              localStorage.setItem(k, JSON.stringify(dbLocal));
+            }
+          } catch (e) {
+            console.warn('Erro ao atualizar banco local do ERP:', e);
+          }
+        });
+
+        // 2. Notifica abas do ERP abertas no mesmo navegador
+        try {
+          window.dispatchEvent(new Event('storage'));
+        } catch (e) {}
+
+        // 3. Sincronização em Nuvem via Supabase (se cliente estiver no 4G de outro dispositivo)
+        try {
+          if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
+            const supUrl = "https://nrhygqygcfjyniogjegq.supabase.co";
+            const supKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yaHlncXlnY2ZqeW5pb2dqZWdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0NzU1MTMsImV4cCI6MjEwNjA1MTUxM30.JXAt9Ha1ni2T3G-dMvITGdH9PIPTc7_utI3H9LPrIV4";
+            const client = window.supabase.createClient(supUrl, supKey);
+            client.from('erp_tenants').select('*').limit(1).then(({ data, error }) => {
+              if (data && data.length > 0) {
+                const row = data[0];
+                const dbCloud = row.dados || {};
+                if (dbCloud && Array.isArray(dbCloud.pedidos)) {
+                  const pedCloud = dbCloud.pedidos.find(p => 
+                    p.id === pedidoIdParam || 
+                    (p.numero != null && p.numero.toString() === pedidoIdParam.replace('PED-', '').replace('ORC-', ''))
+                  );
+                  if (pedCloud) {
+                    pedCloud.jogadores = atletasConfirmados;
+                    pedCloud.grade = gradeCalculada;
+                    pedCloud.quantidadeTotal = totalPecas;
+                    pedCloud.status = 'Entrada Pendente';
+                    pedCloud.origemEntrada = 'preenchido_cliente';
+                    pedCloud.dataPreenchimentoCliente = new Date().toISOString();
+                    pedCloud.codigoValidacao = codigoValidacao;
+                    client.from('erp_tenants').update({ dados: dbCloud, atualizado_em: new Date().toISOString() }).eq('id', row.id).then();
+                  }
+                }
+              }
+            }).catch(err => console.warn('Supabase sync background:', err));
+          }
+        } catch (errCloud) {
+          console.warn('Falha silenciosa na nuvem:', errCloud);
+        }
+      }
+
       // Finalizar Confirmação
       document.getElementById('btnFinalizarConfirmacao').onclick = () => {
         if (atletas.length === 0) {
-          alert('Por favor, adicione pelo menos um atleta.');
+          alert('Por favor, adicione pelo menos uma pessoa/peça.');
           return;
         }
 
         const semNome = atletas.filter(a => !a.nome.trim());
         if (semNome.length > 0) {
-          if (!confirm(`Existem ${semNome.length} atletas sem nome preenchido. Deseja continuar mesmo assim?`)) {
+          if (!confirm(`Existem ${semNome.length} registros sem nome preenchido. Deseja continuar mesmo assim?`)) {
             return;
           }
         }
@@ -888,28 +979,42 @@
         salvarLocal();
 
         // Gera código de validação
-        const hash = 'TIM-' + Math.floor(1000 + Math.random() * 9000);
+        const hash = (tipoParam === 'time' ? 'TIM-' : 'UNI-') + Math.floor(1000 + Math.random() * 9000);
         const totalPecasGeral = atletas.reduce((s, a) => s + Math.max(1, parseInt(a.quantidade || 1, 10)), 0);
+
+        // Calcula a nova grade somando as quantidades de cada tamanho
+        const gradeCalculada = { pp: 0, p: 0, m: 0, g: 0, gg: 0, xg: 0, total: totalPecasGeral };
+        atletas.forEach(at => {
+          const k = (at.tamanho || 'm').toLowerCase().replace('-', '_');
+          const q = Math.max(1, parseInt(at.quantidade || 1, 10));
+          gradeCalculada[k] = (gradeCalculada[k] || 0) + q;
+        });
+
+        // Sincroniza diretamente com o banco de dados do ERP
+        sincronizarComErp(atletas, totalPecasGeral, gradeCalculada, hash);
 
         document.getElementById('sucessoPedidoId').textContent = `#${pedidoIdParam.replace('PED-', '').replace('ORC-', '')}`;
         document.getElementById('sucessoClienteNome').textContent = clienteParam;
-        document.getElementById('sucessoTotalPecas').textContent = `${totalPecasGeral} peças (${atletas.length} atletas)`;
+        document.getElementById('sucessoTotalPecas').textContent = `${totalPecasGeral} peças (${atletas.length} pessoas)`;
         document.getElementById('sucessoCodigoHash').textContent = `#${hash}`;
 
-        // Monta mensagem de WhatsApp
-        let msg = `⚽ *RELAÇÃO OFICIAL DO TIME CONFIRMADA*\n\n`;
+        // Monta mensagem de WhatsApp personalizada
+        const iconeTitulo = tipoParam === 'time' ? '⚽' : '🏢';
+        const tituloTexto = tipoParam === 'time' ? 'RELAÇÃO OFICIAL DO TIME CONFIRMADA' : 'RELAÇÃO DE UNIFORMES DOS COLABORADORES CONFIRMADA';
+        let msg = `${iconeTitulo} *${tituloTexto}*\n\n`;
         msg += `📋 *Pedido:* #${pedidoIdParam.replace('PED-', '').replace('ORC-', '')}\n`;
-        msg += `🏆 *Time/Cliente:* ${clienteParam}\n`;
-        msg += `🔢 *Total de Uniformes:* ${totalPecasGeral} peças (${atletas.length} atletas)\n`;
+        msg += `🏢 *Cliente/Empresa:* ${clienteParam}\n`;
+        msg += `🔢 *Total de Peças:* ${totalPecasGeral} uniformes (${atletas.length} cadastros)\n`;
         msg += `🔑 *Código:* ${hash}\n\n`;
-        msg += `*LISTA DOS ATLETAS:*\n`;
+        msg += `*RELAÇÃO DOS NOMES E TAMANHOS:*\n`;
 
         atletas.forEach((at, i) => {
-          const qtdStr = (at.quantidade && at.quantidade > 1) ? ` *(x${at.quantidade} peças)*` : '';
-          msg += `${i + 1}. ${at.numero ? '#' + at.numero + ' ' : ''}${at.nome || 'SEM NOME'} — Tam: *${at.tamanho}*${qtdStr}${at.posicao && at.posicao !== 'Linha' ? ' (' + at.posicao + ')' : ''}\n`;
+          const qtdStr = (at.quantidade && at.quantidade > 1) ? ` *(x${at.quantidade} pçs)*` : '';
+          const numStr = at.numero ? `Nº ${at.numero} - ` : '';
+          msg += `${i + 1}. ${numStr}${at.nome || 'SEM NOME'} — Tam: *${at.tamanho}*${qtdStr}${at.posicao && at.posicao !== 'Linha' ? ' (' + at.posicao + ')' : ''}\n`;
         });
 
-        msg += `\n✅ *Lista revisada e aprovada pelo capitão/responsável do time.*`;
+        msg += `\n✅ *Lista enviada e confirmada para a confecção produzir.*`;
 
         const linkZap = `https://api.whatsapp.com/send?phone=55${zapFabricaParam.replace(/\D/g, '')}&text=${encodeURIComponent(msg)}`;
         document.getElementById('btnEnviarZapConfirmacao').href = linkZap;
