@@ -3186,6 +3186,32 @@
     ...SECOES_GRADE_EXTRAS.flatMap(s => s.campos)
   ];
 
+  // Escala Têxtil Industrial ABNT/ABIT de Consumo por Tamanho (Base M = 1.00)
+  // Permite calcular com precisão de corte tanto em QUILOS (kg) quanto em METROS (m)
+  const FATORES_CONSUMO_TAMANHO = {
+    // Infantis pequenos e médios (2 a 8 anos): consomem de 60% a 75% da peça M
+    'inf2': 0.60, 'inf4': 0.65, 'inf6': 0.70, 'inf8': 0.75,
+    // Infantis juvenis (10 a 16 anos): consomem de 80% a 92% da peça M
+    'inf10': 0.80, 'inf12': 0.85, 'inf14': 0.88, 'inf16': 0.92,
+    // Adulto Regular (Modelagem padrão comercial):
+    'pp': 0.88,
+    'p': 0.94,
+    'm': 1.00, // TAMANHO BASE PADRÃO
+    'g': 1.06,
+    'gg': 1.15,
+    'xg': 1.25,
+    // Tamanhos Especiais / Plus Size (G1 a G5 - consomem de 38% a 90% mais tecido!)
+    'g1': 1.38,
+    'g2': 1.48,
+    'g3': 1.60,
+    'g4': 1.75,
+    'g5': 1.90,
+    // Modelagem Baby Look Feminina:
+    'bl_pp': 0.80, 'bl_p': 0.85, 'bl_m': 0.90, 'bl_g': 0.95, 'bl_gg': 1.05, 'bl_xg': 1.15,
+    // Modelagem Slim Fit:
+    'slim_p': 0.90, 'slim_m': 0.95, 'slim_g': 1.00, 'slim_gg': 1.10, 'slim_xg': 1.20
+  };
+
   function obterTamanhosSelecionadosGrade(grade) {
     if (!grade) return [];
     const res = [];
@@ -4880,6 +4906,9 @@
       observacoesCoresDetalhes: '',
       grade: { pp: 0, p: 0, m: 0, g: 0, gg: 0, xg: 0, total: 0 },
       aplicacoes: [appInicial],
+      unidadeTecido: 'kg', // 'kg' (Quilos) ou 'metro' (Metros)
+      consumoTotalTecido: 0,
+      consumoUnitarioPonderado: prod.consumoMalhaKgPorPeca || 0.28,
       custoTecidoKg: pdr.custoTecidoKg || 48.50,
       consumoTecido: prod.consumoMalhaKgPorPeca || 0.28,
       margemErroTecido: pdr.margemErroTecido || 8.0,
@@ -5124,6 +5153,8 @@
     }
 
     let itemAtivoIndex = 0;
+    let modalidadePedido = (isEdicao && orcamentoExistente.tipoPedidoModalidade) ? orcamentoExistente.tipoPedidoModalidade : 'padrao';
+    let listaJogadoresTime = (isEdicao && Array.isArray(orcamentoExistente.jogadores)) ? JSON.parse(JSON.stringify(orcamentoExistente.jogadores)) : [];
 
     const prazoClienteInicial = isEdicao
       ? (orcamentoExistente.prazoPedidoDias || padroes.prazoPedidoDias || 15)
@@ -5182,6 +5213,33 @@
                     <span id="labelDataMetaInterna" style="font-size: 10px; color: #0284c7; font-weight: 700; margin-top: 2px; display: block;"></span>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <!-- 1.5 SELETOR DE MODALIDADE: PADRÃO VS UNIFORME DE TIME (GRADE NOMINAL) -->
+            <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                <span style="font-weight: 800; font-size: 11.5px; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                  Tipo de Pedido:
+                </span>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; cursor: pointer; margin: 0; color: #334155;">
+                  <input type="radio" name="tipoPedidoModalidade" value="padrao" ${modalidadePedido !== 'time' ? 'checked' : ''} id="radioModalidadePadrao">
+                  👔 Padrão / Corporativo
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; cursor: pointer; margin: 0; color: #0284c7;">
+                  <input type="radio" name="tipoPedidoModalidade" value="time" ${modalidadePedido === 'time' ? 'checked' : ''} id="radioModalidadeTime">
+                  ⚽ Uniforme de Time (Grade Nominal)
+                </label>
+              </div>
+
+              <div id="acoesTimeContainer" style="display: ${modalidadePedido === 'time' ? 'flex' : 'none'}; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" id="btnColarListaZapModal" style="font-size: 11px; padding: 4px 10px; font-weight: 700; color: #166534; background: #f0fdf4; border-color: #bbf7d0; display: inline-flex; align-items: center; gap: 5px;">
+                  📋 Colar Lista do WhatsApp
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" id="btnGerarLinkTimeModal" style="font-size: 11px; padding: 4px 12px; font-weight: 700; background: #0284c7; border-color: #0284c7; display: inline-flex; align-items: center; gap: 5px;">
+                  🔗 Gerar Link do Cliente
+                </button>
               </div>
             </div>
 
@@ -5435,6 +5493,29 @@
                     <div class="grade-col"><div class="grade-label" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Slim-XG</div><input type="number" id="gradeSlimXg" class="grade-input" value="0" min="0"></div>
                   </div>
                 </div>
+
+                <!-- Painel de Relação de Atletas / Uniforme de Time (Visível apenas se modalidade === 'time') -->
+                <div id="painelTimeJogadoresCard" style="display: ${modalidadePedido === 'time' ? 'block' : 'none'}; margin-top: 12px; padding: 12px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius-sm);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+                    <div>
+                      <strong style="font-size: 12px; color: #166534; display: flex; align-items: center; gap: 6px;">
+                        ⚽ Relação dos Atletas / Jogadores (Com Nomes & Números):
+                      </strong>
+                      <span style="font-size: 10px; color: #15803d;">
+                        Ao adicionar jogadores, os tamanhos da grade acima são somados automaticamente!
+                      </span>
+                    </div>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                      <button type="button" class="btn btn-secondary btn-sm" id="btnAdicionarJogadorModal" style="font-size: 10.5px; padding: 2px 8px; font-weight: 700; color: #166534; background: #ffffff; border-color: #86efac;">
+                        + Adicionar Atleta
+                      </button>
+                    </div>
+                  </div>
+
+                  <div id="containerTabelaJogadoresModal" style="max-height: 240px; overflow-y: auto; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 4px; padding: 6px;">
+                    <!-- Renderizado dinamicamente via renderizarTabelaJogadoresModal() -->
+                  </div>
+                </div>
               </div>
 
               <!-- APLICAÇÕES DE PERSONALIZAÇÃO (BORDADO + DTF + SILK + LOCALIZAÇÃO) -->
@@ -5492,7 +5573,17 @@
                   <span class="form-label" style="font-size: 12px; font-weight: 800; color: var(--text-primary); margin: 0;">
                     Custos Diretos para Produzir este Modelo:
                   </span>
-                  <div style="display: flex; gap: 6px;">
+                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <!-- Switcher de Unidade Têxtil: KG vs METROS -->
+                    <div style="display: inline-flex; background: #e2e8f0; padding: 2px; border-radius: 5px;" id="boxSwitchUnidadeTecido">
+                      <button type="button" class="btn-toggle-unidade-tec" data-unidade="kg" id="btnToggleUnidadeKg" style="font-size: 10.5px; padding: 2px 8px; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; background: #0284c7; color: #ffffff;">
+                        ⚖️ Quilos (kg)
+                      </button>
+                      <button type="button" class="btn-toggle-unidade-tec" data-unidade="metro" id="btnToggleUnidadeMetro" style="font-size: 10.5px; padding: 2px 8px; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; background: transparent; color: #475569;">
+                        📏 Metros (m)
+                      </button>
+                    </div>
+
                     <button type="button" class="btn btn-secondary btn-sm" id="btnSalvarCustosPadrao" style="font-size: 10.5px; padding: 3px 8px; font-weight: 700; background: #f0fdf4; color: #166534; border-color: #bbf7d0;" title="Salva os custos atuais como padrões">
                       ⭐ Salvar como Meus Padrões
                     </button>
@@ -5504,12 +5595,12 @@
                 
                 <div class="form-row">
                   <div class="form-group" style="flex: 1.2;">
-                    <label class="form-label">Custo Tecido (R$/kg ou m)</label>
+                    <label class="form-label" id="labelInputCustoTecido">Custo Tecido (R$/kg)</label>
                     <input type="number" id="inputCustoTecido" class="form-input" value="${padroes.custoTecidoKg.toFixed(2)}" step="0.50">
                   </div>
 
                   <div class="form-group" style="flex: 1;">
-                    <label class="form-label" title="Consumo têxtil padrão desta modelagem">Consumo (kg ou m/un)</label>
+                    <label class="form-label" id="labelInputConsumoTecido" title="Consumo têxtil base do tamanho M">Consumo Base M (kg/un)</label>
                     <input type="number" id="inputConsumoTecido" class="form-input" value="0.28" step="0.01" min="0.05">
                   </div>
 
@@ -6551,42 +6642,95 @@
       const inpTotal = document.getElementById('gradeTotal');
       if (inpTotal) inpTotal.value = totalPecasItem;
 
-      // Engenharia Têxtil do Modelo Ativo
-      const consumoBase = itAtivo.consumoTecido || 0.28;
+      // Engenharia Têxtil Ponderada por Tamanho (PP ao G5) e Unidade (kg ou metro)
+      const unidadeTec = itAtivo.unidadeTecido || 'kg';
+      const isMetros = (unidadeTec === 'metro');
+      const siglaUn = isMetros ? 'm' : 'kg';
+      const nomeUn = isMetros ? 'metros' : 'kg';
+
+      const consumoBaseM = itAtivo.consumoTecido || (isMetros ? 0.75 : 0.28);
       const margemErro = itAtivo.margemErroTecido || 8.0;
-      const consumoRealComPerda = consumoBase * (1 + (margemErro / 100));
-      const rendimentoPecasPorKg = consumoRealComPerda > 0 ? (1 / consumoRealComPerda) : 0;
-      const custoTecidoUnitario = (itAtivo.custoTecidoKg || 48.50) * consumoRealComPerda;
-      const totalKgTecido = totalPecasItem * consumoRealComPerda;
+      const fatorPerda = (1 + (margemErro / 100));
+
+      let consumoTotalTecidoModelo = 0;
+      let custoTotalTecidoModelo = 0;
+      let qtdEspeciaisPlusSize = 0;
+      let totalPecasGrade = 0;
+
+      if (itAtivo.grade) {
+        Object.keys(itAtivo.grade).forEach(chave => {
+          if (chave === 'total') return;
+          const qtd = parseInt(itAtivo.grade[chave], 10) || 0;
+          if (qtd > 0) {
+            totalPecasGrade += qtd;
+            const fator = FATORES_CONSUMO_TAMANHO[chave] || 1.00;
+            if (['g1', 'g2', 'g3', 'g4', 'g5'].includes(chave)) {
+              qtdEspeciaisPlusSize += qtd;
+            }
+            const consumoUnitarioTamanho = (consumoBaseM * fator) * fatorPerda;
+            consumoTotalTecidoModelo += (qtd * consumoUnitarioTamanho);
+            custoTotalTecidoModelo += (qtd * consumoUnitarioTamanho * (itAtivo.custoTecidoKg || 48.50));
+          }
+        });
+      }
+
+      if (totalPecasGrade === 0) {
+        const consumoUnitarioM = consumoBaseM * fatorPerda;
+        consumoTotalTecidoModelo = Math.max(1, totalPecasItem) * consumoUnitarioM;
+        custoTotalTecidoModelo = consumoTotalTecidoModelo * (itAtivo.custoTecidoKg || 48.50);
+      }
+
+      const consumoRealComPerdaMedio = totalPecasGrade > 0 ? (consumoTotalTecidoModelo / totalPecasGrade) : (consumoBaseM * fatorPerda);
+      const custoTecidoUnitario = totalPecasGrade > 0 ? (custoTotalTecidoModelo / totalPecasGrade) : (consumoRealComPerdaMedio * (itAtivo.custoTecidoKg || 48.50));
+      const rendimentoPecasPorKg = consumoRealComPerdaMedio > 0 ? (1 / consumoRealComPerdaMedio) : 0;
+      const totalKgTecido = consumoTotalTecidoModelo;
+
+      itAtivo.consumoTotalTecido = consumoTotalTecidoModelo;
+      itAtivo.consumoUnitarioPonderado = consumoRealComPerdaMedio;
+      itAtivo.custoTecidoUnitarioPonderado = custoTecidoUnitario;
+      itAtivo.unidadeTecido = unidadeTec;
 
       const boxRendimento = document.getElementById('boxRendimentoTecido');
       if (boxRendimento) {
         boxRendimento.innerHTML = `
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
             <strong style="color: var(--text-primary); font-size: 11.5px; display: flex; align-items: center; gap: 5px;">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-              Engenharia Têxtil deste Modelo (${itAtivo.produtoNome.split(' ')[0]}):
+              Engenharia Têxtil Ponderada (${itAtivo.produtoNome.split(' ')[0]}):
             </strong>
-            <span class="status-pill status-gray" style="font-size: 9.5px; font-weight: 700;">Perda Corte/Enfesto: ${margemErro.toFixed(1)}%</span>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              ${qtdEspeciaisPlusSize > 0 ? `
+                <span class="status-pill status-amber" style="font-size: 9.5px; font-weight: 800; background: #fffbeb; color: #b45309; border: 1px solid #fde68a;">
+                  ⚡ ${qtdEspeciaisPlusSize} Peça(s) Plus Size (G1 a G5)
+                </span>
+              ` : ''}
+              <span class="status-pill status-gray" style="font-size: 9.5px; font-weight: 700;">Perda Corte/Enfesto: ${margemErro.toFixed(1)}%</span>
+            </div>
           </div>
           <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; font-size: 11px;">
             <div>
-              <span style="color: var(--text-gray-500); display: block; font-size: 9.5px;">Consumo c/ Margem:</span>
-              <strong style="color: var(--text-primary);">${consumoRealComPerda.toFixed(3)} kg/un</strong>
+              <span style="color: var(--text-gray-500); display: block; font-size: 9.5px;">Consumo Ponderado Médio:</span>
+              <strong style="color: var(--text-primary);">${consumoRealComPerdaMedio.toFixed(3)} ${siglaUn}/un</strong>
             </div>
             <div>
-              <span style="color: var(--text-gray-500); display: block; font-size: 9.5px;">Rendimento Malha:</span>
-              <strong style="color: var(--color-green);">${rendimentoPecasPorKg.toFixed(2)} peças / kg</strong>
+              <span style="color: var(--text-gray-500); display: block; font-size: 9.5px;">Rendimento do Tecido:</span>
+              <strong style="color: var(--color-green);">${rendimentoPecasPorKg.toFixed(2)} peças / ${siglaUn}</strong>
             </div>
             <div>
-              <span style="color: var(--text-gray-500); display: block; font-size: 9.5px;">Custo Tecido / Peça:</span>
+              <span style="color: var(--text-gray-500); display: block; font-size: 9.5px;">Custo Médio Tecido / Peça:</span>
               <strong style="color: #1e40af; font-size: 12.5px;">${formatarMoeda(custoTecidoUnitario)}</strong>
             </div>
             <div>
-              <span style="color: var(--text-gray-500); display: block; font-size: 9.5px;">Consumo Total Modelo:</span>
-              <strong style="color: var(--text-primary);">${totalPecasItem > 0 ? `${totalKgTecido.toFixed(2)} kg` : '0.00 kg'}</strong>
+              <span style="color: var(--text-gray-500); display: block; font-size: 9.5px;">Tecido Total a Comprar/Cortar:</span>
+              <strong style="color: #0f172a; font-size: 12.5px;">${totalPecasItem > 0 ? `${consumoTotalTecidoModelo.toFixed(2)} ${nomeUn}` : `0.00 ${nomeUn}`}</strong>
             </div>
           </div>
+          ${qtdEspeciaisPlusSize > 0 ? `
+            <div style="margin-top: 6px; padding: 4px 8px; background: #fffbeb; border-radius: 4px; font-size: 10px; color: #92400e; display: flex; align-items: center; gap: 5px;">
+              <span>ℹ️</span>
+              <span><strong>Diferenciação por Tamanho Ativa:</strong> Peças G1 a G5 consomem até 90% mais tecido que a modelagem base M. O custo e o total a enfestar já estão ponderados com precisão!</span>
+            </div>
+          ` : ''}
         `;
       }
 
@@ -6807,7 +6951,11 @@
         dataMetaInterna: dataMetaInterna,
         dtfLarguraRolo: itensOrcamento[0].aplicacoes?.find(a => a.tecnica === 'DTF')?.dtfLarguraRolo || 58,
         tipoPersonalizacao: resumoPersonalizacoes,
-        mockupUrl: itensOrcamento[0].mockupUrl
+        mockupUrl: itensOrcamento[0].mockupUrl,
+        tipoPedidoModalidade: modalidadePedido,
+        jogadores: JSON.parse(JSON.stringify(listaJogadoresTime)),
+        unidadeTecido: itensOrcamento[0]?.unidadeTecido || 'kg',
+        consumoTotalTecido: itensOrcamento.reduce((s, it) => s + (it.consumoTotalTecido || 0), 0)
       };
     }
 
@@ -6878,6 +7026,316 @@
       });
     });
 
+    // =========================================================================
+    // MÓDULO PEDIDO DE TIME / GRADE NOMINAL & LINK DO CLIENTE
+    // =========================================================================
+    function alternarModalidadePedido(novaModalidade) {
+      modalidadePedido = novaModalidade;
+      const cardJog = document.getElementById('painelTimeJogadoresCard');
+      const acoesTime = document.getElementById('acoesTimeContainer');
+      if (cardJog) cardJog.style.display = (novaModalidade === 'time') ? 'block' : 'none';
+      if (acoesTime) acoesTime.style.display = (novaModalidade === 'time') ? 'flex' : 'none';
+      if (novaModalidade === 'time') {
+        if (listaJogadoresTime.length === 0) {
+          for (let i = 1; i <= 5; i++) {
+            listaJogadoresTime.push({
+              id: 'jog_' + Date.now() + '_' + i,
+              numero: i === 1 ? '1' : i === 5 ? '10' : '',
+              nome: '',
+              tamanho: 'M',
+              posicao: i === 1 ? 'Goleiro' : 'Linha'
+            });
+          }
+        }
+        renderizarTabelaJogadoresModal();
+      }
+    }
+
+    document.getElementById('radioModalidadePadrao')?.addEventListener('change', (e) => {
+      if (e.target.checked) alternarModalidadePedido('padrao');
+    });
+
+    document.getElementById('radioModalidadeTime')?.addEventListener('change', (e) => {
+      if (e.target.checked) alternarModalidadePedido('time');
+    });
+
+    function sincronizarGradeComListaJogadores() {
+      if (modalidadePedido !== 'time') return;
+      const it = itensOrcamento[itemAtivoIndex];
+      if (!it) return;
+
+      const contagem = {};
+      TODOS_CAMPOS_GRADE.forEach(c => { contagem[c.chave] = 0; });
+      let totalPecas = 0;
+
+      listaJogadoresTime.forEach(jog => {
+        let tam = (jog.tamanho || 'M').toLowerCase().trim();
+        if (['2', '4', '6', '8', '10', '12', '14', '16'].includes(tam)) {
+          tam = 'inf' + tam;
+        } else if (tam.startsWith('bl-') || tam.startsWith('bl_')) {
+          tam = 'bl_' + tam.replace('bl-', '').replace('bl_', '');
+        } else if (tam.startsWith('slim-') || tam.startsWith('slim_')) {
+          tam = 'slim_' + tam.replace('slim-', '').replace('slim_', '');
+        }
+
+        if (contagem[tam] !== undefined) {
+          contagem[tam]++;
+          totalPecas++;
+        } else {
+          contagem['m'] = (contagem['m'] || 0) + 1;
+          totalPecas++;
+        }
+      });
+
+      it.grade = it.grade || {};
+      TODOS_CAMPOS_GRADE.forEach(c => {
+        it.grade[c.chave] = contagem[c.chave] || 0;
+        const elInp = document.getElementById(c.id);
+        if (elInp) elInp.value = contagem[c.chave] || 0;
+      });
+      it.grade.total = totalPecas;
+      const elTotal = document.getElementById('gradeTotal');
+      if (elTotal) elTotal.value = totalPecas;
+
+      // Revela seções de tamanhos especiais se houver na lista
+      SECOES_GRADE_EXTRAS.forEach(sec => {
+        const temQtd = sec.campos.some(c => (it.grade[c.chave] || 0) > 0);
+        const elSec = document.getElementById(sec.id);
+        if (elSec && temQtd) elSec.style.display = 'block';
+      });
+
+      recalcularBenchmarkModal();
+    }
+
+    function renderizarTabelaJogadoresModal() {
+      const container = document.getElementById('containerTabelaJogadoresModal');
+      if (!container) return;
+
+      if (listaJogadoresTime.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 12px; color: #64748b; font-size: 11px;">
+            Nenhum atleta cadastrado ainda. Clique em "+ Adicionar Atleta" ou em "📋 Colar Lista do WhatsApp".
+          </div>
+        `;
+        return;
+      }
+
+      const opcoesTam = [
+        'PP', 'P', 'M', 'G', 'GG', 'XG',
+        'G1', 'G2', 'G3', 'G4', 'G5',
+        'BL-P', 'BL-M', 'BL-G', 'BL-GG',
+        '2', '4', '6', '8', '10', '12', '14', '16'
+      ];
+
+      container.innerHTML = `
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+          <thead>
+            <tr style="background: #f1f5f9; color: #334155; border-bottom: 1.5px solid #cbd5e1;">
+              <th style="padding: 4px; width: 35px; text-align: center;">#</th>
+              <th style="padding: 4px; text-align: left;">Nome na Camisa</th>
+              <th style="padding: 4px; width: 65px; text-align: center;">Número</th>
+              <th style="padding: 4px; width: 85px; text-align: center;">Tamanho</th>
+              <th style="padding: 4px; text-align: left;">Posição / Detalhes</th>
+              <th style="padding: 4px; width: 30px; text-align: center;">✕</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${listaJogadoresTime.map((jog, idx) => `
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 4px; text-align: center; font-weight: 700; color: #64748b;">${idx + 1}</td>
+                <td style="padding: 4px;">
+                  <input type="text" class="form-input inp-jog-nome" data-idx="${idx}" value="${jog.nome || ''}" placeholder="Ex: SILVA" style="padding: 3px 6px; font-size: 11px; text-transform: uppercase; font-weight: 700;">
+                </td>
+                <td style="padding: 4px;">
+                  <input type="text" class="form-input inp-jog-num" data-idx="${idx}" value="${jog.numero || ''}" placeholder="10" style="padding: 3px 4px; font-size: 11px; text-align: center; font-family: monospace; font-weight: 800;">
+                </td>
+                <td style="padding: 4px;">
+                  <select class="form-select sel-jog-tam" data-idx="${idx}" style="padding: 3px 4px; font-size: 11px; font-weight: 700;">
+                    ${opcoesTam.map(t => `<option value="${t}" ${t.toUpperCase() === (jog.tamanho || 'M').toUpperCase() ? 'selected' : ''}>${t}</option>`).join('')}
+                  </select>
+                </td>
+                <td style="padding: 4px;">
+                  <input type="text" class="form-input inp-jog-pos" data-idx="${idx}" value="${jog.posicao || ''}" placeholder="Linha, Goleiro..." style="padding: 3px 6px; font-size: 11px;">
+                </td>
+                <td style="padding: 4px; text-align: center;">
+                  <button type="button" class="btn-del-jog" data-idx="${idx}" style="background: transparent; border: none; color: #ef4444; font-weight: 800; cursor: pointer; font-size: 12px;" title="Remover atleta">&times;</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      container.querySelectorAll('.inp-jog-nome').forEach(inp => {
+        inp.oninput = (e) => {
+          const idx = parseInt(e.target.dataset.idx, 10);
+          if (listaJogadoresTime[idx]) listaJogadoresTime[idx].nome = e.target.value.toUpperCase();
+        };
+      });
+
+      container.querySelectorAll('.inp-jog-num').forEach(inp => {
+        inp.oninput = (e) => {
+          const idx = parseInt(e.target.dataset.idx, 10);
+          if (listaJogadoresTime[idx]) listaJogadoresTime[idx].numero = e.target.value.trim();
+        };
+      });
+
+      container.querySelectorAll('.sel-jog-tam').forEach(sel => {
+        sel.onchange = (e) => {
+          const idx = parseInt(e.target.dataset.idx, 10);
+          if (listaJogadoresTime[idx]) {
+            listaJogadoresTime[idx].tamanho = e.target.value;
+            sincronizarGradeComListaJogadores();
+          }
+        };
+      });
+
+      container.querySelectorAll('.inp-jog-pos').forEach(inp => {
+        inp.oninput = (e) => {
+          const idx = parseInt(e.target.dataset.idx, 10);
+          if (listaJogadoresTime[idx]) listaJogadoresTime[idx].posicao = e.target.value;
+        };
+      });
+
+      container.querySelectorAll('.btn-del-jog').forEach(btn => {
+        btn.onclick = (e) => {
+          const idx = parseInt(btn.dataset.idx, 10);
+          listaJogadoresTime.splice(idx, 1);
+          renderizarTabelaJogadoresModal();
+          sincronizarGradeComListaJogadores();
+        };
+      });
+    }
+
+    document.getElementById('btnAdicionarJogadorModal')?.addEventListener('click', () => {
+      listaJogadoresTime.push({
+        id: 'jog_' + Date.now() + '_' + (listaJogadoresTime.length + 1),
+        numero: '',
+        nome: '',
+        tamanho: 'M',
+        posicao: 'Linha'
+      });
+      renderizarTabelaJogadoresModal();
+      sincronizarGradeComListaJogadores();
+      const elCont = document.getElementById('containerTabelaJogadoresModal');
+      if (elCont) elCont.scrollTop = elCont.scrollHeight;
+    });
+
+    document.getElementById('btnColarListaZapModal')?.addEventListener('click', () => {
+      const texto = prompt('📋 Cole aqui a lista enviada pelo time no WhatsApp (Ex: "10 - Neymar - G", "1 - Alisson - GG (Goleiro)"):');
+      if (!texto || !texto.trim()) return;
+
+      const linhas = texto.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      let adicionados = 0;
+
+      linhas.forEach((linha, i) => {
+        if (linha.toLowerCase().includes('lista') && linha.length < 20) return;
+        if (linha.toLowerCase().includes('uniforme') && linha.length < 20) return;
+
+        let num = '';
+        const matchNum = linha.match(/(?:^|\s|#|-)(\d{1,3})(?:\s*[-–.]|\s+)/);
+        if (matchNum) num = matchNum[1];
+
+        let tam = 'M';
+        const matchTam = linha.match(/\b(g[1-5]|x{1,2}g|gg|xg|pp|bl[-_]?[a-z]+|p|m|g|1[0246]|[2468])\b/i);
+        if (matchTam) tam = matchTam[1].toUpperCase();
+
+        let pos = 'Linha';
+        if (linha.toLowerCase().includes('gol') || linha.toLowerCase().includes('gk')) pos = 'Goleiro';
+        else if (linha.toLowerCase().includes('cap')) pos = 'Capitão';
+
+        let nome = linha
+          .replace(/(?:^|\s|#|-)\d{1,3}(?:\s*[-–.]|\s+)/g, ' ')
+          .replace(/\b(g[1-5]|x{1,2}g|gg|xg|pp|bl[-_]?[a-z]+|p|m|g|1[0246]|[2468])\b/gi, ' ')
+          .replace(/[()\-–#:]/g, ' ')
+          .replace(/\b(goleiro|linha|capitao|capitão)\b/gi, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        if (!nome && num) nome = `ATLETA ${num}`;
+        if (!nome) nome = `JOGADOR ${listaJogadoresTime.length + 1}`;
+
+        listaJogadoresTime.push({
+          id: 'jog_' + Date.now() + '_' + (listaJogadoresTime.length + 1),
+          numero: num,
+          nome: nome.toUpperCase(),
+          tamanho: tam,
+          posicao: pos
+        });
+        adicionados++;
+      });
+
+      if (adicionados > 0) {
+        renderizarTabelaJogadoresModal();
+        sincronizarGradeComListaJogadores();
+        mostrarToast(`⚽ ${adicionados} atletas importados com sucesso! Grade somada automaticamente.`, 'green');
+      } else {
+        mostrarToast('Nenhum atleta reconhecido no texto informado.', 'amber');
+      }
+    });
+
+    document.getElementById('btnGerarLinkTimeModal')?.addEventListener('click', () => {
+      const cliSel = document.getElementById('orcClienteSelect');
+      const nomeCli = cliSel ? cliSel.options[cliSel.selectedIndex]?.text.split('•')[0].trim() : 'Time';
+      const numPed = isEdicao ? orcamentoExistente.numero : 'NOVO';
+      const tenantId = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterTenantId === 'function') ? window.ERP_CLOUD.obterTenantId() : 'bravvi';
+      const empConfig = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function') ? window.ERP_CLOUD.obterEmpresaConfig() : {};
+      const zapFabrica = empConfig.telefone || '11987654321';
+
+      const urlBase = window.location.origin;
+      const linkPublico = `${urlBase}/time.html?p=${numPed}&c=${encodeURIComponent(nomeCli)}&t=${tenantId}&zap=${zapFabrica}`;
+
+      const msgZap = `⚽ *Olá, ${nomeCli}!*\n\nPara garantir que o uniforme do seu time saia perfeito e sem nenhum erro de digitação, acesse o link oficial abaixo para preencher a relação dos atletas (nomes, números e tamanhos):\n\n👉 ${linkPublico}\n\nAssim que você confirmar, a lista entra automaticamente na nossa linha de corte e estampa!`;
+
+      const linkZapDireto = `https://api.whatsapp.com/send?text=${encodeURIComponent(msgZap)}`;
+
+      const promptLink = prompt(
+        `🔗 LINK DO CLIENTE GERADO COM SUCESSO!\n\nCopie o link abaixo para enviar ao capitão do time:\n${linkPublico}\n\nDeseja abrir o WhatsApp agora com a mensagem pronta? (Clique OK para abrir ou Cancelar para apenas copiar)`
+      );
+      if (promptLink !== null) {
+        window.open(linkZapDireto, '_blank');
+      }
+    });
+
+    function atualizarSwitcherUnidadeTecido(novaUnidade) {
+      const it = itensOrcamento[itemAtivoIndex];
+      if (!it) return;
+      it.unidadeTecido = novaUnidade;
+
+      const btnKg = document.getElementById('btnToggleUnidadeKg');
+      const btnMet = document.getElementById('btnToggleUnidadeMetro');
+      if (btnKg) {
+        btnKg.style.background = (novaUnidade === 'kg') ? '#0284c7' : 'transparent';
+        btnKg.style.color = (novaUnidade === 'kg') ? '#ffffff' : '#475569';
+      }
+      if (btnMet) {
+        btnMet.style.background = (novaUnidade === 'metro') ? '#0284c7' : 'transparent';
+        btnMet.style.color = (novaUnidade === 'metro') ? '#ffffff' : '#475569';
+      }
+
+      const lblCusto = document.getElementById('labelInputCustoTecido');
+      if (lblCusto) lblCusto.textContent = (novaUnidade === 'metro') ? 'Custo Tecido (R$/metro)' : 'Custo Tecido (R$/kg)';
+
+      const lblCons = document.getElementById('labelInputConsumoTecido');
+      if (lblCons) lblCons.textContent = (novaUnidade === 'metro') ? 'Consumo Base M (m/un)' : 'Consumo Base M (kg/un)';
+
+      const inpCons = document.getElementById('inputConsumoTecido');
+      if (inpCons) {
+        if (novaUnidade === 'metro' && (!it.consumoTecido || it.consumoTecido <= 0.35)) {
+          inpCons.value = '0.75';
+          it.consumoTecido = 0.75;
+        } else if (novaUnidade === 'kg' && it.consumoTecido >= 0.60) {
+          inpCons.value = '0.28';
+          it.consumoTecido = 0.28;
+        }
+      }
+
+      recalcularBenchmarkModal();
+    }
+
+    document.getElementById('btnToggleUnidadeKg')?.addEventListener('click', () => atualizarSwitcherUnidadeTecido('kg'));
+    document.getElementById('btnToggleUnidadeMetro')?.addEventListener('click', () => atualizarSwitcherUnidadeTecido('metro'));
+
     // Botões de ação do Duplo Fluxo / Edição
     if (isEdicao) {
       document.getElementById('btnSalvarEdicaoOrcamento')?.addEventListener('click', () => {
@@ -6906,6 +7364,10 @@
         orcamentoExistente.prazoPedidoDias = dadosOrcamento.prazoPedidoDias;
         orcamentoExistente.prazoInternoDias = dadosOrcamento.prazoInternoDias;
         orcamentoExistente.dtfLarguraRolo = dadosOrcamento.dtfLarguraRolo;
+        orcamentoExistente.tipoPedidoModalidade = dadosOrcamento.tipoPedidoModalidade || 'padrao';
+        orcamentoExistente.jogadores = dadosOrcamento.jogadores || [];
+        orcamentoExistente.unidadeTecido = dadosOrcamento.unidadeTecido || 'kg';
+        orcamentoExistente.consumoTotalTecido = dadosOrcamento.consumoTotalTecido || 0;
         if (dadosOrcamento.mockupUrl) {
           orcamentoExistente.mockupUrl = dadosOrcamento.mockupUrl;
         }
@@ -6947,6 +7409,10 @@
         orcamentoExistente.prazoPedidoDias = dadosOrcamento.prazoPedidoDias;
         orcamentoExistente.prazoInternoDias = dadosOrcamento.prazoInternoDias;
         orcamentoExistente.dtfLarguraRolo = dadosOrcamento.dtfLarguraRolo;
+        orcamentoExistente.tipoPedidoModalidade = dadosOrcamento.tipoPedidoModalidade || 'padrao';
+        orcamentoExistente.jogadores = dadosOrcamento.jogadores || [];
+        orcamentoExistente.unidadeTecido = dadosOrcamento.unidadeTecido || 'kg';
+        orcamentoExistente.consumoTotalTecido = dadosOrcamento.consumoTotalTecido || 0;
         if (dadosOrcamento.mockupUrl) {
           orcamentoExistente.mockupUrl = dadosOrcamento.mockupUrl;
         }
@@ -6975,6 +7441,9 @@
     atualizarLabelsPrazos();
     configurarEventosComboboxModelo();
     carregarItemAtivoNoDOM();
+    if (modalidadePedido === 'time') {
+      renderizarTabelaJogadoresModal();
+    }
     recalcularBenchmarkModal();
   }
 
@@ -7014,6 +7483,10 @@
       observacoesCoresDetalhes: dados.observacoesCoresDetalhes || '',
       tecidoEspecificacao: dados.prod ? dados.prod.tipoMalhaPadrao : 'Padrão Têxtil',
       tipoPersonalizacao: dados.tipoPersonalizacao || 'Personalização Conforme Proposta',
+      tipoPedidoModalidade: dados.tipoPedidoModalidade || 'padrao',
+      jogadores: dados.jogadores || [],
+      unidadeTecido: dados.unidadeTecido || 'kg',
+      consumoTotalTecido: dados.consumoTotalTecido || 0,
       mockupUrl: dados.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(dados.prod ? dados.prod.nome : 'Camisa', "#1e3a8a", "#ffffff", (dados.cliente ? (dados.cliente.nomeFantasia || dados.cliente.nome || "BRAVVI") : "BRAVVI").toString().substring(0, 6)) : ''),
       artesAnexadas: [],
       grade: dados.grade,
@@ -7702,7 +8175,8 @@
           return;
         }
 
-        abrirEstudioCirurgicoFundo(arq.dataUrl, (novaDataUrl) => {
+        if (!arq.dataUrlOriginal) arq.dataUrlOriginal = arq.dataUrl;
+        abrirEstudioCirurgicoFundo(arq.dataUrlOriginal, (novaDataUrl) => {
           arq.dataUrl = novaDataUrl;
           arq.fundoRemovido = true;
           arq.recortado = true;
@@ -7811,7 +8285,8 @@
           return;
         }
 
-        abrirEstudioCirurgicoFundo(arq.dataUrl, (novaDataUrl) => {
+        if (!arq.dataUrlOriginal) arq.dataUrlOriginal = arq.dataUrl;
+        abrirEstudioCirurgicoFundo(arq.dataUrlOriginal, (novaDataUrl) => {
           arq.dataUrl = novaDataUrl;
           arq.fundoRemovido = true;
           arq.recortado = true;
@@ -9042,7 +9517,8 @@
         const art = artes[idx];
         if (!art || !art.arquivoDataUrl) return;
 
-        abrirEstudioCirurgicoFundo(art.arquivoDataUrl, (novaDataUrl) => {
+        if (!art.arquivoDataUrlOriginal) art.arquivoDataUrlOriginal = art.arquivoDataUrl;
+        abrirEstudioCirurgicoFundo(art.arquivoDataUrlOriginal, (novaDataUrl) => {
           art.arquivoDataUrl = novaDataUrl;
           art.fundoRemovido = true;
           art.recortado = true;
@@ -9215,7 +9691,7 @@
             <div><strong>Total de Peças:</strong> <span style="font-weight: 800; color: #0f172a;">${os.quantidadeTotal} un</span></div>
             <div><strong>Costureira Designada:</strong> <span style="font-weight: 800; color: #047857;">${os.costureiraDesignada}</span></div>
             <div><strong>Encarregado de Corte:</strong> ${os.responsavelCorte}</div>
-            <div><strong>Consumo Estimado:</strong> ${os.tecidoConsumidoKg} kg de malha</div>
+            <div><strong>Consumo Estimado:</strong> ${(pedido.consumoTotalTecido ? pedido.consumoTotalTecido.toFixed(2) : os.tecidoConsumidoKg)} ${(pedido.unidadeTecido === 'metro' ? 'metros de tecido' : 'kg de malha')}</div>
           </div>
         </div>
       </div>
@@ -9289,6 +9765,40 @@
           <span style="color: #047857; font-weight: 800; font-size: 13px;" class="text-mono">TOTAL: ${os.quantidadeTotal} pçs</span>
         </div>
       `}
+
+      <!-- Relação Oficial de Atletas / Uniforme de Time (se houver) -->
+      ${(pedido.jogadores && Array.isArray(pedido.jogadores) && pedido.jogadores.length > 0) ? `
+        <div style="background: #ffffff; border: 1.5px solid #0f172a; border-radius: 4px; padding: 10px; margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <strong style="color: #0f172a; font-size: 11.5px; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+              ⚽ RELAÇÃO OFICIAL DOS ATLETAS (CORTE & ESTAMPA / SUBLIMAÇÃO):
+            </strong>
+            <span style="font-weight: 800; color: #0284c7; font-size: 11px;">${pedido.jogadores.length} ATLETAS CONFERIDOS</span>
+          </div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 10.5px; text-align: left;">
+            <thead>
+              <tr style="background: #0f172a; color: #ffffff;">
+                <th style="padding: 4px 6px; width: 6%; text-align: center;">#</th>
+                <th style="padding: 4px 6px; width: 45%;">Nome na Camisa</th>
+                <th style="padding: 4px 6px; width: 14%; text-align: center;">Número</th>
+                <th style="padding: 4px 6px; width: 15%; text-align: center;">Tamanho</th>
+                <th style="padding: 4px 6px; width: 20%;">Posição / Obs</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${pedido.jogadores.map((jog, jIdx) => `
+                <tr style="border-bottom: 1px solid #cbd5e1; background: ${jIdx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+                  <td style="padding: 4px 6px; text-align: center; font-weight: 700; color: #64748b;">${jIdx + 1}</td>
+                  <td style="padding: 4px 6px; font-weight: 800; color: #0f172a; text-transform: uppercase;">${jog.nome || 'SEM NOME'}</td>
+                  <td style="padding: 4px 6px; text-align: center; font-weight: 800; font-family: monospace; font-size: 11.5px; color: #0284c7;">${jog.numero || '-'}</td>
+                  <td style="padding: 4px 6px; text-align: center;"><span style="background: #e0f2fe; color: #0369a1; padding: 1px 6px; border-radius: 3px; font-weight: 800;">${jog.tamanho}</span></td>
+                  <td style="padding: 4px 6px; color: #475569;">${jog.posicao || 'Linha'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      ` : ''}
 
       <!-- 1. Instruções para a Mesa de Corte -->
       <div style="margin-bottom: 10px;">
@@ -9812,22 +10322,22 @@
             <div style="background: #041f27; border: 1px solid rgba(45, 212, 191, 0.15); border-radius: 6px; padding: 8px;">
               <span style="font-size: 9.5px; font-weight: 800; color: #2dd4bf; text-transform: uppercase; display: block; margin-bottom: 5px;">Opções Cirúrgicas de Limpeza</span>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
-                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; background: rgba(11,52,66,0.5); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(45,212,191,0.1);" title="Elimina fundo preso dentro de letras como A, B, R, P, O">
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; background: rgba(11,52,66,0.5); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(45,212,191,0.1);" title="Remove fundo vazado dentro de letras como O, A, P (textos soltos). Escudos, badges e artes internas são 100% preservados!">
                   <input type="checkbox" id="chkLimparBuracos" checked style="width: 13px; height: 13px; accent-color: #2dd4bf; margin: 0;">
                   <span style="font-size: 10px; font-weight: 700; color: #f1f5f9;">Furos Letras</span>
                 </label>
 
-                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; background: rgba(11,52,66,0.5); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(45,212,191,0.1);" title="Evita que letras brancas ou claras desbotem ou desapareçam">
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; background: rgba(11,52,66,0.5); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(45,212,191,0.1);" title="Protege textos brancos, telefones, números e brilhos cromados para ficarem 100% sólidos e vivos">
                   <input type="checkbox" id="chkProtegerTexto" checked style="width: 13px; height: 13px; accent-color: #2dd4bf; margin: 0;">
                   <span style="font-size: 10px; font-weight: 700; color: #f1f5f9;">Proteger Texto</span>
                 </label>
 
-                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; background: rgba(11,52,66,0.5); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(45,212,191,0.1);" title="Remove contorno escuro ou claro indesejado nas bordas das estampas">
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; background: rgba(11,52,66,0.5); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(45,212,191,0.1);" title="Anti-Halo HD: Elimina contornos brancos e cinzas com descontaminação profissional de cor e choke de 1px">
                   <input type="checkbox" id="chkRemoverHalo" checked style="width: 13px; height: 13px; accent-color: #2dd4bf; margin: 0;">
                   <span style="font-size: 10px; font-weight: 700; color: #f1f5f9;">Anti-Halo</span>
                 </label>
 
-                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; background: rgba(11,52,66,0.5); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(45,212,191,0.1);" title="Apaga ruído e traços residuais do corte nas extremidades">
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; background: rgba(11,52,66,0.5); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(45,212,191,0.1);" title="Bordas Limpas: Elimina automaticamente pontinhos soltos, poeira de JPG e sujeiras flutuantes">
                   <input type="checkbox" id="chkLimparBordasFantasmas" checked style="width: 13px; height: 13px; accent-color: #2dd4bf; margin: 0;">
                   <span style="font-size: 10px; font-weight: 700; color: #f1f5f9;">Bordas Limpas</span>
                 </label>
@@ -10300,6 +10810,13 @@
     document.querySelectorAll('.btn-preset-fundo').forEach(btn => {
       btn.addEventListener('click', () => {
         const p = btn.getAttribute('data-preset');
+        document.querySelectorAll('.btn-preset-fundo').forEach(b => {
+          b.style.outline = 'none';
+          b.style.boxShadow = 'none';
+        });
+        btn.style.outline = '2px solid #2dd4bf';
+        btn.style.boxShadow = '0 0 10px rgba(45, 212, 191, 0.45)';
+
         if (p === 'preto') {
           corAlvo = { r: 0, g: 0, b: 0 };
           tolerancia = 35;

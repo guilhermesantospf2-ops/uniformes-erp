@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Relação de Uniformes do Time — Confirmação de Grade & Atletas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <style>
+    :root {
+      --bg-main: #f8fafc;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --primary-light: #e0f2fe;
+      --accent-green: #10b981;
+      --accent-green-dark: #059669;
+      --border: #e2e8f0;
+      --border-focus: #0284c7;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .header-bar {
+      background: linear-gradient(135deg, #072b35 0%, #031c23 100%);
+      color: #ffffff;
+      padding: 20px 16px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(45, 212, 191, 0.15);
+      color: #2dd4bf;
+      border: 1px solid rgba(45, 212, 191, 0.3);
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .header-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .header-subtitle {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-top: 3px;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .order-info-pill {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 12.5px;
+      margin-bottom: 14px;
+    }
+
+    .actions-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-whatsapp-style {
+      background: #25d366;
+      color: #ffffff;
+    }
+    .btn-whatsapp-style:hover {
+      background: #1ebc59;
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+
+    .btn-success {
+      background: var(--accent-green);
+      color: #ffffff;
+    }
+    .btn-success:hover {
+      background: var(--accent-green-dark);
+    }
+
+    .btn-danger-icon {
+      background: #fef2f2;
+      color: #ef4444;
+      border: 1px solid #fecaca;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .player-row {
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color 0.2s;
+    }
+    .player-row:focus-within {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+
+    .player-row-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .player-num-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      background: #0f172a;
+      color: #38bdf8;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    .player-inputs-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    @media (max-width: 480px) {
+      .player-inputs-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .input-span-full-mobile {
+        grid-column: span 2;
+      }
+    }
+
+    .form-label-micro {
+      display: block;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      padding: 9px 10px;
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 600;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 6px;
+      background: #ffffff;
+      color: var(--text-main);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus, .form-select:focus {
+      border-color: var(--border-focus);
+    }
+
+    .grade-summary-box {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      margin-top: 10px;
+    }
+
+    .grade-badges-flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .grade-badge-count {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .grade-badge-count strong {
+      color: #0284c7;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+    }
+
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border-top: 1.5px solid #cbd5e1;
+      padding: 12px 16px;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
+      z-index: 60;
+    }
+
+    .bottom-bar-content {
+      max-width: 680px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Modal de Colar do Zap */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+    }
+
+    .modal-box {
+      background: #ffffff;
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 520px;
+      padding: 20px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .btn-close {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #94a3b8;
+    }
+
+    /* Sucesso */
+    .success-screen {
+      text-align: center;
+      padding: 24px 12px;
+    }
+
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      background: #ecfdf5;
+      color: #10b981;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      border: 2px solid #a7f3d0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CABEÇALHO -->
+  <header class="header-bar">
+    <div class="header-badge">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20v-20z"/></svg>
+      Portal do Cliente • Bravvi ERP
+    </div>
+    <h1 class="header-title" id="pageHeaderTitle">Relação de Uniformes do Time</h1>
+    <p class="header-subtitle" id="pageHeaderSubtitle">Confirme os nomes, números e tamanhos oficiais para corte e estampa</p>
+  </header>
+
+  <main class="container">
+
+    <!-- CARTÃO DE INFORMAÇÕES DO PEDIDO -->
+    <div class="card" id="cardInfoPedido">
+      <div class="order-info-pill">
+        <div>
+          <span style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block;">Identificação do Pedido:</span>
+          <strong style="font-size: 14px; color: #0284c7;" id="labelIdPedido">Carregando...</strong>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block;">Time / Cliente:</span>
+          <strong style="font-size: 14px; color: #0f172a;" id="labelNomeCliente">Carregando...</strong>
+        </div>
+      </div>
+
+      <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #92400e; margin-bottom: 14px; display: flex; gap: 8px; align-items: flex-start;">
+        <span style="font-size: 16px; line-height: 1;">⚠️</span>
+        <div>
+          <strong>Atenção aos nomes e números:</strong> As peças serão confeccionadas exatamente conforme preenchido abaixo. Verifique a grafia dos nomes para evitar erros na estampa.
+        </div>
+      </div>
+
+      <div class="actions-grid">
+        <button type="button" class="btn btn-whatsapp-style" id="btnAbrirModalColarZap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+          Colar Lista do WhatsApp
+        </button>
+        <button type="button" class="btn btn-primary" id="btnAdicionarJogador">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          + Adicionar Jogador
+        </button>
+      </div>
+    </div>
+
+    <!-- LISTA DE ATLETAS -->
+    <div class="card" id="cardListaAtletas">
+      <div class="card-title" style="justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20v-20z"/></svg>
+          Relação de Atletas / Integrantes
+        </div>
+        <span style="font-size: 12px; font-weight: 700; background: #e0f2fe; color: #0284c7; padding: 2px 8px; border-radius: 9999px;" id="badgeContagemJogadores">
+          0 Atletas
+        </span>
+      </div>
+
+      <div id="containerLinhasJogadores">
+        <!-- Inserido dinamicamente via JS -->
+      </div>
+
+      <div style="text-align: center; margin-top: 12px;">
+        <button type="button" class="btn btn-secondary" id="btnAdicionarMaisUm" style="width: 100%;">
+          + Adicionar Mais Um Atleta
+        </button>
+      </div>
+    </div>
+
+    <!-- RESUMO DA GRADE POR TAMANHO -->
+    <div class="card">
+      <div class="card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        Resumo Automático da Grade de Produção:
+      </div>
+      <p style="font-size: 11.5px; color: var(--text-muted);">
+        O sistema soma automaticamente a quantidade de cada tamanho conforme os atletas adicionados:
+      </p>
+
+      <div class="grade-badges-flow" id="resumoBadgesGrade">
+        <span style="color: #94a3b8; font-size: 12px; font-style: italic;">Nenhum tamanho adicionado ainda.</span>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- BARRA INFERIOR FIXA DE FINALIZAÇÃO -->
+  <footer class="bottom-bar">
+    <div class="bottom-bar-content">
+      <div>
+        <span style="font-size: 11px; color: var(--text-muted); display: block;">Total do Time:</span>
+        <strong style="font-size: 16px; color: #0f172a;" id="bottomBarTotalPecas">0 Camisas</strong>
+      </div>
+      <button type="button" class="btn btn-success" id="btnFinalizarConfirmacao" style="font-size: 14px; padding: 12px 20px; font-weight: 800;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Confirmar Relação Oficial
+      </button>
+    </div>
+  </footer>
+
+  <!-- MODAL: COLAR DO WHATSAPP -->
+  <div class="modal-overlay" id="modalColarZapOverlay" style="display: none;">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">📋 Colar Lista do WhatsApp</h3>
+        <button type="button" class="btn-close" id="btnFecharModalZap">&times;</button>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
+        Copie o texto bruto da lista enviada no grupo do WhatsApp e cole abaixo. O sistema identificará automaticamente o nome, número e tamanho de cada atleta!
+      </p>
+      <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 11px; color: #64748b; margin-bottom: 10px; font-family: monospace;">
+        Exemplo:<br>
+        1 - Marcos - G (Goleiro)<br>
+        10 - Romário - M (Capitão)<br>
+        9 - Ronaldo - GG<br>
+        14 - Hulk - G4
+      </div>
+      <textarea id="textareaColarZap" rows="7" style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px; outline: none;" placeholder="Cole a lista aqui..."></textarea>
+      
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
+        <button type="button" class="btn btn-secondary" id="btnCancelarModalZap">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnProcessarListaZap">Importar Atletas</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TELA DE SUCESSO -->
+  <div class="modal-overlay" id="modalSucessoOverlay" style="display: none;">
+    <div class="modal-box" style="text-align: center;">
+      <div class="success-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">Relação Confirmada com Sucesso!</h2>
+      <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
+        Os dados foram salvos com sucesso e enviados para a linha de produção da confecção.
+      </p>
+
+      <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 8px; padding: 12px; margin-bottom: 18px; text-align: left; font-size: 12.5px;">
+        <div><strong>Pedido:</strong> <span id="sucessoPedidoId">#102</span></div>
+        <div><strong>Time:</strong> <span id="sucessoClienteNome">Guerreiros F.C.</span></div>
+        <div><strong>Total de Uniformes:</strong> <span id="sucessoTotalPecas">16 peças</span></div>
+        <div><strong>Código de Validação:</strong> <code style="font-family: monospace; font-weight: 800; color: #166534;" id="sucessoCodigoHash">#TIM-8849</code></div>
+      </div>
+
+      <a id="btnEnviarZapConfirmacao" href="#" target="_blank" class="btn btn-whatsapp-style" style="width: 100%; font-size: 14px; padding: 12px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        Enviar Cópia no WhatsApp da Fábrica
+      </a>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      // Dados e Estado
+      const urlParams = new URLSearchParams(window.location.search);
+      const pedidoIdParam = urlParams.get('p') || urlParams.get('pedido') || 'PED-NOVO';
+      const clienteParam = urlParams.get('c') || urlParams.get('cliente') || 'Time / Clube';
+      const tenantIdParam = urlParams.get('t') || urlParams.get('tenant') || 'default';
+      const zapFabricaParam = urlParams.get('zap') || '11987654321';
+
+      let atletas = [];
+
+      // Elementos DOM
+      const labelIdPedido = document.getElementById('labelIdPedido');
+      const labelNomeCliente = document.getElementById('labelNomeCliente');
+      const containerLinhas = document.getElementById('containerLinhasJogadores');
+      const badgeContagem = document.getElementById('badgeContagemJogadores');
+      const resumoBadgesGrade = document.getElementById('resumoBadgesGrade');
+      const bottomBarTotalPecas = document.getElementById('bottomBarTotalPecas');
+
+      // Modais
+      const modalColarZap = document.getElementById('modalColarZapOverlay');
+      const textareaColarZap = document.getElementById('textareaColarZap');
+      const modalSucesso = document.getElementById('modalSucessoOverlay');
+
+      // Atualiza Cabeçalhos
+      labelIdPedido.textContent = `#${pedidoIdParam.replace('PED-', '').replace('ORC-', '')}`;
+      labelNomeCliente.textContent = clienteParam;
+
+      // Opções de Tamanho
+      const OPCOES_TAMANHOS = [
+        { rotulo: '--- ADULTO REGULAR ---', disabled: true },
+        { valor: 'PP', rotulo: 'PP' },
+        { valor: 'P', rotulo: 'P' },
+        { valor: 'M', rotulo: 'M' },
+        { valor: 'G', rotulo: 'G' },
+        { valor: 'GG', rotulo: 'GG' },
+        { valor: 'XG', rotulo: 'XG' },
+        { rotulo: '--- PLUS SIZE / ESPECIAIS ---', disabled: true },
+        { valor: 'G1', rotulo: 'G1' },
+        { valor: 'G2', rotulo: 'G2' },
+        { valor: 'G3', rotulo: 'G3' },
+        { valor: 'G4', rotulo: 'G4' },
+        { valor: 'G5', rotulo: 'G5' },
+        { rotulo: '--- BABY LOOK FEMININA ---', disabled: true },
+        { valor: 'BL-PP', rotulo: 'BL-PP' },
+        { valor: 'BL-P', rotulo: 'BL-P' },
+        { valor: 'BL-M', rotulo: 'BL-M' },
+        { valor: 'BL-G', rotulo: 'BL-G' },
+        { valor: 'BL-GG', rotulo: 'BL-GG' },
+        { rotulo: '--- INFANTIL / JUVENIL ---', disabled: true },
+        { valor: '2', rotulo: 'Tam 2 (Infantil)' },
+        { valor: '4', rotulo: 'Tam 4 (Infantil)' },
+        { valor: '6', rotulo: 'Tam 6 (Infantil)' },
+        { valor: '8', rotulo: 'Tam 8 (Infantil)' },
+        { valor: '10', rotulo: 'Tam 10 (Infantil)' },
+        { valor: '12', rotulo: 'Tam 12 (Infantil)' },
+        { valor: '14', rotulo: 'Tam 14 (Infantil)' },
+        { valor: '16', rotulo: 'Tam 16 (Infantil)' }
+      ];
+
+      // Tenta recuperar do storage local se já preenchido anteriormente
+      const storageKey = `bravvi_time_roster_${tenantIdParam}_${pedidoIdParam}`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            atletas = parsed;
+          }
+        } catch(e) {}
+      }
+
+      if (atletas.length === 0) {
+        // Inicializa com 5 linhas vazias prontas para digitar
+        for (let i = 1; i <= 5; i++) {
+          atletas.push({
+            id: 'jog_' + Date.now() + '_' + i,
+            numero: i === 1 ? '1' : i === 5 ? '10' : '',
+            nome: '',
+            tamanho: 'M',
+            posicao: i === 1 ? 'Goleiro' : 'Linha'
+          });
+        }
+      }
+
+      function renderizarTabela() {
+        containerLinhas.innerHTML = '';
+        atletas.forEach((at, index) => {
+          const row = document.createElement('div');
+          row.className = 'player-row';
+          row.dataset.id = at.id;
+
+          const optionsHtml = OPCOES_TAMANHOS.map(opt => {
+            if (opt.disabled) return `<option disabled style="font-weight: 800; background: #e2e8f0; color: #475569;">${opt.rotulo}</option>`;
+            const isSel = (opt.valor.toUpperCase() === (at.tamanho || 'M').toUpperCase()) ? 'selected' : '';
+            return `<option value="${opt.valor}" ${isSel}>${opt.rotulo}</option>`;
+          }).join('');
+
+          row.innerHTML = `
+            <div class="player-row-header">
+              <span class="player-num-tag">#${index + 1}</span>
+              <button type="button" class="btn-danger-icon btn-remover-jogador" data-id="${at.id}" title="Remover jogador">&times;</button>
+            </div>
+            <div class="player-inputs-grid">
+              <div class="input-span-full-mobile">
+                <label class="form-label-micro">Nome na Camisa</label>
+                <input type="text" class="form-input input-atleta-nome" data-id="${at.id}" value="${at.nome || ''}" placeholder="Ex: SILVA, GABIGOL" style="text-transform: uppercase;">
+              </div>
+              <div>
+                <label class="form-label-micro">Número</label>
+                <input type="text" class="form-input input-atleta-num" data-id="${at.id}" value="${at.numero || ''}" placeholder="Ex: 10" style="text-align: center; font-family: monospace; font-weight: 800;">
+              </div>
+              <div>
+                <label class="form-label-micro">Tamanho</label>
+                <select class="form-select select-atleta-tam" data-id="${at.id}">
+                  ${optionsHtml}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="form-label-micro">Posição / Detalhes (Opcional)</label>
+              <input type="text" class="form-input input-atleta-pos" data-id="${at.id}" value="${at.posicao || ''}" placeholder="Ex: Goleiro, Linha, Manga Longa">
+            </div>
+          `;
+          containerLinhas.appendChild(row);
+        });
+
+        atualizarResumoGrade();
+        configurarEventosInputs();
+      }
+
+      function configurarEventosInputs() {
+        containerLinhas.querySelectorAll('.input-atleta-nome').forEach(inp => {
+          inp.oninput = (e) => {
+            const id = e.target.dataset.id;
+            const at = atletas.find(x => x.id === id);
+            if (at) at.nome = e.target.value.toUpperCase();
+            salvarLocal();
+          };
+        });
+
+        containerLinhas.querySelectorAll('.input-atleta-num').forEach(inp => {
+          inp.oninput = (e) => {
+            const id = e.target.dataset.id;
+            const at = atletas.find(x => x.id === id);
+            if (at) at.numero = e.target.value.trim();
+            salvarLocal();
+          };
+        });
+
+        containerLinhas.querySelectorAll('.select-atleta-tam').forEach(sel => {
+          sel.onchange = (e) => {
+            const id = e.target.dataset.id;
+            const at = atletas.find(x => x.id === id);
+            if (at) at.tamanho = e.target.value;
+            atualizarResumoGrade();
+            salvarLocal();
+          };
+        });
+
+        containerLinhas.querySelectorAll('.input-atleta-pos').forEach(inp => {
+          inp.oninput = (e) => {
+            const id = e.target.dataset.id;
+            const at = atletas.find(x => x.id === id);
+            if (at) at.posicao = e.target.value;
+            salvarLocal();
+          };
+        });
+
+        containerLinhas.querySelectorAll('.btn-remover-jogador').forEach(btn => {
+          btn.onclick = (e) => {
+            const id = btn.dataset.id;
+            atletas = atletas.filter(x => x.id !== id);
+            renderizarTabela();
+            salvarLocal();
+          };
+        });
+      }
+
+      function atualizarResumoGrade() {
+        const contagem = {};
+        let total = 0;
+
+        atletas.forEach(at => {
+          const tam = (at.tamanho || 'M').toUpperCase();
+          contagem[tam] = (contagem[tam] || 0) + 1;
+          total++;
+        });
+
+        badgeContagem.textContent = `${total} Atleta${total !== 1 ? 's' : ''}`;
+        bottomBarTotalPecas.textContent = `${total} Camisa${total !== 1 ? 's' : ''}`;
+
+        if (total === 0) {
+          resumoBadgesGrade.innerHTML = '<span style="color: #94a3b8; font-size: 12px; font-style: italic;">Nenhum tamanho adicionado ainda.</span>';
+          return;
+        }
+
+        const badgesHtml = Object.keys(contagem).map(tam => {
+          return `<div class="grade-badge-count">${tam}: <strong>${contagem[tam]}</strong></div>`;
+        }).join('');
+
+        resumoBadgesGrade.innerHTML = badgesHtml;
+      }
+
+      function salvarLocal() {
+        localStorage.setItem(storageKey, JSON.stringify(atletas));
+      }
+
+      // Adicionar Jogador
+      function adicionarNovoJogador() {
+        const novo = {
+          id: 'jog_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+          numero: '',
+          nome: '',
+          tamanho: 'M',
+          posicao: 'Linha'
+        };
+        atletas.push(novo);
+        renderizarTabela();
+        salvarLocal();
+
+        // Rola até o novo jogador
+        setTimeout(() => {
+          const rows = containerLinhas.querySelectorAll('.player-row');
+          if (rows.length > 0) {
+            rows[rows.length - 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            rows[rows.length - 1].querySelector('.input-atleta-nome')?.focus();
+          }
+        }, 100);
+      }
+
+      document.getElementById('btnAdicionarJogador').onclick = adicionarNovoJogador;
+      document.getElementById('btnAdicionarMaisUm').onclick = adicionarNovoJogador;
+
+      // Colar do Zap
+      const modalZap = document.getElementById('modalColarZapOverlay');
+      document.getElementById('btnAbrirModalColarZap').onclick = () => {
+        modalZap.style.display = 'flex';
+        textareaColarZap.focus();
+      };
+      document.getElementById('btnFecharModalZap').onclick = () => { modalZap.style.display = 'none'; };
+      document.getElementById('btnCancelarModalZap').onclick = () => { modalZap.style.display = 'none'; };
+
+      document.getElementById('btnProcessarListaZap').onclick = () => {
+        const texto = textareaColarZap.value;
+        if (!texto.trim()) {
+          alert('Por favor, cole o texto da lista antes de importar.');
+          return;
+        }
+
+        const linhas = texto.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        const novosAtletas = [];
+
+        linhas.forEach((linha, idx) => {
+          // Ignora cabeçalhos tipo "Lista do Time:", "Uniformes:", etc.
+          if (linha.toLowerCase().includes('lista') && linha.length < 20) return;
+          if (linha.toLowerCase().includes('uniforme') && linha.length < 20) return;
+
+          // Extrai Número (ex: 10 -, #10, 10.)
+          let num = '';
+          const matchNum = linha.match(/(?:^|\s|#|-)(\d{1,3})(?:\s*[-–.]|\s+)/);
+          if (matchNum) {
+            num = matchNum[1];
+          }
+
+          // Extrai Tamanho (PP, P, M, G, GG, XG, G1 a G5, BL-*, 2 a 16)
+          let tam = 'M';
+          const matchTam = linha.match(/\b(g[1-5]|x{1,2}g|gg|xg|pp|bl[-_]?[a-z]+|p|m|g|1[0246]|[2468])\b/i);
+          if (matchTam) {
+            tam = matchTam[1].toUpperCase();
+          }
+
+          // Extrai Posição (goleiro, capitao, etc)
+          let pos = 'Linha';
+          if (linha.toLowerCase().includes('gol') || linha.toLowerCase().includes('gk')) pos = 'Goleiro';
+          else if (linha.toLowerCase().includes('cap')) pos = 'Capitão';
+
+          // Limpa o nome removendo o número e o tamanho
+          let nome = linha
+            .replace(/(?:^|\s|#|-)\d{1,3}(?:\s*[-–.]|\s+)/g, ' ')
+            .replace(/\b(g[1-5]|x{1,2}g|gg|xg|pp|bl[-_]?[a-z]+|p|m|g|1[0246]|[2468])\b/gi, ' ')
+            .replace(/[()\-–#:]/g, ' ')
+            .replace(/\b(goleiro|linha|capitao|capitão)\b/gi, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+          if (!nome && num) nome = `ATLETA ${num}`;
+          if (!nome) nome = `JOGADOR ${idx + 1}`;
+
+          novosAtletas.push({
+            id: 'jog_' + Date.now() + '_' + (idx + 1),
+            numero: num,
+            nome: nome.toUpperCase(),
+            tamanho: tam,
+            posicao: pos
+          });
+        });
+
+        if (novosAtletas.length > 0) {
+          // Substitui linhas em branco ou adiciona
+          const temApenasVazios = atletas.every(a => !a.nome.trim());
+          if (temApenasVazios) {
+            atletas = novosAtletas;
+          } else {
+            atletas = atletas.concat(novosAtletas);
+          }
+          renderizarTabela();
+          salvarLocal();
+          modalZap.style.display = 'none';
+          textareaColarZap.value = '';
+          alert(`${novosAtletas.length} atletas importados com sucesso!`);
+        } else {
+          alert('Não foi possível reconhecer os atletas. Verifique o formato do texto e tente novamente.');
+        }
+      };
+
+      // Finalizar Confirmação
+      document.getElementById('btnFinalizarConfirmacao').onclick = () => {
+        if (atletas.length === 0) {
+          alert('Por favor, adicione pelo menos um atleta.');
+          return;
+        }
+
+        const semNome = atletas.filter(a => !a.nome.trim());
+        if (semNome.length > 0) {
+          if (!confirm(`Existem ${semNome.length} atletas sem nome preenchido. Deseja continuar mesmo assim?`)) {
+            return;
+          }
+        }
+
+        salvarLocal();
+
+        // Gera código de validação
+        const hash = 'TIM-' + Math.floor(1000 + Math.random() * 9000);
+        document.getElementById('sucessoPedidoId').textContent = `#${pedidoIdParam.replace('PED-', '').replace('ORC-', '')}`;
+        document.getElementById('sucessoClienteNome').textContent = clienteParam;
+        document.getElementById('sucessoTotalPecas').textContent = `${atletas.length} peças`;
+        document.getElementById('sucessoCodigoHash').textContent = `#${hash}`;
+
+        // Monta mensagem de WhatsApp
+        let msg = `⚽ *RELAÇÃO OFICIAL DO TIME CONFIRMADA*\n\n`;
+        msg += `📋 *Pedido:* #${pedidoIdParam.replace('PED-', '').replace('ORC-', '')}\n`;
+        msg += `🏆 *Time/Cliente:* ${clienteParam}\n`;
+        msg += `🔢 *Total de Uniformes:* ${atletas.length} peças\n`;
+        msg += `🔑 *Código:* ${hash}\n\n`;
+        msg += `*LISTA DOS ATLETAS:*\n`;
+
+        atletas.forEach((at, i) => {
+          msg += `${i + 1}. ${at.numero ? '#' + at.numero + ' ' : ''}${at.nome || 'SEM NOME'} — Tam: *${at.tamanho}*${at.posicao && at.posicao !== 'Linha' ? ' (' + at.posicao + ')' : ''}\n`;
+        });
+
+        msg += `\n✅ *Lista revisada e aprovada pelo capitão/responsável do time.*`;
+
+        const linkZap = `https://api.whatsapp.com/send?phone=55${zapFabricaParam.replace(/\D/g, '')}&text=${encodeURIComponent(msg)}`;
+        document.getElementById('btnEnviarZapConfirmacao').href = linkZap;
+
+        modalSucesso.style.display = 'flex';
+      };
+
+      // Inicializa
+      renderizarTabela();
+    })();
+  </script>
+</body>
+</html>
