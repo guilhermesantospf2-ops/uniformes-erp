@@ -5297,7 +5297,8 @@
         pathDir += '/';
       }
       const baseUrl = loc.origin + pathDir;
-      const linkFinal = `${baseUrl}time.html?pedidoId=${pedId}&cliente=${encodeURIComponent(nomeFinal)}&tipo=${modalidade}&tel=${encodeURIComponent(emp.telefone || '')}`;
+      const paginaDestino = (loc.protocol === 'file:') ? 'cliente.html' : 'cliente';
+      const linkFinal = `${baseUrl}${paginaDestino}?pedidoId=${pedId}&cliente=${encodeURIComponent(nomeFinal)}&tipo=${modalidade}&tel=${encodeURIComponent(emp.telefone || '')}`;
 
       // Monta texto formatado do WhatsApp
       const saudacao = (new Date().getHours() < 12) ? 'Bom dia' : (new Date().getHours() < 18) ? 'Boa tarde' : 'Boa noite';

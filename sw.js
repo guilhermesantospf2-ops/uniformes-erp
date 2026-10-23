@@ -1,12 +1,15 @@
-const CACHE_NAME = 'bravvi-erp-desktop-v8.9.5';
+const CACHE_NAME = 'bravvi-erp-desktop-v8.9.6';
 
 const CORE_ASSETS = [
   '/',
   '/index.html',
   '/demo.html',
+  '/cliente',
+  '/cliente.html',
+  '/time',
   '/time.html',
-  '/style.css?v=8.9.5',
-  '/app.js?v=8.9.5',
+  '/style.css?v=8.9.6',
+  '/app.js?v=8.9.6',
   '/cloud-sync.js?v=8.9.5',
   '/nesting-engine.js?v=8.9.5',
   '/market-benchmark.js?v=8.9.5',

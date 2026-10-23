@@ -6,7 +6,10 @@
     { "source": "/lp", "destination": "/vendas.html" },
     { "source": "/demo", "destination": "/demo.html" },
     { "source": "/ativar", "destination": "/ativar.html" },
-    { "source": "/gerar-acesso", "destination": "/gerar-acesso.html" }
+    { "source": "/gerar-acesso", "destination": "/gerar-acesso.html" },
+    { "source": "/cliente", "destination": "/cliente.html" },
+    { "source": "/time", "destination": "/cliente.html" },
+    { "source": "/coleta", "destination": "/cliente.html" }
   ],
   "headers": [
     {
