@@ -6206,7 +6206,8 @@
         const contagem = { total: 0 };
         TODOS_CAMPOS_GRADE.forEach(c => { contagem[c.chave] = 0; });
         listaJogadoresTime.forEach(jog => {
-          let tam = (jog.tamanho || 'M').toLowerCase().trim();
+          if (!jog.tamanho) return;
+          let tam = jog.tamanho.toLowerCase().trim();
           if (['2', '4', '6', '8', '10', '12', '14', '16'].includes(tam)) {
             tam = 'inf' + tam;
           } else if (tam.startsWith('bl-') || tam.startsWith('bl_')) {
@@ -6219,10 +6220,8 @@
 
           if (contagem[tam] !== undefined) {
             contagem[tam] += qtd;
-          } else {
-            contagem['m'] = (contagem['m'] || 0) + qtd;
+            contagem.total += qtd;
           }
-          contagem.total += qtd;
         });
         it.grade = contagem;
 
@@ -8109,19 +8108,8 @@
               });
             }
           });
-        } else if (listaJogadoresTime.length === 0) {
-          // Preenche 5 linhas padrão em branco
-          for (let i = 1; i <= 5; i++) {
-            listaJogadoresTime.push({
-              id: 'jog_' + Date.now() + '_' + i,
-              numero: i === 1 ? '1' : i === 5 ? '10' : '',
-              nome: '',
-              tamanho: 'M',
-              quantidade: 1,
-              posicao: i === 1 ? 'Goleiro' : 'Linha'
-            });
-          }
         }
+        // Se a lista estiver vazia, não pré-seleciona nada (deixa tudo zerado)
         renderizarTabelaJogadoresModal();
         sincronizarGradeComListaJogadores();
       } else {
@@ -8150,7 +8138,8 @@
       let totalPecas = 0;
 
       listaJogadoresTime.forEach(jog => {
-        let tam = (jog.tamanho || 'M').toLowerCase().trim();
+        if (!jog.tamanho) return;
+        let tam = jog.tamanho.toLowerCase().trim();
         if (['2', '4', '6', '8', '10', '12', '14', '16'].includes(tam)) {
           tam = 'inf' + tam;
         } else if (tam.startsWith('bl-') || tam.startsWith('bl_')) {
@@ -8163,18 +8152,16 @@
 
         if (contagem[tam] !== undefined) {
           contagem[tam] += qtd;
-        } else {
-          contagem['m'] = (contagem['m'] || 0) + qtd;
+          totalPecas += qtd;
         }
-        totalPecas += qtd;
       });
 
       const itensComQtd = TODOS_CAMPOS_GRADE.filter(c => (contagem[c.chave] || 0) > 0);
 
       if (itensComQtd.length === 0) {
         elResumo.innerHTML = `
-          <div style="font-size: 11px; color: #64748b; font-style: italic; padding: 6px 10px; background: #ffffff; border: 1px dashed #bbf7d0; border-radius: 6px;">
-            Nenhum atleta na relação ainda. Clique em "+ Adicionar Atleta" ou em "📋 Colar Lista do WhatsApp" para contabilizar a grade.
+          <div style="font-size: 11px; color: #64748b; font-style: italic; padding: 6px 10px; background: #ffffff; border: 1px dashed #cbd5e1; border-radius: 6px;">
+            Nenhum atleta na relação ainda. A grade está zerada (0 peças).
           </div>
         `;
         return;
@@ -8216,8 +8203,10 @@
 
       if (listaJogadoresTime.length === 0) {
         container.innerHTML = `
-          <div style="text-align: center; padding: 16px; color: #64748b; font-size: 11.5px;">
-            Nenhum atleta na relação ainda. Clique no botão verde <strong>"+ Adicionar Atleta"</strong> acima ou em <strong>"📋 Colar Lista do WhatsApp"</strong>.
+          <div style="text-align: center; padding: 20px 16px; color: #64748b; font-size: 11.5px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 6px;">
+            <div style="font-size: 20px; margin-bottom: 4px;">⚽</div>
+            <div style="font-weight: 700; color: #334155; margin-bottom: 2px;">Nenhum atleta na relação ainda</div>
+            <span>Clique em <strong>"+ Adicionar Atleta"</strong> acima ou em <strong>"📋 Colar Lista do WhatsApp"</strong> para inserir.</span>
           </div>
         `;
         return;
@@ -8249,14 +8238,15 @@
               <tr style="border-bottom: 1px solid #e2e8f0;">
                 <td style="padding: 4px; text-align: center; font-weight: 700; color: #64748b;">${idx + 1}</td>
                 <td style="padding: 4px;">
-                  <input type="text" class="form-input inp-jog-nome" data-idx="${idx}" value="${jog.nome || ''}" placeholder="Ex: SILVA" style="padding: 3px 6px; font-size: 11px; text-transform: uppercase; font-weight: 700;">
+                  <input type="text" class="form-input inp-jog-nome" data-idx="${idx}" value="${jog.nome || ''}" placeholder="Nome do atleta" style="padding: 3px 6px; font-size: 11px; text-transform: uppercase; font-weight: 700;">
                 </td>
                 <td style="padding: 4px;">
-                  <input type="text" class="form-input inp-jog-num" data-idx="${idx}" value="${jog.numero || ''}" placeholder="10" style="padding: 3px 4px; font-size: 11px; text-align: center; font-family: monospace; font-weight: 800;">
+                  <input type="text" class="form-input inp-jog-num" data-idx="${idx}" value="${jog.numero || ''}" placeholder="Nº" style="padding: 3px 4px; font-size: 11px; text-align: center; font-family: monospace; font-weight: 800;">
                 </td>
                 <td style="padding: 4px;">
                   <select class="form-select sel-jog-tam" data-idx="${idx}" style="padding: 3px 4px; font-size: 11px; font-weight: 700;">
-                    ${opcoesTam.map(t => `<option value="${t}" ${t.toUpperCase() === (jog.tamanho || 'M').toUpperCase() ? 'selected' : ''}>${t}</option>`).join('')}
+                    <option value="" ${!jog.tamanho ? 'selected' : ''}>Tam...</option>
+                    ${opcoesTam.map(t => `<option value="${t}" ${jog.tamanho && t.toUpperCase() === jog.tamanho.toUpperCase() ? 'selected' : ''}>${t}</option>`).join('')}
                   </select>
                 </td>
                 <td style="padding: 4px; text-align: center;">
@@ -8331,9 +8321,9 @@
         id: 'jog_' + Date.now() + '_' + (listaJogadoresTime.length + 1),
         numero: '',
         nome: '',
-        tamanho: 'M',
+        tamanho: '',
         quantidade: 1,
-        posicao: 'Linha'
+        posicao: ''
       });
       renderizarTabelaJogadoresModal();
       sincronizarGradeComListaJogadores();

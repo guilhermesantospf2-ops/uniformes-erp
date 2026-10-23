@@ -620,21 +620,17 @@
         } catch(e) {}
       }
 
-      if (atletas.length === 0) {
-        // Inicializa com 5 linhas vazias prontas para digitar
-        for (let i = 1; i <= 5; i++) {
-          atletas.push({
-            id: 'jog_' + Date.now() + '_' + i,
-            numero: i === 1 ? '1' : i === 5 ? '10' : '',
-            nome: '',
-            tamanho: 'M',
-            posicao: i === 1 ? 'Goleiro' : 'Linha'
-          });
-        }
-      }
-
       function renderizarTabela() {
         containerLinhas.innerHTML = '';
+        if (atletas.length === 0) {
+          containerLinhas.innerHTML = `
+            <div style="text-align: center; padding: 25px 15px; color: var(--text-muted); font-size: 13px;">
+              Nenhum integrante na lista ainda. Clique no botão <strong>"+ Adicionar Integrante"</strong> acima ou importe a lista do WhatsApp.
+            </div>
+          `;
+          atualizarGradeAutomatica();
+          return;
+        }
         atletas.forEach((at, index) => {
           const row = document.createElement('div');
           row.className = 'player-row';
