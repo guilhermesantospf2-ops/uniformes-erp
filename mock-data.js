@@ -324,5 +324,78 @@ window.ERP_INITIAL_DATA = {
     { id: "bordado", nome: "Bordado Computadorizado", capacidadeDiaria: 250, unidade: "peças/dia", atualProduzido: 0, modoCalculo: "auto" },
     { id: "dtf", nome: "Impressão DTF Digital", capacidadeDiaria: 40, unidade: "metros lineares/dia", atualProduzido: 0, modoCalculo: "auto" },
     { id: "costura", nome: "Linha de Costura & Fechamento", capacidadeDiaria: 300, unidade: "peças/dia", atualProduzido: 0, modoCalculo: "auto" }
+  ],
+
+  // CENTROS DE CUSTO INDUSTRIAIS
+  centrosCusto: [
+    { id: "CC-01", codigo: "COM", nome: "Comercial & Marketing", icone: "💼", cor: "#0284c7" },
+    { id: "CC-02", codigo: "PROD-CORTE", nome: "Produção: Corte & Estamparia", icone: "✂️", cor: "#059669" },
+    { id: "CC-03", codigo: "PROD-COST", nome: "Produção: Costura & Facções", icone: "🪡", cor: "#d97706" },
+    { id: "CC-04", codigo: "ADM", nome: "Administrativo & Diretoria", icone: "🏢", cor: "#6366f1" },
+    { id: "CC-05", codigo: "LOG", nome: "Logística & Entregas", icone: "🚚", cor: "#ec4899" }
+  ],
+
+  // EQUIPAMENTOS E ATIVO IMOBILIZADO (DEPRECIAÇÃO INDUSTRIAL)
+  equipamentosDepreciacao: [
+    {
+      id: "EQP-01",
+      nome: "Impressora DTF Industrial 60cm 4 Cabeças i3200",
+      categoria: "Impressão & Estamparia",
+      marcaModelo: "Allwin / Epson i3200",
+      dataAquisicao: "2024-01-15",
+      valorCompra: 48000.00,
+      vidaUtilMeses: 36,
+      valorResidual: 6000.00,
+      status: "Operacional",
+      observacoes: "Equipamento principal de estamparia digital"
+    },
+    {
+      id: "EQP-02",
+      nome: "Prensa Térmica Pneumática Dupla Bandeja 40x50",
+      categoria: "Impressão & Estamparia",
+      marcaModelo: "Epson / Metalnox",
+      dataAquisicao: "2024-02-10",
+      valorCompra: 9500.00,
+      vidaUtilMeses: 60,
+      valorResidual: 1200.00,
+      status: "Operacional",
+      observacoes: "Transferência térmica DTF e sublimação"
+    },
+    {
+      id: "EQP-03",
+      nome: "Máquina de Costura Reta Eletrônica Jack A4B",
+      categoria: "Costura & Acabamento",
+      marcaModelo: "Jack Direct Drive",
+      dataAquisicao: "2024-03-01",
+      valorCompra: 4600.00,
+      vidaUtilMeses: 60,
+      valorResidual: 600.00,
+      status: "Operacional",
+      observacoes: "Costura reta com corte de linha automático"
+    },
+    {
+      id: "EQP-04",
+      nome: "Overloque 4 Fios Direct Drive Industrial",
+      categoria: "Costura & Acabamento",
+      marcaModelo: "Siruba / Jack",
+      dataAquisicao: "2024-03-01",
+      valorCompra: 5200.00,
+      vidaUtilMeses: 60,
+      valorResidual: 700.00,
+      status: "Operacional",
+      observacoes: "Fechamento de camisetas e polos"
+    },
+    {
+      id: "EQP-05",
+      nome: "Mesa de Corte com Faca Rotativa Elétrica 8 Pol",
+      categoria: "Corte & Modelagem",
+      marcaModelo: "Eastman",
+      dataAquisicao: "2023-11-20",
+      valorCompra: 6500.00,
+      vidaUtilMeses: 60,
+      valorResidual: 1000.00,
+      status: "Operacional",
+      observacoes: "Enfesto e corte de até 150 folhas de malha"
+    }
   ]
 };

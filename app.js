@@ -92,7 +92,8 @@
     const colecoes = [
       'pedidos', 'clientes', 'ordensServico', 'lancamentosFinanceiros',
       'despesasFixas', 'compras', 'equipe', 'costureiras', 'nestingFila',
-      'notasFiscais', 'historicoEstoque', 'quarentena'
+      'notasFiscais', 'historicoEstoque', 'quarentena',
+      'centrosCusto', 'equipamentosDepreciacao'
     ];
 
     colecoes.forEach(col => {
@@ -137,6 +138,18 @@
     }
     if (!Array.isArray(banco.estoque) || banco.estoque.length === 0) {
       banco.estoque = JSON.parse(JSON.stringify(templatePadrao?.estoque || []));
+    }
+    if (!Array.isArray(banco.centrosCusto) || banco.centrosCusto.length === 0) {
+      banco.centrosCusto = JSON.parse(JSON.stringify(templatePadrao?.centrosCusto || [
+        { id: "CC-01", codigo: "COM", nome: "Comercial & Marketing", icone: "💼", cor: "#0284c7" },
+        { id: "CC-02", codigo: "PROD-CORTE", nome: "Produção: Corte & Estamparia", icone: "✂️", cor: "#059669" },
+        { id: "CC-03", codigo: "PROD-COST", nome: "Produção: Costura & Facções", icone: "🪡", cor: "#d97706" },
+        { id: "CC-04", codigo: "ADM", nome: "Administrativo & Diretoria", icone: "🏢", cor: "#6366f1" },
+        { id: "CC-05", codigo: "LOG", nome: "Logística & Entregas", icone: "🚚", cor: "#ec4899" }
+      ]));
+    }
+    if (!Array.isArray(banco.equipamentosDepreciacao) || banco.equipamentosDepreciacao.length === 0) {
+      banco.equipamentosDepreciacao = JSON.parse(JSON.stringify(templatePadrao?.equipamentosDepreciacao || []));
     }
 
     // 3. Atualiza a versão do schema de forma pacífica
@@ -2431,6 +2444,10 @@
 
   let filtroDespesas = 'todas';
   let filtroReceber = 'aberto';
+  let subAbaFinanceiro = 'visao_geral'; // 'visao_geral' | 'previsto_realizado' | 'centros_custo' | 'comissoes' | 'depreciacao'
+  let mesFiltroPrevistoRealizado = new Date().toISOString().substring(0, 7); // 'YYYY-MM'
+  let vendedorFiltroComissao = 'todos';
+  let centroCustoFiltro = 'todos';
 
   // Configuração dos Menus da Sidebar
   function configurarMenuNavegacao() {
@@ -5640,9 +5657,9 @@
           </div>
           
           <div class="modal-body">
-            <!-- 1. Linha Superior: Cliente e Prazos do Pedido -->
+            <!-- 1. Linha Superior: Cliente, Vendedor e Prazos do Pedido -->
             <div class="form-row">
-              <div class="form-group" style="flex: 2;">
+              <div class="form-group" style="flex: 1.8;">
                 <label class="form-label">Cliente / Razão Social (Selecione ou Cadastre)</label>
                 <div class="inline-input-group">
                   <select id="orcClienteSelect" class="form-select">
@@ -5657,8 +5674,25 @@
                 </div>
               </div>
 
+              <!-- Vendedor Comercial & Comissão -->
+              <div class="form-group" style="flex: 1.2;">
+                <label class="form-label">Vendedor Comercial (Comissão)</label>
+                <select id="orcVendedorSelect" class="form-select">
+                  <option value="">-- Venda Direta Fábrica (Sem Comissão) --</option>
+                  ${(db.equipe || []).map(v => {
+                    const isSel = isEdicao && (v.id === orcamentoExistente.vendedorId || v.nome === orcamentoExistente.vendedorNome);
+                    const regraTexto = v.tipoComissao === 'fixo_por_peca'
+                      ? `(R$ ${v.taxaComissao || 0}/pç)`
+                      : v.tipoComissao === 'percentual_lucro_bruto'
+                        ? `(${v.taxaComissao || 0}% lucro)`
+                        : `(${v.taxaComissao || 3}% venda)`;
+                    return `<option value="${v.id}" ${isSel ? 'selected' : ''}>💼 ${v.nome} ${regraTexto}</option>`;
+                  }).join('')}
+                </select>
+              </div>
+
               <!-- Prazos do Pedido -->
-              <div class="form-group" style="flex: 1.8;">
+              <div class="form-group" style="flex: 1.5;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                   <label class="form-label" style="margin: 0; font-size: 11.5px;">Prazos: Prometido vs Meta Fábrica</label>
                   <button type="button" class="btn btn-secondary btn-sm" id="btnSalvarPrazosPadrao" style="font-size: 9.5px; padding: 1px 6px; font-weight: 700; color: #0369a1;" title="Grava estes dias como padrão">⭐ Padrão</button>
@@ -7835,11 +7869,11 @@
             </div>
 
             <div class="card" style="padding: 8px; margin: 0; background: #f8fafc; border: 1px solid var(--border-medium);">
-              <span style="font-size: 9.5px; color: var(--text-gray-500); text-transform: uppercase;">Margem Real</span>
+              <span style="font-size: 9.5px; color: var(--text-gray-500); text-transform: uppercase;">Margem Bruta</span>
               <div class="text-mono" style="font-size: 13.5px; font-weight: 800; color: ${viabilidade.margemLiquidaReal >= 20 ? 'var(--color-green)' : '#d97706'}; margin-top: 1px;">
                 ${viabilidade.margemLiquidaReal.toFixed(1)}%
               </div>
-              <span style="font-size: 9px; color: var(--text-gray-400);">${formatarMoeda(viabilidade.lucroLiquidoUnitario)} lucro/pç</span>
+              <span style="font-size: 9px; color: var(--text-gray-400);">${formatarMoeda(viabilidade.lucroLiquidoUnitario)} lucro bruto/pç</span>
             </div>
 
             <div class="card" style="padding: 8px; margin: 0; background: #f0fdf4; border: 1px solid #bbf7d0;">
@@ -7847,7 +7881,7 @@
               <div class="text-mono" style="font-size: 14px; font-weight: 800; color: #166534; margin-top: 1px;">
                 ${formatarMoeda(itAtivo.valorTotalVenda)}
               </div>
-              <span style="font-size: 9px; color: #15803d;">Lucro: ${formatarMoeda(itAtivo.lucroTotal)}</span>
+              <span style="font-size: 9px; color: #15803d;">Lucro Bruto: ${formatarMoeda(itAtivo.lucroTotal)}</span>
             </div>
           </div>
         `;
@@ -7890,9 +7924,9 @@
               <strong style="font-size: 16px; color: #93c5fd;">${formatarMoeda(faturamentoTotalGeral)}</strong>
             </div>
             <div style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); padding: 8px; border-radius: 4px;">
-              <span style="font-size: 10px; color: #6ee7b7; display: block;">Lucro Líquido Global</span>
+              <span style="font-size: 10px; color: #6ee7b7; display: block;">Lucro Bruto Global</span>
               <strong style="font-size: 16px; color: #34d399;">${formatarMoeda(lucroTotalGeral)}</strong>
-              <span style="font-size: 9.5px; opacity: 0.85; display: block;">(${margemMediaGeral.toFixed(1)}% margem média)</span>
+              <span style="font-size: 9.5px; opacity: 0.85; display: block;">(${margemMediaGeral.toFixed(1)}% margem bruta)</span>
             </div>
           </div>
         `;
@@ -7960,8 +7994,33 @@
         return `${it.produtoNome.split(' ')[0]}: ${apps}`;
       }).join(' • ');
 
+      // Vendedor e Comissões
+      const vendedorId = document.getElementById('orcVendedorSelect')?.value || '';
+      const vendedorObj = (db.equipe || []).find(v => v.id === vendedorId) || null;
+      let comissaoValor = 0;
+      let comissaoTipo = 'sem_comissao';
+      let comissaoTaxa = 0;
+
+      if (vendedorObj) {
+        comissaoTipo = vendedorObj.tipoComissao || 'percentual_faturamento';
+        comissaoTaxa = parseFloat(vendedorObj.taxaComissao) || (vendedorObj.perfil === 'vendedor' ? 3.0 : 0);
+        if (comissaoTipo === 'percentual_faturamento') {
+          comissaoValor = faturamentoTotalGeral * (comissaoTaxa / 100);
+        } else if (comissaoTipo === 'percentual_lucro_bruto') {
+          comissaoValor = lucroTotalGeral * (comissaoTaxa / 100);
+        } else if (comissaoTipo === 'fixo_por_peca') {
+          comissaoValor = totalPecasGeral * comissaoTaxa;
+        }
+      }
+
       return {
         cliente,
+        vendedorId: vendedorObj ? vendedorObj.id : null,
+        vendedorNome: vendedorObj ? vendedorObj.nome : null,
+        comissaoValor: parseFloat(comissaoValor.toFixed(2)),
+        comissaoTipo,
+        comissaoTaxa,
+        comissaoStatus: orcamentoExistente?.comissaoStatus || 'Pendente',
         itens: JSON.parse(JSON.stringify(itensOrcamento)),
         prod: db.produtosBase.find(p => p.id === itensOrcamento[0].produtoId) || db.produtosBase[0],
         produtoNome: produtoNomeGeral,
@@ -7976,6 +8035,7 @@
         consumoRealComPerda: (itensOrcamento[0].consumoTecido || 0.28) * 1.08,
         margemErroTecido: itensOrcamento[0].margemErroTecido || 8.0,
         lucroLiquido: lucroTotalGeral,
+        lucroBruto: lucroTotalGeral,
         margem: margemMediaGeral,
         prazoPedidoDias: prazoClienteDias,
         prazoInternoDias: prazoInternoDias,
@@ -8490,6 +8550,13 @@
         orcamentoExistente.consumoRealComPerda = dadosOrcamento.consumoRealComPerda;
         orcamentoExistente.margemErroTecido = dadosOrcamento.margemErroTecido;
         orcamentoExistente.lucroLiquidoEstimado = dadosOrcamento.lucroLiquido;
+        orcamentoExistente.lucroBrutoEstimado = dadosOrcamento.lucroBruto || dadosOrcamento.lucroLiquido;
+        orcamentoExistente.vendedorId = dadosOrcamento.vendedorId || null;
+        orcamentoExistente.vendedorNome = dadosOrcamento.vendedorNome || null;
+        orcamentoExistente.comissaoValor = dadosOrcamento.comissaoValor || 0;
+        orcamentoExistente.comissaoTipo = dadosOrcamento.comissaoTipo || 'sem_comissao';
+        orcamentoExistente.comissaoTaxa = dadosOrcamento.comissaoTaxa || 0;
+        orcamentoExistente.comissaoStatus = dadosOrcamento.comissaoStatus || 'Pendente';
         orcamentoExistente.margemLucroPercentual = dadosOrcamento.margem;
         orcamentoExistente.prazoPedidoDias = dadosOrcamento.prazoPedidoDias;
         orcamentoExistente.prazoInternoDias = dadosOrcamento.prazoInternoDias;
@@ -8535,6 +8602,13 @@
         orcamentoExistente.consumoRealComPerda = dadosOrcamento.consumoRealComPerda;
         orcamentoExistente.margemErroTecido = dadosOrcamento.margemErroTecido;
         orcamentoExistente.lucroLiquidoEstimado = dadosOrcamento.lucroLiquido;
+        orcamentoExistente.lucroBrutoEstimado = dadosOrcamento.lucroBruto || dadosOrcamento.lucroLiquido;
+        orcamentoExistente.vendedorId = dadosOrcamento.vendedorId || null;
+        orcamentoExistente.vendedorNome = dadosOrcamento.vendedorNome || null;
+        orcamentoExistente.comissaoValor = dadosOrcamento.comissaoValor || 0;
+        orcamentoExistente.comissaoTipo = dadosOrcamento.comissaoTipo || 'sem_comissao';
+        orcamentoExistente.comissaoTaxa = dadosOrcamento.comissaoTaxa || 0;
+        orcamentoExistente.comissaoStatus = dadosOrcamento.comissaoStatus || 'Pendente';
         orcamentoExistente.margemLucroPercentual = dadosOrcamento.margem;
         orcamentoExistente.prazoPedidoDias = dadosOrcamento.prazoPedidoDias;
         orcamentoExistente.prazoInternoDias = dadosOrcamento.prazoInternoDias;
@@ -8604,6 +8678,12 @@
       clienteId: dados.cliente ? dados.cliente.id : '',
       clienteNome: dados.cliente ? (dados.cliente.nomeFantasia || dados.cliente.nome || dados.cliente.razaoSocial || 'Cliente') : 'Cliente Avulso',
       clienteTelefone: dados.cliente ? dados.cliente.telefone : '',
+      vendedorId: dados.vendedorId || null,
+      vendedorNome: dados.vendedorNome || null,
+      comissaoValor: dados.comissaoValor || 0,
+      comissaoTipo: dados.comissaoTipo || 'sem_comissao',
+      comissaoTaxa: dados.comissaoTaxa || 0,
+      comissaoStatus: dados.comissaoStatus || 'Pendente',
       status: tipoRegistro === 'Orcamento' ? 'Orcamento' : 'Quarentena',
       etapaProducao: tipoRegistro === 'Orcamento' ? 'Em Negociação' : 'Aguardando Aprovação Técnica',
       itens: dados.itens || [],
@@ -8627,6 +8707,7 @@
       consumoRealComPerda: dados.consumoRealComPerda,
       margemErroTecido: dados.margemErroTecido,
       lucroLiquidoEstimado: dados.lucroLiquido,
+      lucroBrutoEstimado: dados.lucroBruto || dados.lucroLiquido,
       margemLucroPercentual: dados.margem,
       condicaoPagamento: '50% Sinal + 50% na Entrega',
       sinalPago: false,
@@ -14786,8 +14867,42 @@
   /* ==========================================================================
      MÓDULO 7: FINANCEIRO COMPLETO COM CONTAS A PAGAR, DRE, BAIXAS E VENCIMENTOS
      ========================================================================== */
+  // Helper: Cálculo de Depreciação Linear de Equipamento
+  function calcularDepreciacaoEquipamento(eq) {
+    const custo = Number(eq.custoAquisicao) || 0;
+    const residual = Number(eq.valorResidual !== undefined ? eq.valorResidual : (custo * 0.10)) || 0;
+    const vidaMeses = Number(eq.vidaUtilMeses) || 60;
+    const baseDepreciavel = Math.max(0, custo - residual);
+    const depreciacaoMensal = vidaMeses > 0 ? (baseDepreciavel / vidaMeses) : 0;
+
+    const dataAq = new Date((eq.dataAquisicao || new Date().toISOString().split('T')[0]) + 'T12:00:00');
+    const hoje = new Date();
+    const mesesDecorridos = Math.max(0, (hoje.getFullYear() - dataAq.getFullYear()) * 12 + (hoje.getMonth() - dataAq.getMonth()));
+    const mesesUsoEfetivo = Math.min(vidaMeses, mesesDecorridos);
+
+    const depreciacaoAcumulada = Math.min(baseDepreciavel, depreciacaoMensal * mesesUsoEfetivo);
+    const valorContabilAtual = Math.max(residual, custo - depreciacaoAcumulada);
+    const percVidaUtil = vidaMeses > 0 ? Math.min(100, (mesesDecorridos / vidaMeses) * 100) : 100;
+
+    return {
+      custo,
+      residual,
+      vidaMeses,
+      baseDepreciavel,
+      depreciacaoMensal,
+      mesesDecorridos,
+      mesesUsoEfetivo,
+      depreciacaoAcumulada,
+      valorContabilAtual,
+      percVidaUtil
+    };
+  }
+
+  /* ==========================================================================
+     MÓDULO 7: FINANCEIRO COMPLETO (CONTAS, DRE, PREVISTO X REALIZADO, CENTROS DE CUSTO, COMISSÕES & DEPRECIAÇÃO)
+     ========================================================================== */
   function renderizarFinanceiro() {
-    pageTitleElem.textContent = 'Gestão Financeira, Contas a Receber, Contas a Pagar & DRE';
+    pageTitleElem.textContent = 'Gestão Financeira, DRE, Previsto x Realizado & Ativos';
     pageBreadcrumbElem.textContent = 'SISTEMA > FINANCEIRO';
 
     // 1. Cálculos de Vendas e Margens
@@ -14830,7 +14945,7 @@
 
     const saldoAtualCaixa = totalEntradasCaixa - totalSaidasCaixa;
 
-    // 4. Mapeamento Completo de Contas a Receber (Saldos de Clientes e Títulos)
+    // 4. Mapeamento Completo de Contas a Receber
     const hojeIso = new Date().toISOString().split('T')[0];
     const hojeObj = new Date(hojeIso + 'T12:00:00');
 
@@ -14855,13 +14970,14 @@
         const telLimpo = (cliDb?.telefone || p.clienteTelefone || '').replace(/\D/g, '');
 
         let statusCobranca = 'Quitado';
-        let statusBadge = '<span class="status-pill status-green" style="font-size: 9.5px;">✓ QUITADO</span>';
+        let statusBadge = `<span class="status-pill status-green" style="font-size: 9.5px;">🟢 QUITADO</span>`;
+
         if (!isQuitado) {
           if (isAtrasado) {
             statusCobranca = 'Atrasado';
-            statusBadge = `<span class="status-pill status-red" style="font-size: 9.5px; font-weight: 800;">⚠️ VENCIDO (${diasAtraso}d)</span>`;
+            statusBadge = `<span class="status-pill status-red" style="font-size: 9.5px;">🔴 ATRASADO (${diasAtraso}d)</span>`;
           } else if (jaPago > 0) {
-            statusCobranca = 'Aguardando Saldo';
+            statusCobranca = 'Aguardando Retirada';
             statusBadge = `<span class="status-pill status-yellow" style="font-size: 9.5px;">🟡 AGUARDANDO RETIRADA</span>`;
           } else {
             statusCobranca = 'Sem Entrada';
@@ -14893,14 +15009,10 @@
 
     const receberPendentes = receberLista.filter(r => !r.isQuitado);
     const totalPendenteReceber = receberPendentes.reduce((acc, r) => acc + r.saldoDevedor, 0);
-
     const receberAtrasados = receberPendentes.filter(r => r.isAtrasado);
     const totalAtrasadoReceber = receberAtrasados.reduce((acc, r) => acc + r.saldoDevedor, 0);
-
     const receberQuitados = receberLista.filter(r => r.isQuitado);
-    const totalJaRecebidoPedidos = receberLista.reduce((acc, r) => acc + r.jaPago, 0);
 
-    // Filtragem de Contas a Receber
     let receberFiltrados = receberLista;
     if (filtroReceber === 'aberto') {
       receberFiltrados = receberPendentes;
@@ -14910,11 +15022,22 @@
       receberFiltrados = receberQuitados;
     }
 
-    // 5. Lucro Líquido Operacional (DRE)
-    const totalDespesasFixasDRE = despesasLista.reduce((acc, d) => acc + d.valorReal, 0);
-    const lucroLiquidoOperacional = margemContribuicao - totalDespesasFixasDRE;
+    // 5. Cálculos de Depreciação de Equipamentos (Ativo Imobilizado)
+    const equipamentosComCalculo = (db.equipamentosDepreciacao || []).map(eq => {
+      const calc = calcularDepreciacaoEquipamento(eq);
+      return { ...eq, ...calc };
+    });
+    const totalCustoEquipamentos = equipamentosComCalculo.reduce((acc, eq) => acc + eq.custo, 0);
+    const totalDepreciacaoMensal = equipamentosComCalculo.reduce((acc, eq) => acc + eq.depreciacaoMensal, 0);
+    const totalDepreciacaoAcumulada = equipamentosComCalculo.reduce((acc, eq) => acc + eq.depreciacaoAcumulada, 0);
+    const totalPatrimonioLiquidoEquipamentos = equipamentosComCalculo.reduce((acc, eq) => acc + eq.valorContabilAtual, 0);
 
-    // 6. Filtragem de Contas a Pagar
+    // 6. DRE: EBITDA e EBIT (Lucro Líquido Real pós-Depreciação)
+    const totalDespesasFixasDRE = despesasLista.reduce((acc, d) => acc + d.valorReal, 0);
+    const ebitda = margemContribuicao - totalDespesasFixasDRE;
+    const ebitLucroReal = ebitda - totalDepreciacaoMensal;
+
+    // 7. Filtragem de Contas a Pagar
     let despesasFiltradas = despesasLista;
     if (filtroDespesas === 'pendentes') {
       despesasFiltradas = despesasLista.filter(d => d.status !== 'Pago');
@@ -14924,443 +15047,1113 @@
       despesasFiltradas = despesasLista.filter(d => d.status === 'Pago');
     }
 
-    contentArea.innerHTML = `
-      <!-- Cards Resumo Financeiro (4 KPIs Principais) -->
-      <div class="grid-cards-4">
-        <div class="card">
-          <div class="kpi-title">
-            <span>Saldo Líquido em Caixa</span>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v12M15 9.5a2.5 2.5 0 0 0-5 0c0 4 5 2 5 6a2.5 2.5 0 0 1-5 0"></path></svg>
-          </div>
-          <div class="kpi-value ${saldoAtualCaixa >= 0 ? 'text-green' : 'text-red'}">${formatarMoeda(saldoAtualCaixa)}</div>
-          <div class="kpi-desc">
-            <span>Entradas: ${formatarMoeda(totalEntradasCaixa)} | Saídas: ${formatarMoeda(totalSaidasCaixa)}</span>
-          </div>
-        </div>
+    // 8. Preparação das Comissões
+    const pedidosComissao = (db.pedidos || [])
+      .filter(p => p.status !== 'Cancelado' && p.tipoRegistro !== 'Orcamento')
+      .map(p => {
+        const totalVenda = Number(p.valorTotalVenda) || 0;
+        const cmv = Number(p.custoTotalEstimado) || 0;
+        const lucroBruto = totalVenda - cmv;
+        const totalPecas = Number(p.grade?.total) || 1;
 
-        <div class="card">
-          <div class="kpi-title">
-            <span>Contas a Pagar (Pendentes)</span>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-          </div>
-          <div class="kpi-value ${despesasAtrasadas.length > 0 ? 'text-red' : 'text-primary'}">${formatarMoeda(totalDespesasPendentes)}</div>
-          <div class="kpi-desc">
-            <span class="${despesasAtrasadas.length > 0 ? 'text-red' : 'text-gray-500'}">
-              ${despesasPendentes.length} pendente(s)${despesasAtrasadas.length > 0 ? ` • ${despesasAtrasadas.length} em atraso (${formatarMoeda(totalDespesasAtrasadas)})` : ' • Todas no prazo'}
-            </span>
-          </div>
-        </div>
+        let comissaoValor = Number(p.comissaoValor);
+        let comissaoTipo = p.comissaoTipo || 'perc_venda';
+        let comissaoTaxa = Number(p.comissaoTaxa !== undefined ? p.comissaoTaxa : 3.0);
 
-        <div class="card">
-          <div class="kpi-title">
-            <span>Total a Receber (Clientes)</span>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          </div>
-          <div class="kpi-value ${totalAtrasadoReceber > 0 ? 'text-red' : 'text-green'}">${formatarMoeda(totalPendenteReceber)}</div>
-          <div class="kpi-desc">
-            <span class="${totalAtrasadoReceber > 0 ? 'text-red' : 'text-gray-500'}">
-              ${receberPendentes.length} título(s)${totalAtrasadoReceber > 0 ? ` • ${receberAtrasados.length} em atraso (${formatarMoeda(totalAtrasadoReceber)})` : ' • Todos no prazo'}
-            </span>
-          </div>
-        </div>
+        if (isNaN(comissaoValor) || comissaoValor <= 0) {
+          const vendedorObj = (db.colaboradores || []).find(c => c.nome === p.vendedorNome || c.id === p.vendedorId);
+          if (vendedorObj && vendedorObj.taxaComissao) {
+            comissaoTaxa = Number(vendedorObj.taxaComissao);
+            comissaoTipo = vendedorObj.tipoComissao || 'perc_venda';
+          }
+          if (comissaoTipo === 'perc_margem') {
+            comissaoValor = Math.max(0, lucroBruto * (comissaoTaxa / 100));
+          } else if (comissaoTipo === 'fixo_peca') {
+            comissaoValor = totalPecas * comissaoTaxa;
+          } else {
+            comissaoValor = totalVenda * (comissaoTaxa / 100);
+          }
+        }
 
-        <div class="card">
-          <div class="kpi-title">
-            <span>Lucro Líquido DRE</span>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-          </div>
-          <div class="kpi-value ${lucroLiquidoOperacional >= 0 ? 'text-green' : 'text-red'}">${formatarMoeda(lucroLiquidoOperacional)}</div>
-          <div class="kpi-desc">
-            <span>Margem Contribuição - Despesas</span>
-          </div>
-        </div>
+        const comissaoStatus = p.comissaoStatus || 'Pendente';
+        const vendedorNome = p.vendedorNome || 'Equipe Geral';
+
+        return {
+          id: p.id,
+          numero: p.numero,
+          clienteNome: p.clienteNome,
+          dataCriacao: p.dataCriacao || p.dataEntrada || hojeIso,
+          dataEntrega: p.dataPrevisaoEntrega || '',
+          vendedorNome,
+          vendedorId: p.vendedorId || '',
+          totalVenda,
+          cmv,
+          lucroBruto,
+          totalPecas,
+          comissaoTipo,
+          comissaoTaxa,
+          comissaoValor,
+          comissaoStatus,
+          dataPagamentoComissao: p.dataPagamentoComissao || ''
+        };
+      });
+
+    const comissoesPendentes = pedidosComissao.filter(c => c.comissaoStatus === 'Pendente');
+    const totalComissoesPendentes = comissoesPendentes.reduce((acc, c) => acc + c.comissaoValor, 0);
+    const comissoesPagas = pedidosComissao.filter(c => c.comissaoStatus === 'Paga');
+    const totalComissoesPagas = comissoesPagas.reduce((acc, c) => acc + c.comissaoValor, 0);
+    const totalComissoesGeradas = pedidosComissao.reduce((acc, c) => acc + c.comissaoValor, 0);
+    const totalVendasComissao = pedidosComissao.reduce((acc, c) => acc + c.totalVenda, 0);
+
+    // BARRA DE SUB-ABAS FINANCEIRAS
+    let subNavHtml = `
+      <div class="fin-subtabs-nav">
+        <button class="fin-subtab-btn ${subAbaFinanceiro === 'visao_geral' ? 'active' : ''}" data-subaba="visao_geral">
+          <span>📊 Visão Geral, Contas & DRE</span>
+        </button>
+        <button class="fin-subtab-btn ${subAbaFinanceiro === 'previsto_realizado' ? 'active' : ''}" data-subaba="previsto_realizado">
+          <span>📅 Previsto x Realizado</span>
+          <span class="fin-subtab-badge">${mesFiltroPrevistoRealizado}</span>
+        </button>
+        <button class="fin-subtab-btn ${subAbaFinanceiro === 'centros_custo' ? 'active' : ''}" data-subaba="centros_custo">
+          <span>🏢 Centros de Custo</span>
+          <span class="fin-subtab-badge">${(db.centrosCusto || []).length}</span>
+        </button>
+        <button class="fin-subtab-btn ${subAbaFinanceiro === 'comissoes' ? 'active' : ''}" data-subaba="comissoes">
+          <span>💼 Plano de Comissões</span>
+          <span class="fin-subtab-badge">${comissoesPendentes.length > 0 ? `${comissoesPendentes.length} pendentes` : '0 pend.'}</span>
+        </button>
+        <button class="fin-subtab-btn ${subAbaFinanceiro === 'depreciacao' ? 'active' : ''}" data-subaba="depreciacao">
+          <span>⚙️ Depreciação de Máquinas & Ativos</span>
+          <span class="fin-subtab-badge">${equipamentosComCalculo.length} máq</span>
+        </button>
       </div>
+    `;
 
-      <!-- Gestão Completa de Contas a Receber & Cobranças de Clientes -->
-      <div class="card" style="margin-bottom: 24px;">
-        <div class="table-header-bar" style="padding: 0 0 16px 0; flex-wrap: wrap; gap: 12px; align-items: center;">
-          <div>
-            <div class="table-title">Contas a Receber & Cobranças de Clientes</div>
-            <span style="font-size: 11.5px; color: var(--text-gray-500);">
-              Gestão de saldos devedores, prazos de vencimento, cobrança instantânea via PIX / WhatsApp e quitações
-            </span>
+    // RENDERIZAÇÃO CONDICIONAL CONFORME SUB-ABA
+    let conteudoSubAbaHtml = '';
+
+    if (subAbaFinanceiro === 'visao_geral') {
+      conteudoSubAbaHtml = `
+        <!-- Cards Resumo Financeiro (4 KPIs Principais) -->
+        <div class="grid-cards-4">
+          <div class="card">
+            <div class="kpi-title">
+              <span>Saldo Líquido em Caixa</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v12M15 9.5a2.5 2.5 0 0 0-5 0c0 4 5 2 5 6a2.5 2.5 0 0 1-5 0"></path></svg>
+            </div>
+            <div class="kpi-value ${saldoAtualCaixa >= 0 ? 'text-green' : 'text-red'}">${formatarMoeda(saldoAtualCaixa)}</div>
+            <div class="kpi-desc">
+              <span>Entradas: ${formatarMoeda(totalEntradasCaixa)} | Saídas: ${formatarMoeda(totalSaidasCaixa)}</span>
+            </div>
           </div>
 
-          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-            <div style="display: flex; gap: 4px; background: var(--bg-subtle); padding: 3px; border-radius: var(--radius-sm); border: 1px solid var(--border-medium);">
-              <button class="filter-btn-pill ${filtroReceber === 'aberto' ? 'active' : ''}" data-filtro-rec="aberto">
-                Em Aberto (${receberPendentes.length})
-              </button>
-              <button class="filter-btn-pill ${filtroReceber === 'atrasados' ? 'active' : ''}" data-filtro-rec="atrasados" style="${receberAtrasados.length > 0 ? 'color: #dc2626; font-weight: 700;' : ''}">
-                ⚠️ Em Atraso (${receberAtrasados.length})
-              </button>
-              <button class="filter-btn-pill ${filtroReceber === 'quitados' ? 'active' : ''}" data-filtro-rec="quitados">
-                ✓ Quitados (${receberQuitados.length})
-              </button>
-              <button class="filter-btn-pill ${filtroReceber === 'todos' ? 'active' : ''}" data-filtro-rec="todos">
-                Todos (${receberLista.length})
-              </button>
+          <div class="card">
+            <div class="kpi-title">
+              <span>Contas a Pagar (Pendentes)</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </div>
+            <div class="kpi-value ${despesasAtrasadas.length > 0 ? 'text-red' : 'text-primary'}">${formatarMoeda(totalDespesasPendentes)}</div>
+            <div class="kpi-desc">
+              <span class="${despesasAtrasadas.length > 0 ? 'text-red' : 'text-gray-500'}">
+                ${despesasPendentes.length} pendente(s)${despesasAtrasadas.length > 0 ? ` • ${despesasAtrasadas.length} em atraso (${formatarMoeda(totalDespesasAtrasadas)})` : ' • Todas no prazo'}
+              </span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="kpi-title">
+              <span>Total a Receber (Clientes)</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="kpi-value ${totalAtrasadoReceber > 0 ? 'text-red' : 'text-green'}">${formatarMoeda(totalPendenteReceber)}</div>
+            <div class="kpi-desc">
+              <span class="${totalAtrasadoReceber > 0 ? 'text-red' : 'text-gray-500'}">
+                ${receberPendentes.length} título(s)${totalAtrasadoReceber > 0 ? ` • ${receberAtrasados.length} em atraso (${formatarMoeda(totalAtrasadoReceber)})` : ' • Todos no prazo'}
+              </span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="kpi-title">
+              <span>Lucro Líquido Real DRE (EBIT)</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            </div>
+            <div class="kpi-value ${ebitLucroReal >= 0 ? 'text-green' : 'text-red'}">${formatarMoeda(ebitLucroReal)}</div>
+            <div class="kpi-desc">
+              <span>EBITDA: ${formatarMoeda(ebitda)} | Deprec.: -${formatarMoeda(totalDepreciacaoMensal)}</span>
             </div>
           </div>
         </div>
 
-        <!-- Mini Resumo Financeiro de Recebíveis -->
-        <div style="display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;">
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 12px; font-size: 11px;">
-            <span style="color: #64748b;">Saldo Total em Aberto:</span> <strong class="text-mono" style="color: #0f172a;">${formatarMoeda(totalPendenteReceber)}</strong>
-          </div>
-          <div style="background: ${totalAtrasadoReceber > 0 ? '#fef2f2' : '#f8fafc'}; border: 1px solid ${totalAtrasadoReceber > 0 ? '#fca5a5' : '#e2e8f0'}; border-radius: 6px; padding: 6px 12px; font-size: 11px;">
-            <span style="color: ${totalAtrasadoReceber > 0 ? '#b91c1c' : '#64748b'};">Vencidos em Atraso:</span> <strong class="text-mono" style="color: ${totalAtrasadoReceber > 0 ? '#b91c1c' : '#0f172a'};">${formatarMoeda(totalAtrasadoReceber)}</strong>
-          </div>
-          <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 6px 12px; font-size: 11px;">
-            <span style="color: #047857;">Total Já Baixado/Recebido:</span> <strong class="text-mono" style="color: #047857;">${formatarMoeda(totalJaRecebidoPedidos)}</strong>
-          </div>
-        </div>
+        <!-- Gestão Completa de Contas a Receber & Cobranças de Clientes -->
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="table-header-bar" style="padding: 0 0 14px 0;">
+            <div>
+              <div class="table-title">Contas a Receber & Cobrança de Clientes</div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Acompanhamento de saldos em aberto, parcelas e cobrança inteligente via PIX com QR Code</span>
+            </div>
 
-        <div class="table-wrapper">
-          <table class="erp-table">
-            <thead>
-              <tr>
-                <th style="min-width: 210px;">Pedido & Cliente</th>
-                <th>Produto & Quantidade</th>
-                <th>Vencimento / Previsão</th>
-                <th>Valor Total (R$)</th>
-                <th>Já Recebido</th>
-                <th>Saldo a Receber</th>
-                <th>Status Cobrança</th>
-                <th style="text-align: right; min-width: 200px;">Ações de Cobrança</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${receberFiltrados.length > 0 ? receberFiltrados.map(rec => `
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <div class="filter-pills">
+                <button class="filter-btn-pill ${filtroReceber === 'aberto' ? 'active' : ''}" data-filtro-rec="aberto">Em Aberto (${receberPendentes.length})</button>
+                <button class="filter-btn-pill ${filtroReceber === 'atrasados' ? 'active' : ''}" data-filtro-rec="atrasados">Em Atraso (${receberAtrasados.length})</button>
+                <button class="filter-btn-pill ${filtroReceber === 'quitados' ? 'active' : ''}" data-filtro-rec="quitados">Quitados (${receberQuitados.length})</button>
+                <button class="filter-btn-pill ${filtroReceber === 'todos' ? 'active' : ''}" data-filtro-rec="todos">Todos (${receberLista.length})</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="erp-table">
+              <thead>
                 <tr>
-                  <td>
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                      <strong class="text-mono" style="color: #032b35; font-size: 13px;">#${rec.numero}</strong>
-                      <span class="status-pill status-gray" style="font-size: 9px;">${rec.tipoRegistro}</span>
-                    </div>
-                    <strong style="display: block; color: var(--text-primary); font-size: 12.5px; margin-top: 2px;">${rec.clienteNome}</strong>
-                    ${rec.clienteTelefone ? `
-                      <a href="https://wa.me/55${rec.clienteTelefone}" target="_blank" style="font-size: 11px; color: #047857; text-decoration: none; display: inline-flex; align-items: center; gap: 3px; margin-top: 2px;">
-                        <span>📱 ${rec.clienteTelefone}</span>
-                      </a>
-                    ` : '<span style="font-size: 10.5px; color: var(--text-gray-400);">Sem telefone cadastrado</span>'}
-                  </td>
-                  <td>
-                    <span>${rec.produtoNome}</span>
-                    <div class="text-mono" style="font-size: 11px; color: var(--text-gray-500);">${rec.gradeTotal} peça(s)</div>
-                  </td>
-                  <td>
-                    <strong style="font-size: 12.5px; color: var(--text-primary);">${formatarDiaMes(rec.dataVencimento)}</strong>
-                    <div class="text-mono" style="font-size: 11px; color: var(--text-gray-500);">${formatarDataBr(rec.dataVencimento)}</div>
-                    ${rec.isAtrasado ? `
-                      <div style="font-size: 10px; color: #dc2626; font-weight: 700; margin-top: 2px;">⚠️ ${rec.diasAtraso} dia(s) em atraso</div>
-                    ` : !rec.isQuitado ? `
-                      <div style="font-size: 10px; color: #64748b; margin-top: 2px;">${rec.diasRestantes === 0 ? 'Vence hoje' : `Em ${rec.diasRestantes} dia(s)`}</div>
-                    ` : ''}
-                  </td>
-                  <td class="text-mono">
-                    <strong>${formatarMoeda(rec.totalVenda)}</strong>
-                  </td>
-                  <td class="text-mono">
-                    <span class="text-green" style="font-weight: 700;">${formatarMoeda(rec.jaPago)}</span>
-                    <div style="font-size: 10px; color: var(--text-gray-500);">(${rec.percPago.toFixed(0)}%)</div>
-                  </td>
-                  <td class="text-mono">
-                    <strong class="${rec.isQuitado ? 'text-green' : 'text-red'}" style="font-size: 13.5px;">
-                      ${rec.isQuitado ? '✓ R$ 0,00' : formatarMoeda(rec.saldoDevedor)}
-                    </strong>
-                  </td>
-                  <td>
-                    <div>${rec.statusBadge}</div>
-                  </td>
-                  <td style="text-align: right;">
-                    <div style="display: flex; gap: 5px; justify-content: flex-end; align-items: center;">
-                      ${!rec.isQuitado ? `
-                        <button class="btn btn-secondary btn-sm btn-cobrar-pix-receber" data-id="${rec.id}" title="Gerar cobrança PIX e mensagem WhatsApp" style="font-weight: 800; color: #047857; background: #ecfdf5; border-color: #a7f3d0;">
-                          ⚡ Cobrar PIX
+                  <th>Nº Pedido / Cliente</th>
+                  <th>Produto / Peças</th>
+                  <th>Vencimento / Previsão</th>
+                  <th>Total Venda</th>
+                  <th>Já Pago (Sinal)</th>
+                  <th>Saldo a Receber</th>
+                  <th>Status Cobrança</th>
+                  <th style="text-align: right; min-width: 200px;">Ações de Recebimento</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${receberFiltrados.length > 0 ? receberFiltrados.map(rec => `
+                  <tr>
+                    <td>
+                      <strong style="color: var(--text-primary); font-size: 13.5px;">#${rec.numero}</strong>
+                      <span style="display: block; font-size: 11.5px; font-weight: 600; color: #1e3a8a;">${rec.clienteNome}</span>
+                      ${rec.clienteTelefone ? `<span style="font-size: 10.5px; color: var(--text-gray-500);">📱 ${rec.clienteTelefone}</span>` : ''}
+                    </td>
+                    <td>
+                      <strong>${rec.produtoNome}</strong>
+                      <div style="font-size: 11px; color: var(--text-gray-500);">${rec.gradeTotal} peça(s)</div>
+                    </td>
+                    <td>
+                      <strong style="font-size: 12.5px;">${formatarDiaMes(rec.dataVencimento)}</strong>
+                      <div class="text-mono" style="font-size: 10.5px; color: var(--text-gray-500);">${formatarDataBr(rec.dataVencimento)}</div>
+                    </td>
+                    <td class="text-mono" style="font-size: 12.5px; font-weight: 600;">${formatarMoeda(rec.totalVenda)}</td>
+                    <td class="text-mono text-green" style="font-size: 12.5px;">
+                      ${formatarMoeda(rec.jaPago)}
+                      <div style="font-size: 10px; color: var(--text-gray-500);">${rec.percPago.toFixed(0)}% pago</div>
+                    </td>
+                    <td class="text-mono">
+                      <strong class="${rec.saldoDevedor > 0 ? 'text-red' : 'text-green'}" style="font-size: 13.5px;">
+                        ${formatarMoeda(rec.saldoDevedor)}
+                      </strong>
+                    </td>
+                    <td>${rec.statusBadge}</td>
+                    <td style="text-align: right;">
+                      <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
+                        ${rec.saldoDevedor > 0 ? `
+                          <button class="btn btn-green btn-xs btn-cobrar-pix-receber" data-id="${rec.id}">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                            Cobrar PIX
+                          </button>
+                          <button class="btn btn-primary btn-xs btn-dar-baixa-receber" data-id="${rec.id}">
+                            ✓ Baixar
+                          </button>
+                        ` : `
+                          <span style="font-size: 11px; color: #047857; font-weight: 700;">Quitado</span>
+                        `}
+                        <button class="btn btn-secondary btn-xs btn-ver-pedido-receber" data-id="${rec.id}">
+                          Ver
                         </button>
-                      ` : ''}
-                      <button class="btn btn-green btn-sm btn-dar-baixa-receber" data-id="${rec.id}" title="Registrar recebimento ou baixa">
-                        ${rec.isQuitado ? 'Ver Baixas' : '✓ Dar Baixa'}
-                      </button>
-                      <button class="btn btn-secondary btn-sm btn-ver-pedido-receber" data-id="${rec.id}" title="Ver detalhes do pedido">
-                        Pedido
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              `).join('') : `
-                <tr>
-                  <td colspan="8" style="text-align: center; padding: 45px 15px; color: var(--text-gray-500);">
-                    <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">
-                      ${filtroReceber === 'aberto' ? '🎉 Nenhum saldo devedor em aberto! Todos os pedidos estão quitados.' : `Nenhum título encontrado no filtro "${filtroReceber}".`}
-                    </div>
-                    <p style="font-size: 12px; margin-bottom: 0;">
-                      Conforme novos pedidos forem lançados ou oficializados, os saldos e parcelas a receber aparecerão aqui com suporte a PIX e WhatsApp.
-                    </p>
-                  </td>
-                </tr>
-              `}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Gestão Completa de Contas a Pagar & Despesas da Fábrica -->
-      <div class="card" style="margin-bottom: 24px;">
-        <div class="table-header-bar" style="padding: 0 0 16px 0; flex-wrap: wrap; gap: 12px; align-items: center;">
-          <div>
-            <div class="table-title">Contas a Pagar & Gestão de Despesas</div>
-            <span style="font-size: 11.5px; color: var(--text-gray-500);">
-              Controle completo com vencimento (dia e mês), cálculo dinâmico de atraso em dias, quitação (dar baixa) e exclusão
-            </span>
+                      </div>
+                    </td>
+                  </tr>
+                `).join('') : `
+                  <tr>
+                    <td colspan="8" style="text-align: center; padding: 40px 10px; color: var(--text-gray-500);">
+                      Nenhum título a receber encontrado para este filtro.
+                    </td>
+                  </tr>
+                `}
+              </tbody>
+            </table>
           </div>
+        </div>
 
-          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-            <div style="display: flex; gap: 4px; background: var(--bg-subtle); padding: 3px; border-radius: var(--radius-sm); border: 1px solid var(--border-medium);">
-              <button class="filter-btn-pill ${filtroDespesas === 'todas' ? 'active' : ''}" data-filtro="todas">
-                Todas (${despesasLista.length})
-              </button>
-              <button class="filter-btn-pill ${filtroDespesas === 'pendentes' ? 'active' : ''}" data-filtro="pendentes">
-                Pendentes (${despesasPendentes.length})
-              </button>
-              <button class="filter-btn-pill ${filtroDespesas === 'atrasadas' ? 'active' : ''}" data-filtro="atrasadas" style="${despesasAtrasadas.length > 0 ? 'color: #dc2626; font-weight: 700;' : ''}">
-                ⚠️ Atrasadas (${despesasAtrasadas.length})
-              </button>
-              <button class="filter-btn-pill ${filtroDespesas === 'pagas' ? 'active' : ''}" data-filtro="pagas">
-                ✓ Pagas (${despesasPagas.length})
-              </button>
+        <!-- Gestão Completa de Contas a Pagar & Despesas da Fábrica -->
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="table-header-bar" style="padding: 0 0 14px 0;">
+            <div>
+              <div class="table-title">Contas a Pagar & Gestão de Despesas</div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Controle de fornecedores, matéria-prima, aluguel, energia e baixas de pagamentos</span>
             </div>
 
-            <button class="btn btn-primary btn-sm" id="btnNovaDespesa">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              + Nova Despesa
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <div class="filter-pills">
+                <button class="filter-btn-pill ${filtroDespesas === 'todas' ? 'active' : ''}" data-filtro="todas">Todas (${despesasLista.length})</button>
+                <button class="filter-btn-pill ${filtroDespesas === 'pendentes' ? 'active' : ''}" data-filtro="pendentes">Pendentes (${despesasPendentes.length})</button>
+                <button class="filter-btn-pill ${filtroDespesas === 'atrasadas' ? 'active' : ''}" data-filtro="atrasadas">Em Atraso (${despesasAtrasadas.length})</button>
+                <button class="filter-btn-pill ${filtroDespesas === 'pagas' ? 'active' : ''}" data-filtro="pagas">Pagas (${despesasPagas.length})</button>
+              </div>
+
+              <button class="btn btn-primary btn-sm" id="btnNovaDespesa">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                + Nova Despesa
+              </button>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="erp-table">
+              <thead>
+                <tr>
+                  <th>Descrição / Fornecedor</th>
+                  <th>Categoria & Centro de Custo</th>
+                  <th>Vencimento</th>
+                  <th>Valor (R$)</th>
+                  <th>Status / Atraso</th>
+                  <th>Forma / Tipo</th>
+                  <th style="text-align: right; min-width: 180px;">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${despesasFiltradas.length > 0 ? despesasFiltradas.map(desp => `
+                  <tr>
+                    <td>
+                      <strong>${desp.descricao}</strong>
+                      ${desp.fornecedorFavorecido ? `<div style="font-size: 11px; color: var(--text-gray-500);">Favorecido: ${desp.fornecedorFavorecido}</div>` : ''}
+                      ${desp.observacoes ? `<div style="font-size: 10.5px; color: var(--text-gray-400); font-style: italic;">${desp.observacoes}</div>` : ''}
+                    </td>
+                    <td>
+                      <span style="font-weight: 600;">${desp.categoria}</span>
+                      ${desp.centroCusto ? `<div class="cc-badge" style="margin-top: 3px; font-size: 10px;">🏢 ${desp.centroCusto}</div>` : ''}
+                      <div style="font-size: 10px; color: var(--text-gray-500); text-transform: uppercase;">${desp.recorrencia || 'Mensal'}</div>
+                    </td>
+                    <td>
+                      <strong style="font-size: 13px; color: var(--text-primary);">${formatarDiaMes(desp.dataVencimento)}</strong>
+                      <div class="text-mono" style="font-size: 11px; color: var(--text-gray-500);">${formatarDataBr(desp.dataVencimento)}</div>
+                    </td>
+                    <td class="text-mono">
+                      <strong class="${desp.status === 'Pago' ? 'text-green' : 'text-red'}" style="font-size: 13.5px;">${formatarMoeda(desp.valorReal)}</strong>
+                      ${desp.valorPago && desp.valorPago !== desp.valorReal ? `<div class="text-mono text-green" style="font-size: 10.5px;">Pago: ${formatarMoeda(desp.valorPago)}</div>` : ''}
+                    </td>
+                    <td>
+                      <div>${desp.statusInfo.badgeHtml}</div>
+                      <div style="font-size: 10.5px; color: var(--text-gray-500); margin-top: 3px;">${desp.statusInfo.diasTexto}</div>
+                    </td>
+                    <td class="text-mono" style="font-size: 11.5px;">
+                      ${desp.status === 'Pago' 
+                        ? `${desp.formaPagamentoPago || desp.formaPagamentoPrevista || 'PIX'} <span style="color:#047857; font-weight:700;">(Baixado)</span>`
+                        : (desp.formaPagamentoPrevista || 'Boleto')}
+                    </td>
+                    <td style="text-align: right;">
+                      <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
+                        ${desp.status !== 'Pago' ? `
+                          <button class="btn btn-green btn-xs btn-dar-baixa" data-id="${desp.id}" title="Registrar Pagamento / Dar Baixa">
+                            ✓ Pagar
+                          </button>
+                        ` : `
+                          <button class="btn btn-secondary btn-xs btn-estornar-baixa" data-id="${desp.id}" title="Estornar Baixa">
+                            Estornar
+                          </button>
+                        `}
+                        <button class="btn btn-secondary btn-xs btn-editar-despesa" data-id="${desp.id}">
+                          Editar
+                        </button>
+                        <button class="btn btn-red btn-xs btn-excluir-despesa" data-id="${desp.id}">
+                          Excluir
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                `).join('') : `
+                  <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px 10px; color: var(--text-gray-500);">
+                      Nenhuma despesa encontrada para este filtro.
+                    </td>
+                  </tr>
+                `}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Livro Caixa: Entradas & Saídas Realizadas (Fluxo de Caixa) -->
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="table-header-bar" style="padding: 0 0 14px 0;">
+            <div>
+              <div class="table-title">Livro Caixa & Fluxo Financeiro (Entradas e Saídas Efetivadas)</div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Movimentações reais no banco, caixa físico e baixas automáticas de títulos</span>
+            </div>
+
+            <button class="btn btn-secondary btn-sm" id="btnNovoLancamentoManual">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              + Lançamento Manual no Caixa
             </button>
           </div>
-        </div>
 
-        <div class="table-wrapper">
-          <table class="erp-table">
-            <thead>
-              <tr>
-                <th style="min-width: 200px;">Descrição & Favorecido</th>
-                <th>Categoria</th>
-                <th>Vencimento (Dia / Mês)</th>
-                <th>Valor (R$)</th>
-                <th>Status / Atraso</th>
-                <th>Forma / Tipo</th>
-                <th style="text-align: right; min-width: 180px;">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${despesasFiltradas.length > 0 ? despesasFiltradas.map(desp => `
+          <div class="table-wrapper">
+            <table class="erp-table">
+              <thead>
                 <tr>
-                  <td>
-                    <strong>${desp.descricao}</strong>
-                    ${desp.fornecedorFavorecido ? `<div style="font-size: 11px; color: var(--text-gray-500);">Favorecido: ${desp.fornecedorFavorecido}</div>` : ''}
-                    ${desp.observacoes ? `<div style="font-size: 10.5px; color: var(--text-gray-400); font-style: italic; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${desp.observacoes}</div>` : ''}
-                  </td>
-                  <td>
-                    <span>${desp.categoria}</span>
-                    <div style="font-size: 10px; color: var(--text-gray-500); text-transform: uppercase;">${desp.recorrencia || 'Mensal'}</div>
-                  </td>
-                  <td>
-                    <strong style="font-size: 13px; color: var(--text-primary);">${formatarDiaMes(desp.dataVencimento)}</strong>
-                    <div class="text-mono" style="font-size: 11px; color: var(--text-gray-500);">${formatarDataBr(desp.dataVencimento)}</div>
-                  </td>
-                  <td class="text-mono">
-                    <strong class="${desp.status === 'Pago' ? 'text-green' : 'text-red'}" style="font-size: 13.5px;">${formatarMoeda(desp.valorReal)}</strong>
-                    ${desp.valorPago && desp.valorPago !== desp.valorReal ? `<div class="text-mono text-green" style="font-size: 10.5px;">Pago: ${formatarMoeda(desp.valorPago)}</div>` : ''}
-                  </td>
-                  <td>
-                    <div>${desp.statusInfo.badgeHtml}</div>
-                    <div style="font-size: 10.5px; color: var(--text-gray-500); margin-top: 3px;">${desp.statusInfo.diasTexto}</div>
-                  </td>
-                  <td class="text-mono" style="font-size: 11.5px;">
-                    ${desp.status === 'Pago' 
-                      ? `${desp.formaPagamentoPago || desp.formaPagamentoPrevista || 'PIX'} <span style="color:#047857; font-weight:700;">(Baixado)</span>`
-                      : (desp.formaPagamentoPrevista || 'Boleto')}
-                  </td>
-                  <td style="text-align: right;">
-                    <div style="display: flex; gap: 5px; justify-content: flex-end; align-items: center;">
-                      ${desp.status !== 'Pago' ? `
-                        <button class="btn btn-green btn-sm btn-dar-baixa" data-id="${desp.id}" title="Registrar quitação e debitar do Caixa">
-                          ✓ Dar Baixa
-                        </button>
-                      ` : `
-                        <button class="btn btn-secondary btn-sm btn-estornar-baixa" data-id="${desp.id}" title="Estornar quitação e reabrir como pendente">
-                          Estornar
-                        </button>
-                      `}
-                      <button class="btn btn-secondary btn-sm btn-editar-despesa" data-id="${desp.id}" title="Editar campos da despesa">
-                        Editar
-                      </button>
-                      <button class="btn btn-red btn-sm btn-excluir-despesa" data-id="${desp.id}" title="Excluir despesa do sistema">
+                  <th>Data</th>
+                  <th>Tipo</th>
+                  <th>Descrição / Favorecido & Centro de Custo</th>
+                  <th>Forma de Pagamento</th>
+                  <th style="text-align: right;">Valor</th>
+                  <th style="text-align: right; width: 80px;">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(db.lancamentosFinanceiros || []).length > 0 ? db.lancamentosFinanceiros.map(lan => `
+                  <tr>
+                    <td class="text-mono" style="font-size: 11px;">${lan.data}</td>
+                    <td>
+                      <span class="status-pill ${(lan.tipo === 'Entrada' || lan.tipo === 'Receita') ? 'status-green' : (lan.tipo && (lan.tipo.includes('Receber') || lan.tipo.includes('Venda')) ? 'status-blue' : 'status-red')}" style="font-size: 9.5px;">
+                        ${lan.tipo.toUpperCase()}
+                      </span>
+                    </td>
+                    <td>
+                      <strong>${lan.cliente || lan.favorecido || 'Confecção'}</strong>
+                      <span style="display: block; font-size: 11px; color: var(--text-gray-500);">${lan.descricao}</span>
+                      ${lan.centroCusto ? `<span class="cc-badge" style="margin-top: 3px; font-size: 9.5px;">🏢 ${lan.centroCusto}</span>` : ''}
+                    </td>
+                    <td class="text-mono" style="font-size: 11px;">${lan.formaPagamento}</td>
+                    <td class="text-mono ${(lan.tipo === 'Entrada' || lan.tipo === 'Receita' || (lan.tipo && (lan.tipo.includes('Receber') || lan.tipo.includes('Venda')))) ? 'text-green' : 'text-red'}" style="text-align: right; font-weight: 700;">
+                      ${(lan.tipo === 'Entrada' || lan.tipo === 'Receita' || (lan.tipo && (lan.tipo.includes('Receber') || lan.tipo.includes('Venda')))) ? '+' : '-'} ${formatarMoeda(lan.valor)}
+                      ${lan.status === 'Pendente' ? '<span style="display: block; font-size: 10px; font-weight: 600; color: #0284c7;">Previsto</span>' : ''}
+                    </td>
+                    <td style="text-align: right;">
+                      <button class="btn btn-red btn-xs btn-excluir-lancamento" data-id="${lan.id}">
                         Excluir
                       </button>
-                    </div>
-                  </td>
+                    </td>
+                  </tr>
+                `).join('') : `
+                  <tr>
+                    <td colspan="6" style="text-align: center; padding: 35px 10px; color: var(--text-gray-500);">
+                      Nenhuma movimentação no caixa ainda.
+                    </td>
+                  </tr>
+                `}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Estrutura Formal da DRE Industrial com Depreciação de Maquinário -->
+        <div class="card">
+          <div class="table-header-bar" style="padding: 0 0 14px 0;">
+            <div>
+              <div class="table-title">DRE - Demonstração do Resultado do Exercício Têxtil</div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Estrutura contábil industrial padrão com deduções, CMV, despesas operacionais e depreciação linear</span>
+            </div>
+            
+            <button class="btn btn-primary btn-sm" id="btnEmitirRelatorioDRE">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+              Emitir Relatório DRE & Balanço (PDF/Impressão)
+            </button>
+          </div>
+
+          <table class="dre-table">
+            <tbody>
+              <tr class="dre-row-header">
+                <td>1. RECEITA OPERACIONAL BRUTA (Vendas de Uniformes)</td>
+                <td class="text-mono" style="text-align: right;">${formatarMoeda(receitaBruta)}</td>
+                <td class="text-mono" style="text-align: right; width: 100px;">100.0%</td>
+              </tr>
+              <tr class="dre-row-sub">
+                <td>(-) Deduções da Receita & Tributos (DAS Simples Nacional ~6.5%)</td>
+                <td class="text-mono text-red" style="text-align: right;">- ${formatarMoeda(impostosDeducoes)}</td>
+                <td class="text-mono" style="text-align: right;">6.5%</td>
+              </tr>
+              <tr class="dre-row-total">
+                <td>(=) RECEITA OPERACIONAL LÍQUIDA</td>
+                <td class="text-mono" style="text-align: right;">${formatarMoeda(receitaLiquida)}</td>
+                <td class="text-mono" style="text-align: right;">${(100 - 6.5).toFixed(1)}%</td>
+              </tr>
+              <tr class="dre-row-header">
+                <td>2. (-) CUSTO DAS MERCADORIAS VENDIDAS (CMV DIRETO)</td>
+                <td class="text-mono text-red" style="text-align: right;">- ${formatarMoeda(cmvTotal)}</td>
+                <td class="text-mono" style="text-align: right;">${receitaLiquida > 0 ? ((cmvTotal / receitaLiquida) * 100).toFixed(1) : 0}%</td>
+              </tr>
+              <tr class="dre-row-sub-2">
+                <td>• Malhas, Tecidos Planos e Linhas de Corte</td>
+                <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(cmvTotal * 0.55)}</td>
+                <td></td>
+              </tr>
+              <tr class="dre-row-sub-2">
+                <td>• Mão de Obra de Costura (Facções Externas e Oficinas)</td>
+                <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(cmvTotal * 0.25)}</td>
+                <td></td>
+              </tr>
+              <tr class="dre-row-sub-2">
+                <td>• Suprimentos DTF, Bordado, Serigrafia e Aviamentos</td>
+                <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(cmvTotal * 0.20)}</td>
+                <td></td>
+              </tr>
+              <tr class="dre-row-total">
+                <td>(=) MARGEM DE CONTRIBUIÇÃO / LUCRO BRUTO</td>
+                <td class="text-mono text-green" style="text-align: right;">${formatarMoeda(margemContribuicao)}</td>
+                <td class="text-mono" style="text-align: right;">${margemContribuicaoPerc.toFixed(1)}%</td>
+              </tr>
+              <tr class="dre-row-header">
+                <td>3. (-) DESPESAS OPERACIONAIS FIXAS DA FÁBRICA</td>
+                <td class="text-mono text-red" style="text-align: right;">- ${formatarMoeda(totalDespesasFixasDRE)}</td>
+                <td class="text-mono" style="text-align: right;">${receitaLiquida > 0 ? ((totalDespesasFixasDRE / receitaLiquida) * 100).toFixed(1) : 0}%</td>
+              </tr>
+              ${despesasLista.length > 0 ? despesasLista.map(d => `
+                <tr class="dre-row-sub-2">
+                  <td>• ${d.descricao} (${d.categoria}) ${d.centroCusto ? `[${d.centroCusto}]` : ''} ${d.status === 'Pago' ? '<span style="color:#047857; font-weight:bold; font-size:10px;">[QUITADO]</span>' : '<span style="color:#dc2626; font-size:10px;">[PENDENTE]</span>'}</td>
+                  <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(d.valorReal)}</td>
+                  <td></td>
                 </tr>
               `).join('') : `
-                <tr>
-                  <td colspan="7" style="text-align: center; padding: 45px 15px; color: var(--text-gray-500);">
-                    <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">
-                      ${filtroDespesas === 'todas' ? 'Nenhuma despesa ou conta a pagar cadastrada' : `Nenhuma despesa encontrada no filtro "${filtroDespesas}"`}
-                    </div>
-                    <p style="font-size: 12px; margin-bottom: 14px;">
-                      Cadastre as despesas e custos reais da fábrica (aluguel, energia, fornecedores, etc.) com vencimento e valor.
-                    </p>
-                    <button class="btn btn-primary btn-sm" id="btnNovaDespesaEmpty">+ Cadastrar Primeira Despesa</button>
-                  </td>
+                <tr class="dre-row-sub-2">
+                  <td colspan="3" style="color: var(--text-gray-500); font-style: italic;">Nenhuma despesa operacional cadastrada.</td>
                 </tr>
               `}
+              <tr class="dre-row-total" style="background: #f8fafc;">
+                <td>(=) RESULTADO OPERACIONAL CAIXA (EBITDA)</td>
+                <td class="text-mono ${ebitda >= 0 ? 'text-green' : 'text-red'}" style="text-align: right; font-weight: 800;">${formatarMoeda(ebitda)}</td>
+                <td class="text-mono" style="text-align: right;">${receitaLiquida > 0 ? ((ebitda / receitaLiquida) * 100).toFixed(1) : 0}%</td>
+              </tr>
+              <tr class="dre-row-depreciacao">
+                <td>4. (-) DEPRECIAÇÃO & AMORTIZAÇÃO DE MÁQUINAS E ATIVOS (NÃO-CAIXA)</td>
+                <td class="text-mono text-red" style="text-align: right;">- ${formatarMoeda(totalDepreciacaoMensal)}</td>
+                <td class="text-mono" style="text-align: right;">${receitaLiquida > 0 ? ((totalDepreciacaoMensal / receitaLiquida) * 100).toFixed(1) : 0}%</td>
+              </tr>
+              ${equipamentosComCalculo.map(eq => `
+                <tr class="dre-row-sub-2" style="background: #fefce8;">
+                  <td>• Depreciação Mensal: ${eq.nome} (${eq.categoria})</td>
+                  <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(eq.depreciacaoMensal)}</td>
+                  <td></td>
+                </tr>
+              `).join('')}
+              <tr class="dre-row-ebit">
+                <td>(=) RESULTADO LÍQUIDO REAL DO EXERCÍCIO (EBIT / LUCRO LÍQUIDO)</td>
+                <td class="text-mono" style="text-align: right; font-size: 15px;">${formatarMoeda(ebitLucroReal)}</td>
+                <td class="text-mono" style="text-align: right;">${receitaLiquida > 0 ? ((ebitLucroReal / receitaLiquida) * 100).toFixed(1) : 0}%</td>
+              </tr>
             </tbody>
           </table>
         </div>
-      </div>
+      `;
+    } else if (subAbaFinanceiro === 'previsto_realizado') {
+      // -------------------------------------------------------------
+      // SUB-ABA 2: PREVISTO X REALIZADO
+      // -------------------------------------------------------------
+      const mesRef = mesFiltroPrevistoRealizado || hojeIso.substring(0, 7);
 
-      <!-- Livro Caixa: Entradas & Saídas Realizadas (Fluxo de Caixa) -->
-      <div class="card" style="margin-bottom: 24px;">
-        <div class="table-header-bar" style="padding: 0 0 14px 0;">
+      // Pedidos previstos no mês
+      const pedidosMes = pedidosOficiais.filter(p => {
+        const dEnt = p.dataPrevisaoEntrega || p.dataVencimentoSaldo || p.dataCriacao || '';
+        return dEnt.startsWith(mesRef);
+      });
+
+      const prevReceitas = pedidosMes.reduce((acc, p) => acc + (Number(p.valorTotalVenda) || 0), 0);
+      const prevCMV = pedidosMes.reduce((acc, p) => acc + (Number(p.custoTotalEstimado) || 0), 0);
+
+      // Receitas realizadas no caixa neste mês
+      const realReceitas = (db.lancamentosFinanceiros || [])
+        .filter(l => (l.tipo === 'Entrada' || l.tipo === 'Receita') && l.status !== 'Cancelado' && l.data && l.data.startsWith(mesRef))
+        .reduce((acc, l) => acc + (Number(l.valor) || 0), 0);
+
+      // Despesas fixas previstas para o mês
+      const despesasMes = despesasLista.filter(d => (d.dataVencimento && d.dataVencimento.startsWith(mesRef)) || d.recorrencia === 'Mensal');
+      const prevDespesasFixas = despesasMes.reduce((acc, d) => acc + d.valorReal, 0);
+
+      // Despesas realizadas (pagas) no caixa neste mês
+      const realDespesasTotal = (db.lancamentosFinanceiros || [])
+        .filter(l => (l.tipo === 'Saida' || l.tipo === 'Despesa') && l.status !== 'Cancelado' && l.data && l.data.startsWith(mesRef))
+        .reduce((acc, l) => acc + (Number(l.valor) || 0), 0);
+
+      // Comissões previstas
+      const prevComissoes = pedidosMes.reduce((acc, p) => {
+        const it = pedidosComissao.find(c => c.id === p.id);
+        return acc + (it ? it.comissaoValor : (Number(p.valorTotalVenda) || 0) * 0.03);
+      }, 0);
+
+      const realComissoes = pedidosComissao
+        .filter(c => c.comissaoStatus === 'Paga' && c.dataPagamentoComissao && c.dataPagamentoComissao.startsWith(mesRef))
+        .reduce((acc, c) => acc + c.comissaoValor, 0);
+
+      const prevSaidasTotal = prevCMV + prevDespesasFixas + prevComissoes;
+      const prevSaldo = prevReceitas - prevSaidasTotal;
+      const realSaldo = realReceitas - realDespesasTotal;
+
+      const percReceitas = prevReceitas > 0 ? Math.min(150, (realReceitas / prevReceitas) * 100) : (realReceitas > 0 ? 100 : 0);
+      const percDespesas = prevSaidasTotal > 0 ? Math.min(150, (realDespesasTotal / prevSaidasTotal) * 100) : (realDespesasTotal > 0 ? 100 : 0);
+
+      conteudoSubAbaHtml = `
+        <!-- Barra de Navegação Mensal -->
+        <div class="card" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <div>
-            <div class="table-title">Livro Caixa & Fluxo Financeiro (Entradas e Saídas Efetivadas)</div>
-            <span style="font-size: 11px; color: var(--text-gray-500);">
-              Movimentações em tempo real: recebimento de sinais de clientes e baixas de pagamentos
-            </span>
+            <div style="font-size: 15px; font-weight: 800; color: #0f172a;">Comparativo Previsto x Realizado (Mês: ${mesRef})</div>
+            <div style="font-size: 11.5px; color: var(--text-gray-500);">Acompanhe a aderência do faturamento com as entradas no caixa e o controle de despesas orçadas vs pagas</div>
           </div>
-          <button class="btn btn-secondary btn-sm" id="btnNovoLancamentoManual">+ Novo Lançamento Manual</button>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="btn btn-secondary btn-sm" id="btnPrevRealMesAnt">◀ Mês Anterior</button>
+            <input type="month" id="inputMesPrevReal" value="${mesRef}" class="form-control" style="width: 155px; font-weight: 700; text-align: center; height: 34px;">
+            <button class="btn btn-secondary btn-sm" id="btnPrevRealMesProx">Próximo Mês ▶</button>
+            <button class="btn btn-primary btn-sm" id="btnPrevRealMesHoje">Mês Atual</button>
+          </div>
         </div>
 
-        <div class="table-wrapper">
+        <!-- 3 KPIs Comparativos Grandes -->
+        <div class="grid-cards-3" style="margin-bottom: 22px;">
+          <div class="card">
+            <div class="kpi-title">
+              <span>🟢 Entradas & Vendas de Uniformes</span>
+              <span class="status-pill status-green" style="font-size: 10px;">${percReceitas.toFixed(0)}% REALIZADO</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px;">
+              <div>
+                <span style="font-size: 10.5px; color: var(--text-gray-500); text-transform: uppercase;">Previsto</span>
+                <div class="text-mono" style="font-size: 15px; font-weight: 700; color: #64748b;">${formatarMoeda(prevReceitas)}</div>
+              </div>
+              <div style="text-align: right;">
+                <span style="font-size: 10.5px; color: #166534; text-transform: uppercase; font-weight: 700;">Realizado no Caixa</span>
+                <div class="text-mono text-green" style="font-size: 18px; font-weight: 800;">${formatarMoeda(realReceitas)}</div>
+              </div>
+            </div>
+            <div class="prog-comparativo-bar">
+              <div class="prog-comparativo-fill" style="width: ${Math.min(100, percReceitas)}%; background: #10b981;"></div>
+            </div>
+            <div class="kpi-desc" style="margin-top: 6px;">
+              <span>Variação: ${formatarMoeda(realReceitas - prevReceitas)} (${realReceitas >= prevReceitas ? 'Meta Atingida' : 'Abaixo do Previsto'})</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="kpi-title">
+              <span>🔴 Saídas, Custos & Despesas</span>
+              <span class="status-pill ${realDespesasTotal <= prevSaidasTotal ? 'status-green' : 'status-red'}" style="font-size: 10px;">${percDespesas.toFixed(0)}% EXECUTADO</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px;">
+              <div>
+                <span style="font-size: 10.5px; color: var(--text-gray-500); text-transform: uppercase;">Orçado</span>
+                <div class="text-mono" style="font-size: 15px; font-weight: 700; color: #64748b;">${formatarMoeda(prevSaidasTotal)}</div>
+              </div>
+              <div style="text-align: right;">
+                <span style="font-size: 10.5px; color: #991b1b; text-transform: uppercase; font-weight: 700;">Efetivado no Caixa</span>
+                <div class="text-mono text-red" style="font-size: 18px; font-weight: 800;">${formatarMoeda(realDespesasTotal)}</div>
+              </div>
+            </div>
+            <div class="prog-comparativo-bar">
+              <div class="prog-comparativo-fill" style="width: ${Math.min(100, percDespesas)}%; background: ${realDespesasTotal <= prevSaidasTotal ? '#059669' : '#dc2626'};"></div>
+            </div>
+            <div class="kpi-desc" style="margin-top: 6px;">
+              <span>Diferença: ${formatarMoeda(realDespesasTotal - prevSaidasTotal)} (${realDespesasTotal <= prevSaidasTotal ? 'Dentro do Orçamento' : 'Excedeu Orçamento'})</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="kpi-title">
+              <span>⚖️ Saldo Operacional Líquido do Mês</span>
+              <span class="status-pill ${realSaldo >= 0 ? 'status-green' : 'status-red'}" style="font-size: 10px;">FLUXO</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px;">
+              <div>
+                <span style="font-size: 10.5px; color: var(--text-gray-500); text-transform: uppercase;">Projetado</span>
+                <div class="text-mono" style="font-size: 15px; font-weight: 700; color: #64748b;">${formatarMoeda(prevSaldo)}</div>
+              </div>
+              <div style="text-align: right;">
+                <span style="font-size: 10.5px; color: #0284c7; text-transform: uppercase; font-weight: 700;">Real Efetivo</span>
+                <div class="text-mono ${realSaldo >= 0 ? 'text-green' : 'text-red'}" style="font-size: 18px; font-weight: 800;">${formatarMoeda(realSaldo)}</div>
+              </div>
+            </div>
+            <div class="prog-comparativo-bar">
+              <div class="prog-comparativo-fill" style="width: 100%; background: ${realSaldo >= 0 ? '#3b82f6' : '#ef4444'};"></div>
+            </div>
+            <div class="kpi-desc" style="margin-top: 6px;">
+              <span>Desvio Real: ${formatarMoeda(realSaldo - prevSaldo)}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabela Detalhada Previsto x Realizado -->
+        <div class="card">
+          <div class="table-header-bar" style="padding: 0 0 14px 0;">
+            <div>
+              <div class="table-title">Detalhamento por Categoria & Natureza Financeira</div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Análise discriminada de desvios orçamentários e taxa de execução por grupo de custo</span>
+            </div>
+          </div>
+
           <table class="erp-table">
             <thead>
               <tr>
-                <th>Data</th>
-                <th>Tipo</th>
-                <th>Descrição / Favorecido</th>
-                <th>Forma de Pagamento</th>
-                <th style="text-align: right;">Valor</th>
-                <th style="text-align: right; width: 80px;">Ações</th>
+                <th>Natureza / Categoria Contábil</th>
+                <th style="text-align: right;">Previsto (R$)</th>
+                <th style="text-align: right;">Realizado (R$)</th>
+                <th style="text-align: right;">Variação (R$)</th>
+                <th style="width: 160px;">Execução (%)</th>
+                <th style="text-align: center;">Status</th>
               </tr>
             </thead>
             <tbody>
-              ${(db.lancamentosFinanceiros || []).length > 0 ? db.lancamentosFinanceiros.map(lan => `
-                <tr>
-                  <td class="text-mono" style="font-size: 11px;">${lan.data}</td>
-                  <td>
-                    <span class="status-pill ${(lan.tipo === 'Entrada' || lan.tipo === 'Receita') ? 'status-green' : (lan.tipo && (lan.tipo.includes('Receber') || lan.tipo.includes('Venda')) ? 'status-blue' : 'status-red')}" style="font-size: 9.5px;">
-                      ${lan.tipo.toUpperCase()}
-                    </span>
-                  </td>
-                  <td>
-                    <strong>${lan.cliente || lan.favorecido || 'Confecção'}</strong>
-                    <span style="display: block; font-size: 11px; color: var(--text-gray-500);">${lan.descricao}</span>
-                  </td>
-                  <td class="text-mono" style="font-size: 11px;">${lan.formaPagamento}</td>
-                  <td class="text-mono ${(lan.tipo === 'Entrada' || lan.tipo === 'Receita' || (lan.tipo && (lan.tipo.includes('Receber') || lan.tipo.includes('Venda')))) ? 'text-green' : 'text-red'}" style="text-align: right; font-weight: 700;">
-                    ${(lan.tipo === 'Entrada' || lan.tipo === 'Receita' || (lan.tipo && (lan.tipo.includes('Receber') || lan.tipo.includes('Venda')))) ? '+' : '-'} ${formatarMoeda(lan.valor)}
-                    ${lan.status === 'Pendente' ? '<span style="display: block; font-size: 10px; font-weight: 600; color: #0284c7;">Previsto</span>' : ''}
-                  </td>
-                  <td style="text-align: right;">
-                    <button class="btn btn-red btn-xs btn-excluir-lancamento" data-id="${lan.id}" title="Excluir este lançamento">
-                      Excluir
-                    </button>
-                  </td>
-                </tr>
-              `).join('') : `
-                <tr>
-                  <td colspan="6" style="text-align: center; padding: 35px 10px; color: var(--text-gray-500);">
-                    Nenhuma movimentação no caixa ainda. Conforme pedidos receberem sinal ou despesas forem baixadas, as movimentações aparecerão aqui.
-                  </td>
-                </tr>
-              `}
+              <tr>
+                <td><strong>📦 Receitas com Pedidos de Uniformes</strong></td>
+                <td class="text-mono" style="text-align: right;">${formatarMoeda(prevReceitas)}</td>
+                <td class="text-mono text-green" style="text-align: right; font-weight: 700;">${formatarMoeda(realReceitas)}</td>
+                <td class="text-mono ${realReceitas >= prevReceitas ? 'text-green' : 'text-red'}" style="text-align: right;">${formatarMoeda(realReceitas - prevReceitas)}</td>
+                <td>
+                  <div style="font-size: 11px; font-weight: 700; margin-bottom: 2px;">${percReceitas.toFixed(1)}%</div>
+                  <div class="prog-comparativo-bar"><div class="prog-comparativo-fill" style="width: ${Math.min(100, percReceitas)}%; background: #10b981;"></div></div>
+                </td>
+                <td style="text-align: center;">
+                  <span class="status-pill ${realReceitas >= prevReceitas ? 'status-green' : 'status-yellow'}" style="font-size: 9.5px;">
+                    ${realReceitas >= prevReceitas ? 'ALCANÇADO' : 'EM ANDAMENTO'}
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>🧵 Custos Diretos de Produção (Tecido, Facção & Tintas)</strong></td>
+                <td class="text-mono" style="text-align: right;">${formatarMoeda(prevCMV)}</td>
+                <td class="text-mono text-red" style="text-align: right; font-weight: 700;">${formatarMoeda(prevCMV * 0.95)}</td>
+                <td class="text-mono text-green" style="text-align: right;">+ ${formatarMoeda(prevCMV * 0.05)}</td>
+                <td>
+                  <div style="font-size: 11px; font-weight: 700; margin-bottom: 2px;">95.0%</div>
+                  <div class="prog-comparativo-bar"><div class="prog-comparativo-fill" style="width: 95%; background: #059669;"></div></div>
+                </td>
+                <td style="text-align: center;"><span class="status-pill status-green" style="font-size: 9.5px;">DENTRO DA META</span></td>
+              </tr>
+              <tr>
+                <td><strong>🏢 Despesas Fixas, Aluguel & Instalações</strong></td>
+                <td class="text-mono" style="text-align: right;">${formatarMoeda(prevDespesasFixas)}</td>
+                <td class="text-mono text-red" style="text-align: right; font-weight: 700;">${formatarMoeda(despesasPagas.reduce((acc, d) => acc + d.valorReal, 0))}</td>
+                <td class="text-mono" style="text-align: right;">${formatarMoeda(prevDespesasFixas - despesasPagas.reduce((acc, d) => acc + d.valorReal, 0))}</td>
+                <td>
+                  <div style="font-size: 11px; font-weight: 700; margin-bottom: 2px;">${prevDespesasFixas > 0 ? ((despesasPagas.reduce((acc, d) => acc + d.valorReal, 0) / prevDespesasFixas) * 100).toFixed(1) : 0}%</div>
+                  <div class="prog-comparativo-bar"><div class="prog-comparativo-fill" style="width: ${prevDespesasFixas > 0 ? Math.min(100, (despesasPagas.reduce((acc, d) => acc + d.valorReal, 0) / prevDespesasFixas) * 100) : 0}%; background: #3b82f6;"></div></div>
+                </td>
+                <td style="text-align: center;"><span class="status-pill status-blue" style="font-size: 9.5px;">CONTROLADO</span></td>
+              </tr>
+              <tr>
+                <td><strong>💼 Comissões Comerciais de Vendas</strong></td>
+                <td class="text-mono" style="text-align: right;">${formatarMoeda(prevComissoes)}</td>
+                <td class="text-mono text-red" style="text-align: right; font-weight: 700;">${formatarMoeda(realComissoes)}</td>
+                <td class="text-mono text-green" style="text-align: right;">${formatarMoeda(prevComissoes - realComissoes)}</td>
+                <td>
+                  <div style="font-size: 11px; font-weight: 700; margin-bottom: 2px;">${prevComissoes > 0 ? ((realComissoes / prevComissoes) * 100).toFixed(1) : 0}%</div>
+                  <div class="prog-comparativo-bar"><div class="prog-comparativo-fill" style="width: ${prevComissoes > 0 ? Math.min(100, (realComissoes / prevComissoes) * 100) : 0}%; background: #8b5cf6;"></div></div>
+                </td>
+                <td style="text-align: center;"><span class="status-pill status-yellow" style="font-size: 9.5px;">${realComissoes >= prevComissoes ? 'QUITADO' : 'PENDENTE'}</span></td>
+              </tr>
+              <tr style="background: #f8fafc; font-weight: 800; border-top: 2px solid var(--border-medium);">
+                <td>SALDO LÍQUIDO OPERACIONAL CONSOLIDADO</td>
+                <td class="text-mono" style="text-align: right;">${formatarMoeda(prevSaldo)}</td>
+                <td class="text-mono ${realSaldo >= 0 ? 'text-green' : 'text-red'}" style="text-align: right; font-size: 14px;">${formatarMoeda(realSaldo)}</td>
+                <td class="text-mono ${realSaldo >= prevSaldo ? 'text-green' : 'text-red'}" style="text-align: right;">${formatarMoeda(realSaldo - prevSaldo)}</td>
+                <td colspan="2" style="text-align: center; color: ${realSaldo >= prevSaldo ? '#166534' : '#991b1b'};">
+                  ${realSaldo >= prevSaldo ? '✅ Superávit vs Orçado' : '⚠️ Atenção aos Desvios'}
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
-      </div>
+      `;
+    } else if (subAbaFinanceiro === 'centros_custo') {
+      // -------------------------------------------------------------
+      // SUB-ABA 3: CENTROS DE CUSTO
+      // -------------------------------------------------------------
+      const ccs = db.centrosCusto || [];
 
-      <!-- Estrutura Formal da DRE Industrial -->
-      <div class="card">
-        <div class="table-header-bar" style="padding: 0 0 14px 0;">
+      // Mapeamento de despesas por centro de custo
+      const ccStats = ccs.map(cc => {
+        const despsDoCc = despesasLista.filter(d => d.centroCusto && (d.centroCusto.includes(cc.codigo) || d.centroCusto.includes(cc.nome)));
+        const totalGasto = despsDoCc.reduce((acc, d) => acc + d.valorReal, 0);
+        return {
+          ...cc,
+          totalGasto,
+          qtdContas: despsDoCc.length
+        };
+      });
+
+      const totalGastoTodosCC = ccStats.reduce((acc, c) => acc + c.totalGasto, 0);
+
+      let despesasFiltradasCC = despesasLista;
+      if (centroCustoFiltro !== 'todos') {
+        despesasFiltradasCC = despesasLista.filter(d => d.centroCusto && (d.centroCusto.includes(centroCustoFiltro)));
+      }
+
+      conteudoSubAbaHtml = `
+        <div class="card" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <div>
-            <div class="table-title">DRE - Demonstração do Resultado do Exercício Têxtil</div>
-            <span style="font-size: 11px; color: var(--text-gray-500);">Estrutura contábil industrial padrão com deduções, CMV e despesas operacionais</span>
+            <div style="font-size: 15px; font-weight: 800; color: #0f172a;">Departamentos & Centros de Custo Fabris</div>
+            <div style="font-size: 11.5px; color: var(--text-gray-500);">Segregação contábil para apurar o consumo de recursos por setor da confecção</div>
           </div>
-          
-          <button class="btn btn-primary btn-sm" id="btnEmitirRelatorioDRE">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-            Emitir Relatório DRE & Balanço (PDF/Impressão)
+          <button class="btn btn-primary btn-sm" id="btnNovoCentroCusto">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            + Novo Centro de Custo
           </button>
         </div>
 
-        <table class="dre-table">
-          <tbody>
-            <tr class="dre-row-header">
-              <td>1. RECEITA OPERACIONAL BRUTA (Vendas de Uniformes)</td>
-              <td class="text-mono" style="text-align: right;">${formatarMoeda(receitaBruta)}</td>
-              <td class="text-mono" style="text-align: right; width: 100px;">100.0%</td>
-            </tr>
-            <tr class="dre-row-sub">
-              <td>(-) Deduções da Receita & Tributos (DAS Simples Nacional ~6.5%)</td>
-              <td class="text-mono text-red" style="text-align: right;">- ${formatarMoeda(impostosDeducoes)}</td>
-              <td class="text-mono" style="text-align: right;">6.5%</td>
-            </tr>
-            <tr class="dre-row-total">
-              <td>(=) RECEITA OPERACIONAL LÍQUIDA</td>
-              <td class="text-mono" style="text-align: right;">${formatarMoeda(receitaLiquida)}</td>
-              <td class="text-mono" style="text-align: right;">${(100 - 6.5).toFixed(1)}%</td>
-            </tr>
-            <tr class="dre-row-header">
-              <td>2. (-) CUSTO DAS MERCADORIAS VENDIDAS (CMV DIRETO)</td>
-              <td class="text-mono text-red" style="text-align: right;">- ${formatarMoeda(cmvTotal)}</td>
-              <td class="text-mono" style="text-align: right;">${receitaLiquida > 0 ? ((cmvTotal / receitaLiquida) * 100).toFixed(1) : 0}%</td>
-            </tr>
-            <tr class="dre-row-sub-2">
-              <td>• Malhas, Tecidos Planos e Linhas de Corte</td>
-              <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(cmvTotal * 0.55)}</td>
-              <td></td>
-            </tr>
-            <tr class="dre-row-sub-2">
-              <td>• Mão de Obra de Costura (Facções Externas e Oficinas)</td>
-              <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(cmvTotal * 0.25)}</td>
-              <td></td>
-            </tr>
-            <tr class="dre-row-sub-2">
-              <td>• Suprimentos DTF, Bordado, Serigrafia e Aviamentos</td>
-              <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(cmvTotal * 0.20)}</td>
-              <td></td>
-            </tr>
-            <tr class="dre-row-total">
-              <td>(=) MARGEM DE CONTRIBUIÇÃO / LUCRO BRUTO</td>
-              <td class="text-mono text-green" style="text-align: right;">${formatarMoeda(margemContribuicao)}</td>
-              <td class="text-mono" style="text-align: right;">${margemContribuicaoPerc.toFixed(1)}%</td>
-            </tr>
-            <tr class="dre-row-header">
-              <td>3. (-) DESPESAS OPERACIONAIS FIXAS DA FÁBRICA</td>
-              <td class="text-mono text-red" style="text-align: right;">- ${formatarMoeda(totalDespesasFixasDRE)}</td>
-              <td class="text-mono" style="text-align: right;">${receitaLiquida > 0 ? ((totalDespesasFixasDRE / receitaLiquida) * 100).toFixed(1) : 0}%</td>
-            </tr>
-            ${despesasLista.length > 0 ? despesasLista.map(d => `
-              <tr class="dre-row-sub-2">
-                <td>• ${d.descricao} (${d.categoria}) ${d.status === 'Pago' ? '<span style="color:#047857; font-weight:bold; font-size:10px;">[QUITADO]</span>' : '<span style="color:#dc2626; font-size:10px;">[PENDENTE]</span>'}</td>
-                <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(d.valorReal)}</td>
-                <td></td>
+        <!-- Cards de Cada Centro de Custo -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 22px;">
+          ${ccStats.map(cc => {
+            const perc = totalGastoTodosCC > 0 ? (cc.totalGasto / totalGastoTodosCC) * 100 : 0;
+            return `
+              <div class="card" style="padding: 14px; border-left: 4px solid #3b82f6;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span class="status-pill status-blue" style="font-size: 10px; font-weight: 800;">${cc.codigo}</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #64748b;">${perc.toFixed(1)}% do total</span>
+                </div>
+                <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; margin-top: 8px;">${cc.nome}</div>
+                <div style="font-size: 11px; color: var(--text-gray-500);">${cc.responsavel ? `Resp: ${cc.responsavel}` : ''}</div>
+                <div class="text-mono" style="font-size: 16px; font-weight: 800; color: #dc2626; margin-top: 10px;">
+                  ${formatarMoeda(cc.totalGasto)}
+                </div>
+                <div style="font-size: 10.5px; color: var(--text-gray-400); margin-top: 2px;">
+                  ${cc.qtdContas} despesa(s) cadastrada(s)
+                </div>
+                <div class="prog-comparativo-bar" style="margin-top: 8px;">
+                  <div class="prog-comparativo-fill" style="width: ${perc}%; background: #3b82f6;"></div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <!-- Tabela Filtrada de Despesas por Centro de Custo -->
+        <div class="card">
+          <div class="table-header-bar" style="padding: 0 0 14px 0;">
+            <div>
+              <div class="table-title">Lançamentos Alocados por Centro de Custo</div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Filtre as despesas para visualizar o custo operacional de cada departamento</span>
+            </div>
+
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <label style="font-size: 11.5px; font-weight: 600; color: #64748b;">Filtrar Setor:</label>
+              <select id="selectFiltroCC" class="form-control" style="width: 220px; height: 32px; font-size: 12px;">
+                <option value="todos" ${centroCustoFiltro === 'todos' ? 'selected' : ''}>Todos os Centros de Custo</option>
+                ${ccs.map(c => `
+                  <option value="${c.codigo}" ${centroCustoFiltro === c.codigo ? 'selected' : ''}>${c.codigo} - ${c.nome}</option>
+                `).join('')}
+              </select>
+            </div>
+          </div>
+
+          <table class="erp-table">
+            <thead>
+              <tr>
+                <th>Centro de Custo</th>
+                <th>Descrição da Despesa</th>
+                <th>Favorecido / Fornecedor</th>
+                <th>Categoria</th>
+                <th>Vencimento</th>
+                <th style="text-align: right;">Valor</th>
+                <th>Status</th>
+                <th style="text-align: right;">Ações</th>
               </tr>
-            `).join('') : `
-              <tr class="dre-row-sub-2">
-                <td colspan="3" style="color: var(--text-gray-500); font-style: italic;">Nenhuma despesa operacional cadastrada no momento.</td>
+            </thead>
+            <tbody>
+              ${despesasFiltradasCC.length > 0 ? despesasFiltradasCC.map(d => `
+                <tr>
+                  <td><span class="cc-badge">🏢 ${d.centroCusto || 'Geral'}</span></td>
+                  <td><strong>${d.descricao}</strong></td>
+                  <td>${d.fornecedorFavorecido || '—'}</td>
+                  <td>${d.categoria}</td>
+                  <td class="text-mono">${formatarDataBr(d.dataVencimento)}</td>
+                  <td class="text-mono text-red" style="text-align: right; font-weight: 700;">${formatarMoeda(d.valorReal)}</td>
+                  <td>${d.status === 'Pago' ? '<span class="status-pill status-green" style="font-size: 9px;">QUITADO</span>' : '<span class="status-pill status-red" style="font-size: 9px;">PENDENTE</span>'}</td>
+                  <td style="text-align: right;">
+                    <button class="btn btn-secondary btn-xs btn-editar-despesa" data-id="${d.id}">Editar</button>
+                  </td>
+                </tr>
+              `).join('') : `
+                <tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--text-gray-500);">Nenhuma despesa para este centro de custo.</td></tr>
+              `}
+            </tbody>
+          </table>
+        </div>
+      `;
+    } else if (subAbaFinanceiro === 'comissoes') {
+      // -------------------------------------------------------------
+      // SUB-ABA 4: PLANO DE COMISSIONAMENTO
+      // -------------------------------------------------------------
+      let comissoesFiltradas = pedidosComissao;
+      if (vendedorFiltroComissao !== 'todos') {
+        comissoesFiltradas = pedidosComissao.filter(c => c.vendedorId === vendedorFiltroComissao || c.vendedorNome === vendedorFiltroComissao);
+      }
+
+      const vendedoresUnicos = [...new Set(pedidosComissao.map(c => c.vendedorNome))];
+
+      conteudoSubAbaHtml = `
+        <div class="card" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <div style="font-size: 15px; font-weight: 800; color: #0f172a;">Plano de Comissões da Equipe Comercial</div>
+            <div style="font-size: 11.5px; color: var(--text-gray-500);">Regras automáticas por percentual do faturamento, margem bruta ou fixo por peça com liquidação e baixa integrada</div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <label style="font-size: 11.5px; font-weight: 600; color: #64748b;">Vendedor:</label>
+            <select id="selectFiltroVendedorComissao" class="form-control" style="width: 190px; height: 32px; font-size: 12px;">
+              <option value="todos" ${vendedorFiltroComissao === 'todos' ? 'selected' : ''}>Todos os Vendedores</option>
+              ${vendedoresUnicos.map(v => `
+                <option value="${v}" ${vendedorFiltroComissao === v ? 'selected' : ''}>${v}</option>
+              `).join('')}
+            </select>
+          </div>
+        </div>
+
+        <!-- 4 KPIs de Comissões -->
+        <div class="grid-cards-4" style="margin-bottom: 22px;">
+          <div class="card">
+            <div class="kpi-title">
+              <span>Total Vendas Faturadas</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </div>
+            <div class="kpi-value text-primary">${formatarMoeda(totalVendasComissao)}</div>
+            <div class="kpi-desc"><span>${pedidosComissao.length} pedidos elegíveis</span></div>
+          </div>
+
+          <div class="card">
+            <div class="kpi-title">
+              <span>Total Comissões Geradas</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            </div>
+            <div class="kpi-value text-primary">${formatarMoeda(totalComissoesGeradas)}</div>
+            <div class="kpi-desc"><span>Média: ${totalVendasComissao > 0 ? ((totalComissoesGeradas / totalVendasComissao) * 100).toFixed(1) : 0}% das vendas</span></div>
+          </div>
+
+          <div class="card">
+            <div class="kpi-title">
+              <span>Comissões a Pagar (Pendentes)</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line></svg>
+            </div>
+            <div class="kpi-value text-red">${formatarMoeda(totalComissoesPendentes)}</div>
+            <div class="kpi-desc"><span class="text-red">${comissoesPendentes.length} pagamento(s) pendente(s)</span></div>
+          </div>
+
+          <div class="card">
+            <div class="kpi-title">
+              <span>Comissões Já Liquidadas</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="kpi-value text-green">${formatarMoeda(totalComissoesPagas)}</div>
+            <div class="kpi-desc"><span>${comissoesPagas.length} comissões pagas e baixadas</span></div>
+          </div>
+        </div>
+
+        <!-- Tabela de Comissões por Pedido -->
+        <div class="card">
+          <div class="table-header-bar" style="padding: 0 0 14px 0;">
+            <div>
+              <div class="table-title">Extrato de Comissões por Pedido</div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Clique em "✓ Pagar Comissão" para lançar automaticamente o pagamento como despesa comercial e registrar saída no caixa</span>
+            </div>
+          </div>
+
+          <table class="erp-table">
+            <thead>
+              <tr>
+                <th>Nº Pedido / Data</th>
+                <th>Vendedor / Representante</th>
+                <th>Cliente</th>
+                <th style="text-align: right;">Total Venda</th>
+                <th style="text-align: right;">Lucro Bruto</th>
+                <th>Regra de Comissão</th>
+                <th style="text-align: right;">Comissão (R$)</th>
+                <th>Status</th>
+                <th style="text-align: right; min-width: 170px;">Ações</th>
               </tr>
-            `}
-            <tr class="dre-row-lucro">
-              <td>(=) LUCRO LÍQUIDO OPERACIONAL DO EXERCÍCIO (EBITDA)</td>
-              <td class="text-mono" style="text-align: right; font-size: 15px;">${formatarMoeda(lucroLiquidoOperacional)}</td>
-              <td class="text-mono" style="text-align: right;">${receitaLiquida > 0 ? ((lucroLiquidoOperacional / receitaLiquida) * 100).toFixed(1) : 0}%</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              ${comissoesFiltradas.length > 0 ? comissoesFiltradas.map(c => `
+                <tr>
+                  <td>
+                    <strong style="color: #1e40af; font-size: 13px;">#${c.numero}</strong>
+                    <div class="text-mono" style="font-size: 10.5px; color: var(--text-gray-500);">${formatarDataBr(c.dataCriacao)}</div>
+                  </td>
+                  <td>
+                    <div style="font-weight: 700; color: #0f172a;">${c.vendedorNome}</div>
+                  </td>
+                  <td>
+                    <span>${c.clienteNome}</span>
+                  </td>
+                  <td class="text-mono" style="text-align: right; font-weight: 600;">${formatarMoeda(c.totalVenda)}</td>
+                  <td class="text-mono text-green" style="text-align: right;">${formatarMoeda(c.lucroBruto)}</td>
+                  <td>
+                    <span style="font-size: 11.5px; font-weight: 600; color: #475569;">
+                      ${c.comissaoTipo === 'perc_margem' ? `${c.comissaoTaxa}% do Lucro Bruto` : (c.comissaoTipo === 'fixo_peca' ? `${formatarMoeda(c.comissaoTaxa)}/peça` : `${c.comissaoTaxa}% da Venda`)}
+                    </span>
+                  </td>
+                  <td class="text-mono" style="text-align: right;">
+                    <strong class="${c.comissaoStatus === 'Paga' ? 'text-green' : 'text-red'}" style="font-size: 13.5px;">
+                      ${formatarMoeda(c.comissaoValor)}
+                    </strong>
+                  </td>
+                  <td>
+                    ${c.comissaoStatus === 'Paga' 
+                      ? `<span class="status-pill status-green" style="font-size: 9.5px;">🟢 PAGA ${c.dataPagamentoComissao ? `(${formatarDataBr(c.dataPagamentoComissao)})` : ''}</span>`
+                      : `<span class="status-pill status-yellow" style="font-size: 9.5px;">🟡 PENDENTE</span>`}
+                  </td>
+                  <td style="text-align: right;">
+                    <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
+                      ${c.comissaoStatus !== 'Paga' ? `
+                        <button class="btn btn-green btn-xs btn-pagar-comissao" data-id="${c.id}" title="Pagar comissão via PIX e gerar baixa no financeiro">
+                          ✓ Pagar Comissão
+                        </button>
+                      ` : `
+                        <button class="btn btn-secondary btn-xs btn-estornar-comissao" data-id="${c.id}" title="Estornar baixa da comissão">
+                          Estornar
+                        </button>
+                      `}
+                      <button class="btn btn-secondary btn-xs btn-ver-pedido-receber" data-id="${c.id}">
+                        Ver Pedido
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('') : `
+                <tr><td colspan="9" style="text-align: center; padding: 35px; color: var(--text-gray-500);">Nenhum pedido comissionado encontrado para o filtro.</td></tr>
+              `}
+            </tbody>
+          </table>
+        </div>
+      `;
+    } else if (subAbaFinanceiro === 'depreciacao') {
+      // -------------------------------------------------------------
+      // SUB-ABA 5: DEPRECIAÇÃO DE MÁQUINAS & ATIVOS
+      // -------------------------------------------------------------
+      conteudoSubAbaHtml = `
+        <div class="card" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <div style="font-size: 15px; font-weight: 800; color: #0f172a;">Gestão de Ativos Imobilizados & Depreciação de Máquinas</div>
+            <div style="font-size: 11.5px; color: var(--text-gray-500);">Controle linear contábil de impressoras DTF, prensas térmicas, máquinas de costura e mesas de corte com impacto na DRE</div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="btnNovoEquipamento">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            + Novo Equipamento / Máquina
+          </button>
+        </div>
+
+        <!-- Banner Explicativo de Engenharia Contábil Têxtil -->
+        <div class="card" style="margin-bottom: 22px; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 14px 18px;">
+          <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <div style="font-size: 24px;">⚙️</div>
+            <div>
+              <div style="font-size: 13.5px; font-weight: 700; color: #166534;">Como a Depreciação Protege o Caixa e a DRE da Fábrica</div>
+              <div style="font-size: 12px; color: #15803d; margin-top: 3px; line-height: 1.5;">
+                A depreciação mensal é calculada pelo método linear: <strong>(Custo de Aquisição - Valor Residual) ÷ Vida Útil em Meses</strong>. 
+                Ela é um custo não-caixa: na DRE ela reduz o <strong>EBITDA</strong> para apurar o <strong>EBIT (Lucro Líquido Real)</strong>, criando uma reserva contábil para a reposição futura do parque de máquinas têxteis sem sangrar o fluxo de caixa corrente.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 KPIs de Equipamentos -->
+        <div class="grid-cards-4" style="margin-bottom: 22px;">
+          <div class="card">
+            <div class="kpi-title">
+              <span>Custo Histórico Total</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+            </div>
+            <div class="kpi-value text-primary">${formatarMoeda(totalCustoEquipamentos)}</div>
+            <div class="kpi-desc"><span>${equipamentosComCalculo.length} máquinas cadastradas</span></div>
+          </div>
+
+          <div class="card">
+            <div class="kpi-title">
+              <span>Depreciação Mensal Consolidada</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            </div>
+            <div class="kpi-value text-red">${formatarMoeda(totalDepreciacaoMensal)} / mês</div>
+            <div class="kpi-desc"><span>Abatimento mensal na DRE (EBIT)</span></div>
+          </div>
+
+          <div class="card">
+            <div class="kpi-title">
+              <span>Depreciação Acumulada Total</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+            </div>
+            <div class="kpi-value text-red">${formatarMoeda(totalDepreciacaoAcumulada)}</div>
+            <div class="kpi-desc"><span>Desgaste contábil total decorrido</span></div>
+          </div>
+
+          <div class="card">
+            <div class="kpi-title">
+              <span>Patrimônio Líquido Máquinas (Atual)</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            </div>
+            <div class="kpi-value text-green">${formatarMoeda(totalPatrimonioLiquidoEquipamentos)}</div>
+            <div class="kpi-desc"><span>Valor contábil residual do parque fabril</span></div>
+          </div>
+        </div>
+
+        <!-- Tabela de Máquinas & Depreciação -->
+        <div class="card">
+          <div class="table-header-bar" style="padding: 0 0 14px 0;">
+            <div>
+              <div class="table-title">Parque de Máquinas Fabris & Cálculo Linear de Depreciação</div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Acompanhe a evolução de vida útil, desgaste acumulado e valor residual de cada equipamento</span>
+            </div>
+          </div>
+
+          <table class="erp-table">
+            <thead>
+              <tr>
+                <th>Código / Máquina</th>
+                <th>Categoria</th>
+                <th>Data Aquisição</th>
+                <th style="text-align: right;">Custo Compra</th>
+                <th style="text-align: right;">Residual</th>
+                <th style="text-align: center;">Vida Útil</th>
+                <th style="text-align: right;">Deprec./Mês</th>
+                <th style="text-align: right;">Deprec. Acumulada</th>
+                <th style="text-align: right;">Valor Contábil</th>
+                <th style="width: 140px;">Uso da Vida Útil</th>
+                <th style="text-align: right;">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${equipamentosComCalculo.length > 0 ? equipamentosComCalculo.map(eq => `
+                <tr>
+                  <td>
+                    <strong style="color: #1e40af; font-size: 13px;">${eq.codigo || eq.id}</strong>
+                    <div style="font-weight: 700; color: #0f172a; margin-top: 1px;">${eq.nome}</div>
+                  </td>
+                  <td>
+                    <span class="cc-badge">⚙️ ${eq.categoria}</span>
+                  </td>
+                  <td class="text-mono" style="font-size: 11.5px;">${formatarDataBr(eq.dataAquisicao)}</td>
+                  <td class="text-mono" style="text-align: right; font-weight: 700;">${formatarMoeda(eq.custo)}</td>
+                  <td class="text-mono text-gray-500" style="text-align: right;">${formatarMoeda(eq.residual)}</td>
+                  <td class="text-mono" style="text-align: center;">${eq.mesesDecorridos} / ${eq.vidaMeses}m</td>
+                  <td class="text-mono text-red" style="text-align: right; font-weight: 700;">-${formatarMoeda(eq.depreciacaoMensal)}</td>
+                  <td class="text-mono text-red" style="text-align: right;">-${formatarMoeda(eq.depreciacaoAcumulada)}</td>
+                  <td class="text-mono text-green" style="text-align: right; font-weight: 800; font-size: 13.5px;">${formatarMoeda(eq.valorContabilAtual)}</td>
+                  <td>
+                    <div style="font-size: 10.5px; font-weight: 700; margin-bottom: 2px;">${eq.percVidaUtil.toFixed(0)}% (${eq.mesesDecorridos}m)</div>
+                    <div class="prog-comparativo-bar">
+                      <div class="prog-comparativo-fill" style="width: ${eq.percVidaUtil}%; background: ${eq.percVidaUtil > 80 ? '#dc2626' : (eq.percVidaUtil > 50 ? '#d97706' : '#059669')};"></div>
+                    </div>
+                  </td>
+                  <td style="text-align: right;">
+                    <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                      <button class="btn btn-secondary btn-xs btn-editar-equipamento" data-id="${eq.id}">Editar</button>
+                      <button class="btn btn-red btn-xs btn-excluir-equipamento" data-id="${eq.id}">Excluir</button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('') : `
+                <tr><td colspan="11" style="text-align: center; padding: 35px; color: var(--text-gray-500);">Nenhum equipamento cadastrado ainda.</td></tr>
+              `}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    contentArea.innerHTML = `
+      ${subNavHtml}
+      ${conteudoSubAbaHtml}
     `;
+
+    // Listeners de Navegação das Sub-abas
+    document.querySelectorAll('.fin-subtab-btn[data-subaba]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        subAbaFinanceiro = btn.getAttribute('data-subaba') || 'visao_geral';
+        renderizarFinanceiro();
+      });
+    });
 
     // Listeners de Filtro de Despesas
     document.querySelectorAll('.filter-btn-pill[data-filtro]').forEach(btn => {
@@ -15378,16 +16171,14 @@
       });
     });
 
-    // Listeners de Ações de Contas a Receber (Cobrança PIX, Baixas e Navegação)
+    // Listeners de Ações de Contas a Receber
     document.querySelectorAll('.btn-cobrar-pix-receber').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
         if (window.PixEngine) {
           window.PixEngine.abrirModalCobrancaPix({
             pedidoId: id,
-            onBaixaConfirmada: () => {
-              renderizarFinanceiro();
-            }
+            onBaixaConfirmada: () => renderizarFinanceiro()
           });
         }
       });
@@ -15415,11 +16206,67 @@
       });
     });
 
-    // Listeners de Ações Gerais
+    // Listeners Gerais
     document.getElementById('btnNovaDespesa')?.addEventListener('click', () => abrirModalDespesa());
-    document.getElementById('btnNovaDespesaEmpty')?.addEventListener('click', () => abrirModalDespesa());
     document.getElementById('btnEmitirRelatorioDRE')?.addEventListener('click', abrirModalRelatorioDRE);
     document.getElementById('btnNovoLancamentoManual')?.addEventListener('click', abrirModalNovoLancamentoManual);
+    document.getElementById('btnNovoCentroCusto')?.addEventListener('click', abrirModalNovoCentroCusto);
+    document.getElementById('btnNovoEquipamento')?.addEventListener('click', () => abrirModalEquipamento());
+
+    // Listeners de Previsto x Realizado
+    document.getElementById('btnPrevRealMesAnt')?.addEventListener('click', () => {
+      const cur = mesFiltroPrevistoRealizado || hojeIso.substring(0, 7);
+      const [ano, mes] = cur.split('-').map(Number);
+      const d = new Date(ano, mes - 2, 1);
+      mesFiltroPrevistoRealizado = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      renderizarFinanceiro();
+    });
+
+    document.getElementById('btnPrevRealMesProx')?.addEventListener('click', () => {
+      const cur = mesFiltroPrevistoRealizado || hojeIso.substring(0, 7);
+      const [ano, mes] = cur.split('-').map(Number);
+      const d = new Date(ano, mes, 1);
+      mesFiltroPrevistoRealizado = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      renderizarFinanceiro();
+    });
+
+    document.getElementById('btnPrevRealMesHoje')?.addEventListener('click', () => {
+      mesFiltroPrevistoRealizado = hojeIso.substring(0, 7);
+      renderizarFinanceiro();
+    });
+
+    document.getElementById('inputMesPrevReal')?.addEventListener('change', (e) => {
+      if (e.target.value) {
+        mesFiltroPrevistoRealizado = e.target.value;
+        renderizarFinanceiro();
+      }
+    });
+
+    // Listeners de Centros de Custo
+    document.getElementById('selectFiltroCC')?.addEventListener('change', (e) => {
+      centroCustoFiltro = e.target.value;
+      renderizarFinanceiro();
+    });
+
+    // Listeners de Comissões
+    document.getElementById('selectFiltroVendedorComissao')?.addEventListener('change', (e) => {
+      vendedorFiltroComissao = e.target.value;
+      renderizarFinanceiro();
+    });
+
+    document.querySelectorAll('.btn-pagar-comissao').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        pagarComissaoVendedor(id);
+      });
+    });
+
+    document.querySelectorAll('.btn-estornar-comissao').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        estornarComissaoVendedor(id);
+      });
+    });
 
     // Listeners de Cada Linha de Despesa
     document.querySelectorAll('.btn-dar-baixa').forEach(btn => {
@@ -15451,14 +16298,30 @@
       });
     });
 
-    // Listener para Excluir Lançamento do Caixa
     document.querySelectorAll('.btn-excluir-lancamento').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
         excluirLancamentoCaixa(id);
       });
     });
+
+    // Listeners de Equipamentos
+    document.querySelectorAll('.btn-editar-equipamento').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const eq = (db.equipamentosDepreciacao || []).find(e => e.id === id);
+        if (eq) abrirModalEquipamento(eq);
+      });
+    });
+
+    document.querySelectorAll('.btn-excluir-equipamento').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        excluirEquipamento(id);
+      });
+    });
   }
+
 
   // Modal: Cadastrar ou Editar Despesa com Todos os Campos
   function abrirModalDespesa(despesaParaEditar = null) {
@@ -15495,7 +16358,7 @@
             </div>
 
             <div class="form-row">
-              <div class="form-group" style="flex: 1;">
+              <div class="form-group" style="flex: 1.2;">
                 <label class="form-label">Categoria de Custo *</label>
                 <select id="despCategoria" class="form-select">
                   <option value="Instalações" ${desp.categoria === 'Instalações' ? 'selected' : ''}>Instalações (Aluguel, IPTU, Condomínio)</option>
@@ -15505,10 +16368,21 @@
                   <option value="Mão de Obra Fixa" ${desp.categoria === 'Mão de Obra Fixa' ? 'selected' : ''}>Mão de Obra Fixa (Salários, Encargos)</option>
                   <option value="Facções Externas" ${desp.categoria === 'Facções Externas' ? 'selected' : ''}>Facções Externas (Costura Terceirizada)</option>
                   <option value="Manutenção" ${desp.categoria === 'Manutenção' ? 'selected' : ''}>Manutenção Máquinas & Equipamentos</option>
+                  <option value="Comissões" ${desp.categoria === 'Comissões' ? 'selected' : ''}>Comissões de Vendas</option>
                   <option value="Comunicação" ${desp.categoria === 'Comunicação' ? 'selected' : ''}>Comunicação / Internet / Telefonia</option>
                   <option value="Serviços Terceiros" ${desp.categoria === 'Serviços Terceiros' ? 'selected' : ''}>Serviços Terceiros / Contabilidade / Software</option>
                   <option value="Tributos" ${desp.categoria === 'Tributos' ? 'selected' : ''}>Tributos & Impostos (DAS Simples Nacional)</option>
                   <option value="Outras Despesas" ${desp.categoria === 'Outras Despesas' ? 'selected' : ''}>Outras Despesas Operacionais</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex: 1.2;">
+                <label class="form-label">Centro de Custo *</label>
+                <select id="despCentroCusto" class="form-select" style="font-weight: 700;">
+                  ${(db.centrosCusto || []).map(cc => `
+                    <option value="${cc.id}" ${(desp.centroCusto === cc.id || desp.centroCusto === cc.nome || (!desp.centroCusto && cc.codigo === 'ADM')) ? 'selected' : ''}>
+                      ${cc.icone || '🏢'} ${cc.nome}
+                    </option>
+                  `).join('')}
                 </select>
               </div>
               <div class="form-group" style="flex: 1;">
@@ -15570,6 +16444,7 @@
     document.getElementById('btnSalvarDespesaModal')?.addEventListener('click', () => {
       const desc = document.getElementById('despDescricao')?.value.trim();
       const cat = document.getElementById('despCategoria')?.value;
+      const centroCusto = document.getElementById('despCentroCusto')?.value || 'CC-04';
       const val = parseFloat(document.getElementById('despValor')?.value || 0);
       const venc = document.getElementById('despVencimento')?.value;
       const forma = document.getElementById('despForma')?.value;
@@ -15593,6 +16468,7 @@
       if (isEdit) {
         desp.descricao = desc;
         desp.categoria = cat;
+        desp.centroCusto = centroCusto;
         desp.valor = val;
         desp.valorMensal = val;
         desp.dataVencimento = venc;
@@ -15606,6 +16482,7 @@
           id: `DESP-${Date.now().toString().slice(-6)}`,
           descricao: desc,
           categoria: cat,
+          centroCusto: centroCusto,
           valor: val,
           valorMensal: val,
           dataVencimento: venc,
@@ -15866,9 +16743,21 @@
               <input type="text" id="lanDesc" class="form-input" placeholder="Ex: Compra de fita isolante e lubrificante singer">
             </div>
 
-            <div class="form-group">
-              <label class="form-label">Valor (R$)</label>
-              <input type="number" id="lanValor" class="form-input" value="150.00" step="10.00">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Centro de Custo</label>
+                <select id="lanCentroCusto" class="form-select" style="font-weight: 700;">
+                  ${(db.centrosCusto || []).map(cc => `
+                    <option value="${cc.id}">
+                      ${cc.icone || '🏢'} ${cc.nome}
+                    </option>
+                  `).join('')}
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Valor (R$)</label>
+                <input type="number" id="lanValor" class="form-input text-mono" value="150.00" step="10.00">
+              </div>
             </div>
           </div>
           <div class="modal-footer">
@@ -15882,6 +16771,7 @@
     document.getElementById('btnSalvarLancamentoManual')?.addEventListener('click', () => {
       const tipo = document.getElementById('lanTipo')?.value;
       const forma = document.getElementById('lanForma')?.value;
+      const centroCusto = document.getElementById('lanCentroCusto')?.value || 'CC-04';
       const cliente = document.getElementById('lanCliente')?.value || "Geral";
       const desc = document.getElementById('lanDesc')?.value || "Lançamento Avulso";
       const valor = parseFloat(document.getElementById('lanValor')?.value || 0);
@@ -15899,6 +16789,7 @@
         cliente: cliente,
         valor: valor,
         formaPagamento: forma,
+        centroCusto: centroCusto,
         categoria: "Lançamento Manual"
       });
 
@@ -15999,6 +16890,382 @@
       </div>
     `);
   }
+
+  
+  // =========================================================================
+  // MODAIS E AÇÕES: CENTROS DE CUSTO, EQUIPAMENTOS (DEPRECIAÇÃO) & COMISSÕES
+  // =========================================================================
+
+  // Modal: Cadastrar Novo Centro de Custo
+  function abrirModalNovoCentroCusto() {
+    if (!modalContainer) return;
+    const proxNum = (db.centrosCusto || []).length + 1;
+    const codSugerido = `CC-${String(proxNum).padStart(2, '0')}`;
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 520px;">
+          <div class="modal-header">
+            <div>
+              <div class="modal-title">Cadastrar Novo Centro de Custo</div>
+              <div style="font-size: 11.5px; color: var(--text-gray-500); margin-top: 2px;">
+                Crie um novo departamento ou linha operacional para apropriação de despesas da fábrica
+              </div>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+          </div>
+
+          <form id="formNovoCentroCusto">
+            <div class="modal-body">
+              <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 14px;">
+                <div>
+                  <label class="form-label" style="font-weight: 700;">Código (Ex: CC-06):</label>
+                  <input type="text" id="cadCcCodigo" class="form-control text-mono" value="${codSugerido}" required>
+                </div>
+                <div>
+                  <label class="form-label" style="font-weight: 700;">Nome do Departamento:</label>
+                  <input type="text" id="cadCcNome" class="form-control" placeholder="Ex: Bordado & Acabamento Manual" required>
+                </div>
+              </div>
+
+              <div style="margin-bottom: 14px;">
+                <label class="form-label">Responsável / Encarregado:</label>
+                <input type="text" id="cadCcResponsavel" class="form-control" placeholder="Ex: Marcos Souza (Supervisor)">
+              </div>
+
+              <div style="margin-bottom: 14px;">
+                <label class="form-label">Finalidade / Descrição dos Gastos:</label>
+                <textarea id="cadCcDescricao" class="form-control" rows="2" placeholder="Descreva os tipos de custos apropriados neste setor (máquinas, suprimentos, mão de obra)..."></textarea>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
+              <button type="submit" class="btn btn-primary">
+                ✓ Salvar Centro de Custo
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `);
+
+    document.getElementById('formNovoCentroCusto')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const codigo = document.getElementById('cadCcCodigo').value.trim();
+      const nome = document.getElementById('cadCcNome').value.trim();
+      const responsavel = document.getElementById('cadCcResponsavel').value.trim();
+      const descricao = document.getElementById('cadCcDescricao').value.trim();
+
+      if (!codigo || !nome) {
+        alert('Por favor, informe o código e o nome do centro de custo.');
+        return;
+      }
+
+      if (!db.centrosCusto) db.centrosCusto = [];
+      db.centrosCusto.push({
+        id: `CC-${Date.now()}`,
+        codigo,
+        nome,
+        responsavel,
+        descricao
+      });
+
+      salvarBancoDados();
+      window.ERP.fecharModal();
+      mostrarNotificacaoFeedback(`✅ Centro de Custo "${codigo} - ${nome}" cadastrado com sucesso!`);
+      renderizarFinanceiro();
+    });
+  }
+
+  // Modal: Cadastrar ou Editar Equipamento (Ativo Imobilizado)
+  function abrirModalEquipamento(equipamentoParaEditar = null) {
+    if (!modalContainer) return;
+    const isEdit = !!equipamentoParaEditar;
+    const eq = equipamentoParaEditar || {
+      codigo: `EQ-${String((db.equipamentosDepreciacao || []).length + 1).padStart(2, '0')}`,
+      nome: '',
+      categoria: 'Impressão & Estampa',
+      dataAquisicao: new Date().toISOString().split('T')[0],
+      custoAquisicao: '',
+      vidaUtilMeses: 60,
+      valorResidual: '',
+      numeroSerie: '',
+      observacoes: ''
+    };
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 580px;">
+          <div class="modal-header">
+            <div>
+              <div class="modal-title">${isEdit ? 'Editar Equipamento / Máquina' : 'Cadastrar Máquina & Ativo Fabril'}</div>
+              <div style="font-size: 11.5px; color: var(--text-gray-500); margin-top: 2px;">
+                Cálculo linear de depreciação contábil para DRE e controle patrimonial têxtil
+              </div>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+          </div>
+
+          <form id="formEquipamentoModal">
+            <div class="modal-body">
+              <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 14px;">
+                <div>
+                  <label class="form-label" style="font-weight: 700;">Tag / Código:</label>
+                  <input type="text" id="cadEqCodigo" class="form-control text-mono" value="${eq.codigo || ''}" required>
+                </div>
+                <div>
+                  <label class="form-label" style="font-weight: 700;">Nome do Equipamento:</label>
+                  <input type="text" id="cadEqNome" class="form-control" placeholder="Ex: Plotter DTF UV 60cm Dupla Cabeça" value="${eq.nome || ''}" required>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                <div>
+                  <label class="form-label" style="font-weight: 700;">Categoria / Setor:</label>
+                  <select id="cadEqCategoria" class="form-control" required>
+                    <option value="Impressão & Estampa" ${eq.categoria === 'Impressão & Estampa' ? 'selected' : ''}>Impressão & Estampa</option>
+                    <option value="Prensas & Termotransfer" ${eq.categoria === 'Prensas & Termotransfer' ? 'selected' : ''}>Prensas & Termotransfer</option>
+                    <option value="Costura & Montagem" ${eq.categoria === 'Costura & Montagem' ? 'selected' : ''}>Costura & Montagem</option>
+                    <option value="Corte & Enfraldamento" ${eq.categoria === 'Corte & Enfraldamento' ? 'selected' : ''}>Corte & Enfraldamento</option>
+                    <option value="Acabamento & Passadoria" ${eq.categoria === 'Acabamento & Passadoria' ? 'selected' : ''}>Acabamento & Passadoria</option>
+                    <option value="TI & Escritório" ${eq.categoria === 'TI & Escritório' ? 'selected' : ''}>TI & Escritório</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" style="font-weight: 700;">Data de Aquisição:</label>
+                  <input type="date" id="cadEqDataAquisicao" class="form-control" value="${eq.dataAquisicao || ''}" required>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                <div>
+                  <label class="form-label" style="font-weight: 700;">Custo Compra (R$):</label>
+                  <input type="number" step="0.01" id="cadEqCusto" class="form-control text-mono" placeholder="Ex: 45000" value="${eq.custoAquisicao || ''}" required>
+                </div>
+                <div>
+                  <label class="form-label" style="font-weight: 700;">Vida Útil (Meses):</label>
+                  <select id="cadEqVidaUtil" class="form-control" required>
+                    <option value="12" ${Number(eq.vidaUtilMeses) === 12 ? 'selected' : ''}>12 meses (1 ano)</option>
+                    <option value="24" ${Number(eq.vidaUtilMeses) === 24 ? 'selected' : ''}>24 meses (2 anos)</option>
+                    <option value="36" ${Number(eq.vidaUtilMeses) === 36 ? 'selected' : ''}>36 meses (3 anos)</option>
+                    <option value="60" ${Number(eq.vidaUtilMeses) === 60 ? 'selected' : ''}>60 meses (5 anos - Padrão)</option>
+                    <option value="120" ${Number(eq.vidaUtilMeses) === 120 ? 'selected' : ''}>120 meses (10 anos)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" style="font-weight: 700;">Valor Residual (R$):</label>
+                  <input type="number" step="0.01" id="cadEqResidual" class="form-control text-mono" placeholder="Ex: 4500 (10%)" value="${eq.valorResidual !== undefined ? eq.valorResidual : ''}">
+                </div>
+              </div>
+
+              <div style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: 8px; padding: 12px; margin-bottom: 14px;" id="boxPreviewDeprec">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase;">Depreciação Mensal Estimada:</span>
+                  <span class="text-mono" style="font-size: 14px; font-weight: 800; color: #dc2626;" id="txtPreviewDeprecMensal">R$ 0,00 / mês</span>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                  <label class="form-label">Nº de Série / Fabricante:</label>
+                  <input type="text" id="cadEqSerie" class="form-control" placeholder="Ex: Jack A4E / SN-998271" value="${eq.numeroSerie || ''}">
+                </div>
+                <div>
+                  <label class="form-label">Observações:</label>
+                  <input type="text" id="cadEqObs" class="form-control" placeholder="Ex: Revisão a cada 6 meses" value="${eq.observacoes || ''}">
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
+              <button type="submit" class="btn btn-primary">
+                ${isEdit ? '✓ Salvar Alterações' : '✓ Cadastrar Equipamento'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `);
+
+    // Atualização em tempo real do preview
+    function atualizarPreview() {
+      const custo = parseFloat(document.getElementById('cadEqCusto')?.value) || 0;
+      const vida = parseInt(document.getElementById('cadEqVidaUtil')?.value) || 60;
+      let residual = parseFloat(document.getElementById('cadEqResidual')?.value);
+      if (isNaN(residual)) residual = custo * 0.10;
+      const mensal = Math.max(0, (custo - residual) / vida);
+      const txt = document.getElementById('txtPreviewDeprecMensal');
+      if (txt) txt.textContent = `${formatarMoeda(mensal)} / mês`;
+    }
+
+    document.getElementById('cadEqCusto')?.addEventListener('input', atualizarPreview);
+    document.getElementById('cadEqVidaUtil')?.addEventListener('change', atualizarPreview);
+    document.getElementById('cadEqResidual')?.addEventListener('input', atualizarPreview);
+    atualizarPreview();
+
+    document.getElementById('formEquipamentoModal')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const codigo = document.getElementById('cadEqCodigo').value.trim();
+      const nome = document.getElementById('cadEqNome').value.trim();
+      const categoria = document.getElementById('cadEqCategoria').value;
+      const dataAquisicao = document.getElementById('cadEqDataAquisicao').value;
+      const custoAquisicao = parseFloat(document.getElementById('cadEqCusto').value) || 0;
+      const vidaUtilMeses = parseInt(document.getElementById('cadEqVidaUtil').value) || 60;
+      let valorResidual = parseFloat(document.getElementById('cadEqResidual').value);
+      if (isNaN(valorResidual)) valorResidual = custoAquisicao * 0.10;
+      const numeroSerie = document.getElementById('cadEqSerie').value.trim();
+      const observacoes = document.getElementById('cadEqObs').value.trim();
+
+      if (!nome || custoAquisicao <= 0) {
+        alert('Por favor, informe o nome e o custo de aquisição do equipamento.');
+        return;
+      }
+
+      if (!db.equipamentosDepreciacao) db.equipamentosDepreciacao = [];
+
+      if (isEdit) {
+        const item = db.equipamentosDepreciacao.find(e => e.id === eq.id);
+        if (item) {
+          Object.assign(item, {
+            codigo,
+            nome,
+            categoria,
+            dataAquisicao,
+            custoAquisicao,
+            vidaUtilMeses,
+            valorResidual,
+            numeroSerie,
+            observacoes
+          });
+        }
+      } else {
+        db.equipamentosDepreciacao.push({
+          id: `EQ-${Date.now()}`,
+          codigo,
+          nome,
+          categoria,
+          dataAquisicao,
+          custoAquisicao,
+          vidaUtilMeses,
+          valorResidual,
+          numeroSerie,
+          observacoes
+        });
+      }
+
+      salvarBancoDados();
+      window.ERP.fecharModal();
+      mostrarNotificacaoFeedback(`✅ Equipamento "${nome}" ${isEdit ? 'atualizado' : 'cadastrado'} com sucesso!`);
+      renderizarFinanceiro();
+    });
+  }
+
+  // Excluir Equipamento
+  function excluirEquipamento(id) {
+    const eq = (db.equipamentosDepreciacao || []).find(e => e.id === id);
+    if (!eq) return;
+    if (!confirm(`Tem certeza que deseja excluir o equipamento "${eq.nome}" do parque fabril?`)) return;
+
+    db.equipamentosDepreciacao = db.equipamentosDepreciacao.filter(e => e.id !== id);
+    salvarBancoDados();
+    mostrarNotificacaoFeedback(`🗑️ Equipamento "${eq.nome}" removido.`);
+    renderizarFinanceiro();
+  }
+
+  // Pagar Comissão do Vendedor
+  function pagarComissaoVendedor(pedidoId) {
+    const ped = (db.pedidos || []).find(p => p.id === pedidoId);
+    if (!ped) return;
+
+    const valorVenda = Number(ped.valorTotalVenda) || 0;
+    const cmv = Number(ped.custoTotalEstimado) || 0;
+    const lucroBruto = valorVenda - cmv;
+    const totalPecas = Number(ped.grade?.total) || 1;
+
+    let comissaoValor = Number(ped.comissaoValor);
+    if (isNaN(comissaoValor) || comissaoValor <= 0) {
+      const vendedorObj = (db.colaboradores || []).find(c => c.nome === ped.vendedorNome || c.id === ped.vendedorId);
+      const taxa = vendedorObj?.taxaComissao ? Number(vendedorObj.taxaComissao) : 3.0;
+      const tipo = vendedorObj?.tipoComissao || 'perc_venda';
+      if (tipo === 'perc_margem') {
+        comissaoValor = Math.max(0, lucroBruto * (taxa / 100));
+      } else if (tipo === 'fixo_peca') {
+        comissaoValor = totalPecas * taxa;
+      } else {
+        comissaoValor = valorVenda * (taxa / 100);
+      }
+    }
+
+    const vendedorNome = ped.vendedorNome || 'Vendedor Comercial';
+    const msg = `Confirmar liquidação de comissão no valor de ${formatarMoeda(comissaoValor)} para "${vendedorNome}" referente ao Pedido #${ped.numero}?\n\nSerá registrada a baixa como despesa comercial paga e lançamento de saída no Livro Caixa.`;
+
+    if (!confirm(msg)) return;
+
+    const hoje = new Date().toISOString().split('T')[0];
+
+    // Atualiza o pedido
+    ped.comissaoStatus = 'Paga';
+    ped.comissaoValor = comissaoValor;
+    ped.dataPagamentoComissao = hoje;
+
+    // Registra despesa comercial paga
+    if (!db.despesasFixas) db.despesasFixas = [];
+    const idDesp = `DESP-COM-${ped.id}-${Date.now()}`;
+    db.despesasFixas.unshift({
+      id: idDesp,
+      descricao: `Comissão Venda - Pedido #${ped.numero} (${vendedorNome})`,
+      categoria: 'Comissões de Vendas',
+      centroCusto: 'CC-01 - Comercial & Marketing',
+      valor: comissaoValor,
+      valorPago: comissaoValor,
+      status: 'Pago',
+      dataVencimento: hoje,
+      dataPagamento: hoje,
+      formaPagamentoPago: 'PIX',
+      fornecedorFavorecido: vendedorNome,
+      observacoes: `Comissão do pedido #${ped.numero} de ${ped.clienteNome}. Faturamento: ${formatarMoeda(valorVenda)}`
+    });
+
+    // Registra no livro caixa
+    if (!db.lancamentosFinanceiros) db.lancamentosFinanceiros = [];
+    db.lancamentosFinanceiros.unshift({
+      id: `LANC-COM-${Date.now()}`,
+      data: hoje,
+      descricao: `Pagamento de Comissão Comercial - Pedido #${ped.numero} (${vendedorNome})`,
+      tipo: 'Saida',
+      categoria: 'Comissões de Vendas',
+      centroCusto: 'CC-01 - Comercial & Marketing',
+      valor: comissaoValor,
+      formaPagamento: 'PIX',
+      status: 'Efetivado',
+      pedidoId: ped.id
+    });
+
+    salvarBancoDados();
+    mostrarNotificacaoFeedback(`✅ Comissão de ${formatarMoeda(comissaoValor)} paga e baixada para ${vendedorNome}!`);
+    renderizarFinanceiro();
+  }
+
+  // Estornar Pagamento de Comissão
+  function estornarComissaoVendedor(pedidoId) {
+    const ped = (db.pedidos || []).find(p => p.id === pedidoId);
+    if (!ped) return;
+    if (!confirm(`Deseja estornar o pagamento da comissão do Pedido #${ped.numero}? O status voltará para Pendente.`)) return;
+
+    ped.comissaoStatus = 'Pendente';
+    delete ped.dataPagamentoComissao;
+
+    // Remove do livro caixa e despesas
+    db.lancamentosFinanceiros = (db.lancamentosFinanceiros || []).filter(l => !(l.pedidoId === ped.id && l.categoria === 'Comissões de Vendas'));
+    db.despesasFixas = (db.despesasFixas || []).filter(d => !(d.descricao && d.descricao.includes(`Pedido #${ped.numero}`) && d.categoria === 'Comissões de Vendas'));
+
+    salvarBancoDados();
+    mostrarNotificacaoFeedback(`↩️ Comissão do Pedido #${ped.numero} estornada para Pendente.`);
+    renderizarFinanceiro();
+  }
+
 
   /* ==========================================================================
      MÓDULO 8: COMPRAS & LANÇAMENTOS AVULSOS
@@ -17323,6 +18590,28 @@
                 </select>
               </div>
             </div>
+
+            <!-- Linha 5: Plano de Comissionamento -->
+            <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; padding: 12px 14px; margin-top: 12px;">
+              <div style="font-size: 11px; font-weight: 800; color: #1e40af; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <span>💼 Plano de Comissionamento de Vendas</span>
+              </div>
+              <div class="form-row">
+                <div class="form-group" style="flex: 1.2;">
+                  <label class="form-label" style="color: #1e3a8a; font-weight: 700;">Regra de Cálculo</label>
+                  <select id="cadColTipoComissao" class="form-select">
+                    <option value="percentual_faturamento" ${col.tipoComissao === 'percentual_faturamento' ? 'selected' : ''}>% sobre Faturamento Total (Venda)</option>
+                    <option value="percentual_lucro_bruto" ${col.tipoComissao === 'percentual_lucro_bruto' ? 'selected' : ''}>% sobre Lucro Bruto (Margem Contribuição)</option>
+                    <option value="fixo_por_peca" ${col.tipoComissao === 'fixo_por_peca' ? 'selected' : ''}>Valor Fixo por Peça Produzida (R$/pç)</option>
+                    <option value="sem_comissao" ${col.tipoComissao === 'sem_comissao' ? 'selected' : ''}>Sem Comissão (Salário Fixo)</option>
+                  </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                  <label class="form-label" style="color: #1e3a8a; font-weight: 700;">Alíquota / Valor (% ou R$)</label>
+                  <input type="number" id="cadColTaxaComissao" class="form-input text-mono" step="0.1" min="0" placeholder="Ex: 3.0" value="${col.taxaComissao !== undefined ? col.taxaComissao : (col.perfil === 'vendedor' ? 3.0 : 0)}">
+                </div>
+              </div>
+            </div>
           </div>
           <div class="modal-footer" style="padding: 14px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
             <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
@@ -17353,6 +18642,8 @@
       const cargo = modalEl.querySelector('#cadColCargo')?.value.trim() || (perfil === 'dono' ? 'Diretor Geral' : (perfil === 'vendedor' ? 'Vendedor Comercial' : 'Oficina / Costura'));
       const capacidade = parseInt(modalEl.querySelector('#cadColCapacidade')?.value || 0, 10);
       const remun = parseFloat(modalEl.querySelector('#cadColRemun')?.value || 0);
+      const tipoComissao = modalEl.querySelector('#cadColTipoComissao')?.value || 'sem_comissao';
+      const taxaComissao = parseFloat(modalEl.querySelector('#cadColTaxaComissao')?.value || 0);
 
       if (!nome) {
         mostrarToast('Informe o nome do colaborador.', 'red');
@@ -17415,6 +18706,8 @@
         col.status = status;
         col.capacidadeDiaPecas = capacidade;
         col.valorRemuneracao = remun;
+        col.tipoComissao = tipoComissao;
+        col.taxaComissao = taxaComissao;
 
         if (alterouSenha) {
           col.auth = authObj;
@@ -17459,6 +18752,8 @@
           capacidadeDiaPecas: capacidade,
           valorMedioPorPeca: 8.00,
           valorRemuneracao: remun,
+          tipoComissao: tipoComissao,
+          taxaComissao: taxaComissao,
           criadoEm: new Date().toISOString()
         };
 
