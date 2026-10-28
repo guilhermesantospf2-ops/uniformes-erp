@@ -153,6 +153,25 @@
     }
 
     // 3. Atualiza a versão do schema de forma pacífica
+        // Homologação Automática de Centros de Custo em Lançamentos Legados
+    if (Array.isArray(banco.despesasFixas)) {
+      banco.despesasFixas.forEach(d => {
+        if (!d.centroCusto) d.centroCusto = inferirCentroCusto(d);
+      });
+    }
+    if (Array.isArray(banco.compras)) {
+      banco.compras.forEach(c => {
+        if (!c.centroCusto) c.centroCusto = inferirCentroCusto(c);
+      });
+    }
+    if (Array.isArray(banco.lancamentosFinanceiros)) {
+      banco.lancamentosFinanceiros.forEach(l => {
+        if (!l.centroCusto && (l.tipo === 'Saida' || l.tipo === 'Despesa')) {
+          l.centroCusto = inferirCentroCusto(l);
+        }
+      });
+    }
+
     banco.versao = ERP_VERSION;
     return banco;
   }
@@ -14867,6 +14886,73 @@
   /* ==========================================================================
      MÓDULO 7: FINANCEIRO COMPLETO COM CONTAS A PAGAR, DRE, BAIXAS E VENCIMENTOS
      ========================================================================== */
+  // =========================================================================
+  // SISTEMA HOMOLOGADO DE CENTROS DE CUSTO (CLASSIFICAÇÃO, MAPEAMENTO & INFERÊNCIA)
+  // =========================================================================
+  function inferirCentroCusto(item) {
+    if (!item) return 'CC-04';
+    const cat = (item.categoria || '').toLowerCase();
+    const desc = (item.descricao || item.itens || '').toLowerCase();
+
+    // 1. Comercial & Marketing (COM / CC-01)
+    if (cat.includes('comiss') || cat.includes('mkt') || cat.includes('marketing') || cat.includes('propaganda') ||
+        desc.includes('comiss') || desc.includes('anúncio') || desc.includes('meta ads') || desc.includes('google ads') || desc.includes('vendedor')) {
+      return 'CC-01';
+    }
+    // 2. Produção: Corte & Estamparia (PROD-CORTE / CC-02)
+    if (cat.includes('dtf') || cat.includes('estamp') || cat.includes('sublima') || cat.includes('tinta') || cat.includes('corte') || cat.includes('enfrald') || cat.includes('manuten') ||
+        desc.includes('dtf') || desc.includes('prensa') || desc.includes('plotter') || desc.includes('tinta') || desc.includes('filme dtf') || desc.includes('poliamida') || desc.includes('fita térmica') || desc.includes('luz') || desc.includes('enel') || desc.includes('energia')) {
+      return 'CC-02';
+    }
+    // 3. Produção: Costura & Facções (PROD-COST / CC-03)
+    if (cat.includes('costur') || cat.includes('facç') || cat.includes('aviamen') || cat.includes('malha') || cat.includes('tecido') || cat.includes('matéria-prima') ||
+        desc.includes('costur') || desc.includes('overlock') || desc.includes('reta jack') || desc.includes('linha') || desc.includes('fio') || desc.includes('zíper') || desc.includes('botão') || desc.includes('elástico') || desc.includes('viés') || desc.includes('facção')) {
+      return 'CC-03';
+    }
+    // 4. Logística & Entregas (LOG / CC-05)
+    if (cat.includes('logíst') || cat.includes('entreg') || cat.includes('frete') || cat.includes('transporte') || cat.includes('combust') || cat.includes('embalagen') ||
+        desc.includes('frete') || desc.includes('sedex') || desc.includes('motoboy') || desc.includes('caixa de papelão') || desc.includes('fita gomada') || desc.includes('combustível') || desc.includes('uber') || desc.includes('entrega')) {
+      return 'CC-05';
+    }
+    // 5. Administrativo & Diretoria (ADM / CC-04) - Aluguel, Escritório, Limpeza, Internet, Softwares
+    return 'CC-04';
+  }
+
+  function obterBadgeCentroCusto(itemOuId) {
+    let ccId = typeof itemOuId === 'string' ? itemOuId : (itemOuId?.centroCusto || inferirCentroCusto(itemOuId));
+    const ccs = (window.db?.centrosCusto) || [
+      { id: "CC-01", codigo: "COM", nome: "Comercial & Marketing", icone: "💼", cor: "#0284c7" },
+      { id: "CC-02", codigo: "PROD-CORTE", nome: "Produção: Corte & Estamparia", icone: "✂️", cor: "#059669" },
+      { id: "CC-03", codigo: "PROD-COST", nome: "Produção: Costura & Facções", icone: "🪡", cor: "#d97706" },
+      { id: "CC-04", codigo: "ADM", nome: "Administrativo & Diretoria", icone: "🏢", cor: "#6366f1" },
+      { id: "CC-05", codigo: "LOG", nome: "Logística & Entregas", icone: "🚚", cor: "#ec4899" }
+    ];
+
+    const val = String(ccId).toLowerCase().trim();
+    const encontrado = ccs.find(c => c.id.toLowerCase() === val || c.codigo.toLowerCase() === val || c.nome.toLowerCase().includes(val) || val.includes(c.codigo.toLowerCase()));
+    const finalCc = encontrado || ccs[3]; // Default ADM
+
+    return `<span class="cc-badge" style="border-left: 3px solid ${finalCc.cor}; font-weight: 700;">${finalCc.icone} ${finalCc.codigo}</span>`;
+  }
+
+  function correspondeAoCentroCusto(item, cc) {
+    if (!item || !cc) return false;
+    let val = (item.centroCusto || '').trim().toLowerCase();
+    if (!val) {
+      val = inferirCentroCusto(item).toLowerCase();
+    }
+    const id = (cc.id || '').toLowerCase();
+    const cod = (cc.codigo || '').toLowerCase();
+    const nome = (cc.nome || '').toLowerCase();
+
+    if (val === id || val === cod || val === nome) return true;
+    if (id && val.includes(id)) return true;
+    if (cod && val.includes(cod)) return true;
+    if (nome && val.includes(nome)) return true;
+    if (val.includes(id) || val.includes(cod)) return true;
+    return false;
+  }
+
   // Helper: Cálculo de Depreciação Linear de Equipamento
   function calcularDepreciacaoEquipamento(eq) {
     const custo = Number(eq.custoAquisicao) || 0;
@@ -15752,33 +15838,85 @@
       `;
     } else if (subAbaFinanceiro === 'centros_custo') {
       // -------------------------------------------------------------
-      // SUB-ABA 3: CENTROS DE CUSTO
+      // SUB-ABA 3: CENTROS DE CUSTO (CONSOLIDAÇÃO TOTAL: DESPESAS + COMPRAS + CAIXA)
       // -------------------------------------------------------------
       const ccs = db.centrosCusto || [];
 
-      // Mapeamento de despesas por centro de custo
+      // 1. Unificação de todos os gastos da fábrica
+      const listaDespesasContas = (despesasLista || []).map(d => ({
+        id: d.id,
+        origem: 'Conta a Pagar',
+        badgeOrigem: '<span class="status-pill status-blue" style="font-size: 9px;">CONTA A PAGAR</span>',
+        descricao: d.descricao,
+        fornecedorFavorecido: d.fornecedorFavorecido || '—',
+        categoria: d.categoria,
+        centroCusto: d.centroCusto || inferirCentroCusto(d),
+        dataRef: d.dataVencimento || hojeIso,
+        valorReal: Number(d.valorReal) || 0,
+        status: d.status,
+        itemOriginal: d
+      }));
+
+      const listaComprasAvulsas = (db.compras || []).map(c => ({
+        id: c.id,
+        origem: 'Compra Avulsa',
+        badgeOrigem: '<span class="status-pill status-yellow" style="font-size: 9px;">COMPRA AVULSA</span>',
+        descricao: c.itens || 'Compra de Insumos',
+        fornecedorFavorecido: c.fornecedor || 'Fornecedor Local',
+        categoria: c.categoria || 'Suprimentos',
+        centroCusto: c.centroCusto || inferirCentroCusto(c),
+        dataRef: c.data || hojeIso,
+        valorReal: Number(c.valorTotal) || 0,
+        status: 'Pago',
+        itemOriginal: c
+      }));
+
+      const listaCaixaAvulso = (db.lancamentosFinanceiros || [])
+        .filter(l => (l.tipo === 'Saida' || l.tipo === 'Despesa') && l.status !== 'Cancelado' && !l.pedidoId && !l.id.startsWith('LAN-COM-') && !despesasLista.some(d => d.id === l.despesaId))
+        .map(l => ({
+          id: l.id,
+          origem: 'Livro Caixa',
+          badgeOrigem: '<span class="status-pill status-green" style="font-size: 9px;">LIVRO CAIXA</span>',
+          descricao: l.descricao,
+          fornecedorFavorecido: l.cliente || l.favorecido || 'Geral',
+          categoria: l.categoria || 'Lançamento Manual',
+          centroCusto: l.centroCusto || inferirCentroCusto(l),
+          dataRef: l.data || hojeIso,
+          valorReal: Number(l.valor) || 0,
+          status: 'Pago',
+          itemOriginal: l
+        }));
+
+      // Base unificada com 100% dos custos da fábrica
+      const todosGastosUnificados = [...listaDespesasContas, ...listaComprasAvulsas, ...listaCaixaAvulso];
+
+      // Mapeamento departamental consolidado
       const ccStats = ccs.map(cc => {
-        const despsDoCc = despesasLista.filter(d => d.centroCusto && (d.centroCusto.includes(cc.codigo) || d.centroCusto.includes(cc.nome)));
-        const totalGasto = despsDoCc.reduce((acc, d) => acc + d.valorReal, 0);
+        const itensDoCc = todosGastosUnificados.filter(item => correspondeAoCentroCusto(item, cc));
+        const totalGasto = itensDoCc.reduce((acc, it) => acc + it.valorReal, 0);
         return {
           ...cc,
           totalGasto,
-          qtdContas: despsDoCc.length
+          qtdContas: itensDoCc.length
         };
       });
 
       const totalGastoTodosCC = ccStats.reduce((acc, c) => acc + c.totalGasto, 0);
 
-      let despesasFiltradasCC = despesasLista;
+      // Filtragem por setor selecionado
+      let gastosFiltradosCC = todosGastosUnificados;
       if (centroCustoFiltro !== 'todos') {
-        despesasFiltradasCC = despesasLista.filter(d => d.centroCusto && (d.centroCusto.includes(centroCustoFiltro)));
+        const ccAlvo = ccs.find(c => c.codigo === centroCustoFiltro || c.id === centroCustoFiltro);
+        if (ccAlvo) {
+          gastosFiltradosCC = todosGastosUnificados.filter(item => correspondeAoCentroCusto(item, ccAlvo));
+        }
       }
 
       conteudoSubAbaHtml = `
         <div class="card" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <div>
             <div style="font-size: 15px; font-weight: 800; color: #0f172a;">Departamentos & Centros de Custo Fabris</div>
-            <div style="font-size: 11.5px; color: var(--text-gray-500);">Segregação contábil para apurar o consumo de recursos por setor da confecção</div>
+            <div style="font-size: 11.5px; color: var(--text-gray-500);">Segregação contábil completa: Contas a Pagar + Compras de Insumos + Lançamentos no Caixa</div>
           </div>
           <button class="btn btn-primary btn-sm" id="btnNovoCentroCusto">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -15791,9 +15929,11 @@
           ${ccStats.map(cc => {
             const perc = totalGastoTodosCC > 0 ? (cc.totalGasto / totalGastoTodosCC) * 100 : 0;
             return `
-              <div class="card" style="padding: 14px; border-left: 4px solid #3b82f6;">
+              <div class="card" style="padding: 14px; border-left: 4px solid ${cc.cor || '#3b82f6'};">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span class="status-pill status-blue" style="font-size: 10px; font-weight: 800;">${cc.codigo}</span>
+                  <span class="status-pill status-blue" style="font-size: 10px; font-weight: 800; background: #f1f5f9; color: ${cc.cor || '#0f172a'}; border: 1px solid ${cc.cor || '#cbd5e1'};">
+                    ${cc.icone || '🏢'} ${cc.codigo}
+                  </span>
                   <span style="font-size: 11px; font-weight: 700; color: #64748b;">${perc.toFixed(1)}% do total</span>
                 </div>
                 <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; margin-top: 8px;">${cc.nome}</div>
@@ -15802,30 +15942,30 @@
                   ${formatarMoeda(cc.totalGasto)}
                 </div>
                 <div style="font-size: 10.5px; color: var(--text-gray-400); margin-top: 2px;">
-                  ${cc.qtdContas} despesa(s) cadastrada(s)
+                  ${cc.qtdContas} lançamento(s) alocado(s)
                 </div>
                 <div class="prog-comparativo-bar" style="margin-top: 8px;">
-                  <div class="prog-comparativo-fill" style="width: ${perc}%; background: #3b82f6;"></div>
+                  <div class="prog-comparativo-fill" style="width: ${perc}%; background: ${cc.cor || '#3b82f6'};"></div>
                 </div>
               </div>
             `;
           }).join('')}
         </div>
 
-        <!-- Tabela Filtrada de Despesas por Centro de Custo -->
+        <!-- Tabela Filtrada de Gastos por Centro de Custo -->
         <div class="card">
           <div class="table-header-bar" style="padding: 0 0 14px 0;">
             <div>
               <div class="table-title">Lançamentos Alocados por Centro de Custo</div>
-              <span style="font-size: 11px; color: var(--text-gray-500);">Filtre as despesas para visualizar o custo operacional de cada departamento</span>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Exibindo despesas de contas a pagar, compras de insumos e saídas de caixa do departamento</span>
             </div>
 
             <div style="display: flex; gap: 8px; align-items: center;">
               <label style="font-size: 11.5px; font-weight: 600; color: #64748b;">Filtrar Setor:</label>
-              <select id="selectFiltroCC" class="form-control" style="width: 220px; height: 32px; font-size: 12px;">
-                <option value="todos" ${centroCustoFiltro === 'todos' ? 'selected' : ''}>Todos os Centros de Custo</option>
+              <select id="selectFiltroCC" class="form-control" style="width: 250px; height: 34px; font-size: 12px; font-weight: 700;">
+                <option value="todos" ${centroCustoFiltro === 'todos' ? 'selected' : ''}>Todos os Centros de Custo (${todosGastosUnificados.length})</option>
                 ${ccs.map(c => `
-                  <option value="${c.codigo}" ${centroCustoFiltro === c.codigo ? 'selected' : ''}>${c.codigo} - ${c.nome}</option>
+                  <option value="${c.codigo}" ${centroCustoFiltro === c.codigo ? 'selected' : ''}>${c.icone || '🏢'} ${c.codigo} - ${c.nome}</option>
                 `).join('')}
               </select>
             </div>
@@ -15835,36 +15975,45 @@
             <thead>
               <tr>
                 <th>Centro de Custo</th>
-                <th>Descrição da Despesa</th>
+                <th>Origem</th>
+                <th>Descrição / Itens Comprados</th>
                 <th>Favorecido / Fornecedor</th>
                 <th>Categoria</th>
-                <th>Vencimento</th>
+                <th>Data / Vencimento</th>
                 <th style="text-align: right;">Valor</th>
                 <th>Status</th>
                 <th style="text-align: right;">Ações</th>
               </tr>
             </thead>
             <tbody>
-              ${despesasFiltradasCC.length > 0 ? despesasFiltradasCC.map(d => `
+              ${gastosFiltradosCC.length > 0 ? gastosFiltradosCC.map(g => `
                 <tr>
-                  <td><span class="cc-badge">🏢 ${d.centroCusto || 'Geral'}</span></td>
-                  <td><strong>${d.descricao}</strong></td>
-                  <td>${d.fornecedorFavorecido || '—'}</td>
-                  <td>${d.categoria}</td>
-                  <td class="text-mono">${formatarDataBr(d.dataVencimento)}</td>
-                  <td class="text-mono text-red" style="text-align: right; font-weight: 700;">${formatarMoeda(d.valorReal)}</td>
-                  <td>${d.status === 'Pago' ? '<span class="status-pill status-green" style="font-size: 9px;">QUITADO</span>' : '<span class="status-pill status-red" style="font-size: 9px;">PENDENTE</span>'}</td>
+                  <td>${obterBadgeCentroCusto(g.centroCusto)}</td>
+                  <td>${g.badgeOrigem}</td>
+                  <td><strong>${g.descricao}</strong></td>
+                  <td>${g.fornecedorFavorecido}</td>
+                  <td><span style="font-size: 11.5px; font-weight: 600; color: #475569;">${g.categoria}</span></td>
+                  <td class="text-mono" style="font-size: 11.5px;">${formatarDataBr(g.dataRef)}</td>
+                  <td class="text-mono text-red" style="text-align: right; font-weight: 700; font-size: 13px;">${formatarMoeda(g.valorReal)}</td>
+                  <td>${g.status === 'Pago' ? '<span class="status-pill status-green" style="font-size: 9px;">QUITADO</span>' : '<span class="status-pill status-red" style="font-size: 9px;">PENDENTE</span>'}</td>
                   <td style="text-align: right;">
-                    <button class="btn btn-secondary btn-xs btn-editar-despesa" data-id="${d.id}">Editar</button>
+                    ${g.origem === 'Conta a Pagar' ? `
+                      <button class="btn btn-secondary btn-xs btn-editar-despesa" data-id="${g.id}">Editar</button>
+                    ` : (g.origem === 'Compra Avulsa' ? `
+                      <button class="btn btn-secondary btn-xs" onclick="window.ERP.navegarPara('compras')">Ver Compras</button>
+                    ` : `
+                      <span style="font-size: 10px; color: var(--text-gray-400);">Caixa</span>
+                    `)}
                   </td>
                 </tr>
               `).join('') : `
-                <tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--text-gray-500);">Nenhuma despesa para este centro de custo.</td></tr>
+                <tr><td colspan="9" style="text-align: center; padding: 35px; color: var(--text-gray-500);">Nenhum lançamento encontrado para este centro de custo.</td></tr>
               `}
             </tbody>
           </table>
         </div>
       `;
+
     } else if (subAbaFinanceiro === 'comissoes') {
       // -------------------------------------------------------------
       // SUB-ABA 4: PLANO DE COMISSIONAMENTO
@@ -17293,7 +17442,8 @@
               <th>Categoria</th>
               <th>Valor Total</th>
               <th>Status</th>
-              <th>Estoque</th>
+              <th>Centro de Custo</th>
+                <th>Estoque</th>
             </tr>
           </thead>
           <tbody>
@@ -17310,7 +17460,8 @@
                     ${c.status.toUpperCase()}
                   </span>
                 </td>
-                <td>
+                <td>${obterBadgeCentroCusto(c.centroCusto || inferirCentroCusto(c))}</td>
+                  <td>
                   <span class="status-pill ${c.lancadoEstoque ? 'status-green' : 'status-gray'}">
                     ${c.lancadoEstoque ? 'ESTOQUE OK' : 'AVULSO'}
                   </span>
@@ -17355,12 +17506,31 @@
               <div class="form-group" style="flex: 1;">
                 <label class="form-label">Categoria de Despesa</label>
                 <select id="comCategoria" class="form-select">
-                  <option value="Manutenção Fábrica">Manutenção Fábrica</option>
-                  <option value="Aviamentos">Aviamentos</option>
-                  <option value="Insumos DTF">Insumos DTF</option>
-                  <option value="Matéria-Prima">Matéria-Prima</option>
-                  <option value="Material de Escritório">Material de Escritório</option>
                   <option value="Limpeza & Higiene">Limpeza & Higiene</option>
+                  <option value="Material de Escritório">Material de Escritório</option>
+                  <option value="Manutenção Fábrica">Manutenção Fábrica</option>
+                  <option value="Insumos DTF">Insumos DTF</option>
+                  <option value="Aviamentos">Aviamentos</option>
+                  <option value="Matéria-Prima">Matéria-Prima</option>
+                  <option value="Embalagens & Logística">Embalagens & Logística</option>
+                  <option value="Outros Suprimentos">Outros Suprimentos</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="flex: 1.2;">
+                <label class="form-label" style="font-weight: 700;">Centro de Custo *</label>
+                <select id="comCentroCusto" class="form-select" style="font-weight: 700;">
+                  ${(db.centrosCusto || [
+                    { id: "CC-01", codigo: "COM", nome: "Comercial & Marketing", icone: "💼" },
+                    { id: "CC-02", codigo: "PROD-CORTE", nome: "Produção: Corte & Estamparia", icone: "✂️" },
+                    { id: "CC-03", codigo: "PROD-COST", nome: "Produção: Costura & Facções", icone: "🪡" },
+                    { id: "CC-04", codigo: "ADM", nome: "Administrativo & Diretoria", icone: "🏢" },
+                    { id: "CC-05", codigo: "LOG", nome: "Logística & Entregas", icone: "🚚" }
+                  ]).map(cc => `
+                    <option value="${cc.id}" ${cc.codigo === 'ADM' ? 'selected' : ''}>
+                      ${cc.icone || '🏢'} ${cc.codigo} - ${cc.nome}
+                    </option>
+                  `).join('')}
                 </select>
               </div>
             </div>
@@ -17404,9 +17574,21 @@
       </div>
     `);
 
-    document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () => {
+        // Ajuste inteligente automático de Centro de Custo ao escolher categoria
+    document.getElementById('comCategoria')?.addEventListener('change', (e) => {
+      const cat = e.target.value;
+      const ccSel = document.getElementById('comCentroCusto');
+      if (!ccSel) return;
+      if (cat.includes('Limpeza') || cat.includes('Escritório')) ccSel.value = 'CC-04';
+      else if (cat.includes('DTF') || cat.includes('Manutenção')) ccSel.value = 'CC-02';
+      else if (cat.includes('Aviamentos') || cat.includes('Matéria-Prima')) ccSel.value = 'CC-03';
+      else if (cat.includes('Logística') || cat.includes('Embalagens')) ccSel.value = 'CC-05';
+    });
+
+document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () => {
       const fornecedor = document.getElementById('comFornecedor')?.value || "Fornecedor";
       const cat = document.getElementById('comCategoria')?.value || "Manutenção Fábrica";
+      const centroCusto = document.getElementById('comCentroCusto')?.value || "CC-04";
       const itens = document.getElementById('comDescricao')?.value;
       const valor = parseFloat(document.getElementById('comValorTotal')?.value || 0);
       const forma = document.getElementById('comFormaPagamento')?.value || "PIX";
@@ -17422,11 +17604,13 @@
         data: new Date().toISOString().split('T')[0],
         fornecedor: fornecedor,
         categoria: cat,
+        centroCusto: centroCusto,
         itens: itens,
         valorTotal: valor,
         status: status,
         previsaoChegada: new Date().toISOString().split('T')[0],
-        lancadoEstoque: false
+        lancadoEstoque: false,
+        centroCusto: centroCusto
       };
 
       db.compras.unshift(novaCompra);
@@ -21831,9 +22015,18 @@
     ];
 
     db.despesasFixas = [
-      { id: "DESP-01", descricao: "Aluguel Galpão Industrial 600m²", categoria: "Aluguel & Instalações", valor: 4500.00, dataVencimento: hoje.substring(0,7) + '-10', status: "Pendente", favorecido: "Imobiliária Central" },
-      { id: "DESP-02", descricao: "Energia Elétrica Trifásica Industrial", categoria: "Utilidades", valor: 1850.00, dataVencimento: hoje.substring(0,7) + '-15', status: "Pendente", favorecido: "CPFL Energia" },
-      { id: "DESP-03", descricao: "Manutenção Preventiva das Máquinas de Costura e DTF", categoria: "Manutenção", valor: 650.00, dataVencimento: hoje.substring(0,7) + '-25', status: "Pendente", favorecido: "Técnica Têxtil Ltda" }
+      { id: "DESP-01", descricao: "Aluguel Galpão Industrial 600m²", categoria: "Instalações", centroCusto: "CC-04", valor: 4500.00, dataVencimento: hoje.substring(0,7) + '-10', status: "Pendente", favorecido: "Imobiliária Central" },
+      { id: "DESP-02", descricao: "Energia Elétrica Trifásica Industrial", categoria: "Utilidades", centroCusto: "CC-02", valor: 1850.00, dataVencimento: hoje.substring(0,7) + '-15', status: "Pendente", favorecido: "CPFL Energia" },
+      { id: "DESP-03", descricao: "Manutenção Preventiva das Máquinas de Costura e DTF", categoria: "Manutenção", centroCusto: "CC-02", valor: 650.00, dataVencimento: hoje.substring(0,7) + '-25', status: "Pendente", favorecido: "Técnica Têxtil Ltda" },
+      { id: "DESP-04", descricao: "Fios, Linhas e Aviamentos de Costura", categoria: "Aviamentos", centroCusto: "CC-03", valor: 1240.00, dataVencimento: hoje.substring(0,7) + '-18', status: "Pago", valorPago: 1240.00, favorecido: "Linhas Corrente & Cia" },
+      { id: "DESP-05", descricao: "Comissões Comerciais sobre Pedidos Entregues", categoria: "Comissões", centroCusto: "CC-01", valor: 980.00, dataVencimento: hoje.substring(0,7) + '-20', status: "Pendente", favorecido: "Equipe Comercial" },
+      { id: "DESP-06", descricao: "Embalagens Plásticas e Caixas de Envio", categoria: "Logística & Entregas", centroCusto: "CC-05", valor: 420.00, dataVencimento: hoje.substring(0,7) + '-12', status: "Pago", valorPago: 420.00, favorecido: "Embalagens Americana" }
+    ];
+
+    db.compras = [
+      { id: "COM-501", data: hoje, fornecedor: "Distribuidora Limpeza Total", categoria: "Limpeza & Higiene", centroCusto: "CC-04", itens: "Desinfetante 5L, Sabonete Líquido e Papel Toalha", valorTotal: 185.00, status: "Entregue", lancadoEstoque: false },
+      { id: "COM-502", data: hoje, fornecedor: "Suprimentos DTF Brasil", categoria: "Insumos DTF", centroCusto: "CC-02", itens: "2x Rolo Filme DTF 58cm x 100m e Poliamida Branca 1kg", valorTotal: 890.00, status: "Entregue", lancadoEstoque: true },
+      { id: "COM-503", data: hoje, fornecedor: "Armarinhos Central", categoria: "Aviamentos", centroCusto: "CC-03", itens: "50x Zíper Destacável 70cm e 10 Cones Linha 120", valorTotal: 340.00, status: "Entregue", lancadoEstoque: false }
     ];
 
     db.equipe = [
