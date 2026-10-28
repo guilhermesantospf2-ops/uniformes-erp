@@ -389,11 +389,16 @@
 
   <!-- CABEÇALHO -->
   <header class="header-bar">
-    <div class="header-badge">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20v-20z"/></svg>
-      Portal do Cliente • Bravvi ERP
+    <div style="display: flex; justify-content: center; align-items: center; position: relative; max-width: 600px; margin: 0 auto;">
+      <div class="header-badge" style="margin-bottom: 0;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20v-20z"/></svg>
+        Portal do Cliente • Bravvi ERP
+      </div>
+      <button type="button" onclick="window.ERP_I18N ? window.ERP_I18N.abrirModalIdioma() : null" style="position: absolute; right: 0; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: #ffffff; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+        <span id="headerLangFlag">🌐</span> <span id="headerLangText">Idioma</span>
+      </button>
     </div>
-    <h1 class="header-title" id="pageHeaderTitle">Relação de Uniformes do Time</h1>
+    <h1 class="header-title" id="pageHeaderTitle" style="margin-top: 10px;">Relação de Uniformes do Time</h1>
     <p class="header-subtitle" id="pageHeaderSubtitle">Confirme os nomes, números e tamanhos oficiais para corte e estampa</p>
   </header>
 
@@ -536,6 +541,7 @@
     </div>
   </div>
 
+  <script src="bravvi-i18n.js?v=9.1.0"></script>
   <script>
     (function() {
       'use strict';
