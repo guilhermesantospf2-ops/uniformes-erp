@@ -18,34 +18,88 @@
   'use strict';
 
   const WHATSAPP_SUPORTE = '5544999856245';
-  const LINK_WHATSAPP_MENSAL = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero assinar o Plano Mensal do Bravvi ERP Têxtil por R$ 227/mês com Implantação Grátis.');
+  const LINK_WHATSAPP_BASICO = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero assinar o Plano Básico do Bravvi ERP Têxtil por R$ 107/mês com Implantação Grátis.');
+  const LINK_WHATSAPP_MENSAL = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero assinar o Plano Pro Industrial do Bravvi ERP Têxtil por R$ 227/mês com Implantação Grátis.');
   const LINK_WHATSAPP_ANUAL = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero contratar o Plano Anual Pro do Bravvi ERP Têxtil (12x de R$ 189 ou R$ 1.890/ano à vista).');
   const LINK_WHATSAPP_TREINAMENTO = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero contratar o Treinamento Dedicado VIP da Equipe (R$ 297 taxa única).');
 
+  // Paraguai 🇵🇾 ($19 / $39 USD)
+  const LINK_WHATSAPP_BASICO_PY = 'https://wa.me/5544999856245?text=' + encodeURIComponent('¡Hola! Escribo desde Paraguay y quiero contratar el Plan Básico ($19 USD/mes) para mi taller de confección.');
+  const LINK_WHATSAPP_PRO_PY = 'https://wa.me/5544999856245?text=' + encodeURIComponent('¡Hola! Escribo desde Paraguay y quiero contratar el Plan Pro Industrial ($39 USD/mes) del ERP Bravvi.');
+
+  // Portugal 🇵🇹 (€ 19 / € 39)
+  const LINK_WHATSAPP_BASICO_PT = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá! Escrevo de Portugal e pretendo aderir ao Plano Básico (€ 19/mês) para a minha confeção têxtil.');
+  const LINK_WHATSAPP_PRO_PT = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá! Escrevo de Portugal e pretendo aderir ao Plano Pro Industrial (€ 39/mês) do Bravvi ERP Têxtil.');
+
   // Configuração padrão dos planos e valores oficiais
   const PLANOS_CONFIG = {
-    mensal: {
-      id: 'plano_mensal_227',
-      nome: 'Plano Fábrica Mensal',
+    basico: {
+      id: 'plano_basico_107',
+      nome: 'Plano Básico Confecção',
+      valor: 107.00,
+      valorFormatado: 'R$ 107,00',
+      periodo: '/mês',
+      parcelamento: 'Sem fidelidade • Cancele quando quiser • Implantação R$ 0',
+      destaque: false,
+      badge: 'Mais Acessível • Para Começar Rápido',
+      descricao: 'Ideal para oficinas, pequenas confecções e facções que precisam organizar pedidos, fichas e orçamentos sem complicação.',
+      itens: [
+        'Até 2 usuários de acesso',
+        'Taxa de Implantação: R$ 0 (100% Gratuita)',
+        'Orçamentos rápidos com fotos e mockups',
+        'Fichas Técnicas básicas (P ao GG)',
+        'Controle essencial de pedidos e entregas',
+        'Catálogo de produtos e tecidos',
+        'Tutoriais em vídeo inclusos',
+        'Suporte técnico via WhatsApp'
+      ],
+      linkPadrao: LINK_WHATSAPP_BASICO
+    },
+    pro: {
+      id: 'plano_pro_227',
+      nome: 'Plano Pro Industrial',
       valor: 227.00,
       valorFormatado: 'R$ 227,00',
       periodo: '/mês',
       parcelamento: 'Sem fidelidade • Cancele quando quiser • Implantação R$ 0',
-      destaque: false,
-      badge: 'Acesso Imediato • Sem Adesão',
-      descricao: 'Acesso completo a todas as ferramentas industriais para a sua confecção. Implantação e tutoriais 100% gratuitos.',
+      destaque: true,
+      badge: 'Mais Completo • Automatização Total',
+      descricao: 'Todas as ferramentas industriais liberadas para confecções e fábricas que querem escalar e zerar desperdícios.',
       itens: [
-        'Usuários e computadores ilimitados',
+        'Usuários e computadores ILIMITADOS',
         'Taxa de Implantação: R$ 0 (100% Gratuita)',
-        'Tutoriais ilustrados passo a passo incluídos',
-        'Orçamentos com Mockups 3x4 dinâmicos',
-        'Fichas Técnicas A4 com grade expandida (Infantil ao G5)',
-        'Radar de Prazos Industrial com alertas visuais',
-        'Emissor de NF-e Focus/SEFAZ Modelo 55 com DANFE A4',
-        'Nesting DTF para otimização de rolo de impressão',
-        'Portal do Cliente para envio de nomes e tamanhos',
-        'Módulo Financeiro, DRE e Custos Têxteis',
-        'Suporte técnico via WhatsApp'
+        'Radar de Prazos Industrial com alertas anti-atraso',
+        'Fichas Técnicas A4 com Grade Infantil ao G5',
+        'Otimizador de Bobina DTF Nesting (economia de tecido)',
+        'Emissor de NF-e Focus/SEFAZ Modelo 55 integrado',
+        'Portal do Cliente (nomes e números no celular)',
+        'DRE Gerencial & Lucro Real por Pedido',
+        'Gestão de Facções e Terceirizados',
+        'Suporte Prioritário VIP no WhatsApp'
+      ],
+      linkPadrao: LINK_WHATSAPP_MENSAL
+    },
+    mensal: {
+      id: 'plano_pro_227',
+      nome: 'Plano Pro Industrial',
+      valor: 227.00,
+      valorFormatado: 'R$ 227,00',
+      periodo: '/mês',
+      parcelamento: 'Sem fidelidade • Cancele quando quiser • Implantação R$ 0',
+      destaque: true,
+      badge: 'Mais Completo • Automatização Total',
+      descricao: 'Todas as ferramentas industriais liberadas para confecções e fábricas que querem escalar e zerar desperdícios.',
+      itens: [
+        'Usuários e computadores ILIMITADOS',
+        'Taxa de Implantação: R$ 0 (100% Gratuita)',
+        'Radar de Prazos Industrial com alertas anti-atraso',
+        'Fichas Técnicas A4 com Grade Infantil ao G5',
+        'Otimizador de Bobina DTF Nesting (economia de tecido)',
+        'Emissor de NF-e Focus/SEFAZ Modelo 55 integrado',
+        'Portal do Cliente (nomes e números no celular)',
+        'DRE Gerencial & Lucro Real por Pedido',
+        'Gestão de Facções e Terceirizados',
+        'Suporte Prioritário VIP no WhatsApp'
       ],
       linkPadrao: LINK_WHATSAPP_MENSAL
     },
@@ -173,17 +227,33 @@
     const plano = PLANOS_CONFIG[planoKey] || PLANOS_CONFIG.mensal;
     const config = carregarConfiguracoes();
 
-    // 1. Mensal vai direto para o checkout da Cakto
-    if (planoKey === 'mensal') {
+    // 1. Plano Básico R$ 107
+    if (planoKey === 'basico' || planoKey === 'plano_basico_107') {
+      return config.linkBasico || LINK_WHATSAPP_BASICO;
+    }
+
+    // 2. Plano Pro R$ 227 / Mensal
+    if (planoKey === 'pro' || planoKey === 'mensal' || planoKey === 'plano_pro_227') {
       return config.linkMensal || 'https://pay.cakto.com.br/rb6atzs_1178556';
     }
 
-    // 2. Anual vai direto para o checkout da Cakto
+    // 3. Anual Pro
     if (planoKey === 'anual') {
       return config.linkAnual || 'https://pay.cakto.com.br/ecrfqfr_1178654';
     }
 
-    // 3. Combo Anual com Implementação vai direto para o WhatsApp
+    // 4. Planos Paraguai 🇵🇾 ($19 / $39 USD)
+    if (planoKey === 'basico_py') return LINK_WHATSAPP_BASICO_PY;
+    if (planoKey === 'pro_py') return LINK_WHATSAPP_PRO_PY;
+
+    // 5. Planos Portugal 🇵🇹 (€ 19 / € 39)
+    if (planoKey === 'basico_pt') return LINK_WHATSAPP_BASICO_PT;
+    if (planoKey === 'pro_pt') return LINK_WHATSAPP_PRO_PT;
+
+    // 6. Treinamento VIP opcional
+    if (planoKey === 'treinamento' || planoKey === 'treinamento_equipe') return LINK_WHATSAPP_TREINAMENTO;
+
+    // 7. Combos e legado
     if (planoKey === 'anual_implementacao') return LINK_WHATSAPP_COMBO;
     if (planoKey === 'implementacao_avulsa') return LINK_WHATSAPP_SETUP;
 

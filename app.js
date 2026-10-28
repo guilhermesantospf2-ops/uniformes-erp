@@ -912,7 +912,7 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const emailUrl = (urlParams.get('email') || '').trim();
-    const modoAtivacao = urlParams.get('ativar') === '1' || urlParams.get('adesao') === '1' || urlParams.get('novo_cliente') === '1' || Boolean(emailUrl);
+    const modoAtivacao = urlParams.get('ativar') === '1' || urlParams.get('adesao') === '1' || urlParams.get('novo_cliente') === '1';
 
     // Opção de lembrar e-mail (a senha NUNCA é salva, deve ser digitada a cada entrada)
     const emailSalvo = localStorage.getItem('BRAVVI_REMEMBERED_EMAIL') || '';
@@ -1142,7 +1142,7 @@
     });
 
     // Foco e banner inicial
-    if (emailUrl || modoAtivacao) {
+    if (modoAtivacao) {
       setTimeout(() => {
         if (inpSenhaLogin && !inpSenhaLogin.value) {
           inpSenhaLogin.value = 'Bravvi@2026';
@@ -1160,7 +1160,7 @@
           btnSubmitLogin?.focus();
         }
       }, 200);
-    } else if (emailSalvo) {
+    } else if (emailUrl || emailSalvo) {
       setTimeout(() => inpSenhaLogin?.focus(), 150);
     } else {
       setTimeout(() => gatekeeper.querySelector('#gateLoginEmail')?.focus(), 150);

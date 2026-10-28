@@ -7,3 +7,17 @@ whatsapp-bridge/*.png
 .vercel
 *.log
 scratch/
+.env
+*.env
+__pycache__/
+*.mp3
+phone_*.png
+composite_*.png
+processed_output.png
+raw_*.bin
+scratch_frames/
+test_*.png
+telegram_bridge.pid
+leads_meta.csv
+leads_meta.json
+seen_leads.json
