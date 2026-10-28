@@ -873,6 +873,163 @@
       font-weight: 700;
     }
 
+    /* SEÇÃO TUTORIAIS: COMO USAR O SISTEMA */
+    .tutorials-section {
+      padding: 90px 0;
+      background: #f8fafc;
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .tutorial-nav {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 36px;
+      margin-bottom: 36px;
+      flex-wrap: wrap;
+    }
+
+    .tutorial-tab-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 22px;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .tutorial-tab-btn .tab-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      transition: all 0.25s ease;
+    }
+
+    .tutorial-tab-btn:hover {
+      border-color: var(--brand-teal);
+      color: var(--text-main);
+      transform: translateY(-2px);
+    }
+
+    .tutorial-tab-btn.active {
+      background: var(--brand-navy);
+      color: #ffffff;
+      border-color: var(--brand-navy);
+      box-shadow: 0 4px 14px rgba(3, 43, 53, 0.2);
+    }
+
+    .tutorial-tab-btn.active .tab-num {
+      background: var(--brand-cyan);
+      color: var(--brand-navy);
+    }
+
+    .tutorial-panel {
+      display: none;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 40px;
+      box-shadow: var(--shadow-lg);
+      animation: fadeInTut 0.3s ease;
+    }
+
+    .tutorial-panel.active {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 36px;
+      align-items: center;
+    }
+
+    @keyframes fadeInTut {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 920px) {
+      .tutorial-panel.active {
+        grid-template-columns: 1fr;
+        padding: 24px;
+      }
+    }
+
+    .tutorial-info .step-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      background: var(--brand-teal-light);
+      color: var(--brand-teal);
+      border: 1px solid rgba(13, 148, 136, 0.2);
+      padding: 4px 12px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .tutorial-info h3 {
+      font-family: var(--font-heading);
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.25;
+      margin-bottom: 14px;
+    }
+
+    .tutorial-info p {
+      font-size: 14.5px;
+      color: var(--text-body);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .tutorial-steps-list {
+      list-style: none;
+      margin-bottom: 24px;
+    }
+
+    .tutorial-steps-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 13.5px;
+      color: var(--text-body);
+      margin-bottom: 12px;
+      line-height: 1.45;
+    }
+
+    .tutorial-steps-list li svg {
+      color: var(--brand-teal);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .tutorial-visual-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      color: #f8fafc;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
     /* PLANOS E PREÇOS */
     .pricing-section {
       padding: 90px 0;
@@ -1131,8 +1288,8 @@
 
   <!-- Aviso Superior -->
   <div class="top-announcement">
-    <span>📢 <strong>Lançamento Oficial:</strong> Conecte o Bravvi ERP à sua confecção e ganhe Implantação VIP com treinamento gratuito da equipe.</span>
-    <a href="https://wa.me/5544998071870?text=Ol%C3%A1!%20Quero%20aproveitar%20o%20treinamento%20VIP%20do%20Bravvi%20ERP%20T%C3%AAxtil." target="_blank">Garantir Vaga &rarr;</a>
+    <span>📢 <strong>Acesso Industrial por R$ 227/mês:</strong> Implantação 100% Gratuita (R$ 0 de taxa) e tutoriais passo a passo incluídos. Cancele quando quiser.</span>
+    <a href="https://wa.me/5544999856245?text=Ol%C3%A1%20Guilherme!%20Quero%20aproveitar%20o%20Bravvi%20ERP%20por%20R%24%20227%2Fm%C3%AAs%20com%20implanta%C3%A7%C3%A3o%20gr%C3%A1tis." target="_blank">Começar Agora &rarr;</a>
   </div>
 
   <!-- Header Superior -->
@@ -1145,9 +1302,9 @@
       <nav class="nav-menu">
         <a href="#apps">Módulos</a>
         <a href="#demonstracao">Ver por Dentro</a>
-        <a href="#diferenciais">Como Funciona</a>
+        <a href="#tutoriais">Como Usar (Tutoriais)</a>
         <a href="#calculadora">Calculadora de Lucro</a>
-        <a href="#planos">Planos</a>
+        <a href="#planos">Planos (R$ 227)</a>
         <a href="#faq">Dúvidas</a>
       </nav>
 
@@ -1208,7 +1365,7 @@
         <a href="demo.html" target="_blank" class="btn btn-secondary btn-lg" title="Testar showroom ao vivo com dados de exemplo">
           ✨ Test Drive ao Vivo
         </a>
-        <a href="https://wa.me/5544998071870?text=Ol%C3%A1!%20Vi%20a%20p%C3%A1gina%20do%20Bravvi%20ERP%20e%20quero%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20para%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-whatsapp btn-lg">
+        <a href="https://wa.me/5544999856245?text=Ol%C3%A1%20Guilherme!%20Vi%20a%20p%C3%A1gina%20do%20Bravvi%20ERP%20e%20quero%20conhecer%20o%20plano%20de%20R%24%20227%20para%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-whatsapp btn-lg">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="#ffffff"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z"/></svg>
           Agendar no WhatsApp
         </a>
@@ -1702,7 +1859,7 @@
             </div>
 
             <div style="margin-top: 24px;">
-              <a href="https://wa.me/5544998071870?text=Ol%C3%A1!%20Fiz%20a%20simula%C3%A7%C3%A3o%20na%20calculadora%20e%20quero%20conectar%20o%20Bravvi%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-primary btn-sm" style="width: 100%;">
+              <a href="https://wa.me/5544999856245?text=Ol%C3%A1%20Guilherme!%20Fiz%20a%20simula%C3%A7%C3%A3o%20na%20calculadora%20e%20quero%20conectar%20o%20Bravvi%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-primary btn-sm" style="width: 100%;">
                 Quero Recuperar Essa Economia Agora &rarr;
               </a>
             </div>
@@ -1769,14 +1926,320 @@
     </div>
   </section>
 
+  <!-- SEÇÃO TUTORIAIS: COMO USAR O SISTEMA -->
+  <section class="tutorials-section" id="tutoriais">
+    <div class="container">
+      
+      <div class="section-header-center">
+        <span class="section-tag">Passo a Passo Simples</span>
+        <h2 class="section-title">Como Mexer no Sistema: Do Orçamento ao Envio</h2>
+        <p class="section-desc">Criado especificamente para quem não tem tempo a perder. Veja como sua fábrica roda em 5 passos fáceis.</p>
+      </div>
+
+      <!-- Navegação das Abas de Tutorial -->
+      <div class="tutorial-nav">
+        <button type="button" class="tutorial-tab-btn active" onclick="mudarAbaTutorial(0)">
+          <span class="tab-num">1</span>
+          <span>Orçamento com Mockup</span>
+        </button>
+        <button type="button" class="tutorial-tab-btn" onclick="mudarAbaTutorial(1)">
+          <span class="tab-num">2</span>
+          <span>Otimizador DTF Nesting</span>
+        </button>
+        <button type="button" class="tutorial-tab-btn" onclick="mudarAbaTutorial(2)">
+          <span class="tab-num">3</span>
+          <span>Ficha Técnica A4</span>
+        </button>
+        <button type="button" class="tutorial-tab-btn" onclick="mudarAbaTutorial(3)">
+          <span class="tab-num">4</span>
+          <span>Portal de Nomes & Números</span>
+        </button>
+        <button type="button" class="tutorial-tab-btn" onclick="mudarAbaTutorial(4)">
+          <span class="tab-num">5</span>
+          <span>Radar de Prazos & PIX</span>
+        </button>
+      </div>
+
+      <!-- Painel 1: Orçamento -->
+      <div class="tutorial-panel active" id="tutPanel0">
+        <div class="tutorial-info">
+          <span class="step-badge">Passo 1 • Comercial Ágil</span>
+          <h3>Crie um Orçamento com Foto e Grade em 2 Minutos</h3>
+          <p>
+            Chega de perder 2 horas no CorelDRAW ou mandando mensagens soltas no WhatsApp. No Bravvi, você cria propostas comerciais completas com imagem da peça, grade de tamanhos, custo real e botão de aceite instantâneo.
+          </p>
+          <ul class="tutorial-steps-list">
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Selecione o cliente:</strong> Digite o nome ou CNPJ para preenchimento automático de dados.</span>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Anexe a imagem do modelo:</strong> O sistema insere a foto do uniforme ou camisa no PDF comercial.</span>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Preencha a grade de tamanhos:</strong> Quantidades do PP ao G5 com cálculo de tecido e margem de lucro.</span>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Envie no WhatsApp:</strong> 1 clique gera o PDF com chave PIX e link de confirmação do pedido.</span>
+            </li>
+          </ul>
+          <div style="margin-top: 18px;">
+            <a href="demo.html" target="_blank" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+              ✨ Testar no Showroom Interativo &rarr;
+            </a>
+          </div>
+        </div>
+
+        <div class="tutorial-visual-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 12px; margin-bottom: 16px;">
+            <div style="font-size: 12px; font-weight: 700; color: #38bdf8;">PROPOSTA COMERCIAL #1084</div>
+            <div style="font-size: 11px; background: #059669; color: #ffffff; padding: 2px 8px; border-radius: 4px; font-weight: 700;">PDF GERADO</div>
+          </div>
+          <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 14px;">
+            <div style="width: 72px; height: 72px; background: #1e293b; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 32px;">👕</div>
+            <div>
+              <div style="font-weight: 800; font-size: 15px; color: #ffffff;">Camisa Polo Dry Fit Personalizada</div>
+              <div style="font-size: 12px; color: #94a3b8;">Estampa DTF Peito + Costas • 110 unidades</div>
+              <div style="font-size: 13px; color: #2dd4bf; font-weight: 800; margin-top: 4px;">R$ 42,90 / peça • Total: R$ 4.719,00</div>
+            </div>
+          </div>
+          <div style="background: #1e293b; border-radius: 8px; padding: 12px; font-size: 11.5px; color: #cbd5e1; margin-bottom: 14px;">
+            <strong style="color: #ffffff;">Grade:</strong> P: 20 | M: 45 | G: 30 | GG: 15 (Total 110 pçs)<br>
+            <strong style="color: #ffffff;">Margem Bruta:</strong> 42,8% | <strong style="color: #ffffff;">Sinal 50%:</strong> R$ 2.359,50 via PIX
+          </div>
+          <div style="background: #0d9488; color: #ffffff; text-align: center; padding: 10px; border-radius: 6px; font-weight: 700; font-size: 12px;">
+            📱 Enviado no WhatsApp do Cliente com 1 Clique
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel 2: Nesting DTF -->
+      <div class="tutorial-panel" id="tutPanel1">
+        <div class="tutorial-info">
+          <span class="step-badge">Passo 2 • Otimização de Custo</span>
+          <h3>Otimize o Rolo de Filme DTF sem Desperdício</h3>
+          <p>
+            Não jogue dinheiro no lixo pagando por filme transparente não impresso. O otimizador de nesting encaixa todas as artes do pedido na largura exata da sua bobina (58cm ou 28cm).
+          </p>
+          <ul class="tutorial-steps-list">
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Carregue as artes:</strong> Insira os arquivos PNG das estampas (peito, mangas, costas).</span>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Defina a bobina:</strong> Escolha 58cm ou 28cm e a margem de segurança de corte (ex: 5mm).</span>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Nesting inteligente:</strong> O sistema rotaciona e compacta as imagens aproveitando até 98% da área útil.</span>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Economia na ponta do lápis:</strong> Reduza metros de filme e mililitros de tinta branca em cada lote.</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="tutorial-visual-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 12px; margin-bottom: 16px;">
+            <div style="font-size: 12px; font-weight: 700; color: #a855f7;">BOBINA DTF 580mm • NESTING ATIVO</div>
+            <div style="font-size: 11px; background: #9333ea; color: #ffffff; padding: 2px 8px; border-radius: 4px; font-weight: 700;">APROVEITAMENTO: 96.8%</div>
+          </div>
+          <div style="background: #020617; border: 1px dashed #475569; border-radius: 8px; padding: 14px; margin-bottom: 14px; position: relative;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center;">
+              <div style="background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; border-radius: 4px; padding: 12px 6px; font-size: 11px;">Logo Peito (10cm)</div>
+              <div style="background: rgba(45, 212, 191, 0.2); border: 1px solid #2dd4bf; border-radius: 4px; padding: 12px 6px; font-size: 11px;">Manga (8cm)</div>
+              <div style="background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; border-radius: 4px; padding: 12px 6px; font-size: 11px;">Logo Peito (10cm)</div>
+            </div>
+            <div style="background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; border-radius: 4px; padding: 16px 8px; font-size: 11px; margin-top: 8px; text-align: center;">
+              Estampa Costas A3 (28x38cm) • Giro Automático 90°
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; color: #cbd5e1; margin-bottom: 12px;">
+            <span>Comprimento Usado: <strong>4,20 metros</strong></span>
+            <span style="color: #2dd4bf; font-weight: 700;">Economia: R$ 37,80 no lote</span>
+          </div>
+          <div style="background: #1e293b; color: #ffffff; text-align: center; padding: 8px; border-radius: 6px; font-size: 11px;">
+            🖨️ Arquivo pronto exportado para software RIP
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel 3: Ficha Técnica A4 -->
+      <div class="tutorial-panel" id="tutPanel2">
+        <div class="tutorial-info">
+          <span class="step-badge">Passo 3 • Chão de Fábrica</span>
+          <h3>Ficha Técnica A4 e Ordem de Produção Blindada</h3>
+          <p>
+            Elimine de vez o telefone sem fio entre o vendedor e as costureiras. Ao aprovar o pedido, o sistema gera a Ficha A4 com código de barras, consumo exato de quilos de tecido e instruções detalhadas de corte e acabamento.
+          </p>
+          <ul class="tutorial-steps-list">
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Geração automática:</strong> Dados do pedido viram ficha industrial em 1 clique.</span>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Consumo de tecido calculado:</strong> O cortador sabe exatamente quantos quilos puxar do rolo.</span>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Rastreabilidade por etapas:</strong> Risco & Corte &rarr; Estamparia &rarr; Costura &rarr; Embalagem.</span>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Zero retrabalho:</strong> Fim das camisas cortadas no tamanho errado.</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="tutorial-visual-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 12px; margin-bottom: 16px;">
+            <div style="font-size: 12px; font-weight: 700; color: #f59e0b;">FICHA TÉCNICA INDUSTRIAL A4</div>
+            <div style="font-size: 11px; background: #b45309; color: #ffffff; padding: 2px 8px; border-radius: 4px; font-weight: 700;">ORDEM #1084</div>
+          </div>
+          <div style="background: #ffffff; color: #0f172a; border-radius: 8px; padding: 14px; font-family: monospace; font-size: 11px; margin-bottom: 14px;">
+            <div style="font-weight: 800; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 6px;">
+              BRAVVI CONFECÇÕES • OP #1084 • ENTREGA: 12/NOV
+            </div>
+            <div>PRODUTO: Polo Piquet Chumbo Mescla</div>
+            <div>TECIDO: Piquet PA (50% Algodão / 50% Poliéster)</div>
+            <div>CONSUMO TOTAL: 24,8 kg de malha (Rendimento: 4,4 pçs/kg)</div>
+            <div style="margin-top: 6px; padding: 4px; background: #f1f5f9; border-radius: 4px;">
+              GRADE: [PP: 5] [P: 18] [M: 42] [G: 28] [GG: 12] [XG: 5]
+            </div>
+            <div style="margin-top: 6px; font-size: 10px; color: #64748b;">
+              ║▌║▌║█│▌ Código de Barras de Apontamento
+            </div>
+          </div>
+          <div style="background: #0284c7; color: #ffffff; text-align: center; padding: 8px; border-radius: 6px; font-size: 11.5px; font-weight: 700;">
+            📄 Imprime em qualquer impressora A4 comum do galpão
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel 4: Portal do Cliente -->
+      <div class="tutorial-panel" id="tutPanel3">
+        <div class="tutorial-info">
+          <span class="step-badge">Passo 4 • Zero Digitação</span>
+          <h3>Portal do Cliente: Relação de Nomes e Números no Celular</h3>
+          <p>
+            Nunca mais perca horas decifrando garranchos em papelzinho de pão com nomes de turmas escolares, fardamentos de empresas ou times esportivos. O cliente digita pelo celular dele!
+          </p>
+          <ul class="tutorial-steps-list">
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Link exclusivo do pedido:</strong> O vendedor gera o link com 1 clique e manda no grupo do WhatsApp.</span>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Preenchimento assistido:</strong> Cada integrante digita o nome das costas, o número e seleciona o tamanho.</span>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Controle de cota contratada:</strong> O sistema bloqueia preenchimentos extras acima da quantidade comprada.</span>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Direto para a estamparia:</strong> A lista entra organizada na ficha técnica sem erro ortográfico.</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="tutorial-visual-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 12px; margin-bottom: 16px;">
+            <div style="font-size: 12px; font-weight: 700; color: #10b981;">PORTAL DO CLIENTE (MOBILE)</div>
+            <div style="font-size: 11px; background: #065f46; color: #ffffff; padding: 2px 8px; border-radius: 4px; font-weight: 700;">48 DE 50 PREENCHIDOS</div>
+          </div>
+          <div style="background: #1e293b; border-radius: 8px; padding: 12px; margin-bottom: 12px; font-size: 12px;">
+            <div style="color: #94a3b8; font-size: 11px; margin-bottom: 8px;">Link do WhatsApp: <span style="color: #38bdf8;">confec.pro/p/1084</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #334155;">
+              <span>1. GUILHERME</span>
+              <span style="color: #f59e0b;">Nº 10 • Tam G</span>
+            </li>
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #334155;">
+              <span>2. RODRIGO</span>
+              <span style="color: #f59e0b;">Nº 07 • Tam M</span>
+            </li>
+            <div style="display: flex; justify-content: space-between; padding: 6px 0;">
+              <span>3. MATHEUS</span>
+              <span style="color: #f59e0b;">Nº 01 • Tam GG</span>
+            </li>
+          </div>
+          <div style="background: #059669; color: #ffffff; text-align: center; padding: 8px; border-radius: 6px; font-size: 11.5px; font-weight: 700;">
+            ✓ Dados salvos automaticamente no banco de dados da fábrica
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel 5: Radar de Prazos & PIX -->
+      <div class="tutorial-panel" id="tutPanel4">
+        <div class="tutorial-info">
+          <span class="step-badge">Passo 5 • Entrega & Caixa</span>
+          <h3>Radar de Prazos Industrial e Cobrança PIX Automática</h3>
+          <p>
+            Elimine a ansiedade de esquecer datas de entrega. O radar industrial avisa com antecedência quais pedidos precisam ser cortados e costurados hoje, enquanto o módulo financeiro controla os sinais de pagamento.
+          </p>
+          <ul class="tutorial-steps-list">
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Semáforo de entregas:</strong> Verde (no prazo), Amarelo (atenção 48h) e Vermelho (urgência máxima).</span>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Cobrança PIX dinâmica:</strong> O cliente paga o sinal ou saldo via QR Code e o sistema dá baixa imediata.</span>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Emissão fiscal descomplicada:</strong> NF-e SEFAZ Modelo 55 emitida diretamente com 1 clique.</span>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>DRE e Lucro Real:</strong> Saiba exatamente quanto sobrou de lucro líquido no bolso em cada pedido.</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="tutorial-visual-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 12px; margin-bottom: 16px;">
+            <div style="font-size: 12px; font-weight: 700; color: #2dd4bf;">RADAR DE EXPEDIÇÃO & CAIXA</div>
+            <div style="font-size: 11px; background: #0f766e; color: #ffffff; padding: 2px 8px; border-radius: 4px; font-weight: 700;">3 PEDIDOS ATIVOS</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;">
+            <div style="background: #1e293b; border-left: 4px solid #10b981; border-radius: 4px; padding: 10px; font-size: 11.5px; display: flex; justify-content: space-between;">
+              <span>OP #1081 • Colégio Santo André</span>
+              <span style="color: #10b981; font-weight: 700;">🟢 Entrega em 5 dias</span>
+            </div>
+            <div style="background: #1e293b; border-left: 4px solid #f59e0b; border-radius: 4px; padding: 10px; font-size: 11.5px; display: flex; justify-content: space-between;">
+              <span>OP #1082 • Mecânica Central</span>
+              <span style="color: #f59e0b; font-weight: 700;">🟡 Atenção (Amanhã)</span>
+            </div>
+            <div style="background: #1e293b; border-left: 4px solid #38bdf8; border-radius: 4px; padding: 10px; font-size: 11.5px; display: flex; justify-content: space-between;">
+              <span>PIX Recebido • OP #1084</span>
+              <span style="color: #38bdf8; font-weight: 700;">💳 R$ 2.359,50 (Sinal)</span>
+            </div>
+          </div>
+          <div style="background: #1e293b; color: #e2e8f0; text-align: center; padding: 8px; border-radius: 6px; font-size: 11px;">
+            📊 DRE consolidado em tempo real com margem limpa
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
   <!-- PLANOS E PREÇOS -->
   <section class="pricing-section" id="planos">
     <div class="container">
       
       <div class="section-header-center">
         <span class="section-tag">Preços Transparentes</span>
-        <h2 class="section-title">Sem mensalidade por usuário. Tudo incluso.</h2>
-        <p class="section-desc">Escolha o plano ideal para a sua confecção e assine com Cartão em até 12x ou Pix instantâneo.</p>
+        <h2 class="section-title">Sem mensalidade por usuário. Implantação 100% Gratuita.</h2>
+        <p class="section-desc">Escolha o plano ideal para a sua confecção e comece a faturar hoje com Cartão em até 12x ou Pix instantâneo.</p>
       </div>
 
       <div class="pricing-grid">
@@ -1784,135 +2247,126 @@
         <!-- Plano 1: Mensal -->
         <div class="pricing-card">
           <div class="pricing-name">Mensal Flexível</div>
-          <div class="pricing-desc">Para quem quer começar com flexibilidade total e sem fidelidade contratual.</div>
-          <div class="pricing-value">R$ 397 <span>/ mês</span></div>
-          <div style="font-size: 11.5px; color: var(--text-muted); margin-top: -6px; margin-bottom: 12px; font-weight: 600;">Cancele quando quiser • Sem carência</div>
+          <div class="pricing-desc">Acesso completo e imediato sem fidelidade contratual e com taxa de implantação R$ 0.</div>
+          <div class="pricing-value">R$ 227 <span>/ mês</span></div>
+          <div style="font-size: 11.5px; color: var(--brand-teal); margin-top: -6px; margin-bottom: 12px; font-weight: 700;">Implantação Grátis (R$ 0) • Cancele quando quiser</div>
           <ul class="pricing-features">
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Usuários e computadores ilimitados</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Taxa de Implantação: R$ 0 (100% Grátis)</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Tutoriais passo a passo em vídeo inclusos</strong></li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Orçamentos 3x4 com Mockups dinâmicos</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Fichas Técnicas A4 com Grade Infantil ao G5</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Radar de Prazos Industrial com alertas</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Emissor de NF-e Focus/SEFAZ Modelo 55</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Otimizador de Bobina Nesting DTF</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Portal do Cliente (Nomes & Números no celular)</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Suporte técnico oficial por WhatsApp</li>
           </ul>
-          <button type="button" onclick="if (window.InfinitePayEngine) { window.InfinitePayEngine.irParaCheckout('mensal'); } else { window.open('https://pay.cakto.com.br/rb6atzs_1178556', '_blank'); }" class="btn btn-secondary" style="width: 100%; cursor: pointer;">
-            💳 Assinar Plano Mensal (R$ 397)
+          <button type="button" onclick="if (window.InfinitePayEngine) { window.InfinitePayEngine.irParaCheckout('mensal'); } else { window.open('https://wa.me/5544999856245?text=Ol%C3%A1%20Guilherme!%20Quero%20assinar%20o%20Plano%20Mensal%20de%20R%24%20227%20com%20Implanta%C3%A7%C3%A3o%20Gr%C3%A1tis.', '_blank'); }" class="btn btn-secondary" style="width: 100%; cursor: pointer;">
+            💳 Assinar Plano Mensal (R$ 227/mês)
           </button>
         </div>
 
         <!-- Plano 2: Anual Pro (Destaque) -->
         <div class="pricing-card featured">
-          <div class="pricing-pill">Mais Escolhido • Economize R$ 794 (2 meses grátis)</div>
+          <div class="pricing-pill">Mais Escolhido • Economize R$ 834 no ano</div>
           <div class="pricing-name">Anual Pro Industrial</div>
-          <div class="pricing-desc">A solução mais inteligente e econômica com desconto anual garantido.</div>
-          <div class="pricing-value">R$ 3.970 <span>/ ano</span></div>
-          <div style="font-size: 12px; color: var(--brand-teal); font-weight: 700; margin-top: -4px; margin-bottom: 12px;">À vista no Pix ou parcelado em até 12x no cartão</div>
+          <div class="pricing-desc">A solução mais inteligente e econômica com desconto anual garantido (menos de R$ 158/mês).</div>
+          <div class="pricing-value">12x R$ 189 <span>/ mês</span></div>
+          <div style="font-size: 12px; color: var(--brand-teal); font-weight: 700; margin-top: -4px; margin-bottom: 12px;">Cobrado anualmente: R$ 1.890 à vista no Pix (Pague 10 meses e use 12)</div>
           <ul class="pricing-features">
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Tudo do Plano Mensal incluso</strong></li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Economia garantida de R$ 794 no ano (Pague 10, Leve 12 meses)</strong></li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Parcelamento em até 12x no cartão de crédito</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Taxa de Implantação: R$ 0 (100% Gratuita)</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Economia garantida de R$ 834,00 no ano</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Parcelamento em até 12x no cartão de crédito ou Pix</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Otimizador de Bobina DTF Nesting Avançado</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Portal do Cliente ilimitado para fardamentos e turmas</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> DRE Gerencial & Lucro Real por Pedido</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Suporte Prioritário VIP com fila rápida</li>
           </ul>
-          <button type="button" onclick="if (window.InfinitePayEngine) { window.InfinitePayEngine.irParaCheckout('anual'); } else { window.open('https://pay.cakto.com.br/ecrfqfr_1178654', '_blank'); }" class="btn btn-primary" style="width: 100%; cursor: pointer;">
+          <button type="button" onclick="if (window.InfinitePayEngine) { window.InfinitePayEngine.irParaCheckout('anual'); } else { window.open('https://wa.me/5544999856245?text=Ol%C3%A1%20Guilherme!%20Quero%20garantir%20o%20Plano%20Anual%20Pro%20(12x%20R%24%20189%20ou%20R%24%201.890%20%C3%A0%20vista).', '_blank'); }" class="btn btn-primary" style="width: 100%; cursor: pointer;">
             🚀 Garantir Plano Anual &rarr;
           </button>
         </div>
 
-        <!-- Plano 3: Combo Anual + Implementação VIP -->
+        <!-- Plano 3: Treinamento VIP Dedicado (Opcional) -->
         <div class="pricing-card">
-          <div class="pricing-pill" style="background: #0284c7; color: #ffffff;">Setup Completo • Chave na Mão</div>
-          <div class="pricing-name">Anual + Implementação VIP</div>
-          <div class="pricing-desc">A fábrica rodando pronta em 48h com consultoria e equipe 100% treinada.</div>
-          <div class="pricing-value">12x R$ 397 <span>/ mês</span></div>
-          <div style="font-size: 12px; color: #0284c7; font-weight: 700; margin-top: -4px; margin-bottom: 12px;">Cobrado anualmente: R$ 4.764 à vista (Setup + 12 meses)</div>
+          <div class="pricing-pill" style="background: #0284c7; color: #ffffff;">Add-on Opcional • Só se desejar</div>
+          <div class="pricing-name">Treinamento VIP Equipe</div>
+          <div class="pricing-desc">Apenas se a confecção desejar mentoria ao vivo por videoconferência com especialista têxtil.</div>
+          <div class="pricing-value">R$ 297 <span>taxa única</span></div>
+          <div style="font-size: 12px; color: #0284c7; font-weight: 700; margin-top: -4px; margin-bottom: 12px;">Sessão exclusiva de 2 horas ao vivo para toda a equipe</div>
           <ul class="pricing-features">
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>12 meses de acesso completo ao ERP</strong></li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Implementação VIP com Especialista Têxtil</strong></li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Parametrização de logotipo, CNPJ e SEFAZ</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Mapeamento de custos e catálogo de tecidos</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Treinamento ao vivo (Vendas + Chão de Fábrica)</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Acompanhamento assistido dos primeiros 10 pedidos</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Implantação do ERP já é 100% gratuita com tutoriais</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>2 horas de consultoria prática ao vivo no Google Meet</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Treinamento de Vendas (orçamento com foto em 2 min)</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Treinamento de Chão de Fábrica (Ficha A4 e Radar)</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Parametrização assistida dos tecidos da fábrica</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Gravação em vídeo para novos funcionários assistirem</li>
           </ul>
-          <button type="button" onclick="if (window.InfinitePayEngine) { window.InfinitePayEngine.irParaCheckout('anual_implementacao'); } else { window.open('https://wa.me/5544998071870?text=Ol%C3%A1!%20Quero%20contratar%20o%20Plano%20Anual%20%2B%20Implementa%C3%A7%C3%A3o%20VIP%20do%20Bravvi%20ERP%20T%C3%AAxtil%20(12x%20R%24%20397%20%2F%20R%24%204.764).', '_blank'); }" class="btn btn-secondary" style="width: 100%; cursor: pointer;">
-            💬 Contratar Combo no WhatsApp com Especialista
+          <button type="button" onclick="window.open('https://wa.me/5544999856245?text=Ol%C3%A1%20Guilherme!%20Quero%20contratar%20o%20Treinamento%20VIP%20da%20Equipe%20por%20R%24%20297.', '_blank');" class="btn btn-secondary" style="width: 100%; cursor: pointer;">
+            💬 Adicionar Treinamento no WhatsApp (R$ 297)
           </button>
         </div>
 
       </div>
 
-      <!-- SEÇÃO DETALHADA: O QUE É A IMPLEMENTAÇÃO ACOMPANHADA -->
+      <!-- SEÇÃO DETALHADA: IMPLANTAÇÃO 100% GRÁTIS & TUTORIAIS -->
       <div style="margin-top: 48px; background: #ffffff; border: 2px solid #0d9488; border-radius: var(--radius-md); padding: 32px 28px; box-shadow: 0 10px 25px -5px rgba(13, 148, 136, 0.1);">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 16px;">
           <div>
-            <span style="font-size: 11px; font-weight: 800; background: #f0fdfa; color: #0d9488; border: 1px solid #99f6e4; padding: 3px 10px; border-radius: 20px; text-transform: uppercase;">Serviço Especializado</span>
-            <h3 style="font-size: 22px; font-weight: 900; color: #0f172a; margin: 8px 0 4px 0;">O que é a Implementação Acompanhada da Bravvi?</h3>
-            <p style="font-size: 13.5px; color: #64748b; margin: 0;">Você não precisa perder semanas quebrando a cabeça. Nós entregamos o sistema 100% configurado para a realidade do seu galpão.</p>
+            <span style="font-size: 11px; font-weight: 800; background: #f0fdfa; color: #0d9488; border: 1px solid #99f6e4; padding: 3px 10px; border-radius: 20px; text-transform: uppercase;">Sem Cobrança de Setup</span>
+            <h3 style="font-size: 22px; font-weight: 900; color: #0f172a; margin: 8px 0 4px 0;">Implantação 100% Gratuita & Tutoriais Guiados</h3>
+            <p style="font-size: 13.5px; color: #64748b; margin: 0;">Você não paga taxa de implantação. O Bravvi ERP já vem com tutoriais interativos e suporte direto para você começar a rodar no mesmo dia.</p>
           </div>
           <div style="text-align: right;">
-            <div style="font-size: 11px; font-weight: 700; color: #64748b;">Opção Avulsa (Taxa Única):</div>
-            <div style="font-size: 22px; font-weight: 900; color: #0d9488;">R$ 997,00</div>
-            <div style="font-size: 11px; color: #059669; font-weight: 700;">Ou grátis no Combo Anual VIP</div>
+            <div style="font-size: 11px; font-weight: 700; color: #64748b;">Taxa de Implantação:</div>
+            <div style="font-size: 22px; font-weight: 900; color: #059669;">R$ 0,00 (Gratuita)</div>
+            <div style="font-size: 11px; color: #0d9488; font-weight: 700;">Treinamento VIP ao vivo opcional por R$ 297</div>
           </div>
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px;">
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px;">
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <span style="font-size: 22px;">🎬</span>
+              <strong style="font-size: 13.5px; color: #0f172a;">1. Tutoriais Visuais em Vídeo e Texto</strong>
+            </div>
+            <p style="font-size: 12px; color: #475569; margin: 0; line-height: 1.5;">
+              Guias rápidos direto na tela explicando cada função do sistema: como lançar orçamentos, cadastrar tecidos, gerar o Nesting DTF e consultar o Radar de Prazos. Qualquer colaborador aprende em menos de 20 minutos.
+            </p>
+          </div>
+
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
               <span style="font-size: 22px;">🎨</span>
-              <strong style="font-size: 13.5px; color: #0f172a;">1. Parametrização & Identidade Visual</strong>
+              <strong style="font-size: 13.5px; color: #0f172a;">2. Identidade Visual da sua Fábrica</strong>
             </div>
             <p style="font-size: 12px; color: #475569; margin: 0; line-height: 1.5;">
-              Vetorização e aplicação do logotipo da sua confecção em alta definição nas propostas e fichas A4. Parametrização completa do CNPJ, Inscrição Estadual, chave PIX e emissão fiscal de NF-e Focus/SEFAZ.
+              Insira o logotipo da sua confecção em alta definição nas propostas e fichas técnicas A4. Parametrização simples de CNPJ, Inscrição Estadual, chave PIX da fábrica e emissão de NF-e Focus/SEFAZ.
             </p>
           </div>
 
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px;">
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-              <span style="font-size: 22px;">🧵</span>
-              <strong style="font-size: 13.5px; color: #0f172a;">2. Mapeamento de Custos Têxteis</strong>
+              <span style="font-size: 22px;">💬</span>
+              <strong style="font-size: 13.5px; color: #0f172a;">3. Suporte Humanizado no WhatsApp</strong>
             </div>
             <p style="font-size: 12px; color: #475569; margin: 0; line-height: 1.5;">
-              Cadastro dos tecidos da fábrica (Poliéster, Dry Fit, Algodão 30.1, Piquet, Brim, Ripstop). Parametrização do rendimento por quilo/metro, custos de estamparia (DTF, Silk, Bordado) e margem de contribuição.
-            </p>
-          </div>
-
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px;">
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-              <span style="font-size: 22px;">🖨️</span>
-              <strong style="font-size: 13.5px; color: #0f172a;">3. Calibração do Nesting DTF</strong>
-            </div>
-            <p style="font-size: 12px; color: #475569; margin: 0; line-height: 1.5;">
-              Ajuste fino da largura útil de bobina (58cm / 60cm), margem de segurança entre artes e padrão de corte para economizar metros de filme de impressão em cada tiragem.
-            </p>
-          </div>
-
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px;">
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-              <span style="font-size: 22px;">👥</span>
-              <strong style="font-size: 13.5px; color: #0f172a;">4. Treinamento Ao Vivo da Equipe</strong>
-            </div>
-            <p style="font-size: 12px; color: #475569; margin: 0; line-height: 1.5;">
-              Treinamento prático em vídeo/WhatsApp: vendedores aprendem a fechar orçamentos no WhatsApp com mockup em 2 minutos; encarregados aprendem a ler a Ficha A4 e operar o Radar de Prazos.
+              Dúvidas no dia a dia? Você fala diretamente com nosso suporte técnico no WhatsApp. Sem robôs chatos ou tickets que demoram dias para responder.
             </p>
           </div>
 
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; grid-column: 1 / -1;">
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-              <span style="font-size: 22px;">🚀</span>
-              <strong style="font-size: 13.5px; color: #0f172a;">5. Auditoria & Acompanhamento dos Primeiros 10 Pedidos</strong>
+              <span style="font-size: 22px;">👥</span>
+              <strong style="font-size: 13.5px; color: #0f172a;">4. Treinamento VIP Opcional para sua Equipe (R$ 297)</strong>
             </div>
             <p style="font-size: 12px; color: #475569; margin: 0; line-height: 1.5;">
-              Um especialista da Bravvi audita e acompanha lado a lado os primeiros pedidos reais lançados pela sua equipe até a entrega ao cliente, garantindo que nenhum erro ocorra no chão de fábrica.
+              Caso sua empresa queira que um especialista têxtil faça uma videoconferência ao vivo de 2 horas para treinar toda a sua equipe (vendedores e chão de fábrica), tire dúvidas e acompanhe os primeiros pedidos, adicione esse serviço opcional por apenas R$ 297 de taxa única.
             </p>
           </div>
         </div>
-      </div>
-
-      </div>
-
     </div>
   </section>
 
@@ -1993,7 +2447,7 @@
         Junte-se a confecções e estamparias que zeraram os atrasos de entrega e reduziram o desperdício de tecido com o Bravvi ERP Têxtil.
       </p>
       <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
-        <a href="https://wa.me/5544998071870?text=Ol%C3%A1!%20Quero%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20do%20Bravvi%20ERP%20T%C3%AAxtil." target="_blank" class="btn btn-whatsapp btn-lg">
+        <a href="https://wa.me/5544999856245?text=Ol%C3%A1%20Guilherme!%20Quero%20agendar%20uma%20demonstra%C3%A7%C3%A3o%20do%20Bravvi%20ERP%20T%C3%AAxtil." target="_blank" class="btn btn-whatsapp btn-lg">
           Falar com Especialista no WhatsApp Agora &rarr;
         </a>
         <a href="demo.html" target="_blank" class="btn btn-secondary btn-lg" style="color: var(--brand-navy);">
@@ -2032,6 +2486,7 @@
             <li><a href="demo.html" target="_blank">Test Drive ao Vivo</a></li>
             <li><a href="proposta-comercial.html" target="_blank">Proposta Comercial A4</a></li>
             <li><a href="#calculadora">Calculadora de Lucro</a></li>
+            <li><a href="#tutoriais">Como Usar (Tutoriais)</a></li>
             <li><a href="#planos">Planos & Preços</a></li>
             <li><a href="#faq">Dúvidas Frequentes</a></li>
           </ul>
@@ -2040,7 +2495,7 @@
         <div>
           <div class="footer-title">Atendimento</div>
           <ul class="footer-links">
-            <li><a href="https://wa.me/5544998071870?text=Ol%C3%A1!%20Gostaria%20de%20falar%20com%20o%20suporte%20do%20Bravvi%20ERP." target="_blank">WhatsApp Suporte: (44) 99807-1870</a></li>
+            <li><a href="https://wa.me/5544999856245?text=Ol%C3%A1%20Guilherme!%20Gostaria%20de%20falar%20com%20o%20suporte%20do%20Bravvi%20ERP." target="_blank">WhatsApp Suporte: (44) 99985-6245</a></li>
             <li><span>suporte@bravvi.com.br</span></li>
             <li><span>São Paulo / SP • Brasil</span></li>
             <li><span style="display: inline-block; margin-top: 8px; background: rgba(45, 212, 191, 0.15); color: var(--brand-cyan); padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;">SUPORTE ATIVO</span></li>
@@ -2061,7 +2516,7 @@
   </footer>
 
   <!-- Botão Flutuante do WhatsApp -->
-  <a href="https://wa.me/5544998071870?text=Ol%C3%A1!%20Vi%20a%20p%C3%A1gina%20do%20Bravvi%20ERP%20T%C3%AAxtil%20e%20gostaria%20de%20atendimento." target="_blank" class="floating-wa-btn" title="Falar no WhatsApp: (44) 99807-1870">
+  <a href="https://wa.me/5544999856245?text=Ol%C3%A1%20Guilherme!%20Vi%20a%20p%C3%A1gina%20do%20Bravvi%20ERP%20T%C3%AAxtil%20e%20gostaria%20de%20atendimento." target="_blank" class="floating-wa-btn" title="Falar no WhatsApp: (44) 99985-6245">
     <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
       <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z"/>
     </svg>
@@ -2155,6 +2610,16 @@
         item.classList.toggle('active');
       });
     });
+
+    // 5. Alternador de Abas de Tutorial (Como Usar o Sistema)
+    function mudarAbaTutorial(indice) {
+      document.querySelectorAll('.tutorial-tab-btn').forEach((btn, idx) => {
+        btn.classList.toggle('active', idx === indice);
+      });
+      document.querySelectorAll('.tutorial-panel').forEach((panel, idx) => {
+        panel.classList.toggle('active', idx === indice);
+      });
+    }
   </script>
 
   <!-- Container de Modais de Pagamento & Checkout -->

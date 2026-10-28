@@ -17,95 +17,78 @@
 (function () {
   'use strict';
 
-  const WHATSAPP_SUPORTE = '5544998071870';
-  const LINK_WHATSAPP_ANUAL = 'https://wa.me/5544998071870?text=' + encodeURIComponent('Olá! Quero contratar o Plano Anual Pro do Bravvi ERP Têxtil (R$ 3.970/ano à vista ou 12x no cartão).');
-  const LINK_WHATSAPP_COMBO = 'https://wa.me/5544998071870?text=' + encodeURIComponent('Olá! Quero contratar o Combo Anual + Implementação VIP do Bravvi ERP Têxtil (12x R$ 397 / R$ 4.764).');
-  const LINK_WHATSAPP_SETUP = 'https://wa.me/5544998071870?text=' + encodeURIComponent('Olá! Quero contratar a Implementação Especializada VIP da Bravvi.');
+  const WHATSAPP_SUPORTE = '5544999856245';
+  const LINK_WHATSAPP_MENSAL = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero assinar o Plano Mensal do Bravvi ERP Têxtil por R$ 227/mês com Implantação Grátis.');
+  const LINK_WHATSAPP_ANUAL = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero contratar o Plano Anual Pro do Bravvi ERP Têxtil (12x de R$ 189 ou R$ 1.890/ano à vista).');
+  const LINK_WHATSAPP_TREINAMENTO = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero contratar o Treinamento Dedicado VIP da Equipe (R$ 297 taxa única).');
 
   // Configuração padrão dos planos e valores oficiais
   const PLANOS_CONFIG = {
     mensal: {
-      id: 'plano_mensal_397',
+      id: 'plano_mensal_227',
       nome: 'Plano Fábrica Mensal',
-      valor: 397.00,
-      valorFormatado: 'R$ 397,00',
+      valor: 227.00,
+      valorFormatado: 'R$ 227,00',
       periodo: '/mês',
-      parcelamento: 'Sem fidelidade • Cancele quando quiser',
+      parcelamento: 'Sem fidelidade • Cancele quando quiser • Implantação R$ 0',
       destaque: false,
-      badge: 'Flexibilidade Total',
-      descricao: 'Acesso completo a todas as ferramentas industriais para a sua confecção.',
+      badge: 'Acesso Imediato • Sem Adesão',
+      descricao: 'Acesso completo a todas as ferramentas industriais para a sua confecção. Implantação e tutoriais 100% gratuitos.',
       itens: [
         'Usuários e computadores ilimitados',
+        'Taxa de Implantação: R$ 0 (100% Gratuita)',
+        'Tutoriais ilustrados passo a passo incluídos',
         'Orçamentos com Mockups 3x4 dinâmicos',
         'Fichas Técnicas A4 com grade expandida (Infantil ao G5)',
         'Radar de Prazos Industrial com alertas visuais',
         'Emissor de NF-e Focus/SEFAZ Modelo 55 com DANFE A4',
         'Nesting DTF para otimização de rolo de impressão',
+        'Portal do Cliente para envio de nomes e tamanhos',
         'Módulo Financeiro, DRE e Custos Têxteis',
         'Suporte técnico via WhatsApp'
       ],
-      linkPadrao: 'https://pay.cakto.com.br/rb6atzs_1178556'
+      linkPadrao: LINK_WHATSAPP_MENSAL
     },
     anual: {
-      id: 'plano_anual_3970',
+      id: 'plano_anual_1890',
       nome: 'Plano Anual Pro Industrial',
-      valor: 3970.00,
-      valorFormatado: 'R$ 3.970,00',
+      valor: 1890.00,
+      valorFormatado: 'R$ 1.890,00',
       periodo: '/ano à vista',
-      parcelamento: 'Ou parcelado em até 12x no cartão de crédito',
+      parcelamento: 'Ou 12x de R$ 189,00 no cartão de crédito',
       destaque: true,
-      badge: 'Mais Escolhido • Economize R$ 794 (2 meses grátis)',
-      descricao: 'O melhor custo-benefício para indústrias têxteis com desconto anual garantido.',
+      badge: 'Mais Escolhido • Economize R$ 834 no ano',
+      descricao: 'O melhor custo-benefício para confecções com desconto anual garantido (menos de R$ 158/mês).',
       itens: [
         'Tudo do Plano Mensal incluso',
-        'Economia de R$ 794,00 no ano (paga 10 meses, usa 12 meses)',
-        'Parcelamento em até 12x no cartão de crédito',
+        'Taxa de Implantação: R$ 0 (100% Gratuita)',
+        'Economia de R$ 834,00 no ano (paga 10 meses, usa 12 meses)',
+        'Parcelamento em até 12x no cartão de crédito ou Pix',
+        'Otimizador de Bobina DTF Nesting Avançado',
+        'Portal do Cliente ilimitado para equipes e facções',
         'Suporte Prioritário VIP com fila acelerada no WhatsApp',
-        'Atualizações contínuas de novos recursos',
         'Backup automático na nuvem'
       ],
-      linkPadrao: 'https://pay.cakto.com.br/ecrfqfr_1178654'
+      linkPadrao: LINK_WHATSAPP_ANUAL
     },
-    anual_implementacao: {
-      id: 'plano_anual_vip_setup',
-      nome: 'Combo Anual Pro + Implementação VIP',
-      valor: 4764.00,
-      valorFormatado: 'R$ 4.764,00',
-      periodo: '/ano à vista',
-      parcelamento: 'Ou em até 12x de R$ 397,00 no cartão de crédito',
+    treinamento_equipe: {
+      id: 'treinamento_vip_equipe_297',
+      nome: 'Treinamento Dedicado VIP da Equipe (Opcional)',
+      valor: 297.00,
+      valorFormatado: 'R$ 297,00',
+      periodo: 'taxa única (opcional)',
+      parcelamento: 'Sessão ao vivo de 2 horas (Vendas + Chão de Fábrica)',
       destaque: false,
-      badge: 'Chave na Mão • Setup Completo',
-      descricao: 'Acesso anual completo com consultoria de implantação e fábrica rodando em 48h.',
+      badge: 'Add-on Opcional • Só se a empresa quiser',
+      descricao: 'A implantação do sistema é 100% grátis com tutoriais guiados. Se a sua fábrica quiser uma consultoria ao vivo com especialista têxtil para treinar seus vendedores e chão de fábrica em videoconferência, adicione este treinamento opcional.',
       itens: [
-        '12 meses de acesso completo ao Bravvi ERP',
-        'Implementação VIP 100% assistida por especialista têxtil',
-        'Parametrização de logotipo, CNPJ, NF-e SEFAZ e Chave Pix',
-        'Cadastro do catálogo inicial de tecidos, custos e modelagens',
-        'Calibração de Nesting DTF para o maquinário da sua estamparia',
-        'Treinamento ao vivo com vendedores, encarregados e diretoria',
-        'Acompanhamento assistido dos primeiros 10 pedidos reais'
+        'Sessão ao vivo de 2 horas com Especialista Têxtil',
+        'Treinamento prático de Vendas (orçamento com foto em 2 min)',
+        'Treinamento de Produção (leitura de Ficha A4 e Radar)',
+        'Parametrização assistida do catálogo inicial de tecidos',
+        'Tira-dúvidas ao vivo com a sua equipe no Google Meet/WhatsApp'
       ],
-      linkPadrao: LINK_WHATSAPP_COMBO
-    },
-    implementacao_avulsa: {
-      id: 'setup_implementacao_997',
-      nome: 'Implementação Operacional & Setup VIP',
-      valor: 997.00,
-      valorFormatado: 'R$ 997,00',
-      periodo: 'taxa única',
-      parcelamento: 'Ou em até 6x no cartão de crédito',
-      destaque: false,
-      badge: 'Serviço Consultivo Especializado',
-      descricao: 'Colocamos a sua confecção para rodar pronta em menos de 48 horas.',
-      itens: [
-        'Parametrização da identidade visual (logo em alta resolução nas fichas e orçamentos)',
-        'Configuração fiscal SEFAZ/Focus NFe e emissão de notas com 1 clique',
-        'Mapeamento de custos: cálculo de rendimento por quilo de tecido e margens reais',
-        'Ajuste fino de largura de bobina no motor Nesting DTF para corte sem desperdício',
-        'Treinamento prático em vídeo/WhatsApp para vendedores e chão de fábrica',
-        'Auditoria e acompanhamento dos primeiros pedidos lançados'
-      ],
-      linkPadrao: LINK_WHATSAPP_SETUP
+      linkPadrao: LINK_WHATSAPP_TREINAMENTO
     }
   };
 
@@ -257,23 +240,23 @@
           </div>
 
           <div style="margin-bottom: 12px;">
-            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">Link do Plano Mensal (R$ 397,00):</label>
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">Link do Plano Mensal (R$ 227,00):</label>
             <input type="url" id="cfgIpLinkMensal" value="${config.linkMensal || ''}" placeholder="https://pay.infinitepay.io/..." style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 12px; box-sizing: border-box;">
           </div>
 
           <div style="margin-bottom: 12px;">
-            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">Link do Plano Anual (R$ 3.970,00 em até 12x):</label>
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">Link do Plano Anual (R$ 1.890,00 ou 12x de R$ 189):</label>
             <input type="url" id="cfgIpLinkAnual" value="${config.linkAnual || ''}" placeholder="https://pay.infinitepay.io/..." style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 12px; box-sizing: border-box;">
           </div>
 
           <div style="margin-bottom: 12px;">
-            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">Link Combo Anual + Implementação (R$ 4.764,00 em até 12x):</label>
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">Link Treinamento VIP Equipe Opcional (R$ 297,00):</label>
             <input type="url" id="cfgIpLinkCombo" value="${config.linkCombo || ''}" placeholder="https://pay.infinitepay.io/..." style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 12px; box-sizing: border-box;">
           </div>
 
           <div style="margin-bottom: 16px;">
             <label style="display: block; font-size: 11.5px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">WhatsApp Comercial de Suporte (DDD + Número):</label>
-            <input type="text" id="cfgIpWhatsapp" value="${config.whatsappSuporte || '5544998071870'}" placeholder="5544998071870" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 12px; box-sizing: border-box;">
+            <input type="text" id="cfgIpWhatsapp" value="${config.whatsappSuporte || '5544999856245'}" placeholder="5544999856245" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 12px; box-sizing: border-box;">
           </div>
 
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; font-size: 11px; color: #64748b; line-height: 1.4;">
@@ -301,7 +284,7 @@
         linkMensal: overlay.querySelector('#cfgIpLinkMensal').value.trim(),
         linkAnual: overlay.querySelector('#cfgIpLinkAnual').value.trim(),
         linkCombo: overlay.querySelector('#cfgIpLinkCombo').value.trim(),
-        whatsappSuporte: overlay.querySelector('#cfgIpWhatsapp').value.replace(/\D/g, '') || '5544998071870'
+        whatsappSuporte: overlay.querySelector('#cfgIpWhatsapp').value.replace(/\D/g, '') || '5544999856245'
       };
       salvarConfiguracoes(novaCfg);
       fechar();
