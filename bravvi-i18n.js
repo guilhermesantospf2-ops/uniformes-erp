@@ -1,9 +1,13 @@
 /**
  * ============================================================================
- * BRAVVI ERP TÊXTIL — MOTOR DE INTERNACIONALIZAÇÃO GLOBAL (i18n)
+ * BRAVVI ERP TÊXTIL — MOTOR DE INTERNACIONALIZAÇÃO GLOBAL & DOM WALKER (i18n)
  * ============================================================================
- * Suporte a todos os idiomas do mundo com seleção instantânea,
- * formatação de moeda automática e tradução inteligente de interface.
+ * Suporte a todos os idiomas do mundo (+120 idiomas) com:
+ * 1. Dicionário nativo industrial de alta precisão para PT-PT, ES, EN, FR, DE, IT.
+ * 2. Varredor recursivo de DOM (DOM Walker) que traduz toda a interface em tempo real.
+ * 3. MutationObserver automático que intercepta e traduz novas telas e modais.
+ * 4. Motor universal Google Translate para todos os demais 120+ idiomas do mundo.
+ * 5. Formatação monetária dinâmica instantânea (R$, €, $, £, ¥, etc.).
  */
 
 (function () {
@@ -101,502 +105,813 @@
     { code: 'ur', nome: 'اردو (Urdu)', flag: '🇵🇰', moeda: 'PKR', simbolo: '₨', locale: 'ur-PK', rtl: true },
     { code: 'uz', nome: 'Oʻzbekcha (Uzbek)', flag: '🇺🇿', moeda: 'UZS', simbolo: 'soʻm', locale: 'uz-UZ' },
     { code: 'vi', nome: 'Tiếng Việt (Vietnamese)', flag: '🇻🇳', moeda: 'VND', simbolo: '₫', locale: 'vi-VN' },
-    { code: 'cy', nome: 'Cymraeg (Welsh)', flag: '🏴󠁧󠁢󠁷󠁬󠁳󠁿', moeda: 'GBP', simbolo: '£', locale: 'cy-GB' },
+    { code: 'cy', nome: 'Cymraeg (Welsh)', flag: '🇬🇧', moeda: 'GBP', simbolo: '£', locale: 'cy-GB' },
     { code: 'xh', nome: 'isiXhosa', flag: '🇿🇦', moeda: 'ZAR', simbolo: 'R', locale: 'xh-ZA' },
-    { code: 'yi', nome: 'ייִדיש (Yiddish)', flag: '🌐', moeda: 'USD', simbolo: '$', locale: 'yi', rtl: true },
-    { code: 'zu', nome: 'isiZulu', flag: '🇿🇦', moeda: 'ZAR', simbolo: 'R', locale: 'zu-ZA' },
-    { code: 'gn', nome: 'Avañeʼẽ (Guaraní)', flag: '🇵🇾', moeda: 'PYG', simbolo: 'Gs', locale: 'gn-PY' }
+    { code: 'yi', nome: 'ייִדיש (Yiddish)', flag: '🌐', moeda: 'EUR', simbolo: '€', locale: 'yi', rtl: true },
+    { code: 'zu', nome: 'isiZulu', flag: '🇿🇦', moeda: 'ZAR', simbolo: 'R', locale: 'zu-ZA' }
   ];
 
-  // 2. Dicionários Oficiais de Termos do Sistema para as Principais Línguas
-  const DICIONARIOS = {
-    'pt-BR': {
-      // Sidebar
-      'menu_abertura': 'Abertura',
-      'menu_pedidos': 'Pedidos',
-      'menu_os': 'OS / Fichas',
-      'menu_nesting': 'Nesting DTF',
-      'menu_estoque': 'Estoque',
-      'menu_produtos': 'Produtos',
-      'menu_financeiro': 'Financeiro',
-      'menu_compras': 'Compras',
-      'menu_clientes': 'Clientes',
-      'menu_quarentena': 'Quarentena',
-      'menu_equipe': 'Equipe',
-      'menu_nfe': 'Notas Fiscais',
-      'menu_empresa': 'Minha Empresa',
-      // Headers & Actions
-      'minha_conta': 'Minha Conta',
-      'licenca_pro': 'LICENÇA PRO ATIVA',
-      'plano_industrial': 'Plano Industrial • Ilimitado',
-      'instalar_pc': 'Instalar no PC',
-      'novo_pedido': 'Novo Pedido',
-      'salvar': 'Salvar',
-      'cancelar': 'Cancelar',
-      'excluir': 'Excluir',
-      'editar': 'Editar',
-      'imprimir': 'Imprimir',
-      'exportar': 'Exportar',
-      'pesquisar': 'Pesquisar...',
-      'filtrar': 'Filtrar',
-      'selecionar_idioma': 'Selecionar Idioma',
-      'idioma_sistema': 'Idioma do Sistema',
-      'trocar_idioma': 'Alterar Idioma'
-    },
+  // 2. Estado Ativo do Idioma
+  let idiomaAtual = localStorage.getItem('bravvi_language') || 'pt-BR';
+  let moedaAtual = localStorage.getItem('bravvi_currency') || 'BRL';
+
+  // Helper para obter dados do idioma ativo
+  function obterIdiomaConfig() {
+    return IDIOMAS_CATALOGO.find(i => i.code === idiomaAtual) || IDIOMAS_CATALOGO[0];
+  }
+
+  // 3. Super Dicionário Lexical da Confecção & ERP Têxtil
+  const DICIONARIOS_EXATOS = {
     'pt-PT': {
-      // Sidebar
-      'menu_abertura': 'Início',
-      'menu_pedidos': 'Encomendas',
-      'menu_os': 'OF / Fichas',
-      'menu_nesting': 'Nesting DTF',
-      'menu_estoque': 'Stock',
-      'menu_produtos': 'Artigos',
-      'menu_financeiro': 'Financeiro',
-      'menu_compras': 'Compras',
-      'menu_clientes': 'Clientes',
-      'menu_quarentena': 'Quarentena',
-      'menu_equipe': 'Equipa',
-      'menu_nfe': 'Faturação',
-      'menu_empresa': 'Minha Empresa',
-      // Headers & Actions
-      'minha_conta': 'A Minha Conta',
-      'licenca_pro': 'LICENÇA PRO ATIVA',
-      'plano_industrial': 'Plano Fabril • Ilimitado',
-      'instalar_pc': 'Instalar no PC',
-      'novo_pedido': 'Nova Encomenda',
-      'salvar': 'Guardar',
-      'cancelar': 'Cancelar',
-      'excluir': 'Eliminar',
-      'editar': 'Editar',
-      'imprimir': 'Imprimir',
-      'exportar': 'Exportar',
-      'pesquisar': 'Procurar...',
-      'filtrar': 'Filtrar',
-      'selecionar_idioma': 'Selecionar Idioma',
-      'idioma_sistema': 'Idioma do Sistema',
-      'trocar_idioma': 'Alterar Idioma'
+      'Abertura & Visão Geral da Fábrica': 'Ecrã Inicial & Visão Geral da Fábrica',
+      'Gestão Comercial, Orçamentos & Pedidos': 'Gestão Comercial, Orçamentos & Encomendas',
+      'Visão Geral de Pedidos': 'Visão Geral das Encomendas',
+      'Ordens de Serviço & Fichas': 'Ordens de Fabrico & Fichas Técnicas',
+      'Ordem de Produção': 'Ordem de Fabrico',
+      'Ordens de Serviço': 'Ordens de Fabrico',
+      'OS / Fichas': 'OF / Fichas',
+      'Nesting DTF & Encaixe Automático': 'Nesting DTF & Encaixe Automático',
+      'Controle de Estoque & Matéria-Prima': 'Gestão de Stock & Matérias-Primas',
+      'Estoque': 'Stock',
+      'Estoque de Matéria-Prima': 'Stock de Matérias-Primas',
+      'Catálogo de Produtos & Modelagens': 'Catálogo de Artigos & Modelagens',
+      'Produtos': 'Artigos',
+      'Produto': 'Artigo',
+      'Gestão Financeira & DRE Industrial': 'Gestão Financeira & Demonstração de Resultados',
+      'Financeiro': 'Financeiro',
+      'Compras & Cotação de Fornecedores': 'Compras & Cotação de Fornecedores',
+      'Compras': 'Compras',
+      'Carteira de Clientes & CRM': 'Gestão de Clientes & CRM',
+      'Clientes': 'Clientes',
+      'Controle de Qualidade & Quarentena': 'Controlo de Qualidade & Quarentena',
+      'Quarentena': 'Quarentena',
+      'Gestão de Equipe & Produção': 'Gestão de Equipa & Produtividade',
+      'Equipe': 'Equipa',
+      'Emissão de Notas Fiscais (NF-e / NFC-e)': 'Faturação & Documentos Fiscais',
+      'Notas Fiscais': 'Faturas',
+      'Fiscal': 'Faturação',
+      'Configurações da Empresa': 'Definições da Empresa',
+      'Minha Empresa': 'A Minha Empresa',
+      'Minha Conta': 'A Minha Conta',
+      'Novo Orçamento / Pedido': '+ Novo Orçamento / Encomenda',
+      'Novo Pedido': '+ Nova Encomenda',
+      'Cadastrar Primeiro Pedido / Orçamento': 'Criar Primeiro Orçamento / Encomenda',
+      'Tabela Detalhada': 'Tabela Detalhada',
+      'Kanban de Pedidos': 'Kanban de Encomendas',
+      'Gerar Link do Cliente': 'Gerar Ligação para o Cliente',
+      'Buscar cliente, número ou modelo...': 'Pesquisar cliente, número ou artigo...',
+      'Buscar por cliente, pedido, artigo...': 'Pesquisar por cliente, encomenda, artigo...',
+      'Todos os Status': 'Todos os Estados',
+      'Apenas Ativos (Sem Cancelados)': 'Apenas Ativos (Sem Cancelados)',
+      'Em Produção': 'Em Fabrico',
+      'Em Quarentena': 'Em Quarentena',
+      'Apenas Orçamento': 'Apenas Orçamento',
+      'Finalizados': 'Concluídos',
+      '🚫 Apenas Cancelados': '🚫 Apenas Cancelados',
+      'Aguardando Produção': 'A Aguardar Fabrico',
+      'Aguardando Corte': 'A Aguardar Corte',
+      'Em Estamparia': 'Em Estamparia',
+      'Em Costura': 'Em Costura',
+      'Em Acabamento': 'Em Acabamento',
+      '100% QUITADO': '100% LIQUIDADO',
+      'PENDENTE': 'PENDENTE',
+      'PARCIAL': 'PARCIAL',
+      'Salvar Alterações': 'Guardar Alterações',
+      'Salvar': 'Guardar',
+      'Cancelar': 'Cancelar',
+      'Fechar': 'Fechar',
+      'Imprimir': 'Imprimir',
+      'Exportar': 'Exportar',
+      'Excluir': 'Eliminar',
+      'Editar': 'Editar',
+      'Detalhes': 'Detalhes',
+      'Preço': 'Preço',
+      'Quantidade': 'Quantidade',
+      'Tamanho': 'Tamanho',
+      'Total': 'Total',
+      'Prazo': 'Prazo de Entrega',
+      'Valor Total': 'Montante Total',
+      'Faturamento': 'Faturação',
+      'Lucro': 'Lucro',
+      'Entregue': 'Entregue',
+      'Celular / WhatsApp': 'Telemóvel / WhatsApp',
+      'Telefone': 'Contacto Telefónico',
+      'Endereço': 'Morada',
+      'Bairro': 'Freguesia / Zona',
+      'CEP': 'Código Postal',
+      'Usuários': 'Utilizadores',
+      'Usuário': 'Utilizador',
+      'Sair do Sistema': 'Terminar Sessão'
     },
     'es': {
-      // Sidebar
-      'menu_abertura': 'Inicio',
-      'menu_pedidos': 'Pedidos',
-      'menu_os': 'OT / Fichas',
-      'menu_nesting': 'Nesting DTF',
-      'menu_estoque': 'Stock',
-      'menu_produtos': 'Productos',
-      'menu_financeiro': 'Finanzas',
-      'menu_compras': 'Compras',
-      'menu_clientes': 'Clientes',
-      'menu_quarentena': 'Cuarentena',
-      'menu_equipe': 'Equipo',
-      'menu_nfe': 'Facturación',
-      'menu_empresa': 'Mi Empresa',
-      // Headers & Actions
-      'minha_conta': 'Mi Cuenta',
-      'licenca_pro': 'LICENCIA PRO ACTIVA',
-      'plano_industrial': 'Plan Industrial • Ilimitado',
-      'instalar_pc': 'Instalar en PC',
-      'novo_pedido': 'Nuevo Pedido',
-      'salvar': 'Guardar',
-      'cancelar': 'Cancelar',
-      'excluir': 'Eliminar',
-      'editar': 'Editar',
-      'imprimir': 'Imprimir',
-      'exportar': 'Exportar',
-      'pesquisar': 'Buscar...',
-      'filtrar': 'Filtrar',
-      'selecionar_idioma': 'Seleccionar Idioma',
-      'idioma_sistema': 'Idioma del Sistema',
-      'trocar_idioma': 'Cambiar Idioma'
+      'Abertura & Visão Geral da Fábrica': 'Inicio & Visión General de Fábrica',
+      'Gestão Comercial, Orçamentos & Pedidos': 'Gestión Comercial, Presupuestos & Pedidos',
+      'Visão Geral de Pedidos': 'Visión General de Pedidos',
+      'Ordens de Serviço & Fichas': 'Órdenes de Trabajo & Fichas Técnicas',
+      'Ordem de Produção': 'Orden de Producción',
+      'Ordens de Serviço': 'Órdenes de Trabajo',
+      'OS / Fichas': 'OT / Fichas',
+      'Nesting DTF & Encaixe Automático': 'Nesting DTF & Encaje Automático',
+      'Controle de Estoque & Matéria-Prima': 'Control de Inventario & Materia Prima',
+      'Estoque': 'Inventario',
+      'Estoque de Matéria-Prima': 'Inventario de Materia Prima',
+      'Catálogo de Produtos & Modelagens': 'Catálogo de Productos & Patrones',
+      'Produtos': 'Productos',
+      'Produto': 'Producto',
+      'Gestão Financeira & DRE Industrial': 'Gestión Financiera & Resultados',
+      'Financeiro': 'Finanzas',
+      'Compras & Cotação de Fornecedores': 'Compras & Cotización de Proveedores',
+      'Compras': 'Compras',
+      'Carteira de Clientes & CRM': 'Cartera de Clientes & CRM',
+      'Clientes': 'Clientes',
+      'Controle de Qualidade & Quarentena': 'Control de Calidad & Cuarentena',
+      'Quarentena': 'Cuarentena',
+      'Gestão de Equipe & Produção': 'Gestión de Equipo & Rendimiento',
+      'Equipe': 'Equipo',
+      'Emissão de Notas Fiscais (NF-e / NFC-e)': 'Facturación & Documentos Fiscales',
+      'Notas Fiscais': 'Facturas',
+      'Fiscal': 'Facturación',
+      'Configurações da Empresa': 'Configuración de la Empresa',
+      'Minha Empresa': 'Mi Empresa',
+      'Minha Conta': 'Mi Cuenta',
+      'Novo Orçamento / Pedido': '+ Nuevo Presupuesto / Pedido',
+      'Novo Pedido': '+ Nuevo Pedido',
+      'Cadastrar Primeiro Pedido / Orçamento': 'Registrar Primer Pedido / Presupuesto',
+      'Tabela Detalhada': 'Tabla Detallada',
+      'Kanban de Pedidos': 'Kanban de Pedidos',
+      'Gerar Link do Cliente': 'Generar Enlace para el Cliente',
+      'Buscar cliente, número ou modelo...': 'Buscar cliente, número o artículo...',
+      'Buscar por cliente, pedido, artigo...': 'Buscar por cliente, pedido, artículo...',
+      'Todos os Status': 'Todos los Estados',
+      'Apenas Ativos (Sem Cancelados)': 'Solo Activos (Sin Cancelados)',
+      'Em Produção': 'En Producción',
+      'Em Quarentena': 'En Cuarentena',
+      'Apenas Orçamento': 'Solo Presupuesto',
+      'Finalizados': 'Completados',
+      '🚫 Apenas Cancelados': '🚫 Solo Cancelados',
+      'Aguardando Produção': 'Esperando Producción',
+      'Aguardando Corte': 'Esperando Corte',
+      'Em Estamparia': 'En Estampado',
+      'Em Costura': 'En Costura',
+      'Em Acabamento': 'En Acabado',
+      '100% QUITADO': '100% PAGADO',
+      'PENDENTE': 'PENDIENTE',
+      'PARCIAL': 'PARCIAL',
+      'Salvar Alterações': 'Guardar Cambios',
+      'Salvar': 'Guardar',
+      'Cancelar': 'Cancelar',
+      'Fechar': 'Cerrar',
+      'Imprimir': 'Imprimir',
+      'Exportar': 'Exportar',
+      'Excluir': 'Eliminar',
+      'Editar': 'Editar',
+      'Detalhes': 'Detalles',
+      'Preço': 'Precio',
+      'Quantidade': 'Cantidad',
+      'Tamanho': 'Talla',
+      'Tamanhos': 'Tallas',
+      'Total': 'Total',
+      'Prazo': 'Fecha de Entrega',
+      'Valor Total': 'Importe Total',
+      'Faturamento': 'Facturación',
+      'Lucro': 'Ganancia',
+      'Entregue': 'Entregado',
+      'Celular / WhatsApp': 'Celular / WhatsApp',
+      'Telefone': 'Teléfono de Contacto',
+      'Endereço': 'Dirección',
+      'Bairro': 'Barrio',
+      'CEP': 'Código Postal',
+      'Usuários': 'Usuarios',
+      'Usuário': 'Usuario',
+      'Sair do Sistema': 'Cerrar Sesión'
     },
     'en': {
-      // Sidebar
-      'menu_abertura': 'Dashboard',
-      'menu_pedidos': 'Orders',
-      'menu_os': 'Work Orders',
-      'menu_nesting': 'DTF Nesting',
-      'menu_estoque': 'Inventory',
-      'menu_produtos': 'Products',
-      'menu_financeiro': 'Finance',
-      'menu_compras': 'Purchasing',
-      'menu_clientes': 'Customers',
-      'menu_quarentena': 'Hold Queue',
-      'menu_equipe': 'Team',
-      'menu_nfe': 'Invoicing',
-      'menu_empresa': 'Company Settings',
-      // Headers & Actions
-      'minha_conta': 'My Account',
-      'licenca_pro': 'PRO LICENSE ACTIVE',
-      'plano_industrial': 'Industrial Plan • Unlimited',
-      'instalar_pc': 'Install Desktop App',
-      'novo_pedido': 'New Order',
-      'salvar': 'Save',
-      'cancelar': 'Cancel',
-      'excluir': 'Delete',
-      'editar': 'Edit',
-      'imprimir': 'Print',
-      'exportar': 'Export',
-      'pesquisar': 'Search...',
-      'filtrar': 'Filter',
-      'selecionar_idioma': 'Select Language',
-      'idioma_sistema': 'System Language',
-      'trocar_idioma': 'Change Language'
+      'Abertura & Visão Geral da Fábrica': 'Dashboard & Factory Overview',
+      'Gestão Comercial, Orçamentos & Pedidos': 'Sales Management, Quotes & Orders',
+      'Visão Geral de Pedidos': 'Orders Overview',
+      'Ordens de Serviço & Fichas': 'Work Orders & Spec Sheets',
+      'Ordem de Produção': 'Production Order',
+      'Ordens de Serviço': 'Work Orders',
+      'OS / Fichas': 'WO / Specs',
+      'Nesting DTF & Encaixe Automático': 'DTF Auto Nesting & Layout Engine',
+      'Controle de Estoque & Matéria-Prima': 'Inventory & Raw Materials Control',
+      'Estoque': 'Inventory',
+      'Estoque de Matéria-Prima': 'Raw Materials Stock',
+      'Catálogo de Produtos & Modelagens': 'Product Catalog & Textile Patterns',
+      'Produtos': 'Products',
+      'Produto': 'Product',
+      'Gestão Financeira & DRE Industrial': 'Financial Management & P&L Statement',
+      'Financeiro': 'Financial',
+      'Compras & Cotação de Fornecedores': 'Purchasing & Supplier Quotes',
+      'Compras': 'Purchases',
+      'Carteira de Clientes & CRM': 'Customer Portfolio & CRM',
+      'Clientes': 'Customers',
+      'Controle de Qualidade & Quarentena': 'Quality Control & Quarantine',
+      'Quarentena': 'Quality Control',
+      'Gestão de Equipe & Produção': 'Team Management & Productivity',
+      'Equipe': 'Team',
+      'Emissão de Notas Fiscais (NF-e / NFC-e)': 'Tax Invoices & Billing',
+      'Notas Fiscais': 'Invoices',
+      'Fiscal': 'Tax & Billing',
+      'Configurações da Empresa': 'Company Settings',
+      'Minha Empresa': 'My Company',
+      'Minha Conta': 'My Account',
+      'Novo Orçamento / Pedido': '+ New Quote / Order',
+      'Novo Pedido': '+ New Order',
+      'Cadastrar Primeiro Pedido / Orçamento': 'Create First Order / Quote',
+      'Tabela Detalhada': 'Detailed Table',
+      'Kanban de Pedidos': 'Orders Kanban',
+      'Gerar Link do Cliente': 'Generate Customer Link',
+      'Buscar cliente, número ou modelo...': 'Search customer, number or item...',
+      'Buscar por cliente, pedido, artigo...': 'Search by customer, order, item...',
+      'Todos os Status': 'All Statuses',
+      'Apenas Ativos (Sem Cancelados)': 'Active Only (No Cancelled)',
+      'Em Produção': 'In Production',
+      'Em Quarentena': 'In Quarantine',
+      'Apenas Orçamento': 'Quotes Only',
+      'Finalizados': 'Completed',
+      '🚫 Apenas Cancelados': '🚫 Cancelled Only',
+      'Aguardando Produção': 'Awaiting Production',
+      'Aguardando Corte': 'Awaiting Cut',
+      'Em Estamparia': 'Screen Printing',
+      'Em Costura': 'In Sewing',
+      'Em Acabamento': 'In Finishing',
+      '100% QUITADO': '100% PAID IN FULL',
+      'PENDENTE': 'PENDING',
+      'PARCIAL': 'PARTIAL',
+      'Salvar Alterações': 'Save Changes',
+      'Salvar': 'Save',
+      'Cancelar': 'Cancel',
+      'Fechar': 'Close',
+      'Imprimir': 'Print',
+      'Exportar': 'Export',
+      'Excluir': 'Delete',
+      'Editar': 'Edit',
+      'Detalhes': 'Details',
+      'Preço': 'Price',
+      'Quantidade': 'Quantity',
+      'Tamanho': 'Size',
+      'Tamanhos': 'Sizes',
+      'Total': 'Total',
+      'Prazo': 'Deadline',
+      'Valor Total': 'Total Amount',
+      'Faturamento': 'Revenue',
+      'Lucro': 'Profit',
+      'Entregue': 'Delivered',
+      'Celular / WhatsApp': 'Mobile / WhatsApp',
+      'Telefone': 'Phone Number',
+      'Endereço': 'Address',
+      'Bairro': 'Neighborhood',
+      'CEP': 'Zip Code',
+      'Usuários': 'Users',
+      'Usuário': 'User',
+      'Sair do Sistema': 'Sign Out'
     },
     'fr': {
-      'menu_abertura': 'Tableau de bord',
-      'menu_pedidos': 'Commandes',
-      'menu_os': 'Ordres de fabrication',
-      'menu_nesting': 'Imbrication DTF',
-      'menu_estoque': 'Stocks',
-      'menu_produtos': 'Articles',
-      'menu_financeiro': 'Finances',
-      'menu_compras': 'Achats',
-      'menu_clientes': 'Clients',
-      'menu_quarentena': 'Quarantaine',
-      'menu_equipe': 'Équipe',
-      'menu_nfe': 'Facturation',
-      'menu_empresa': 'Mon Entreprise',
-      'minha_conta': 'Mon Compte',
-      'licenca_pro': 'LICENCE PRO ACTIVE',
-      'plano_industrial': 'Plan Industriel • Illimité',
-      'instalar_pc': 'Installer sur PC',
-      'novo_pedido': 'Nouvelle Commande',
-      'salvar': 'Enregistrer',
-      'cancelar': 'Annuler',
-      'excluir': 'Supprimer',
-      'editar': 'Modifier',
-      'imprimir': 'Imprimer',
-      'exportar': 'Exporter',
-      'pesquisar': 'Rechercher...',
-      'filtrar': 'Filtrer',
-      'selecionar_idioma': 'Choisir la Langue',
-      'idioma_sistema': 'Langue du Système',
-      'trocar_idioma': 'Changer de Langue'
+      'Abertura & Visão Geral da Fábrica': 'Tableau de Bord & Vue d\'Ensemble',
+      'Gestão Comercial, Orçamentos & Pedidos': 'Gestion Commerciale, Devis & Commandes',
+      'Visão Geral de Pedidos': 'Aperçu des Commandes',
+      'Ordens de Serviço & Fichas': 'Ordres de Fabrication & Fiches Techniques',
+      'Ordem de Produção': 'Ordre de Production',
+      'Ordens de Serviço': 'Ordres de Travail',
+      'OS / Fichas': 'OF / Fiches',
+      'Controle de Estoque & Matéria-Prima': 'Gestion des Stocks & Matières Premières',
+      'Estoque': 'Stock',
+      'Produtos': 'Produits',
+      'Produto': 'Produit',
+      'Financeiro': 'Finances',
+      'Compras': 'Achats',
+      'Clientes': 'Clients',
+      'Quarentena': 'Contrôle Qualité',
+      'Equipe': 'Équipe',
+      'Fiscal': 'Facturation',
+      'Configurações da Empresa': 'Paramètres de l\'Entreprise',
+      'Minha Empresa': 'Mon Entreprise',
+      'Minha Conta': 'Mon Compte',
+      'Novo Orçamento / Pedido': '+ Nouveau Devis / Commande',
+      'Tabela Detalhada': 'Tableau Détaillé',
+      'Kanban de Pedidos': 'Kanban des Commandes',
+      'Salvar Alterações': 'Enregistrer les Modifications',
+      'Salvar': 'Enregistrer',
+      'Cancelar': 'Annuler',
+      'Fechar': 'Fermer',
+      'Imprimir': 'Imprimer',
+      'Exportar': 'Exporter',
+      'Excluir': 'Supprimer',
+      'Editar': 'Modifier',
+      'Em Produção': 'En Production',
+      'Finalizados': 'Terminés',
+      'Sair do Sistema': 'Déconnexion'
     },
     'de': {
-      'menu_abertura': 'Übersicht',
-      'menu_pedidos': 'Aufträge',
-      'menu_os': 'Fertigungsaufträge',
-      'menu_nesting': 'DTF Schachtelung',
-      'menu_estoque': 'Lagerbestand',
-      'menu_produtos': 'Produkte',
-      'menu_financeiro': 'Finanzen',
-      'menu_compras': 'Einkauf',
-      'menu_clientes': 'Kunden',
-      'menu_quarentena': 'Quarantäne',
-      'menu_equipe': 'Team',
-      'menu_nfe': 'Rechnungen',
-      'menu_empresa': 'Mein Unternehmen',
-      'minha_conta': 'Mein Konto',
-      'licenca_pro': 'PRO LIZENZ AKTIV',
-      'plano_industrial': 'Industrie-Plan • Unbegrenzt',
-      'instalar_pc': 'Auf PC installieren',
-      'novo_pedido': 'Neuer Auftrag',
-      'salvar': 'Speichern',
-      'cancelar': 'Abbrechen',
-      'excluir': 'Löschen',
-      'editar': 'Bearbeiten',
-      'imprimir': 'Drucken',
-      'exportar': 'Exportieren',
-      'pesquisar': 'Suchen...',
-      'filtrar': 'Filtern',
-      'selecionar_idioma': 'Sprache Wählen',
-      'idioma_sistema': 'Systemsprache',
-      'trocar_idioma': 'Sprache Ändern'
+      'Abertura & Visão Geral da Fábrica': 'Dashboard & Fabrikübersicht',
+      'Gestão Comercial, Orçamentos & Pedidos': 'Vertriebsmanagement, Angebote & Aufträge',
+      'Visão Geral de Pedidos': 'Auftragsübersicht',
+      'Ordens de Serviço & Fichas': 'Fertigungsaufträge & Datenblätter',
+      'Ordem de Produção': 'Produktionsauftrag',
+      'Estoque': 'Lagerbestand',
+      'Produtos': 'Produkte',
+      'Financeiro': 'Finanzen',
+      'Compras': 'Einkauf',
+      'Clientes': 'Kunden',
+      'Quarentena': 'Qualitätskontrolle',
+      'Equipe': 'Team',
+      'Fiscal': 'Steuern & Rechnungswesen',
+      'Configurações da Empresa': 'Unternehmenseinstellungen',
+      'Minha Empresa': 'Mein Unternehmen',
+      'Minha Conta': 'Mein Konto',
+      'Novo Orçamento / Pedido': '+ Neues Angebot / Auftrag',
+      'Salvar Alterações': 'Änderungen Speichern',
+      'Salvar': 'Speichern',
+      'Cancelar': 'Abbrechen',
+      'Fechar': 'Schließen',
+      'Imprimir': 'Drucken',
+      'Exportar': 'Exportieren',
+      'Excluir': 'Löschen',
+      'Editar': 'Bearbeiten',
+      'Em Produção': 'In Produktion',
+      'Finalizados': 'Abgeschlossen',
+      'Sair do Sistema': 'Abmelden'
     },
     'it': {
-      'menu_abertura': 'Pannello',
-      'menu_pedidos': 'Ordini',
-      'menu_os': 'Ordini di Lavoro',
-      'menu_nesting': 'Nesting DTF',
-      'menu_estoque': 'Magazzino',
-      'menu_produtos': 'Prodotti',
-      'menu_financeiro': 'Finanze',
-      'menu_compras': 'Acquisti',
-      'menu_clientes': 'Clienti',
-      'menu_quarentena': 'Quarantena',
-      'menu_equipe': 'Squadra',
-      'menu_nfe': 'Fatturazione',
-      'menu_empresa': 'La Mia Azienda',
-      'minha_conta': 'Il Mio Account',
-      'licenca_pro': 'LICENZA PRO ATTIVA',
-      'plano_industrial': 'Piano Industriale • Illimitato',
-      'instalar_pc': 'Installa su PC',
-      'novo_pedido': 'Nuovo Ordine',
-      'salvar': 'Salva',
-      'cancelar': 'Annulla',
-      'excluir': 'Elimina',
-      'editar': 'Modifica',
-      'imprimir': 'Stampa',
-      'exportar': 'Esporta',
-      'pesquisar': 'Cerca...',
-      'filtrar': 'Filtra',
-      'selecionar_idioma': 'Seleziona Lingua',
-      'idioma_sistema': 'Lingua del Sistema',
-      'trocar_idioma': 'Cambia Lingua'
+      'Abertura & Visão Geral da Fábrica': 'Dashboard & Panoramica Fabbrica',
+      'Gestão Comercial, Orçamentos & Pedidos': 'Gestione Commerciale, Preventivi & Ordini',
+      'Visão Geral de Pedidos': 'Panoramica Ordini',
+      'Ordens de Serviço & Fichas': 'Ordini di Lavoro & Schede Tecniche',
+      'Ordem de Produção': 'Ordine di Produzione',
+      'Estoque': 'Magazzino',
+      'Produtos': 'Prodotti',
+      'Financeiro': 'Finanze',
+      'Compras': 'Acquisti',
+      'Clientes': 'Clienti',
+      'Quarentena': 'Controllo Qualità',
+      'Equipe': 'Squadra',
+      'Fiscal': 'Fatturazione',
+      'Configurações da Empresa': 'Impostazioni Azienda',
+      'Minha Empresa': 'La Mia Azienda',
+      'Minha Conta': 'Il Mio Account',
+      'Novo Orçamento / Pedido': '+ Nuovo Preventivo / Ordine',
+      'Salvar Alterações': 'Salva Modifiche',
+      'Salvar': 'Salva',
+      'Cancelar': 'Annulla',
+      'Fechar': 'Chiudi',
+      'Imprimir': 'Stampa',
+      'Exportar': 'Esporta',
+      'Excluir': 'Elimina',
+      'Editar': 'Modifica',
+      'Em Produção': 'In Produzione',
+      'Finalizados': 'Completati',
+      'Sair do Sistema': 'Esci'
     }
   };
 
-  // 3. Estado Atual do Motor
-  let idiomaAtual = 'pt-BR';
+  // Sub-regras de substituição para termos frequentes soltos
+  const SUBSTITUICOES_TERMOS = {
+    'pt-PT': [
+      [/\bPedidos\b/g, 'Encomendas'],
+      [/\bPedido\b/g, 'Encomenda'],
+      [/\bEstoque\b/g, 'Stock'],
+      [/\bProdutos\b/g, 'Artigos'],
+      [/\bProduto\b/g, 'Artigo'],
+      [/\bEquipe\b/g, 'Equipa'],
+      [/\bUsuários\b/g, 'Utilizadores'],
+      [/\bUsuário\b/g, 'Utilizador'],
+      [/\bConfigurações\b/g, 'Definições'],
+      [/\bFaturamento\b/g, 'Faturação'],
+      [/\bCelular\b/g, 'Telemóvel'],
+      [/\bSalvar\b/g, 'Guardar'],
+      [/\bBuscar\b/g, 'Pesquisar'],
+      [/\bEm Produção\b/g, 'Em Fabrico'],
+      [/R\$\s*/g, '€ ']
+    ],
+    'es': [
+      [/\bNovo Orçamento\b/g, 'Nuevo Presupuesto'],
+      [/\bNovo Pedido\b/g, 'Nuevo Pedido'],
+      [/\bOrçamento\b/g, 'Presupuesto'],
+      [/\bOrçamentos\b/g, 'Presupuestos'],
+      [/\bEstoque\b/g, 'Inventario'],
+      [/\bProdutos\b/g, 'Productos'],
+      [/\bProduto\b/g, 'Producto'],
+      [/\bFinanceiro\b/g, 'Finanzas'],
+      [/\bEquipe\b/g, 'Equipo'],
+      [/\bQuarentena\b/g, 'Cuarentena'],
+      [/\bConfigurações\b/g, 'Configuración'],
+      [/\bMinha Empresa\b/g, 'Mi Empresa'],
+      [/\bMinha Conta\b/g, 'Mi Cuenta'],
+      [/\bSalvar\b/g, 'Guardar'],
+      [/\bCancelar\b/g, 'Cancelar'],
+      [/\bFechar\b/g, 'Cerrar'],
+      [/\bExcluir\b/g, 'Eliminar'],
+      [/\bBuscar\b/g, 'Buscar'],
+      [/\bDetalhes\b/g, 'Detalles'],
+      [/\bEm Produção\b/g, 'En Producción'],
+      [/\bFinalizado\b/g, 'Completado'],
+      [/\bFinalizados\b/g, 'Completados'],
+      [/\bAguardando\b/g, 'Esperando'],
+      [/\bEntregue\b/g, 'Entregado'],
+      [/\bPrazo\b/g, 'Plazo'],
+      [/\bQuantidade\b/g, 'Cantidad'],
+      [/\bPreço\b/g, 'Precio'],
+      [/\bValor\b/g, 'Importe'],
+      [/\bTamanho\b/g, 'Talla'],
+      [/\bTamanhos\b/g, 'Tallas'],
+      [/R\$\s*/g, '$ ']
+    ],
+    'en': [
+      [/\bNovo Orçamento\b/g, 'New Quote'],
+      [/\bNovo Pedido\b/g, 'New Order'],
+      [/\bOrçamento\b/g, 'Quote'],
+      [/\bOrçamentos\b/g, 'Quotes'],
+      [/\bPedidos\b/g, 'Orders'],
+      [/\bPedido\b/g, 'Order'],
+      [/\bEstoque\b/g, 'Inventory'],
+      [/\bProdutos\b/g, 'Products'],
+      [/\bProduto\b/g, 'Product'],
+      [/\bFinanceiro\b/g, 'Financial'],
+      [/\bCompras\b/g, 'Purchases'],
+      [/\bClientes\b/g, 'Customers'],
+      [/\bCliente\b/g, 'Customer'],
+      [/\bEquipe\b/g, 'Team'],
+      [/\bQuarentena\b/g, 'Quality Control'],
+      [/\bFiscal\b/g, 'Billing / Tax'],
+      [/\bConfigurações\b/g, 'Settings'],
+      [/\bMinha Empresa\b/g, 'My Company'],
+      [/\bMinha Conta\b/g, 'My Account'],
+      [/\bSalvar Alterações\b/g, 'Save Changes'],
+      [/\bSalvar\b/g, 'Save'],
+      [/\bCancelar\b/g, 'Cancel'],
+      [/\bFechar\b/g, 'Close'],
+      [/\bImprimir\b/g, 'Print'],
+      [/\bExportar\b/g, 'Export'],
+      [/\bExcluir\b/g, 'Delete'],
+      [/\bEditar\b/g, 'Edit'],
+      [/\bBuscar\b/g, 'Search'],
+      [/\bDetalhes\b/g, 'Details'],
+      [/\bEm Produção\b/g, 'In Production'],
+      [/\bFinalizado\b/g, 'Completed'],
+      [/\bFinalizados\b/g, 'Completed'],
+      [/\bAguardando\b/g, 'Awaiting'],
+      [/\bEntregue\b/g, 'Delivered'],
+      [/\bPrazo\b/g, 'Deadline'],
+      [/\bQuantidade\b/g, 'Quantity'],
+      [/\bPreço\b/g, 'Price'],
+      [/\bValor Total\b/g, 'Total Amount'],
+      [/\bValor\b/g, 'Value'],
+      [/\bTamanho\b/g, 'Size'],
+      [/\bTamanhos\b/g, 'Sizes'],
+      [/\bFaturamento\b/g, 'Revenue'],
+      [/\bLucro\b/g, 'Profit'],
+      [/\bTabela Detalhada\b/g, 'Detailed Table'],
+      [/\bKanban de Pedidos\b/g, 'Orders Kanban'],
+      [/\bSair do Sistema\b/g, 'Sign Out'],
+      [/R\$\s*/g, '$ ']
+    ],
+    'fr': [
+      [/\bPedidos\b/g, 'Commandes'],
+      [/\bPedido\b/g, 'Commande'],
+      [/\bEstoque\b/g, 'Stock'],
+      [/\bProdutos\b/g, 'Produits'],
+      [/\bClientes\b/g, 'Clients'],
+      [/\bEquipe\b/g, 'Équipe'],
+      [/\bSalvar\b/g, 'Enregistrer'],
+      [/\bCancelar\b/g, 'Annuler'],
+      [/\bFechar\b/g, 'Fermer'],
+      [/R\$\s*/g, '€ ']
+    ],
+    'de': [
+      [/\bPedidos\b/g, 'Aufträge'],
+      [/\bPedido\b/g, 'Auftrag'],
+      [/\bEstoque\b/g, 'Lagerbestand'],
+      [/\bProdutos\b/g, 'Produkte'],
+      [/\bClientes\b/g, 'Kunden'],
+      [/\bEquipe\b/g, 'Team'],
+      [/\bSalvar\b/g, 'Speichern'],
+      [/\bCancelar\b/g, 'Abbrechen'],
+      [/\bFechar\b/g, 'Schließen'],
+      [/R\$\s*/g, '€ ']
+    ],
+    'it': [
+      [/\bPedidos\b/g, 'Ordini'],
+      [/\bPedido\b/g, 'Ordine'],
+      [/\bEstoque\b/g, 'Magazzino'],
+      [/\bProdutos\b/g, 'Prodotti'],
+      [/\bClientes\b/g, 'Clienti'],
+      [/\bEquipe\b/g, 'Squadra'],
+      [/\bSalvar\b/g, 'Salva'],
+      [/\bCancelar\b/g, 'Annulla'],
+      [/\bFechar\b/g, 'Chiudi'],
+      [/R\$\s*/g, '€ ']
+    ]
+  };
 
-  // Detecção Inicial
-  function detectarIdiomaInicial() {
-    // 1. Salvo no localStorage
-    const salvo = localStorage.getItem('bravvi_language');
-    if (salvo && IDIOMAS_CATALOGO.some(i => i.code === salvo)) {
-      return salvo;
+  // 4. Função Central de Tradução de Texto
+  function traduzirTexto(textoBruto, targetLang) {
+    if (!textoBruto || typeof textoBruto !== 'string') return textoBruto;
+    if (targetLang === 'pt-BR') return textoBruto;
+
+    const trimmed = textoBruto.trim();
+    if (!trimmed || /^[0-9\s.,/\\-_:;()]+$/.test(trimmed)) {
+      return textoBruto;
     }
 
-    // 2. Parâmetro na URL (?lang=pt ou ?lang=es)
-    if (window.location && window.location.search) {
-      const params = new URLSearchParams(window.location.search);
-      const urlLang = params.get('lang');
-      if (urlLang) {
-        const found = IDIOMAS_CATALOGO.find(i => i.code.toLowerCase() === urlLang.toLowerCase() || i.code.split('-')[0] === urlLang.toLowerCase());
-        if (found) return found.code;
+    // A. Busca Exata no Dicionário
+    const dict = DICIONARIOS_EXATOS[targetLang];
+    if (dict && dict[trimmed]) {
+      return textoBruto.replace(trimmed, dict[trimmed]);
+    }
+
+    // B. Substituição de Termos e Expressões
+    let resultado = textoBruto;
+    const regras = SUBSTITUICOES_TERMOS[targetLang];
+    if (regras && regras.length) {
+      for (let i = 0; i < regras.length; i++) {
+        resultado = resultado.replace(regras[i][0], regras[i][1]);
       }
     }
 
-    // 3. Pathname da URL (/pt -> pt-PT, /py -> es)
-    if (window.location && window.location.pathname) {
-      const path = window.location.pathname.toLowerCase();
-      if (path.includes('/pt') || path.includes('vendas-pt')) return 'pt-PT';
-      if (path.includes('/py') || path.includes('vendas-py') || path.includes('/paraguay')) return 'es';
+    // C. Substituição de Moeda Genérica se aplicável
+    const cfg = IDIOMAS_CATALOGO.find(i => i.code === targetLang);
+    if (cfg && cfg.simbolo && cfg.simbolo !== 'R$') {
+      resultado = resultado.replace(/R\$\s*/g, cfg.simbolo + ' ');
     }
 
-    // 4. Idioma do Navegador
-    if (navigator && navigator.language) {
-      const navLang = navigator.language;
-      if (navLang.toLowerCase().startsWith('pt-pt')) return 'pt-PT';
-      if (navLang.toLowerCase().startsWith('es')) return 'es';
-      if (navLang.toLowerCase().startsWith('en')) return 'en';
+    return resultado;
+  }
+
+  // 5. Varredor Recursivo de DOM (DOM Walker Ultra-Rápido)
+  function traduzirElemento(raiz, targetLang) {
+    if (!raiz || !raiz.nodeType) return;
+    if (raiz.id === 'bravviLanguageModal') return;
+
+    // Se raiz for text node
+    if (raiz.nodeType === 3) {
+      const raw = raiz.nodeValue;
+      if (!raw || !raw.trim()) return;
+      if (raiz.__origText === undefined) raiz.__origText = raw;
+      raiz.nodeValue = (targetLang === 'pt-BR') ? raiz.__origText : traduzirTexto(raiz.__origText, targetLang);
+      return;
     }
 
-    return 'pt-BR';
+    // Se for elemento
+    if (raiz.nodeType === 1) {
+      const tag = raiz.tagName.toUpperCase();
+      if (['SCRIPT', 'STYLE', 'CODE', 'PRE', 'NOSCRIPT'].includes(tag)) return;
+
+      // Traduz Text Nodes filhos via TreeWalker
+      const walker = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT, null, false);
+      let textNode;
+      while ((textNode = walker.nextNode())) {
+        const raw = textNode.nodeValue;
+        if (!raw || !raw.trim()) continue;
+        const parent = textNode.parentNode;
+        if (parent && (['SCRIPT', 'STYLE', 'CODE', 'PRE'].includes(parent.tagName) || parent.closest('#bravviLanguageModal'))) continue;
+
+        if (textNode.__origText === undefined) textNode.__origText = raw;
+        textNode.nodeValue = (targetLang === 'pt-BR') ? textNode.__origText : traduzirTexto(textNode.__origText, targetLang);
+      }
+
+      // Traduz Atributos Relevantes
+      if (raiz.placeholder) {
+        if (raiz.__origPlaceholder === undefined) raiz.__origPlaceholder = raiz.placeholder;
+        raiz.placeholder = (targetLang === 'pt-BR') ? raiz.__origPlaceholder : traduzirTexto(raiz.__origPlaceholder, targetLang);
+      }
+      if (raiz.title) {
+        if (raiz.__origTitle === undefined) raiz.__origTitle = raiz.title;
+        raiz.title = (targetLang === 'pt-BR') ? raiz.__origTitle : traduzirTexto(raiz.__origTitle, targetLang);
+      }
+
+      // Sub-elementos de formulário dentro da raiz
+      const inputs = raiz.querySelectorAll ? raiz.querySelectorAll('input[placeholder], textarea[placeholder], button[title], select') : [];
+      inputs.forEach(el => {
+        if (el.closest && el.closest('#bravviLanguageModal')) return;
+        if (el.placeholder) {
+          if (el.__origPlaceholder === undefined) el.__origPlaceholder = el.placeholder;
+          el.placeholder = (targetLang === 'pt-BR') ? el.__origPlaceholder : traduzirTexto(el.__origPlaceholder, targetLang);
+        }
+        if (el.title) {
+          if (el.__origTitle === undefined) el.__origTitle = el.title;
+          el.title = (targetLang === 'pt-BR') ? el.__origTitle : traduzirTexto(el.__origTitle, targetLang);
+        }
+        if (el.tagName === 'SELECT') {
+          Array.from(el.options).forEach(opt => {
+            if (opt.__origText === undefined) opt.__origText = opt.text;
+            opt.text = (targetLang === 'pt-BR') ? opt.__origText : traduzirTexto(opt.__origText, targetLang);
+          });
+        }
+      });
+    }
   }
 
-  idiomaAtual = detectarIdiomaInicial();
+  // 6. Tradução da Página Completa
+  function traduzirPaginaCompleta() {
+    const lang = idiomaAtual;
+    const config = obterIdiomaConfig();
 
-  // Obter Objeto de Configuração do Idioma Atual
-  function obterIdiomaConfig(code = idiomaAtual) {
-    return IDIOMAS_CATALOGO.find(i => i.code === code) || IDIOMAS_CATALOGO[0];
+    // Tag HTML
+    document.documentElement.lang = config.code;
+    document.documentElement.dir = config.rtl ? 'rtl' : 'ltr';
+
+    // 1. Navbar e Cabeçalho
+    const headerLangText = document.getElementById('headerLangText');
+    const headerLangFlag = document.getElementById('headerLangFlag');
+    if (headerLangText) headerLangText.textContent = config.nome.split(' (')[0];
+    if (headerLangFlag) headerLangFlag.textContent = config.flag;
+
+    const sidebarLangText = document.getElementById('sidebarLangText');
+    if (sidebarLangText) sidebarLangText.textContent = `${config.flag} ${config.nome.split(' (')[0]}`;
+
+    const empDisplay = document.getElementById('empresaLangDisplay');
+    if (empDisplay) empDisplay.textContent = `${config.flag} ${config.nome}`;
+
+    // 2. Traduzir Navbar Completa
+    const navbar = document.getElementById('top-navbar') || document.querySelector('.top-navbar');
+    if (navbar) traduzirElemento(navbar, lang);
+
+    // 3. Traduzir Barra Lateral (Sidebar)
+    const sidebar = document.getElementById('sidebar') || document.querySelector('.sidebar');
+    if (sidebar) traduzirElemento(sidebar, lang);
+
+    // 4. Traduzir Área Principal (Dashboard / Pedidos / Tabelas / Cards)
+    const mainArea = document.getElementById('appMainContent') || document.querySelector('.main-content') || document.body;
+    if (mainArea) traduzirElemento(mainArea, lang);
+
+    // 5. Traduzir Modais Abertos
+    const modalContainer = document.getElementById('modalContainer');
+    if (modalContainer) traduzirElemento(modalContainer, lang);
+
+    // 6. Traduzir Título e Breadcrumb Superior
+    const pageTitle = document.getElementById('pageTitle');
+    if (pageTitle) {
+      if (pageTitle.__origText === undefined) pageTitle.__origText = pageTitle.textContent;
+      pageTitle.textContent = (lang === 'pt-BR') ? pageTitle.__origText : traduzirTexto(pageTitle.__origText, lang);
+    }
+    const pageBreadcrumb = document.getElementById('pageBreadcrumb');
+    if (pageBreadcrumb) {
+      if (pageBreadcrumb.__origText === undefined) pageBreadcrumb.__origText = pageBreadcrumb.textContent;
+      pageBreadcrumb.textContent = (lang === 'pt-BR') ? pageBreadcrumb.__origText : traduzirTexto(pageBreadcrumb.__origText, lang);
+    }
+
+    // 7. Acionar Tradutor Automático para outros idiomas caso não nativo
+    acionarMotorUniversal(config.code);
   }
 
-  // Formatação de Moeda Internacional Conforme Idioma Selecionado
-  function formatarMoeda(valor, code = idiomaAtual) {
-    const config = obterIdiomaConfig(code);
+  // 7. Observador de Mutações do DOM (Traduz Automaticamente Novas Telas Renderizadas)
+  let mutacaoObserver = null;
+  function iniciarObservadorMutacoes() {
+    if (mutacaoObserver) return;
+    const container = document.body;
+    mutacaoObserver = new MutationObserver((mutations) => {
+      if (idiomaAtual === 'pt-BR') return;
+      for (let i = 0; i < mutations.length; i++) {
+        const m = mutations[i];
+        for (let j = 0; j < m.addedNodes.length; j++) {
+          const node = m.addedNodes[j];
+          if (node.nodeType === 1 && !node.closest('#bravviLanguageModal')) {
+            traduzirElemento(node, idiomaAtual);
+          }
+        }
+      }
+    });
+    mutacaoObserver.observe(container, { childList: true, subtree: true });
+  }
+
+  // 8. Integração com Tradutor Universal em Tempo Real (Google Translate para 100+ idiomas)
+  function acionarMotorUniversal(targetLang) {
+    // Para idiomas com tradução nativa ultra-rápida, dispensamos dependência externa
+    if (['pt-BR', 'pt-PT', 'es', 'es-ES', 'en', 'en-GB', 'fr', 'de', 'it'].includes(targetLang)) {
+      removerCookiesTraducaoExterna();
+      return;
+    }
+
+    // Para todos os outros 120+ idiomas do mundo, carrega o Google Translate
+    carregarGoogleTranslateEngine(targetLang);
+  }
+
+  function carregarGoogleTranslateEngine(targetLang) {
+    const shortCode = targetLang.split('-')[0];
+    document.cookie = `googtrans=/pt/${shortCode}; path=/;`;
+    try {
+      document.cookie = `googtrans=/pt/${shortCode}; domain=.${location.hostname}; path=/;`;
+    } catch(e) {}
+
+    let elem = document.getElementById('google_translate_element');
+    if (!elem) {
+      elem = document.createElement('div');
+      elem.id = 'google_translate_element';
+      elem.style.display = 'none';
+      document.body.appendChild(elem);
+    }
+
+    if (!document.getElementById('google-translate-script')) {
+      window.googleTranslateElementInit = function () {
+        new window.google.translate.TranslateElement({
+          pageLanguage: 'pt',
+          autoDisplay: false
+        }, 'google_translate_element');
+
+        setTimeout(dispararComboGoogle, 300);
+      };
+
+      const s = document.createElement('script');
+      s.id = 'google-translate-script';
+      s.src = 'https://translate.google.com/translate_a/element.js?cb=window.googleTranslateElementInit';
+      document.body.appendChild(s);
+    } else {
+      dispararComboGoogle();
+    }
+  }
+
+  function dispararComboGoogle() {
+    const config = obterIdiomaConfig();
+    const shortCode = config.code.split('-')[0];
+    const combo = document.querySelector('.goog-te-combo');
+    if (combo) {
+      combo.value = shortCode;
+      combo.dispatchEvent(new Event('change'));
+    }
+  }
+
+  function removerCookiesTraducaoExterna() {
+    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    try {
+      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=.${location.hostname}; path=/;`;
+    } catch(e) {}
+    const frame = document.querySelector('.goog-te-banner-frame');
+    if (frame) frame.style.display = 'none';
+  }
+
+  // 9. Formatação Monetária Internacional (Hooked em todo o ERP)
+  function formatarMoeda(valor) {
+    const config = obterIdiomaConfig();
+    const num = Number(valor) || 0;
     try {
       return new Intl.NumberFormat(config.locale, {
         style: 'currency',
         currency: config.moeda,
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
-      }).format(valor || 0);
+      }).format(num);
     } catch (e) {
-      return `${config.simbolo} ${(Number(valor) || 0).toFixed(2)}`;
+      return `${config.simbolo} ${num.toFixed(2)}`;
     }
   }
 
-  // Tradução de chave interna
-  function t(chave) {
-    const dict = DICIONARIOS[idiomaAtual] || DICIONARIOS['en'] || DICIONARIOS['pt-BR'];
-    if (dict && dict[chave]) return dict[chave];
-    if (DICIONARIOS['pt-BR'] && DICIONARIOS['pt-BR'][chave]) return DICIONARIOS['pt-BR'][chave];
-    return chave;
-  }
-
-  // 4. Aplicação Dinâmica na Interface do ERP
-  function aplicarIdiomaNaInterface() {
-    const config = obterIdiomaConfig();
-
-    // 1. Tag HTML
-    document.documentElement.lang = config.code;
-    if (config.rtl) {
-      document.documentElement.dir = 'rtl';
-    } else {
-      document.documentElement.dir = 'ltr';
-    }
-
-    // 2. Atualizar Botão do Topo (Navbar) & Sidebar
-    const btnText = document.getElementById('headerLangText');
-    const btnFlag = document.getElementById('headerLangFlag');
-    if (btnText) btnText.textContent = config.nome.split(' (')[0];
-    if (btnFlag) btnFlag.textContent = config.flag;
-
-    const sideText = document.getElementById('sidebarLangText');
-    if (sideText) sideText.textContent = `${config.flag} ${config.nome.split(' (')[0]}`;
-
-    const empDisplay = document.getElementById('empresaLangDisplay');
-    if (empDisplay) empDisplay.textContent = `${config.flag} ${config.nome}`;
-
-    // 3. Atualizar Sidebar Menu Itens
-    const menuMapa = {
-      'abertura': 'menu_abertura',
-      'pedidos': 'menu_pedidos',
-      'os': 'menu_os',
-      'nesting': 'menu_nesting',
-      'estoque': 'menu_estoque',
-      'produtos': 'menu_produtos',
-      'financeiro': 'menu_financeiro',
-      'compras': 'menu_compras',
-      'clientes': 'menu_clientes',
-      'quarentena': 'menu_quarentena',
-      'equipe': 'menu_equipe',
-      'nfe': 'menu_nfe',
-      'empresa': 'menu_empresa'
-    };
-
-    document.querySelectorAll('.sidebar-menu .menu-item').forEach(item => {
-      const aba = item.getAttribute('data-aba');
-      if (aba && menuMapa[aba]) {
-        const span = item.querySelector('span:not(.menu-badge)');
-        if (span) {
-          span.textContent = t(menuMapa[aba]);
-        }
-      }
-    });
-
-    // 4. Atualizar Labels Globais
-    const authText = document.getElementById('btnHeaderAuthText');
-    if (authText) authText.textContent = t('minha_conta');
-
-    const btnInstall = document.querySelector('.btn-instalar-app-desktop span');
-    if (btnInstall) btnInstall.textContent = `💻 ${t('instalar_pc')}`;
-
-    const proBadge = document.querySelector('.sidebar-pro-badge div div:first-child');
-    if (proBadge) proBadge.textContent = t('licenca_pro');
-
-    const proSub = document.querySelector('.sidebar-pro-badge div div:last-child');
-    if (proSub) proSub.textContent = t('plano_industrial');
-
-    // 5. Injetar ou Acionar Tradutor Automático para todas as outras línguas
-    acionarTradutorUniversal(config.code);
-
-    // 6. Notificar Sistema
-    window.dispatchEvent(new CustomEvent('bravvi:idiomaAlterado', { detail: { idioma: config } }));
-  }
-
-  // 5. Integração com Tradutor Universal em Tempo Real
-  function acionarTradutorUniversal(langCode) {
-    // Para idiomas principais com dicionário completo, manter renderização nativa de altíssima velocidade
-    if (['pt-BR', 'pt-PT', 'es', 'en'].includes(langCode)) {
-      removerWidgetTraducaoExterna();
-      return;
-    }
-
-    // Para qualquer um dos outros 120+ idiomas do mundo, carrega o Google Translate dinamicamente
-    carregarGoogleTranslateEngine(langCode);
-  }
-
-  function carregarGoogleTranslateEngine(targetLang) {
-    const shortCode = targetLang.split('-')[0];
-
-    // Configurar cookie do Google Translate
-    document.cookie = `googtrans=/auto/${shortCode}; path=/;`;
-    document.cookie = `googtrans=/auto/${shortCode}; domain=.${location.hostname}; path=/;`;
-
-    if (!document.getElementById('google-translate-script')) {
-      const script = document.createElement('script');
-      script.id = 'google-translate-script';
-      script.src = 'https://translate.google.com/translate_a/element.js?cb=window.googleTranslateElementInit';
-      document.body.appendChild(script);
-
-      window.googleTranslateElementInit = function () {
-        if (!document.getElementById('google_translate_element')) {
-          const div = document.createElement('div');
-          div.id = 'google_translate_element';
-          div.style.display = 'none';
-          document.body.appendChild(div);
-        }
-        new window.google.translate.TranslateElement({
-          pageLanguage: 'pt',
-          includedLanguages: IDIOMAS_CATALOGO.map(i => i.code.split('-')[0]).join(','),
-          autoDisplay: false
-        }, 'google_translate_element');
-      };
-    } else {
-      // Disparar evento para mudar combo se já existir
-      const select = document.querySelector('.goog-te-combo');
-      if (select) {
-        select.value = shortCode;
-        select.dispatchEvent(new Event('change'));
-      }
-    }
-  }
-
-  function removerWidgetTraducaoExterna() {
-    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=.${location.hostname}; path=/;`;
-    const frame = document.querySelector('.goog-te-banner-frame');
-    if (frame) frame.style.display = 'none';
-  }
-
-  // 6. Modal Interativo de Seleção de Idioma (Com Filtro em Tempo Real)
+  // 10. Modal Interativo de Seleção de Idioma (Com Filtro em Tempo Real)
   function abrirModalIdioma() {
     let modal = document.getElementById('bravviLanguageModal');
     if (modal) modal.remove();
 
     const populares = IDIOMAS_CATALOGO.filter(i => i.popular);
-    const todos = IDIOMAS_CATALOGO;
 
     modal = document.createElement('div');
     modal.id = 'bravviLanguageModal';
-    modal.style.cssText = `
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(4px);
-      z-index: 999999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      box-sizing: border-box;
-    `;
+    modal.className = 'modal-overlay';
+    modal.style.cssText = 'position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 16px;';
 
     modal.innerHTML = `
-      <div style="background: #ffffff; width: 100%; max-width: 720px; max-height: 90vh; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #cbd5e1;">
+      <div class="modal-box" style="background: #ffffff; border-radius: 14px; max-width: 640px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); border: 1px solid #e2e8f0; overflow: hidden; animation: bravviModalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
         
         <!-- Header do Modal -->
         <div style="padding: 18px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 24px;">🌐</span>
-            <div>
-              <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin: 0;">Selecione o Idioma do Sistema</h2>
-              <div style="font-size: 12px; color: #64748b;">Select System Language • Elige tu idioma • Choisissez votre langue</div>
+          <div>
+            <div style="font-size: 17px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+              <span>🌐</span> Escolha o Idioma do Sistema / Select Language
+            </div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
+              Tradução integral de toda a interface e formatação de moeda automática
             </div>
           </div>
-          <button type="button" id="btnCloseLangModal" style="background: transparent; border: none; font-size: 20px; color: #64748b; cursor: pointer; padding: 4px 8px; border-radius: 6px;">✕</button>
+          <button type="button" id="btnCloseLangModal" style="background: none; border: none; font-size: 22px; cursor: pointer; color: #64748b; padding: 4px 8px; border-radius: 6px;">&times;</button>
         </div>
 
-        <!-- Barra de Pesquisa Rápida -->
-        <div style="padding: 14px 24px; background: #ffffff; border-bottom: 1px solid #f1f5f9;">
+        <!-- Barra de Busca Instantânea -->
+        <div style="padding: 14px 24px 8px 24px; background: #ffffff;">
           <div style="position: relative;">
-            <input type="text" id="inputSearchLanguage" placeholder="🔍 Digite para filtrar idiomas (ex: Español, English, Deutsch, Português, Guaraní, 日本語)..." style="width: 100%; padding: 10px 14px; font-size: 13.5px; border: 1.5px solid #cbd5e1; border-radius: 8px; outline: none; box-sizing: border-box; font-family: inherit;">
+            <input type="text" id="inputSearchLanguage" placeholder="🔍 Digite para pesquisar seu idioma ou país (ex: Portugal, Paraguay, English, Español)..." style="width: 100%; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#0d9488'" onblur="this.style.borderColor='#cbd5e1'">
           </div>
         </div>
 
-        <!-- Lista Rolável de Idiomas -->
-        <div style="padding: 18px 24px; overflow-y: auto; flex: 1;">
+        <!-- Conteúdo Rolável -->
+        <div style="padding: 10px 24px 20px 24px; overflow-y: auto; flex: 1;">
           
-          <!-- Seção de Mais Utilizados -->
+          <!-- Seção: Idiomas em Destaque -->
           <div id="sectionPopulares">
-            <div style="font-size: 11px; font-weight: 800; color: #0d9488; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
-              <span>⭐</span> Mais Populares & Mercados Oficiais
+            <div style="font-size: 11px; font-weight: 800; color: #0f766e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+              ⭐ Idiomas Populares & Mercados Ativos
             </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin-bottom: 22px;">
-              ${populares.map(item => renderizarCardIdioma(item)).join('')}
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 20px;">
+              ${populares.map(i => renderizarCardIdioma(i)).join('')}
             </div>
           </div>
 
-          <!-- Todos os Idiomas Globais -->
-          <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
-            <span>🌍</span> Todos os Idiomas Mundiais (${todos.length} idiomas disponíveis)
-          </div>
-          <div id="gridTodosIdiomas" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">
-            ${todos.map(item => renderizarCardIdioma(item)).join('')}
+          <!-- Seção: Todos os Idiomas do Mundo -->
+          <div>
+            <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+              🌍 Todos os Idiomas do Mundo (+120 países em ordem alfabética)
+            </div>
+            <div id="gridTodosIdiomas" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px;">
+              ${IDIOMAS_CATALOGO.map(i => renderizarCardIdioma(i)).join('')}
+            </div>
           </div>
 
         </div>
@@ -658,13 +973,14 @@
     `;
   }
 
-  // 7. Ação de Mudar o Idioma
+  // 11. Ação de Mudar o Idioma
   function selecionarIdioma(code) {
     if (!code) return;
     const encontrado = IDIOMAS_CATALOGO.find(i => i.code === code);
     if (!encontrado) return;
 
     idiomaAtual = encontrado.code;
+    moedaAtual = encontrado.moeda;
     localStorage.setItem('bravvi_language', idiomaAtual);
     localStorage.setItem('bravvi_currency', encontrado.moeda);
 
@@ -672,19 +988,24 @@
     const modal = document.getElementById('bravviLanguageModal');
     if (modal) modal.remove();
 
-    // Aplicar na interface
-    aplicarIdiomaNaInterface();
+    // Iniciar observador se ainda não estiver ativo
+    iniciarObservadorMutacoes();
 
-    // Re-renderizar tela atual se o ERP estiver carregado
+    // Re-renderizar tela atual no ERP se ativo
     if (window.ERP && typeof window.ERP.obterAbaAtiva === 'function' && typeof window.ERP.navegarPara === 'function') {
       const aba = window.ERP.obterAbaAtiva();
-      if (aba) window.ERP.navegarPara(aba);
-    } else if (window.location && typeof window.location.reload === 'function') {
-      // Recarrega suavemente se necessário
-      if (!['pt-BR', 'pt-PT', 'es', 'en'].includes(idiomaAtual)) {
-        setTimeout(() => window.location.reload(), 150);
+      if (aba) {
+        window.ERP.navegarPara(aba);
       }
     }
+
+    // Executar varredura completa da página imediatamente
+    traduzirPaginaCompleta();
+    setTimeout(traduzirPaginaCompleta, 150);
+    setTimeout(traduzirPaginaCompleta, 600);
+
+    // Notificar Sistema
+    window.dispatchEvent(new CustomEvent('bravvi:idiomaAlterado', { detail: { idioma: encontrado } }));
 
     // Exibir Toast Informativo
     const msg = {
@@ -701,21 +1022,29 @@
   }
 
   // Inicialização Automática quando o DOM estiver pronto
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', aplicarIdiomaNaInterface);
-  } else {
-    setTimeout(aplicarIdiomaNaInterface, 50);
+  function inicializar() {
+    iniciarObservadorMutacoes();
+    traduzirPaginaCompleta();
+    setTimeout(traduzirPaginaCompleta, 200);
+    setTimeout(traduzirPaginaCompleta, 800);
   }
 
-  // 8. Exportação Global da API i18n
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', inicializar);
+  } else {
+    setTimeout(inicializar, 50);
+  }
+
+  // 12. Exportação Global da API i18n
   window.ERP_I18N = {
-    t,
     idiomaAtual: () => idiomaAtual,
     obterIdiomaConfig,
     formatarMoeda,
     selecionarIdioma,
     abrirModalIdioma,
-    aplicarIdiomaNaInterface,
+    traduzirElemento,
+    traduzirPaginaCompleta,
+    traduzirTexto,
     catalogo: IDIOMAS_CATALOGO
   };
 

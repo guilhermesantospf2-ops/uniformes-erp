@@ -2624,6 +2624,11 @@
       setTimeout(window.ERP_ATUALIZAR_BARRA_ROLAGEM, 40);
       setTimeout(window.ERP_ATUALIZAR_BARRA_ROLAGEM, 250);
     }
+
+    if (window.ERP_I18N && typeof window.ERP_I18N.traduzirPaginaCompleta === 'function') {
+      setTimeout(() => window.ERP_I18N.traduzirPaginaCompleta(), 10);
+      setTimeout(() => window.ERP_I18N.traduzirPaginaCompleta(), 120);
+    }
   }
 
   // Atualiza contadores numéricos na Sidebar
@@ -2675,6 +2680,13 @@
     // Registra na pilha e adiciona ao container no DOM
     modalPilha.push(modalEl);
     modalContainer.appendChild(modalEl);
+
+    if (window.ERP_I18N && typeof window.ERP_I18N.traduzirElemento === 'function') {
+      try {
+        window.ERP_I18N.traduzirElemento(modalEl, window.ERP_I18N.idiomaAtual());
+        setTimeout(() => window.ERP_I18N.traduzirElemento(modalEl, window.ERP_I18N.idiomaAtual()), 80);
+      } catch (e) {}
+    }
 
     // 1. NÃO fechar ao clicar no backdrop (fora da caixa) - protege 100% dos dados preenchidos
     modalEl.addEventListener('click', (e) => {
@@ -22857,6 +22869,7 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
     },
     salvarOrcamentoOuPedido,
     navegarPara,
+    obterAbaAtiva: () => abaAtiva,
     calcularContagemRegressivaPedido,
     fecharModal,
     fecharTodosModais,
