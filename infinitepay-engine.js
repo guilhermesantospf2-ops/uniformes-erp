@@ -18,6 +18,8 @@
   'use strict';
 
   const WHATSAPP_SUPORTE = '5544999856245';
+  const LINK_CAKTO_BASICO_107 = 'https://pay.cakto.com.br/ecrfqfr_1178654';
+  const LINK_CAKTO_PRO_227 = 'https://pay.cakto.com.br/rb6atzs_1178556';
   const LINK_WHATSAPP_BASICO = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero assinar o Plano Básico do Bravvi ERP Têxtil por R$ 107/mês com Implantação Grátis.');
   const LINK_WHATSAPP_MENSAL = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero assinar o Plano Pro Industrial do Bravvi ERP Têxtil por R$ 227/mês com Implantação Grátis.');
   const LINK_WHATSAPP_ANUAL = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero contratar o Plano Anual Pro do Bravvi ERP Têxtil (12x de R$ 189 ou R$ 1.890/ano à vista).');
@@ -53,7 +55,7 @@
         'Tutoriais em vídeo inclusos',
         'Suporte técnico via WhatsApp'
       ],
-      linkPadrao: LINK_WHATSAPP_BASICO
+      linkPadrao: LINK_CAKTO_BASICO_107
     },
     pro: {
       id: 'plano_pro_227',
@@ -77,7 +79,7 @@
         'Gestão de Facções e Terceirizados',
         'Suporte Prioritário VIP no WhatsApp'
       ],
-      linkPadrao: LINK_WHATSAPP_MENSAL
+      linkPadrao: LINK_CAKTO_PRO_227
     },
     mensal: {
       id: 'plano_pro_227',
@@ -101,7 +103,7 @@
         'Gestão de Facções e Terceirizados',
         'Suporte Prioritário VIP no WhatsApp'
       ],
-      linkPadrao: LINK_WHATSAPP_MENSAL
+      linkPadrao: LINK_CAKTO_PRO_227
     },
     anual: {
       id: 'plano_anual_1890',
@@ -123,7 +125,7 @@
         'Suporte Prioritário VIP com fila acelerada no WhatsApp',
         'Backup automático na nuvem'
       ],
-      linkPadrao: LINK_WHATSAPP_ANUAL
+      linkPadrao: LINK_CAKTO_PRO_227
     },
     treinamento_equipe: {
       id: 'treinamento_vip_equipe_297',
@@ -188,23 +190,19 @@
     }
     const padrao = {
       handle: '', // ex: 'bravvitextil'
-      linkMensal: 'https://pay.cakto.com.br/rb6atzs_1178556',
-      linkAnual: 'https://pay.cakto.com.br/ecrfqfr_1178654',
+      linkBasico: LINK_CAKTO_BASICO_107,
+      linkMensal: LINK_CAKTO_PRO_227,
+      linkPro: LINK_CAKTO_PRO_227,
+      linkAnual: LINK_CAKTO_PRO_227,
       linkCombo: LINK_WHATSAPP_COMBO,
       linkSetup: LINK_WHATSAPP_SETUP,
       apiKey: '',
       whatsappSuporte: WHATSAPP_SUPORTE
     };
     if (data) {
-      // Se linkMensal estiver vazio ou não for da Cakto, atualiza para o link oficial da Cakto
-      if (!data.linkMensal || !data.linkMensal.includes('cakto.com.br')) {
-        data.linkMensal = padrao.linkMensal;
-      }
-      // Sempre garante que o Anual aponte para o checkout oficial da Cakto
-      if (!data.linkAnual || !data.linkAnual.includes('cakto.com.br/ecrfqfr_1178654')) {
-        data.linkAnual = padrao.linkAnual;
-      }
-      // O Combo Anual + Implementação vai para o WhatsApp com especialista
+      data.linkBasico = LINK_CAKTO_BASICO_107;
+      data.linkMensal = LINK_CAKTO_PRO_227;
+      data.linkPro = LINK_CAKTO_PRO_227;
       data.linkCombo = LINK_WHATSAPP_COMBO;
       data.linkSetup = LINK_WHATSAPP_SETUP;
       data.whatsappSuporte = WHATSAPP_SUPORTE;
@@ -229,17 +227,17 @@
 
     // 1. Plano Básico R$ 107
     if (planoKey === 'basico' || planoKey === 'plano_basico_107') {
-      return config.linkBasico || LINK_WHATSAPP_BASICO;
+      return config.linkBasico || LINK_CAKTO_BASICO_107;
     }
 
     // 2. Plano Pro R$ 227 / Mensal
     if (planoKey === 'pro' || planoKey === 'mensal' || planoKey === 'plano_pro_227') {
-      return config.linkMensal || 'https://pay.cakto.com.br/rb6atzs_1178556';
+      return config.linkPro || config.linkMensal || LINK_CAKTO_PRO_227;
     }
 
     // 3. Anual Pro
     if (planoKey === 'anual') {
-      return config.linkAnual || 'https://pay.cakto.com.br/ecrfqfr_1178654';
+      return config.linkAnual || LINK_CAKTO_PRO_227;
     }
 
     // 4. Planos Paraguai 🇵🇾 ($19 / $39 USD)
@@ -257,7 +255,7 @@
     if (planoKey === 'anual_implementacao') return LINK_WHATSAPP_COMBO;
     if (planoKey === 'implementacao_avulsa') return LINK_WHATSAPP_SETUP;
 
-    return plano.linkPadrao || 'https://pay.cakto.com.br/ecrfqfr_1178654';
+    return plano.linkPadrao || LINK_CAKTO_BASICO_107;
   }
 
   /**
