@@ -1713,35 +1713,26 @@
     }, 4500);
   }
 
-  // Utilitários de Formatação Internacional (i18n)
+  // Utilitários de Formatação
   function formatarMoeda(valor) {
-    if (window.ERP_I18N && typeof window.ERP_I18N.formatarMoeda === 'function') {
-      return window.ERP_I18N.formatarMoeda(valor);
-    }
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
   }
 
   function formatarNumero(valor) {
-    const locale = (window.ERP_I18N && typeof window.ERP_I18N.obterIdiomaConfig === 'function')
-      ? window.ERP_I18N.obterIdiomaConfig().locale
-      : 'pt-BR';
-    return new Intl.NumberFormat(locale).format(valor || 0);
+    return new Intl.NumberFormat('pt-BR').format(valor || 0);
   }
 
   function formatarK(valor) {
-    const sim = (window.ERP_I18N && typeof window.ERP_I18N.obterIdiomaConfig === 'function')
-      ? window.ERP_I18N.obterIdiomaConfig().simbolo
-      : 'R$';
-    if (valor === undefined || valor === null || isNaN(valor)) return `${sim} 0`;
+    if (valor === undefined || valor === null || isNaN(valor)) return 'R$ 0';
     const num = Number(valor);
     const absVal = Math.abs(num);
-    if (absVal === 0) return `${sim} 0`;
+    if (absVal === 0) return 'R$ 0';
     const prefix = num < 0 ? '-' : '';
     if (absVal >= 1000) {
       const milhar = (absVal / 1000).toFixed(absVal % 1000 === 0 ? 0 : 1).replace('.0', '');
-      return `${prefix}${sim} ${milhar}k`;
+      return `${prefix}R$ ${milhar}k`;
     }
-    return `${prefix}${sim} ${absVal.toFixed(0)}`;
+    return `${prefix}R$ ${absVal.toFixed(0)}`;
   }
 
   function formatarTelefone(tel) {
@@ -2624,11 +2615,6 @@
       setTimeout(window.ERP_ATUALIZAR_BARRA_ROLAGEM, 40);
       setTimeout(window.ERP_ATUALIZAR_BARRA_ROLAGEM, 250);
     }
-
-    if (window.ERP_I18N && typeof window.ERP_I18N.traduzirPaginaCompleta === 'function') {
-      setTimeout(() => window.ERP_I18N.traduzirPaginaCompleta(), 10);
-      setTimeout(() => window.ERP_I18N.traduzirPaginaCompleta(), 120);
-    }
   }
 
   // Atualiza contadores numéricos na Sidebar
@@ -2680,13 +2666,6 @@
     // Registra na pilha e adiciona ao container no DOM
     modalPilha.push(modalEl);
     modalContainer.appendChild(modalEl);
-
-    if (window.ERP_I18N && typeof window.ERP_I18N.traduzirElemento === 'function') {
-      try {
-        window.ERP_I18N.traduzirElemento(modalEl, window.ERP_I18N.idiomaAtual());
-        setTimeout(() => window.ERP_I18N.traduzirElemento(modalEl, window.ERP_I18N.idiomaAtual()), 80);
-      } catch (e) {}
-    }
 
     // 1. NÃO fechar ao clicar no backdrop (fora da caixa) - protege 100% dos dados preenchidos
     modalEl.addEventListener('click', (e) => {
@@ -22403,63 +22382,10 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
         </div>
       </div>
 
-      <!-- Card 3: Idioma do Sistema & Moeda Internacional -->
-      <div class="card" style="margin-bottom: 24px;">
-        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-          <div class="card-title">3. Idioma do Sistema & Moeda Internacional (Global i18n)</div>
-          <span class="status-pill status-gray">MULTILINGUAL & MULTI-MOEDA</span>
-        </div>
-        <div class="card-body">
-          <div style="border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 18px; background: #ffffff;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 16px;">
-              <div>
-                <strong style="display: block; color: var(--text-primary); font-size: 14px; margin-bottom: 4px;">
-                  🌐 Idioma Ativo: <span id="empresaLangDisplay">${window.ERP_I18N ? window.ERP_I18N.obterIdiomaConfig().flag + ' ' + window.ERP_I18N.obterIdiomaConfig().nome : '🇧🇷 Português (Brasil)'}</span>
-                </strong>
-                <p style="font-size: 12px; color: var(--text-gray-500); line-height: 1.4; margin: 0;">
-                  Alterne entre todos os idiomas mundiais com tradução instantânea da interface e formatação monetária automática.
-                </p>
-              </div>
-              <button type="button" class="btn btn-primary btn-sm" onclick="window.ERP_I18N.abrirModalIdioma()" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
-                <span>🌐</span> Escolher Entre Todos os Idiomas do Mundo &rarr;
-              </button>
-            </div>
-
-            <!-- Seleção Rápida de Idiomas Populares -->
-            <div style="font-size: 11px; font-weight: 700; color: var(--text-gray-500); text-transform: uppercase; margin-bottom: 8px;">
-              Atalhos Rápidos de Idioma:
-            </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP_I18N.selecionarIdioma('pt-BR'); window.ERP.navegarPara('empresa');">
-                🇧🇷 Português (Brasil) • R$
-              </button>
-              <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP_I18N.selecionarIdioma('pt-PT'); window.ERP.navegarPara('empresa');">
-                🇵🇹 Português (Portugal) • €
-              </button>
-              <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP_I18N.selecionarIdioma('es'); window.ERP.navegarPara('empresa');">
-                🇵🇾 Español (Paraguay & Latam) • $
-              </button>
-              <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP_I18N.selecionarIdioma('en'); window.ERP.navegarPara('empresa');">
-                🇺🇸 English (Global) • $
-              </button>
-              <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP_I18N.selecionarIdioma('fr'); window.ERP.navegarPara('empresa');">
-                🇫🇷 Français • €
-              </button>
-              <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP_I18N.selecionarIdioma('de'); window.ERP.navegarPara('empresa');">
-                🇩🇪 Deutsch • €
-              </button>
-              <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP_I18N.selecionarIdioma('it'); window.ERP.navegarPara('empresa');">
-                🇮🇹 Italiano • €
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 4: Central de Backup Seguro & Exportação de Dados -->
+      <!-- Card 3: Central de Backup Seguro & Exportação de Dados -->
       <div class="card">
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-          <div class="card-title">4. Central de Backup Seguro & Exportação de Dados</div>
+          <div class="card-title">3. Central de Backup Seguro & Exportação de Dados</div>
           <span class="status-pill status-blue">GESTÃO DE DADOS</span>
         </div>
         <div class="card-body">
@@ -22869,7 +22795,6 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
     },
     salvarOrcamentoOuPedido,
     navegarPara,
-    obterAbaAtiva: () => abaAtiva,
     calcularContagemRegressivaPedido,
     fecharModal,
     fecharTodosModais,
