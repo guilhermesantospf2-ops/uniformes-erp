@@ -2557,6 +2557,7 @@
 
   <!-- SCRIPTS INTERATIVOS -->
   <script>
+    try { localStorage.setItem('bravvi_language', 'pt-PT'); } catch (e) {}
     // 1. Alternador do Mosaico de Apps (Estilo Odoo Switcher)
     function toggleAppsMode(mode) {
       const tabCom = document.getElementById('tabComBravvi');
