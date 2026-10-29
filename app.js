@@ -1700,13 +1700,16 @@
   function mostrarToast(mensagem, tipo = 'green') {
     if (!toastElem) return;
     toastElem.className = `toast-msg toast-${tipo} show`;
+    const msgFinal = (window.ERP_I18N && typeof window.ERP_I18N.traduzirTexto === 'function')
+      ? window.ERP_I18N.traduzirTexto(mensagem, window.ERP_I18N.idiomaAtual())
+      : mensagem;
     toastElem.innerHTML = `
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         ${tipo === 'green' 
           ? '<polyline points="20 6 9 17 4 12"></polyline>' 
           : '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>'}
       </svg>
-      <span>${mensagem}</span>
+      <span>${msgFinal}</span>
     `;
     setTimeout(() => {
       toastElem.classList.remove('show');
@@ -22800,6 +22803,8 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
   window.ERP = Object.assign(window.ERP || {}, {
     db,
     obterDb: () => db,
+    abaAtiva: () => abaAtiva || 'abertura',
+    obterAbaAtiva: () => abaAtiva || 'abertura',
     formatarMoeda,
     mostrarToast,
     criarModalCamada,

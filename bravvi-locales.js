@@ -31,7 +31,7 @@
     "flag": "🇪🇸",
     "moeda": "USD",
     "simbolo": "$",
-    "locale": "es-ES",
+    "locale": "es-US",
     "popular": true
   },
   {
@@ -112,7 +112,7 @@
     "estamparia & silk/dtf": "Screen Printing & DTF",
     "linha de costura & fechamento": "Sewing & Assembly Line",
     "últimos pedidos & mockups têxteis 3x4": "Recent Orders & 3x4 Textile Mockups",
-    "ir para todos os pedidos": "Go to All Orders",
+    "ir para todos os pedidos": "View All Orders",
     "ações & status": "Actions & Status",
     "abertura": "Dashboard",
     "pedidos": "Orders",
@@ -124,7 +124,7 @@
     "financeiro": "Financial",
     "compras": "Purchasing",
     "clientes": "Customers",
-    "quarentena": "QUALITY HOLD",
+    "quarentena": "Quality Control",
     "equipe": "Team",
     "notas fiscais": "Invoices",
     "minha empresa": "My Company",
@@ -152,7 +152,7 @@
     "nº pedido": "Order #",
     "cliente": "Customer",
     "data": "Date",
-    "peças": "Pieces",
+    "peças": "pieces",
     "valor total": "Total Value",
     "status": "Status",
     "ações": "Actions",
@@ -321,7 +321,7 @@
     "data de entrada": "Entry Date",
     "mockup 3x4": "Mockup 3x4",
     "produto têxtil": "Textile Product",
-    "grade": "Sizes",
+    "grade": "Size Curve",
     "prazo & contagem": "Deadline & Countdown",
     "sinal (50%)": "Deposit (50%)",
     "etapa oficina": "Workshop Stage",
@@ -333,7 +333,22 @@
     "estamparia": "Printing",
     "bordado": "Embroidery",
     "acabamento": "Finishing",
-    "expedição": "Shipping"
+    "expedição": "Shipping",
+    "camisa polo tradicional piquet": "Classic Pique Polo Shirt",
+    "camiseta dry fit confort esportiva": "Sport Comfort Dry Fit T-Shirt",
+    "uniforme industrial brim pesado": "Heavy Denim Industrial Uniform",
+    "avental impermeável pvc": "Waterproof PVC Apron",
+    "jaqueta corta-vento tactel": "Tactel Windbreaker Jacket",
+    "camisa polo": "Polo Shirt",
+    "camiseta dry fit": "Dry Fit T-Shirt",
+    "entrada (50%)": "Down Payment (50%)",
+    "etapa na fábrica": "Workshop Stage",
+    "etapa": "Stage",
+    "saldo": "Balance",
+    "saldo devedor": "Outstanding Balance",
+    "saldo pendente": "Pending Balance",
+    "unidades": "units",
+    "ordens ativas": "Active Orders"
   },
   "es": {
     "abertura & visão geral da fábrica": "Inicio & Visión General de la Fábrica",
@@ -386,7 +401,7 @@
     "financeiro": "Finanzas",
     "compras": "Compras",
     "clientes": "Clientes",
-    "quarentena": "CONTROL CALIDAD",
+    "quarentena": "Control de Calidad",
     "equipe": "Equipo",
     "notas fiscais": "Facturación",
     "minha empresa": "Mi Empresa",
@@ -414,7 +429,7 @@
     "nº pedido": "Nº Pedido",
     "cliente": "Cliente",
     "data": "Fecha",
-    "peças": "Piezas",
+    "peças": "piezas",
     "valor total": "Valor Total",
     "status": "Estado",
     "ações": "Acciones",
@@ -595,7 +610,22 @@
     "estamparia": "Estampado",
     "bordado": "Bordado",
     "acabamento": "Terminación",
-    "expedição": "Despacho"
+    "expedição": "Despacho",
+    "camisa polo tradicional piquet": "Camisa Polo Tradicional Piqué",
+    "camiseta dry fit confort esportiva": "Camiseta Dry Fit Confort Deportiva",
+    "uniforme industrial brim pesado": "Uniforme Industrial Gabardina Pesada",
+    "avental impermeável pvc": "Delantal Impermeable PVC",
+    "jaqueta corta-vento tactel": "Chaqueta Cortavientos Tactel",
+    "camisa polo": "Camisa Polo",
+    "camiseta dry fit": "Camiseta Dry Fit",
+    "entrada (50%)": "Anticipo (50%)",
+    "etapa na fábrica": "Etapa Taller",
+    "etapa": "Etapa",
+    "saldo": "Saldo",
+    "saldo devedor": "Saldo Pendiente",
+    "saldo pendente": "Saldo Pendiente",
+    "unidades": "unidades",
+    "ordens ativas": "Órdenes Activas"
   },
   "pt-PT": {
     "abertura & visão geral da fábrica": "Abertura & Visão Geral da Fábrica",
@@ -648,7 +678,7 @@
     "financeiro": "Finanças",
     "compras": "Compras",
     "clientes": "Clientes",
-    "quarentena": "QUARENTENA TÉCNICA",
+    "quarentena": "Quarentena Técnica",
     "equipe": "Equipa",
     "notas fiscais": "Faturação",
     "minha empresa": "A Minha Empresa",
@@ -676,7 +706,7 @@
     "nº pedido": "Nº Encomenda",
     "cliente": "Cliente",
     "data": "Data",
-    "peças": "Peças",
+    "peças": "peças",
     "valor total": "Valor Total",
     "status": "Estado",
     "ações": "Ações",
@@ -857,7 +887,22 @@
     "estamparia": "Estamparia",
     "bordado": "Bordado",
     "acabamento": "Acabamento",
-    "expedição": "Expedição"
+    "expedição": "Expedição",
+    "camisa polo tradicional piquet": "Polo Tradicional Piquet",
+    "camiseta dry fit confort esportiva": "T-Shirt Dry Fit Confort Desportiva",
+    "uniforme industrial brim pesado": "Farda Industrial Ganga Pesada",
+    "avental impermeável pvc": "Avental Impermeável PVC",
+    "jaqueta corta-vento tactel": "Casaco Corta-Vento Tactel",
+    "camisa polo": "Polo",
+    "camiseta dry fit": "T-Shirt Dry Fit",
+    "entrada (50%)": "Sinal (50%)",
+    "etapa na fábrica": "Etapa Oficina",
+    "etapa": "Etapa",
+    "saldo": "Saldo",
+    "saldo devedor": "Saldo Devedor",
+    "saldo pendente": "Saldo Pendente",
+    "unidades": "unidades",
+    "ordens ativas": "Encomendas Ativas"
   },
   "fr": {
     "abertura & visão geral da fábrica": "Accueil & Vue d'Ensemble de l'Usine",
@@ -910,7 +955,7 @@
     "financeiro": "Finances",
     "compras": "Achats",
     "clientes": "Clients",
-    "quarentena": "CONTRÔLE QUALITÉ",
+    "quarentena": "Contrôle Qualité",
     "equipe": "Équipe",
     "notas fiscais": "Facturation",
     "minha empresa": "Mon Entreprise",
@@ -938,7 +983,7 @@
     "nº pedido": "N° Commande",
     "cliente": "Client",
     "data": "Date",
-    "peças": "Pièces",
+    "peças": "pièces",
     "valor total": "Montant Total",
     "status": "État",
     "ações": "Actions",
@@ -1119,7 +1164,22 @@
     "estamparia": "Sérigraphie",
     "bordado": "Broderie",
     "acabamento": "Finition",
-    "expedição": "Expédition"
+    "expedição": "Expédition",
+    "camisa polo tradicional piquet": "Polo Traditionnel Piqué",
+    "camiseta dry fit confort esportiva": "T-Shirt Sport Dry Fit Confort",
+    "uniforme industrial brim pesado": "Uniforme Industriel Toile Lourde",
+    "avental impermeável pvc": "Tablier Imperméable PVC",
+    "jaqueta corta-vento tactel": "Veste Coupe-Vent Tactel",
+    "camisa polo": "Polo",
+    "camiseta dry fit": "T-Shirt Dry Fit",
+    "entrada (50%)": "Acompte (50%)",
+    "etapa na fábrica": "Étape Atelier",
+    "etapa": "Étape",
+    "saldo": "Solde",
+    "saldo devedor": "Solde Dû",
+    "saldo pendente": "Solde en Attente",
+    "unidades": "unités",
+    "ordens ativas": "Ordres Actifs"
   },
   "de": {
     "abertura & visão geral da fábrica": "Übersicht & Werksüberblick",
@@ -1172,7 +1232,7 @@
     "financeiro": "Finanzen",
     "compras": "Einkauf",
     "clientes": "Kunden",
-    "quarentena": "QUALITÄTSPRÜFUNG",
+    "quarentena": "Qualitätsprüfung",
     "equipe": "Mitarbeiter",
     "notas fiscais": "Rechnungen",
     "minha empresa": "Mein Unternehmen",
@@ -1200,7 +1260,7 @@
     "nº pedido": "Auftrags-Nr.",
     "cliente": "Kunde",
     "data": "Datum",
-    "peças": "Stückzahl",
+    "peças": "Stück",
     "valor total": "Gesamtbetrag",
     "status": "Status",
     "ações": "Aktionen",
@@ -1372,7 +1432,7 @@
     "grade": "Größenlauf",
     "prazo & contagem": "Frist & Countdown",
     "sinal (50%)": "Anzahlung (50%)",
-    "etapa oficina": "Fertigungsschritt",
+    "etapa oficina": "Fertigungsstufe",
     "100% quitado": "100% BEZAHLT",
     "🔒 quarentena": "🔒 QUALITÄTSPRÜFUNG",
     "em producao": "IN PRODUKTION",
@@ -1381,7 +1441,22 @@
     "estamparia": "Druckerei",
     "bordado": "Stickerei",
     "acabamento": "Endbearbeitung",
-    "expedição": "Versand"
+    "expedição": "Versand",
+    "camisa polo tradicional piquet": "Klassisches Piqué-Poloshirt",
+    "camiseta dry fit confort esportiva": "Sport Comfort Dry-Fit T-Shirt",
+    "uniforme industrial brim pesado": "Industrie-Arbeitskleidung Schwerer Köper",
+    "avental impermeável pvc": "Wasserdichte PVC-Schürze",
+    "jaqueta corta-vento tactel": "Windbreaker-Jacke Tactel",
+    "camisa polo": "Poloshirt",
+    "camiseta dry fit": "Dry-Fit T-Shirt",
+    "entrada (50%)": "Anzahlung (50%)",
+    "etapa na fábrica": "Fertigungsstufe",
+    "etapa": "Stufe",
+    "saldo": "Saldo",
+    "saldo devedor": "Restbetrag",
+    "saldo pendente": "Ausstehender Saldo",
+    "unidades": "Einheiten",
+    "ordens ativas": "Aktive Aufträge"
   },
   "it": {
     "abertura & visão geral da fábrica": "Panoramica & Gestione Fabbrica",
@@ -1434,7 +1509,7 @@
     "financeiro": "Finanze",
     "compras": "Acquisti",
     "clientes": "Clienti",
-    "quarentena": "CONTROLLO QUALITÀ",
+    "quarentena": "Controllo Qualità",
     "equipe": "Personale",
     "notas fiscais": "Fatturazione",
     "minha empresa": "La Mia Azienda",
@@ -1462,7 +1537,7 @@
     "nº pedido": "N° Ordine",
     "cliente": "Cliente",
     "data": "Data",
-    "peças": "Pezzi",
+    "peças": "pezzi",
     "valor total": "Valore Totale",
     "status": "Stato",
     "ações": "Azioni",
@@ -1643,9 +1718,181 @@
     "estamparia": "Serigrafia",
     "bordado": "Ricamo",
     "acabamento": "Finitura",
-    "expedição": "Spedizione"
+    "expedição": "Spedizione",
+    "camisa polo tradicional piquet": "Polo Tradizionale Piqué",
+    "camiseta dry fit confort esportiva": "Maglietta Sportiva Dry Fit Comfort",
+    "uniforme industrial brim pesado": "Divisa da Lavoro Denim Pesante",
+    "avental impermeável pvc": "Grembiule Impermeabile in PVC",
+    "jaqueta corta-vento tactel": "Giacca a Vento Tactel",
+    "camisa polo": "Polo",
+    "camiseta dry fit": "Maglietta Dry Fit",
+    "entrada (50%)": "Acconto (50%)",
+    "etapa na fábrica": "Fase Lavorazione",
+    "etapa": "Fase",
+    "saldo": "Saldo",
+    "saldo devedor": "Saldo Residuo",
+    "saldo pendente": "Saldo Sospeso",
+    "unidades": "unità",
+    "ordens ativas": "Ordini Attivi"
   }
 };
+
+  // Títulos Canônicos de Cada Módulo nos 7 Idiomas Oficiais
+  const TAB_TITLES = {
+    'abertura': {
+      'pt-BR': 'Abertura & Visão Geral da Fábrica',
+      'pt-PT': 'Abertura & Visão Geral da Fábrica',
+      'es': 'Inicio & Visión General de la Fábrica',
+      'en': 'Dashboard & Factory Overview',
+      'fr': "Accueil & Vue d'Ensemble de l'Atelier",
+      'de': 'Übersicht & Werksüberblick',
+      'it': 'Panoramica & Controllo Fabbrica'
+    },
+    'pedidos': {
+      'pt-BR': 'Gestão Comercial, Orçamentos & Pedidos',
+      'pt-PT': 'Gestão Comercial, Orçamentos & Encomendas',
+      'es': 'Gestión Comercial, Presupuestos & Pedidos',
+      'en': 'Commercial Management, Quotes & Orders',
+      'fr': 'Gestion Commerciale, Devis & Commandes',
+      'de': 'Vertrieb, Angebote & Auftragsverwaltung',
+      'it': 'Gestione Commerciale, Preventivi & Ordini'
+    },
+    'os': {
+      'pt-BR': 'Ordens de Serviço & Fichas Técnicas',
+      'pt-PT': 'Ordens de Fabrico & Fichas Técnicas',
+      'es': 'Órdenes de Trabajo & Fichas Técnicas',
+      'en': 'Work Orders & Technical Specs',
+      'fr': 'Ordres de Travail & Fiches Techniques',
+      'de': 'Fertigungsaufträge & Technische Datenblätter',
+      'it': 'Schede di Lavoro & Schede Tecniche'
+    },
+    'nesting': {
+      'pt-BR': 'Gestor de Artes DTF & Nesting Automático',
+      'pt-PT': 'Gestor de Artes DTF & Nesting Automático',
+      'es': 'Gestor de Diseños DTF & Nesting Automático',
+      'en': 'DTF Artworks & Automatic Nesting',
+      'fr': 'Gestionnaire Arts DTF & Imbrication Automatique',
+      'de': 'DTF-Druckmotive & Automatisches Nesting',
+      'it': 'Gestione Grafiche DTF & Nesting Automatico'
+    },
+    'estoque': {
+      'pt-BR': 'Estoque de Malhas, Tecidos & Insumos',
+      'pt-PT': 'Stock de Malhas, Tecidos & Insumos',
+      'es': 'Inventario de Telas, Tejidos & Insumos',
+      'en': 'Knits, Fabrics & Supplies Inventory',
+      'fr': 'Stock de Mailles, Tissus & Fournitures',
+      'de': 'Warenbestand Maschenware, Stoffe & Zubehör',
+      'it': 'Magazzino Tessuti, Maglieria & Forniture'
+    },
+    'produtos': {
+      'pt-BR': 'Catálogo de Modelagens & Produtos Têxteis',
+      'pt-PT': 'Catálogo de Modelações & Artigos Têxteis',
+      'es': 'Catálogo de Patronaje & Productos Textiles',
+      'en': 'Pattern & Textile Products Catalog',
+      'fr': 'Catalogue Modélisme & Produits Textiles',
+      'de': 'Schnittmuster- & Textilproduktkatalog',
+      'it': 'Catalogo Modelleria & Prodotti Tessili'
+    },
+    'financeiro': {
+      'pt-BR': 'Gestão Financeira, DRE, Previsto x Realizado & Ativos',
+      'pt-PT': 'Gestão Financeira, DRE, Previsto vs Realizado & Ativos',
+      'es': 'Gestión Financiera, Estado de Resultados & Flujo',
+      'en': 'Financial Management, P&L, Forecast vs Actual & Assets',
+      'fr': 'Gestion Financière, Compte de Résultat & Trésorerie',
+      'de': 'Finanzmanagement, GuV, Plan vs. Ist & Aktiva',
+      'it': 'Gestione Finanziaria, Conto Economico & Flussi'
+    },
+    'compras': {
+      'pt-BR': 'Gestão de Compras & Suprimentos Têxteis',
+      'pt-PT': 'Gestão de Compras & Aprovisionamento Têxtil',
+      'es': 'Gestión de Compras & Suministros Textiles',
+      'en': 'Purchasing & Textile Supply Management',
+      'fr': 'Gestion des Achats & Fournitures Textiles',
+      'de': 'Einkaufsmanagement & Textilbedarf',
+      'it': 'Gestione Acquisti & Forniture Tessili'
+    },
+    'clientes': {
+      'pt-BR': 'Gestão de Clientes & CRM Têxtil',
+      'pt-PT': 'Gestão de Clientes & CRM Têxtil',
+      'es': 'Gestión de Clientes & CRM Textil',
+      'en': 'Customer Management & Textile CRM',
+      'fr': 'Gestion Clients & CRM Textile',
+      'de': 'Kundenverwaltung & Textil-CRM',
+      'it': 'Gestione Clienti & CRM Tessile'
+    },
+    'quarentena': {
+      'pt-BR': 'Mesa de Quarentena & Aprovação de Riscos',
+      'pt-PT': 'Quarentena Técnica & Aprovação de Encomendas',
+      'es': 'Control de Calidad & Aprobación de Pedidos',
+      'en': 'Quality Hold & Technical Risk Approval',
+      'fr': 'Contrôle Qualité & Validation Technique',
+      'de': 'Qualitätsprüfung & Technische Freigabe',
+      'it': 'Controllo Qualità & Approvazione Tecnica'
+    },
+    'equipe': {
+      'pt-BR': 'Gestão de Usuários, Colaboradores & Equipe Têxtil',
+      'pt-PT': 'Gestão de Utilizadores, Colaboradores & Equipa',
+      'es': 'Gestión de Usuarios, Colaboradores & Equipo Textil',
+      'en': 'User Management, Staff & Textile Team',
+      'fr': "Gestion des Utilisateurs & Équipe d'Atelier",
+      'de': 'Benutzerverwaltung, Mitarbeiter & Werksteam',
+      'it': 'Gestione Utenti, Collaboratori & Team Tessile'
+    },
+    'nfe': {
+      'pt-BR': 'Emissor & Gestor Fiscal NF-e (SEFAZ)',
+      'pt-PT': 'Faturação Eletrónica & Gestão Fiscal',
+      'es': 'Facturación Electrónica & Gestión Fiscal',
+      'en': 'Electronic Invoicing & Tax Management',
+      'fr': 'Facturation Électronique & Fiscalité',
+      'de': 'Elektronische Rechnungsstellung & Steuern',
+      'it': 'Fatturazione Elettronica & Fiscale'
+    },
+    'empresa': {
+      'pt-BR': 'Minha Empresa & Identidade Visual',
+      'pt-PT': 'A Minha Empresa & Identidade Visual',
+      'es': 'Mi Empresa & Identidad Visual',
+      'en': 'My Company & Brand Settings',
+      'fr': 'Mon Entreprise & Identité Visuelle',
+      'de': 'Mein Unternehmen & Markenprofil',
+      'it': 'La Mia Azienda & Identità Visiva'
+    }
+  };
+
+  const TAB_BREADCRUMBS = {
+    'abertura': { 'pt-BR': 'SISTEMA > ABERTURA', 'pt-PT': 'SISTEMA > ABERTURA', 'es': 'SISTEMA > INICIO', 'en': 'SYSTEM > DASHBOARD', 'fr': 'SYSTÈME > ACCUEIL', 'de': 'SYSTEM > ÜBERSICHT', 'it': 'SISTEMA > PANORAMICA' },
+    'pedidos': { 'pt-BR': 'SISTEMA > PEDIDOS & ORÇAMENTOS', 'pt-PT': 'SISTEMA > ENCOMENDAS & ORÇAMENTOS', 'es': 'SISTEMA > PEDIDOS & PRESUPUESTOS', 'en': 'SYSTEM > ORDERS & QUOTES', 'fr': 'SYSTÈME > COMMANDES & DEVIS', 'de': 'SYSTEM > AUFTRÄGE & ANGEBOTE', 'it': 'SISTEMA > ORDINI & PREVENTIVI' },
+    'os': { 'pt-BR': 'SISTEMA > OS & FICHAS TÉCNICAS', 'pt-PT': 'SISTEMA > OF & FICHAS TÉCNICAS', 'es': 'SISTEMA > OT & FICHAS TÉCNICAS', 'en': 'SYSTEM > WORK ORDERS & SPECS', 'fr': 'SYSTÈME > ORDRES & FICHES', 'de': 'SYSTEM > AUFTRÄGE & DATENBLÄTTER', 'it': 'SISTEMA > SCHEDE LAVORO & TECNICHE' },
+    'nesting': { 'pt-BR': 'SISTEMA > NESTING DE ARTES', 'pt-PT': 'SISTEMA > NESTING DE ARTES', 'es': 'SISTEMA > NESTING DE DISEÑOS', 'en': 'SYSTEM > ARTWORK NESTING', 'fr': 'SYSTÈME > IMBRICATION DTF', 'de': 'SYSTEM > MOTIV-NESTING', 'it': 'SISTEMA > NESTING GRAFICHE' },
+    'estoque': { 'pt-BR': 'SISTEMA > ESTOQUE', 'pt-PT': 'SISTEMA > STOCK', 'es': 'SISTEMA > INVENTARIO', 'en': 'SYSTEM > INVENTORY', 'fr': 'SYSTÈME > STOCK', 'de': 'SYSTEM > LAGERBESTAND', 'it': 'SISTEMA > MAGAZZINO' },
+    'produtos': { 'pt-BR': 'SISTEMA > PRODUTOS', 'pt-PT': 'SISTEMA > ARTIGOS', 'es': 'SISTEMA > PRODUCTOS', 'en': 'SYSTEM > PRODUCTS', 'fr': 'SYSTÈME > PRODUITS', 'de': 'SYSTEM > ARTIKEL', 'it': 'SISTEMA > PRODOTTI' },
+    'financeiro': { 'pt-BR': 'SISTEMA > FINANCEIRO', 'pt-PT': 'SISTEMA > FINANÇAS', 'es': 'SISTEMA > FINANZAS', 'en': 'SYSTEM > FINANCIAL', 'fr': 'SYSTÈME > FINANCES', 'de': 'SYSTEM > FINANZEN', 'it': 'SISTEMA > FINANZE' },
+    'compras': { 'pt-BR': 'SISTEMA > COMPRAS', 'pt-PT': 'SISTEMA > COMPRAS', 'es': 'SISTEMA > COMPRAS', 'en': 'SYSTEM > PURCHASING', 'fr': 'SYSTÈME > ACHATS', 'de': 'SYSTEM > EINKAUF', 'it': 'SISTEMA > ACQUISTI' },
+    'clientes': { 'pt-BR': 'SISTEMA > CLIENTES', 'pt-PT': 'SISTEMA > CLIENTES', 'es': 'SISTEMA > CLIENTES', 'en': 'SYSTEM > CUSTOMERS', 'fr': 'SYSTÈME > CLIENTS', 'de': 'SYSTEM > KUNDEN', 'it': 'SISTEMA > CLIENTI' },
+    'quarentena': { 'pt-BR': 'SISTEMA > QUARENTENA', 'pt-PT': 'SISTEMA > QUARENTENA', 'es': 'SISTEMA > CONTROL CALIDAD', 'en': 'SYSTEM > QUALITY HOLD', 'fr': 'SYSTÈME > CONTRÔLE QUALITÉ', 'de': 'SYSTEM > QUALITÄTSPRÜFUNG', 'it': 'SISTEMA > CONTROLLO QUALITÀ' },
+    'equipe': { 'pt-BR': 'SISTEMA > EQUIPE & ACESSOS', 'pt-PT': 'SISTEMA > EQUIPA & ACESSOS', 'es': 'SISTEMA > EQUIPO & ACCESOS', 'en': 'SYSTEM > TEAM & ACCESS', 'fr': 'SYSTÈME > ÉQUIPE & ACCÈS', 'de': 'SYSTEM > TEAM & ZUGÄNGE', 'it': 'SISTEMA > TEAM & ACCESSI' },
+    'nfe': { 'pt-BR': 'SISTEMA > NOTAS FISCAIS', 'pt-PT': 'SISTEMA > FATURAÇÃO', 'es': 'SISTEMA > FACTURACIÓN', 'en': 'SYSTEM > INVOICING', 'fr': 'SYSTÈME > FACTURATION', 'de': 'SYSTEM > RECHNUNGEN', 'it': 'SISTEMA > FATTURAZIONE' },
+    'empresa': { 'pt-BR': 'SISTEMA > MINHA EMPRESA', 'pt-PT': 'SISTEMA > A MINHA EMPRESA', 'es': 'SISTEMA > MI EMPRESA', 'en': 'SYSTEM > MY COMPANY', 'fr': 'SYSTÈME > MON ENTREPRISE', 'de': 'SYSTEM > MEIN UNTERNEHMEN', 'it': 'SISTEMA > LA MIA AZIENDA' }
+  };
+
+  const MESES = {
+    'JAN': { en: 'JAN', es: 'ENE', 'pt-PT': 'JAN', fr: 'JAN', de: 'JAN', it: 'GEN' },
+    'FEV': { en: 'FEB', es: 'FEB', 'pt-PT': 'FEV', fr: 'FÉV', de: 'FEB', it: 'FEB' },
+    'MAR': { en: 'MAR', es: 'MAR', 'pt-PT': 'MAR', fr: 'MAR', de: 'MÄR', it: 'MAR' },
+    'ABR': { en: 'APR', es: 'ABR', 'pt-PT': 'ABR', fr: 'AVR', de: 'APR', it: 'APR' },
+    'MAI': { en: 'MAY', es: 'MAY', 'pt-PT': 'MAI', fr: 'MAI', de: 'MAI', it: 'MAG' },
+    'JUN': { en: 'JUN', es: 'JUN', 'pt-PT': 'JUN', fr: 'JUIN', de: 'JUN', it: 'GIU' },
+    'JUL': { en: 'JUL', es: 'JUL', 'pt-PT': 'JUL', fr: 'JUIL', de: 'JUL', it: 'LUG' },
+    'AGO': { en: 'AUG', es: 'AGO', 'pt-PT': 'AGO', fr: 'AOÛ', de: 'AUG', it: 'AGO' },
+    'SET': { en: 'SEP', es: 'SEP', 'pt-PT': 'SET', fr: 'SEP', de: 'SEP', it: 'SET' },
+    'OUT': { en: 'OCT', es: 'OCT', 'pt-PT': 'OUT', fr: 'OCT', de: 'OKT', it: 'OTT' },
+    'NOV': { en: 'NOV', es: 'NOV', 'pt-PT': 'NOV', fr: 'NOV', de: 'NOV', it: 'NOV' },
+    'DEZ': { en: 'DEC', es: 'DIC', 'pt-PT': 'DEZ', fr: 'DÉC', de: 'DEZ', it: 'DIC' }
+  };
+
+  const SUFIXOS_MES = {
+    '(ATUAL)': { en: '(CURRENT)', es: '(ACTUAL)', 'pt-PT': '(ATUAL)', fr: '(EN COURS)', de: '(AKTUELL)', it: '(ATTUALE)' },
+    '(PREV)': { en: '(FCST)', es: '(PREV)', 'pt-PT': '(PREV)', fr: '(PRÉV)', de: '(PROGN)', it: '(PREV)' }
+  };
 
   let idiomaAtual = localStorage.getItem('bravvi_language') || 'pt-BR';
   if (!CATALOGO.some(c => c.code === idiomaAtual)) {
@@ -1691,49 +1938,18 @@
     return `${prefix}${cfg.simbolo} ${absVal.toFixed(0)}`;
   }
 
-
   // Padrões Dinâmicos por Idioma (Frases com números / variáveis)
   function traduzirPadroes(texto, lang) {
     const t = texto.trim();
 
-    // 1. Chart Month Labels
-    if (t === 'MAI') {
-      if (lang === 'en') return 'MAY';
-      if (lang === 'de') return 'MAI';
-      if (lang === 'fr') return 'MAI';
-    }
-    if (t === 'AGO') {
-      if (lang === 'en') return 'AUG';
-      if (lang === 'fr') return 'AOÛ';
-      if (lang === 'de') return 'AUG';
-      if (lang === 'it') return 'AGO';
-    }
-    if (t === 'SET') {
-      if (lang === 'en') return 'SEP';
-      if (lang === 'de') return 'SEP';
-      if (lang === 'fr') return 'SEP';
-    }
-    if (t === 'OUT') {
-      if (lang === 'en') return 'OCT';
-      if (lang === 'de') return 'OKT';
-      if (lang === 'fr') return 'OCT';
-      if (lang === 'it') return 'OTT';
-    }
-    if (t === 'SET (ATUAL)') {
-      if (lang === 'en') return 'SEP (CURRENT)';
-      if (lang === 'es') return 'SEP (ACTUAL)';
-      if (lang === 'pt-PT') return 'SET (ATUAL)';
-      if (lang === 'fr') return 'SEP (EN COURS)';
-      if (lang === 'de') return 'SEP (AKTUELL)';
-      if (lang === 'it') return 'SET (ATTUALE)';
-    }
-    if (t === 'OUT (PREV)') {
-      if (lang === 'en') return 'OCT (FCST)';
-      if (lang === 'es') return 'OCT (PREV)';
-      if (lang === 'pt-PT') return 'OUT (PREV)';
-      if (lang === 'fr') return 'OCT (PRÉV)';
-      if (lang === 'de') return 'OKT (PROGN)';
-      if (lang === 'it') return 'OTT (PREV)';
+    // 1. Meses do Gráfico com Suffix Opcional: JAN..DEZ [(ATUAL)|(PREV)]
+    const mMes = t.match(/^(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)(?:\s+(\((?:ATUAL|PREV)\)))?$/i);
+    if (mMes) {
+      const mesKey = mMes[1].toUpperCase();
+      const sufKey = mMes[2] ? mMes[2].toUpperCase() : null;
+      const mesTrad = (MESES[mesKey] && MESES[mesKey][lang]) ? MESES[mesKey][lang] : mesKey;
+      const sufTrad = sufKey && SUFIXOS_MES[sufKey] && SUFIXOS_MES[sufKey][lang] ? ' ' + SUFIXOS_MES[sufKey][lang] : '';
+      return mesTrad + sufTrad;
     }
 
     // 2. Capacidade da Oficina & Badges
@@ -1749,7 +1965,7 @@
     }
 
     // (Capacidade: X peças/dia)
-    const mCapac = t.match(/^\(?Capacidade:\s*(\d+)\s*(?:peças|unidades|metros|kg)?\/?dia\)?$/i);
+    const mCapac = t.match(/^\(?Capacidade:\s*(\d+)\s*(?:peças|unidades|metros|kg|pcs|piezas|pièces|stk\.?|pz\.)?\/?dia\)?$/i);
     if (mCapac) {
       const n = mCapac[1];
       if (lang === 'en') return `(Capacity: ${n} pcs/day)`;
@@ -1760,17 +1976,26 @@
       if (lang === 'it') return `(Capacità: ${n} pezzi/giorno)`;
     }
 
-    // X peças (Y%)
-    const mPecasPerc = t.match(/^(\d+)\s+peças\s+\((\d+)%\)$/i);
+    // [X] peças (Y%)
+    const mPecasPerc = t.match(/^(?:(\d+)\s+)?(?:peças|unidades|metros|kg|pcs|piezas|pièces|stk\.?|pz\.)\s+\((\d+)%\)$/i);
     if (mPecasPerc) {
       const p = mPecasPerc[1];
       const prc = mPecasPerc[2];
-      if (lang === 'en') return `${p} pcs (${prc}%)`;
-      if (lang === 'es') return `${p} piezas (${prc}%)`;
-      if (lang === 'pt-PT') return `${p} peças (${prc}%)`;
-      if (lang === 'fr') return `${p} pièces (${prc}%)`;
-      if (lang === 'de') return `${p} Stk. (${prc}%)`;
-      if (lang === 'it') return `${p} pz. (${prc}%)`;
+      if (p) {
+        if (lang === 'en') return `${p} pcs (${prc}%)`;
+        if (lang === 'es') return `${p} piezas (${prc}%)`;
+        if (lang === 'pt-PT') return `${p} peças (${prc}%)`;
+        if (lang === 'fr') return `${p} pièces (${prc}%)`;
+        if (lang === 'de') return `${p} Stk. (${prc}%)`;
+        if (lang === 'it') return `${p} pz. (${prc}%)`;
+      } else {
+        if (lang === 'en') return `pcs (${prc}%)`;
+        if (lang === 'es') return `piezas (${prc}%)`;
+        if (lang === 'pt-PT') return `peças (${prc}%)`;
+        if (lang === 'fr') return `pièces (${prc}%)`;
+        if (lang === 'de') return `Stk. (${prc}%)`;
+        if (lang === 'it') return `pz. (${prc}%)`;
+      }
     }
 
     // 3. Table Buttons & Scroll
@@ -1922,9 +2147,11 @@
     return null;
   }
 
-  // Tradução de String Completa (Frase Inteira, sem quebra)
+  // Tradução de String Completa com Preservação Rigorosa de Espaçamento Original
   function traduzirTexto(textoOriginal, lang) {
     if (!textoOriginal || typeof textoOriginal !== 'string') return textoOriginal;
+    const mLeading = textoOriginal.match(/^\s*/)[0];
+    const mTrailing = textoOriginal.match(/\s*$/)[0];
     const trimmed = textoOriginal.trim();
     if (trimmed.length === 0) return textoOriginal;
 
@@ -1932,7 +2159,7 @@
 
     // 1. Checar Padrões Dinâmicos
     const resPadrao = traduzirPadroes(trimmed, lang);
-    if (resPadrao) return resPadrao;
+    if (resPadrao) return mLeading + resPadrao + mTrailing;
 
     // 2. Checar Dicionário por Chave Lowercase
     const dict = DICIONARIOS[lang];
@@ -1940,22 +2167,22 @@
       const key = trimmed.toLowerCase();
       if (dict[key]) {
         const traducao = dict[key];
-        // Se o original era 100% maiúsculo, preserva
+        // Se o original era 100% maiúsculo e tem mais de 2 letras, preserva maiúsculo
         if (trimmed.length > 2 && trimmed === trimmed.toUpperCase()) {
-          return traducao.toUpperCase();
+          return mLeading + traducao.toUpperCase() + mTrailing;
         }
-        return traducao;
+        return mLeading + traducao + mTrailing;
       }
     }
 
-    // Se não encontrou, preserva intacto (NUNCA faça regex parcial de palavras soltas)
+    // Se não encontrou, preserva intacto
     return textoOriginal;
   }
 
   // Varredura Recursiva Segura no DOM
   function traduzirElemento(raiz, lang) {
     if (!raiz || !raiz.nodeType) return;
-    if (raiz.id === 'bravviLanguageModal') return;
+    if (raiz.id === 'bravviLanguageModal' || raiz.id === 'pageTitle' || raiz.id === 'pageBreadcrumb') return;
 
     // Text Node direto
     if (raiz.nodeType === 3) {
@@ -1972,7 +2199,12 @@
       const val = node.nodeValue;
       if (!val || !val.trim()) continue;
       const parent = node.parentNode;
-      if (parent && (['SCRIPT', 'STYLE', 'CODE', 'PRE'].includes(parent.tagName) || parent.closest('#bravviLanguageModal'))) {
+      if (parent && (
+        ['SCRIPT', 'STYLE', 'CODE', 'PRE'].includes(parent.tagName) || 
+        parent.closest('#bravviLanguageModal') ||
+        parent.closest('#pageTitle') ||
+        parent.closest('#pageBreadcrumb')
+      )) {
         continue;
       }
       if (node.__origText === undefined) {
@@ -2009,7 +2241,7 @@
     if (flagEl) flagEl.textContent = cfg.flag;
     if (textEl) textEl.textContent = cfg.nome.split(' (')[0];
 
-    // Navbar
+    // Navbar (exceto pageTitle e pageBreadcrumb)
     const topNavbar = document.querySelector('.top-navbar');
     if (topNavbar) traduzirElemento(topNavbar, lang);
 
@@ -2021,17 +2253,25 @@
     const contentArea = document.getElementById('contentArea');
     if (contentArea) traduzirElemento(contentArea, lang);
 
-    // Título e Breadcrumb da Página
+    // Título e Breadcrumb Canônicos do Módulo Ativo
+    let aba = 'abertura';
+    if (window.ERP && typeof window.ERP.obterAbaAtiva === 'function') {
+      aba = window.ERP.obterAbaAtiva();
+    } else if (window.ERP && typeof window.ERP.abaAtiva === 'function') {
+      aba = window.ERP.abaAtiva();
+    } else {
+      const activeMenu = document.querySelector('.menu-item.active[data-aba]');
+      if (activeMenu) aba = activeMenu.getAttribute('data-aba');
+    }
+
     const pageTitle = document.getElementById('pageTitle');
-    if (pageTitle) {
-      if (pageTitle.__origText === undefined) pageTitle.__origText = pageTitle.textContent;
-      pageTitle.textContent = (lang === 'pt-BR') ? pageTitle.__origText : traduzirTexto(pageTitle.__origText, lang);
+    if (pageTitle && TAB_TITLES[aba]) {
+      pageTitle.textContent = TAB_TITLES[aba][lang] || TAB_TITLES[aba]['pt-BR'];
     }
 
     const pageBreadcrumb = document.getElementById('pageBreadcrumb');
-    if (pageBreadcrumb) {
-      if (pageBreadcrumb.__origText === undefined) pageBreadcrumb.__origText = pageBreadcrumb.textContent;
-      pageBreadcrumb.textContent = (lang === 'pt-BR') ? pageBreadcrumb.__origText : traduzirTexto(pageBreadcrumb.__origText, lang);
+    if (pageBreadcrumb && TAB_BREADCRUMBS[aba]) {
+      pageBreadcrumb.textContent = TAB_BREADCRUMBS[aba][lang] || TAB_BREADCRUMBS[aba]['pt-BR'];
     }
   }
 
@@ -2097,7 +2337,7 @@
     };
   }
 
-  // Ação de Selecionar Idioma
+  // Ação de Selecionar Idioma com Re-renderização Imediata
   function selecionarIdioma(code) {
     if (!code) return;
     const item = CATALOGO.find(c => c.code === code);
@@ -2110,8 +2350,18 @@
     if (modal) modal.remove();
 
     // Re-renderiza a aba ativa do ERP para atualizar os cálculos de moeda
-    if (window.ERP && typeof window.ERP.obterAbaAtiva === 'function' && typeof window.ERP.navegarPara === 'function') {
-      window.ERP.navegarPara(window.ERP.obterAbaAtiva());
+    let aba = 'abertura';
+    if (window.ERP && typeof window.ERP.obterAbaAtiva === 'function') {
+      aba = window.ERP.obterAbaAtiva();
+    } else if (window.ERP && typeof window.ERP.abaAtiva === 'function') {
+      aba = window.ERP.abaAtiva();
+    } else {
+      const activeMenu = document.querySelector('.menu-item.active[data-aba]');
+      if (activeMenu) aba = activeMenu.getAttribute('data-aba');
+    }
+
+    if (window.ERP && typeof window.ERP.navegarPara === 'function') {
+      window.ERP.navegarPara(aba);
     }
 
     // Executa a tradução visual completa
