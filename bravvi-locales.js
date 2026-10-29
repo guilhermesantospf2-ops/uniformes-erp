@@ -124,7 +124,7 @@
     "financeiro": "Financial",
     "compras": "Purchasing",
     "clientes": "Customers",
-    "quarentena": "Quality Control",
+    "quarentena": "QUALITY HOLD",
     "equipe": "Team",
     "notas fiscais": "Invoices",
     "minha empresa": "My Company",
@@ -140,7 +140,7 @@
     "buscar cliente, número ou modelo...": "Search customer, order # or style...",
     "todos os status": "All Statuses",
     "apenas ativos (sem cancelados)": "Active Only (No Cancelled)",
-    "em produção": "In Production",
+    "em produção": "IN PRODUCTION",
     "em quarentena": "In Quarantine",
     "apenas orçamento": "Quotes Only",
     "finalizados": "Completed",
@@ -279,7 +279,7 @@
     "adicionar receita": "+ Add Revenue",
     "adicionar despesa": "+ Add Expense",
     "pago": "Paid",
-    "pendente": "Pending",
+    "pendente": "PENDING",
     "vencido": "Overdue",
     "hoje": "Today",
     "mês atual": "Current Month",
@@ -318,7 +318,22 @@
     "assinatura do responsável": "Sign-off Signature",
     "observações de produção": "Production Notes",
     "data de entrega": "Delivery Date",
-    "data de entrada": "Entry Date"
+    "data de entrada": "Entry Date",
+    "mockup 3x4": "Mockup 3x4",
+    "produto têxtil": "Textile Product",
+    "grade": "Sizes",
+    "prazo & contagem": "Deadline & Countdown",
+    "sinal (50%)": "Deposit (50%)",
+    "etapa oficina": "Workshop Stage",
+    "100% quitado": "100% PAID",
+    "🔒 quarentena": "🔒 QUALITY HOLD",
+    "em producao": "IN PRODUCTION",
+    "corte": "Cutting",
+    "costura": "Sewing",
+    "estamparia": "Printing",
+    "bordado": "Embroidery",
+    "acabamento": "Finishing",
+    "expedição": "Shipping"
   },
   "es": {
     "abertura & visão geral da fábrica": "Inicio & Visión General de la Fábrica",
@@ -371,7 +386,7 @@
     "financeiro": "Finanzas",
     "compras": "Compras",
     "clientes": "Clientes",
-    "quarentena": "Control de Calidad",
+    "quarentena": "CONTROL CALIDAD",
     "equipe": "Equipo",
     "notas fiscais": "Facturación",
     "minha empresa": "Mi Empresa",
@@ -387,7 +402,7 @@
     "buscar cliente, número ou modelo...": "Buscar cliente, número o modelo...",
     "todos os status": "Todos los Estados",
     "apenas ativos (sem cancelados)": "Solo Activos (Sin Cancelados)",
-    "em produção": "En Producción",
+    "em produção": "EN PRODUCCIÓN",
     "em quarentena": "En Cuarentena",
     "apenas orçamento": "Solo Presupuestos",
     "finalizados": "Completados",
@@ -526,7 +541,7 @@
     "adicionar receita": "+ Nuevo Ingreso",
     "adicionar despesa": "+ Nuevo Egreso",
     "pago": "Pagado",
-    "pendente": "Pendiente",
+    "pendente": "PENDIENTE",
     "vencido": "Vencido",
     "hoje": "Hoy",
     "mês atual": "Mes Actual",
@@ -565,7 +580,22 @@
     "assinatura do responsável": "Firma del Responsable",
     "observações de produção": "Notas de Producción",
     "data de entrega": "Fecha de Entrega",
-    "data de entrada": "Fecha de Entrada"
+    "data de entrada": "Fecha de Entrada",
+    "mockup 3x4": "Mockup 3x4",
+    "produto têxtil": "Producto Textil",
+    "grade": "Curva de Talles",
+    "prazo & contagem": "Plazo & Conteo",
+    "sinal (50%)": "Anticipo (50%)",
+    "etapa oficina": "Etapa Taller",
+    "100% quitado": "100% PAGADO",
+    "🔒 quarentena": "🔒 CONTROL CALIDAD",
+    "em producao": "EN PRODUCCIÓN",
+    "corte": "Corte",
+    "costura": "Costura",
+    "estamparia": "Estampado",
+    "bordado": "Bordado",
+    "acabamento": "Terminación",
+    "expedição": "Despacho"
   },
   "pt-PT": {
     "abertura & visão geral da fábrica": "Abertura & Visão Geral da Fábrica",
@@ -618,7 +648,7 @@
     "financeiro": "Finanças",
     "compras": "Compras",
     "clientes": "Clientes",
-    "quarentena": "Quarentena Técnica",
+    "quarentena": "QUARENTENA TÉCNICA",
     "equipe": "Equipa",
     "notas fiscais": "Faturação",
     "minha empresa": "A Minha Empresa",
@@ -634,7 +664,7 @@
     "buscar cliente, número ou modelo...": "Pesquisar cliente, número ou modelo...",
     "todos os status": "Todos os Estados",
     "apenas ativos (sem cancelados)": "Apenas Ativos (Sem Cancelados)",
-    "em produção": "Em Produção",
+    "em produção": "EM PRODUÇÃO",
     "em quarentena": "Em Quarentena",
     "apenas orçamento": "Apenas Orçamentos",
     "finalizados": "Concluídos",
@@ -773,7 +803,7 @@
     "adicionar receita": "+ Nova Receita",
     "adicionar despesa": "+ Nova Despesa",
     "pago": "Pago",
-    "pendente": "Pendente",
+    "pendente": "PENDENTE",
     "vencido": "Vencido",
     "hoje": "Hoje",
     "mês atual": "Mês Atual",
@@ -812,7 +842,22 @@
     "assinatura do responsável": "Assinatura do Responsável",
     "observações de produção": "Notas de Produção",
     "data de entrega": "Data de Entrega",
-    "data de entrada": "Data de Entrada"
+    "data de entrada": "Data de Entrada",
+    "mockup 3x4": "Mockup 3x4",
+    "produto têxtil": "Artigo Têxtil",
+    "grade": "Grelha de Tamanhos",
+    "prazo & contagem": "Prazo & Contagem",
+    "sinal (50%)": "Sinal (50%)",
+    "etapa oficina": "Etapa Oficina",
+    "100% quitado": "100% LIQUIDADO",
+    "🔒 quarentena": "🔒 QUARENTENA TÉCNICA",
+    "em producao": "EM PRODUÇÃO",
+    "corte": "Corte",
+    "costura": "Costura",
+    "estamparia": "Estamparia",
+    "bordado": "Bordado",
+    "acabamento": "Acabamento",
+    "expedição": "Expedição"
   },
   "fr": {
     "abertura & visão geral da fábrica": "Accueil & Vue d'Ensemble de l'Usine",
@@ -865,7 +910,7 @@
     "financeiro": "Finances",
     "compras": "Achats",
     "clientes": "Clients",
-    "quarentena": "Contrôle Qualité",
+    "quarentena": "CONTRÔLE QUALITÉ",
     "equipe": "Équipe",
     "notas fiscais": "Facturation",
     "minha empresa": "Mon Entreprise",
@@ -881,7 +926,7 @@
     "buscar cliente, número ou modelo...": "Rechercher client, numéro ou modèle...",
     "todos os status": "Tous les États",
     "apenas ativos (sem cancelados)": "Actifs Uniquement",
-    "em produção": "En Production",
+    "em produção": "EN PRODUCTION",
     "em quarentena": "En Contrôle Qualité",
     "apenas orçamento": "Devis Uniquement",
     "finalizados": "Terminées",
@@ -1020,7 +1065,7 @@
     "adicionar receita": "+ Nouvelle Recette",
     "adicionar despesa": "+ Nouvelle Dépense",
     "pago": "Payé",
-    "pendente": "En attente",
+    "pendente": "EN ATTENTE",
     "vencido": "Échu",
     "hoje": "Aujourd'hui",
     "mês atual": "Mois en cours",
@@ -1059,7 +1104,22 @@
     "assinatura do responsável": "Signature Responsable",
     "observações de produção": "Notes de Production",
     "data de entrega": "Date de Livraison",
-    "data de entrada": "Date d'Entrée"
+    "data de entrada": "Date d'Entrée",
+    "mockup 3x4": "Maquette 3x4",
+    "produto têxtil": "Produit Textile",
+    "grade": "Grille de Tailles",
+    "prazo & contagem": "Délai & Décompte",
+    "sinal (50%)": "Acompte (50%)",
+    "etapa oficina": "Étape Atelier",
+    "100% quitado": "100% RÉGLÉ",
+    "🔒 quarentena": "🔒 CONTRÔLE QUALITÉ",
+    "em producao": "EN PRODUCTION",
+    "corte": "Coupe",
+    "costura": "Confection",
+    "estamparia": "Sérigraphie",
+    "bordado": "Broderie",
+    "acabamento": "Finition",
+    "expedição": "Expédition"
   },
   "de": {
     "abertura & visão geral da fábrica": "Übersicht & Werksüberblick",
@@ -1112,7 +1172,7 @@
     "financeiro": "Finanzen",
     "compras": "Einkauf",
     "clientes": "Kunden",
-    "quarentena": "Qualitätskontrolle",
+    "quarentena": "QUALITÄTSPRÜFUNG",
     "equipe": "Mitarbeiter",
     "notas fiscais": "Rechnungen",
     "minha empresa": "Mein Unternehmen",
@@ -1128,7 +1188,7 @@
     "buscar cliente, número ou modelo...": "Kunde, Auftragsnummer oder Modell suchen...",
     "todos os status": "Alle Status",
     "apenas ativos (sem cancelados)": "Nur aktive Aufträge",
-    "em produção": "In Produktion",
+    "em produção": "IN PRODUKTION",
     "em quarentena": "In Qualitätskontrolle",
     "apenas orçamento": "Nur Angebote",
     "finalizados": "Abgeschlossen",
@@ -1267,7 +1327,7 @@
     "adicionar receita": "+ Neue Einnahme",
     "adicionar despesa": "+ Neue Ausgabe",
     "pago": "Bezahlt",
-    "pendente": "Ausstehend",
+    "pendente": "AUSSTEHEND",
     "vencido": "Überfällig",
     "hoje": "Heute",
     "mês atual": "Aktueller Monat",
@@ -1306,7 +1366,22 @@
     "assinatura do responsável": "Unterschrift Verantwortlicher",
     "observações de produção": "Produktionshinweise",
     "data de entrega": "Lieferdatum",
-    "data de entrada": "Eingangsdatum"
+    "data de entrada": "Eingangsdatum",
+    "mockup 3x4": "Mockup 3x4",
+    "produto têxtil": "Textilprodukt",
+    "grade": "Größenlauf",
+    "prazo & contagem": "Frist & Countdown",
+    "sinal (50%)": "Anzahlung (50%)",
+    "etapa oficina": "Fertigungsschritt",
+    "100% quitado": "100% BEZAHLT",
+    "🔒 quarentena": "🔒 QUALITÄTSPRÜFUNG",
+    "em producao": "IN PRODUKTION",
+    "corte": "Zuschnitt",
+    "costura": "Näherei",
+    "estamparia": "Druckerei",
+    "bordado": "Stickerei",
+    "acabamento": "Endbearbeitung",
+    "expedição": "Versand"
   },
   "it": {
     "abertura & visão geral da fábrica": "Panoramica & Gestione Fabbrica",
@@ -1359,7 +1434,7 @@
     "financeiro": "Finanze",
     "compras": "Acquisti",
     "clientes": "Clienti",
-    "quarentena": "Controllo Qualità",
+    "quarentena": "CONTROLLO QUALITÀ",
     "equipe": "Personale",
     "notas fiscais": "Fatturazione",
     "minha empresa": "La Mia Azienda",
@@ -1375,7 +1450,7 @@
     "buscar cliente, número ou modelo...": "Cerca cliente, numero ordine o modello...",
     "todos os status": "Tutti gli Stati",
     "apenas ativos (sem cancelados)": "Solo Attivi (Senza Annullati)",
-    "em produção": "In Produzione",
+    "em produção": "IN PRODUZIONE",
     "em quarentena": "In Controllo Qualità",
     "apenas orçamento": "Solo Preventivi",
     "finalizados": "Completati",
@@ -1514,7 +1589,7 @@
     "adicionar receita": "+ Nuova Entrata",
     "adicionar despesa": "+ Nuova Spesa",
     "pago": "Pagato",
-    "pendente": "In Sospeso",
+    "pendente": "IN SOSPESO",
     "vencido": "Scaduto",
     "hoje": "Oggi",
     "mês atual": "Mese Corrente",
@@ -1553,7 +1628,22 @@
     "assinatura do responsável": "Firma del Responsabile",
     "observações de produção": "Note di Produzione",
     "data de entrega": "Data di Consegna",
-    "data de entrada": "Data di Entrata"
+    "data de entrada": "Data di Entrata",
+    "mockup 3x4": "Bozzetto 3x4",
+    "produto têxtil": "Prodotto Tessile",
+    "grade": "Sviluppo Taglie",
+    "prazo & contagem": "Scadenza & Conteggio",
+    "sinal (50%)": "Acconto (50%)",
+    "etapa oficina": "Fase Lavorazione",
+    "100% quitado": "100% SALDATO",
+    "🔒 quarentena": "🔒 CONTROLLO QUALITÀ",
+    "em producao": "IN PRODUZIONE",
+    "corte": "Taglio",
+    "costura": "Cucitura",
+    "estamparia": "Serigrafia",
+    "bordado": "Ricamo",
+    "acabamento": "Finitura",
+    "expedição": "Spedizione"
   }
 };
 
@@ -1601,10 +1691,142 @@
     return `${prefix}${cfg.simbolo} ${absVal.toFixed(0)}`;
   }
 
+
   // Padrões Dinâmicos por Idioma (Frases com números / variáveis)
   function traduzirPadroes(texto, lang) {
     const t = texto.trim();
-    
+
+    // 1. Chart Month Labels
+    if (t === 'MAI') {
+      if (lang === 'en') return 'MAY';
+      if (lang === 'de') return 'MAI';
+      if (lang === 'fr') return 'MAI';
+    }
+    if (t === 'AGO') {
+      if (lang === 'en') return 'AUG';
+      if (lang === 'fr') return 'AOÛ';
+      if (lang === 'de') return 'AUG';
+      if (lang === 'it') return 'AGO';
+    }
+    if (t === 'SET') {
+      if (lang === 'en') return 'SEP';
+      if (lang === 'de') return 'SEP';
+      if (lang === 'fr') return 'SEP';
+    }
+    if (t === 'OUT') {
+      if (lang === 'en') return 'OCT';
+      if (lang === 'de') return 'OKT';
+      if (lang === 'fr') return 'OCT';
+      if (lang === 'it') return 'OTT';
+    }
+    if (t === 'SET (ATUAL)') {
+      if (lang === 'en') return 'SEP (CURRENT)';
+      if (lang === 'es') return 'SEP (ACTUAL)';
+      if (lang === 'pt-PT') return 'SET (ATUAL)';
+      if (lang === 'fr') return 'SEP (EN COURS)';
+      if (lang === 'de') return 'SEP (AKTUELL)';
+      if (lang === 'it') return 'SET (ATTUALE)';
+    }
+    if (t === 'OUT (PREV)') {
+      if (lang === 'en') return 'OCT (FCST)';
+      if (lang === 'es') return 'OCT (PREV)';
+      if (lang === 'pt-PT') return 'OUT (PREV)';
+      if (lang === 'fr') return 'OCT (PRÉV)';
+      if (lang === 'de') return 'OKT (PROGN)';
+      if (lang === 'it') return 'OTT (PREV)';
+    }
+
+    // 2. Capacidade da Oficina & Badges
+    const mOficinaRitmo = t.match(/^Oficina em Ritmo Normal(?:\s*\((\d+)%\))?$/i);
+    if (mOficinaRitmo) {
+      const p = mOficinaRitmo[1] ? ` (${mOficinaRitmo[1]}%)` : '';
+      if (lang === 'en') return `Workshop at Normal Pace${p}`;
+      if (lang === 'es') return `Taller en Ritmo Normal${p}`;
+      if (lang === 'pt-PT') return `Oficina em Ritmo Normal${p}`;
+      if (lang === 'fr') return `Atelier à Cadence Normale${p}`;
+      if (lang === 'de') return `Betrieb im Normalbetrieb${p}`;
+      if (lang === 'it') return `Laboratorio a Ritmo Normale${p}`;
+    }
+
+    // (Capacidade: X peças/dia)
+    const mCapac = t.match(/^\(?Capacidade:\s*(\d+)\s*(?:peças|unidades|metros|kg)?\/?dia\)?$/i);
+    if (mCapac) {
+      const n = mCapac[1];
+      if (lang === 'en') return `(Capacity: ${n} pcs/day)`;
+      if (lang === 'es') return `(Capacidad: ${n} piezas/día)`;
+      if (lang === 'pt-PT') return `(Capacidade: ${n} peças/dia)`;
+      if (lang === 'fr') return `(Capacité: ${n} pièces/jour)`;
+      if (lang === 'de') return `(Kapazität: ${n} Stück/Tag)`;
+      if (lang === 'it') return `(Capacità: ${n} pezzi/giorno)`;
+    }
+
+    // X peças (Y%)
+    const mPecasPerc = t.match(/^(\d+)\s+peças\s+\((\d+)%\)$/i);
+    if (mPecasPerc) {
+      const p = mPecasPerc[1];
+      const prc = mPecasPerc[2];
+      if (lang === 'en') return `${p} pcs (${prc}%)`;
+      if (lang === 'es') return `${p} piezas (${prc}%)`;
+      if (lang === 'pt-PT') return `${p} peças (${prc}%)`;
+      if (lang === 'fr') return `${p} pièces (${prc}%)`;
+      if (lang === 'de') return `${p} Stk. (${prc}%)`;
+      if (lang === 'it') return `${p} pz. (${prc}%)`;
+    }
+
+    // 3. Table Buttons & Scroll
+    if (t === '◀ Início' || t === '◄ Início') {
+      if (lang === 'en') return '◀ Start';
+      if (lang === 'es') return '◀ Inicio';
+      if (lang === 'pt-PT') return '◀ Início';
+      if (lang === 'fr') return '◀ Début';
+      if (lang === 'de') return '◀ Anfang';
+      if (lang === 'it') return '◀ Inizio';
+    }
+    if (t === 'Ações & Status ▶' || t === 'Ações & Status ►') {
+      if (lang === 'en') return 'Actions & Status ▶';
+      if (lang === 'es') return 'Acciones & Estado ▶';
+      if (lang === 'pt-PT') return 'Ações & Estado ▶';
+      if (lang === 'fr') return 'Actions & État ▶';
+      if (lang === 'de') return 'Aktionen & Status ▶';
+      if (lang === 'it') return 'Azioni & Stato ▶';
+    }
+
+    // 4. Badges de Prazo da Tabela (RESTAM X DIAS)
+    const mRestam = t.match(/^RESTAM\s+(\d+)\s+DIAS$/i);
+    if (mRestam) {
+      const d = mRestam[1];
+      if (lang === 'en') return `${d} DAYS LEFT`;
+      if (lang === 'es') return `QUEDAN ${d} DÍAS`;
+      if (lang === 'pt-PT') return `RESTAM ${d} DIAS`;
+      if (lang === 'fr') return `RESTE ${d} JOURS`;
+      if (lang === 'de') return `NOCH ${d} TAGE`;
+      if (lang === 'it') return `MANCANO ${d} GIORNI`;
+    }
+
+    // Prazo em orçamento: "⏱️ Xd após aprovação"
+    const mPrazoAprov = t.match(/^⏱️\s*(\d+)d\s+após\s+aprovação$/i);
+    if (mPrazoAprov) {
+      const d = mPrazoAprov[1];
+      if (lang === 'en') return `⏱️ ${d}d after approval`;
+      if (lang === 'es') return `⏱️ ${d}d tras aprobación`;
+      if (lang === 'pt-PT') return `⏱️ ${d}d após aprovação`;
+      if (lang === 'fr') return `⏱️ ${d}j après validation`;
+      if (lang === 'de') return `⏱️ ${d}T nach Freigabe`;
+      if (lang === 'it') return `⏱️ ${d}g dopo approvazione`;
+    }
+
+    // Status de Quitação na Tabela
+    const mParcial = t.match(/^PARCIAL\s*\((\d+)%\)$/i);
+    if (mParcial) {
+      const p = mParcial[1];
+      if (lang === 'en') return `PARTIAL (${p}%)`;
+      if (lang === 'es') return `PARCIAL (${p}%)`;
+      if (lang === 'pt-PT') return `PARCIAL (${p}%)`;
+      if (lang === 'fr') return `PARTIEL (${p}%)`;
+      if (lang === 'de') return `TEILWEISE (${p}%)`;
+      if (lang === 'it') return `PARZIALE (${p}%)`;
+    }
+
     // Ordens ativas na oficina
     const mOficina = t.match(/^(\d+)\s+ordens ativas na oficina$/i);
     if (mOficina) {
@@ -1792,7 +2014,7 @@
     if (topNavbar) traduzirElemento(topNavbar, lang);
 
     // Sidebar
-    const sidebar = document.getElementById('sidebar');
+    const sidebar = document.getElementById('sidebar') || document.querySelector('.erp-sidebar');
     if (sidebar) traduzirElemento(sidebar, lang);
 
     // Conteúdo Principal
