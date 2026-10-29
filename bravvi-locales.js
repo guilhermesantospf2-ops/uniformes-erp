@@ -1836,7 +1836,7 @@
     "relatório gerencial dre & balanço contábil": "Managerial Income Statement (DRE) & Balance Sheet Report",
     "remover fundo automaticamente (canva-style)": "Remover fundo automaticamente (Canva-style)",
     "rendimento do tecido:": "Fabric Yield:",
-    "requer botão \"entrada\"": "Requer botão \"Entrada\"",
+    "requer botão \"entrada\"": "Requires \"Down Payment\" button",
     "resumo financeiro consolidado do pedido:": "ORDER CONSOLIDATED FINANCIAL SUMMARY:",
     "ribana gola": "Collar Rib",
     "ribana gola 1x1": "1x1 Rib Collar",
@@ -2054,14 +2054,14 @@
     "💡 dica: mantenha a opção": "💡 Dica: Mantenha a opção",
     "💡 os números são formatados automaticamente em milhares (k) no gráfico para proporcionar leitura limpa.": "💡 Os números são formatados automaticamente em milhares (k) no gráfico para proporcionar leitura limpa.",
     "💡 primeiro acesso pós-compra? clique aqui para orientações": "💡 Primeiro acesso pós-compra? Clique aqui para orientações",
-    "💬 em proposta / orçamento": "💬 Em Proposta / Orçamento",
+    "💬 em proposta / orçamento": "💬 In Proposal / Quote",
     "💻 instalar aplicativo no computador (área de trabalho)": "💻 Instalar Aplicativo no Computador (Área de Trabalho)",
     "💼 plano de comissionamento de vendas": "💼 Plano de Comissionamento de Vendas",
     "💼 plano de comissões": "💼 Plano de Comissões",
     "💼 vendedor": "💼 Sales Rep",
     "📄 danfe": "📄 DANFE",
     "📅 previsto x realizado": "📅 Previsto x Realizado",
-    "📋 aguardando entrada": "📋 AGUARDANDO ENTRADA",
+    "📋 aguardando entrada": "📋 AWAITING DOWN PAYMENT",
     "📐 modelagem slim fit (slim-p ao slim-xg)": "📐 Modelagem Slim Fit (Slim-P ao Slim-XG)",
     "🔑 credenciais de acesso ao sistema (login do funcionário)": "🔑 Credenciais de Acesso ao Sistema (Login do Funcionário)",
     "🔑 provisória": "🔑 Temporary",
@@ -2227,7 +2227,25 @@
     "official factory configuration:": "Official Factory Configuration:",
     "1. logotipo & identidade da manufacturing": "1. Factory Logo & Brand Identity",
     "backup completo em arquivo json": "Full System Backup in JSON File",
-    "mandatory executive technical approval": "Mandatory Executive Technical Approval"
+    "mandatory executive technical approval": "Mandatory Executive Technical Approval",
+    "em proposta / orçamento": "In Proposal / Quote",
+    "requer botão 'entrada'": "Requires 'Down Payment' button",
+    "requer botão entrada": "Requires Down Payment button",
+    "aguardando entrada": "Awaiting Down Payment",
+    "orçamento em negociação comercial. para registrar entrada financeira, use o botão 'entrada'.": "Quote in commercial negotiation. To record financial down payment, use the 'Down Payment' button.",
+    "proposta:": "Proposal:",
+    "aviamentos p / peça (r$)": "Trims per Piece ($)",
+    "aviamentos p/ pc (r$)": "Trims per Piece ($)",
+    "aviamentos p / pc (r$)": "Trims per Piece ($)",
+    "aviamentos p/ pç (r$)": "Trims per Piece ($)",
+    "aviamentos p / pç (r$)": "Trims per Piece ($)",
+    "resumo financeiro consolidado do pedido": "Consolidated Order Financial Summary",
+    "aviamentos p/ peça": "Trims per Piece",
+    "aviamentos p / peça": "Trims per Piece",
+    "aviamentos p/ pc": "Trims per Piece",
+    "aviamentos p / pc": "Trims per Piece",
+    "aviamentos p/ pç": "Trims per Piece",
+    "aviamentos p / pç": "Trims per Piece"
   },
   "es": {
     "abertura & visão geral da fábrica": "Inicio & Visión General de la Fábrica",
@@ -3992,7 +4010,7 @@
     "relatório gerencial dre & balanço contábil": "Informe Gerencial de Pérdidas y Ganancias (DRE) y Balance",
     "remover fundo automaticamente (canva-style)": "Remover fundo automaticamente (Canva-style)",
     "rendimento do tecido:": "Rendimiento de la Tela:",
-    "requer botão \"entrada\"": "Requer botão \"Entrada\"",
+    "requer botão \"entrada\"": "Requiere botón \"Anticipo\"",
     "resumo financeiro consolidado do pedido:": "RESUMEN FINANCIERO CONSOLIDADO DEL PEDIDO:",
     "ribana gola": "Rib de Cuello",
     "ribana gola 1x1": "Cuello de Rib 1x1",
@@ -4210,14 +4228,14 @@
     "💡 dica: mantenha a opção": "💡 Dica: Mantenha a opção",
     "💡 os números são formatados automaticamente em milhares (k) no gráfico para proporcionar leitura limpa.": "💡 Os números são formatados automaticamente em milhares (k) no gráfico para proporcionar leitura limpa.",
     "💡 primeiro acesso pós-compra? clique aqui para orientações": "💡 Primeiro acesso pós-compra? Clique aqui para orientações",
-    "💬 em proposta / orçamento": "💬 Em Proposta / Orçamento",
+    "💬 em proposta / orçamento": "💬 En Propuesta / Presupuesto",
     "💻 instalar aplicativo no computador (área de trabalho)": "💻 Instalar Aplicativo no Computador (Área de Trabalho)",
     "💼 plano de comissionamento de vendas": "💼 Plano de Comissionamento de Vendas",
     "💼 plano de comissões": "💼 Plano de Comissões",
     "💼 vendedor": "💼 Vendedor",
     "📄 danfe": "📄 DANFE",
     "📅 previsto x realizado": "📅 Previsto x Realizado",
-    "📋 aguardando entrada": "📋 AGUARDANDO ENTRADA",
+    "📋 aguardando entrada": "📋 ESPERANDO ANTICIPO",
     "📐 modelagem slim fit (slim-p ao slim-xg)": "📐 Modelagem Slim Fit (Slim-P ao Slim-XG)",
     "🔑 credenciais de acesso ao sistema (login do funcionário)": "🔑 Credenciais de Acesso ao Sistema (Login do Funcionário)",
     "🔑 provisória": "🔑 Provisional",
@@ -4383,7 +4401,25 @@
     "official factory configuration:": "Parametrización Oficial de la Fábrica:",
     "1. logotipo & identidade da manufacturing": "1. Logotipo e Identidad de la Fábrica",
     "backup completo em arquivo json": "Copia de Seguridad Completa en Archivo JSON",
-    "mandatory executive technical approval": "Validación Técnica Obligatoria de la Dirección"
+    "mandatory executive technical approval": "Validación Técnica Obligatoria de la Dirección",
+    "em proposta / orçamento": "En Propuesta / Presupuesto",
+    "requer botão 'entrada'": "Requiere botón 'Anticipo'",
+    "requer botão entrada": "Requiere botón Anticipo",
+    "aguardando entrada": "Esperando Anticipo",
+    "orçamento em negociação comercial. para registrar entrada financeira, use o botão 'entrada'.": "Presupuesto en negociación comercial. Para registrar anticipo financiero, use el botón 'Anticipo'.",
+    "proposta:": "Propuesta:",
+    "aviamentos p / peça (r$)": "Avíos por Prenda ($)",
+    "aviamentos p/ pc (r$)": "Avíos por Prenda ($)",
+    "aviamentos p / pc (r$)": "Avíos por Prenda ($)",
+    "aviamentos p/ pç (r$)": "Avíos por Prenda ($)",
+    "aviamentos p / pç (r$)": "Avíos por Prenda ($)",
+    "resumo financeiro consolidado do pedido": "Resumen Financiero Consolidado del Pedido",
+    "aviamentos p/ peça": "Avíos por Prenda",
+    "aviamentos p / peça": "Avíos por Prenda",
+    "aviamentos p/ pc": "Avíos por Prenda",
+    "aviamentos p / pc": "Avíos por Prenda",
+    "aviamentos p/ pç": "Avíos por Prenda",
+    "aviamentos p / pç": "Avíos por Prenda"
   },
   "pt-PT": {
     "abertura & visão geral da fábrica": "Abertura & Visão Geral da Fábrica",
@@ -6373,7 +6409,7 @@
     "💼 vendedor": "💼 Vendedor",
     "📄 danfe": "📄 DANFE",
     "📅 previsto x realizado": "📅 Previsto x Realizado",
-    "📋 aguardando entrada": "📋 AGUARDANDO ENTRADA",
+    "📋 aguardando entrada": "📋 A AGUARDAR ENTRADA",
     "📐 modelagem slim fit (slim-p ao slim-xg)": "📐 Modelagem Slim Fit (Slim-P ao Slim-XG)",
     "🔑 credenciais de acesso ao sistema (login do funcionário)": "🔑 Credenciais de Acesso ao Sistema (Login do Funcionário)",
     "🔑 provisória": "🔑 Provisória",
@@ -6539,7 +6575,25 @@
     "official factory configuration:": "Parametrização Oficial da Fábrica:",
     "1. logotipo & identidade da manufacturing": "1. Logótipo e Identidade da Fábrica",
     "backup completo em arquivo json": "Cópia de Segurança Completa em Ficheiro JSON",
-    "mandatory executive technical approval": "Validação Técnica Obrigatória da Administração"
+    "mandatory executive technical approval": "Validação Técnica Obrigatória da Administração",
+    "em proposta / orçamento": "Em Proposta / Orçamento",
+    "requer botão 'entrada'": "Requer botão 'Entrada'",
+    "requer botão entrada": "Requer botão Entrada",
+    "aguardando entrada": "A Aguardar Entrada",
+    "orçamento em negociação comercial. para registrar entrada financeira, use o botão 'entrada'.": "Orçamento em negociação comercial. Para registar entrada financeira, use o botão 'Entrada'.",
+    "proposta:": "Proposta:",
+    "aviamentos p / peça (r$)": "Aviamentos por Peça (€)",
+    "aviamentos p/ pc (r$)": "Aviamentos por Peça (€)",
+    "aviamentos p / pc (r$)": "Aviamentos por Peça (€)",
+    "aviamentos p/ pç (r$)": "Aviamentos por Peça (€)",
+    "aviamentos p / pç (r$)": "Aviamentos por Peça (€)",
+    "resumo financeiro consolidado do pedido": "Resumo Financeiro Consolidado da Encomenda",
+    "aviamentos p/ peça": "Aviamentos por Peça",
+    "aviamentos p / peça": "Aviamentos por Peça",
+    "aviamentos p/ pc": "Aviamentos por Peça",
+    "aviamentos p / pc": "Aviamentos por Peça",
+    "aviamentos p/ pç": "Aviamentos por Peça",
+    "aviamentos p / pç": "Aviamentos por Peça"
   },
   "fr": {
     "abertura & visão geral da fábrica": "Accueil & Vue d'Ensemble de l'Usine",
@@ -8304,7 +8358,7 @@
     "relatório gerencial dre & balanço contábil": "Rapport de Gestion Compte de Résultat & Bilan",
     "remover fundo automaticamente (canva-style)": "Remover fundo automaticamente (Canva-style)",
     "rendimento do tecido:": "Rendement du Tissu :",
-    "requer botão \"entrada\"": "Requer botão \"Entrada\"",
+    "requer botão \"entrada\"": "Nécessite le bouton \"Acompte\"",
     "resumo financeiro consolidado do pedido:": "RÉSUMÉ FINANCIER CONSOLIDÉ DE LA COMMANDE :",
     "ribana gola": "Côte de Col",
     "ribana gola 1x1": "Bord-Côte Col 1x1",
@@ -8522,14 +8576,14 @@
     "💡 dica: mantenha a opção": "💡 Dica: Mantenha a opção",
     "💡 os números são formatados automaticamente em milhares (k) no gráfico para proporcionar leitura limpa.": "💡 Os números são formatados automaticamente em milhares (k) no gráfico para proporcionar leitura limpa.",
     "💡 primeiro acesso pós-compra? clique aqui para orientações": "💡 Primeiro acesso pós-compra? Clique aqui para orientações",
-    "💬 em proposta / orçamento": "💬 Em Proposta / Orçamento",
+    "💬 em proposta / orçamento": "💬 En Devis / Proposition",
     "💻 instalar aplicativo no computador (área de trabalho)": "💻 Instalar Aplicativo no Computador (Área de Trabalho)",
     "💼 plano de comissionamento de vendas": "💼 Plano de Comissionamento de Vendas",
     "💼 plano de comissões": "💼 Plano de Comissões",
     "💼 vendedor": "💼 Commercial",
     "📄 danfe": "📄 DANFE",
     "📅 previsto x realizado": "📅 Previsto x Realizado",
-    "📋 aguardando entrada": "📋 AGUARDANDO ENTRADA",
+    "📋 aguardando entrada": "📋 EN ATTENTE D'ACOMPTE",
     "📐 modelagem slim fit (slim-p ao slim-xg)": "📐 Modelagem Slim Fit (Slim-P ao Slim-XG)",
     "🔑 credenciais de acesso ao sistema (login do funcionário)": "🔑 Credenciais de Acesso ao Sistema (Login do Funcionário)",
     "🔑 provisória": "🔑 Provisoire",
@@ -8695,7 +8749,25 @@
     "official factory configuration:": "Paramétrage Officiel de l'Usine :",
     "1. logotipo & identidade da manufacturing": "1. Logo et Identité de l'Usine",
     "backup completo em arquivo json": "Sauvegarde Complète en Fichier JSON",
-    "mandatory executive technical approval": "Validation Technique Obligatoire de la Direction"
+    "mandatory executive technical approval": "Validation Technique Obligatoire de la Direction",
+    "em proposta / orçamento": "En Devis / Proposition",
+    "requer botão 'entrada'": "Nécessite le bouton 'Acompte'",
+    "requer botão entrada": "Nécessite le bouton Acompte",
+    "aguardando entrada": "En Attente d'Acompte",
+    "orçamento em negociação comercial. para registrar entrada financeira, use o botão 'entrada'.": "Devis en négociation commerciale. Pour enregistrer un acompte financier, utilisez le bouton 'Acompte'.",
+    "proposta:": "Devis :",
+    "aviamentos p / peça (r$)": "Fournitures par Pièce (€)",
+    "aviamentos p/ pc (r$)": "Fournitures par Pièce (€)",
+    "aviamentos p / pc (r$)": "Fournitures par Pièce (€)",
+    "aviamentos p/ pç (r$)": "Fournitures par Pièce (€)",
+    "aviamentos p / pç (r$)": "Fournitures par Pièce (€)",
+    "resumo financeiro consolidado do pedido": "Résumé Financier Consolidé de la Commande",
+    "aviamentos p/ peça": "Fournitures par Pièce",
+    "aviamentos p / peça": "Fournitures par Pièce",
+    "aviamentos p/ pc": "Fournitures par Pièce",
+    "aviamentos p / pc": "Fournitures par Pièce",
+    "aviamentos p/ pç": "Fournitures par Pièce",
+    "aviamentos p / pç": "Fournitures par Pièce"
   },
   "de": {
     "abertura & visão geral da fábrica": "Übersicht & Werksüberblick",
@@ -10460,7 +10532,7 @@
     "relatório gerencial dre & balanço contábil": "Betriebswirtschaftliche Auswertung & Bilanzbericht",
     "remover fundo automaticamente (canva-style)": "Remover fundo automaticamente (Canva-style)",
     "rendimento do tecido:": "Stoffausbeute:",
-    "requer botão \"entrada\"": "Requer botão \"Entrada\"",
+    "requer botão \"entrada\"": "Erfordert \"Anzahlung\"-Schaltfläche",
     "resumo financeiro consolidado do pedido:": "KONSOLIDIERTE FINANZÜBERSICHT DES AUFTRAGS:",
     "ribana gola": "Kragenbündchen",
     "ribana gola 1x1": "1x1 Rippstrickkragen",
@@ -10678,14 +10750,14 @@
     "💡 dica: mantenha a opção": "💡 Dica: Mantenha a opção",
     "💡 os números são formatados automaticamente em milhares (k) no gráfico para proporcionar leitura limpa.": "💡 Os números são formatados automaticamente em milhares (k) no gráfico para proporcionar leitura limpa.",
     "💡 primeiro acesso pós-compra? clique aqui para orientações": "💡 Primeiro acesso pós-compra? Clique aqui para orientações",
-    "💬 em proposta / orçamento": "💬 Em Proposta / Orçamento",
+    "💬 em proposta / orçamento": "💬 Im Angebot / Entwurf",
     "💻 instalar aplicativo no computador (área de trabalho)": "💻 Instalar Aplicativo no Computador (Área de Trabalho)",
     "💼 plano de comissionamento de vendas": "💼 Plano de Comissionamento de Vendas",
     "💼 plano de comissões": "💼 Plano de Comissões",
     "💼 vendedor": "💼 Verkäufer",
     "📄 danfe": "📄 DANFE",
     "📅 previsto x realizado": "📅 Previsto x Realizado",
-    "📋 aguardando entrada": "📋 AGUARDANDO ENTRADA",
+    "📋 aguardando entrada": "📋 WARTET AUF ANZAHLUNG",
     "📐 modelagem slim fit (slim-p ao slim-xg)": "📐 Modelagem Slim Fit (Slim-P ao Slim-XG)",
     "🔑 credenciais de acesso ao sistema (login do funcionário)": "🔑 Credenciais de Acesso ao Sistema (Login do Funcionário)",
     "🔑 provisória": "🔑 Vorläufig",
@@ -10851,7 +10923,25 @@
     "official factory configuration:": "Offizielle Fabrikkonfiguration:",
     "1. logotipo & identidade da manufacturing": "1. Fabriklogo & Markenidentität",
     "backup completo em arquivo json": "Vollständige Systemsicherung als JSON-Datei",
-    "mandatory executive technical approval": "Verbindliche technische Freigabe der Geschäftsleitung"
+    "mandatory executive technical approval": "Verbindliche technische Freigabe der Geschäftsleitung",
+    "em proposta / orçamento": "Im Angebot / Entwurf",
+    "requer botão 'entrada'": "Erfordert 'Anzahlung'-Schaltfläche",
+    "requer botão entrada": "Erfordert Anzahlung-Schaltfläche",
+    "aguardando entrada": "Wartet auf Anzahlung",
+    "orçamento em negociação comercial. para registrar entrada financeira, use o botão 'entrada'.": "Angebot in kaufmännischer Verhandlung. Um eine finanzielle Anzahlung zu erfassen, verwenden Sie die Schaltfläche 'Anzahlung'.",
+    "proposta:": "Angebot:",
+    "aviamentos p / peça (r$)": "Zutaten pro Stück (€)",
+    "aviamentos p/ pc (r$)": "Zutaten pro Stück (€)",
+    "aviamentos p / pc (r$)": "Zutaten pro Stück (€)",
+    "aviamentos p/ pç (r$)": "Zutaten pro Stück (€)",
+    "aviamentos p / pç (r$)": "Zutaten pro Stück (€)",
+    "resumo financeiro consolidado do pedido": "Konsolidierte Finanzübersicht des Auftrags",
+    "aviamentos p/ peça": "Zutaten pro Stück",
+    "aviamentos p / peça": "Zutaten pro Stück",
+    "aviamentos p/ pc": "Zutaten pro Stück",
+    "aviamentos p / pc": "Zutaten pro Stück",
+    "aviamentos p/ pç": "Zutaten pro Stück",
+    "aviamentos p / pç": "Zutaten pro Stück"
   },
   "it": {
     "abertura & visão geral da fábrica": "Panoramica & Gestione Fabbrica",
@@ -12616,7 +12706,7 @@
     "relatório gerencial dre & balanço contábil": "Report Gestionale Conto Economico & Bilancio",
     "remover fundo automaticamente (canva-style)": "Remover fundo automaticamente (Canva-style)",
     "rendimento do tecido:": "Resa del Tessuto:",
-    "requer botão \"entrada\"": "Requer botão \"Entrada\"",
+    "requer botão \"entrada\"": "Richiede pulsante \"Acconto\"",
     "resumo financeiro consolidado do pedido:": "RIEPILOGO FINANZIARIO CONSOLIDATO DELL'ORDINE:",
     "ribana gola": "Costina Collo",
     "ribana gola 1x1": "Colletto a Costine 1x1",
@@ -12834,14 +12924,14 @@
     "💡 dica: mantenha a opção": "💡 Dica: Mantenha a opção",
     "💡 os números são formatados automaticamente em milhares (k) no gráfico para proporcionar leitura limpa.": "💡 Os números são formatados automaticamente em milhares (k) no gráfico para proporcionar leitura limpa.",
     "💡 primeiro acesso pós-compra? clique aqui para orientações": "💡 Primeiro acesso pós-compra? Clique aqui para orientações",
-    "💬 em proposta / orçamento": "💬 Em Proposta / Orçamento",
+    "💬 em proposta / orçamento": "💬 In Preventivo / Proposta",
     "💻 instalar aplicativo no computador (área de trabalho)": "💻 Instalar Aplicativo no Computador (Área de Trabalho)",
     "💼 plano de comissionamento de vendas": "💼 Plano de Comissionamento de Vendas",
     "💼 plano de comissões": "💼 Plano de Comissões",
     "💼 vendedor": "💼 Venditore",
     "📄 danfe": "📄 DANFE",
     "📅 previsto x realizado": "📅 Previsto x Realizado",
-    "📋 aguardando entrada": "📋 AGUARDANDO ENTRADA",
+    "📋 aguardando entrada": "📋 IN ATTESA DI ACCONTO",
     "📐 modelagem slim fit (slim-p ao slim-xg)": "📐 Modelagem Slim Fit (Slim-P ao Slim-XG)",
     "🔑 credenciais de acesso ao sistema (login do funcionário)": "🔑 Credenciais de Acesso ao Sistema (Login do Funcionário)",
     "🔑 provisória": "🔑 Provvisoria",
@@ -13007,7 +13097,25 @@
     "official factory configuration:": "Configurazione Ufficiale della Fabbrica:",
     "1. logotipo & identidade da manufacturing": "1. Logo e Identità della Fabbrica",
     "backup completo em arquivo json": "Backup Completo del Sistema in File JSON",
-    "mandatory executive technical approval": "Validazione Tecnica Obbligatoria della Direzione"
+    "mandatory executive technical approval": "Validazione Tecnica Obbligatoria della Direzione",
+    "em proposta / orçamento": "In Preventivo / Proposta",
+    "requer botão 'entrada'": "Richiede pulsante 'Acconto'",
+    "requer botão entrada": "Richiede pulsante Acconto",
+    "aguardando entrada": "In Attesa di Acconto",
+    "orçamento em negociação comercial. para registrar entrada financeira, use o botão 'entrada'.": "Preventivo in negoziazione commerciale. Per registrare l'acconto finanziario, utilizzare il pulsante 'Acconto'.",
+    "proposta:": "Preventivo:",
+    "aviamentos p / peça (r$)": "Accessori per Pezzo (€)",
+    "aviamentos p/ pc (r$)": "Accessori per Pezzo (€)",
+    "aviamentos p / pc (r$)": "Accessori per Pezzo (€)",
+    "aviamentos p/ pç (r$)": "Accessori per Pezzo (€)",
+    "aviamentos p / pç (r$)": "Accessori per Pezzo (€)",
+    "resumo financeiro consolidado do pedido": "Riepilogo Finanziario Consolidato dell'Ordine",
+    "aviamentos p/ peça": "Accessori per Pezzo",
+    "aviamentos p / peça": "Accessori per Pezzo",
+    "aviamentos p/ pc": "Accessori per Pezzo",
+    "aviamentos p / pc": "Accessori per Pezzo",
+    "aviamentos p/ pç": "Accessori per Pezzo",
+    "aviamentos p / pç": "Accessori per Pezzo"
   }
 };
 
@@ -13379,6 +13487,17 @@
       return `• ${trName} (${mult}) - ${price}`;
     }
 
+    const mAviamentosPC = t.match(/^aviamentos\s+p\s*\/\s*(?:peça|pc|pç)(?:\s*\(r\$\))?$/i);
+    if (mAviamentosPC) {
+      const hasMoeda = t.includes('(');
+      if (lang === 'en') return hasMoeda ? 'Trims per Piece ($)' : 'Trims per Piece';
+      if (lang === 'es') return hasMoeda ? 'Avíos por Prenda ($)' : 'Avíos por Prenda';
+      if (lang === 'pt-PT') return hasMoeda ? 'Aviamentos por Peça (€)' : 'Aviamentos por Peça';
+      if (lang === 'fr') return hasMoeda ? 'Fournitures par Pièce (€)' : 'Fournitures par Pièce';
+      if (lang === 'de') return hasMoeda ? 'Zutaten pro Stück (€)' : 'Zutaten pro Stück';
+      if (lang === 'it') return hasMoeda ? 'Accessori per Pezzo (€)' : 'Accessori per Pezzo';
+    }
+
     // Suffix /peça ou / peça (ex: "$4.50 / peça" ou "Embroidery: $4.50/peça")
     const mPorPeca = t.match(/^(.*?)\s*\/\s*peça(.*)$/i);
     if (mPorPeca) {
@@ -13671,15 +13790,20 @@
       if (mapaStatus[st] && mapaStatus[st][lang]) return mapaStatus[st][lang];
     }
 
-    const mPecas = t.match(/^(\d+)\s+peça\(s\)$/i);
+    const mPecas = t.match(/^(\(?)(\d+)\s*(?:peças|peça|peça\(s\)|pçs|pç)(\)?)$/i);
     if (mPecas) {
-      const n = mPecas[1];
-      if (lang === 'en') return `${n} pcs`;
-      if (lang === 'es') return `${n} pzas`;
-      if (lang === 'pt-PT') return `${n} peças`;
-      if (lang === 'fr') return `${n} pièces`;
-      if (lang === 'de') return `${n} Stk.`;
-      if (lang === 'it') return `${n} pz`;
+      const openP = mPecas[1];
+      const n = mPecas[2];
+      const closeP = mPecas[3];
+      let res = '';
+      if (lang === 'en') res = n === '1' ? '1 piece' : `${n} pieces`;
+      else if (lang === 'es') res = n === '1' ? '1 pieza' : `${n} piezas`;
+      else if (lang === 'pt-PT') res = n === '1' ? '1 peça' : `${n} peças`;
+      else if (lang === 'fr') res = n === '1' ? '1 pièce' : `${n} pièces`;
+      else if (lang === 'de') res = `${n} Stück`;
+      else if (lang === 'it') res = n === '1' ? '1 pezzo' : `${n} pezzi`;
+      else res = `${n} peças`;
+      return `${openP}${res}${closeP}`;
     }
 
     const mPago = t.match(/^(\d+)%\s+pago$/i);
@@ -14540,6 +14664,97 @@
       if (lang === 'de') return `${p} Stk./Tag`;
       if (lang === 'it') return `${p} pz/giorno`;
     }
+    // 8. Padrões dinâmicos v8: Proposta, Badges de Status, Aviamentos e Resumos Consolidados
+    const mPropostaValor = t.match(/^Proposta:\s*(.*?)$/i);
+    if (mPropostaValor) {
+      const val = mPropostaValor[1];
+      if (lang === 'en') return `Proposal: ${val}`;
+      if (lang === 'es') return `Propuesta: ${val}`;
+      if (lang === 'pt-PT') return `Proposta: ${val}`;
+      if (lang === 'fr') return `Devis : ${val}`;
+      if (lang === 'de') return `Angebot: ${val}`;
+      if (lang === 'it') return `Preventivo: ${val}`;
+    }
+
+    const mRequerEntrada = t.match(/^Requer\s+botão\s+["']?Entrada["']?$/i);
+    if (mRequerEntrada) {
+      if (lang === 'en') return 'Requires "Down Payment" button';
+      if (lang === 'es') return 'Requiere botón "Anticipo"';
+      if (lang === 'pt-PT') return 'Requer botão "Entrada"';
+      if (lang === 'fr') return 'Nécessite le bouton "Acompte"';
+      if (lang === 'de') return 'Erfordert "Anzahlung"-Schaltfläche';
+      if (lang === 'it') return 'Richiede pulsante "Acconto"';
+    }
+
+    const mEmPropOrc = t.match(/^(💬\s*)?Em\s+Proposta\s*\/\s*Orçamento$/i);
+    if (mEmPropOrc) {
+      const ic = mEmPropOrc[1] ? '💬 ' : '';
+      if (lang === 'en') return `${ic}In Proposal / Quote`;
+      if (lang === 'es') return `${ic}En Propuesta / Presupuesto`;
+      if (lang === 'pt-PT') return `${ic}Em Proposta / Orçamento`;
+      if (lang === 'fr') return `${ic}En Devis / Proposition`;
+      if (lang === 'de') return `${ic}Im Angebot / Entwurf`;
+      if (lang === 'it') return `${ic}In Preventivo / Proposta`;
+    }
+
+    const mAguardEntrada = t.match(/^(📋\s*)?AGUARDANDO\s+ENTRADA$/i);
+    if (mAguardEntrada) {
+      const ic = mAguardEntrada[1] ? '📋 ' : '';
+      if (lang === 'en') return `${ic}AWAITING DOWN PAYMENT`;
+      if (lang === 'es') return `${ic}ESPERANDO ANTICIPO`;
+      if (lang === 'pt-PT') return `${ic}A AGUARDAR ENTRADA`;
+      if (lang === 'fr') return `${ic}EN ATTENTE D'ACOMPTE`;
+      if (lang === 'de') return `${ic}WARTET AUF ANZAHLUNG`;
+      if (lang === 'it') return `${ic}IN ATTESA DI ACCONTO`;
+    }
+
+    const mMargemBrutaPerc = t.match(/^(\(?)(\d+(?:\.\d+)?|\d+(?:,\d+)?)%\s+margem bruta(\)?)$/i);
+    if (mMargemBrutaPerc) {
+      const o = mMargemBrutaPerc[1];
+      const p = mMargemBrutaPerc[2];
+      const c = mMargemBrutaPerc[3];
+      if (lang === 'en') return `${o}${p}% gross margin${c}`;
+      if (lang === 'es') return `${o}${p}% margen bruto${c}`;
+      if (lang === 'pt-PT') return `${o}${p}% margem bruta${c}`;
+      if (lang === 'fr') return `${o}${p}% marge brute${c}`;
+      if (lang === 'de') return `${o}${p}% Bruttomarge${c}`;
+      if (lang === 'it') return `${o}${p}% margine lordo${c}`;
+    }
+
+    const mResumoModPecas = t.match(/^(\d+)\s+(Modelo|Modelos Diferentes no Pedido)\s*•\s*(\d+)\s+Peças no Total$/i);
+    if (mResumoModPecas) {
+      const nMod = mResumoModPecas[1];
+      const nPec = mResumoModPecas[3];
+      if (lang === 'en') return `${nMod} ${nMod === '1' ? 'Model' : 'Different Models in Order'} • ${nPec} Pieces in Total`;
+      if (lang === 'es') return `${nMod} ${nMod === '1' ? 'Modelo' : 'Modelos Diferentes en el Pedido'} • ${nPec} Piezas en Total`;
+      if (lang === 'pt-PT') return `${nMod} ${nMod === '1' ? 'Modelo' : 'Modelos Diferentes na Encomenda'} • ${nPec} Peças no Total`;
+      if (lang === 'fr') return `${nMod} ${nMod === '1' ? 'Modèle' : 'Différents Modèles dans la Commande'} • ${nPec} Pièces au Total`;
+      if (lang === 'de') return `${nMod} ${nMod === '1' ? 'Modell' : 'Verschiedene Modelle im Auftrag'} • ${nPec} Stück insgesamt`;
+      if (lang === 'it') return `${nMod} ${nMod === '1' ? 'Modello' : 'Modelli Diversi nell\'Ordine'} • ${nPec} Pezzi in Totale`;
+    }
+
+    const mPecasNoTotal = t.match(/^(\d+)\s+peças no total$/i);
+    if (mPecasNoTotal) {
+      const n = mPecasNoTotal[1];
+      if (lang === 'en') return `${n} pieces in total`;
+      if (lang === 'es') return `${n} piezas en total`;
+      if (lang === 'pt-PT') return `${n} peças no total`;
+      if (lang === 'fr') return `${n} pièces au total`;
+      if (lang === 'de') return `${n} Stück insgesamt`;
+      if (lang === 'it') return `${n} pezzi in totale`;
+    }
+
+    const mUnidades = t.match(/^(\d+)\s+un$/i);
+    if (mUnidades) {
+      const n = mUnidades[1];
+      if (lang === 'en') return n === '1' ? '1 unit' : `${n} units`;
+      if (lang === 'es') return n === '1' ? '1 ud' : `${n} uds`;
+      if (lang === 'pt-PT') return `${n} un`;
+      if (lang === 'fr') return n === '1' ? '1 unité' : `${n} unités`;
+      if (lang === 'de') return `${n} Stk.`;
+      if (lang === 'it') return `${n} unità`;
+    }
+
 
 
 

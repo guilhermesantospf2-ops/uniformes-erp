@@ -7951,7 +7951,7 @@
               ${itensOrcamento.map((it, i) => `<span style="display: inline-block; background: rgba(255,255,255,0.1); padding: 1px 6px; border-radius: 3px; margin: 1px;">${i+1}. ${it.produtoNome.split(' ')[0]} (${it.grade?.total || 0} pçs)</span>`).join(' ')}
             </div>
           </div>
-          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; text-align: center; overflow: visible;">
             <div style="background: rgba(255,255,255,0.08); padding: 8px; border-radius: 4px;">
               <span style="font-size: 10px; opacity: 0.75; display: block;">Total Peças Pedido</span>
               <strong style="font-size: 16px; color: #ffffff;">${totalPecasGeral} un</strong>
