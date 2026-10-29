@@ -1713,16 +1713,25 @@
     }, 4500);
   }
 
-  // Utilitários de Formatação
+  // Utilitários de Formatação Nativos & Multi-Moeda
   function formatarMoeda(valor) {
+    if (window.ERP_I18N && typeof window.ERP_I18N.formatarMoeda === 'function') {
+      return window.ERP_I18N.formatarMoeda(valor);
+    }
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
   }
 
   function formatarNumero(valor) {
+    if (window.ERP_I18N && typeof window.ERP_I18N.formatarNumero === 'function') {
+      return window.ERP_I18N.formatarNumero(valor);
+    }
     return new Intl.NumberFormat('pt-BR').format(valor || 0);
   }
 
   function formatarK(valor) {
+    if (window.ERP_I18N && typeof window.ERP_I18N.formatarK === 'function') {
+      return window.ERP_I18N.formatarK(valor);
+    }
     if (valor === undefined || valor === null || isNaN(valor)) return 'R$ 0';
     const num = Number(valor);
     const absVal = Math.abs(num);
@@ -2615,6 +2624,11 @@
       setTimeout(window.ERP_ATUALIZAR_BARRA_ROLAGEM, 40);
       setTimeout(window.ERP_ATUALIZAR_BARRA_ROLAGEM, 250);
     }
+
+    // Tradução instantânea nativa para o idioma ativo (0ms)
+    if (window.ERP_I18N && typeof window.ERP_I18N.traduzirPaginaCompleta === 'function') {
+      window.ERP_I18N.traduzirPaginaCompleta();
+    }
   }
 
   // Atualiza contadores numéricos na Sidebar
@@ -2666,6 +2680,11 @@
     // Registra na pilha e adiciona ao container no DOM
     modalPilha.push(modalEl);
     modalContainer.appendChild(modalEl);
+
+    // Tradução instantânea nativa do modal (0ms)
+    if (window.ERP_I18N && typeof window.ERP_I18N.traduzirElemento === 'function') {
+      window.ERP_I18N.traduzirElemento(modalEl, window.ERP_I18N.idiomaAtual());
+    }
 
     // 1. NÃO fechar ao clicar no backdrop (fora da caixa) - protege 100% dos dados preenchidos
     modalEl.addEventListener('click', (e) => {
