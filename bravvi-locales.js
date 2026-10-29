@@ -964,10 +964,10 @@
     "2. especificação de artes & dtf digital:": "2. ARTWORK SPECS & DIGITAL DTF:",
     "3. instruções para a costureira / facção:": "3. INSTRUCTIONS FOR SEAMSTRESS / CONTRACTOR:",
     "atenção da bancada:": "WORKSHOP ALERT:",
-    "para qual costureira / facção vai o pedido?": "Which Seamstress / Contractor is assigned?",
+    "para qual costureira / facção vai o pedido?": "Which seamstress / contractor is assigned to the order?",
     "artes da peça & personalizações em alta resolução": "Garment Artworks & High-Res Customizations",
     "✅ peça lisa (sem estampa / sem bordado)": "✅ Blank Garment (No Print / No Embroidery)",
-    "✅ quitação integral (100% pago)": "✅ Paid in Full (100% Cleared)",
+    "✅ quitação integral (100% pago)": "✅ Full Settlement (100% Paid)",
     "📦 receitas com pedidos de uniformes": "📦 Revenue from Uniform Orders",
     "🧵 custos diretos de produção (tecido, facção & tintas)": "🧵 Direct Production Costs (Fabrics, Labor & Inks)",
     "🏢 despesas fixas, aluguel & instalações": "🏢 Fixed Overhead, Rent & Facilities",
@@ -1036,12 +1036,12 @@
     "🚀 como funciona:": "🚀 How it works:",
     "⚡ recálculo em tempo real:": "⚡ Real-Time Recalculation:",
     "preço/custo final muda automaticamente na hora!": "final price/cost updates instantly!",
-    "diferenciação por tamanho ativa:": "Size-Based Weighting Active:",
+    "diferenciação por tamanho ativa:": "Size-based Differentiation Active:",
     "dica:": "Tip:",
     "auto-corte": "Auto-Crop",
     "recorte manual": "Manual Crop",
     "arraste o mouse": "Click and drag mouse",
-    "nenhuma arte carregada neste rolo": "No artwork loaded in this roll",
+    "nenhuma arte carregada neste rolo": "No artwork loaded on this roll",
     "separar por pedido": "Group by Order",
     "recálculo automático de custo médio ponderado:": "Automatic Weighted Average Cost Recalculation:",
     "malha/tecido:": "Knit/Fabric:",
@@ -1266,7 +1266,7 @@
     "❌ \"e se a internet cair aqui no galpão?\"": "❌ \"What if the internet goes down in the workshop?\"",
     "detalhes de confecção & bicolores:": "Tailoring Details & Two-Tone:",
     "para qual costureira / facção vai o pedido? (campo obrigatório)": "Which Seamstress / Contractor is assigned? (Required)",
-    "agrupa com linha de corte": "Groups with visual cutting guide line",
+    "agrupa com linha de corte": "Groups with visual cutting line",
     "centro de custo *": "Cost Center *",
     "código (ex: cc-06):": "Code (e.g. CC-06):",
     "tag / código:": "Tag / Code:",
@@ -1360,7 +1360,7 @@
     "aguardando digitação": "Aguardando digitação",
     "agulha máquina reta industrial cabo fino dbx1 (cx 10un)": "Agulha Máquina Reta Industrial Cabo Fino DBx1 (cx 10un)",
     "ainda não possui assinatura ativa?": "Ainda não possui assinatura ativa?",
-    "ajuste dimensões, quantidades e recorte cirúrgico": "Ajuste dimensões, quantidades e recorte cirúrgico",
+    "ajuste dimensões, quantidades e recorte cirúrgico": "Adjust dimensions, quantities, and precision crop",
     "ajuste os dados técnicos e a grade de consumo em gramas por tamanho de acordo com o tecido": "Ajuste os dados técnicos e a grade de consumo em gramas por tamanho de acordo com o tecido",
     "ajuste os valores reais de entradas (faturamento) e saídas (despesas/custos) para análise executiva": "Ajuste os valores reais de Entradas (Faturamento) e Saídas (Despesas/Custos) para análise executiva",
     "altere o": "Altere o",
@@ -1383,8 +1383,8 @@
     "arquivo não anexado nesta versão": "Arquivo não anexado nesta versão",
     "arquivo:": "Arquivo:",
     "arquivos salvos e vinculados permanentemente à ordem de serviço da confecção.": "Arquivos salvos e vinculados permanentemente à Work Order da Manufacturing.",
-    "artes no rolo dtf": "Artes no Rolo DTF",
-    "atalhos de entrada:": "Atalhos de Entrada:",
+    "artes no rolo dtf": "Artworks on DTF Roll",
+    "atalhos de entrada:": "Down Payment Shortcuts:",
     "atalhos:": "Atalhos:",
     "ativar minha licença pro & entrar": "Ativar Minha Licença PRO & Entrar",
     "auto-trim inteligente • recorte manual de enquadramento • remoção cirúrgica de fundo": "Auto-Trim inteligente • Recorte manual de enquadramento • Remoção cirúrgica de fundo",
@@ -1466,7 +1466,7 @@
     "compra malha piquet e dry - malharia sul": "Pique & Dry Fit Fabric Purchase - Malharia Sul",
     "compras sincronizadas com o estoque e lançamentos avulsos de manutenção e consumíveis da fábrica.": "Purchases synchronized with inventory and standalone entries for factory maintenance and consumables.",
     "condição de fornecimento:": "Condição de Fornecimento:",
-    "condições comerciais, entrada de sinal & saldo remanescente:": "Condições Comerciais, Entrada de Sinal & Saldo Remanescente:",
+    "condições comerciais, entrada de sinal & saldo remanescente:": "COMMERCIAL TERMS, DOWN PAYMENT & REMAINING BALANCE:",
     "cone linha reta 120 10.000m azul marinho": "Cone Linha Reta 120 10.000m Azul Marinho",
     "conectando aos servidores da sefaz sp e verificando disponibilidade dos webservices...": "Conectando aos servidores da SEFAZ SP e verificando disponibilidade dos webservices...",
     "conexão ssl mtls ativa": "Conexão SSL mTLS Ativa",
@@ -1475,7 +1475,7 @@
     "configure os limites de produtividade diária de corte, bordado, dtf, costura e outros processos": "Configure os limites de produtividade diária de corte, bordado, DTF, costura e outros processos",
     "configure sua confecção abaixo para liberar o acesso pro.": "Configure sua Manufacturing abaixo para liberar o acesso PRO.",
     "configure sua fábrica & crie sua senha definitiva": "Configure sua fábrica & crie sua senha definitiva",
-    "confirmar sinal já recebido e lançar entrada imediata no fluxo de caixa (financeiro)": "Confirm sinal já recebido e lançar entrada imediata no Fluxo de Caixa (Financeiro)",
+    "confirmar sinal já recebido e lançar entrada imediata no fluxo de caixa (financeiro)": "Confirm down payment already received and immediately post entry to Cash Flow (Finance)",
     "confirmo que a entrada ou valor acordado foi compensado na conta da confecção ou há termo formal de faturamento assinado.": "Confirmo que a entrada ou valor acordado foi compensado na conta da Manufacturing ou há termo formal de faturamento assinado.",
     "confirmo que a margem de contribuição do lote cobre todos os custos diretos, impostos do simples e gera margem real positiva.": "Confirmo que a Contribution Margin do lote cobre todos os custos diretos, impostos do Simples e gera margem real positiva.",
     "confirmo que as peças de tecido na cor principal e detalhes contrastantes (golas, punhos, frisos, recortes) estão fisicamente no galpão sem risco de variação de cor.": "Confirmo que as peças de tecido na cor principal e Details contrastantes (golas, punhos, frisos, recortes) estão fisicamente no galpão sem risco de variação de cor.",
@@ -1483,7 +1483,7 @@
     "consulta de autenticidade no portal da nf-e": "Consulta de autenticidade no portal da NF-e",
     "consultando base da receita federal em tempo real...": "Consultando base da Income Federal em tempo real...",
     "consumo base m": "Base Consumption M",
-    "consumo ponderado médio:": "Consumo Ponderado Médio:",
+    "consumo ponderado médio:": "Weighted Average Consumption:",
     "consumo de tecido por tamanho de acordo com o tecido *obrigatório": "Consumo de Tecido por Tamanho de Acordo com o Tecido *Obrigatório",
     "consumo de corte, ordem de produção, avarias ou ajuste de inventário": "Consumo de corte, ordem de produção, avarias ou ajuste de inventário",
     "contas a pagar & gestão de despesas": "Accounts Payable & Expense Management",
@@ -1504,11 +1504,11 @@
     "criando banco de dados exclusivo...": "Criando banco de dados exclusivo...",
     "crie um novo departamento ou linha operacional para apropriação de despesas da fábrica": "Crie um novo departamento ou linha operacional para apropriação de despesas da fábrica",
     "critérios de segurança:": "Critérios de Segurança:",
-    "custo dtf (filme + tinta)": "Custo DTF (Filme + Tinta)",
-    "custo direto total": "Custo Direto Total",
+    "custo dtf (filme + tinta)": "DTF COST (FILM + INK)",
+    "custo direto total": "Total Direct Cost",
     "custo histórico total": "Custo History Total",
-    "custo médio tecido / peça:": "Custo Médio Tecido / Peça:",
-    "custo produção": "Custo Produção",
+    "custo médio tecido / peça:": "Average Fabric Cost / Piece:",
+    "custo produção": "PRODUCTION COST",
     "custo:": "Custo:",
     "custos diretos para produzir este modelo:": "Custos Diretos para Produzir este Modelo:",
     "cálculo do imposto": "CÁLCULO DO IMPOSTO",
@@ -1534,9 +1534,9 @@
     "depreciação mensal consolidada": "Monthly Depreciation Consolidada",
     "depreciação mensal estimada:": "Monthly Depreciation Estimada:",
     "desgaste contábil total decorrido": "Desgaste contábil total decorrido",
-    "designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro": "Designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro",
+    "designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro": "Seamstress assignment, mandatory upload of high-res artwork, and financial down payment sync",
     "desinfetante 5l, sabonete líquido e papel toalha": "Disinfectant 5L, Liquid Soap and Paper Towels",
-    "detalhamento dos custos individuais de cada peça:": "Detalhamento dos custos individuais de cada peça:",
+    "detalhamento dos custos individuais de cada peça:": "Individual cost breakdown per piece:",
     "detalhamento por categoria & natureza financeira": "Detalhamento por Categoria & Natureza Financeira",
     "dir:": "Dir:",
     "distribuidora limpeza total": "Distribuidora Limpeza Total",
@@ -1563,7 +1563,7 @@
     "emitir nf-e modelo 55 (danfe oficial sefaz)": "Issue Electronic Invoice Model 55 (Official Tax Authority)",
     "empresa:": "Empresa:",
     "emulsão fotográfica têxtil resistente a água": "Emulsão Fotográfica Têxtil Resistente a Água",
-    "encaixe first-fit milimétrico para zero desperdício de filme pet e economia direta de tinta": "Encaixe First-Fit milimétrico para zero desperdício de filme PET e economia direta de tinta",
+    "encaixe first-fit milimétrico para zero desperdício de filme pet e economia direta de tinta": "Millimetric first-fit nesting for zero PET film waste and direct ink savings",
     "engenharia têxtil com recálculo em tempo real: edite o consumo ou o custo final diretamente em cada tamanho": "Engenharia têxtil com recálculo em tempo real: edite o consumo ou o custo final diretamente em cada tamanho",
     "entrada / sinal inicial": "Entrada / Sinal Inicial",
     "entrada oficial no pedido • confecção & chão de fábrica": "Official Order Ingestion • Tailoring & Factory Floor",
@@ -1602,7 +1602,7 @@
     "faixa refletiva 50mm (3m)": "Faixa Refletiva 50mm (3m)",
     "faixa refletiva termocolante alta visibilidade 50mm": "Faixa Refletiva Termocolante Alta Visibilidade 50mm",
     "faturamento acumulado": "Faturamento Acumulado",
-    "faturamento total": "Faturamento Total",
+    "faturamento total": "Total Revenue",
     "fazer ele admitir que perde dinheiro na gestão manual ou em planilhas soltas.": "Fazer ele admitir que perde dinheiro na gestão manual ou em planilhas soltas.",
     "fechamento comercial": "Fechamento Comercial",
     "ficha técnica a4": "A4 Tech Spec Sheet",
@@ -1669,7 +1669,7 @@
     "livro caixa & fluxo financeiro (entradas e saídas efetivadas)": "Cash Book & Financial Cash Flow (Settled Inflows & Outflows)",
     "logística & entregas": "Logistics & Deliveries",
     "lucas rodrigues": "Lucas Rodrigues",
-    "lucro bruto global": "Gross Profit Global",
+    "lucro bruto global": "Global Gross Profit",
     "lucro líquido real dre (ebit)": "Net Profit Real DRE (EBIT)",
     "mais popular (saas)": "MAIS POPULAR (SAAS)",
     "motor 2d skyline ativo": "MOTOR 2D SKYLINE ATIVO",
@@ -1685,9 +1685,9 @@
     "malha poliviscose pv anti-pilling (67% pol / 33% visc)": "Malha Poliviscose PV Anti-Pilling (67% Pol / 33% Visc)",
     "malhas, tecidos, aviamentos e dtf": "Knits, fabrics, haberdashery & DTF",
     "manutenção": "Manutenção",
-    "mapa visual do rolo dtf (escala 1:1)": "Mapa Visual do Rolo DTF (Escala 1:1)",
+    "mapa visual do rolo dtf (escala 1:1)": "Visual DTF Roll Map (1:1 Scale)",
     "mapeamento de custos e cadastro de tecidos": "Mapeamento de custos e cadastro de tecidos",
-    "margem bruta": "Margem Bruta",
+    "margem bruta": "GROSS MARGIN",
     "marrom café": "Marrom Café",
     "meia malha 30.1 penteada 100% algodão": "Single Jersey 30.1 100% Combed Cotton",
     "meia malha 30.1 penteada algodão branco": "Single Jersey 30.1 Combed White Cotton",
@@ -1695,7 +1695,7 @@
     "mesa de corte com faca rotativa elétrica 8 pol": "Cutting Table com Faca Rotativa Elétrica 8 Pol",
     "mestre antônio silva": "Mestre Antônio Silva",
     "meta interna do chão de fábrica:": "Meta Interna do Chão de Fábrica:",
-    "metros lineares de rolo": "Metros Lineares de Rolo",
+    "metros lineares de rolo": "ROLL LINEAR METERS",
     "modelo têxtil:": "Modelo Têxtil:",
     "modelo:": "Modelo:",
     "moletom flanelado 3 cabos (50% alg / 50% pol)": "Moletom Flanelado 3 Cabos (50% Alg / 50% Pol)",
@@ -1756,7 +1756,7 @@
     "o sistema está limpo e preparado para receber os pedidos reais da sua campanha.": "O sistema está limpo e preparado para receber os pedidos reais da sua campanha.",
     "o sistema gera o schema xml 4.00 oficial, chave de 44 dígitos com módulo 11 e protocolo de autorização compatível com consulta pública no portal nacional da sefaz.": "O sistema gera o Schema XML 4.00 oficial, chave de 44 dígitos com Módulo 11 e protocolo de autorização compatível com consulta pública no portal nacional da SEFAZ.",
     "o sistema mescla o saldo físico com a nova compra e recalcula o custo médio exato para garantir que os futuros orçamentos da fábrica reflitam os preços reais pagos aos fornecedores.": "O sistema mescla o saldo físico com a New Purchase e recalcula o custo médio exato para garantir que os futuros orçamentos da fábrica reflitam os preços reais pagos aos fornecedores.",
-    "o valor da entrada cobre 100% do pedido. não haverá saldo remanescente devedor.": "O valor da entrada cobre 100% do pedido. Não haverá saldo remanescente devedor.",
+    "o valor da entrada cobre 100% do pedido. não haverá saldo remanescente devedor.": "The upfront payment covers 100% of the order. There will be no outstanding balance.",
     "ordem de produção:": "ORDEM DE PRODUÇÃO:",
     "os produtos / serviços constantes da nota fiscal indicada ao lado": "OS PRODUTOS / SERVIÇOS CONSTANTES DA NOTA FISCAL INDICADA AO LADO",
     "outras despesas": "OUTRAS DESPESAS",
@@ -1788,7 +1788,7 @@
     "peça lisa (sem estampa). nenhuma personalização adicionada. clique nos botões acima para incluir bordado, dtf ou silk.": "Peça Lisa (Sem Estampa). Nenhuma personalização adicionada. Clique nos botões acima para incluir Bordado, DTF ou Silk.",
     "peça de uniforme adicional": "Peça de Uniforme Adicional",
     "peça monocromática na cor principal informada acima. sem recortes ou frisos contrastantes adicionais.": "Peça monocromática na cor principal informada acima. Sem recortes ou frisos contrastantes adicionais.",
-    "peças g1 a g5 consomem até 90% mais tecido que a modelagem base m. o custo e o total a enfestar já estão ponderados com precisão!": "Peças G1 a G5 consomem até 90% mais tecido que a modelagem base M. O custo e o total a enfestar já estão ponderados com precisão!",
+    "peças g1 a g5 consomem até 90% mais tecido que a modelagem base m. o custo e o total a enfestar já estão ponderados com precisão!": "Plus Size pieces (G1 to G5) consume up to 90% more fabric than base size M. Cost and total spreading are accurately weighted!",
     "plano de comissões da equipe comercial": "Plano de Comissões da Equipe Comercial",
     "poliamida termofusível branca especial dtf": "Poliamida Termofusível Branca Especial DTF",
     "prazo prometido ao cliente:": "Prazo Prometido ao Cliente:",
@@ -1801,7 +1801,7 @@
     "previsão": "Previsão",
     "preço médio / pç:": "Preço Médio / Pç:",
     "preço unitário:": "Preço Unitário:",
-    "preço venda": "Preço Venda",
+    "preço venda": "SELLING PRICE",
     "primeiro acesso ao sistema": "First System Access",
     "produção: corte & estamparia": "Produção: Corte & Estamparia",
     "produção: costura & facções": "Produção: Costura & Facções",
@@ -1835,9 +1835,9 @@
     "regulador de metal": "Regulador de Metal",
     "relatório gerencial dre & balanço contábil": "Managerial Income Statement (DRE) & Balance Sheet Report",
     "remover fundo automaticamente (canva-style)": "Remover fundo automaticamente (Canva-style)",
-    "rendimento do tecido:": "Rendimento do Tecido:",
+    "rendimento do tecido:": "Fabric Yield:",
     "requer botão \"entrada\"": "Requer botão \"Entrada\"",
-    "resumo financeiro consolidado do pedido:": "Resumo Financeiro Consolidado do Pedido:",
+    "resumo financeiro consolidado do pedido:": "ORDER CONSOLIDATED FINANCIAL SUMMARY:",
     "ribana gola": "Ribana Gola",
     "ribana gola 1x1": "1x1 Rib Collar",
     "ribana gola bicolor": "Two-Tone Collar Rib",
@@ -1865,7 +1865,7 @@
     "se você cobrar uma mensalidade de": "Se você cobrar uma mensalidade de",
     "segregação contábil completa: contas a pagar + compras de insumos + lançamentos no caixa": "Segregação contábil completa: Contas a Pagar + Compras de Insumos + Lançamentos no Caixa",
     "selecione um modelo": "Select a Model",
-    "selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo dtf.": "Selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo DTF.",
+    "selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo dtf.": "Select a registered order at the top or import files from your computer to fit onto the DTF roll.",
     "sem fidelidade ou carência": "Sem fidelidade ou carência",
     "sem grade": "Sem grade",
     "seus dados ficam 100% sob seu controle. você pode baixar cópias de segurança a qualquer momento e restaurar em outro computador ou navegador.": "Seus dados ficam 100% sob seu controle. Você pode baixar cópias de segurança a qualquer momento e restaurar em outro computador ou navegador.",
@@ -1881,7 +1881,7 @@
     "soma de personalizações deste modelo:": "Total custom prints for this model:",
     "status conexão sefaz": "TAX AUTHORITY STATUS",
     "status sefaz:": "Status SEFAZ:",
-    "subtotal modelo": "Subtotal Modelo",
+    "subtotal modelo": "MODEL SUBTOTAL",
     "suporte direto via whatsapp oficial": "Suporte direto via WhatsApp oficial",
     "suprimentos dtf brasil": "Suprimentos DTF Brasil",
     "série:": "Série:",
@@ -1897,7 +1897,7 @@
     "tam 6": "Tam 6",
     "tam 8": "Tam 8",
     "tamanho:": "Tamanho:",
-    "taxa de aproveitamento": "Taxa de Aproveitamento",
+    "taxa de aproveitamento": "UTILIZATION RATE",
     "tecido brim pesado 100% algodão cinza": "Heavy Cotton Twill 100% Grey",
     "tecido brim pesado sarja 100% algodão 260g": "Tecido Brim Pesado Sarja 100% Algodão 260g",
     "tecido gabardine nobre com elastano": "Tecido Gabardine Nobre com Elastano",
@@ -1905,7 +1905,7 @@
     "tecido oxford branco 100% poliéster": "White Oxford Fabric 100% Polyester",
     "tecido rip stop anti-rasgo militar": "Tecido Rip Stop Anti-Rasgo Militar",
     "tecido tactel microfibra 100% poliéster": "Tecido Tactel Microfibra 100% Poliéster",
-    "tecido total a comprar/cortar:": "Tecido Total a Comprar/Cortar:",
+    "tecido total a comprar/cortar:": "Total Fabric to Buy/Cut:",
     "tecido tricoline mista 60/40 camisaria": "Tecido Tricoline Mista 60/40 Camisaria",
     "tinta dtf textil pigmentada branca 1l": "Tinta DTF Textil Pigmentada Branca 1L",
     "tinta dtf têxtil pigmentada branca (white) 1l": "Tinta DTF Têxtil Pigmentada Branca (White) 1L",
@@ -1917,10 +1917,10 @@
     "tolerância:": "Tolerância:",
     "topo:": "Topo:",
     "total comissões geradas": "Total Comissões Geradas",
-    "total cópias encaixadas": "Total Cópias Encaixadas",
+    "total cópias encaixadas": "TOTAL NESTED COPIES",
     "total faturado em nf-e": "TOTAL BILLED VIA E-INVOICE",
     "total já recebido": "Total Já Recebido",
-    "total peças pedido": "Total Peças Pedido",
+    "total peças pedido": "Total Order Pieces",
     "total vendas faturadas": "Total Vendas Faturadas",
     "total a receber (clientes)": "Total a Receber (Clientes)",
     "total de pedidos": "Total de Pedidos",
@@ -1954,7 +1954,7 @@
     "verde água": "Verde Água",
     "verificando credenciais...": "Verificando credenciais...",
     "versão xml: 4.00": "Versão XML: 4.00",
-    "visualização completa das matrizes, réguas em cm/metros e marcas de corte": "Visualização completa das matrizes, réguas em cm/metros e marcas de corte",
+    "visualização completa das matrizes, réguas em cm/metros e marcas de corte": "Complete visualization of designs, cm/meter rulers, and cut marks",
     "vá na aba": "Vá na aba",
     "whatsapp contato:": "WhatsApp Contato:",
     "zero espaço branco": "Zero Espaço Branco",
@@ -1993,7 +1993,7 @@
     "para inserir.": "para inserir.",
     "para que seu cliente pague a entrada com 1 clique.": "para que seu cliente pague a entrada com 1 clique.",
     "para quitação do pedido. este valor continuará como saldo a receber na entrega.": "para quitação do pedido. Este valor continuará como saldo a receber na entrega.",
-    "por peça acabada": "por peça acabada",
+    "por peça acabada": "per finished piece",
     "sobre o desenho ou use os sliders abaixo (0% a 95%):": "sobre o desenho ou use os sliders abaixo (0% a 95%):",
     "tem autorização para cadastrar novos funcionários, definir perfis de permissão e criar senhas temporárias de acesso.": "tem autorização para cadastrar novos funcionários, definir perfis de permissão e criar senhas temporárias de acesso.",
     "à vista / 30d": "À Vista / 30D",
@@ -2021,12 +2021,12 @@
     "⚙️ configurações fiscais & certificado digital a1": "⚙️ Tax Settings & A1 Digital Certificate",
     "⚙️ depreciação de máquinas & ativos": "⚙️ Depreciação de Máquinas & Ativos",
     "⚠️ atenção corte / costura / compra de materiais (detalhes de cor):": "⚠️ Warning CORTE / COSTURA / COMPRA DE MATERIAIS (Details DE COR):",
-    "⚠️ anexo obrigatório: não é permitido dar entrada sem os arquivos das artes": "⚠️ Anexo Obrigatório: Não é permitido dar entrada sem os arquivos das artes",
+    "⚠️ anexo obrigatório: não é permitido dar entrada sem os arquivos das artes": "⚠️ Mandatory Attachment: Order ingestion is not permitted without artwork files",
     "⚠️ atenção: esta baixa deixará o saldo deste insumo abaixo do estoque mínimo de segurança!": "⚠️ Warning: Esta baixa deixará o saldo deste insumo abaixo do estoque mínimo de segurança!",
     "⚠️ cnpj não localizado automaticamente na base pública. você pode preencher os campos abaixo manualmente.": "⚠️ CNPJ não localizado automaticamente na base pública. Você pode preencher os campos abaixo manualmente.",
     "⚠️ este usuário ainda não possui senha provisória definida no sistema. preencha uma senha abaixo para liberar o acesso dele.": "⚠️ Este usuário ainda não possui senha provisória definida no sistema. Preencha uma senha abaixo para liberar o acesso dele.",
     "⚠️ obrigatório": "⚠️ Obrigatório",
-    "⚠️ obrigatório anexar": "⚠️ Obrigatório Anexar",
+    "⚠️ obrigatório anexar": "⚠️ Mandatory to Attach",
     "⚠️ sem senha definida": "⚠️ Sem Senha Definida",
     "⚡ auto-corte inteligente (trim)": "⚡ Auto-Corte Inteligente (Trim)",
     "⚡ baixar todos os arquivos em lote": "⚡ Baixar Todos os Arquivos em Lote",
@@ -2036,11 +2036,11 @@
     "⚽ relação dos atletas & numerações": "⚽ Relação dos Atletas & Numerações",
     "✂️ oficina / fábrica": "✂️ Oficina / Fábrica",
     "✂️ recorte & enquadramento": "✂️ Recorte & Enquadramento",
-    "✏️ custos/consumos manuais ativos": "✏️ Custos/Consumos Manuais Ativos",
-    "✓ definido na proposta": "✓ Definido na Proposta",
+    "✏️ custos/consumos manuais ativos": "✏️ Manual Costs/Usage Active",
+    "✓ definido na proposta": "✓ Defined in Proposal",
     "✓ pago": "✓ PAID",
     "✓ preço direto por bordado": "✓ Direct price per embroidery",
-    "✓ sem fundo": "✓ Sem Fundo",
+    "✓ sem fundo": "✓ No Background",
     "✓ senha pessoal criada": "✓ Senha Pessoal Criada",
     "✨ explorar modo demonstração showroom (sem cadastro) &rarr;": "✨ Explorar Modo Demonstração Showroom (Sem Cadastro) &rarr;",
     "✨ pronto dtf": "✨ Pronto DTF",
@@ -2185,7 +2185,23 @@
     "sefaz homologação": "Tax Authority Sandbox / Testing",
     "buscar por cliente, cnpj, número ou chave...": "Search by Customer, Tax ID, Number or Access Key...",
     "autorizada": "AUTHORIZED",
-    "personalize a identidade da fábrica: logotipo em alta resolução, dados cadastrais, dados para pagamento via pix e segurança.": "Customize factory identity: high-resolution logo, legal registration, instant payment details and security."
+    "personalize a identidade da fábrica: logotipo em alta resolução, dados cadastrais, dados para pagamento via pix e segurança.": "Customize factory identity: high-resolution logo, legal registration, instant payment details and security.",
+    "custos/consumos manuais ativos": "Manual Costs/Usage Active",
+    "detalhar & editar custo por peça": "Detail & Edit Cost Breakdown",
+    "viável (margem excelente)": "VIABLE (Excellent Margin)",
+    "viável (padrão)": "VIABLE (Standard)",
+    "atenção (margem baixa)": "WARNING (Low Margin)",
+    "inviável (prejuízo)": "UNVIABLE (Loss)",
+    "entrada oficial no pedido • manufacturing & chão de fábrica": "Official Order Ingestion • Manufacturing & Factory Floor",
+    "definido na proposta": "Defined in Proposal",
+    "which seamstress / contractor is assigned? (campo obrigatório)": "WHICH SEAMSTRESS / CONTRACTOR IS ASSIGNED? (MANDATORY FIELD)",
+    "anexo obrigatório: não é permitido dar entrada sem os arquivos das artes": "Mandatory Attachment: Order ingestion is not permitted without artwork files",
+    "obrigatório anexar": "Mandatory to Attach",
+    "confirm sinal já recebido e lançar entrada imediata no fluxo de caixa (financeiro)": "Confirm down payment already received and immediately post entry to Cash Flow (Finance)",
+    "quitação integral (100% pago)": "Full Settlement (100% Paid)",
+    "remover fundo": "Remove Background",
+    "✨ remover fundo": "✨ Remove Background",
+    "recorte & fundo": "Crop & Background"
   },
   "es": {
     "abertura & visão geral da fábrica": "Inicio & Visión General de la Fábrica",
@@ -2931,7 +2947,7 @@
     "🔄 restaurar padrão abnt": "🔄 Restaurar Curva Estándar",
     "salvar consumos & custos por peça": "Guardar Consumos y Costos por Prenda",
     "← preencher grade do pedido": "← Completar Talles del Pedido",
-    "📊 detalhar & editar custo por peça ✏️": "📊 Detallar y Editar Costos ✏️",
+    "📊 detalhar & editar custo por peça ✏️": "📊 Detallar y Editar Costos por Pieza ✏️",
     "+ cadastrar costureira": "+ Registrar Costurera",
     "✂️ estúdio & recorte dtf": "✂️ Estudio y Recorte DTF",
     "✕ trocar": "✕ Cambiar",
@@ -2940,8 +2956,8 @@
     "30% entrada": "30% Anticipo",
     "40% entrada": "40% Anticipo",
     "50% entrada (padrão)": "50% Anticipo (Estándar)",
-    "100% (à vista total)": "100% (Pago Total)",
-    "confirmar entrada no pedido & gerar os": "Confirmar Pedido y Generar OT",
+    "100% (à vista total)": "100% (Pago Total Anticipado)",
+    "confirmar entrada no pedido & gerar os": "Confirmar Entrada del Pedido y Generar OT",
     "editar orçamento": "Editar Presupuesto",
     "aprovar & dar entrada": "Aprobar y Enviar a Planta",
     "imprimir / baixar proposta em pdf": "Imprimir / Descargar Propuesta PDF",
@@ -2969,12 +2985,12 @@
     "↺ desfazer todos os recortes (voltar original)": "↺ Deshacer Todos los Recortes",
     "⬛ preto": "⬛ Negro",
     "✨ auto detecção": "✨ Detección Automática",
-    "+ adicionar arquivo do computador": "+ Añadir Archivo del Ordenador",
+    "+ adicionar arquivo do computador": "+ Agregar Archivo del Computador",
     "+ incluir outro pedido no rolo": "+ Incluir Otro Pedido en el Rollo",
     "↺ re-otimizar": "↺ Re-optimizar",
     "✂️ recorte & fundo": "✂️ Recorte y Fondo",
     "🖨️ ficha dtf": "🖨️ Ficha DTF",
-    "salvar & exportar png (rip)": "Guardar y Exportar PNG (RIP)",
+    "salvar & exportar png (rip)": "Guardar y Exportar PNG (Listo RIP)",
     "padrão (40%)": "Estándar (40%)",
     "adicionar matrizes ao rolo": "Añadir Matrices al Rollo",
     "✂️ estúdio cirúrgico & conta-gotas": "✂️ Estudio de Precisión y Gotero",
@@ -3078,10 +3094,10 @@
     "2. especificação de artes & dtf digital:": "2. ESPECIFICACIÓN DE DISEÑOS Y DTF DIGITAL:",
     "3. instruções para a costureira / facção:": "3. INSTRUCCIONES PARA COSTURERA / TALLER:",
     "atenção da bancada:": "ATENCIÓN EN PLANTA:",
-    "para qual costureira / facção vai o pedido?": "¿A qué Taller / Costurera se asigna el pedido?",
-    "artes da peça & personalizações em alta resolução": "Diseños y Personalizaciones en Alta Resolución",
+    "para qual costureira / facção vai o pedido?": "¿A qué costurera / taller va el pedido?",
+    "artes da peça & personalizações em alta resolução": "Artes de la Prenda y Personalizaciones en Alta Resolución",
     "✅ peça lisa (sem estampa / sem bordado)": "✅ Prenda Lisa (Sin Estampado / Sin Bordado)",
-    "✅ quitação integral (100% pago)": "✅ Pago Total (100% Cancelado)",
+    "✅ quitação integral (100% pago)": "✅ Liquidación Total (100% Pagado)",
     "📦 receitas com pedidos de uniformes": "📦 Ingresos por Pedidos de Uniformes",
     "🧵 custos diretos de produção (tecido, facção & tintas)": "🧵 Costos Directos de Producción (Telas, Talleres y Tintas)",
     "🏢 despesas fixas, aluguel & instalações": "🏢 Gastos Fijos, Alquiler e Instalaciones",
@@ -3150,12 +3166,12 @@
     "🚀 como funciona:": "🚀 Cómo funciona:",
     "⚡ recálculo em tempo real:": "⚡ Recálculo en Tiempo Real:",
     "preço/custo final muda automaticamente na hora!": "¡precio/costo final cambia al instante!",
-    "diferenciação por tamanho ativa:": "Diferenciación por Talle Activa:",
+    "diferenciação por tamanho ativa:": "Diferenciación por Talla Activa:",
     "dica:": "Consejo:",
     "auto-corte": "Auto-Corte",
     "recorte manual": "Recorte Manual",
     "arraste o mouse": "Arrastre el cursor",
-    "nenhuma arte carregada neste rolo": "Ningún diseño cargado en este rollo",
+    "nenhuma arte carregada neste rolo": "Ningún arte cargado en este rollo",
     "separar por pedido": "Separar por Pedido",
     "recálculo automático de custo médio ponderado:": "Recálculo Automático de Costo Promedio:",
     "malha/tecido:": "Tela/Tejido:",
@@ -3221,8 +3237,8 @@
     "largura do rolo / papel": "Ancho del Rollo / Papel",
     "largura custom (cm)": "Ancho Personalizado (cm)",
     "metragem por arquivo": "Metraje por Archivo",
-    "metragem custom (m)": "Metraje Personalizado (m)",
-    "espaçamento / sangria": "Espaciado / Sangrado",
+    "metragem custom (m)": "Longitud Personalizada (m)",
+    "espaçamento / sangria": "Espaciado / Sangría",
     "selecione o pedido para adicionar": "Seleccione el Pedido",
     "arquivo de imagem (png, jpg, webp, svg ou pdf/ai)": "Archivo de Imagen (PNG, JPG, SVG, PDF)",
     "descrição / local da estampa": "Descripción / Ubicación de la Estampa",
@@ -3474,7 +3490,7 @@
     "aguardando digitação": "Aguardando digitação",
     "agulha máquina reta industrial cabo fino dbx1 (cx 10un)": "Agulha Máquina Reta Industrial Cabo Fino DBx1 (cx 10un)",
     "ainda não possui assinatura ativa?": "Ainda não possui assinatura ativa?",
-    "ajuste dimensões, quantidades e recorte cirúrgico": "Ajuste dimensões, quantidades e recorte cirúrgico",
+    "ajuste dimensões, quantidades e recorte cirúrgico": "Ajuste dimensiones, cantidades y recorte quirúrgico",
     "ajuste os dados técnicos e a grade de consumo em gramas por tamanho de acordo com o tecido": "Ajuste os dados técnicos e a grade de consumo em gramas por tamanho de acordo com o tecido",
     "ajuste os valores reais de entradas (faturamento) e saídas (despesas/custos) para análise executiva": "Ajuste os valores reais de Entradas (Faturamento) e Saídas (Despesas/Custos) para análise executiva",
     "altere o": "Altere o",
@@ -3497,8 +3513,8 @@
     "arquivo não anexado nesta versão": "Arquivo não anexado nesta versão",
     "arquivo:": "Arquivo:",
     "arquivos salvos e vinculados permanentemente à ordem de serviço da confecção.": "Arquivos salvos e vinculados permanentemente à Orden de Servicio da Confección.",
-    "artes no rolo dtf": "Artes no Rolo DTF",
-    "atalhos de entrada:": "Atalhos de Entrada:",
+    "artes no rolo dtf": "Artes en el Rollo DTF",
+    "atalhos de entrada:": "Accesos Rápidos de Anticipo:",
     "atalhos:": "Atalhos:",
     "ativar minha licença pro & entrar": "Ativar Minha Licença PRO & Entrar",
     "auto-trim inteligente • recorte manual de enquadramento • remoção cirúrgica de fundo": "Auto-Trim inteligente • Recorte manual de enquadramento • Remoção cirúrgica de fundo",
@@ -3580,7 +3596,7 @@
     "compra malha piquet e dry - malharia sul": "Compra Tejido Piqué y Dry - Malharia Sul",
     "compras sincronizadas com o estoque e lançamentos avulsos de manutenção e consumíveis da fábrica.": "Compras sincronizadas con el inventario y registros individuales de mantenimiento y consumibles de fábrica.",
     "condição de fornecimento:": "Condição de Fornecimento:",
-    "condições comerciais, entrada de sinal & saldo remanescente:": "Condições Comerciais, Entrada de Sinal & Saldo Remanescente:",
+    "condições comerciais, entrada de sinal & saldo remanescente:": "CONDICIONES COMERCIALES, ANTICIPO Y SALDO PENDIENTE:",
     "cone linha reta 120 10.000m azul marinho": "Cone Linha Reta 120 10.000m Azul Marinho",
     "conectando aos servidores da sefaz sp e verificando disponibilidade dos webservices...": "Conectando aos servidores da SEFAZ SP e verificando disponibilidade dos webservices...",
     "conexão ssl mtls ativa": "Conexão SSL mTLS Ativa",
@@ -3589,7 +3605,7 @@
     "configure os limites de produtividade diária de corte, bordado, dtf, costura e outros processos": "Configure os limites de produtividade diária de corte, bordado, DTF, costura e outros processos",
     "configure sua confecção abaixo para liberar o acesso pro.": "Configure sua Confección abaixo para liberar o acesso PRO.",
     "configure sua fábrica & crie sua senha definitiva": "Configure sua fábrica & crie sua senha definitiva",
-    "confirmar sinal já recebido e lançar entrada imediata no fluxo de caixa (financeiro)": "Confirmar sinal já recebido e lançar entrada imediata no Fluxo de Caixa (Financeiro)",
+    "confirmar sinal já recebido e lançar entrada imediata no fluxo de caixa (financeiro)": "Confirmar anticipo ya recibido y asentar entrada inmediata en el Flujo de Caja (Financiero)",
     "confirmo que a entrada ou valor acordado foi compensado na conta da confecção ou há termo formal de faturamento assinado.": "Confirmo que a entrada ou valor acordado foi compensado na conta da Confección ou há termo formal de faturamento assinado.",
     "confirmo que a margem de contribuição do lote cobre todos os custos diretos, impostos do simples e gera margem real positiva.": "Confirmo que a Margen de Contribución do lote cobre todos os custos diretos, impostos do Simples e gera margem real positiva.",
     "confirmo que as peças de tecido na cor principal e detalhes contrastantes (golas, punhos, frisos, recortes) estão fisicamente no galpão sem risco de variação de cor.": "Confirmo que as peças de tecido na cor principal e detalhes contrastantes (golas, punhos, frisos, recortes) estão fisicamente no galpão sem risco de variação de cor.",
@@ -3597,7 +3613,7 @@
     "consulta de autenticidade no portal da nf-e": "Consulta de autenticidade no portal da NF-e",
     "consultando base da receita federal em tempo real...": "Consultando base da Ingreso Federal em tempo real...",
     "consumo base m": "Consumo Base Talla M",
-    "consumo ponderado médio:": "Consumo Ponderado Médio:",
+    "consumo ponderado médio:": "Consumo Ponderado Medio:",
     "consumo de tecido por tamanho de acordo com o tecido *obrigatório": "Consumo de Tecido por Tamanho de Acordo com o Tecido *Obrigatório",
     "consumo de corte, ordem de produção, avarias ou ajuste de inventário": "Consumo de corte, ordem de produção, avarias ou ajuste de inventário",
     "contas a pagar & gestão de despesas": "Cuentas por Pagar y Gestión de Gastos",
@@ -3618,11 +3634,11 @@
     "criando banco de dados exclusivo...": "Criando banco de dados exclusivo...",
     "crie um novo departamento ou linha operacional para apropriação de despesas da fábrica": "Crie um novo departamento ou linha operacional para apropriação de despesas da fábrica",
     "critérios de segurança:": "Critérios de Segurança:",
-    "custo dtf (filme + tinta)": "Custo DTF (Filme + Tinta)",
-    "custo direto total": "Custo Direto Total",
+    "custo dtf (filme + tinta)": "COSTO DTF (FILM + TINTA)",
+    "custo direto total": "Costo Directo Total",
     "custo histórico total": "Custo Histórico Total",
-    "custo médio tecido / peça:": "Custo Médio Tecido / Peça:",
-    "custo produção": "Custo Produção",
+    "custo médio tecido / peça:": "Costo Medio Tela / Pieza:",
+    "custo produção": "COSTO DE PRODUCCIÓN",
     "custo:": "Custo:",
     "custos diretos para produzir este modelo:": "Custos Diretos para Produzir este Modelo:",
     "cálculo do imposto": "CÁLCULO DO IMPOSTO",
@@ -3648,9 +3664,9 @@
     "depreciação mensal consolidada": "Depreciación Mensual Consolidada",
     "depreciação mensal estimada:": "Depreciación Mensual Estimada:",
     "desgaste contábil total decorrido": "Desgaste contábil total decorrido",
-    "designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro": "Designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro",
+    "designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro": "Asignación de costurera, subida obligatoria de artes en alta calidad y sincronización de anticipo financiero",
     "desinfetante 5l, sabonete líquido e papel toalha": "Desinfectante 5L, Jabón Líquido y Papel Toalla",
-    "detalhamento dos custos individuais de cada peça:": "Detalhamento dos custos individuais de cada peça:",
+    "detalhamento dos custos individuais de cada peça:": "Desglose de costos individuales por pieza:",
     "detalhamento por categoria & natureza financeira": "Detalhamento por Categoria & Natureza Financeira",
     "dir:": "Dir:",
     "distribuidora limpeza total": "Distribuidora Limpeza Total",
@@ -3677,7 +3693,7 @@
     "emitir nf-e modelo 55 (danfe oficial sefaz)": "Emitir Factura Electrónica Modelo 55 (Oficial SEFAZ)",
     "empresa:": "Empresa:",
     "emulsão fotográfica têxtil resistente a água": "Emulsão Fotográfica Têxtil Resistente a Água",
-    "encaixe first-fit milimétrico para zero desperdício de filme pet e economia direta de tinta": "Encaixe First-Fit milimétrico para zero desperdício de filme PET e economia direta de tinta",
+    "encaixe first-fit milimétrico para zero desperdício de filme pet e economia direta de tinta": "Ajuste First-Fit milimétrico para cero desperdicio de film PET y ahorro directo de tinta",
     "engenharia têxtil com recálculo em tempo real: edite o consumo ou o custo final diretamente em cada tamanho": "Engenharia têxtil com recálculo em tempo real: edite o consumo ou o custo final diretamente em cada tamanho",
     "entrada / sinal inicial": "Entrada / Sinal Inicial",
     "entrada oficial no pedido • confecção & chão de fábrica": "Entrada Oficial al Pedido • Confección y Planta de Fábrica",
@@ -3716,7 +3732,7 @@
     "faixa refletiva 50mm (3m)": "Faixa Refletiva 50mm (3m)",
     "faixa refletiva termocolante alta visibilidade 50mm": "Faixa Refletiva Termocolante Alta Visibilidade 50mm",
     "faturamento acumulado": "Faturamento Acumulado",
-    "faturamento total": "Faturamento Total",
+    "faturamento total": "Facturación Total",
     "fazer ele admitir que perde dinheiro na gestão manual ou em planilhas soltas.": "Fazer ele admitir que perde dinheiro na gestão manual ou em planilhas soltas.",
     "fechamento comercial": "Fechamento Comercial",
     "ficha técnica a4": "Ficha Técnica A4",
@@ -3799,9 +3815,9 @@
     "malha poliviscose pv anti-pilling (67% pol / 33% visc)": "Malha Poliviscose PV Anti-Pilling (67% Pol / 33% Visc)",
     "malhas, tecidos, aviamentos e dtf": "Puntos, telas, avíos y DTF",
     "manutenção": "Manutenção",
-    "mapa visual do rolo dtf (escala 1:1)": "Mapa Visual do Rolo DTF (Escala 1:1)",
+    "mapa visual do rolo dtf (escala 1:1)": "Mapa Visual del Rollo DTF (Escala 1:1)",
     "mapeamento de custos e cadastro de tecidos": "Mapeamento de custos e cadastro de tecidos",
-    "margem bruta": "Margem Bruta",
+    "margem bruta": "MARGEN BRUTO",
     "marrom café": "Marrom Café",
     "meia malha 30.1 penteada 100% algodão": "Jersey 30.1 100% Algodón Peinado",
     "meia malha 30.1 penteada algodão branco": "Jersey 30.1 Peinado Algodón Blanco",
@@ -3809,7 +3825,7 @@
     "mesa de corte com faca rotativa elétrica 8 pol": "Mesa de Corte com Faca Rotativa Elétrica 8 Pol",
     "mestre antônio silva": "Mestre Antônio Silva",
     "meta interna do chão de fábrica:": "Meta Interna do Chão de Fábrica:",
-    "metros lineares de rolo": "Metros Lineares de Rolo",
+    "metros lineares de rolo": "METROS LINEALES DE ROLLO",
     "modelo têxtil:": "Modelo Têxtil:",
     "modelo:": "Modelo:",
     "moletom flanelado 3 cabos (50% alg / 50% pol)": "Moletom Flanelado 3 Cabos (50% Alg / 50% Pol)",
@@ -3870,7 +3886,7 @@
     "o sistema está limpo e preparado para receber os pedidos reais da sua campanha.": "O sistema está limpo e preparado para receber os pedidos reais da sua campanha.",
     "o sistema gera o schema xml 4.00 oficial, chave de 44 dígitos com módulo 11 e protocolo de autorização compatível com consulta pública no portal nacional da sefaz.": "O sistema gera o Schema XML 4.00 oficial, chave de 44 dígitos com Módulo 11 e protocolo de autorização compatível com consulta pública no portal nacional da SEFAZ.",
     "o sistema mescla o saldo físico com a nova compra e recalcula o custo médio exato para garantir que os futuros orçamentos da fábrica reflitam os preços reais pagos aos fornecedores.": "O sistema mescla o saldo físico com a Nueva Compra e recalcula o custo médio exato para garantir que os futuros orçamentos da fábrica reflitam os preços reais pagos aos fornecedores.",
-    "o valor da entrada cobre 100% do pedido. não haverá saldo remanescente devedor.": "O valor da entrada cobre 100% do pedido. Não haverá saldo remanescente devedor.",
+    "o valor da entrada cobre 100% do pedido. não haverá saldo remanescente devedor.": "El anticipo cubre el 100% del pedido. No quedará saldo pendiente.",
     "ordem de produção:": "ORDEM DE PRODUÇÃO:",
     "os produtos / serviços constantes da nota fiscal indicada ao lado": "OS PRODUTOS / SERVIÇOS CONSTANTES DA NOTA FISCAL INDICADA AO LADO",
     "outras despesas": "OUTRAS DESPESAS",
@@ -3902,7 +3918,7 @@
     "peça lisa (sem estampa). nenhuma personalização adicionada. clique nos botões acima para incluir bordado, dtf ou silk.": "Peça Lisa (Sem Estampa). Nenhuma personalização adicionada. Clique nos botões acima para incluir Bordado, DTF ou Silk.",
     "peça de uniforme adicional": "Peça de Uniforme Adicional",
     "peça monocromática na cor principal informada acima. sem recortes ou frisos contrastantes adicionais.": "Peça monocromática na cor principal informada acima. Sem recortes ou frisos contrastantes adicionais.",
-    "peças g1 a g5 consomem até 90% mais tecido que a modelagem base m. o custo e o total a enfestar já estão ponderados com precisão!": "Peças G1 a G5 consomem até 90% mais tecido que a modelagem base M. O custo e o total a enfestar já estão ponderados com precisão!",
+    "peças g1 a g5 consomem até 90% mais tecido que a modelagem base m. o custo e o total a enfestar já estão ponderados com precisão!": "Las piezas G1 a G5 consumen hasta un 90% más de tela que el patrón base M. ¡El costo y el tendido ya están ponderados con precisión!",
     "plano de comissões da equipe comercial": "Plano de Comissões da Equipe Comercial",
     "poliamida termofusível branca especial dtf": "Poliamida Termofusível Branca Especial DTF",
     "prazo prometido ao cliente:": "Prazo Prometido ao Cliente:",
@@ -3915,7 +3931,7 @@
     "previsão": "Previsão",
     "preço médio / pç:": "Preço Médio / Pç:",
     "preço unitário:": "Preço Unitário:",
-    "preço venda": "Preço Venda",
+    "preço venda": "PRECIO DE VENTA",
     "primeiro acesso ao sistema": "Primer Acceso al Sistema",
     "produção: corte & estamparia": "Produção: Corte & Estamparia",
     "produção: costura & facções": "Produção: Costura & Facções",
@@ -3949,9 +3965,9 @@
     "regulador de metal": "Regulador de Metal",
     "relatório gerencial dre & balanço contábil": "Informe Gerencial de Pérdidas y Ganancias (DRE) y Balance",
     "remover fundo automaticamente (canva-style)": "Remover fundo automaticamente (Canva-style)",
-    "rendimento do tecido:": "Rendimento do Tecido:",
+    "rendimento do tecido:": "Rendimiento de la Tela:",
     "requer botão \"entrada\"": "Requer botão \"Entrada\"",
-    "resumo financeiro consolidado do pedido:": "Resumo Financeiro Consolidado do Pedido:",
+    "resumo financeiro consolidado do pedido:": "RESUMEN FINANCIERO CONSOLIDADO DEL PEDIDO:",
     "ribana gola": "Ribana Gola",
     "ribana gola 1x1": "Cuello de Rib 1x1",
     "ribana gola bicolor": "Cuello de Rib Bicolor",
@@ -3979,7 +3995,7 @@
     "se você cobrar uma mensalidade de": "Se você cobrar uma mensalidade de",
     "segregação contábil completa: contas a pagar + compras de insumos + lançamentos no caixa": "Segregação contábil completa: Contas a Pagar + Compras de Insumos + Lançamentos no Caixa",
     "selecione um modelo": "Seleccione un Modelo",
-    "selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo dtf.": "Selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo DTF.",
+    "selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo dtf.": "Seleccione un pedido registrado arriba o importe archivos desde su computadora para encajar en el rollo DTF.",
     "sem fidelidade ou carência": "Sem fidelidade ou carência",
     "sem grade": "Sem grade",
     "seus dados ficam 100% sob seu controle. você pode baixar cópias de segurança a qualquer momento e restaurar em outro computador ou navegador.": "Seus dados ficam 100% sob seu controle. Você pode baixar cópias de segurança a qualquer momento e restaurar em outro computador ou navegador.",
@@ -3995,7 +4011,7 @@
     "soma de personalizações deste modelo:": "Suma de personalizaciones de este modelo:",
     "status conexão sefaz": "ESTADO DE CONEXIÓN FISCAL",
     "status sefaz:": "Status SEFAZ:",
-    "subtotal modelo": "Subtotal Modelo",
+    "subtotal modelo": "SUBTOTAL MODELO",
     "suporte direto via whatsapp oficial": "Suporte direto via WhatsApp oficial",
     "suprimentos dtf brasil": "Suprimentos DTF Brasil",
     "série:": "Série:",
@@ -4011,7 +4027,7 @@
     "tam 6": "Tam 6",
     "tam 8": "Tam 8",
     "tamanho:": "Tamanho:",
-    "taxa de aproveitamento": "Taxa de Aproveitamento",
+    "taxa de aproveitamento": "TASA DE APROVECHAMIENTO",
     "tecido brim pesado 100% algodão cinza": "Sarga Pesada 100% Algodón Gris",
     "tecido brim pesado sarja 100% algodão 260g": "Tecido Brim Pesado Sarja 100% Algodão 260g",
     "tecido gabardine nobre com elastano": "Tecido Gabardine Nobre com Elastano",
@@ -4019,7 +4035,7 @@
     "tecido oxford branco 100% poliéster": "Tejido Oxford Blanco 100% Poliéster",
     "tecido rip stop anti-rasgo militar": "Tecido Rip Stop Anti-Rasgo Militar",
     "tecido tactel microfibra 100% poliéster": "Tecido Tactel Microfibra 100% Poliéster",
-    "tecido total a comprar/cortar:": "Tecido Total a Comprar/Cortar:",
+    "tecido total a comprar/cortar:": "Tela Total a Comprar/Cortar:",
     "tecido tricoline mista 60/40 camisaria": "Tecido Tricoline Mista 60/40 Camisaria",
     "tinta dtf textil pigmentada branca 1l": "Tinta DTF Textil Pigmentada Branca 1L",
     "tinta dtf têxtil pigmentada branca (white) 1l": "Tinta DTF Têxtil Pigmentada Branca (White) 1L",
@@ -4031,10 +4047,10 @@
     "tolerância:": "Tolerância:",
     "topo:": "Topo:",
     "total comissões geradas": "Total Comissões Geradas",
-    "total cópias encaixadas": "Total Cópias Encaixadas",
+    "total cópias encaixadas": "TOTAL COPIAS ENCAJADAS",
     "total faturado em nf-e": "TOTAL FACTURADO EN FACTURA ELECTRÓNICA",
     "total já recebido": "Total Já Recebido",
-    "total peças pedido": "Total Peças Pedido",
+    "total peças pedido": "Total Piezas Pedido",
     "total vendas faturadas": "Total Vendas Faturadas",
     "total a receber (clientes)": "Total a Receber (Clientes)",
     "total de pedidos": "Total de Pedidos",
@@ -4068,7 +4084,7 @@
     "verde água": "Verde Água",
     "verificando credenciais...": "Verificando credenciais...",
     "versão xml: 4.00": "Versão XML: 4.00",
-    "visualização completa das matrizes, réguas em cm/metros e marcas de corte": "Visualização completa das matrizes, réguas em cm/metros e marcas de corte",
+    "visualização completa das matrizes, réguas em cm/metros e marcas de corte": "Visualización completa de matrices, reglas en cm/metros y marcas de corte",
     "vá na aba": "Vá na aba",
     "whatsapp contato:": "WhatsApp Contato:",
     "zero espaço branco": "Zero Espaço Branco",
@@ -4107,7 +4123,7 @@
     "para inserir.": "para inserir.",
     "para que seu cliente pague a entrada com 1 clique.": "para que seu cliente pague a entrada com 1 clique.",
     "para quitação do pedido. este valor continuará como saldo a receber na entrega.": "para quitação do pedido. Este valor continuará como saldo a receber na entrega.",
-    "por peça acabada": "por peça acabada",
+    "por peça acabada": "por pieza terminada",
     "sobre o desenho ou use os sliders abaixo (0% a 95%):": "sobre o desenho ou use os sliders abaixo (0% a 95%):",
     "tem autorização para cadastrar novos funcionários, definir perfis de permissão e criar senhas temporárias de acesso.": "tem autorização para cadastrar novos funcionários, definir perfis de permissão e criar senhas temporárias de acesso.",
     "à vista / 30d": "À Vista / 30D",
@@ -4135,12 +4151,12 @@
     "⚙️ configurações fiscais & certificado digital a1": "⚙️ Configuración Fiscal y Certificado Digital A1",
     "⚙️ depreciação de máquinas & ativos": "⚙️ Depreciação de Máquinas & Ativos",
     "⚠️ atenção corte / costura / compra de materiais (detalhes de cor):": "⚠️ Atención CORTE / COSTURA / COMPRA DE MATERIAIS (DETALHES DE COR):",
-    "⚠️ anexo obrigatório: não é permitido dar entrada sem os arquivos das artes": "⚠️ Anexo Obrigatório: Não é permitido dar entrada sem os arquivos das artes",
+    "⚠️ anexo obrigatório: não é permitido dar entrada sem os arquivos das artes": "⚠️ Adjunto Obligatorio: No se permite dar entrada sin los archivos de las artes",
     "⚠️ atenção: esta baixa deixará o saldo deste insumo abaixo do estoque mínimo de segurança!": "⚠️ Atención: Esta baixa deixará o saldo deste insumo abaixo do estoque mínimo de segurança!",
     "⚠️ cnpj não localizado automaticamente na base pública. você pode preencher os campos abaixo manualmente.": "⚠️ CNPJ não localizado automaticamente na base pública. Você pode preencher os campos abaixo manualmente.",
     "⚠️ este usuário ainda não possui senha provisória definida no sistema. preencha uma senha abaixo para liberar o acesso dele.": "⚠️ Este usuário ainda não possui senha provisória definida no sistema. Preencha uma senha abaixo para liberar o acesso dele.",
     "⚠️ obrigatório": "⚠️ Obrigatório",
-    "⚠️ obrigatório anexar": "⚠️ Obrigatório Anexar",
+    "⚠️ obrigatório anexar": "⚠️ Obligatorio Adjuntar",
     "⚠️ sem senha definida": "⚠️ Sem Senha Definida",
     "⚡ auto-corte inteligente (trim)": "⚡ Auto-Corte Inteligente (Trim)",
     "⚡ baixar todos os arquivos em lote": "⚡ Baixar Todos os Arquivos em Lote",
@@ -4150,11 +4166,11 @@
     "⚽ relação dos atletas & numerações": "⚽ Relação dos Atletas & Numerações",
     "✂️ oficina / fábrica": "✂️ Oficina / Fábrica",
     "✂️ recorte & enquadramento": "✂️ Recorte & Enquadramento",
-    "✏️ custos/consumos manuais ativos": "✏️ Custos/Consumos Manuais Ativos",
-    "✓ definido na proposta": "✓ Definido na Proposta",
+    "✏️ custos/consumos manuais ativos": "✏️ Costos/Consumos Manuales Activos",
+    "✓ definido na proposta": "✓ Definido en la Propuesta",
     "✓ pago": "✓ PAGADO",
     "✓ preço direto por bordado": "✓ Precio directo por bordado",
-    "✓ sem fundo": "✓ Sem Fundo",
+    "✓ sem fundo": "✓ Sin Fondo",
     "✓ senha pessoal criada": "✓ Senha Pessoal Criada",
     "✨ explorar modo demonstração showroom (sem cadastro) &rarr;": "✨ Explorar Modo Demonstração Showroom (Sem Cadastro) &rarr;",
     "✨ pronto dtf": "✨ Pronto DTF",
@@ -4299,7 +4315,23 @@
     "sefaz homologação": "SEFAZ Pruebas",
     "buscar por cliente, cnpj, número ou chave...": "Buscar por Cliente, NIF/CIF, Número o Clave...",
     "autorizada": "AUTORIZADA",
-    "personalize a identidade da fábrica: logotipo em alta resolução, dados cadastrais, dados para pagamento via pix e segurança.": "Personalice la identidad de la fábrica: logotipo de alta resolución, datos fiscales, datos de pago y seguridad."
+    "personalize a identidade da fábrica: logotipo em alta resolução, dados cadastrais, dados para pagamento via pix e segurança.": "Personalice la identidad de la fábrica: logotipo de alta resolución, datos fiscales, datos de pago y seguridad.",
+    "custos/consumos manuais ativos": "Costos/Consumos Manuales Activos",
+    "detalhar & editar custo por peça": "Detallar y Editar Costos por Pieza",
+    "viável (margem excelente)": "VIABLE (Excelente Margen)",
+    "viável (padrão)": "VIABLE (Estándar)",
+    "atenção (margem baixa)": "ATENCIÓN (Margen Bajo)",
+    "inviável (prejuízo)": "INVIABLE (Pérdida)",
+    "entrada oficial no pedido • manufacturing & chão de fábrica": "Entrada Oficial al Pedido • Manufactura y Planta de Fábrica",
+    "definido na proposta": "Definido en la Propuesta",
+    "which seamstress / contractor is assigned? (campo obrigatório)": "¿QUÉ COSTURERA / TALLER ESTÁ ASIGNADO? (CAMPO OBLIGATORIO)",
+    "anexo obrigatório: não é permitido dar entrada sem os arquivos das artes": "Adjunto Obligatorio: No se permite dar entrada sin los archivos de las artes",
+    "obrigatório anexar": "Obligatorio Adjuntar",
+    "confirm sinal já recebido e lançar entrada imediata no fluxo de caixa (financeiro)": "Confirmar anticipo ya recibido y asentar entrada inmediata en el Flujo de Caja (Financiero)",
+    "quitação integral (100% pago)": "Liquidación Total (100% Pagado)",
+    "remover fundo": "Quitar Fondo",
+    "✨ remover fundo": "✨ Quitar Fondo",
+    "recorte & fundo": "Recorte y Fondo"
   },
   "pt-PT": {
     "abertura & visão geral da fábrica": "Abertura & Visão Geral da Fábrica",
@@ -5045,8 +5077,8 @@
     "🔄 restaurar padrão abnt": "🔄 Restaurar Padrão ABNT",
     "salvar consumos & custos por peça": "Guardar Consumos & Custos por Peça",
     "← preencher grade do pedido": "← Preencher Grade da Encomenda",
-    "📊 detalhar & editar custo por peça ✏️": "📊 Detalhar & Editar Custos por Peça ✏️",
-    "+ cadastrar costureira": "+ Criar Costureira",
+    "📊 detalhar & editar custo por peça ✏️": "📊 Detalhar e Editar Custos por Peça ✏️",
+    "+ cadastrar costureira": "+ Registar Costureira",
     "✂️ estúdio & recorte dtf": "✂️ Estúdio & Recorte DTF",
     "✕ trocar": "✕ Alterar",
     "✂️ estúdio & recorte": "✂️ Estúdio & Recorte",
@@ -5055,7 +5087,7 @@
     "40% entrada": "40% Entrada",
     "50% entrada (padrão)": "50% Entrada (Padrão)",
     "100% (à vista total)": "100% (Pronto Pagamento Integral)",
-    "confirmar entrada no pedido & gerar os": "Confirmar Encomenda & Gerar OF",
+    "confirmar entrada no pedido & gerar os": "Confirmar Entrada na Encomenda e Gerar Folha de Obra",
     "editar orçamento": "Editar Orçamento",
     "aprovar & dar entrada": "Aprovar & Lançar Produção",
     "imprimir / baixar proposta em pdf": "Imprimir / Descarregar Proposta em PDF",
@@ -5083,12 +5115,12 @@
     "↺ desfazer todos os recortes (voltar original)": "↺ Anular Todos os Recortes",
     "⬛ preto": "⬛ Preto",
     "✨ auto detecção": "✨ Deteção Automática",
-    "+ adicionar arquivo do computador": "+ Carregar Ficheiro do Computador",
+    "+ adicionar arquivo do computador": "+ Adicionar Ficheiro do Computador",
     "+ incluir outro pedido no rolo": "+ Incluir Outra Encomenda no Rolo",
     "↺ re-otimizar": "↺ Reotimizar",
-    "✂️ recorte & fundo": "✂️ Recorte & Fundo",
+    "✂️ recorte & fundo": "✂️ Recorte e Fundo",
     "🖨️ ficha dtf": "🖨️ Ficha DTF",
-    "salvar & exportar png (rip)": "Guardar & Exportar PNG (RIP)",
+    "salvar & exportar png (rip)": "Guardar e Exportar PNG (Pronto RIP)",
     "padrão (40%)": "Padrão (40%)",
     "adicionar matrizes ao rolo": "Adicionar Matrizes ao Rolo",
     "✂️ estúdio cirúrgico & conta-gotas": "✂️ Estúdio de Precisão & Conta-gotas",
@@ -5192,8 +5224,8 @@
     "2. especificação de artes & dtf digital:": "2. ESPECIFICAÇÃO DE ARTES & DTF DIGITAL:",
     "3. instruções para a costureira / facção:": "3. INSTRUÇÕES PARA A COSTUREIRA / OFICINA:",
     "atenção da bancada:": "ATENÇÃO DA BANCADA:",
-    "para qual costureira / facção vai o pedido?": "Para qual Costureira / Oficina vai a encomenda?",
-    "artes da peça & personalizações em alta resolução": "Artes da Peça & Personalizações em Alta Resolução",
+    "para qual costureira / facção vai o pedido?": "Para qual costureira / confeção vai a encomenda?",
+    "artes da peça & personalizações em alta resolução": "Artes da Peça e Personalizações em Alta Resolução",
     "✅ peça lisa (sem estampa / sem bordado)": "✅ Peça Lisa (Sem Estampa / Sem Bordado)",
     "✅ quitação integral (100% pago)": "✅ Quitação Integral (100% Pago)",
     "📦 receitas com pedidos de uniformes": "📦 Receitas de Encomendas de Fardas",
@@ -5694,7 +5726,7 @@
     "compra malha piquet e dry - malharia sul": "Compra Malha Piquet e Dry - Malharia Sul",
     "compras sincronizadas com o estoque e lançamentos avulsos de manutenção e consumíveis da fábrica.": "Compras sincronizadas com o stock e lançamentos avulsos de manutenção e consumíveis da fábrica.",
     "condição de fornecimento:": "Condição de Fornecimento:",
-    "condições comerciais, entrada de sinal & saldo remanescente:": "Condições Comerciais, Entrada de Sinal & Saldo Remanescente:",
+    "condições comerciais, entrada de sinal & saldo remanescente:": "CONDIÇÕES COMERCIAIS, ENTRADA DE SINAL E SALDO REMANESCENTE:",
     "cone linha reta 120 10.000m azul marinho": "Cone Linha Reta 120 10.000m Azul Marinho",
     "conectando aos servidores da sefaz sp e verificando disponibilidade dos webservices...": "Conectando aos servidores da SEFAZ SP e verificando disponibilidade dos webservices...",
     "conexão ssl mtls ativa": "Conexão SSL mTLS Ativa",
@@ -5732,11 +5764,11 @@
     "criando banco de dados exclusivo...": "Criando banco de dados exclusivo...",
     "crie um novo departamento ou linha operacional para apropriação de despesas da fábrica": "Crie um novo departamento ou linha operacional para apropriação de despesas da fábrica",
     "critérios de segurança:": "Critérios de Segurança:",
-    "custo dtf (filme + tinta)": "Custo DTF (Filme + Tinta)",
+    "custo dtf (filme + tinta)": "CUSTO DTF (FILME + TINTA)",
     "custo direto total": "Custo Direto Total",
     "custo histórico total": "Custo Histórico Total",
     "custo médio tecido / peça:": "Custo Médio Tecido / Peça:",
-    "custo produção": "Custo Produção",
+    "custo produção": "CUSTO DE PRODUÇÃO",
     "custo:": "Custo:",
     "custos diretos para produzir este modelo:": "Custos Diretos para Produzir este Modelo:",
     "cálculo do imposto": "CÁLCULO DO IMPOSTO",
@@ -5762,7 +5794,7 @@
     "depreciação mensal consolidada": "Depreciação Mensal Consolidada",
     "depreciação mensal estimada:": "Depreciação Mensal Estimada:",
     "desgaste contábil total decorrido": "Desgaste contábil total decorrido",
-    "designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro": "Designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro",
+    "designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro": "Designação de costureira, envio obrigatório de artes em alta qualidade e sincronização de sinal financeiro",
     "desinfetante 5l, sabonete líquido e papel toalha": "Desinfetante 5L, Sabonete Líquido e Papel Toalha",
     "detalhamento dos custos individuais de cada peça:": "Detalhamento dos custos individuais de cada peça:",
     "detalhamento por categoria & natureza financeira": "Detalhamento por Categoria & Natureza Financeira",
@@ -5791,7 +5823,7 @@
     "emitir nf-e modelo 55 (danfe oficial sefaz)": "Emitir Fatura Eletrónica Modelo 55 (Oficial SEFAZ)",
     "empresa:": "Empresa:",
     "emulsão fotográfica têxtil resistente a água": "Emulsão Fotográfica Têxtil Resistente a Água",
-    "encaixe first-fit milimétrico para zero desperdício de filme pet e economia direta de tinta": "Encaixe First-Fit milimétrico para zero desperdício de filme PET e economia direta de tinta",
+    "encaixe first-fit milimétrico para zero desperdício de filme pet e economia direta de tinta": "Encaixe First-Fit milimétrico para desperdício zero de filme PET e economia direta de tinta",
     "engenharia têxtil com recálculo em tempo real: edite o consumo ou o custo final diretamente em cada tamanho": "Engenharia têxtil com recálculo em tempo real: edite o consumo ou o custo final diretamente em cada tamanho",
     "entrada / sinal inicial": "Entrada / Sinal Inicial",
     "entrada oficial no pedido • confecção & chão de fábrica": "Entrada Oficial na Encomenda • Confeção e Chão de Fábrica",
@@ -5830,7 +5862,7 @@
     "faixa refletiva 50mm (3m)": "Faixa Refletiva 50mm (3m)",
     "faixa refletiva termocolante alta visibilidade 50mm": "Faixa Refletiva Termocolante Alta Visibilidade 50mm",
     "faturamento acumulado": "Faturamento Acumulado",
-    "faturamento total": "Faturamento Total",
+    "faturamento total": "Faturação Total",
     "fazer ele admitir que perde dinheiro na gestão manual ou em planilhas soltas.": "Fazer ele admitir que perde dinheiro na gestão manual ou em planilhas soltas.",
     "fechamento comercial": "Fechamento Comercial",
     "ficha técnica a4": "Ficha Técnica A4",
@@ -5915,7 +5947,7 @@
     "manutenção": "Manutenção",
     "mapa visual do rolo dtf (escala 1:1)": "Mapa Visual do Rolo DTF (Escala 1:1)",
     "mapeamento de custos e cadastro de tecidos": "Mapeamento de custos e cadastro de tecidos",
-    "margem bruta": "Margem Bruta",
+    "margem bruta": "MARGEM BRUTA",
     "marrom café": "Marrom Café",
     "meia malha 30.1 penteada 100% algodão": "Meia Malha 30.1 Penteada 100% Algodão",
     "meia malha 30.1 penteada algodão branco": "Meia Malha 30.1 Penteada Algodão Branco",
@@ -5923,7 +5955,7 @@
     "mesa de corte com faca rotativa elétrica 8 pol": "Bancada de Corte com Faca Rotativa Elétrica 8 Pol",
     "mestre antônio silva": "Mestre Antônio Silva",
     "meta interna do chão de fábrica:": "Meta Interna do Chão de Fábrica:",
-    "metros lineares de rolo": "Metros Lineares de Rolo",
+    "metros lineares de rolo": "METROS LINEARES DE ROLO",
     "modelo têxtil:": "Modelo Têxtil:",
     "modelo:": "Modelo:",
     "moletom flanelado 3 cabos (50% alg / 50% pol)": "Moletom Flanelado 3 Cabos (50% Alg / 50% Pol)",
@@ -5984,7 +6016,7 @@
     "o sistema está limpo e preparado para receber os pedidos reais da sua campanha.": "O sistema está limpo e preparado para receber os pedidos reais da sua campanha.",
     "o sistema gera o schema xml 4.00 oficial, chave de 44 dígitos com módulo 11 e protocolo de autorização compatível com consulta pública no portal nacional da sefaz.": "O sistema gera o Schema XML 4.00 oficial, chave de 44 dígitos com Módulo 11 e protocolo de autorização compatível com consulta pública no portal nacional da SEFAZ.",
     "o sistema mescla o saldo físico com a nova compra e recalcula o custo médio exato para garantir que os futuros orçamentos da fábrica reflitam os preços reais pagos aos fornecedores.": "O sistema mescla o saldo físico com a Nova Compra e recalcula o custo médio exato para garantir que os futuros orçamentos da fábrica reflitam os preços reais pagos aos fornecedores.",
-    "o valor da entrada cobre 100% do pedido. não haverá saldo remanescente devedor.": "O valor da entrada cobre 100% do pedido. Não haverá saldo remanescente devedor.",
+    "o valor da entrada cobre 100% do pedido. não haverá saldo remanescente devedor.": "O valor de entrada cobre 100% da encomenda. Não haverá saldo remanescente em dívida.",
     "ordem de produção:": "ORDEM DE PRODUÇÃO:",
     "os produtos / serviços constantes da nota fiscal indicada ao lado": "OS PRODUTOS / SERVIÇOS CONSTANTES DA NOTA FISCAL INDICADA AO LADO",
     "outras despesas": "OUTRAS DESPESAS",
@@ -6029,7 +6061,7 @@
     "previsão": "Previsão",
     "preço médio / pç:": "Preço Médio / Pç:",
     "preço unitário:": "Preço Unitário:",
-    "preço venda": "Preço Venda",
+    "preço venda": "PREÇO DE VENDA",
     "primeiro acesso ao sistema": "Primeiro Acesso ao Sistema",
     "produção: corte & estamparia": "Produção: Corte & Estamparia",
     "produção: costura & facções": "Produção: Costura & Facções",
@@ -6065,7 +6097,7 @@
     "remover fundo automaticamente (canva-style)": "Remover fundo automaticamente (Canva-style)",
     "rendimento do tecido:": "Rendimento do Tecido:",
     "requer botão \"entrada\"": "Requer botão \"Entrada\"",
-    "resumo financeiro consolidado do pedido:": "Resumo Financeiro Consolidado do Pedido:",
+    "resumo financeiro consolidado do pedido:": "RESUMO FINANCEIRO CONSOLIDADO DA ENCOMENDA:",
     "ribana gola": "Ribana Gola",
     "ribana gola 1x1": "Gola de Ribana 1x1",
     "ribana gola bicolor": "Gola em Ribana Bicolor",
@@ -6093,7 +6125,7 @@
     "se você cobrar uma mensalidade de": "Se você cobrar uma mensalidade de",
     "segregação contábil completa: contas a pagar + compras de insumos + lançamentos no caixa": "Segregação contábil completa: Contas a Pagar + Compras de Insumos + Lançamentos no Caixa",
     "selecione um modelo": "Selecione um Modelo",
-    "selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo dtf.": "Selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo DTF.",
+    "selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo dtf.": "Selecione uma encomenda registada no topo ou importe ficheiros do seu computador para encaixar no rolo DTF.",
     "sem fidelidade ou carência": "Sem fidelidade ou carência",
     "sem grade": "Sem grade",
     "seus dados ficam 100% sob seu controle. você pode baixar cópias de segurança a qualquer momento e restaurar em outro computador ou navegador.": "Seus dados ficam 100% sob seu controle. Você pode baixar cópias de segurança a qualquer momento e restaurar em outro computador ou navegador.",
@@ -6109,7 +6141,7 @@
     "soma de personalizações deste modelo:": "Soma de personalizações deste modelo:",
     "status conexão sefaz": "ESTADO DA LIGAÇÃO FISCAL",
     "status sefaz:": "Status SEFAZ:",
-    "subtotal modelo": "Subtotal Modelo",
+    "subtotal modelo": "SUBTOTAL MODELO",
     "suporte direto via whatsapp oficial": "Suporte direto via WhatsApp oficial",
     "suprimentos dtf brasil": "Suprimentos DTF Brasil",
     "série:": "Série:",
@@ -6125,7 +6157,7 @@
     "tam 6": "Tam 6",
     "tam 8": "Tam 8",
     "tamanho:": "Tamanho:",
-    "taxa de aproveitamento": "Taxa de Aproveitamento",
+    "taxa de aproveitamento": "TAXA DE APROVEITAMENTO",
     "tecido brim pesado 100% algodão cinza": "Tecido Sarja Pesada 100% Algodão Cinzento",
     "tecido brim pesado sarja 100% algodão 260g": "Tecido Brim Pesado Sarja 100% Algodão 260g",
     "tecido gabardine nobre com elastano": "Tecido Gabardine Nobre com Elastano",
@@ -6145,10 +6177,10 @@
     "tolerância:": "Tolerância:",
     "topo:": "Topo:",
     "total comissões geradas": "Total Comissões Geradas",
-    "total cópias encaixadas": "Total Cópias Encaixadas",
+    "total cópias encaixadas": "TOTAL CÓPIAS ENCAIXADAS",
     "total faturado em nf-e": "TOTAL FATURADO EM FATURA ELETRÓNICA",
     "total já recebido": "Total Já Recebido",
-    "total peças pedido": "Total Peças Pedido",
+    "total peças pedido": "Total Peças Encomenda",
     "total vendas faturadas": "Total Vendas Faturadas",
     "total a receber (clientes)": "Total a Receber (Clientes)",
     "total de pedidos": "Total de Pedidos",
@@ -6249,7 +6281,7 @@
     "⚙️ configurações fiscais & certificado digital a1": "⚙️ Configurações Fiscais e Certificado Digital A1",
     "⚙️ depreciação de máquinas & ativos": "⚙️ Depreciação de Máquinas & Ativos",
     "⚠️ atenção corte / costura / compra de materiais (detalhes de cor):": "⚠️ Atenção CORTE / COSTURA / COMPRA DE MATERIAIS (DETALHES DE COR):",
-    "⚠️ anexo obrigatório: não é permitido dar entrada sem os arquivos das artes": "⚠️ Anexo Obrigatório: Não é permitido dar entrada sem os arquivos das artes",
+    "⚠️ anexo obrigatório: não é permitido dar entrada sem os arquivos das artes": "⚠️ Anexo Obrigatório: Não é permitido dar entrada sem os ficheiros das artes",
     "⚠️ atenção: esta baixa deixará o saldo deste insumo abaixo do estoque mínimo de segurança!": "⚠️ Atenção: Esta baixa deixará o saldo deste insumo abaixo do estoque mínimo de segurança!",
     "⚠️ cnpj não localizado automaticamente na base pública. você pode preencher os campos abaixo manualmente.": "⚠️ CNPJ não localizado automaticamente na base pública. Você pode preencher os campos abaixo manualmente.",
     "⚠️ este usuário ainda não possui senha provisória definida no sistema. preencha uma senha abaixo para liberar o acesso dele.": "⚠️ Este usuário ainda não possui senha provisória definida no sistema. Preencha uma senha abaixo para liberar o acesso dele.",
@@ -6413,7 +6445,23 @@
     "sefaz homologação": "SEFAZ Homologação",
     "buscar por cliente, cnpj, número ou chave...": "Pesquisar por Cliente, NIF, Número ou Chave...",
     "autorizada": "AUTORIZADA",
-    "personalize a identidade da fábrica: logotipo em alta resolução, dados cadastrais, dados para pagamento via pix e segurança.": "Personalize a identidade da fábrica: logótipo em alta resolução, dados de faturação, pagamento e segurança."
+    "personalize a identidade da fábrica: logotipo em alta resolução, dados cadastrais, dados para pagamento via pix e segurança.": "Personalize a identidade da fábrica: logótipo em alta resolução, dados de faturação, pagamento e segurança.",
+    "custos/consumos manuais ativos": "Custos/Consumos Manuais Ativos",
+    "detalhar & editar custo por peça": "Detalhar e Editar Custos por Peça",
+    "viável (margem excelente)": "VIÁVEL (Margem Excelente)",
+    "viável (padrão)": "VIÁVEL (Padrão)",
+    "atenção (margem baixa)": "ATENÇÃO (Margem Baixa)",
+    "inviável (prejuízo)": "INVIÁVEL (Prejuízo)",
+    "entrada oficial no pedido • manufacturing & chão de fábrica": "Entrada Oficial na Encomenda • Confeção e Chão de Fábrica",
+    "definido na proposta": "Definido na Proposta",
+    "which seamstress / contractor is assigned? (campo obrigatório)": "QUAL COSTUREIRA / CONFEÇÃO ESTÁ ATRIBUÍDA? (CAMPO OBRIGATÓRIO)",
+    "anexo obrigatório: não é permitido dar entrada sem os arquivos das artes": "Anexo Obrigatório: Não é permitido dar entrada sem os ficheiros das artes",
+    "obrigatório anexar": "Obrigatório Anexar",
+    "confirm sinal já recebido e lançar entrada imediata no fluxo de caixa (financeiro)": "Confirmar sinal já recebido e lançar entrada imediata no Fluxo de Caixa (Financeiro)",
+    "quitação integral (100% pago)": "Quitação Integral (100% Pago)",
+    "remover fundo": "Remover Fundo",
+    "✨ remover fundo": "✨ Remover Fundo",
+    "recorte & fundo": "Recorte e Fundo"
   },
   "fr": {
     "abertura & visão geral da fábrica": "Accueil & Vue d'Ensemble de l'Usine",
@@ -7100,8 +7148,8 @@
     "criar primeiro orçamento / pedido oficial": "Créer Premier Devis / Commande",
     "ações & totais ▶": "Actions & Totaux ▶",
     "✓ 100% quitado": "✓ RÉGLÉ À 100%",
-    "✕ pendente (receber)": "✕ EN ATTENTE (À Encaisser)",
-    "⚡ cobrar pix": "⚡ Encaisser",
+    "✕ pendente (receber)": "✕ EN ATTENTE (À encaisser)",
+    "⚡ cobrar pix": "⚡ Encaisser Paiement",
     "bloqueado (quarentena)": "VERROUILLÉ (CONTRÔLE QUALITÉ)",
     "reativar": "Réactiver",
     "proposta": "Devis PDF",
@@ -7160,16 +7208,16 @@
     "salvar consumos & custos por peça": "Enregistrer les Consommations & Coûts par Pièce",
     "← preencher grade do pedido": "← Renseigner la Grille de la Commande",
     "📊 detalhar & editar custo por peça ✏️": "📊 Détailler & Modifier le Coût par Pièce ✏️",
-    "+ cadastrar costureira": "+ Ajouter une Couturière",
+    "+ cadastrar costureira": "+ Inscrire une Couturière",
     "✂️ estúdio & recorte dtf": "✂️ Studio & Détourage DTF",
     "✕ trocar": "✕ Changer",
     "✂️ estúdio & recorte": "✂️ Studio & Recadrage",
     "0% (sem entrada)": "0% (Sans Acompte)",
-    "30% entrada": "30% d'Acompte",
-    "40% entrada": "40% d'Acompte",
-    "50% entrada (padrão)": "50% d'Acompte (Standard)",
-    "100% (à vista total)": "100% (Paiement Intégral Comptant)",
-    "confirmar entrada no pedido & gerar os": "Valider la Commande & Créer Fiche Atelier",
+    "30% entrada": "30% Acompte",
+    "40% entrada": "40% Acompte",
+    "50% entrada (padrão)": "50% Acompte (Standard)",
+    "100% (à vista total)": "100% (Paiement Intégral d'Avance)",
+    "confirmar entrada no pedido & gerar os": "Confirmer la Commande & Générer l'Ordre de Fabrication",
     "editar orçamento": "Modifier le Devis",
     "aprovar & dar entrada": "Approuver & Lancer la Fabrication",
     "imprimir / baixar proposta em pdf": "Imprimer / Télécharger le Devis PDF",
@@ -7197,12 +7245,12 @@
     "↺ desfazer todos os recortes (voltar original)": "↺ Annuler Tous les Recadrages",
     "⬛ preto": "⬛ Noir",
     "✨ auto detecção": "✨ Détection Automatique",
-    "+ adicionar arquivo do computador": "+ Ajouter un Fichier de l'Ordinateur",
+    "+ adicionar arquivo do computador": "+ Ajouter un Fichier depuis l'Ordinateur",
     "+ incluir outro pedido no rolo": "+ Ajouter une Autre Commande au Rouleau",
     "↺ re-otimizar": "↺ Ré-optimiser",
-    "✂️ recorte & fundo": "✂️ Détourage & Fond",
+    "✂️ recorte & fundo": "✂️ Recadrage & Fond",
     "🖨️ ficha dtf": "🖨️ Fiche DTF",
-    "salvar & exportar png (rip)": "Enregistrer & Exporter PNG (RIP)",
+    "salvar & exportar png (rip)": "Enregistrer & Exporter PNG (Prêt RIP)",
     "padrão (40%)": "Standard (40%)",
     "adicionar matrizes ao rolo": "Ajouter les Matrices au Rouleau",
     "✂️ estúdio cirúrgico & conta-gotas": "✂️ Studio Précision & Pipette",
@@ -7306,10 +7354,10 @@
     "2. especificação de artes & dtf digital:": "2. SPÉCIFICATIONS GRAPHIQUES & DTF NUMÉRIQUE :",
     "3. instruções para a costureira / facção:": "3. INSTRUCTIONS POUR LA COUTURIÈRE / L'ATELIER :",
     "atenção da bancada:": "ATTENTION ATELIER :",
-    "para qual costureira / facção vai o pedido?": "À quelle Couturière / Atelier confier la commande ?",
-    "artes da peça & personalizações em alta resolução": "Visuels & Personnalisations Haute Résolution",
+    "para qual costureira / facção vai o pedido?": "À quelle couturière / quel atelier est confiée la commande ?",
+    "artes da peça & personalizações em alta resolução": "Visuels du Vêtement & Personnalisations Haute Résolution",
     "✅ peça lisa (sem estampa / sem bordado)": "✅ Vêtement Vierge (Sans Marquage / Sans Broderie)",
-    "✅ quitação integral (100% pago)": "✅ Paiement Intégral (100% Réglé)",
+    "✅ quitação integral (100% pago)": "✅ Règlement Intégral (100% Payé)",
     "📦 receitas com pedidos de uniformes": "📦 Recettes des Commandes d'Uniformes",
     "🧵 custos diretos de produção (tecido, facção & tintas)": "🧵 Coûts Directs de Production (Tissus, Façon & Encres)",
     "🏢 despesas fixas, aluguel & instalações": "🏢 Charges Fixes, Loyers & Locaux",
@@ -7378,12 +7426,12 @@
     "🚀 como funciona:": "🚀 Comment ça marche :",
     "⚡ recálculo em tempo real:": "⚡ Recalcul en Temps Réel :",
     "preço/custo final muda automaticamente na hora!": "le prix/coût final s'actualise en direct !",
-    "diferenciação por tamanho ativa:": "Pondération par Taille Active :",
+    "diferenciação por tamanho ativa:": "Différenciation par Taille Active :",
     "dica:": "Conseil :",
     "auto-corte": "Découpe Auto",
     "recorte manual": "Recadrage Manuel",
     "arraste o mouse": "Glissez la souris",
-    "nenhuma arte carregada neste rolo": "Aucun visuel chargé dans ce rouleau",
+    "nenhuma arte carregada neste rolo": "Aucun visuel chargé sur ce rouleau",
     "separar por pedido": "Séparer par Commande",
     "recálculo automático de custo médio ponderado:": "Recalcul Automatique du Coût Moyen Pondéré :",
     "malha/tecido:": "Maille/Tissu :",
@@ -7449,8 +7497,8 @@
     "largura do rolo / papel": "Largeur du Rouleau / Papier",
     "largura custom (cm)": "Largeur Sur Mesure (cm)",
     "metragem por arquivo": "Métrage par Fichier",
-    "metragem custom (m)": "Métrage Sur Mesure (m)",
-    "espaçamento / sangria": "Espacement / Fond Perdu",
+    "metragem custom (m)": "Métrage Personnalisé (m)",
+    "espaçamento / sangria": "Espacement / Marge Perdue",
     "selecione o pedido para adicionar": "Sélectionner la Commande",
     "arquivo de imagem (png, jpg, webp, svg ou pdf/ai)": "Fichier Graphique (PNG, JPG, SVG, PDF)",
     "descrição / local da estampa": "Description / Emplacement du Marquage",
@@ -7702,7 +7750,7 @@
     "aguardando digitação": "Aguardando digitação",
     "agulha máquina reta industrial cabo fino dbx1 (cx 10un)": "Agulha Máquina Reta Industrial Cabo Fino DBx1 (cx 10un)",
     "ainda não possui assinatura ativa?": "Ainda não possui assinatura ativa?",
-    "ajuste dimensões, quantidades e recorte cirúrgico": "Ajuste dimensões, quantidades e recorte cirúrgico",
+    "ajuste dimensões, quantidades e recorte cirúrgico": "Ajustez les dimensions, quantités et découpe chirurgicale",
     "ajuste os dados técnicos e a grade de consumo em gramas por tamanho de acordo com o tecido": "Ajuste os dados técnicos e a grade de consumo em gramas por tamanho de acordo com o tecido",
     "ajuste os valores reais de entradas (faturamento) e saídas (despesas/custos) para análise executiva": "Ajuste os valores reais de Entradas (Faturamento) e Saídas (Despesas/Custos) para análise executiva",
     "altere o": "Altere o",
@@ -7725,8 +7773,8 @@
     "arquivo não anexado nesta versão": "Arquivo não anexado nesta versão",
     "arquivo:": "Arquivo:",
     "arquivos salvos e vinculados permanentemente à ordem de serviço da confecção.": "Arquivos salvos e vinculados permanentemente à Ordre de Travail da Confection.",
-    "artes no rolo dtf": "Artes no Rolo DTF",
-    "atalhos de entrada:": "Atalhos de Entrada:",
+    "artes no rolo dtf": "Visuels sur Rouleau DTF",
+    "atalhos de entrada:": "Raccourcis d'Acompte :",
     "atalhos:": "Atalhos:",
     "ativar minha licença pro & entrar": "Ativar Minha Licença PRO & Entrar",
     "auto-trim inteligente • recorte manual de enquadramento • remoção cirúrgica de fundo": "Auto-Trim inteligente • Recorte manual de enquadramento • Remoção cirúrgica de fundo",
@@ -7808,7 +7856,7 @@
     "compra malha piquet e dry - malharia sul": "Achat Tissu Piqué et Dry - Malharia Sul",
     "compras sincronizadas com o estoque e lançamentos avulsos de manutenção e consumíveis da fábrica.": "Achats synchronisés avec les stocks et écritures diverses pour l'entretien et les consommables de l'usine.",
     "condição de fornecimento:": "Condição de Fornecimento:",
-    "condições comerciais, entrada de sinal & saldo remanescente:": "Condições Comerciais, Entrada de Sinal & Saldo Remanescente:",
+    "condições comerciais, entrada de sinal & saldo remanescente:": "CONDITIONS COMMERCIALES, ACOMPTE & SOLDE RESTANT :",
     "cone linha reta 120 10.000m azul marinho": "Cone Linha Reta 120 10.000m Azul Marinho",
     "conectando aos servidores da sefaz sp e verificando disponibilidade dos webservices...": "Conectando aos servidores da SEFAZ SP e verificando disponibilidade dos webservices...",
     "conexão ssl mtls ativa": "Conexão SSL mTLS Ativa",
@@ -7817,7 +7865,7 @@
     "configure os limites de produtividade diária de corte, bordado, dtf, costura e outros processos": "Configure os limites de produtividade diária de corte, bordado, DTF, costura e outros processos",
     "configure sua confecção abaixo para liberar o acesso pro.": "Configure sua Confection abaixo para liberar o acesso PRO.",
     "configure sua fábrica & crie sua senha definitiva": "Configure sua fábrica & crie sua senha definitiva",
-    "confirmar sinal já recebido e lançar entrada imediata no fluxo de caixa (financeiro)": "Confirmer sinal já recebido e lançar entrada imediata no Fluxo de Caixa (Financeiro)",
+    "confirmar sinal já recebido e lançar entrada imediata no fluxo de caixa (financeiro)": "Confirmer l'acompte reçu et inscrire immédiatement la recette dans le Flux de Trésorerie",
     "confirmo que a entrada ou valor acordado foi compensado na conta da confecção ou há termo formal de faturamento assinado.": "Confirmo que a entrada ou valor acordado foi compensado na conta da Confection ou há termo formal de faturamento assinado.",
     "confirmo que a margem de contribuição do lote cobre todos os custos diretos, impostos do simples e gera margem real positiva.": "Confirmo que a Marge sur Coût Variable do lote cobre todos os custos diretos, impostos do Simples e gera margem real positiva.",
     "confirmo que as peças de tecido na cor principal e detalhes contrastantes (golas, punhos, frisos, recortes) estão fisicamente no galpão sem risco de variação de cor.": "Confirmo que as peças de tecido na cor principal e detalhes contrastantes (golas, punhos, frisos, recortes) estão fisicamente no galpão sem risco de variação de cor.",
@@ -7825,7 +7873,7 @@
     "consulta de autenticidade no portal da nf-e": "Consulta de autenticidade no portal da NF-e",
     "consultando base da receita federal em tempo real...": "Consultando base da Recette Federal em tempo real...",
     "consumo base m": "Consommation de Base M",
-    "consumo ponderado médio:": "Consumo Ponderado Médio:",
+    "consumo ponderado médio:": "Consommation Moyenne Pondérée :",
     "consumo de tecido por tamanho de acordo com o tecido *obrigatório": "Consumo de Tecido por Tamanho de Acordo com o Tecido *Obrigatório",
     "consumo de corte, ordem de produção, avarias ou ajuste de inventário": "Consumo de corte, ordem de produção, avarias ou ajuste de inventário",
     "contas a pagar & gestão de despesas": "Fournisseurs & Gestion des Dépenses",
@@ -7846,11 +7894,11 @@
     "criando banco de dados exclusivo...": "Criando banco de dados exclusivo...",
     "crie um novo departamento ou linha operacional para apropriação de despesas da fábrica": "Crie um novo departamento ou linha operacional para apropriação de despesas da fábrica",
     "critérios de segurança:": "Critérios de Segurança:",
-    "custo dtf (filme + tinta)": "Custo DTF (Filme + Tinta)",
-    "custo direto total": "Custo Direto Total",
+    "custo dtf (filme + tinta)": "COÛT DTF (FILM + ENCRE)",
+    "custo direto total": "Coût Direct Total",
     "custo histórico total": "Custo Histórico Total",
-    "custo médio tecido / peça:": "Custo Médio Tecido / Peça:",
-    "custo produção": "Custo Produção",
+    "custo médio tecido / peça:": "Coût Moyen Tissu / Pièce :",
+    "custo produção": "COÛT DE PRODUCTION",
     "custo:": "Custo:",
     "custos diretos para produzir este modelo:": "Custos Diretos para Produzir este Modelo:",
     "cálculo do imposto": "CÁLCULO DO IMPOSTO",
@@ -7876,9 +7924,9 @@
     "depreciação mensal consolidada": "Amortissement Mensuel Consolidada",
     "depreciação mensal estimada:": "Amortissement Mensuel Estimada:",
     "desgaste contábil total decorrido": "Desgaste contábil total decorrido",
-    "designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro": "Designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro",
+    "designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro": "Attribution de couturière, téléversement obligatoire des visuels HD et synchronisation de l'acompte",
     "desinfetante 5l, sabonete líquido e papel toalha": "Désinfectant 5L, Savon Liquide et Essuie-mains Papier",
-    "detalhamento dos custos individuais de cada peça:": "Detalhamento dos custos individuais de cada peça:",
+    "detalhamento dos custos individuais de cada peça:": "Détail des coûts individuels par pièce :",
     "detalhamento por categoria & natureza financeira": "Detalhamento por Categoria & Natureza Financeira",
     "dir:": "Dir:",
     "distribuidora limpeza total": "Distribuidora Limpeza Total",
@@ -7905,7 +7953,7 @@
     "emitir nf-e modelo 55 (danfe oficial sefaz)": "Émettre Facture Électronique Modèle 55 (Officielle)",
     "empresa:": "Empresa:",
     "emulsão fotográfica têxtil resistente a água": "Emulsão Fotográfica Têxtil Resistente a Água",
-    "encaixe first-fit milimétrico para zero desperdício de filme pet e economia direta de tinta": "Encaixe First-Fit milimétrico para zero desperdício de filme PET e economia direta de tinta",
+    "encaixe first-fit milimétrico para zero desperdício de filme pet e economia direta de tinta": "Imbrication millimétrique First-Fit pour zéro déchet de film PET et économies d'encre",
     "engenharia têxtil com recálculo em tempo real: edite o consumo ou o custo final diretamente em cada tamanho": "Engenharia têxtil com recálculo em tempo real: edite o consumo ou o custo final diretamente em cada tamanho",
     "entrada / sinal inicial": "Entrada / Sinal Inicial",
     "entrada oficial no pedido • confecção & chão de fábrica": "Entrée Officielle de Commande • Confection & Atelier",
@@ -7944,7 +7992,7 @@
     "faixa refletiva 50mm (3m)": "Faixa Refletiva 50mm (3m)",
     "faixa refletiva termocolante alta visibilidade 50mm": "Faixa Refletiva Termocolante Alta Visibilidade 50mm",
     "faturamento acumulado": "Faturamento Acumulado",
-    "faturamento total": "Faturamento Total",
+    "faturamento total": "Chiffre d'Affaires Total",
     "fazer ele admitir que perde dinheiro na gestão manual ou em planilhas soltas.": "Fazer ele admitir que perde dinheiro na gestão manual ou em planilhas soltas.",
     "fechamento comercial": "Fechamento Comercial",
     "ficha técnica a4": "Fiche Technique A4",
@@ -8027,9 +8075,9 @@
     "malha poliviscose pv anti-pilling (67% pol / 33% visc)": "Malha Poliviscose PV Anti-Pilling (67% Pol / 33% Visc)",
     "malhas, tecidos, aviamentos e dtf": "Mailles, tissus, mercerie & DTF",
     "manutenção": "Manutenção",
-    "mapa visual do rolo dtf (escala 1:1)": "Mapa Visual do Rolo DTF (Escala 1:1)",
+    "mapa visual do rolo dtf (escala 1:1)": "Carte Visuelle du Rouleau DTF (Échelle 1:1)",
     "mapeamento de custos e cadastro de tecidos": "Mapeamento de custos e cadastro de tecidos",
-    "margem bruta": "Margem Bruta",
+    "margem bruta": "MARGE BRUTE",
     "marrom café": "Marrom Café",
     "meia malha 30.1 penteada 100% algodão": "Jersey Simple 30.1 100% Coton Peigné",
     "meia malha 30.1 penteada algodão branco": "Jersey Simple 30.1 Coton Peigné Blanc",
@@ -8037,7 +8085,7 @@
     "mesa de corte com faca rotativa elétrica 8 pol": "Table de Coupe com Faca Rotativa Elétrica 8 Pol",
     "mestre antônio silva": "Mestre Antônio Silva",
     "meta interna do chão de fábrica:": "Meta Interna do Chão de Fábrica:",
-    "metros lineares de rolo": "Metros Lineares de Rolo",
+    "metros lineares de rolo": "MÈTRES LINÉAIRES DE ROULEAU",
     "modelo têxtil:": "Modelo Têxtil:",
     "modelo:": "Modelo:",
     "moletom flanelado 3 cabos (50% alg / 50% pol)": "Moletom Flanelado 3 Cabos (50% Alg / 50% Pol)",
@@ -8098,7 +8146,7 @@
     "o sistema está limpo e preparado para receber os pedidos reais da sua campanha.": "O sistema está limpo e preparado para receber os pedidos reais da sua campanha.",
     "o sistema gera o schema xml 4.00 oficial, chave de 44 dígitos com módulo 11 e protocolo de autorização compatível com consulta pública no portal nacional da sefaz.": "O sistema gera o Schema XML 4.00 oficial, chave de 44 dígitos com Módulo 11 e protocolo de autorização compatível com consulta pública no portal nacional da SEFAZ.",
     "o sistema mescla o saldo físico com a nova compra e recalcula o custo médio exato para garantir que os futuros orçamentos da fábrica reflitam os preços reais pagos aos fornecedores.": "O sistema mescla o saldo físico com a Nouvel Achat e recalcula o custo médio exato para garantir que os futuros orçamentos da fábrica reflitam os preços reais pagos aos fornecedores.",
-    "o valor da entrada cobre 100% do pedido. não haverá saldo remanescente devedor.": "O valor da entrada cobre 100% do pedido. Não haverá saldo remanescente devedor.",
+    "o valor da entrada cobre 100% do pedido. não haverá saldo remanescente devedor.": "L'acompte couvre 100% de la commande. Il ne restera aucun solde débiteur.",
     "ordem de produção:": "ORDEM DE PRODUÇÃO:",
     "os produtos / serviços constantes da nota fiscal indicada ao lado": "OS PRODUTOS / SERVIÇOS CONSTANTES DA NOTA FISCAL INDICADA AO LADO",
     "outras despesas": "OUTRAS DESPESAS",
@@ -8130,7 +8178,7 @@
     "peça lisa (sem estampa). nenhuma personalização adicionada. clique nos botões acima para incluir bordado, dtf ou silk.": "Peça Lisa (Sem Estampa). Nenhuma personalização adicionada. Clique nos botões acima para incluir Bordado, DTF ou Silk.",
     "peça de uniforme adicional": "Peça de Uniforme Adicional",
     "peça monocromática na cor principal informada acima. sem recortes ou frisos contrastantes adicionais.": "Peça monocromática na cor principal informada acima. Sem recortes ou frisos contrastantes adicionais.",
-    "peças g1 a g5 consomem até 90% mais tecido que a modelagem base m. o custo e o total a enfestar já estão ponderados com precisão!": "Peças G1 a G5 consomem até 90% mais tecido que a modelagem base M. O custo e o total a enfestar já estão ponderados com precisão!",
+    "peças g1 a g5 consomem até 90% mais tecido que a modelagem base m. o custo e o total a enfestar já estão ponderados com precisão!": "Les pièces G1 à G5 consomment jusqu'à 90% de tissu de plus que la taille M. Coût et matelassage sont pondérés avec précision !",
     "plano de comissões da equipe comercial": "Plano de Comissões da Equipe Comercial",
     "poliamida termofusível branca especial dtf": "Poliamida Termofusível Branca Especial DTF",
     "prazo prometido ao cliente:": "Prazo Prometido ao Cliente:",
@@ -8143,7 +8191,7 @@
     "previsão": "Previsão",
     "preço médio / pç:": "Preço Médio / Pç:",
     "preço unitário:": "Preço Unitário:",
-    "preço venda": "Preço Venda",
+    "preço venda": "PRIX DE VENTE",
     "primeiro acesso ao sistema": "Premier Accès au Système",
     "produção: corte & estamparia": "Produção: Corte & Estamparia",
     "produção: costura & facções": "Produção: Costura & Facções",
@@ -8177,9 +8225,9 @@
     "regulador de metal": "Regulador de Metal",
     "relatório gerencial dre & balanço contábil": "Rapport de Gestion Compte de Résultat & Bilan",
     "remover fundo automaticamente (canva-style)": "Remover fundo automaticamente (Canva-style)",
-    "rendimento do tecido:": "Rendimento do Tecido:",
+    "rendimento do tecido:": "Rendement du Tissu :",
     "requer botão \"entrada\"": "Requer botão \"Entrada\"",
-    "resumo financeiro consolidado do pedido:": "Resumo Financeiro Consolidado do Pedido:",
+    "resumo financeiro consolidado do pedido:": "RÉSUMÉ FINANCIER CONSOLIDÉ DE LA COMMANDE :",
     "ribana gola": "Ribana Gola",
     "ribana gola 1x1": "Bord-Côte Col 1x1",
     "ribana gola bicolor": "Bord-Côte Col Bicolore",
@@ -8207,7 +8255,7 @@
     "se você cobrar uma mensalidade de": "Se você cobrar uma mensalidade de",
     "segregação contábil completa: contas a pagar + compras de insumos + lançamentos no caixa": "Segregação contábil completa: Contas a Pagar + Compras de Insumos + Lançamentos no Caixa",
     "selecione um modelo": "Sélectionnez un Modèle",
-    "selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo dtf.": "Selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo DTF.",
+    "selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo dtf.": "Sélectionnez une commande en haut ou importez des fichiers depuis votre ordinateur pour les imbriquer sur le rouleau DTF.",
     "sem fidelidade ou carência": "Sem fidelidade ou carência",
     "sem grade": "Sem grade",
     "seus dados ficam 100% sob seu controle. você pode baixar cópias de segurança a qualquer momento e restaurar em outro computador ou navegador.": "Seus dados ficam 100% sob seu controle. Você pode baixar cópias de segurança a qualquer momento e restaurar em outro computador ou navegador.",
@@ -8223,7 +8271,7 @@
     "soma de personalizações deste modelo:": "Total des personnalisations de ce modèle :",
     "status conexão sefaz": "STATUT CONNEXION FISCALE",
     "status sefaz:": "Status SEFAZ:",
-    "subtotal modelo": "Subtotal Modelo",
+    "subtotal modelo": "SOUS-TOTAL MODÈLE",
     "suporte direto via whatsapp oficial": "Suporte direto via WhatsApp oficial",
     "suprimentos dtf brasil": "Suprimentos DTF Brasil",
     "série:": "Série:",
@@ -8239,7 +8287,7 @@
     "tam 6": "Tam 6",
     "tam 8": "Tam 8",
     "tamanho:": "Tamanho:",
-    "taxa de aproveitamento": "Taxa de Aproveitamento",
+    "taxa de aproveitamento": "TAUX D'UTILISATION",
     "tecido brim pesado 100% algodão cinza": "Sergé Lourd 100% Coton Gris",
     "tecido brim pesado sarja 100% algodão 260g": "Tecido Brim Pesado Sarja 100% Algodão 260g",
     "tecido gabardine nobre com elastano": "Tecido Gabardine Nobre com Elastano",
@@ -8247,7 +8295,7 @@
     "tecido oxford branco 100% poliéster": "Tissu Oxford Blanc 100% Polyester",
     "tecido rip stop anti-rasgo militar": "Tecido Rip Stop Anti-Rasgo Militar",
     "tecido tactel microfibra 100% poliéster": "Tecido Tactel Microfibra 100% Poliéster",
-    "tecido total a comprar/cortar:": "Tecido Total a Comprar/Cortar:",
+    "tecido total a comprar/cortar:": "Tissu Total à Acheter/Couper :",
     "tecido tricoline mista 60/40 camisaria": "Tecido Tricoline Mista 60/40 Camisaria",
     "tinta dtf textil pigmentada branca 1l": "Tinta DTF Textil Pigmentada Branca 1L",
     "tinta dtf têxtil pigmentada branca (white) 1l": "Tinta DTF Têxtil Pigmentada Branca (White) 1L",
@@ -8259,10 +8307,10 @@
     "tolerância:": "Tolerância:",
     "topo:": "Topo:",
     "total comissões geradas": "Total Comissões Geradas",
-    "total cópias encaixadas": "Total Cópias Encaixadas",
+    "total cópias encaixadas": "TOTAL COPIES IMBRIQUÉES",
     "total faturado em nf-e": "TOTAL FACTURÉ PAR FACTURE ÉLECTRONIQUE",
     "total já recebido": "Total Já Recebido",
-    "total peças pedido": "Total Peças Pedido",
+    "total peças pedido": "Total Pièces Commande",
     "total vendas faturadas": "Total Vendas Faturadas",
     "total a receber (clientes)": "Total a Receber (Clientes)",
     "total de pedidos": "Total de Pedidos",
@@ -8296,7 +8344,7 @@
     "verde água": "Verde Água",
     "verificando credenciais...": "Verificando credenciais...",
     "versão xml: 4.00": "Versão XML: 4.00",
-    "visualização completa das matrizes, réguas em cm/metros e marcas de corte": "Visualização completa das matrizes, réguas em cm/metros e marcas de corte",
+    "visualização completa das matrizes, réguas em cm/metros e marcas de corte": "Visualisation complète des visuels, règles en cm/mètres et repères de coupe",
     "vá na aba": "Vá na aba",
     "whatsapp contato:": "WhatsApp Contato:",
     "zero espaço branco": "Zero Espaço Branco",
@@ -8335,7 +8383,7 @@
     "para inserir.": "para inserir.",
     "para que seu cliente pague a entrada com 1 clique.": "para que seu cliente pague a entrada com 1 clique.",
     "para quitação do pedido. este valor continuará como saldo a receber na entrega.": "para quitação do pedido. Este valor continuará como saldo a receber na entrega.",
-    "por peça acabada": "por peça acabada",
+    "por peça acabada": "par pièce finie",
     "sobre o desenho ou use os sliders abaixo (0% a 95%):": "sobre o desenho ou use os sliders abaixo (0% a 95%):",
     "tem autorização para cadastrar novos funcionários, definir perfis de permissão e criar senhas temporárias de acesso.": "tem autorização para cadastrar novos funcionários, definir perfis de permissão e criar senhas temporárias de acesso.",
     "à vista / 30d": "À Vista / 30D",
@@ -8363,12 +8411,12 @@
     "⚙️ configurações fiscais & certificado digital a1": "⚙️ Paramètres Fiscaux & Certificat Numérique A1",
     "⚙️ depreciação de máquinas & ativos": "⚙️ Depreciação de Máquinas & Ativos",
     "⚠️ atenção corte / costura / compra de materiais (detalhes de cor):": "⚠️ Attention CORTE / COSTURA / COMPRA DE MATERIAIS (DETALHES DE COR):",
-    "⚠️ anexo obrigatório: não é permitido dar entrada sem os arquivos das artes": "⚠️ Anexo Obrigatório: Não é permitido dar entrada sem os arquivos das artes",
+    "⚠️ anexo obrigatório: não é permitido dar entrada sem os arquivos das artes": "⚠️ Pièce Jointe Obligatoire : La commande ne peut être lancée sans les fichiers de visuels",
     "⚠️ atenção: esta baixa deixará o saldo deste insumo abaixo do estoque mínimo de segurança!": "⚠️ Attention: Esta baixa deixará o saldo deste insumo abaixo do estoque mínimo de segurança!",
     "⚠️ cnpj não localizado automaticamente na base pública. você pode preencher os campos abaixo manualmente.": "⚠️ CNPJ não localizado automaticamente na base pública. Você pode preencher os campos abaixo manualmente.",
     "⚠️ este usuário ainda não possui senha provisória definida no sistema. preencha uma senha abaixo para liberar o acesso dele.": "⚠️ Este usuário ainda não possui senha provisória definida no sistema. Preencha uma senha abaixo para liberar o acesso dele.",
     "⚠️ obrigatório": "⚠️ Obrigatório",
-    "⚠️ obrigatório anexar": "⚠️ Obrigatório Anexar",
+    "⚠️ obrigatório anexar": "⚠️ Pièce Jointe Obligatoire",
     "⚠️ sem senha definida": "⚠️ Sem Senha Definida",
     "⚡ auto-corte inteligente (trim)": "⚡ Auto-Corte Inteligente (Trim)",
     "⚡ baixar todos os arquivos em lote": "⚡ Baixar Todos os Arquivos em Lote",
@@ -8378,11 +8426,11 @@
     "⚽ relação dos atletas & numerações": "⚽ Relação dos Atletas & Numerações",
     "✂️ oficina / fábrica": "✂️ Oficina / Fábrica",
     "✂️ recorte & enquadramento": "✂️ Recorte & Enquadramento",
-    "✏️ custos/consumos manuais ativos": "✏️ Custos/Consumos Manuais Ativos",
-    "✓ definido na proposta": "✓ Definido na Proposta",
+    "✏️ custos/consumos manuais ativos": "✏️ Coûts/Consommations Manuels Actifs",
+    "✓ definido na proposta": "✓ Défini dans la Proposition",
     "✓ pago": "✓ RÉGLÉ",
     "✓ preço direto por bordado": "✓ Prix direct par broderie",
-    "✓ sem fundo": "✓ Sem Fundo",
+    "✓ sem fundo": "✓ Sans Arrière-Plan",
     "✓ senha pessoal criada": "✓ Senha Pessoal Criada",
     "✨ explorar modo demonstração showroom (sem cadastro) &rarr;": "✨ Explorar Modo Demonstração Showroom (Sem Cadastro) &rarr;",
     "✨ pronto dtf": "✨ Pronto DTF",
@@ -8527,7 +8575,23 @@
     "sefaz homologação": "Homologation Fiscale Test",
     "buscar por cliente, cnpj, número ou chave...": "Rechercher par Client, Numéro Fiscal, Numéro ou Clé...",
     "autorizada": "AUTORISÉE",
-    "personalize a identidade da fábrica: logotipo em alta resolução, dados cadastrais, dados para pagamento via pix e segurança.": "Personnalisez l'identité de l'usine : logo haute résolution, données fiscales, paiement instantané et sécurité."
+    "personalize a identidade da fábrica: logotipo em alta resolução, dados cadastrais, dados para pagamento via pix e segurança.": "Personnalisez l'identité de l'usine : logo haute résolution, données fiscales, paiement instantané et sécurité.",
+    "custos/consumos manuais ativos": "Coûts/Consommations Manuels Actifs",
+    "detalhar & editar custo por peça": "Détailler & Modifier le Coût par Pièce",
+    "viável (margem excelente)": "VIABLE (Marge Excellente)",
+    "viável (padrão)": "VIABLE (Standard)",
+    "atenção (margem baixa)": "ATTENTION (Faible Marge)",
+    "inviável (prejuízo)": "NON VIABLE (Perte)",
+    "entrada oficial no pedido • manufacturing & chão de fábrica": "Entrée Officielle de Commande • Fabrication & Atelier",
+    "definido na proposta": "Défini dans la Proposition",
+    "which seamstress / contractor is assigned? (campo obrigatório)": "QUELLE COUTURIÈRE / QUEL ATELIER EST ASSIGNÉ ? (CHAMP OBLIGATOIRE)",
+    "anexo obrigatório: não é permitido dar entrada sem os arquivos das artes": "Pièce Jointe Obligatoire : La commande ne peut être lancée sans les fichiers de visuels",
+    "obrigatório anexar": "Pièce Jointe Obligatoire",
+    "confirm sinal já recebido e lançar entrada imediata no fluxo de caixa (financeiro)": "Confirmer l'acompte reçu et inscrire immédiatement la recette dans le Flux de Trésorerie",
+    "quitação integral (100% pago)": "Règlement Intégral (100% Payé)",
+    "remover fundo": "Supprimer l'Arrière-Plan",
+    "✨ remover fundo": "✨ Supprimer l'Arrière-Plan",
+    "recorte & fundo": "Recadrage & Fond"
   },
   "de": {
     "abertura & visão geral da fábrica": "Übersicht & Werksüberblick",
@@ -9215,7 +9279,7 @@
     "ações & totais ▶": "Aktionen & Summen ▶",
     "✓ 100% quitado": "✓ 100% VOLL BEZAHLT",
     "✕ pendente (receber)": "✕ AUSSTEHEND (Einziehen)",
-    "⚡ cobrar pix": "⚡ Zahlung Anfordern",
+    "⚡ cobrar pix": "⚡ Zahlung anfordern",
     "bloqueado (quarentena)": "GESPERRT (QUALITÄTSPRÜFUNG)",
     "reativar": "Reaktivieren",
     "proposta": "Angebot",
@@ -9273,8 +9337,8 @@
     "🔄 restaurar padrão abnt": "🔄 Standard-Größentabelle Wiederherstellen",
     "salvar consumos & custos por peça": "Materialverbrauch & Stückkosten Speichern",
     "← preencher grade do pedido": "← Auftrags-Größentabelle Ausfüllen",
-    "📊 detalhar & editar custo por peça ✏️": "📊 Stückkosten Aufschlüsseln & Bearbeiten ✏️",
-    "+ cadastrar costureira": "+ Näherei Anlegen",
+    "📊 detalhar & editar custo por peça ✏️": "📊 Stückkosten aufschlüsseln & bearbeiten ✏️",
+    "+ cadastrar costureira": "+ Näherei hinzufügen",
     "✂️ estúdio & recorte dtf": "✂️ DTF-Studio & Freistellen",
     "✕ trocar": "✕ Ändern",
     "✂️ estúdio & recorte": "✂️ Studio & Zuschnitt",
@@ -9282,8 +9346,8 @@
     "30% entrada": "30% Anzahlung",
     "40% entrada": "40% Anzahlung",
     "50% entrada (padrão)": "50% Anzahlung (Standard)",
-    "100% (à vista total)": "100% (Sofortige Vollzahlung)",
-    "confirmar entrada no pedido & gerar os": "Auftrag Bestätigen & Fertigungsauftrag Erstellen",
+    "100% (à vista total)": "100% (Vollständige Vorauszahlung)",
+    "confirmar entrada no pedido & gerar os": "Auftragseingang bestätigen & Fertigungsauftrag erstellen",
     "editar orçamento": "Angebot Bearbeiten",
     "aprovar & dar entrada": "Freigeben & Fertigung Starten",
     "imprimir / baixar proposta em pdf": "Angebot Drucken / PDF Herunterladen",
@@ -9311,12 +9375,12 @@
     "↺ desfazer todos os recortes (voltar original)": "↺ Alle Zuschnitte Rückgängig Machen",
     "⬛ preto": "⬛ Schwarz",
     "✨ auto detecção": "✨ Automatische Erkennung",
-    "+ adicionar arquivo do computador": "+ Datei vom Computer Hochladen",
+    "+ adicionar arquivo do computador": "+ Datei vom Computer hinzufügen",
     "+ incluir outro pedido no rolo": "+ Weiteren Auftrag zur Rolle Hinzufügen",
-    "↺ re-otimizar": "↺ Neu Optimieren",
-    "✂️ recorte & fundo": "✂️ Freistellen & Hintergrund",
-    "🖨️ ficha dtf": "🖨️ DTF-Druckblatt",
-    "salvar & exportar png (rip)": "Speichern & PNG Exportieren (RIP)",
+    "↺ re-otimizar": "↺ Neu optimieren",
+    "✂️ recorte & fundo": "✂️ Zuschnitt & Hintergrund",
+    "🖨️ ficha dtf": "🖨️ DTF-Auftragsblatt",
+    "salvar & exportar png (rip)": "Speichern & PNG exportieren (RIP-bereit)",
     "padrão (40%)": "Standard (40%)",
     "adicionar matrizes ao rolo": "Muster zur Druckrolle Hinzufügen",
     "✂️ estúdio cirúrgico & conta-gotas": "✂️ Präzisionsstudio & Pipette",
@@ -9420,10 +9484,10 @@
     "2. especificação de artes & dtf digital:": "2. GRAFIKSPEZIFIKATION & DIGITAL-DTF:",
     "3. instruções para a costureira / facção:": "3. ANWEISUNGEN FÜR DIE NÄHEREI / LOHNFERTIGER:",
     "atenção da bancada:": "WERKSTATT-HINWEIS:",
-    "para qual costureira / facção vai o pedido?": "Welcher Näherei / welchem Lohnfertiger zuweisen?",
-    "artes da peça & personalizações em alta resolução": "Druckmotive & Hochauflösende Veredelungen",
+    "para qual costureira / facção vai o pedido?": "Welcher Näherei / Werkstatt wird der Auftrag zugewiesen?",
+    "artes da peça & personalizações em alta resolução": "Druckdaten & HD-Veredelungen des Kleidungsstücks",
     "✅ peça lisa (sem estampa / sem bordado)": "✅ Unbedrucktes Textil (Ohne Druck / Stick)",
-    "✅ quitação integral (100% pago)": "✅ Vollständig Bezahlt (100% Beglichen)",
+    "✅ quitação integral (100% pago)": "✅ Vollständige Begleichung (100% bezahlt)",
     "📦 receitas com pedidos de uniformes": "📦 Umsatzerlöse aus Berufsbekleidung",
     "🧵 custos diretos de produção (tecido, facção & tintas)": "🧵 Direkte Herstellkosten (Stoffe, Lohn & Druckfarben)",
     "🏢 despesas fixas, aluguel & instalações": "🏢 Feste Gemeinkosten, Miete & Betriebsstätte",
@@ -9492,13 +9556,13 @@
     "🚀 como funciona:": "🚀 So funktioniert's:",
     "⚡ recálculo em tempo real:": "⚡ Neuberechnung in Echtzeit:",
     "preço/custo final muda automaticamente na hora!": "Endpreis/-kosten passen sich sofort an!",
-    "diferenciação por tamanho ativa:": "Größendifferenzierung Aktiv:",
+    "diferenciação por tamanho ativa:": "Größendifferenzierung aktiv:",
     "dica:": "Tipp:",
     "auto-corte": "Auto-Zuschnitt",
     "recorte manual": "Manuell Freistellen",
     "arraste o mouse": "Maus mit gedrückter Taste ziehen",
-    "nenhuma arte carregada neste rolo": "Kein Motiv auf diese Rolle geladen",
-    "separar por pedido": "Nach Auftrag Gruppieren",
+    "nenhuma arte carregada neste rolo": "Kein Motiv auf dieser Rolle geladen",
+    "separar por pedido": "Nach Auftrag trennen",
     "recálculo automático de custo médio ponderado:": "Automatische Neuberechnung der Durchschnittskosten:",
     "malha/tecido:": "Stoff/Maschenware:",
     "consumo base m:": "Grundverbrauch M:",
@@ -9563,8 +9627,8 @@
     "largura do rolo / papel": "Rollen- / Papierbreite",
     "largura custom (cm)": "Benutzerdefinierte Breite (cm)",
     "metragem por arquivo": "Länge je Datei",
-    "metragem custom (m)": "Benutzerdefinierte Länge (m)",
-    "espaçamento / sangria": "Abstand / Randzugabe",
+    "metragem custom (m)": "Individuelle Länge (m)",
+    "espaçamento / sangria": "Abstand / Beschnittzugabe",
     "selecione o pedido para adicionar": "Auftrag zum Hinzufügen Wählen",
     "arquivo de imagem (png, jpg, webp, svg ou pdf/ai)": "Bilddatei (PNG, JPG, WebP, SVG oder PDF/AI)",
     "descrição / local da estampa": "Beschreibung / Druckposition",
@@ -9722,7 +9786,7 @@
     "❌ \"e se a internet cair aqui no galpão?\"": "❌ „Was passiert, wenn im Werk das Internet ausfällt?“",
     "detalhes de confecção & bicolores:": "Konfektionsdetails & Zweifarbig:",
     "para qual costureira / facção vai o pedido? (campo obrigatório)": "Welcher Näherei / Lohnfertiger zuweisen? (Pflichtfeld)",
-    "agrupa com linha de corte": "Mit Schnittlinie gruppieren",
+    "agrupa com linha de corte": "Gruppiert mit Schnittlinie",
     "centro de custo *": "Kostenstelle *",
     "código (ex: cc-06):": "Code (z.B. CC-06):",
     "tag / código:": "Kennung / Code:",
@@ -9816,7 +9880,7 @@
     "aguardando digitação": "Aguardando digitação",
     "agulha máquina reta industrial cabo fino dbx1 (cx 10un)": "Agulha Máquina Reta Industrial Cabo Fino DBx1 (cx 10un)",
     "ainda não possui assinatura ativa?": "Ainda não possui assinatura ativa?",
-    "ajuste dimensões, quantidades e recorte cirúrgico": "Ajuste dimensões, quantidades e recorte cirúrgico",
+    "ajuste dimensões, quantidades e recorte cirúrgico": "Maße, Stückzahlen und Präzisionsausschnitt anpassen",
     "ajuste os dados técnicos e a grade de consumo em gramas por tamanho de acordo com o tecido": "Ajuste os dados técnicos e a grade de consumo em gramas por tamanho de acordo com o tecido",
     "ajuste os valores reais de entradas (faturamento) e saídas (despesas/custos) para análise executiva": "Ajuste os valores reais de Entradas (Faturamento) e Saídas (Despesas/Custos) para análise executiva",
     "altere o": "Altere o",
@@ -9839,8 +9903,8 @@
     "arquivo não anexado nesta versão": "Arquivo não anexado nesta versão",
     "arquivo:": "Arquivo:",
     "arquivos salvos e vinculados permanentemente à ordem de serviço da confecção.": "Arquivos salvos e vinculados permanentemente à Fertigungsauftrag da Konfektion.",
-    "artes no rolo dtf": "Artes no Rolo DTF",
-    "atalhos de entrada:": "Atalhos de Entrada:",
+    "artes no rolo dtf": "Motive auf DTF-Rolle",
+    "atalhos de entrada:": "Schnellauswahl Anzahlung:",
     "atalhos:": "Atalhos:",
     "ativar minha licença pro & entrar": "Ativar Minha Licença PRO & Entrar",
     "auto-trim inteligente • recorte manual de enquadramento • remoção cirúrgica de fundo": "Auto-Trim inteligente • Recorte manual de enquadramento • Remoção cirúrgica de fundo",
@@ -9922,7 +9986,7 @@
     "compra malha piquet e dry - malharia sul": "Einkauf Piqué- und Dry-Fit-Stoff - Malharia Sul",
     "compras sincronizadas com o estoque e lançamentos avulsos de manutenção e consumíveis da fábrica.": "Mit dem Lagerbestand synchronisierte Einkäufe sowie Einzelbuchungen für Fabrikinstandhaltung und Verbrauchsmaterialien.",
     "condição de fornecimento:": "Condição de Fornecimento:",
-    "condições comerciais, entrada de sinal & saldo remanescente:": "Condições Comerciais, Entrada de Sinal & Saldo Remanescente:",
+    "condições comerciais, entrada de sinal & saldo remanescente:": "GESCHÄFTSBEDINGUNGEN, ANZAHLUNG & RESTBETRAG:",
     "cone linha reta 120 10.000m azul marinho": "Cone Linha Reta 120 10.000m Azul Marinho",
     "conectando aos servidores da sefaz sp e verificando disponibilidade dos webservices...": "Conectando aos servidores da SEFAZ SP e verificando disponibilidade dos webservices...",
     "conexão ssl mtls ativa": "Conexão SSL mTLS Ativa",
@@ -9931,7 +9995,7 @@
     "configure os limites de produtividade diária de corte, bordado, dtf, costura e outros processos": "Configure os limites de produtividade diária de corte, bordado, DTF, costura e outros processos",
     "configure sua confecção abaixo para liberar o acesso pro.": "Configure sua Konfektion abaixo para liberar o acesso PRO.",
     "configure sua fábrica & crie sua senha definitiva": "Configure sua fábrica & crie sua senha definitiva",
-    "confirmar sinal já recebido e lançar entrada imediata no fluxo de caixa (financeiro)": "Bestätigen sinal já recebido e lançar entrada imediata no Fluxo de Caixa (Financeiro)",
+    "confirmar sinal já recebido e lançar entrada imediata no fluxo de caixa (financeiro)": "Erhalt der Anzahlung bestätigen und sofortige Buchung im Cashflow (Finanzen) erfassen",
     "confirmo que a entrada ou valor acordado foi compensado na conta da confecção ou há termo formal de faturamento assinado.": "Confirmo que a entrada ou valor acordado foi compensado na conta da Konfektion ou há termo formal de faturamento assinado.",
     "confirmo que a margem de contribuição do lote cobre todos os custos diretos, impostos do simples e gera margem real positiva.": "Confirmo que a Deckungsbeitrag do lote cobre todos os custos diretos, impostos do Simples e gera margem real positiva.",
     "confirmo que as peças de tecido na cor principal e detalhes contrastantes (golas, punhos, frisos, recortes) estão fisicamente no galpão sem risco de variação de cor.": "Confirmo que as peças de tecido na cor principal e detalhes contrastantes (golas, punhos, frisos, recortes) estão fisicamente no galpão sem risco de variação de cor.",
@@ -9939,7 +10003,7 @@
     "consulta de autenticidade no portal da nf-e": "Consulta de autenticidade no portal da NF-e",
     "consultando base da receita federal em tempo real...": "Consultando base da Einnahme Federal em tempo real...",
     "consumo base m": "Grundverbrauch M",
-    "consumo ponderado médio:": "Consumo Ponderado Médio:",
+    "consumo ponderado médio:": "Gewichteter Durchschnittsverbrauch:",
     "consumo de tecido por tamanho de acordo com o tecido *obrigatório": "Consumo de Tecido por Tamanho de Acordo com o Tecido *Obrigatório",
     "consumo de corte, ordem de produção, avarias ou ajuste de inventário": "Consumo de corte, ordem de produção, avarias ou ajuste de inventário",
     "contas a pagar & gestão de despesas": "Verbindlichkeiten & Ausgabenverwaltung",
@@ -9960,11 +10024,11 @@
     "criando banco de dados exclusivo...": "Criando banco de dados exclusivo...",
     "crie um novo departamento ou linha operacional para apropriação de despesas da fábrica": "Crie um novo departamento ou linha operacional para apropriação de despesas da fábrica",
     "critérios de segurança:": "Critérios de Segurança:",
-    "custo dtf (filme + tinta)": "Custo DTF (Filme + Tinta)",
-    "custo direto total": "Custo Direto Total",
+    "custo dtf (filme + tinta)": "DTF-KOSTEN (FOLIE + TINTE)",
+    "custo direto total": "Direkte Gesamtkosten",
     "custo histórico total": "Custo Histórico Total",
-    "custo médio tecido / peça:": "Custo Médio Tecido / Peça:",
-    "custo produção": "Custo Produção",
+    "custo médio tecido / peça:": "Durchschnittliche Stoffkosten / Stück:",
+    "custo produção": "PRODUKTIONSKOSTEN",
     "custo:": "Custo:",
     "custos diretos para produzir este modelo:": "Custos Diretos para Produzir este Modelo:",
     "cálculo do imposto": "CÁLCULO DO IMPOSTO",
@@ -9990,9 +10054,9 @@
     "depreciação mensal consolidada": "Monatliche Abschreibung Consolidada",
     "depreciação mensal estimada:": "Monatliche Abschreibung Estimada:",
     "desgaste contábil total decorrido": "Desgaste contábil total decorrido",
-    "designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro": "Designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro",
+    "designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro": "Zuweisung von Schneidern, verpflichtender Upload von HD-Druckdaten und Synchronisation der Anzahlung",
     "desinfetante 5l, sabonete líquido e papel toalha": "Desinfektionsmittel 5L, Flüssigseife und Papierhandtücher",
-    "detalhamento dos custos individuais de cada peça:": "Detalhamento dos custos individuais de cada peça:",
+    "detalhamento dos custos individuais de cada peça:": "Aufschlüsselung der Einzelkosten pro Stück:",
     "detalhamento por categoria & natureza financeira": "Detalhamento por Categoria & Natureza Financeira",
     "dir:": "Dir:",
     "distribuidora limpeza total": "Distribuidora Limpeza Total",
@@ -10019,7 +10083,7 @@
     "emitir nf-e modelo 55 (danfe oficial sefaz)": "Elektronische Rechnung Modell 55 ausstellen",
     "empresa:": "Empresa:",
     "emulsão fotográfica têxtil resistente a água": "Emulsão Fotográfica Têxtil Resistente a Água",
-    "encaixe first-fit milimétrico para zero desperdício de filme pet e economia direta de tinta": "Encaixe First-Fit milimétrico para zero desperdício de filme PET e economia direta de tinta",
+    "encaixe first-fit milimétrico para zero desperdício de filme pet e economia direta de tinta": "Millimetergenaue First-Fit-Verschachtelung für null PET-Folienabfall und direkte Tintensparung",
     "engenharia têxtil com recálculo em tempo real: edite o consumo ou o custo final diretamente em cada tamanho": "Engenharia têxtil com recálculo em tempo real: edite o consumo ou o custo final diretamente em cada tamanho",
     "entrada / sinal inicial": "Entrada / Sinal Inicial",
     "entrada oficial no pedido • confecção & chão de fábrica": "Offizieller Auftragseingang • Fertigung & Werkhalle",
@@ -10058,7 +10122,7 @@
     "faixa refletiva 50mm (3m)": "Faixa Refletiva 50mm (3m)",
     "faixa refletiva termocolante alta visibilidade 50mm": "Faixa Refletiva Termocolante Alta Visibilidade 50mm",
     "faturamento acumulado": "Faturamento Acumulado",
-    "faturamento total": "Faturamento Total",
+    "faturamento total": "Gesamtumsatz",
     "fazer ele admitir que perde dinheiro na gestão manual ou em planilhas soltas.": "Fazer ele admitir que perde dinheiro na gestão manual ou em planilhas soltas.",
     "fechamento comercial": "Fechamento Comercial",
     "ficha técnica a4": "A4 Datenblatt",
@@ -10125,7 +10189,7 @@
     "livro caixa & fluxo financeiro (entradas e saídas efetivadas)": "Kassenbuch & Finanz-Cashflow (Tatsächliche Ein- und Auszahlungen)",
     "logística & entregas": "Logistik & Lieferungen",
     "lucas rodrigues": "Lucas Rodrigues",
-    "lucro bruto global": "Bruttogewinn Global",
+    "lucro bruto global": "Gesamtbruttogewinn",
     "lucro líquido real dre (ebit)": "Reingewinn Real DRE (EBIT)",
     "mais popular (saas)": "MAIS POPULAR (SAAS)",
     "motor 2d skyline ativo": "MOTOR 2D SKYLINE ATIVO",
@@ -10141,9 +10205,9 @@
     "malha poliviscose pv anti-pilling (67% pol / 33% visc)": "Malha Poliviscose PV Anti-Pilling (67% Pol / 33% Visc)",
     "malhas, tecidos, aviamentos e dtf": "Maschenware, Gewebe, Kurzwaren & DTF",
     "manutenção": "Manutenção",
-    "mapa visual do rolo dtf (escala 1:1)": "Mapa Visual do Rolo DTF (Escala 1:1)",
+    "mapa visual do rolo dtf (escala 1:1)": "Visuelle DTF-Rollenkarte (Maßstab 1:1)",
     "mapeamento de custos e cadastro de tecidos": "Mapeamento de custos e cadastro de tecidos",
-    "margem bruta": "Margem Bruta",
+    "margem bruta": "BRUTTOMARGE",
     "marrom café": "Marrom Café",
     "meia malha 30.1 penteada 100% algodão": "Single Jersey 30.1 100% Gekämmte Baumwolle",
     "meia malha 30.1 penteada algodão branco": "Single Jersey 30.1 gekämmte weiße Baumwolle",
@@ -10151,7 +10215,7 @@
     "mesa de corte com faca rotativa elétrica 8 pol": "Zuschnitttisch com Faca Rotativa Elétrica 8 Pol",
     "mestre antônio silva": "Mestre Antônio Silva",
     "meta interna do chão de fábrica:": "Meta Interna do Chão de Fábrica:",
-    "metros lineares de rolo": "Metros Lineares de Rolo",
+    "metros lineares de rolo": "LAUFENDE METER ROLLE",
     "modelo têxtil:": "Modelo Têxtil:",
     "modelo:": "Modelo:",
     "moletom flanelado 3 cabos (50% alg / 50% pol)": "Moletom Flanelado 3 Cabos (50% Alg / 50% Pol)",
@@ -10212,7 +10276,7 @@
     "o sistema está limpo e preparado para receber os pedidos reais da sua campanha.": "O sistema está limpo e preparado para receber os pedidos reais da sua campanha.",
     "o sistema gera o schema xml 4.00 oficial, chave de 44 dígitos com módulo 11 e protocolo de autorização compatível com consulta pública no portal nacional da sefaz.": "O sistema gera o Schema XML 4.00 oficial, chave de 44 dígitos com Módulo 11 e protocolo de autorização compatível com consulta pública no portal nacional da SEFAZ.",
     "o sistema mescla o saldo físico com a nova compra e recalcula o custo médio exato para garantir que os futuros orçamentos da fábrica reflitam os preços reais pagos aos fornecedores.": "O sistema mescla o saldo físico com a Neuer Einkauf e recalcula o custo médio exato para garantir que os futuros orçamentos da fábrica reflitam os preços reais pagos aos fornecedores.",
-    "o valor da entrada cobre 100% do pedido. não haverá saldo remanescente devedor.": "O valor da entrada cobre 100% do pedido. Não haverá saldo remanescente devedor.",
+    "o valor da entrada cobre 100% do pedido. não haverá saldo remanescente devedor.": "Die Vorauszahlung deckt 100% des Auftrags ab. Es verbleibt kein offener Restbetrag.",
     "ordem de produção:": "ORDEM DE PRODUÇÃO:",
     "os produtos / serviços constantes da nota fiscal indicada ao lado": "OS PRODUTOS / SERVIÇOS CONSTANTES DA NOTA FISCAL INDICADA AO LADO",
     "outras despesas": "OUTRAS DESPESAS",
@@ -10244,7 +10308,7 @@
     "peça lisa (sem estampa). nenhuma personalização adicionada. clique nos botões acima para incluir bordado, dtf ou silk.": "Peça Lisa (Sem Estampa). Nenhuma personalização adicionada. Clique nos botões acima para incluir Bordado, DTF ou Silk.",
     "peça de uniforme adicional": "Peça de Uniforme Adicional",
     "peça monocromática na cor principal informada acima. sem recortes ou frisos contrastantes adicionais.": "Peça monocromática na cor principal informada acima. Sem recortes ou frisos contrastantes adicionais.",
-    "peças g1 a g5 consomem até 90% mais tecido que a modelagem base m. o custo e o total a enfestar já estão ponderados com precisão!": "Peças G1 a G5 consomem até 90% mais tecido que a modelagem base M. O custo e o total a enfestar já estão ponderados com precisão!",
+    "peças g1 a g5 consomem até 90% mais tecido que a modelagem base m. o custo e o total a enfestar já estão ponderados com precisão!": "Übergrößen G1 bis G5 verbrauchen bis zu 90% mehr Stoff als Basisgröße M. Kosten und Legebild sind präzise gewichtet!",
     "plano de comissões da equipe comercial": "Plano de Comissões da Equipe Comercial",
     "poliamida termofusível branca especial dtf": "Poliamida Termofusível Branca Especial DTF",
     "prazo prometido ao cliente:": "Prazo Prometido ao Cliente:",
@@ -10257,7 +10321,7 @@
     "previsão": "Previsão",
     "preço médio / pç:": "Preço Médio / Pç:",
     "preço unitário:": "Preço Unitário:",
-    "preço venda": "Preço Venda",
+    "preço venda": "VERKAUFSPREIS",
     "primeiro acesso ao sistema": "Erster Systemzugriff",
     "produção: corte & estamparia": "Produção: Corte & Estamparia",
     "produção: costura & facções": "Produção: Costura & Facções",
@@ -10291,9 +10355,9 @@
     "regulador de metal": "Regulador de Metal",
     "relatório gerencial dre & balanço contábil": "Betriebswirtschaftliche Auswertung & Bilanzbericht",
     "remover fundo automaticamente (canva-style)": "Remover fundo automaticamente (Canva-style)",
-    "rendimento do tecido:": "Rendimento do Tecido:",
+    "rendimento do tecido:": "Stoffausbeute:",
     "requer botão \"entrada\"": "Requer botão \"Entrada\"",
-    "resumo financeiro consolidado do pedido:": "Resumo Financeiro Consolidado do Pedido:",
+    "resumo financeiro consolidado do pedido:": "KONSOLIDIERTE FINANZÜBERSICHT DES AUFTRAGS:",
     "ribana gola": "Ribana Gola",
     "ribana gola 1x1": "1x1 Rippstrickkragen",
     "ribana gola bicolor": "Zweifarbiger Rippkragen",
@@ -10321,7 +10385,7 @@
     "se você cobrar uma mensalidade de": "Se você cobrar uma mensalidade de",
     "segregação contábil completa: contas a pagar + compras de insumos + lançamentos no caixa": "Segregação contábil completa: Contas a Pagar + Compras de Insumos + Lançamentos no Caixa",
     "selecione um modelo": "Modell auswählen",
-    "selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo dtf.": "Selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo DTF.",
+    "selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo dtf.": "Wählen Sie oben einen registrierten Auftrag aus oder importieren Sie Dateien von Ihrem Computer, um sie auf der DTF-Rolle zu platzieren.",
     "sem fidelidade ou carência": "Sem fidelidade ou carência",
     "sem grade": "Sem grade",
     "seus dados ficam 100% sob seu controle. você pode baixar cópias de segurança a qualquer momento e restaurar em outro computador ou navegador.": "Seus dados ficam 100% sob seu controle. Você pode baixar cópias de segurança a qualquer momento e restaurar em outro computador ou navegador.",
@@ -10337,7 +10401,7 @@
     "soma de personalizações deste modelo:": "Summe der Veredelungen für dieses Modell:",
     "status conexão sefaz": "FINANZAMT-VERBINDUNGSSTATUS",
     "status sefaz:": "Status SEFAZ:",
-    "subtotal modelo": "Subtotal Modelo",
+    "subtotal modelo": "ZWISCHENSUMME MODELL",
     "suporte direto via whatsapp oficial": "Suporte direto via WhatsApp oficial",
     "suprimentos dtf brasil": "Suprimentos DTF Brasil",
     "série:": "Série:",
@@ -10353,7 +10417,7 @@
     "tam 6": "Tam 6",
     "tam 8": "Tam 8",
     "tamanho:": "Tamanho:",
-    "taxa de aproveitamento": "Taxa de Aproveitamento",
+    "taxa de aproveitamento": "AUSNUTZUNGSGRAD",
     "tecido brim pesado 100% algodão cinza": "Schwerer Baumwolltwill 100% Grau",
     "tecido brim pesado sarja 100% algodão 260g": "Tecido Brim Pesado Sarja 100% Algodão 260g",
     "tecido gabardine nobre com elastano": "Tecido Gabardine Nobre com Elastano",
@@ -10361,7 +10425,7 @@
     "tecido oxford branco 100% poliéster": "Weißes Oxford-Gewebe 100% Polyester",
     "tecido rip stop anti-rasgo militar": "Tecido Rip Stop Anti-Rasgo Militar",
     "tecido tactel microfibra 100% poliéster": "Tecido Tactel Microfibra 100% Poliéster",
-    "tecido total a comprar/cortar:": "Tecido Total a Comprar/Cortar:",
+    "tecido total a comprar/cortar:": "Gesamtstoff zum Kaufen/Zuschneiden:",
     "tecido tricoline mista 60/40 camisaria": "Tecido Tricoline Mista 60/40 Camisaria",
     "tinta dtf textil pigmentada branca 1l": "Tinta DTF Textil Pigmentada Branca 1L",
     "tinta dtf têxtil pigmentada branca (white) 1l": "Tinta DTF Têxtil Pigmentada Branca (White) 1L",
@@ -10373,10 +10437,10 @@
     "tolerância:": "Tolerância:",
     "topo:": "Topo:",
     "total comissões geradas": "Total Comissões Geradas",
-    "total cópias encaixadas": "Total Cópias Encaixadas",
+    "total cópias encaixadas": "GESAMT EINGEPASSTE KOPIEN",
     "total faturado em nf-e": "GESAMTFAKTURIERT PER E-RECHNUNG",
     "total já recebido": "Total Já Recebido",
-    "total peças pedido": "Total Peças Pedido",
+    "total peças pedido": "Gesamtstücke Auftrag",
     "total vendas faturadas": "Total Vendas Faturadas",
     "total a receber (clientes)": "Total a Receber (Clientes)",
     "total de pedidos": "Total de Pedidos",
@@ -10410,7 +10474,7 @@
     "verde água": "Verde Água",
     "verificando credenciais...": "Verificando credenciais...",
     "versão xml: 4.00": "Versão XML: 4.00",
-    "visualização completa das matrizes, réguas em cm/metros e marcas de corte": "Visualização completa das matrizes, réguas em cm/metros e marcas de corte",
+    "visualização completa das matrizes, réguas em cm/metros e marcas de corte": "Vollständige Ansicht der Motive, Lineale in cm/Metern und Schnittmarken",
     "vá na aba": "Vá na aba",
     "whatsapp contato:": "WhatsApp Contato:",
     "zero espaço branco": "Zero Espaço Branco",
@@ -10449,7 +10513,7 @@
     "para inserir.": "para inserir.",
     "para que seu cliente pague a entrada com 1 clique.": "para que seu cliente pague a entrada com 1 clique.",
     "para quitação do pedido. este valor continuará como saldo a receber na entrega.": "para quitação do pedido. Este valor continuará como saldo a receber na entrega.",
-    "por peça acabada": "por peça acabada",
+    "por peça acabada": "pro fertiges Stück",
     "sobre o desenho ou use os sliders abaixo (0% a 95%):": "sobre o desenho ou use os sliders abaixo (0% a 95%):",
     "tem autorização para cadastrar novos funcionários, definir perfis de permissão e criar senhas temporárias de acesso.": "tem autorização para cadastrar novos funcionários, definir perfis de permissão e criar senhas temporárias de acesso.",
     "à vista / 30d": "À Vista / 30D",
@@ -10477,12 +10541,12 @@
     "⚙️ configurações fiscais & certificado digital a1": "⚙️ Steuereinstellungen & A1 Digitalzertifikat",
     "⚙️ depreciação de máquinas & ativos": "⚙️ Depreciação de Máquinas & Ativos",
     "⚠️ atenção corte / costura / compra de materiais (detalhes de cor):": "⚠️ Achtung CORTE / COSTURA / COMPRA DE MATERIAIS (DETALHES DE COR):",
-    "⚠️ anexo obrigatório: não é permitido dar entrada sem os arquivos das artes": "⚠️ Anexo Obrigatório: Não é permitido dar entrada sem os arquivos das artes",
+    "⚠️ anexo obrigatório: não é permitido dar entrada sem os arquivos das artes": "⚠️ Pflichtanhang: Freigabe ohne Druckdateien nicht zulässig",
     "⚠️ atenção: esta baixa deixará o saldo deste insumo abaixo do estoque mínimo de segurança!": "⚠️ Achtung: Esta baixa deixará o saldo deste insumo abaixo do estoque mínimo de segurança!",
     "⚠️ cnpj não localizado automaticamente na base pública. você pode preencher os campos abaixo manualmente.": "⚠️ CNPJ não localizado automaticamente na base pública. Você pode preencher os campos abaixo manualmente.",
     "⚠️ este usuário ainda não possui senha provisória definida no sistema. preencha uma senha abaixo para liberar o acesso dele.": "⚠️ Este usuário ainda não possui senha provisória definida no sistema. Preencha uma senha abaixo para liberar o acesso dele.",
     "⚠️ obrigatório": "⚠️ Obrigatório",
-    "⚠️ obrigatório anexar": "⚠️ Obrigatório Anexar",
+    "⚠️ obrigatório anexar": "⚠️ Anhang erforderlich",
     "⚠️ sem senha definida": "⚠️ Sem Senha Definida",
     "⚡ auto-corte inteligente (trim)": "⚡ Auto-Corte Inteligente (Trim)",
     "⚡ baixar todos os arquivos em lote": "⚡ Baixar Todos os Arquivos em Lote",
@@ -10492,11 +10556,11 @@
     "⚽ relação dos atletas & numerações": "⚽ Relação dos Atletas & Numerações",
     "✂️ oficina / fábrica": "✂️ Oficina / Fábrica",
     "✂️ recorte & enquadramento": "✂️ Recorte & Enquadramento",
-    "✏️ custos/consumos manuais ativos": "✏️ Custos/Consumos Manuais Ativos",
-    "✓ definido na proposta": "✓ Definido na Proposta",
+    "✏️ custos/consumos manuais ativos": "✏️ Manuelle Kosten/Verbräuche aktiv",
+    "✓ definido na proposta": "✓ Im Angebot definiert",
     "✓ pago": "✓ BEZAHLT",
     "✓ preço direto por bordado": "✓ Direktpreis pro Stickerei",
-    "✓ sem fundo": "✓ Sem Fundo",
+    "✓ sem fundo": "✓ Ohne Hintergrund",
     "✓ senha pessoal criada": "✓ Senha Pessoal Criada",
     "✨ explorar modo demonstração showroom (sem cadastro) &rarr;": "✨ Explorar Modo Demonstração Showroom (Sem Cadastro) &rarr;",
     "✨ pronto dtf": "✨ Pronto DTF",
@@ -10641,7 +10705,23 @@
     "sefaz homologação": "Finanzamt Testumgebung",
     "buscar por cliente, cnpj, número ou chave...": "Nach Kunde, Steuernummer, Belegnummer oder Schlüssel suchen...",
     "autorizada": "AUTORISIERT",
-    "personalize a identidade da fábrica: logotipo em alta resolução, dados cadastrais, dados para pagamento via pix e segurança.": "Passen Sie die Fabrikidentität an: hochauflösendes Logo, Stammdaten, Sofortzahlungsdaten und Sicherheit."
+    "personalize a identidade da fábrica: logotipo em alta resolução, dados cadastrais, dados para pagamento via pix e segurança.": "Passen Sie die Fabrikidentität an: hochauflösendes Logo, Stammdaten, Sofortzahlungsdaten und Sicherheit.",
+    "custos/consumos manuais ativos": "Manuelle Kosten/Verbräuche aktiv",
+    "detalhar & editar custo por peça": "Stückkosten aufschlüsseln & bearbeiten",
+    "viável (margem excelente)": "RENTABEL (Ausgezeichnete Marge)",
+    "viável (padrão)": "RENTABEL (Standard)",
+    "atenção (margem baixa)": "ACHTUNG (Geringe Marge)",
+    "inviável (prejuízo)": "UNRENTABEL (Verlust)",
+    "entrada oficial no pedido • manufacturing & chão de fábrica": "Offizieller Auftragseingang • Fertigung & Werkhalle",
+    "definido na proposta": "Im Angebot definiert",
+    "which seamstress / contractor is assigned? (campo obrigatório)": "WELCHE NÄHEREI / WERKSTATT IST ZUGEWIESEN? (PFLICHTFELD)",
+    "anexo obrigatório: não é permitido dar entrada sem os arquivos das artes": "Pflichtanhang: Freigabe ohne Druckdateien nicht zulässig",
+    "obrigatório anexar": "Anhang erforderlich",
+    "confirm sinal já recebido e lançar entrada imediata no fluxo de caixa (financeiro)": "Erhalt der Anzahlung bestätigen und sofortige Buchung im Cashflow (Finanzen) erfassen",
+    "quitação integral (100% pago)": "Vollständige Begleichung (100% bezahlt)",
+    "remover fundo": "Hintergrund entfernen",
+    "✨ remover fundo": "✨ Hintergrund entfernen",
+    "recorte & fundo": "Zuschnitt & Hintergrund"
   },
   "it": {
     "abertura & visão geral da fábrica": "Panoramica & Gestione Fabbrica",
@@ -11328,7 +11408,7 @@
     "criar primeiro orçamento / pedido oficial": "Crea Primo Preventivo / Ordine",
     "ações & totais ▶": "Azioni e Totali ▶",
     "✓ 100% quitado": "✓ 100% SALDATO",
-    "✕ pendente (receber)": "✕ IN SOSPESO (Incassare)",
+    "✕ pendente (receber)": "✕ IN SOSPESO (Da incassare)",
     "⚡ cobrar pix": "⚡ Incassa Pagamento",
     "bloqueado (quarentena)": "BLOCCATO (CONTROLLO QUALITÀ)",
     "reativar": "Riattiva",
@@ -11387,8 +11467,8 @@
     "🔄 restaurar padrão abnt": "🔄 Ripristina Standard Taglie",
     "salvar consumos & custos por peça": "Salva Consumi & Costi per Pezzo",
     "← preencher grade do pedido": "← Compila Taglie dell'Ordine",
-    "📊 detalhar & editar custo por peça ✏️": "📊 Dettaglia & Modifica Costo per Pezzo ✏️",
-    "+ cadastrar costureira": "+ Aggiungi Sarta",
+    "📊 detalhar & editar custo por peça ✏️": "📊 Dettaglia e Modifica Costo per Pezzo ✏️",
+    "+ cadastrar costureira": "+ Registra Sarta",
     "✂️ estúdio & recorte dtf": "✂️ Studio & Ritaglio DTF",
     "✕ trocar": "✕ Cambia",
     "✂️ estúdio & recorte": "✂️ Studio & Ritaglio",
@@ -11396,8 +11476,8 @@
     "30% entrada": "30% Acconto",
     "40% entrada": "40% Acconto",
     "50% entrada (padrão)": "50% Acconto (Standard)",
-    "100% (à vista total)": "100% (Saldo Totale Anticipato)",
-    "confirmar entrada no pedido & gerar os": "Conferma Ordine & Genera Scheda Lavoro",
+    "100% (à vista total)": "100% (Saldo Anticipato Integrale)",
+    "confirmar entrada no pedido & gerar os": "Conferma Ordine e Genera Scheda di Lavoro",
     "editar orçamento": "Modifica Preventivo",
     "aprovar & dar entrada": "Approva & Avvia Produzione",
     "imprimir / baixar proposta em pdf": "Stampa / Scarica Proposta PDF",
@@ -11428,9 +11508,9 @@
     "+ adicionar arquivo do computador": "+ Aggiungi File dal Computer",
     "+ incluir outro pedido no rolo": "+ Aggiungi Altro Ordine al Rotolo",
     "↺ re-otimizar": "↺ Riottimizza",
-    "✂️ recorte & fundo": "✂️ Ritaglio & Sfondo",
+    "✂️ recorte & fundo": "✂️ Ritaglio e Sfondo",
     "🖨️ ficha dtf": "🖨️ Scheda DTF",
-    "salvar & exportar png (rip)": "Salva & Esporta PNG (RIP)",
+    "salvar & exportar png (rip)": "Salva ed Esporta PNG (Pronto RIP)",
     "padrão (40%)": "Standard (40%)",
     "adicionar matrizes ao rolo": "Aggiungi Matrici al Rotolo",
     "✂️ estúdio cirúrgico & conta-gotas": "✂️ Studio di Precisione & Contagocce",
@@ -11534,10 +11614,10 @@
     "2. especificação de artes & dtf digital:": "2. SPECIFICHE GRAFICHE & DTF DIGITALE:",
     "3. instruções para a costureira / facção:": "3. ISTRUZIONI PER LA SARTA / LABORATORIO:",
     "atenção da bancada:": "ATTENZIONE BANCO LAVORO:",
-    "para qual costureira / facção vai o pedido?": "A quale Sarta / Laboratorio assegnare l'ordine?",
-    "artes da peça & personalizações em alta resolução": "Grafiche & Personalizzazioni ad Alta Risoluzione",
+    "para qual costureira / facção vai o pedido?": "A quale sarta / laboratorio è assegnato l'ordine?",
+    "artes da peça & personalizações em alta resolução": "Grafiche del Capo e Personalizzazioni ad Alta Risoluzione",
     "✅ peça lisa (sem estampa / sem bordado)": "✅ Capo Neutro (Senza Stampa / Senza Ricamo)",
-    "✅ quitação integral (100% pago)": "✅ Saldato Integralmente (100% Pagato)",
+    "✅ quitação integral (100% pago)": "✅ Saldo Integrale (100% Pagato)",
     "📦 receitas com pedidos de uniformes": "📦 Ricavi da Ordini di Divise",
     "🧵 custos diretos de produção (tecido, facção & tintas)": "🧵 Costi Diretti di Produzione (Tessuti, Laboratori & Inchiostri)",
     "🏢 despesas fixas, aluguel & instalações": "🏢 Spese Fisse, Affitto & Strutture",
@@ -11611,7 +11691,7 @@
     "auto-corte": "Ritaglio Automatico",
     "recorte manual": "Ritaglio Manuale",
     "arraste o mouse": "Trascina il mouse",
-    "nenhuma arte carregada neste rolo": "Nessuna grafica caricata in questo rotolo",
+    "nenhuma arte carregada neste rolo": "Nessuna grafica caricata su questo rotolo",
     "separar por pedido": "Separa per Ordine",
     "recálculo automático de custo médio ponderado:": "Ricalcolo Automatico del Costo Medio Ponderato:",
     "malha/tecido:": "Maglia/Tessuto:",
@@ -11677,8 +11757,8 @@
     "largura do rolo / papel": "Larghezza Rotolo / Carta",
     "largura custom (cm)": "Larghezza Personalizzata (cm)",
     "metragem por arquivo": "Metratura per File",
-    "metragem custom (m)": "Metratura Personalizzata (m)",
-    "espaçamento / sangria": "Spaziatura / Margine",
+    "metragem custom (m)": "Metraggio Personalizzato (m)",
+    "espaçamento / sangria": "Spaziatura / Margine di Rifilo",
     "selecione o pedido para adicionar": "Seleziona Ordine da Aggiungere",
     "arquivo de imagem (png, jpg, webp, svg ou pdf/ai)": "File Immagine (PNG, JPG, WebP, SVG o PDF/AI)",
     "descrição / local da estampa": "Descrizione / Posizione della Stampa",
@@ -11930,7 +12010,7 @@
     "aguardando digitação": "Aguardando digitação",
     "agulha máquina reta industrial cabo fino dbx1 (cx 10un)": "Agulha Máquina Reta Industrial Cabo Fino DBx1 (cx 10un)",
     "ainda não possui assinatura ativa?": "Ainda não possui assinatura ativa?",
-    "ajuste dimensões, quantidades e recorte cirúrgico": "Ajuste dimensões, quantidades e recorte cirúrgico",
+    "ajuste dimensões, quantidades e recorte cirúrgico": "Regola dimensioni, quantità e ritaglio chirurgico",
     "ajuste os dados técnicos e a grade de consumo em gramas por tamanho de acordo com o tecido": "Ajuste os dados técnicos e a grade de consumo em gramas por tamanho de acordo com o tecido",
     "ajuste os valores reais de entradas (faturamento) e saídas (despesas/custos) para análise executiva": "Ajuste os valores reais de Entradas (Faturamento) e Saídas (Despesas/Custos) para análise executiva",
     "altere o": "Altere o",
@@ -11953,8 +12033,8 @@
     "arquivo não anexado nesta versão": "Arquivo não anexado nesta versão",
     "arquivo:": "Arquivo:",
     "arquivos salvos e vinculados permanentemente à ordem de serviço da confecção.": "Arquivos salvos e vinculados permanentemente à Commessa di Lavoro da Confezione.",
-    "artes no rolo dtf": "Artes no Rolo DTF",
-    "atalhos de entrada:": "Atalhos de Entrada:",
+    "artes no rolo dtf": "Grafiche su Rotolo DTF",
+    "atalhos de entrada:": "Scorciatoie Acconto:",
     "atalhos:": "Atalhos:",
     "ativar minha licença pro & entrar": "Ativar Minha Licença PRO & Entrar",
     "auto-trim inteligente • recorte manual de enquadramento • remoção cirúrgica de fundo": "Auto-Trim inteligente • Recorte manual de enquadramento • Remoção cirúrgica de fundo",
@@ -12036,7 +12116,7 @@
     "compra malha piquet e dry - malharia sul": "Acquisto Tessuto Piquet e Dry - Malharia Sul",
     "compras sincronizadas com o estoque e lançamentos avulsos de manutenção e consumíveis da fábrica.": "Acquisti sincronizzati con il magazzino e registrazioni singole per manutenzione e materiali di consumo della fabbrica.",
     "condição de fornecimento:": "Condição de Fornecimento:",
-    "condições comerciais, entrada de sinal & saldo remanescente:": "Condições Comerciais, Entrada de Sinal & Saldo Remanescente:",
+    "condições comerciais, entrada de sinal & saldo remanescente:": "CONDIZIONI COMMERCIALI, ACCONTO E SALDO RIMANENTE:",
     "cone linha reta 120 10.000m azul marinho": "Cone Linha Reta 120 10.000m Azul Marinho",
     "conectando aos servidores da sefaz sp e verificando disponibilidade dos webservices...": "Conectando aos servidores da SEFAZ SP e verificando disponibilidade dos webservices...",
     "conexão ssl mtls ativa": "Conexão SSL mTLS Ativa",
@@ -12045,7 +12125,7 @@
     "configure os limites de produtividade diária de corte, bordado, dtf, costura e outros processos": "Configure os limites de produtividade diária de corte, bordado, DTF, costura e outros processos",
     "configure sua confecção abaixo para liberar o acesso pro.": "Configure sua Confezione abaixo para liberar o acesso PRO.",
     "configure sua fábrica & crie sua senha definitiva": "Configure sua fábrica & crie sua senha definitiva",
-    "confirmar sinal já recebido e lançar entrada imediata no fluxo de caixa (financeiro)": "Conferma sinal já recebido e lançar entrada imediata no Fluxo de Caixa (Financeiro)",
+    "confirmar sinal já recebido e lançar entrada imediata no fluxo de caixa (financeiro)": "Conferma acconto già ricevuto e registra entrata immediata nel Flusso di Cassa (Finanza)",
     "confirmo que a entrada ou valor acordado foi compensado na conta da confecção ou há termo formal de faturamento assinado.": "Confirmo que a entrada ou valor acordado foi compensado na conta da Confezione ou há termo formal de faturamento assinado.",
     "confirmo que a margem de contribuição do lote cobre todos os custos diretos, impostos do simples e gera margem real positiva.": "Confirmo que a Margine di Contribuzione do lote cobre todos os custos diretos, impostos do Simples e gera margem real positiva.",
     "confirmo que as peças de tecido na cor principal e detalhes contrastantes (golas, punhos, frisos, recortes) estão fisicamente no galpão sem risco de variação de cor.": "Confirmo que as peças de tecido na cor principal e detalhes contrastantes (golas, punhos, frisos, recortes) estão fisicamente no galpão sem risco de variação de cor.",
@@ -12053,7 +12133,7 @@
     "consulta de autenticidade no portal da nf-e": "Consulta de autenticidade no portal da NF-e",
     "consultando base da receita federal em tempo real...": "Consultando base da Entrata Federal em tempo real...",
     "consumo base m": "Consumo Base Taglia M",
-    "consumo ponderado médio:": "Consumo Ponderado Médio:",
+    "consumo ponderado médio:": "Consumo Medio Ponderato:",
     "consumo de tecido por tamanho de acordo com o tecido *obrigatório": "Consumo de Tecido por Tamanho de Acordo com o Tecido *Obrigatório",
     "consumo de corte, ordem de produção, avarias ou ajuste de inventário": "Consumo de corte, ordem de produção, avarias ou ajuste de inventário",
     "contas a pagar & gestão de despesas": "Debiti e Gestione Spese",
@@ -12074,11 +12154,11 @@
     "criando banco de dados exclusivo...": "Criando banco de dados exclusivo...",
     "crie um novo departamento ou linha operacional para apropriação de despesas da fábrica": "Crie um novo departamento ou linha operacional para apropriação de despesas da fábrica",
     "critérios de segurança:": "Critérios de Segurança:",
-    "custo dtf (filme + tinta)": "Custo DTF (Filme + Tinta)",
-    "custo direto total": "Custo Direto Total",
+    "custo dtf (filme + tinta)": "COSTO DTF (FILM + INCHIOSTRO)",
+    "custo direto total": "Costo Diretto Totale",
     "custo histórico total": "Custo Histórico Total",
-    "custo médio tecido / peça:": "Custo Médio Tecido / Peça:",
-    "custo produção": "Custo Produção",
+    "custo médio tecido / peça:": "Costo Medio Tessuto / Pezzo:",
+    "custo produção": "COSTO DI PRODUZIONE",
     "custo:": "Custo:",
     "custos diretos para produzir este modelo:": "Custos Diretos para Produzir este Modelo:",
     "cálculo do imposto": "CÁLCULO DO IMPOSTO",
@@ -12104,9 +12184,9 @@
     "depreciação mensal consolidada": "Ammortamento Mensile Consolidada",
     "depreciação mensal estimada:": "Ammortamento Mensile Estimada:",
     "desgaste contábil total decorrido": "Desgaste contábil total decorrido",
-    "designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro": "Designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro",
+    "designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro": "Assegnazione sarta, caricamento obbligatorio grafiche HD e sincronizzazione acconto finanziario",
     "desinfetante 5l, sabonete líquido e papel toalha": "Disinfettante 5L, Sapone Liquido e Asciugamani di Carta",
-    "detalhamento dos custos individuais de cada peça:": "Detalhamento dos custos individuais de cada peça:",
+    "detalhamento dos custos individuais de cada peça:": "Dettaglio dei costi individuali per pezzo:",
     "detalhamento por categoria & natureza financeira": "Detalhamento por Categoria & Natureza Financeira",
     "dir:": "Dir:",
     "distribuidora limpeza total": "Distribuidora Limpeza Total",
@@ -12133,7 +12213,7 @@
     "emitir nf-e modelo 55 (danfe oficial sefaz)": "Emetti Fattura Elettronica Modello 55 (Ufficiale)",
     "empresa:": "Empresa:",
     "emulsão fotográfica têxtil resistente a água": "Emulsão Fotográfica Têxtil Resistente a Água",
-    "encaixe first-fit milimétrico para zero desperdício de filme pet e economia direta de tinta": "Encaixe First-Fit milimétrico para zero desperdício de filme PET e economia direta de tinta",
+    "encaixe first-fit milimétrico para zero desperdício de filme pet e economia direta de tinta": "Nesting millimetrico First-Fit per zero spreco di pellicola PET e risparmio diretto di inchiostro",
     "engenharia têxtil com recálculo em tempo real: edite o consumo ou o custo final diretamente em cada tamanho": "Engenharia têxtil com recálculo em tempo real: edite o consumo ou o custo final diretamente em cada tamanho",
     "entrada / sinal inicial": "Entrada / Sinal Inicial",
     "entrada oficial no pedido • confecção & chão de fábrica": "Ingresso Ufficiale Ordine • Confezione e Officina",
@@ -12172,7 +12252,7 @@
     "faixa refletiva 50mm (3m)": "Faixa Refletiva 50mm (3m)",
     "faixa refletiva termocolante alta visibilidade 50mm": "Faixa Refletiva Termocolante Alta Visibilidade 50mm",
     "faturamento acumulado": "Faturamento Acumulado",
-    "faturamento total": "Faturamento Total",
+    "faturamento total": "Fatturato Totale",
     "fazer ele admitir que perde dinheiro na gestão manual ou em planilhas soltas.": "Fazer ele admitir que perde dinheiro na gestão manual ou em planilhas soltas.",
     "fechamento comercial": "Fechamento Comercial",
     "ficha técnica a4": "Scheda Tecnica A4",
@@ -12239,7 +12319,7 @@
     "livro caixa & fluxo financeiro (entradas e saídas efetivadas)": "Libro Cassa & Flusso Finanziario (Entrate e Uscite Effettive)",
     "logística & entregas": "Logistica & Consegne",
     "lucas rodrigues": "Lucas Rodrigues",
-    "lucro bruto global": "Utile Lordo Global",
+    "lucro bruto global": "Profitto Lordo Globale",
     "lucro líquido real dre (ebit)": "Utile Netto Real DRE (EBIT)",
     "mais popular (saas)": "MAIS POPULAR (SAAS)",
     "motor 2d skyline ativo": "MOTOR 2D SKYLINE ATIVO",
@@ -12255,9 +12335,9 @@
     "malha poliviscose pv anti-pilling (67% pol / 33% visc)": "Malha Poliviscose PV Anti-Pilling (67% Pol / 33% Visc)",
     "malhas, tecidos, aviamentos e dtf": "Maglieria, tessuti, merceria & DTF",
     "manutenção": "Manutenção",
-    "mapa visual do rolo dtf (escala 1:1)": "Mapa Visual do Rolo DTF (Escala 1:1)",
+    "mapa visual do rolo dtf (escala 1:1)": "Mappa Visiva del Rotolo DTF (Scala 1:1)",
     "mapeamento de custos e cadastro de tecidos": "Mapeamento de custos e cadastro de tecidos",
-    "margem bruta": "Margem Bruta",
+    "margem bruta": "MARGINE LORDO",
     "marrom café": "Marrom Café",
     "meia malha 30.1 penteada 100% algodão": "Jersey Semplice 30.1 100% Cotone Pettinato",
     "meia malha 30.1 penteada algodão branco": "Jersey Semplice 30.1 Cotone Pettinato Bianco",
@@ -12265,7 +12345,7 @@
     "mesa de corte com faca rotativa elétrica 8 pol": "Tavolo da Taglio com Faca Rotativa Elétrica 8 Pol",
     "mestre antônio silva": "Mestre Antônio Silva",
     "meta interna do chão de fábrica:": "Meta Interna do Chão de Fábrica:",
-    "metros lineares de rolo": "Metros Lineares de Rolo",
+    "metros lineares de rolo": "METRI LINEARI DI ROTOLO",
     "modelo têxtil:": "Modelo Têxtil:",
     "modelo:": "Modelo:",
     "moletom flanelado 3 cabos (50% alg / 50% pol)": "Moletom Flanelado 3 Cabos (50% Alg / 50% Pol)",
@@ -12326,7 +12406,7 @@
     "o sistema está limpo e preparado para receber os pedidos reais da sua campanha.": "O sistema está limpo e preparado para receber os pedidos reais da sua campanha.",
     "o sistema gera o schema xml 4.00 oficial, chave de 44 dígitos com módulo 11 e protocolo de autorização compatível com consulta pública no portal nacional da sefaz.": "O sistema gera o Schema XML 4.00 oficial, chave de 44 dígitos com Módulo 11 e protocolo de autorização compatível com consulta pública no portal nacional da SEFAZ.",
     "o sistema mescla o saldo físico com a nova compra e recalcula o custo médio exato para garantir que os futuros orçamentos da fábrica reflitam os preços reais pagos aos fornecedores.": "O sistema mescla o saldo físico com a Nuovo Acquisto e recalcula o custo médio exato para garantir que os futuros orçamentos da fábrica reflitam os preços reais pagos aos fornecedores.",
-    "o valor da entrada cobre 100% do pedido. não haverá saldo remanescente devedor.": "O valor da entrada cobre 100% do pedido. Não haverá saldo remanescente devedor.",
+    "o valor da entrada cobre 100% do pedido. não haverá saldo remanescente devedor.": "L'anticipo copre il 100% dell'ordine. Non rimarrà alcun saldo debitorio.",
     "ordem de produção:": "ORDEM DE PRODUÇÃO:",
     "os produtos / serviços constantes da nota fiscal indicada ao lado": "OS PRODUTOS / SERVIÇOS CONSTANTES DA NOTA FISCAL INDICADA AO LADO",
     "outras despesas": "OUTRAS DESPESAS",
@@ -12358,7 +12438,7 @@
     "peça lisa (sem estampa). nenhuma personalização adicionada. clique nos botões acima para incluir bordado, dtf ou silk.": "Peça Lisa (Sem Estampa). Nenhuma personalização adicionada. Clique nos botões acima para incluir Bordado, DTF ou Silk.",
     "peça de uniforme adicional": "Peça de Uniforme Adicional",
     "peça monocromática na cor principal informada acima. sem recortes ou frisos contrastantes adicionais.": "Peça monocromática na cor principal informada acima. Sem recortes ou frisos contrastantes adicionais.",
-    "peças g1 a g5 consomem até 90% mais tecido que a modelagem base m. o custo e o total a enfestar já estão ponderados com precisão!": "Peças G1 a G5 consomem até 90% mais tecido que a modelagem base M. O custo e o total a enfestar já estão ponderados com precisão!",
+    "peças g1 a g5 consomem até 90% mais tecido que a modelagem base m. o custo e o total a enfestar já estão ponderados com precisão!": "I capi G1 a G5 consumano fino al 90% di tessuto in più rispetto alla taglia base M. Costi e stesura sono ponderati con precisione!",
     "plano de comissões da equipe comercial": "Plano de Comissões da Equipe Comercial",
     "poliamida termofusível branca especial dtf": "Poliamida Termofusível Branca Especial DTF",
     "prazo prometido ao cliente:": "Prazo Prometido ao Cliente:",
@@ -12371,7 +12451,7 @@
     "previsão": "Previsão",
     "preço médio / pç:": "Preço Médio / Pç:",
     "preço unitário:": "Preço Unitário:",
-    "preço venda": "Preço Venda",
+    "preço venda": "PREZZO DI VENDITA",
     "primeiro acesso ao sistema": "Primo Accesso al Sistema",
     "produção: corte & estamparia": "Produção: Corte & Estamparia",
     "produção: costura & facções": "Produção: Costura & Facções",
@@ -12405,9 +12485,9 @@
     "regulador de metal": "Regulador de Metal",
     "relatório gerencial dre & balanço contábil": "Report Gestionale Conto Economico & Bilancio",
     "remover fundo automaticamente (canva-style)": "Remover fundo automaticamente (Canva-style)",
-    "rendimento do tecido:": "Rendimento do Tecido:",
+    "rendimento do tecido:": "Resa del Tessuto:",
     "requer botão \"entrada\"": "Requer botão \"Entrada\"",
-    "resumo financeiro consolidado do pedido:": "Resumo Financeiro Consolidado do Pedido:",
+    "resumo financeiro consolidado do pedido:": "RIEPILOGO FINANZIARIO CONSOLIDATO DELL'ORDINE:",
     "ribana gola": "Ribana Gola",
     "ribana gola 1x1": "Colletto a Costine 1x1",
     "ribana gola bicolor": "Colletto in Costina Bicolore",
@@ -12435,7 +12515,7 @@
     "se você cobrar uma mensalidade de": "Se você cobrar uma mensalidade de",
     "segregação contábil completa: contas a pagar + compras de insumos + lançamentos no caixa": "Segregação contábil completa: Contas a Pagar + Compras de Insumos + Lançamentos no Caixa",
     "selecione um modelo": "Seleziona un Modello",
-    "selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo dtf.": "Selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo DTF.",
+    "selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo dtf.": "Seleziona un ordine registrato in alto o importa file dal tuo computer per disporli sul rotolo DTF.",
     "sem fidelidade ou carência": "Sem fidelidade ou carência",
     "sem grade": "Sem grade",
     "seus dados ficam 100% sob seu controle. você pode baixar cópias de segurança a qualquer momento e restaurar em outro computador ou navegador.": "Seus dados ficam 100% sob seu controle. Você pode baixar cópias de segurança a qualquer momento e restaurar em outro computador ou navegador.",
@@ -12451,7 +12531,7 @@
     "soma de personalizações deste modelo:": "Somma personalizzazioni per questo modello:",
     "status conexão sefaz": "STATO CONNESSIONE FISCALE",
     "status sefaz:": "Status SEFAZ:",
-    "subtotal modelo": "Subtotal Modelo",
+    "subtotal modelo": "SUBTOTALE MODELLO",
     "suporte direto via whatsapp oficial": "Suporte direto via WhatsApp oficial",
     "suprimentos dtf brasil": "Suprimentos DTF Brasil",
     "série:": "Série:",
@@ -12467,7 +12547,7 @@
     "tam 6": "Tam 6",
     "tam 8": "Tam 8",
     "tamanho:": "Tamanho:",
-    "taxa de aproveitamento": "Taxa de Aproveitamento",
+    "taxa de aproveitamento": "TASSO DI UTILIZZO",
     "tecido brim pesado 100% algodão cinza": "Twill Pesante 100% Cotone Grigio",
     "tecido brim pesado sarja 100% algodão 260g": "Tecido Brim Pesado Sarja 100% Algodão 260g",
     "tecido gabardine nobre com elastano": "Tecido Gabardine Nobre com Elastano",
@@ -12475,7 +12555,7 @@
     "tecido oxford branco 100% poliéster": "Tessuto Oxford Bianco 100% Poliestere",
     "tecido rip stop anti-rasgo militar": "Tecido Rip Stop Anti-Rasgo Militar",
     "tecido tactel microfibra 100% poliéster": "Tecido Tactel Microfibra 100% Poliéster",
-    "tecido total a comprar/cortar:": "Tecido Total a Comprar/Cortar:",
+    "tecido total a comprar/cortar:": "Tessuto Totale da Acquistare/Tagliare:",
     "tecido tricoline mista 60/40 camisaria": "Tecido Tricoline Mista 60/40 Camisaria",
     "tinta dtf textil pigmentada branca 1l": "Tinta DTF Textil Pigmentada Branca 1L",
     "tinta dtf têxtil pigmentada branca (white) 1l": "Tinta DTF Têxtil Pigmentada Branca (White) 1L",
@@ -12487,10 +12567,10 @@
     "tolerância:": "Tolerância:",
     "topo:": "Topo:",
     "total comissões geradas": "Total Comissões Geradas",
-    "total cópias encaixadas": "Total Cópias Encaixadas",
+    "total cópias encaixadas": "TOTALE COPIE ANNIDATE",
     "total faturado em nf-e": "TOTALE FATTURATO IN FATTURA ELETTRONICA",
     "total já recebido": "Total Já Recebido",
-    "total peças pedido": "Total Peças Pedido",
+    "total peças pedido": "Totale Capi Ordine",
     "total vendas faturadas": "Total Vendas Faturadas",
     "total a receber (clientes)": "Total a Receber (Clientes)",
     "total de pedidos": "Total de Pedidos",
@@ -12524,7 +12604,7 @@
     "verde água": "Verde Água",
     "verificando credenciais...": "Verificando credenciais...",
     "versão xml: 4.00": "Versão XML: 4.00",
-    "visualização completa das matrizes, réguas em cm/metros e marcas de corte": "Visualização completa das matrizes, réguas em cm/metros e marcas de corte",
+    "visualização completa das matrizes, réguas em cm/metros e marcas de corte": "Visualizzazione completa delle matrici, righelli in cm/metri e segni di taglio",
     "vá na aba": "Vá na aba",
     "whatsapp contato:": "WhatsApp Contato:",
     "zero espaço branco": "Zero Espaço Branco",
@@ -12563,7 +12643,7 @@
     "para inserir.": "para inserir.",
     "para que seu cliente pague a entrada com 1 clique.": "para que seu cliente pague a entrada com 1 clique.",
     "para quitação do pedido. este valor continuará como saldo a receber na entrega.": "para quitação do pedido. Este valor continuará como saldo a receber na entrega.",
-    "por peça acabada": "por peça acabada",
+    "por peça acabada": "per pezzo finito",
     "sobre o desenho ou use os sliders abaixo (0% a 95%):": "sobre o desenho ou use os sliders abaixo (0% a 95%):",
     "tem autorização para cadastrar novos funcionários, definir perfis de permissão e criar senhas temporárias de acesso.": "tem autorização para cadastrar novos funcionários, definir perfis de permissão e criar senhas temporárias de acesso.",
     "à vista / 30d": "À Vista / 30D",
@@ -12591,12 +12671,12 @@
     "⚙️ configurações fiscais & certificado digital a1": "⚙️ Impostazioni Fiscali & Certificato Digitale A1",
     "⚙️ depreciação de máquinas & ativos": "⚙️ Depreciação de Máquinas & Ativos",
     "⚠️ atenção corte / costura / compra de materiais (detalhes de cor):": "⚠️ Attenzione CORTE / COSTURA / COMPRA DE MATERIAIS (DETALHES DE COR):",
-    "⚠️ anexo obrigatório: não é permitido dar entrada sem os arquivos das artes": "⚠️ Anexo Obrigatório: Não é permitido dar entrada sem os arquivos das artes",
+    "⚠️ anexo obrigatório: não é permitido dar entrada sem os arquivos das artes": "⚠️ Allegato Obbligatorio: Non è consentito confermare l'ordine senza i file grafici",
     "⚠️ atenção: esta baixa deixará o saldo deste insumo abaixo do estoque mínimo de segurança!": "⚠️ Attenzione: Esta baixa deixará o saldo deste insumo abaixo do estoque mínimo de segurança!",
     "⚠️ cnpj não localizado automaticamente na base pública. você pode preencher os campos abaixo manualmente.": "⚠️ CNPJ não localizado automaticamente na base pública. Você pode preencher os campos abaixo manualmente.",
     "⚠️ este usuário ainda não possui senha provisória definida no sistema. preencha uma senha abaixo para liberar o acesso dele.": "⚠️ Este usuário ainda não possui senha provisória definida no sistema. Preencha uma senha abaixo para liberar o acesso dele.",
     "⚠️ obrigatório": "⚠️ Obrigatório",
-    "⚠️ obrigatório anexar": "⚠️ Obrigatório Anexar",
+    "⚠️ obrigatório anexar": "⚠️ Allegato Obbligatorio",
     "⚠️ sem senha definida": "⚠️ Sem Senha Definida",
     "⚡ auto-corte inteligente (trim)": "⚡ Auto-Corte Inteligente (Trim)",
     "⚡ baixar todos os arquivos em lote": "⚡ Baixar Todos os Arquivos em Lote",
@@ -12606,11 +12686,11 @@
     "⚽ relação dos atletas & numerações": "⚽ Relação dos Atletas & Numerações",
     "✂️ oficina / fábrica": "✂️ Oficina / Fábrica",
     "✂️ recorte & enquadramento": "✂️ Recorte & Enquadramento",
-    "✏️ custos/consumos manuais ativos": "✏️ Custos/Consumos Manuais Ativos",
-    "✓ definido na proposta": "✓ Definido na Proposta",
+    "✏️ custos/consumos manuais ativos": "✏️ Costi/Consumi Manuali Attivi",
+    "✓ definido na proposta": "✓ Definito nella Proposta",
     "✓ pago": "✓ PAGATO",
     "✓ preço direto por bordado": "✓ Prezzo diretto per ricamo",
-    "✓ sem fundo": "✓ Sem Fundo",
+    "✓ sem fundo": "✓ Senza Sfondo",
     "✓ senha pessoal criada": "✓ Senha Pessoal Criada",
     "✨ explorar modo demonstração showroom (sem cadastro) &rarr;": "✨ Explorar Modo Demonstração Showroom (Sem Cadastro) &rarr;",
     "✨ pronto dtf": "✨ Pronto DTF",
@@ -12755,7 +12835,23 @@
     "sefaz homologação": "Test Fiscale Sandbox",
     "buscar por cliente, cnpj, número ou chave...": "Cerca per Cliente, P.IVA/CF, Numero o Chiave...",
     "autorizada": "AUTORIZZATA",
-    "personalize a identidade da fábrica: logotipo em alta resolução, dados cadastrais, dados para pagamento via pix e segurança.": "Personalizza l'identità della fabbrica: logo ad alta risoluzione, dati aziendali, pagamento istantaneo e sicurezza."
+    "personalize a identidade da fábrica: logotipo em alta resolução, dados cadastrais, dados para pagamento via pix e segurança.": "Personalizza l'identità della fabbrica: logo ad alta risoluzione, dati aziendali, pagamento istantaneo e sicurezza.",
+    "custos/consumos manuais ativos": "Costi/Consumi Manuali Attivi",
+    "detalhar & editar custo por peça": "Dettaglia e Modifica Costo per Pezzo",
+    "viável (margem excelente)": "FATTIBILE (Margine Eccellente)",
+    "viável (padrão)": "FATTIBILE (Standard)",
+    "atenção (margem baixa)": "ATTENZIONE (Margine Basso)",
+    "inviável (prejuízo)": "NON FATTIBILE (Perdita)",
+    "entrada oficial no pedido • manufacturing & chão de fábrica": "Ingresso Ufficiale Ordine • Produzione e Officina",
+    "definido na proposta": "Definito nella Proposta",
+    "which seamstress / contractor is assigned? (campo obrigatório)": "QUALE SARTA / LABORATORIO È ASSEGNATO? (CAMPO OBBLIGATORIO)",
+    "anexo obrigatório: não é permitido dar entrada sem os arquivos das artes": "Allegato Obbligatorio: Non è consentito confermare l'ordine senza i file grafici",
+    "obrigatório anexar": "Allegato Obbligatorio",
+    "confirm sinal já recebido e lançar entrada imediata no fluxo de caixa (financeiro)": "Conferma acconto già ricevuto e registra entrata immediata nel Flusso di Cassa (Finanza)",
+    "quitação integral (100% pago)": "Saldo Integrale (100% Pagato)",
+    "remover fundo": "Rimuovi Sfondo",
+    "✨ remover fundo": "✨ Rimuovi Sfondo",
+    "recorte & fundo": "Ritaglio e Sfondo"
   }
 };
 
@@ -13862,6 +13958,389 @@
       if (lang === 'de') return `🟢 Ausreichend (>7T): ${n}`;
       if (lang === 'it') return `🟢 Comodo (>7g): ${n}`;
     }
+    // =========================================================================
+    // NOVO BATCH 5: ENGENHARIA TÊXTIL, VIABILIDADE, ENTRADA OFICIAL, PARCIAL E DTF
+    // =========================================================================
+
+    // 5.1. Engenharia Têxtil Ponderada (Camisa):
+    const mEngTextil = t.match(/^Engenharia Têxtil Ponderada\s*\((.*?)\):?$/i);
+    if (mEngTextil) {
+      const prod = mEngTextil[1];
+      const dict = DICIONARIOS[lang] || {};
+      const prodTrad = dict[prod.toLowerCase()] || prod;
+      if (lang === 'en') return `Weighted Textile Engineering (${prodTrad}):`;
+      if (lang === 'es') return `Ingeniería Textil Ponderada (${prodTrad}):`;
+      if (lang === 'pt-PT') return `Engenharia Têxtil Ponderada (${prodTrad}):`;
+      if (lang === 'fr') return `Ingénierie Textile Pondérée (${prodTrad}) :`;
+      if (lang === 'de') return `Gewichtete Textiltechnik (${prodTrad}):`;
+      if (lang === 'it') return `Ingegneria Tessile Ponderata (${prodTrad}):`;
+    }
+
+    // Perda Corte/Enfesto: 8.0%
+    const mPerdaCorte = t.match(/^Perda Corte\/Enfesto:\s*([\d.,]+%)$/i);
+    if (mPerdaCorte) {
+      const p = mPerdaCorte[1];
+      if (lang === 'en') return `Cutting/Spreading Loss: ${p}`;
+      if (lang === 'es') return `Pérdida Corte/Tendido: ${p}`;
+      if (lang === 'pt-PT') return `Perda Corte/Enfesto: ${p}`;
+      if (lang === 'fr') return `Perte Coupe/Matelassage : ${p}`;
+      if (lang === 'de') return `Zuschnitt-/Lageverlust: ${p}`;
+      if (lang === 'it') return `Perdita Taglio/Stesura: ${p}`;
+    }
+
+    // 3.31 peças / kg
+    const mRendTecido = t.match(/^([\d.,]+)\s*peças\s*\/\s*(kg|un|m)$/i);
+    if (mRendTecido) {
+      const q = mRendTecido[1];
+      const u = mRendTecido[2];
+      if (lang === 'en') return `${q} pcs / ${u}`;
+      if (lang === 'es') return `${q} pzas / ${u}`;
+      if (lang === 'pt-PT') return `${q} peças / ${u}`;
+      if (lang === 'fr') return `${q} pièces / ${u}`;
+      if (lang === 'de') return `${q} Stk. / ${u}`;
+      if (lang === 'it') return `${q} pz / ${u}`;
+    }
+
+    // ⚡ X Peça(s) Plus Size (G1 a G5)
+    const mPlusSizePcs = t.match(/^(?:⚡\s*)?(\d+)\s*Peça\(s\)\s*Plus Size \(G1 a G5\)$/i);
+    if (mPlusSizePcs) {
+      const n = mPlusSizePcs[1];
+      if (lang === 'en') return `⚡ ${n} Plus Size Piece(s) (G1 to G5)`;
+      if (lang === 'es') return `⚡ ${n} Pieza(s) Tallas Grandes (G1 a G5)`;
+      if (lang === 'pt-PT') return `⚡ ${n} Peça(s) Tamanhos Especiais (G1 a G5)`;
+      if (lang === 'fr') return `⚡ ${n} Pièce(s) Grandes Tailles (G1 à G5)`;
+      if (lang === 'de') return `⚡ ${n} Übergrößen-Stück(e) (G1 bis G5)`;
+      if (lang === 'it') return `⚡ ${n} Pezzo/i Taglie Forti (G1 a G5)`;
+    }
+
+    // Modelo 1 (Camisa Polo Tradicional Piquet): 0 peças
+    const mModPecas = t.match(/^Modelo\s*(\d+)\s*\((.*?)\):\s*(\d+)\s*(?:peças|peça)$/i);
+    if (mModPecas) {
+      const idx = mModPecas[1];
+      const prod = mModPecas[2];
+      const q = mModPecas[3];
+      const dict = DICIONARIOS[lang] || {};
+      const prodTrad = dict[prod.toLowerCase()] || prod;
+      if (lang === 'en') return `Model ${idx} (${prodTrad}): ${q} pcs`;
+      if (lang === 'es') return `Modelo ${idx} (${prodTrad}): ${q} pzas`;
+      if (lang === 'pt-PT') return `Modelo ${idx} (${prodTrad}): ${q} peças`;
+      if (lang === 'fr') return `Modèle ${idx} (${prodTrad}) : ${q} pièces`;
+      if (lang === 'de') return `Modell ${idx} (${prodTrad}): ${q} Stk.`;
+      if (lang === 'it') return `Modello ${idx} (${prodTrad}): ${q} pz`;
+    }
+
+    // Média Brasil: $36.50
+    const mMedBrasil = t.match(/^Média Brasil:\s*(.*?)$/i);
+    if (mMedBrasil) {
+      const v = mMedBrasil[1];
+      if (lang === 'en') return `Brazil Average: ${v}`;
+      if (lang === 'es') return `Media Brasil: ${v}`;
+      if (lang === 'pt-PT') return `Média Brasil: ${v}`;
+      if (lang === 'fr') return `Moyenne Brésil : ${v}`;
+      if (lang === 'de') return `Brasilien-Durchschnitt: ${v}`;
+      if (lang === 'it') return `Media Brasile: ${v}`;
+    }
+
+    // Sugerido: $51.92
+    const mSugerido = t.match(/^Sugerido:\s*(.*?)$/i);
+    if (mSugerido) {
+      const v = mSugerido[1];
+      if (lang === 'en') return `Suggested: ${v}`;
+      if (lang === 'es') return `Sugerido: ${v}`;
+      if (lang === 'pt-PT') return `Sugerido: ${v}`;
+      if (lang === 'fr') return `Suggéré : ${v}`;
+      if (lang === 'de') return `Empfohlen: ${v}`;
+      if (lang === 'it') return `Suggerito: ${v}`;
+    }
+
+    // $21.26 lucro bruto/pç
+    const mLucroBrutoPc = t.match(/^(.*?)\s*lucro bruto\/pç$/i);
+    if (mLucroBrutoPc) {
+      const v = mLucroBrutoPc[1];
+      if (lang === 'en') return `${v} gross profit/pc`;
+      if (lang === 'es') return `${v} beneficio bruto/pza`;
+      if (lang === 'pt-PT') return `${v} lucro bruto/peça`;
+      if (lang === 'fr') return `${v} bénéfice brut/pièce`;
+      if (lang === 'de') return `${v} Bruttogewinn/Stk.`;
+      if (lang === 'it') return `${v} profitto lordo/pz`;
+    }
+
+    // Lucro Bruto: $0.00
+    const mLucroBrutoVal = t.match(/^Lucro Bruto:\s*(.*?)$/i);
+    if (mLucroBrutoVal) {
+      const v = mLucroBrutoVal[1];
+      if (lang === 'en') return `Gross Profit: ${v}`;
+      if (lang === 'es') return `Beneficio Bruto: ${v}`;
+      if (lang === 'pt-PT') return `Lucro Bruto: ${v}`;
+      if (lang === 'fr') return `Bénéfice Brut : ${v}`;
+      if (lang === 'de') return `Bruttogewinn: ${v}`;
+      if (lang === 'it') return `Profitto Lordo: ${v}`;
+    }
+
+    // 1 Modelo • 0 Peças no Total / X Modelos Diferentes no Pedido • Y Peças no Total
+    const mResumoModelos = t.match(/^(\d+)\s*(?:Modelo|Modelos Diferentes no Pedido)\s*•\s*(\d+)\s*Peças no Total$/i);
+    if (mResumoModelos) {
+      const m = mResumoModelos[1];
+      const p = mResumoModelos[2];
+      if (lang === 'en') return `${m} Model(s) • ${p} Total Pieces`;
+      if (lang === 'es') return `${m} Modelo(s) • ${p} Piezas en Total`;
+      if (lang === 'pt-PT') return `${m} Modelo(s) • ${p} Peças no Total`;
+      if (lang === 'fr') return `${m} Modèle(s) • ${p} Pièces au Total`;
+      if (lang === 'de') return `${m} Modell(e) • ${p} Teile insgesamt`;
+      if (lang === 'it') return `${m} Modello/i • ${p} Pezzi Totali`;
+    }
+
+    // 1. Camisa (0 pçs)
+    const mModNumPcs = t.match(/^(\d+\.\s*.*?)\s*\((\d+)\s*(?:pçs|pcs|un)\)$/i);
+    if (mModNumPcs) {
+      const mod = mModNumPcs[1];
+      const q = mModNumPcs[2];
+      const dict = DICIONARIOS[lang] || {};
+      const modTrad = dict[mod.toLowerCase()] || mod;
+      if (lang === 'en') return `${modTrad} (${q} pcs)`;
+      if (lang === 'es') return `${modTrad} (${q} pzas)`;
+      if (lang === 'pt-PT') return `${modTrad} (${q} peças)`;
+      if (lang === 'fr') return `${modTrad} (${q} pièces)`;
+      if (lang === 'de') return `${modTrad} (${q} Stk.)`;
+      if (lang === 'it') return `${modTrad} (${q} pz)`;
+    }
+
+    // (0.0% margem bruta)
+    const mPercMargBruta = t.match(/^\(([\d.,]+%)\s*margem bruta\)$/i);
+    if (mPercMargBruta) {
+      const p = mPercMargBruta[1];
+      if (lang === 'en') return `(${p} gross margin)`;
+      if (lang === 'es') return `(${p} margen bruto)`;
+      if (lang === 'pt-PT') return `(${p} margem bruta)`;
+      if (lang === 'fr') return `(${p} marge brute)`;
+      if (lang === 'de') return `(${p} Bruttomarge)`;
+      if (lang === 'it') return `(${p} margine lordo)`;
+    }
+
+    // 5.2. Entrada Oficial no Pedido
+    const mEntradaOficHeader = t.match(/^Entrada Oficial no Pedido\s*•\s*(.*)$/i);
+    if (mEntradaOficHeader) {
+      const sub = mEntradaOficHeader[1].trim();
+      const dict = DICIONARIOS[lang] || {};
+      const subTrad = dict[sub.toLowerCase()] || sub;
+      if (lang === 'en') return `Official Order Ingestion • ${subTrad}`;
+      if (lang === 'es') return `Entrada Oficial al Pedido • ${subTrad}`;
+      if (lang === 'pt-PT') return `Entrada Oficial na Encomenda • ${subTrad}`;
+      if (lang === 'fr') return `Entrée Officielle de Commande • ${subTrad}`;
+      if (lang === 'de') return `Offizieller Auftragseingang • ${subTrad}`;
+      if (lang === 'it') return `Ingresso Ufficiale Ordine • ${subTrad}`;
+    }
+
+    // (X aplicações obrigatórias)
+    const mAplicObrig = t.match(/^\(?(\d+)\s*aplicações obrigatórias\)?$/i);
+    if (mAplicObrig) {
+      const n = mAplicObrig[1];
+      if (lang === 'en') return `(${n} mandatory applications)`;
+      if (lang === 'es') return `(${n} aplicaciones obligatorias)`;
+      if (lang === 'pt-PT') return `(${n} aplicações obrigatórias)`;
+      if (lang === 'fr') return `(${n} applications obligatoires)`;
+      if (lang === 'de') return `(${n} Pflichtapplikationen)`;
+      if (lang === 'it') return `(${n} applicazioni obbligatorie)`;
+    }
+
+    // Especificação: 10x10 cm
+    const mEspecif = t.match(/^Especificação:\s*(.*)$/i);
+    if (mEspecif) {
+      const v = mEspecif[1];
+      if (lang === 'en') return `Specification: ${v}`;
+      if (lang === 'es') return `Especificación: ${v}`;
+      if (lang === 'pt-PT') return `Especificação: ${v}`;
+      if (lang === 'fr') return `Spécification : ${v}`;
+      if (lang === 'de') return `Spezifikation: ${v}`;
+      if (lang === 'it') return `Specifica: ${v}`;
+    }
+
+    // BORDADO • 1 UN
+    const mTecnicaUn = t.match(/^(BORDADO|SILK|DTF|SUBLIMAÇÃO|SERIGRAFIA)\s*•\s*(\d+)\s*(?:UN|PEÇA|PC|PÇS)$/i);
+    if (mTecnicaUn) {
+      const tec = mTecnicaUn[1].toUpperCase();
+      const n = mTecnicaUn[2];
+      const tecTrad = {
+        'BORDADO': { en: 'EMBROIDERY', es: 'BORDADO', 'pt-PT': 'BORDADO', fr: 'BRODERIE', de: 'STICKEREI', it: 'RICAMO' },
+        'SILK': { en: 'SCREEN PRINT', es: 'SERIGRAFÍA', 'pt-PT': 'SERIGRAFIA', fr: 'SÉRIGRAPHIE', de: 'SIEBDRUCK', it: 'SERIGRAFIA' },
+        'DTF': { en: 'DTF', es: 'DTF', 'pt-PT': 'DTF', fr: 'DTF', de: 'DTF', it: 'DTF' },
+        'SUBLIMAÇÃO': { en: 'SUBLIMATION', es: 'SUBLIMACIÓN', 'pt-PT': 'SUBLIMAÇÃO', fr: 'SUBLIMATION', de: 'SUBLIMATION', it: 'SUBLIMAZIONE' },
+        'SERIGRAFIA': { en: 'SCREEN PRINT', es: 'SERIGRAFÍA', 'pt-PT': 'SERIGRAFIA', fr: 'SÉRIGRAPHIE', de: 'SIEBDRUCK', it: 'SERIGRAFIA' }
+      }[tec] || {};
+      const tNome = tecTrad[lang] || tec;
+      if (lang === 'en') return `${tNome} • ${n} PC`;
+      if (lang === 'es') return `${tNome} • ${n} PZA`;
+      if (lang === 'pt-PT') return `${tNome} • ${n} PEÇA`;
+      if (lang === 'fr') return `${tNome} • ${n} PIÈCE`;
+      if (lang === 'de') return `${tNome} • ${n} STK.`;
+      if (lang === 'it') return `${tNome} • ${n} PZ`;
+    }
+
+    // Saldo Remanescente: $29.00
+    const mSaldoReman = t.match(/^(?:⚠️\s*)?Saldo Remanescente:\s*(.*?)$/i);
+    if (mSaldoReman) {
+      const v = mSaldoReman[1];
+      if (lang === 'en') return `Remaining Balance: ${v}`;
+      if (lang === 'es') return `Saldo Pendiente: ${v}`;
+      if (lang === 'pt-PT') return `Saldo Remanescente: ${v}`;
+      if (lang === 'fr') return `Solde Restant : ${v}`;
+      if (lang === 'de') return `Restbetrag: ${v}`;
+      if (lang === 'it') return `Saldo Rimanente: ${v}`;
+    }
+
+    // Com a entrada de $29.00, faltará $29.00 para quitação do pedido. Este valor continuará como saldo a receber na entrega.
+    const mComEntrada = t.match(/^Com a entrada de (.*?), faltará (.*?) para quitação do pedido\. Este valor continuará como saldo a receber na entrega\.$/i);
+    if (mComEntrada) {
+      const e = mComEntrada[1];
+      const f = mComEntrada[2];
+      if (lang === 'en') return `With a down payment of ${e}, ${f} will remain to settle the order. This amount will remain as balance due upon delivery.`;
+      if (lang === 'es') return `Con el anticipo de ${e}, quedarán ${f} para liquidar el pedido. Este importe permanecerá como saldo a cobrar en la entrega.`;
+      if (lang === 'pt-PT') return `Com a entrada de ${e}, faltarão ${f} para quitação da encomenda. Este valor continuará como saldo a receber na entrega.`;
+      if (lang === 'fr') return `Avec l'acompte de ${e}, il restera ${f} pour solder la commande. Ce montant restera dû à la livraison.`;
+      if (lang === 'de') return `Mit der Anzahlung von ${e} verbleiben ${f} zum Begleichen des Auftrags. Dieser Betrag bleibt als Restforderung bei Lieferung bestehen.`;
+      if (lang === 'it') return `Con l'acconto di ${e}, mancheranno ${f} per saldare l'ordine. Questo importo rimarrà come saldo da riscuotere alla consegna.`;
+    }
+
+    // 5.3. Financeiro & Cobrança (Screenshot 4)
+    // PARCIAL (50%)
+    const mParcialPerc = t.match(/^(?:⚠️\s*)?PARCIAL\s*\(([\d.,]+%)\)$/i);
+    if (mParcialPerc) {
+      const p = mParcialPerc[1];
+      if (lang === 'en') return `PARTIAL (${p})`;
+      if (lang === 'es') return `PARCIAL (${p})`;
+      if (lang === 'pt-PT') return `PARCIAL (${p})`;
+      if (lang === 'fr') return `PARTIEL (${p})`;
+      if (lang === 'de') return `TEILZAHLUNG (${p})`;
+      if (lang === 'it') return `PARZIALE (${p})`;
+    }
+
+    // Pago: $4,350.00
+    const mPagoVal = t.match(/^Pago:\s*(.*?)$/i);
+    if (mPagoVal) {
+      const v = mPagoVal[1];
+      if (lang === 'en') return `Paid: ${v}`;
+      if (lang === 'es') return `Pagado: ${v}`;
+      if (lang === 'pt-PT') return `Pago: ${v}`;
+      if (lang === 'fr') return `Payé : ${v}`;
+      if (lang === 'de') return `Bezahlt: ${v}`;
+      if (lang === 'it') return `Pagato: ${v}`;
+    }
+
+    // Falta: $4,350.00
+    const mFaltaVal = t.match(/^Falta:\s*(.*?)$/i);
+    if (mFaltaVal) {
+      const v = mFaltaVal[1];
+      if (lang === 'en') return `Remaining: ${v}`;
+      if (lang === 'es') return `Pendiente: ${v}`;
+      if (lang === 'pt-PT') return `Em falta: ${v}`;
+      if (lang === 'fr') return `Reste : ${v}`;
+      if (lang === 'de') return `Offen: ${v}`;
+      if (lang === 'it') return `Mancante: ${v}`;
+    }
+
+    // 5.4. DTF (Screenshot 5)
+    // Ped #101 • TransBrasil Logística Integrada Ltda (150 pçs - 2 artes)
+    const mPedDtf = t.match(/^Ped\s*#?(\d+)\s*•\s*(.*?)\s*\((\d+)\s*pçs\s*-\s*(\d+)\s*artes\)$/i);
+    if (mPedDtf) {
+      const num = mPedDtf[1];
+      const cli = mPedDtf[2];
+      const pcs = mPedDtf[3];
+      const art = mPedDtf[4];
+      if (lang === 'en') return `Order #${num} • ${cli} (${pcs} pcs - ${art} artworks)`;
+      if (lang === 'es') return `Pedido #${num} • ${cli} (${pcs} pzas - ${art} artes)`;
+      if (lang === 'pt-PT') return `Encomenda #${num} • ${cli} (${pcs} peças - ${art} artes)`;
+      if (lang === 'fr') return `Commande #${num} • ${cli} (${pcs} pièces - ${art} visuels)`;
+      if (lang === 'de') return `Auftrag #${num} • ${cli} (${pcs} Stk. - ${art} Motive)`;
+      if (lang === 'it') return `Ordine #${num} • ${cli} (${pcs} pz - ${art} grafiche)`;
+    }
+
+    // Largura útil de 58 cm
+    const mLargUtil = t.match(/^Largura útil de\s*(.*)$/i);
+    if (mLargUtil) {
+      const w = mLargUtil[1];
+      if (lang === 'en') return `Usable width of ${w}`;
+      if (lang === 'es') return `Ancho útil de ${w}`;
+      if (lang === 'pt-PT') return `Largura útil de ${w}`;
+      if (lang === 'fr') return `Largeur utile de ${w}`;
+      if (lang === 'de') return `Nutzbreite von ${w}`;
+      if (lang === 'it') return `Larghezza utile di ${w}`;
+    }
+
+    // Desperdício reduzido: 8.8%
+    const mDespRed = t.match(/^Desperdício reduzido:\s*([\d.,]+%)$/i);
+    if (mDespRed) {
+      const p = mDespRed[1];
+      if (lang === 'en') return `Reduced waste: ${p}`;
+      if (lang === 'es') return `Desperdicio reducido: ${p}`;
+      if (lang === 'pt-PT') return `Desperdício reduzido: ${p}`;
+      if (lang === 'fr') return `Gaspillage réduit : ${p}`;
+      if (lang === 'de') return `Reduzierter Verschnitt: ${p}`;
+      if (lang === 'it') return `Spreco ridotto: ${p}`;
+    }
+
+    // Base: R$ 60,00 por metro linear
+    const mBaseMetro = t.match(/^Base:\s*(.*?)\s*por metro linear$/i);
+    if (mBaseMetro) {
+      const v = mBaseMetro[1];
+      if (lang === 'en') return `Base: ${v} per linear meter`;
+      if (lang === 'es') return `Base: ${v} por metro lineal`;
+      if (lang === 'pt-PT') return `Base: ${v} por metro linear`;
+      if (lang === 'fr') return `Base : ${v} par mètre linéaire`;
+      if (lang === 'de') return `Basis: ${v} pro laufenden Meter`;
+      if (lang === 'it') return `Base: ${v} per metro lineare`;
+    }
+
+    // Custo médio: $2.00 / peça
+    const mCustoMedPeca = t.match(/^Custo médio:\s*(.*?)\s*\/\s*peça$/i);
+    if (mCustoMedPeca) {
+      const v = mCustoMedPeca[1];
+      if (lang === 'en') return `Average cost: ${v} / pc`;
+      if (lang === 'es') return `Costo medio: ${v} / pza`;
+      if (lang === 'pt-PT') return `Custo médio: ${v} / peça`;
+      if (lang === 'fr') return `Coût moyen : ${v} / pièce`;
+      if (lang === 'de') return `Durchschnittskosten: ${v} / Stk.`;
+      if (lang === 'it') return `Costo medio: ${v} / pz`;
+    }
+
+    // X matrizes
+    const mMatrizes = t.match(/^(\d+)\s*matrizes$/i);
+    if (mMatrizes) {
+      const n = mMatrizes[1];
+      if (lang === 'en') return `${n} designs`;
+      if (lang === 'es') return `${n} matrices`;
+      if (lang === 'pt-PT') return `${n} matrizes`;
+      if (lang === 'fr') return `${n} visuels`;
+      if (lang === 'de') return `${n} Motive`;
+      if (lang === 'it') return `${n} matrici`;
+    }
+
+    // Visão Geral (10 arq • 10m)
+    const mVisaoGeralArq = t.match(/^Visão Geral\s*\((\d+)\s*arq\s*•\s*([\d.,]+m)\)$/i);
+    if (mVisaoGeralArq) {
+      const a = mVisaoGeralArq[1];
+      const m = mVisaoGeralArq[2];
+      if (lang === 'en') return `Overview (${a} files • ${m})`;
+      if (lang === 'es') return `Visión General (${a} arch • ${m})`;
+      if (lang === 'pt-PT') return `Visão Geral (${a} fich • ${m})`;
+      if (lang === 'fr') return `Vue d'Ensemble (${a} fich • ${m})`;
+      if (lang === 'de') return `Gesamtübersicht (${a} Dat. • ${m})`;
+      if (lang === 'it') return `Panoramica (${a} file • ${m})`;
+    }
+
+    // Arquivo 1 (1m • 26 pçs)
+    const mArqMetrosPcs = t.match(/^(?:📄\s*)?Arquivo\s*(\d+)\s*\(([\d.,]+m)\s*•\s*(\d+)\s*pçs\)$/i);
+    if (mArqMetrosPcs) {
+      const num = mArqMetrosPcs[1];
+      const m = mArqMetrosPcs[2];
+      const pcs = mArqMetrosPcs[3];
+      if (lang === 'en') return `File ${num} (${m} • ${pcs} pcs)`;
+      if (lang === 'es') return `Archivo ${num} (${m} • ${pcs} pzas)`;
+      if (lang === 'pt-PT') return `Ficheiro ${num} (${m} • ${pcs} peças)`;
+      if (lang === 'fr') return `Fichier ${num} (${m} • ${pcs} pièces)`;
+      if (lang === 'de') return `Datei ${num} (${m} • ${pcs} Stk.)`;
+      if (lang === 'it') return `File ${num} (${m} • ${pcs} pz)`;
+    }
+
 
     return null;
   }
