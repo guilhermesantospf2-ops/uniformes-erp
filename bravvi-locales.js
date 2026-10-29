@@ -153,7 +153,7 @@
     "cliente": "Customer",
     "data": "Date",
     "peças": "pieces",
-    "valor total": "Total Value",
+    "valor total": "TOTAL AMOUNT",
     "status": "Status",
     "ações": "Actions",
     "ver detalhes": "View Details",
@@ -863,8 +863,8 @@
     "salvar & exportar png (rip)": "Save & Export PNG (RIP Ready)",
     "padrão (40%)": "Standard (40%)",
     "adicionar matrizes ao rolo": "Add Artwork Matrices to Roll",
-    "✂️ estúdio cirúrgico & conta-gotas": "✂️ Eyedropper & Precision Studio",
-    "✨ remoção rápida 1-clique": "✨ 1-Click Fast Removal",
+    "✂️ estúdio cirúrgico & conta-gotas": "✂️ Precision Studio & Eyedropper",
+    "✨ remoção rápida 1-clique": "✨ Quick 1-Click Removal",
     "↺ restaurar original": "↺ Restore Original",
     "adicionar ao rolo & encaixar": "Add to Roll & Auto-Nest",
     "📦 saldos & insumos": "📦 Balances & Supplies",
@@ -1377,7 +1377,7 @@
     "ao menos 1 número (0-9)": "Ao menos 1 número (0-9)",
     "apenas o": "Apenas o",
     "aprovação final do administrador com checklist obrigatório": "Aprovação final do administrador com checklist obrigatório",
-    "aproveita melhor a largura de 58cm reduzindo metros de rolo": "Aproveita melhor a largura de 58cm reduzindo metros de rolo",
+    "aproveita melhor a largura de 58cm reduzindo metros de rolo": "Optimizes 58cm width usage, reducing total roll length",
     "areia / bege": "Areia / Bege",
     "armarinhos central": "Central Haberdashery & Trims",
     "arquivo não anexado nesta versão": "Arquivo não anexado nesta versão",
@@ -1465,7 +1465,7 @@
     "como a depreciação protege o caixa e a dre da fábrica": "Como a Depreciação Protege o Caixa e a DRE da Fábrica",
     "compra malha piquet e dry - malharia sul": "Pique & Dry Fit Fabric Purchase - Malharia Sul",
     "compras sincronizadas com o estoque e lançamentos avulsos de manutenção e consumíveis da fábrica.": "Purchases synchronized with inventory and standalone entries for factory maintenance and consumables.",
-    "condição de fornecimento:": "Condição de Fornecimento:",
+    "condição de fornecimento:": "Supply Condition:",
     "condições comerciais, entrada de sinal & saldo remanescente:": "COMMERCIAL TERMS, DOWN PAYMENT & REMAINING BALANCE:",
     "cone linha reta 120 10.000m azul marinho": "Cone Linha Reta 120 10.000m Azul Marinho",
     "conectando aos servidores da sefaz sp e verificando disponibilidade dos webservices...": "Conectando aos servidores da SEFAZ SP e verificando disponibilidade dos webservices...",
@@ -1550,7 +1550,7 @@
     "economia direta estimada mensal:": "Economia Direta Estimada Mensal:",
     "editar performance financeira semestral": "Edit Semiannual Financial Performance",
     "efetivado no caixa": "Efetivado no Caixa",
-    "elimina bordas brancas/bege sólidas sem alterar letras internas": "Elimina bordas brancas/bege sólidas sem alterar letras internas",
+    "elimina bordas brancas/bege sólidas sem alterar letras internas": "Eliminates solid white/beige borders without altering inner letters",
     "elástico 35mm": "35mm Elastic",
     "elástico 40mm cintura": "40mm Waistband Elastic",
     "elástico chato reforçado 30mm / 40mm": "Elástico Chato Reforçado 30mm / 40mm",
@@ -1641,7 +1641,7 @@
     "insc. estadual do subst. trib.": "INSC. ESTADUAL DO SUBST. TRIB.",
     "identificação do usuário": "User Identification",
     "ilhós de metal (par)": "Metal Eyelets (pair)",
-    "importe estampas avulsas, logos ou artes reais da fábrica em alta resolução": "Importe estampas avulsas, logos ou artes reais da fábrica em alta resolução",
+    "importe estampas avulsas, logos ou artes reais da fábrica em alta resolução": "Import loose prints, logos, or high-resolution factory designs",
     "importe um arquivo .json gerado previamente para carregar todos os dados.": "Importe um arquivo .json gerado previamente para carregar todos os dados.",
     "imposto estimado simples:": "Imposto Estimado Simples:",
     "impressora dtf industrial 60cm 4 cabeças i3200": "Impressora DTF Industrial 60cm 4 Cabeças i3200",
@@ -1782,7 +1782,7 @@
     "pedido reativado": "Pedido Reativado",
     "pegar token grátis na focus nfe &rarr;": "Pegar Token Grátis na Focus NFe &rarr;",
     "perfis de dono, vendedor e oficina": "Perfis de Dono, Vendedor e Oficina",
-    "permitir rotação automática de 90°": "Permitir rotação automática de 90°",
+    "permitir rotação automática de 90°": "Allow automatic 90° rotation",
     "personalização padrão conforme ficha de estampa e bordado aprovada.": "Personalização padrão conforme ficha de estampa e bordado aprovada.",
     "personalize a identidade da confecção: logotipo em alta resolução, dados cadastrais, dados para pagamento via pix e segurança.": "Customize factory identity: high-resolution logo, legal registration, instant payment details and security.",
     "peça lisa (sem estampa). nenhuma personalização adicionada. clique nos botões acima para incluir bordado, dtf ou silk.": "Peça Lisa (Sem Estampa). Nenhuma personalização adicionada. Clique nos botões acima para incluir Bordado, DTF ou Silk.",
@@ -1792,15 +1792,15 @@
     "plano de comissões da equipe comercial": "Plano de Comissões da Equipe Comercial",
     "poliamida termofusível branca especial dtf": "Poliamida Termofusível Branca Especial DTF",
     "prazo prometido ao cliente:": "Prazo Prometido ao Cliente:",
-    "prazo prometido de produção & entrega:": "Prazo Prometido de Produção & Entrega:",
+    "prazo prometido de produção & entrega:": "Promised Production & Delivery Time:",
     "preencha os dados da confecção com o cliente para demonstrar que o sistema se paga sozinho logo no primeiro mês de uso.": "Preencha os dados da Manufacturing com o cliente para demonstrar que o sistema se paga sozinho logo no primeiro mês de uso.",
     "preencha os tamanhos necessários. somente os tamanhos com quantidade aparecerão no orçamento e corte.": "Fill in the required sizes. Only sizes with quantities will appear in the quote and cutting.",
     "preencha todos os dados: vencimento (dia e mês), fornecedor, categoria e valor": "Preencha todos os dados: vencimento (dia e mês), fornecedor, categoria e valor",
     "preenchimento automático via cartão cnpj e integração completa com pedidos e nf-e": "Preenchimento automático via Cartão CNPJ e integração completa com Pedidos e NF-e",
     "prensa térmica pneumática dupla bandeja 40x50": "Prensa Térmica Pneumática Dupla Bandeja 40x50",
     "previsão": "Previsão",
-    "preço médio / pç:": "Preço Médio / Pç:",
-    "preço unitário:": "Preço Unitário:",
+    "preço médio / pç:": "Avg Price / Pc:",
+    "preço unitário:": "Unit Price:",
     "preço venda": "SELLING PRICE",
     "primeiro acesso ao sistema": "First System Access",
     "produção: corte & estamparia": "Produção: Corte & Estamparia",
@@ -1834,7 +1834,7 @@
     "regras automáticas por percentual do faturamento, margem bruta ou fixo por peça com liquidação e baixa integrada": "Regras automáticas por percentual do faturamento, margem bruta ou fixo por peça com liquidação e baixa integrada",
     "regulador de metal": "Metal Slider Buckle",
     "relatório gerencial dre & balanço contábil": "Managerial Income Statement (DRE) & Balance Sheet Report",
-    "remover fundo automaticamente (canva-style)": "Remover fundo automaticamente (Canva-style)",
+    "remover fundo automaticamente (canva-style)": "Remove background automatically (Canva-style)",
     "rendimento do tecido:": "Fabric Yield:",
     "requer botão \"entrada\"": "Requires \"Down Payment\" button",
     "resumo financeiro consolidado do pedido:": "ORDER CONSOLIDATED FINANCIAL SUMMARY:",
@@ -1938,7 +1938,7 @@
     "valor total da nota": "VALOR TOTAL DA NOTA",
     "valor total do ipi": "VALOR TOTAL DO IPI",
     "valor total dos produtos": "VALOR TOTAL DOS PRODUTOS",
-    "valor total:": "VALOR TOTAL:",
+    "valor total:": "TOTAL AMOUNT:",
     "você deve selecionar obrigatoriamente cada ponto de atenção para confirmar que conferiu:": "YOU MUST MANDATORILY CHECK EACH QUALITY POINT TO CONFIRM INSPECTION:",
     "valor total pedido": "Valor Total Pedido",
     "valor total do pedido:": "Valor Total do Pedido:",
@@ -2002,7 +2002,7 @@
     "• arquivo:": "• Arquivo:",
     "• artes anexadas:": "• Artes Anexadas:",
     "• cliente:": "• CLIENTE:",
-    "• chave pix:": "• Chave PIX:",
+    "• chave pix:": "• Instant Payment Key (PIX):",
     "• custo médio atual:": "• Custo médio atual:",
     "• malhas, tecidos planos e linhas de corte": "• Knits, Woven Fabrics and Cut Lines",
     "• margem líquida:": "• Margem Líquida:",
@@ -2012,10 +2012,10 @@
     "• pedido": "• PEDIDO",
     "• para transmissão direta com protocolo governamental em lote, insira o token gratuito da focus nfe.": "• Para transmissão direta com protocolo governamental em lote, insira o Token gratuito da Focus NFe.",
     "• peça:": "• Peça:",
-    "• prazo de entrega: prometido para": "• Prazo de Entrega: Prometido para",
+    "• prazo de entrega: prometido para": "• Delivery Timeline: Promised for",
     "• requer entrada": "• Requer Entrada",
     "• suprimentos dtf, bordado, serigrafia e aviamentos": "• DTF Supplies, Embroidery, Screen Printing & Trims",
-    "• validade desta proposta: 15 dias corridos a partir da data de emissão.": "• Validade desta proposta: 15 dias corridos a partir da data de emissão.",
+    "• validade desta proposta: 15 dias corridos a partir da data de emissão.": "• Validity of this proposal: 15 calendar days from issue date.",
     "• validade:": "• Validade:",
     "⚖️ saldo operacional líquido do mês": "⚖️ Saldo Operacional Líquido do Mês",
     "⚙️ configurações fiscais & certificado digital a1": "⚙️ Tax Settings & A1 Digital Certificate",
@@ -2245,7 +2245,17 @@
     "aviamentos p/ pc": "Trims per Piece",
     "aviamentos p / pc": "Trims per Piece",
     "aviamentos p/ pç": "Trims per Piece",
-    "aviamentos p / pç": "Trims per Piece"
+    "aviamentos p / pç": "Trims per Piece",
+    "prazo prometido de produção & entrega": "Promised Production & Delivery Time",
+    "condição de fornecimento": "Supply Condition",
+    "condições gerais de fornecimento": "GENERAL TERMS OF SUPPLY",
+    "preço unitário": "Unit Price",
+    "preço médio / pç": "Avg Price / Pc",
+    "chave pix:": "Instant Payment Key (PIX):",
+    "prazo de entrega: prometido para": "Delivery Timeline: Promised for",
+    "validade desta proposta: 15 dias corridos a partir da data de emissão.": "Validity of this proposal: 15 calendar days from issue date.",
+    "estampa dtf": "DTF Print",
+    "cliente oficial": "Official Customer"
   },
   "es": {
     "abertura & visão geral da fábrica": "Inicio & Visión General de la Fábrica",
@@ -2327,7 +2337,7 @@
     "cliente": "Cliente",
     "data": "Fecha",
     "peças": "piezas",
-    "valor total": "Valor Total",
+    "valor total": "IMPORTE TOTAL",
     "status": "Estado",
     "ações": "Acciones",
     "ver detalhes": "Ver Detalles",
@@ -3037,8 +3047,8 @@
     "salvar & exportar png (rip)": "Guardar y Exportar PNG (Listo RIP)",
     "padrão (40%)": "Estándar (40%)",
     "adicionar matrizes ao rolo": "Añadir Matrices al Rollo",
-    "✂️ estúdio cirúrgico & conta-gotas": "✂️ Estudio de Precisión y Gotero",
-    "✨ remoção rápida 1-clique": "✨ Eliminación Rápida 1-Clic",
+    "✂️ estúdio cirúrgico & conta-gotas": "✂️ Estudio Quirúrgico y Cuentagotas",
+    "✨ remoção rápida 1-clique": "✨ Eliminación Rápida en 1 Clic",
     "↺ restaurar original": "↺ Restaurar Original",
     "adicionar ao rolo & encaixar": "Añadir al Rollo y Encajar",
     "📦 saldos & insumos": "📦 Saldos e Insumos",
@@ -3284,7 +3294,7 @@
     "metragem custom (m)": "Longitud Personalizada (m)",
     "espaçamento / sangria": "Espaciado / Sangría",
     "selecione o pedido para adicionar": "Seleccione el Pedido",
-    "arquivo de imagem (png, jpg, webp, svg ou pdf/ai)": "Archivo de Imagen (PNG, JPG, SVG, PDF)",
+    "arquivo de imagem (png, jpg, webp, svg ou pdf/ai)": "Archivo de Imagen (PNG, JPG, WebP, SVG o PDF/AI)",
     "descrição / local da estampa": "Descripción / Ubicación de la Estampa",
     "cliente / identificação do pedido": "Cliente / Identificación del Pedido",
     "cópias (un)": "Copias (cant.)",
@@ -3551,7 +3561,7 @@
     "ao menos 1 número (0-9)": "Ao menos 1 número (0-9)",
     "apenas o": "Apenas o",
     "aprovação final do administrador com checklist obrigatório": "Aprovação final do administrador com checklist obrigatório",
-    "aproveita melhor a largura de 58cm reduzindo metros de rolo": "Aproveita melhor a largura de 58cm reduzindo metros de rolo",
+    "aproveita melhor a largura de 58cm reduzindo metros de rolo": "Aprovecha mejor el ancho de 58cm reduciendo metros de rollo",
     "areia / bege": "Areia / Bege",
     "armarinhos central": "Mercería Central",
     "arquivo não anexado nesta versão": "Arquivo não anexado nesta versão",
@@ -3639,7 +3649,7 @@
     "como a depreciação protege o caixa e a dre da fábrica": "Como a Depreciação Protege o Caixa e a DRE da Fábrica",
     "compra malha piquet e dry - malharia sul": "Compra Tejido Piqué y Dry - Malharia Sul",
     "compras sincronizadas com o estoque e lançamentos avulsos de manutenção e consumíveis da fábrica.": "Compras sincronizadas con el inventario y registros individuales de mantenimiento y consumibles de fábrica.",
-    "condição de fornecimento:": "Condição de Fornecimento:",
+    "condição de fornecimento:": "Condición de Suministro:",
     "condições comerciais, entrada de sinal & saldo remanescente:": "CONDICIONES COMERCIALES, ANTICIPO Y SALDO PENDIENTE:",
     "cone linha reta 120 10.000m azul marinho": "Cone Linha Reta 120 10.000m Azul Marinho",
     "conectando aos servidores da sefaz sp e verificando disponibilidade dos webservices...": "Conectando aos servidores da SEFAZ SP e verificando disponibilidade dos webservices...",
@@ -3724,7 +3734,7 @@
     "economia direta estimada mensal:": "Economia Direta Estimada Mensal:",
     "editar performance financeira semestral": "Editar Rendimiento Financiero Semestral",
     "efetivado no caixa": "Efetivado no Caixa",
-    "elimina bordas brancas/bege sólidas sem alterar letras internas": "Elimina bordas brancas/bege sólidas sem alterar letras internas",
+    "elimina bordas brancas/bege sólidas sem alterar letras internas": "Elimina bordes blancos/beige sólidos sin alterar letras internas",
     "elástico 35mm": "Elástico 35mm",
     "elástico 40mm cintura": "Elástico 40mm Cintura",
     "elástico chato reforçado 30mm / 40mm": "Elástico Chato Reforçado 30mm / 40mm",
@@ -3815,7 +3825,7 @@
     "insc. estadual do subst. trib.": "INSC. ESTADUAL DO SUBST. TRIB.",
     "identificação do usuário": "Identificación del Usuario",
     "ilhós de metal (par)": "Ojetes Metálicos (par)",
-    "importe estampas avulsas, logos ou artes reais da fábrica em alta resolução": "Importe estampas avulsas, logos ou artes reais da fábrica em alta resolução",
+    "importe estampas avulsas, logos ou artes reais da fábrica em alta resolução": "Importe estampados sueltos, logotipos o artes reales de la fábrica en alta resolución",
     "importe um arquivo .json gerado previamente para carregar todos os dados.": "Importe um arquivo .json gerado previamente para carregar todos os dados.",
     "imposto estimado simples:": "Imposto Estimado Simples:",
     "impressora dtf industrial 60cm 4 cabeças i3200": "Impressora DTF Industrial 60cm 4 Cabeças i3200",
@@ -3956,7 +3966,7 @@
     "pedido reativado": "Pedido Reativado",
     "pegar token grátis na focus nfe &rarr;": "Pegar Token Grátis na Focus NFe &rarr;",
     "perfis de dono, vendedor e oficina": "Perfis de Dono, Vendedor e Oficina",
-    "permitir rotação automática de 90°": "Permitir rotação automática de 90°",
+    "permitir rotação automática de 90°": "Permitir rotación automática de 90°",
     "personalização padrão conforme ficha de estampa e bordado aprovada.": "Personalização padrão conforme ficha de estampa e bordado aprovada.",
     "personalize a identidade da confecção: logotipo em alta resolução, dados cadastrais, dados para pagamento via pix e segurança.": "Personalice la identidad de la confección: logotipo de alta resolución, datos fiscales, datos de pago y seguridad.",
     "peça lisa (sem estampa). nenhuma personalização adicionada. clique nos botões acima para incluir bordado, dtf ou silk.": "Peça Lisa (Sem Estampa). Nenhuma personalização adicionada. Clique nos botões acima para incluir Bordado, DTF ou Silk.",
@@ -3966,15 +3976,15 @@
     "plano de comissões da equipe comercial": "Plano de Comissões da Equipe Comercial",
     "poliamida termofusível branca especial dtf": "Poliamida Termofusível Branca Especial DTF",
     "prazo prometido ao cliente:": "Prazo Prometido ao Cliente:",
-    "prazo prometido de produção & entrega:": "Prazo Prometido de Produção & Entrega:",
+    "prazo prometido de produção & entrega:": "Plazo Prometido de Producción y Entrega:",
     "preencha os dados da confecção com o cliente para demonstrar que o sistema se paga sozinho logo no primeiro mês de uso.": "Preencha os dados da Confección com o cliente para demonstrar que o sistema se paga sozinho logo no primeiro mês de uso.",
     "preencha os tamanhos necessários. somente os tamanhos com quantidade aparecerão no orçamento e corte.": "Complete las tallas necesarias. Solo las tallas con cantidad aparecerán en el presupuesto y corte.",
     "preencha todos os dados: vencimento (dia e mês), fornecedor, categoria e valor": "Preencha todos os dados: vencimento (dia e mês), fornecedor, categoria e valor",
     "preenchimento automático via cartão cnpj e integração completa com pedidos e nf-e": "Preenchimento automático via Cartão CNPJ e integração completa com Pedidos e NF-e",
     "prensa térmica pneumática dupla bandeja 40x50": "Prensa Térmica Pneumática Dupla Bandeja 40x50",
     "previsão": "Previsão",
-    "preço médio / pç:": "Preço Médio / Pç:",
-    "preço unitário:": "Preço Unitário:",
+    "preço médio / pç:": "Precio Medio / Pza:",
+    "preço unitário:": "Precio Unitario:",
     "preço venda": "PRECIO DE VENTA",
     "primeiro acesso ao sistema": "Primer Acceso al Sistema",
     "produção: corte & estamparia": "Produção: Corte & Estamparia",
@@ -4008,7 +4018,7 @@
     "regras automáticas por percentual do faturamento, margem bruta ou fixo por peça com liquidação e baixa integrada": "Regras automáticas por percentual do faturamento, margem bruta ou fixo por peça com liquidação e baixa integrada",
     "regulador de metal": "Regulador Metálico",
     "relatório gerencial dre & balanço contábil": "Informe Gerencial de Pérdidas y Ganancias (DRE) y Balance",
-    "remover fundo automaticamente (canva-style)": "Remover fundo automaticamente (Canva-style)",
+    "remover fundo automaticamente (canva-style)": "Eliminar fondo automáticamente (estilo Canva)",
     "rendimento do tecido:": "Rendimiento de la Tela:",
     "requer botão \"entrada\"": "Requiere botón \"Anticipo\"",
     "resumo financeiro consolidado do pedido:": "RESUMEN FINANCIERO CONSOLIDADO DEL PEDIDO:",
@@ -4112,7 +4122,7 @@
     "valor total da nota": "VALOR TOTAL DA NOTA",
     "valor total do ipi": "VALOR TOTAL DO IPI",
     "valor total dos produtos": "VALOR TOTAL DOS PRODUTOS",
-    "valor total:": "VALOR TOTAL:",
+    "valor total:": "IMPORTE TOTAL:",
     "você deve selecionar obrigatoriamente cada ponto de atenção para confirmar que conferiu:": "DEBE SELECCIONAR OBLIGATORIAMENTE CADA PUNTO DE ATENCIÓN PARA CONFIRMAR LA REVISIÓN:",
     "valor total pedido": "Valor Total Pedido",
     "valor total do pedido:": "Valor Total do Pedido:",
@@ -4176,7 +4186,7 @@
     "• arquivo:": "• Arquivo:",
     "• artes anexadas:": "• Artes Anexadas:",
     "• cliente:": "• CLIENTE:",
-    "• chave pix:": "• Chave PIX:",
+    "• chave pix:": "• Clave de Pago Inmediato (PIX):",
     "• custo médio atual:": "• Custo médio atual:",
     "• malhas, tecidos planos e linhas de corte": "• Telas, Tejidos Planos y Líneas de Corte",
     "• margem líquida:": "• Margem Líquida:",
@@ -4186,10 +4196,10 @@
     "• pedido": "• PEDIDO",
     "• para transmissão direta com protocolo governamental em lote, insira o token gratuito da focus nfe.": "• Para transmissão direta com protocolo governamental em lote, insira o Token gratuito da Focus NFe.",
     "• peça:": "• Peça:",
-    "• prazo de entrega: prometido para": "• Prazo de Entrega: Prometido para",
+    "• prazo de entrega: prometido para": "• Plazo de Entrega: Prometido para",
     "• requer entrada": "• Requer Entrada",
     "• suprimentos dtf, bordado, serigrafia e aviamentos": "• Insumos DTF, Bordado, Serigrafía y Fornituras",
-    "• validade desta proposta: 15 dias corridos a partir da data de emissão.": "• Validade desta proposta: 15 dias corridos a partir da data de emissão.",
+    "• validade desta proposta: 15 dias corridos a partir da data de emissão.": "• Validez de esta propuesta: 15 días naturales desde la fecha de emisión.",
     "• validade:": "• Validade:",
     "⚖️ saldo operacional líquido do mês": "⚖️ Saldo Operacional Líquido do Mês",
     "⚙️ configurações fiscais & certificado digital a1": "⚙️ Configuración Fiscal y Certificado Digital A1",
@@ -4419,7 +4429,17 @@
     "aviamentos p/ pc": "Avíos por Prenda",
     "aviamentos p / pc": "Avíos por Prenda",
     "aviamentos p/ pç": "Avíos por Prenda",
-    "aviamentos p / pç": "Avíos por Prenda"
+    "aviamentos p / pç": "Avíos por Prenda",
+    "prazo prometido de produção & entrega": "Plazo Prometido de Producción y Entrega",
+    "condição de fornecimento": "Condición de Suministro",
+    "condições gerais de fornecimento": "CONDICIONES GENERALES DE SUMINISTRO",
+    "preço unitário": "Precio Unitario",
+    "preço médio / pç": "Precio Medio / Pza",
+    "chave pix:": "Clave de Pago Inmediato (PIX):",
+    "prazo de entrega: prometido para": "Plazo de Entrega: Prometido para",
+    "validade desta proposta: 15 dias corridos a partir da data de emissão.": "Validez de esta propuesta: 15 días naturales desde la fecha de emisión.",
+    "estampa dtf": "Estampado DTF",
+    "cliente oficial": "Cliente Oficial"
   },
   "pt-PT": {
     "abertura & visão geral da fábrica": "Abertura & Visão Geral da Fábrica",
@@ -4501,7 +4521,7 @@
     "cliente": "Cliente",
     "data": "Data",
     "peças": "peças",
-    "valor total": "Valor Total",
+    "valor total": "VALOR TOTAL",
     "status": "Estado",
     "ações": "Ações",
     "ver detalhes": "Ver Detalhes",
@@ -5211,7 +5231,7 @@
     "salvar & exportar png (rip)": "Guardar e Exportar PNG (Pronto RIP)",
     "padrão (40%)": "Padrão (40%)",
     "adicionar matrizes ao rolo": "Adicionar Matrizes ao Rolo",
-    "✂️ estúdio cirúrgico & conta-gotas": "✂️ Estúdio de Precisão & Conta-gotas",
+    "✂️ estúdio cirúrgico & conta-gotas": "✂️ Estúdio Cirúrgico e Conta-gotas",
     "✨ remoção rápida 1-clique": "✨ Remoção Rápida 1-Clique",
     "↺ restaurar original": "↺ Restaurar Original",
     "adicionar ao rolo & encaixar": "Adicionar ao Rolo & Encaixar",
@@ -5458,7 +5478,7 @@
     "metragem custom (m)": "Metragem Personalizada (m)",
     "espaçamento / sangria": "Espaçamento / Sangria",
     "selecione o pedido para adicionar": "Selecionar Encomenda",
-    "arquivo de imagem (png, jpg, webp, svg ou pdf/ai)": "Ficheiro de Imagem (PNG, JPG, SVG, PDF)",
+    "arquivo de imagem (png, jpg, webp, svg ou pdf/ai)": "Ficheiro de Imagem (PNG, JPG, WebP, SVG ou PDF/AI)",
     "descrição / local da estampa": "Descrição / Localização da Estampa",
     "cliente / identificação do pedido": "Cliente / Identificação da Encomenda",
     "cópias (un)": "Cópias (un)",
@@ -5898,7 +5918,7 @@
     "economia direta estimada mensal:": "Economia Direta Estimada Mensal:",
     "editar performance financeira semestral": "Editar Desempenho Financeiro Semestral",
     "efetivado no caixa": "Efetivado no Caixa",
-    "elimina bordas brancas/bege sólidas sem alterar letras internas": "Elimina bordas brancas/bege sólidas sem alterar letras internas",
+    "elimina bordas brancas/bege sólidas sem alterar letras internas": "Elimina bordos brancos/bege sólidos sem alterar letras internas",
     "elástico 35mm": "Elástico 35mm",
     "elástico 40mm cintura": "Elástico 40mm Cintura",
     "elástico chato reforçado 30mm / 40mm": "Elástico Chato Reforçado 30mm / 40mm",
@@ -5989,7 +6009,7 @@
     "insc. estadual do subst. trib.": "INSC. ESTADUAL DO SUBST. TRIB.",
     "identificação do usuário": "Identificação do Utilizador",
     "ilhós de metal (par)": "Ilhoses de Metal (par)",
-    "importe estampas avulsas, logos ou artes reais da fábrica em alta resolução": "Importe estampas avulsas, logos ou artes reais da fábrica em alta resolução",
+    "importe estampas avulsas, logos ou artes reais da fábrica em alta resolução": "Importe estampas avulsas, logótipos ou maquetes da fábrica em alta resolução",
     "importe um arquivo .json gerado previamente para carregar todos os dados.": "Importe um arquivo .json gerado previamente para carregar todos os dados.",
     "imposto estimado simples:": "Imposto Estimado Simples:",
     "impressora dtf industrial 60cm 4 cabeças i3200": "Impressora DTF Industrial 60cm 4 Cabeças i3200",
@@ -6140,14 +6160,14 @@
     "plano de comissões da equipe comercial": "Plano de Comissões da Equipe Comercial",
     "poliamida termofusível branca especial dtf": "Poliamida Termofusível Branca Especial DTF",
     "prazo prometido ao cliente:": "Prazo Prometido ao Cliente:",
-    "prazo prometido de produção & entrega:": "Prazo Prometido de Produção & Entrega:",
+    "prazo prometido de produção & entrega:": "Prazo Prometido de Produção e Entrega:",
     "preencha os dados da confecção com o cliente para demonstrar que o sistema se paga sozinho logo no primeiro mês de uso.": "Preencha os dados da Confeção com o cliente para demonstrar que o sistema se paga sozinho logo no primeiro mês de uso.",
     "preencha os tamanhos necessários. somente os tamanhos com quantidade aparecerão no orçamento e corte.": "Preencha os tamanhos necessários. Apenas os tamanhos com quantidade aparecerão no orçamento e corte.",
     "preencha todos os dados: vencimento (dia e mês), fornecedor, categoria e valor": "Preencha todos os dados: vencimento (dia e mês), fornecedor, categoria e valor",
     "preenchimento automático via cartão cnpj e integração completa com pedidos e nf-e": "Preenchimento automático via Cartão CNPJ e integração completa com Pedidos e NF-e",
     "prensa térmica pneumática dupla bandeja 40x50": "Prensa Térmica Pneumática Dupla Bandeja 40x50",
     "previsão": "Previsão",
-    "preço médio / pç:": "Preço Médio / Pç:",
+    "preço médio / pç:": "Preço Médio / Peça:",
     "preço unitário:": "Preço Unitário:",
     "preço venda": "PREÇO DE VENDA",
     "primeiro acesso ao sistema": "Primeiro Acesso ao Sistema",
@@ -6182,7 +6202,7 @@
     "regras automáticas por percentual do faturamento, margem bruta ou fixo por peça com liquidação e baixa integrada": "Regras automáticas por percentual do faturamento, margem bruta ou fixo por peça com liquidação e baixa integrada",
     "regulador de metal": "Regulador Metálico",
     "relatório gerencial dre & balanço contábil": "Relatório de Gestão DRE e Balanço Contabilístico",
-    "remover fundo automaticamente (canva-style)": "Remover fundo automaticamente (Canva-style)",
+    "remover fundo automaticamente (canva-style)": "Remover fundo automaticamente (estilo Canva)",
     "rendimento do tecido:": "Rendimento do Tecido:",
     "requer botão \"entrada\"": "Requer botão \"Entrada\"",
     "resumo financeiro consolidado do pedido:": "RESUMO FINANCEIRO CONSOLIDADO DA ENCOMENDA:",
@@ -6350,7 +6370,7 @@
     "• arquivo:": "• Arquivo:",
     "• artes anexadas:": "• Artes Anexadas:",
     "• cliente:": "• CLIENTE:",
-    "• chave pix:": "• Chave PIX:",
+    "• chave pix:": "• Chave de Pagamento Imediato (PIX):",
     "• custo médio atual:": "• Custo médio atual:",
     "• malhas, tecidos planos e linhas de corte": "• Malhas, Tecidos Planos e Linhas de Corte",
     "• margem líquida:": "• Margem Líquida:",
@@ -6593,7 +6613,17 @@
     "aviamentos p/ pc": "Aviamentos por Peça",
     "aviamentos p / pc": "Aviamentos por Peça",
     "aviamentos p/ pç": "Aviamentos por Peça",
-    "aviamentos p / pç": "Aviamentos por Peça"
+    "aviamentos p / pç": "Aviamentos por Peça",
+    "prazo prometido de produção & entrega": "Prazo Prometido de Produção e Entrega",
+    "condição de fornecimento": "Condição de Fornecimento",
+    "condições gerais de fornecimento": "CONDIÇÕES GERAIS DE FORNECIMENTO",
+    "preço unitário": "Preço Unitário",
+    "preço médio / pç": "Preço Médio / Peça",
+    "chave pix:": "Chave de Pagamento Imediato (PIX):",
+    "prazo de entrega: prometido para": "Prazo de Entrega: Prometido para",
+    "validade desta proposta: 15 dias corridos a partir da data de emissão.": "Validade desta proposta: 15 dias corridos a partir da data de emissão.",
+    "estampa dtf": "Estampa DTF",
+    "cliente oficial": "Cliente Oficial"
   },
   "fr": {
     "abertura & visão geral da fábrica": "Accueil & Vue d'Ensemble de l'Usine",
@@ -6675,7 +6705,7 @@
     "cliente": "Client",
     "data": "Date",
     "peças": "pièces",
-    "valor total": "Montant Total",
+    "valor total": "MONTANT TOTAL",
     "status": "Statut",
     "ações": "Actions",
     "ver detalhes": "Voir Détails",
@@ -7385,7 +7415,7 @@
     "salvar & exportar png (rip)": "Enregistrer & Exporter PNG (Prêt RIP)",
     "padrão (40%)": "Standard (40%)",
     "adicionar matrizes ao rolo": "Ajouter les Matrices au Rouleau",
-    "✂️ estúdio cirúrgico & conta-gotas": "✂️ Studio Précision & Pipette",
+    "✂️ estúdio cirúrgico & conta-gotas": "✂️ Studio Chirurgical & Pipette",
     "✨ remoção rápida 1-clique": "✨ Suppression Rapide en 1 Clic",
     "↺ restaurar original": "↺ Restaurer l'Original",
     "adicionar ao rolo & encaixar": "Ajouter au Rouleau & Imbriquer",
@@ -7632,7 +7662,7 @@
     "metragem custom (m)": "Métrage Personnalisé (m)",
     "espaçamento / sangria": "Espacement / Marge Perdue",
     "selecione o pedido para adicionar": "Sélectionner la Commande",
-    "arquivo de imagem (png, jpg, webp, svg ou pdf/ai)": "Fichier Graphique (PNG, JPG, SVG, PDF)",
+    "arquivo de imagem (png, jpg, webp, svg ou pdf/ai)": "Fichier Image (PNG, JPG, WebP, SVG ou PDF/AI)",
     "descrição / local da estampa": "Description / Emplacement du Marquage",
     "cliente / identificação do pedido": "Client / Référence de Commande",
     "cópias (un)": "Exemplaires (qté)",
@@ -7899,7 +7929,7 @@
     "ao menos 1 número (0-9)": "Ao menos 1 número (0-9)",
     "apenas o": "Apenas o",
     "aprovação final do administrador com checklist obrigatório": "Aprovação final do administrador com checklist obrigatório",
-    "aproveita melhor a largura de 58cm reduzindo metros de rolo": "Aproveita melhor a largura de 58cm reduzindo metros de rolo",
+    "aproveita melhor a largura de 58cm reduzindo metros de rolo": "Optimise la laize de 58cm en réduisant la longueur de rouleau",
     "areia / bege": "Areia / Bege",
     "armarinhos central": "Mercerie Centrale",
     "arquivo não anexado nesta versão": "Arquivo não anexado nesta versão",
@@ -7987,7 +8017,7 @@
     "como a depreciação protege o caixa e a dre da fábrica": "Como a Depreciação Protege o Caixa e a DRE da Fábrica",
     "compra malha piquet e dry - malharia sul": "Achat Tissu Piqué et Dry - Malharia Sul",
     "compras sincronizadas com o estoque e lançamentos avulsos de manutenção e consumíveis da fábrica.": "Achats synchronisés avec les stocks et écritures diverses pour l'entretien et les consommables de l'usine.",
-    "condição de fornecimento:": "Condição de Fornecimento:",
+    "condição de fornecimento:": "Condition de Fourniture :",
     "condições comerciais, entrada de sinal & saldo remanescente:": "CONDITIONS COMMERCIALES, ACOMPTE & SOLDE RESTANT :",
     "cone linha reta 120 10.000m azul marinho": "Cone Linha Reta 120 10.000m Azul Marinho",
     "conectando aos servidores da sefaz sp e verificando disponibilidade dos webservices...": "Conectando aos servidores da SEFAZ SP e verificando disponibilidade dos webservices...",
@@ -8072,7 +8102,7 @@
     "economia direta estimada mensal:": "Economia Direta Estimada Mensal:",
     "editar performance financeira semestral": "Modifier la Performance Financière Semestrielle",
     "efetivado no caixa": "Efetivado no Caixa",
-    "elimina bordas brancas/bege sólidas sem alterar letras internas": "Elimina bordas brancas/bege sólidas sem alterar letras internas",
+    "elimina bordas brancas/bege sólidas sem alterar letras internas": "Supprime les bordures unies blanches/beiges sans altérer les lettres intérieures",
     "elástico 35mm": "Élastique 35mm",
     "elástico 40mm cintura": "Élastique de Ceinture 40mm",
     "elástico chato reforçado 30mm / 40mm": "Elástico Chato Reforçado 30mm / 40mm",
@@ -8163,7 +8193,7 @@
     "insc. estadual do subst. trib.": "INSC. ESTADUAL DO SUBST. TRIB.",
     "identificação do usuário": "Identification de l'Utilisateur",
     "ilhós de metal (par)": "Œillets Métalliques (paire)",
-    "importe estampas avulsas, logos ou artes reais da fábrica em alta resolução": "Importe estampas avulsas, logos ou artes reais da fábrica em alta resolução",
+    "importe estampas avulsas, logos ou artes reais da fábrica em alta resolução": "Importez des visuels, logos ou maquettes haute résolution de l'usine",
     "importe um arquivo .json gerado previamente para carregar todos os dados.": "Importe um arquivo .json gerado previamente para carregar todos os dados.",
     "imposto estimado simples:": "Imposto Estimado Simples:",
     "impressora dtf industrial 60cm 4 cabeças i3200": "Impressora DTF Industrial 60cm 4 Cabeças i3200",
@@ -8304,7 +8334,7 @@
     "pedido reativado": "Pedido Reativado",
     "pegar token grátis na focus nfe &rarr;": "Pegar Token Grátis na Focus NFe &rarr;",
     "perfis de dono, vendedor e oficina": "Perfis de Dono, Vendedor e Oficina",
-    "permitir rotação automática de 90°": "Permitir rotação automática de 90°",
+    "permitir rotação automática de 90°": "Autoriser la rotation automatique à 90°",
     "personalização padrão conforme ficha de estampa e bordado aprovada.": "Personalização padrão conforme ficha de estampa e bordado aprovada.",
     "personalize a identidade da confecção: logotipo em alta resolução, dados cadastrais, dados para pagamento via pix e segurança.": "Personnalisez l'identité de confection : logo haute résolution, données fiscales, paiement instantané et sécurité.",
     "peça lisa (sem estampa). nenhuma personalização adicionada. clique nos botões acima para incluir bordado, dtf ou silk.": "Peça Lisa (Sem Estampa). Nenhuma personalização adicionada. Clique nos botões acima para incluir Bordado, DTF ou Silk.",
@@ -8314,15 +8344,15 @@
     "plano de comissões da equipe comercial": "Plano de Comissões da Equipe Comercial",
     "poliamida termofusível branca especial dtf": "Poliamida Termofusível Branca Especial DTF",
     "prazo prometido ao cliente:": "Prazo Prometido ao Cliente:",
-    "prazo prometido de produção & entrega:": "Prazo Prometido de Produção & Entrega:",
+    "prazo prometido de produção & entrega:": "Délai Promis de Production & Livraison :",
     "preencha os dados da confecção com o cliente para demonstrar que o sistema se paga sozinho logo no primeiro mês de uso.": "Preencha os dados da Confection com o cliente para demonstrar que o sistema se paga sozinho logo no primeiro mês de uso.",
     "preencha os tamanhos necessários. somente os tamanhos com quantidade aparecerão no orçamento e corte.": "Remplissez les tailles nécessaires. Seules les tailles avec des quantités apparaîtront dans le devis et la coupe.",
     "preencha todos os dados: vencimento (dia e mês), fornecedor, categoria e valor": "Preencha todos os dados: vencimento (dia e mês), fornecedor, categoria e valor",
     "preenchimento automático via cartão cnpj e integração completa com pedidos e nf-e": "Preenchimento automático via Cartão CNPJ e integração completa com Pedidos e NF-e",
     "prensa térmica pneumática dupla bandeja 40x50": "Prensa Térmica Pneumática Dupla Bandeja 40x50",
     "previsão": "Previsão",
-    "preço médio / pç:": "Preço Médio / Pç:",
-    "preço unitário:": "Preço Unitário:",
+    "preço médio / pç:": "Prix Moyen / Pièce :",
+    "preço unitário:": "Prix Unitaire :",
     "preço venda": "PRIX DE VENTE",
     "primeiro acesso ao sistema": "Premier Accès au Système",
     "produção: corte & estamparia": "Produção: Corte & Estamparia",
@@ -8356,7 +8386,7 @@
     "regras automáticas por percentual do faturamento, margem bruta ou fixo por peça com liquidação e baixa integrada": "Regras automáticas por percentual do faturamento, margem bruta ou fixo por peça com liquidação e baixa integrada",
     "regulador de metal": "Boucle de Réglage Métallique",
     "relatório gerencial dre & balanço contábil": "Rapport de Gestion Compte de Résultat & Bilan",
-    "remover fundo automaticamente (canva-style)": "Remover fundo automaticamente (Canva-style)",
+    "remover fundo automaticamente (canva-style)": "Supprimer l'arrière-plan automatiquement (style Canva)",
     "rendimento do tecido:": "Rendement du Tissu :",
     "requer botão \"entrada\"": "Nécessite le bouton \"Acompte\"",
     "resumo financeiro consolidado do pedido:": "RÉSUMÉ FINANCIER CONSOLIDÉ DE LA COMMANDE :",
@@ -8460,7 +8490,7 @@
     "valor total da nota": "VALOR TOTAL DA NOTA",
     "valor total do ipi": "VALOR TOTAL DO IPI",
     "valor total dos produtos": "VALOR TOTAL DOS PRODUTOS",
-    "valor total:": "VALOR TOTAL:",
+    "valor total:": "MONTANT TOTAL :",
     "você deve selecionar obrigatoriamente cada ponto de atenção para confirmar que conferiu:": "VOUS DEVEZ OBLIGATOIREMENT SÉLECTIONNER CHAQUE POINT D'ATTENTION POUR CONFIRMER LA VÉRIFICATION :",
     "valor total pedido": "Valor Total Pedido",
     "valor total do pedido:": "Valor Total do Pedido:",
@@ -8524,7 +8554,7 @@
     "• arquivo:": "• Arquivo:",
     "• artes anexadas:": "• Artes Anexadas:",
     "• cliente:": "• CLIENTE:",
-    "• chave pix:": "• Chave PIX:",
+    "• chave pix:": "• Clé de Paiement Immédiat (PIX) :",
     "• custo médio atual:": "• Custo médio atual:",
     "• malhas, tecidos planos e linhas de corte": "• Mailles, Tissus et Lignes de Coupe",
     "• margem líquida:": "• Margem Líquida:",
@@ -8534,10 +8564,10 @@
     "• pedido": "• PEDIDO",
     "• para transmissão direta com protocolo governamental em lote, insira o token gratuito da focus nfe.": "• Para transmissão direta com protocolo governamental em lote, insira o Token gratuito da Focus NFe.",
     "• peça:": "• Peça:",
-    "• prazo de entrega: prometido para": "• Prazo de Entrega: Prometido para",
+    "• prazo de entrega: prometido para": "• Délai de Livraison : Promis pour",
     "• requer entrada": "• Requer Entrada",
     "• suprimentos dtf, bordado, serigrafia e aviamentos": "• Fournitures DTF, Broderie, Sérigraphie & Mercerie",
-    "• validade desta proposta: 15 dias corridos a partir da data de emissão.": "• Validade desta proposta: 15 dias corridos a partir da data de emissão.",
+    "• validade desta proposta: 15 dias corridos a partir da data de emissão.": "• Validité de ce devis : 15 jours calendaires à compter de la date d'émission.",
     "• validade:": "• Validade:",
     "⚖️ saldo operacional líquido do mês": "⚖️ Saldo Operacional Líquido do Mês",
     "⚙️ configurações fiscais & certificado digital a1": "⚙️ Paramètres Fiscaux & Certificat Numérique A1",
@@ -8767,7 +8797,17 @@
     "aviamentos p/ pc": "Fournitures par Pièce",
     "aviamentos p / pc": "Fournitures par Pièce",
     "aviamentos p/ pç": "Fournitures par Pièce",
-    "aviamentos p / pç": "Fournitures par Pièce"
+    "aviamentos p / pç": "Fournitures par Pièce",
+    "prazo prometido de produção & entrega": "Délai Promis de Production & Livraison",
+    "condição de fornecimento": "Condition de Fourniture",
+    "condições gerais de fornecimento": "CONDITIONS GÉNÉRALES DE FOURNITURE",
+    "preço unitário": "Prix Unitaire",
+    "preço médio / pç": "Prix Moyen / Pièce",
+    "chave pix:": "Clé de Paiement Immédiat (PIX) :",
+    "prazo de entrega: prometido para": "Délai de Livraison : Promis pour",
+    "validade desta proposta: 15 dias corridos a partir da data de emissão.": "Validité de ce devis : 15 jours calendaires à compter de la date d'émission.",
+    "estampa dtf": "Impression DTF",
+    "cliente oficial": "Client Officiel"
   },
   "de": {
     "abertura & visão geral da fábrica": "Übersicht & Werksüberblick",
@@ -8849,7 +8889,7 @@
     "cliente": "Kunde",
     "data": "Datum",
     "peças": "Stück",
-    "valor total": "Gesamtbetrag",
+    "valor total": "GESAMTBETRAG",
     "status": "Status",
     "ações": "Aktionen",
     "ver detalhes": "Details anzeigen",
@@ -9559,9 +9599,9 @@
     "salvar & exportar png (rip)": "Speichern & PNG exportieren (RIP-bereit)",
     "padrão (40%)": "Standard (40%)",
     "adicionar matrizes ao rolo": "Muster zur Druckrolle Hinzufügen",
-    "✂️ estúdio cirúrgico & conta-gotas": "✂️ Präzisionsstudio & Pipette",
-    "✨ remoção rápida 1-clique": "✨ 1-Klick Schnellentfernung",
-    "↺ restaurar original": "↺ Original Wiederherstellen",
+    "✂️ estúdio cirúrgico & conta-gotas": "✂️ Präzisions-Studio & Pipette",
+    "✨ remoção rápida 1-clique": "✨ Schnelle 1-Klick-Entfernung",
+    "↺ restaurar original": "↺ Original wiederherstellen",
     "adicionar ao rolo & encaixar": "Zur Rolle Hinzufügen & Einpassen",
     "📦 saldos & insumos": "📦 Bestände & Materialien",
     "+ entrada": "+ Zugang",
@@ -10073,7 +10113,7 @@
     "ao menos 1 número (0-9)": "Ao menos 1 número (0-9)",
     "apenas o": "Apenas o",
     "aprovação final do administrador com checklist obrigatório": "Aprovação final do administrador com checklist obrigatório",
-    "aproveita melhor a largura de 58cm reduzindo metros de rolo": "Aproveita melhor a largura de 58cm reduzindo metros de rolo",
+    "aproveita melhor a largura de 58cm reduzindo metros de rolo": "Nutzt die 58cm-Breite optimal aus und spart Rollenmeter",
     "areia / bege": "Areia / Bege",
     "armarinhos central": "Zentral-Kurzwaren",
     "arquivo não anexado nesta versão": "Arquivo não anexado nesta versão",
@@ -10161,7 +10201,7 @@
     "como a depreciação protege o caixa e a dre da fábrica": "Como a Depreciação Protege o Caixa e a DRE da Fábrica",
     "compra malha piquet e dry - malharia sul": "Einkauf Piqué- und Dry-Fit-Stoff - Malharia Sul",
     "compras sincronizadas com o estoque e lançamentos avulsos de manutenção e consumíveis da fábrica.": "Mit dem Lagerbestand synchronisierte Einkäufe sowie Einzelbuchungen für Fabrikinstandhaltung und Verbrauchsmaterialien.",
-    "condição de fornecimento:": "Condição de Fornecimento:",
+    "condição de fornecimento:": "Lieferbedingung:",
     "condições comerciais, entrada de sinal & saldo remanescente:": "GESCHÄFTSBEDINGUNGEN, ANZAHLUNG & RESTBETRAG:",
     "cone linha reta 120 10.000m azul marinho": "Cone Linha Reta 120 10.000m Azul Marinho",
     "conectando aos servidores da sefaz sp e verificando disponibilidade dos webservices...": "Conectando aos servidores da SEFAZ SP e verificando disponibilidade dos webservices...",
@@ -10246,7 +10286,7 @@
     "economia direta estimada mensal:": "Economia Direta Estimada Mensal:",
     "editar performance financeira semestral": "Halbjährliche Finanzleistung bearbeiten",
     "efetivado no caixa": "Efetivado no Caixa",
-    "elimina bordas brancas/bege sólidas sem alterar letras internas": "Elimina bordas brancas/bege sólidas sem alterar letras internas",
+    "elimina bordas brancas/bege sólidas sem alterar letras internas": "Entfernt einfarbige weiße/beige Ränder, ohne innere Buchstaben zu verändern",
     "elástico 35mm": "35mm Elastikband",
     "elástico 40mm cintura": "40mm Taillengummi",
     "elástico chato reforçado 30mm / 40mm": "Elástico Chato Reforçado 30mm / 40mm",
@@ -10337,7 +10377,7 @@
     "insc. estadual do subst. trib.": "INSC. ESTADUAL DO SUBST. TRIB.",
     "identificação do usuário": "Benutzeridentifikation",
     "ilhós de metal (par)": "Metallösen (Paar)",
-    "importe estampas avulsas, logos ou artes reais da fábrica em alta resolução": "Importe estampas avulsas, logos ou artes reais da fábrica em alta resolução",
+    "importe estampas avulsas, logos ou artes reais da fábrica em alta resolução": "Einzelne Motive, Logos oder hochauflösende Werksgrafiken importieren",
     "importe um arquivo .json gerado previamente para carregar todos os dados.": "Importe um arquivo .json gerado previamente para carregar todos os dados.",
     "imposto estimado simples:": "Imposto Estimado Simples:",
     "impressora dtf industrial 60cm 4 cabeças i3200": "Impressora DTF Industrial 60cm 4 Cabeças i3200",
@@ -10478,7 +10518,7 @@
     "pedido reativado": "Pedido Reativado",
     "pegar token grátis na focus nfe &rarr;": "Pegar Token Grátis na Focus NFe &rarr;",
     "perfis de dono, vendedor e oficina": "Perfis de Dono, Vendedor e Oficina",
-    "permitir rotação automática de 90°": "Permitir rotação automática de 90°",
+    "permitir rotação automática de 90°": "Automatische 90°-Drehung zulassen",
     "personalização padrão conforme ficha de estampa e bordado aprovada.": "Personalização padrão conforme ficha de estampa e bordado aprovada.",
     "personalize a identidade da confecção: logotipo em alta resolução, dados cadastrais, dados para pagamento via pix e segurança.": "Passen Sie die Fabrikidentität an: hochauflösendes Logo, Stammdaten, Sofortzahlungsdaten und Sicherheit.",
     "peça lisa (sem estampa). nenhuma personalização adicionada. clique nos botões acima para incluir bordado, dtf ou silk.": "Peça Lisa (Sem Estampa). Nenhuma personalização adicionada. Clique nos botões acima para incluir Bordado, DTF ou Silk.",
@@ -10488,15 +10528,15 @@
     "plano de comissões da equipe comercial": "Plano de Comissões da Equipe Comercial",
     "poliamida termofusível branca especial dtf": "Poliamida Termofusível Branca Especial DTF",
     "prazo prometido ao cliente:": "Prazo Prometido ao Cliente:",
-    "prazo prometido de produção & entrega:": "Prazo Prometido de Produção & Entrega:",
+    "prazo prometido de produção & entrega:": "Zugesagte Produktions- & Lieferzeit:",
     "preencha os dados da confecção com o cliente para demonstrar que o sistema se paga sozinho logo no primeiro mês de uso.": "Preencha os dados da Konfektion com o cliente para demonstrar que o sistema se paga sozinho logo no primeiro mês de uso.",
     "preencha os tamanhos necessários. somente os tamanhos com quantidade aparecerão no orçamento e corte.": "Erforderliche Größen ausfüllen. Nur Größen mit Stückzahlen erscheinen in Angebot und Zuschnitt.",
     "preencha todos os dados: vencimento (dia e mês), fornecedor, categoria e valor": "Preencha todos os dados: vencimento (dia e mês), fornecedor, categoria e valor",
     "preenchimento automático via cartão cnpj e integração completa com pedidos e nf-e": "Preenchimento automático via Cartão CNPJ e integração completa com Pedidos e NF-e",
     "prensa térmica pneumática dupla bandeja 40x50": "Prensa Térmica Pneumática Dupla Bandeja 40x50",
     "previsão": "Previsão",
-    "preço médio / pç:": "Preço Médio / Pç:",
-    "preço unitário:": "Preço Unitário:",
+    "preço médio / pç:": "Durchschnittspreis / Stk.:",
+    "preço unitário:": "Einzelpreis:",
     "preço venda": "VERKAUFSPREIS",
     "primeiro acesso ao sistema": "Erster Systemzugriff",
     "produção: corte & estamparia": "Produção: Corte & Estamparia",
@@ -10530,7 +10570,7 @@
     "regras automáticas por percentual do faturamento, margem bruta ou fixo por peça com liquidação e baixa integrada": "Regras automáticas por percentual do faturamento, margem bruta ou fixo por peça com liquidação e baixa integrada",
     "regulador de metal": "Metallschnalle / Versteller",
     "relatório gerencial dre & balanço contábil": "Betriebswirtschaftliche Auswertung & Bilanzbericht",
-    "remover fundo automaticamente (canva-style)": "Remover fundo automaticamente (Canva-style)",
+    "remover fundo automaticamente (canva-style)": "Hintergrund automatisch entfernen (Canva-Stil)",
     "rendimento do tecido:": "Stoffausbeute:",
     "requer botão \"entrada\"": "Erfordert \"Anzahlung\"-Schaltfläche",
     "resumo financeiro consolidado do pedido:": "KONSOLIDIERTE FINANZÜBERSICHT DES AUFTRAGS:",
@@ -10634,7 +10674,7 @@
     "valor total da nota": "VALOR TOTAL DA NOTA",
     "valor total do ipi": "VALOR TOTAL DO IPI",
     "valor total dos produtos": "VALOR TOTAL DOS PRODUTOS",
-    "valor total:": "VALOR TOTAL:",
+    "valor total:": "GESAMTBETRAG:",
     "você deve selecionar obrigatoriamente cada ponto de atenção para confirmar que conferiu:": "SIE MÜSSEN JEDEN PRÜFPUNKT VERPFLICHTEND AUSWÄHLEN, UM DIE KONTROLLE ZU BESTÄTIGEN:",
     "valor total pedido": "Valor Total Pedido",
     "valor total do pedido:": "Valor Total do Pedido:",
@@ -10698,7 +10738,7 @@
     "• arquivo:": "• Arquivo:",
     "• artes anexadas:": "• Artes Anexadas:",
     "• cliente:": "• CLIENTE:",
-    "• chave pix:": "• Chave PIX:",
+    "• chave pix:": "• Sofortzahlungsschlüssel (PIX):",
     "• custo médio atual:": "• Custo médio atual:",
     "• malhas, tecidos planos e linhas de corte": "• Maschenware, Webstoffe und Zuschnittlinien",
     "• margem líquida:": "• Margem Líquida:",
@@ -10708,10 +10748,10 @@
     "• pedido": "• PEDIDO",
     "• para transmissão direta com protocolo governamental em lote, insira o token gratuito da focus nfe.": "• Para transmissão direta com protocolo governamental em lote, insira o Token gratuito da Focus NFe.",
     "• peça:": "• Peça:",
-    "• prazo de entrega: prometido para": "• Prazo de Entrega: Prometido para",
+    "• prazo de entrega: prometido para": "• Lieferfrist: Zugesagt für",
     "• requer entrada": "• Requer Entrada",
     "• suprimentos dtf, bordado, serigrafia e aviamentos": "• DTF-Verbrauchsmaterial, Stickerei, Siebdruck & Kurzwaren",
-    "• validade desta proposta: 15 dias corridos a partir da data de emissão.": "• Validade desta proposta: 15 dias corridos a partir da data de emissão.",
+    "• validade desta proposta: 15 dias corridos a partir da data de emissão.": "• Gültigkeit dieses Angebots: 15 Kalendertage ab Ausstellungsdatum.",
     "• validade:": "• Validade:",
     "⚖️ saldo operacional líquido do mês": "⚖️ Saldo Operacional Líquido do Mês",
     "⚙️ configurações fiscais & certificado digital a1": "⚙️ Steuereinstellungen & A1 Digitalzertifikat",
@@ -10941,7 +10981,17 @@
     "aviamentos p/ pc": "Zutaten pro Stück",
     "aviamentos p / pc": "Zutaten pro Stück",
     "aviamentos p/ pç": "Zutaten pro Stück",
-    "aviamentos p / pç": "Zutaten pro Stück"
+    "aviamentos p / pç": "Zutaten pro Stück",
+    "prazo prometido de produção & entrega": "Zugesagte Produktions- & Lieferzeit",
+    "condição de fornecimento": "Lieferbedingung",
+    "condições gerais de fornecimento": "ALLGEMEINE LIEFERBEDINGUNGEN",
+    "preço unitário": "Einzelpreis",
+    "preço médio / pç": "Durchschnittspreis / Stk.",
+    "chave pix:": "Sofortzahlungsschlüssel (PIX):",
+    "prazo de entrega: prometido para": "Lieferfrist: Zugesagt für",
+    "validade desta proposta: 15 dias corridos a partir da data de emissão.": "Gültigkeit dieses Angebots: 15 Kalendertage ab Ausstellungsdatum.",
+    "estampa dtf": "DTF-Druck",
+    "cliente oficial": "Offizieller Kunde"
   },
   "it": {
     "abertura & visão geral da fábrica": "Panoramica & Gestione Fabbrica",
@@ -11023,7 +11073,7 @@
     "cliente": "Cliente",
     "data": "Data",
     "peças": "pezzi",
-    "valor total": "Valore Totale",
+    "valor total": "IMPORTO TOTALE",
     "status": "Stato",
     "ações": "Azioni",
     "ver detalhes": "Visualizza Dettagli",
@@ -11733,8 +11783,8 @@
     "salvar & exportar png (rip)": "Salva ed Esporta PNG (Pronto RIP)",
     "padrão (40%)": "Standard (40%)",
     "adicionar matrizes ao rolo": "Aggiungi Matrici al Rotolo",
-    "✂️ estúdio cirúrgico & conta-gotas": "✂️ Studio di Precisione & Contagocce",
-    "✨ remoção rápida 1-clique": "✨ Rimozione Rapida in 1 Clic",
+    "✂️ estúdio cirúrgico & conta-gotas": "✂️ Studio Chirurgico & Contagocce",
+    "✨ remoção rápida 1-clique": "✨ Rimozione Rapida 1-Click",
     "↺ restaurar original": "↺ Ripristina Originale",
     "adicionar ao rolo & encaixar": "Aggiungi al Rotolo & Incastra",
     "📦 saldos & insumos": "📦 Giacenze & Forniture",
@@ -12247,7 +12297,7 @@
     "ao menos 1 número (0-9)": "Ao menos 1 número (0-9)",
     "apenas o": "Apenas o",
     "aprovação final do administrador com checklist obrigatório": "Aprovação final do administrador com checklist obrigatório",
-    "aproveita melhor a largura de 58cm reduzindo metros de rolo": "Aproveita melhor a largura de 58cm reduzindo metros de rolo",
+    "aproveita melhor a largura de 58cm reduzindo metros de rolo": "Sfrutta al meglio la larghezza di 58cm riducendo i metri di bobina",
     "areia / bege": "Areia / Bege",
     "armarinhos central": "Merceria Centrale",
     "arquivo não anexado nesta versão": "Arquivo não anexado nesta versão",
@@ -12335,7 +12385,7 @@
     "como a depreciação protege o caixa e a dre da fábrica": "Como a Depreciação Protege o Caixa e a DRE da Fábrica",
     "compra malha piquet e dry - malharia sul": "Acquisto Tessuto Piquet e Dry - Malharia Sul",
     "compras sincronizadas com o estoque e lançamentos avulsos de manutenção e consumíveis da fábrica.": "Acquisti sincronizzati con il magazzino e registrazioni singole per manutenzione e materiali di consumo della fabbrica.",
-    "condição de fornecimento:": "Condição de Fornecimento:",
+    "condição de fornecimento:": "Condizione di Fornitura:",
     "condições comerciais, entrada de sinal & saldo remanescente:": "CONDIZIONI COMMERCIALI, ACCONTO E SALDO RIMANENTE:",
     "cone linha reta 120 10.000m azul marinho": "Cone Linha Reta 120 10.000m Azul Marinho",
     "conectando aos servidores da sefaz sp e verificando disponibilidade dos webservices...": "Conectando aos servidores da SEFAZ SP e verificando disponibilidade dos webservices...",
@@ -12420,7 +12470,7 @@
     "economia direta estimada mensal:": "Economia Direta Estimada Mensal:",
     "editar performance financeira semestral": "Modifica Performance Finanziaria Semestrale",
     "efetivado no caixa": "Efetivado no Caixa",
-    "elimina bordas brancas/bege sólidas sem alterar letras internas": "Elimina bordas brancas/bege sólidas sem alterar letras internas",
+    "elimina bordas brancas/bege sólidas sem alterar letras internas": "Elimina bordi solidi bianchi/beige senza alterare le scritte interne",
     "elástico 35mm": "Elastico 35mm",
     "elástico 40mm cintura": "Elastico Vita 40mm",
     "elástico chato reforçado 30mm / 40mm": "Elástico Chato Reforçado 30mm / 40mm",
@@ -12511,7 +12561,7 @@
     "insc. estadual do subst. trib.": "INSC. ESTADUAL DO SUBST. TRIB.",
     "identificação do usuário": "Identificazione Utente",
     "ilhós de metal (par)": "Occhielli in Metallo (paio)",
-    "importe estampas avulsas, logos ou artes reais da fábrica em alta resolução": "Importe estampas avulsas, logos ou artes reais da fábrica em alta resolução",
+    "importe estampas avulsas, logos ou artes reais da fábrica em alta resolução": "Importa stampe sciolte, loghi o grafiche di fabbrica ad alta risoluzione",
     "importe um arquivo .json gerado previamente para carregar todos os dados.": "Importe um arquivo .json gerado previamente para carregar todos os dados.",
     "imposto estimado simples:": "Imposto Estimado Simples:",
     "impressora dtf industrial 60cm 4 cabeças i3200": "Impressora DTF Industrial 60cm 4 Cabeças i3200",
@@ -12652,7 +12702,7 @@
     "pedido reativado": "Pedido Reativado",
     "pegar token grátis na focus nfe &rarr;": "Pegar Token Grátis na Focus NFe &rarr;",
     "perfis de dono, vendedor e oficina": "Perfis de Dono, Vendedor e Oficina",
-    "permitir rotação automática de 90°": "Permitir rotação automática de 90°",
+    "permitir rotação automática de 90°": "Consenti rotazione automatica di 90°",
     "personalização padrão conforme ficha de estampa e bordado aprovada.": "Personalização padrão conforme ficha de estampa e bordado aprovada.",
     "personalize a identidade da confecção: logotipo em alta resolução, dados cadastrais, dados para pagamento via pix e segurança.": "Personalizza l'identità del laboratorio: logo ad alta risoluzione, dati aziendali, pagamento istantaneo e sicurezza.",
     "peça lisa (sem estampa). nenhuma personalização adicionada. clique nos botões acima para incluir bordado, dtf ou silk.": "Peça Lisa (Sem Estampa). Nenhuma personalização adicionada. Clique nos botões acima para incluir Bordado, DTF ou Silk.",
@@ -12662,15 +12712,15 @@
     "plano de comissões da equipe comercial": "Plano de Comissões da Equipe Comercial",
     "poliamida termofusível branca especial dtf": "Poliamida Termofusível Branca Especial DTF",
     "prazo prometido ao cliente:": "Prazo Prometido ao Cliente:",
-    "prazo prometido de produção & entrega:": "Prazo Prometido de Produção & Entrega:",
+    "prazo prometido de produção & entrega:": "Tempi Promessi di Produzione e Consegna:",
     "preencha os dados da confecção com o cliente para demonstrar que o sistema se paga sozinho logo no primeiro mês de uso.": "Preencha os dados da Confezione com o cliente para demonstrar que o sistema se paga sozinho logo no primeiro mês de uso.",
     "preencha os tamanhos necessários. somente os tamanhos com quantidade aparecerão no orçamento e corte.": "Compila le taglie necessarie. Solo le taglie con quantità appariranno nel preventivo e nel taglio.",
     "preencha todos os dados: vencimento (dia e mês), fornecedor, categoria e valor": "Preencha todos os dados: vencimento (dia e mês), fornecedor, categoria e valor",
     "preenchimento automático via cartão cnpj e integração completa com pedidos e nf-e": "Preenchimento automático via Cartão CNPJ e integração completa com Pedidos e NF-e",
     "prensa térmica pneumática dupla bandeja 40x50": "Prensa Térmica Pneumática Dupla Bandeja 40x50",
     "previsão": "Previsão",
-    "preço médio / pç:": "Preço Médio / Pç:",
-    "preço unitário:": "Preço Unitário:",
+    "preço médio / pç:": "Prezzo Medio / Pz:",
+    "preço unitário:": "Prezzo Unitario:",
     "preço venda": "PREZZO DI VENDITA",
     "primeiro acesso ao sistema": "Primo Accesso al Sistema",
     "produção: corte & estamparia": "Produção: Corte & Estamparia",
@@ -12704,7 +12754,7 @@
     "regras automáticas por percentual do faturamento, margem bruta ou fixo por peça com liquidação e baixa integrada": "Regras automáticas por percentual do faturamento, margem bruta ou fixo por peça com liquidação e baixa integrada",
     "regulador de metal": "Regolatore in Metallo",
     "relatório gerencial dre & balanço contábil": "Report Gestionale Conto Economico & Bilancio",
-    "remover fundo automaticamente (canva-style)": "Remover fundo automaticamente (Canva-style)",
+    "remover fundo automaticamente (canva-style)": "Rimuovi sfondo automaticamente (stile Canva)",
     "rendimento do tecido:": "Resa del Tessuto:",
     "requer botão \"entrada\"": "Richiede pulsante \"Acconto\"",
     "resumo financeiro consolidado do pedido:": "RIEPILOGO FINANZIARIO CONSOLIDATO DELL'ORDINE:",
@@ -12808,7 +12858,7 @@
     "valor total da nota": "VALOR TOTAL DA NOTA",
     "valor total do ipi": "VALOR TOTAL DO IPI",
     "valor total dos produtos": "VALOR TOTAL DOS PRODUTOS",
-    "valor total:": "VALOR TOTAL:",
+    "valor total:": "IMPORTO TOTALE:",
     "você deve selecionar obrigatoriamente cada ponto de atenção para confirmar que conferiu:": "DEVI OBBLIGATORIAMENTE SELEZIONARE OGNI PUNTO DI CONTROLLO PER CONFERMARE LA VERIFICA:",
     "valor total pedido": "Valor Total Pedido",
     "valor total do pedido:": "Valor Total do Pedido:",
@@ -12872,7 +12922,7 @@
     "• arquivo:": "• Arquivo:",
     "• artes anexadas:": "• Artes Anexadas:",
     "• cliente:": "• CLIENTE:",
-    "• chave pix:": "• Chave PIX:",
+    "• chave pix:": "• Chiave di Pagamento Istantaneo (PIX):",
     "• custo médio atual:": "• Custo médio atual:",
     "• malhas, tecidos planos e linhas de corte": "• Maglieria, Tessuti a Navetta e Linee di Taglio",
     "• margem líquida:": "• Margem Líquida:",
@@ -12882,10 +12932,10 @@
     "• pedido": "• PEDIDO",
     "• para transmissão direta com protocolo governamental em lote, insira o token gratuito da focus nfe.": "• Para transmissão direta com protocolo governamental em lote, insira o Token gratuito da Focus NFe.",
     "• peça:": "• Peça:",
-    "• prazo de entrega: prometido para": "• Prazo de Entrega: Prometido para",
+    "• prazo de entrega: prometido para": "• Tempi di Consegna: Promesso per",
     "• requer entrada": "• Requer Entrada",
     "• suprimentos dtf, bordado, serigrafia e aviamentos": "• Forniture DTF, Ricamo, Serigrafia e Minuterie",
-    "• validade desta proposta: 15 dias corridos a partir da data de emissão.": "• Validade desta proposta: 15 dias corridos a partir da data de emissão.",
+    "• validade desta proposta: 15 dias corridos a partir da data de emissão.": "• Validità di questo preventivo: 15 giorni solari dalla data di emissione.",
     "• validade:": "• Validade:",
     "⚖️ saldo operacional líquido do mês": "⚖️ Saldo Operacional Líquido do Mês",
     "⚙️ configurações fiscais & certificado digital a1": "⚙️ Impostazioni Fiscali & Certificato Digitale A1",
@@ -13115,7 +13165,17 @@
     "aviamentos p/ pc": "Accessori per Pezzo",
     "aviamentos p / pc": "Accessori per Pezzo",
     "aviamentos p/ pç": "Accessori per Pezzo",
-    "aviamentos p / pç": "Accessori per Pezzo"
+    "aviamentos p / pç": "Accessori per Pezzo",
+    "prazo prometido de produção & entrega": "Tempi Promessi di Produzione e Consegna",
+    "condição de fornecimento": "Condizione di Fornitura",
+    "condições gerais de fornecimento": "CONDIZIONI GENERALI DI FORNITURA",
+    "preço unitário": "Prezzo Unitario",
+    "preço médio / pç": "Prezzo Medio / Pz",
+    "chave pix:": "Chiave di Pagamento Istantaneo (PIX):",
+    "prazo de entrega: prometido para": "Tempi di Consegna: Promesso per",
+    "validade desta proposta: 15 dias corridos a partir da data de emissão.": "Validità di questo preventivo: 15 giorni solari dalla data di emissione.",
+    "estampa dtf": "Stampa DTF",
+    "cliente oficial": "Cliente Ufficiale"
   }
 };
 
@@ -14754,6 +14814,115 @@
       if (lang === 'de') return `${n} Stk.`;
       if (lang === 'it') return `${n} unità`;
     }
+    // 9. Padrões dinâmicos v9: Detalhes de Modelos, Prazos Úteis, Condições PIX e Termos de Proposta
+    const mModeloProdColon = t.match(/^Modelo\s*(\d+)\s*\((.*?)\):\s*$/i);
+    if (mModeloProdColon) {
+      const idx = mModeloProdColon[1];
+      const prod = mModeloProdColon[2];
+      const dict = DICIONARIOS[lang] || {};
+      const prodTrad = dict[prod.toLowerCase()] || prod;
+      if (lang === 'en') return `Model ${idx} (${prodTrad}): `;
+      if (lang === 'es') return `Modelo ${idx} (${prodTrad}): `;
+      if (lang === 'pt-PT') return `Modelo ${idx} (${prodTrad}): `;
+      if (lang === 'fr') return `Modèle ${idx} (${prodTrad}) : `;
+      if (lang === 'de') return `Modell ${idx} (${prodTrad}): `;
+      if (lang === 'it') return `Modello ${idx} (${prodTrad}): `;
+    }
+
+    const mCondPagtoSinal = t.match(/^(\d+)%\s+(?:Sinal|Entrada)\s*\+\s*(\d+)%\s+(?:na|no)\s+(?:Entrega|Retirada|Envio)$/i);
+    if (mCondPagtoSinal) {
+      const s = mCondPagtoSinal[1];
+      const r = mCondPagtoSinal[2];
+      const isRetirada = /retirada/i.test(t);
+      if (lang === 'en') return `${s}% Down Payment + ${r}% on ${isRetirada ? 'Pickup' : 'Delivery'}`;
+      if (lang === 'es') return `${s}% Anticipo + ${r}% contra ${isRetirada ? 'Retiro' : 'Entrega'}`;
+      if (lang === 'pt-PT') return `${s}% Entrada + ${r}% no ${isRetirada ? 'Levantamento' : 'Envio'}`;
+      if (lang === 'fr') return `${s}% Acompte + ${r}% au ${isRetirada ? 'Retrait' : 'Livraison'}`;
+      if (lang === 'de') return `${s}% Anzahlung + ${r}% bei ${isRetirada ? 'Abholung' : 'Lieferung'}`;
+      if (lang === 'it') return `${s}% Acconto + ${r}% al ${isRetirada ? 'Ritiro' : 'Consegna'}`;
+    }
+
+    const mDataDiasUteis = t.match(/^(📅\s*)?(\d{2}\/\d{2}\/\d{4})\s*\((\d+)\s+dias úteis\)$/i);
+    if (mDataDiasUteis) {
+      const icon = mDataDiasUteis[1] || '';
+      const data = mDataDiasUteis[2];
+      const d = mDataDiasUteis[3];
+      if (lang === 'en') return `${icon}${data} (${d} business days)`;
+      if (lang === 'es') return `${icon}${data} (${d} días hábiles)`;
+      if (lang === 'pt-PT') return `${icon}${data} (${d} dias úteis)`;
+      if (lang === 'fr') return `${icon}${data} (${d} jours ouvrés)`;
+      if (lang === 'de') return `${icon}${data} (${d} Werktage)`;
+      if (lang === 'it') return `${icon}${data} (${d} giorni lavorativi)`;
+    }
+
+    const mDiasUteisApos = t.match(/^\s*\((\d+)\s+dias úteis após confirmação de sinal e artes\)\.?\s*$/i);
+    if (mDiasUteisApos) {
+      const d = mDiasUteisApos[1];
+      if (lang === 'en') return `(${d} business days after confirmation of down payment and proofs).`;
+      if (lang === 'es') return `(${d} días hábiles tras confirmación de anticipo y artes).`;
+      if (lang === 'pt-PT') return `(${d} dias úteis após confirmação de entrada e maquetes).`;
+      if (lang === 'fr') return `(${d} jours ouvrés après confirmation de l'acompte et des BAT).`;
+      if (lang === 'de') return `(${d} Werktage nach Anzahlung und Druckfreigabe).`;
+      if (lang === 'it') return `(${d} giorni lavorativi dopo conferma dell'acconto e bozze).`;
+    }
+
+    const mFavorecidoPix = t.match(/^\s*\((.*?)\s*-\s*Favorecido:\s*(.*?)\)\s*$/i);
+    if (mFavorecidoPix) {
+      const tipo = mFavorecidoPix[1];
+      const ben = mFavorecidoPix[2];
+      if (lang === 'en') return `(${tipo} - Beneficiary: ${ben})`;
+      if (lang === 'es') return `(${tipo} - Beneficiario: ${ben})`;
+      if (lang === 'pt-PT') return `(${tipo} - Beneficiário: ${ben})`;
+      if (lang === 'fr') return `(${tipo} - Bénéficiaire : ${ben})`;
+      if (lang === 'de') return `(${tipo} - Begünstigter: ${ben})`;
+      if (lang === 'it') return `(${tipo} - Beneficiario: ${ben})`;
+    }
+
+    const mTermoPagamentoProposta = t.match(/^(?:•\s*)?Pagamento:\s*Proposta válida por (\d+) dias\. Pagamento de (\d+)% de sinal na aprovação e saldo na retirada\.?$/i);
+    if (mTermoPagamentoProposta) {
+      const d = mTermoPagamentoProposta[1];
+      const s = mTermoPagamentoProposta[2];
+      if (lang === 'en') return `• Payment: Quote valid for ${d} days. ${s}% deposit upon approval and balance upon pickup.`;
+      if (lang === 'es') return `• Pago: Propuesta válida por ${d} días. Pago de ${s}% de anticipo en la aprobación y saldo en la entrega.`;
+      if (lang === 'pt-PT') return `• Pagamento: Proposta válida por ${d} dias. Pagamento de ${s}% de entrada na aprovação e saldo no levantamento.`;
+      if (lang === 'fr') return `• Paiement : Devis valable ${d} jours. Acompte de ${s}% à l'approbation et solde au retrait.`;
+      if (lang === 'de') return `• Zahlung: Angebot gültig für ${d} Tage. ${s}% Anzahlung bei Freigabe und Restbetrag bei Abholung.`;
+      if (lang === 'it') return `• Pagamento: Preventivo valido per ${d} giorni. Acconto del ${s}% all'approvazione e saldo al ritiro.`;
+    }
+
+    const mTermoPagamentoPadrao = t.match(/^(?:•\s*)?Pagamento:\s*(\d+)% de sinal na aprovação do pedido e (\d+)% restante na retirada\/entrega\.?$/i);
+    if (mTermoPagamentoPadrao) {
+      const s = mTermoPagamentoPadrao[1];
+      const r = mTermoPagamentoPadrao[2];
+      if (lang === 'en') return `• Payment: ${s}% deposit upon order approval and remaining ${r}% upon pickup/delivery.`;
+      if (lang === 'es') return `• Pago: ${s}% de anticipo en la aprobación del pedido y ${r}% restante en la entrega.`;
+      if (lang === 'pt-PT') return `• Pagamento: ${s}% de entrada na aprovação da encomenda e ${r}% restante no levantamento/entrega.`;
+      if (lang === 'fr') return `• Paiement : Acompte de ${s}% à l'approbation de la commande et ${r}% restant au retrait/livraison.`;
+      if (lang === 'de') return `• Zahlung: ${s}% Anzahlung bei Auftragsfreigabe und restliche ${r}% bei Abholung/Lieferung.`;
+      if (lang === 'it') return `• Pagamento: ${s}% di acconto all'approvazione dell'ordine e restante ${r}% al ritiro/consegna.`;
+    }
+
+    const mPrazoEntregaPrometido = t.match(/^(?:•\s*)?Prazo de Entrega:\s*Prometido para\s*$/i);
+    if (mPrazoEntregaPrometido) {
+      if (lang === 'en') return `• Delivery Timeline: Promised for `;
+      if (lang === 'es') return `• Plazo de Entrega: Prometido para `;
+      if (lang === 'pt-PT') return `• Prazo de Entrega: Prometido para `;
+      if (lang === 'fr') return `• Délai de Livraison : Promis pour `;
+      if (lang === 'de') return `• Lieferfrist: Zugesagt für `;
+      if (lang === 'it') return `• Tempi di Consegna: Promesso per `;
+    }
+
+    const mValidadeDestaProposta = t.match(/^(?:•\s*)?Validade desta proposta:\s*(\d+)\s*dias corridos a partir da data de emissão\.?$/i);
+    if (mValidadeDestaProposta) {
+      const d = mValidadeDestaProposta[1];
+      if (lang === 'en') return `• Validity of this proposal: ${d} calendar days from issue date.`;
+      if (lang === 'es') return `• Validez de esta propuesta: ${d} días naturales desde la fecha de emisión.`;
+      if (lang === 'pt-PT') return `• Validade desta proposta: ${d} dias corridos a partir da data de emissão.`;
+      if (lang === 'fr') return `• Validité de ce devis : ${d} jours calendaires à compter de la date d'émission.`;
+      if (lang === 'de') return `• Gültigkeit dieses Angebots: ${d} Kalendertage ab Ausstellungsdatum.`;
+      if (lang === 'it') return `• Validità di questo preventivo: ${d} giorni solari dalla data di emissione.`;
+    }
+
 
 
 
