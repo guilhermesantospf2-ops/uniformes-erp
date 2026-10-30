@@ -33,9 +33,13 @@
   const LINK_WHATSAPP_BASICO_PY = LINK_STRIPE_BASICO_PY;
   const LINK_WHATSAPP_PRO_PY = LINK_STRIPE_PRO_PY;
 
-  // Portugal 🇵🇹 (€ 29 / € 49)
-  const LINK_WHATSAPP_BASICO_PT = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá! Escrevo de Portugal e pretendo aderir ao Plano Básico (€ 29/mês) para a minha confeção têxtil.');
-  const LINK_WHATSAPP_PRO_PT = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá! Escrevo de Portugal e pretendo aderir ao Plano Pro Industrial (€ 49/mês) do Bravvi ERP Têxtil.');
+  // Portugal 🇵🇹 (€ 29 / € 49 - Stripe Checkout Oficial em Euros)
+  const LINK_STRIPE_BASICO_PT = 'https://buy.stripe.com/aFaaEXefn2Wy6v15BC53O08';
+  const LINK_STRIPE_PRO_PT = 'https://buy.stripe.com/cNifZhb3beFgg5Bggg53O09';
+  const LINK_STRIPE_ANUAL_PT = 'https://buy.stripe.com/dRm6oH0oxdBcaLh8NO53O0a';
+  const LINK_STRIPE_VIP_PT = 'https://buy.stripe.com/aFa8wPb3beFg6v1d4453O0b';
+  const LINK_WHATSAPP_BASICO_PT = LINK_STRIPE_BASICO_PT;
+  const LINK_WHATSAPP_PRO_PT = LINK_STRIPE_PRO_PT;
 
   // Configuração padrão dos planos e valores oficiais
   const PLANOS_CONFIG = {
