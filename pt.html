@@ -1315,9 +1315,9 @@
 <body>
 
   <!-- Aviso Superior -->
-  <div class="top-announcement">
-    <span>📢 <strong>Planos a partir de € 29/mês:</strong> Implantação 100% Gratuita (€ 0 de taxa), liberação imediata e 7 dias de garantia.</span>
-    <a href="#planos">Ver Planos &rarr;</a>
+  <div class="top-announcement" style="flex-wrap: wrap;">
+    <span>📢 <strong>Planos a partir de € 29/mês:</strong> Implantação 100% Gratuita (0 de taxa), liberação imediata e 7 dias de garantia.</span>
+    <span style="margin-left:8px; display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.12); padding:3px 10px; border-radius:999px; font-size:11.5px;">🌎 Moeda: <a href="/vendas#planos" style="color:#ffffff;text-decoration:none;">R$ Real</a> • <a href="/py#planos" style="color:#ffffff;text-decoration:none;">$ Dólar</a> • <a href="/pt#planos" style="color:#2dd4bf;text-decoration:underline;">€ Euro</a></span>
   </div>
 
   <!-- Header Superior -->
@@ -1390,7 +1390,7 @@
         <a href="demo.html" target="_blank" class="btn btn-primary btn-lg" title="Testar o sistema real funcionando agora sem precisar cadastrar cartão">
           🎮 Testar Sistema ao Vivo Agora &rarr;
         </a>
-        <a href="#planos" class="btn btn-secondary btn-lg" title="Ver planos em Euro e assinar">
+        <a href="#planos" class="btn btn-secondary btn-lg" title="Ver planos a partir de R$ 107/mês e assinar">
           💳 Ver Planos (€ 29 / € 49)
         </a>
         <a href="https://wa.me/5544999856245?text=Ol%C3%A1%20Guilherme!%20Vi%20a%20p%C3%A1gina%20do%20Bravvi%20ERP%20e%20quero%20tirar%20uma%20d%C3%BAvida%20sobre%20o%20sistema%20para%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-whatsapp btn-lg">
@@ -2267,26 +2267,63 @@
       <div class="section-header-center">
         <span class="section-tag">Preços Transparentes</span>
         <h2 class="section-title">Sem mensalidade por usuário. Implantação 100% Gratuita.</h2>
-        <p class="section-desc">Escolha o plano ideal para a sua confecção e comece a faturar hoje com Cartão em até 12x ou Pix instantâneo.</p>
+        <p class="section-desc">Escolha a moeda do seu país abaixo e assine o plano ideal para a sua confecção com liberação automática imediata.</p>
       </div>
 
-      
-      <!-- Seletor de Moeda dos Planos (Sem troca de idioma) -->
-      <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 28px; flex-wrap: wrap;">
-        <a href="/vendas#planos" style="padding: 8px 18px; border-radius: 999px; font-size: 13px; font-weight: 700; text-decoration: none; background: #ffffff; color: #334155; border: 1.5px solid #cbd5e1;">🇧🇷 Real (R$ - BRL)</a>
-        <a href="/py#planos" style="padding: 8px 18px; border-radius: 999px; font-size: 13px; font-weight: 700; text-decoration: none; background: #ffffff; color: #334155; border: 1.5px solid #cbd5e1;">🇵🇾 Dólar ($ - USD)</a>
-        <a href="/pt#planos" style="padding: 8px 18px; border-radius: 999px; font-size: 13px; font-weight: 800; text-decoration: none; background: #0d9488; color: #ffffff; border: 2px solid #0d9488; box-shadow: 0 4px 12px rgba(13,148,136,0.2);">🇪🇺 Euro (€ - EUR)</a>
+
+      <!-- CAIXA DE DESTAQUE DE SELEÇÃO DE MOEDA / PAÍS -->
+      <div style="max-width: 1060px; margin: 0 auto 38px auto; background: linear-gradient(135deg, #032b35 0%, #0f3f4c 100%); border: 2px solid #0d9488; border-radius: 18px; padding: 20px 24px; box-shadow: 0 14px 30px -8px rgba(3, 43, 53, 0.25);">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 14px; text-align: center; flex-wrap: wrap;">
+          <span style="background: #f59e0b; color: #0f172a; font-size: 11px; font-weight: 900; padding: 3px 10px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.5px;">🌎 Moeda do Seu País</span>
+          <span style="color: #ffffff; font-size: 14.5px; font-weight: 800;">Clique abaixo para alterar a moeda dos planos (Real R$, Dólar US$ ou Euro €):</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+
+          <a href="/vendas#planos" style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; border-radius: 14px; background: #ffffff; color: #0f172a; border: 2px solid #cbd5e1; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06); text-decoration: none; transition: all 0.2s ease;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <svg width="28" height="20" viewBox="0 0 28 20" style="border-radius:3px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.2);"><rect width="28" height="20" fill="#009b3a"/><polygon points="14,2.5 25,10 14,17.5 3,10" fill="#fedf00"/><circle cx="14" cy="10" r="4.2" fill="#002776"/></svg>
+              <div style="text-align: left;">
+                <div style="font-size: 14.5px; font-weight: 800; color: #0f172a; line-height: 1.2;">Real Brasileiro (R$)</div>
+                <div style="font-size: 11.5px; color: #64748b; font-weight: 600; margin-top: 2px;">Brasil • PIX ou Cartão</div>
+              </div>
+            </div>
+            <span style="background: #f1f5f9; color: #0f766e; border: 1px solid #99f6e4; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 999px; white-space: nowrap;">Mudar para R$ &rarr;</span>
+          </a>
+
+          <a href="/py#planos" style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; border-radius: 14px; background: #ffffff; color: #0f172a; border: 2px solid #cbd5e1; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06); text-decoration: none; transition: all 0.2s ease;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <svg width="28" height="20" viewBox="0 0 28 20" style="border-radius:3px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.2);"><rect width="28" height="6.66" fill="#d52b1e"/><rect y="6.66" width="28" height="6.66" fill="#ffffff"/><rect y="13.32" width="28" height="6.68" fill="#0038a8"/><circle cx="14" cy="10" r="2.3" fill="#fedf00" stroke="#0038a8" stroke-width="0.6"/></svg>
+              <div style="text-align: left;">
+                <div style="font-size: 14.5px; font-weight: 800; color: #0f172a; line-height: 1.2;">Dólar Americano ($ USD)</div>
+                <div style="font-size: 11.5px; color: #64748b; font-weight: 600; margin-top: 2px;">Paraguai & Internacional</div>
+              </div>
+            </div>
+            <span style="background: #f1f5f9; color: #0f766e; border: 1px solid #99f6e4; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 999px; white-space: nowrap;">Mudar para US$ &rarr;</span>
+          </a>
+
+          <a href="/pt#planos" style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; border-radius: 14px; background: #0d9488; color: #ffffff; border: 2.5px solid #2dd4bf; box-shadow: 0 8px 20px rgba(13, 148, 136, 0.35); text-decoration: none; transform: translateY(-2px); transition: all 0.2s ease;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <svg width="28" height="20" viewBox="0 0 28 20" style="border-radius:3px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.2);"><rect width="28" height="20" fill="#003399"/><circle cx="14" cy="10" r="6" fill="none" stroke="#ffcc00" stroke-width="1.6" stroke-dasharray="1.5 1.65"/></svg>
+              <div style="text-align: left;">
+                <div style="font-size: 14.5px; font-weight: 900; color: #ffffff; line-height: 1.2;">Euro Europeu (€ EUR)</div>
+                <div style="font-size: 11.5px; color: #ccfbf1; font-weight: 600; margin-top: 2px;">Portugal & Europa</div>
+              </div>
+            </div>
+            <span style="background: #ffffff; color: #0f766e; font-size: 11px; font-weight: 900; padding: 4px 10px; border-radius: 999px; white-space: nowrap; text-transform: uppercase;">✓ Ativo</span>
+          </a>
+        </div>
       </div>
 
-      <div class="pricing-grid-2col">
+      <!-- GRADE DE 3 PLANOS LADO A LADO (BÁSICO | PRO MENSAL | PRO ANUAL) -->
+      <div class="pricing-grid" style="max-width: 1200px; margin: 0 auto; align-items: stretch;">
         
-        <!-- Plano 1: Básico (R$ 107/mês) -->
+        <!-- Card 1: Plano Básico -->
         <div class="pricing-card">
-          <div class="pricing-pill" style="background: #475569; color: #ffffff;">Mais Acessível • Para Começar Rápido</div>
+          <div class="pricing-pill" style="background: #475569; color: #ffffff; white-space: nowrap;">Mais Acessível • Para Começar</div>
           <div class="pricing-name">Plano Básico Confecção</div>
           <div class="pricing-desc">Ideal para oficinas, facções e pequenas confecções que precisam organizar orçamentos e pedidos sem complicação.</div>
           <div class="pricing-value">€ 29 <span>/ mês</span></div>
-          <div style="font-size: 11.5px; color: var(--brand-teal); margin-top: -6px; margin-bottom: 12px; font-weight: 700;">Sem fidelidade • Implantação € 0 • Cancele quando quiser</div>
+          <div style="font-size: 11.5px; color: var(--brand-teal); margin-top: -4px; margin-bottom: 12px; font-weight: 700;">Sem fidelidade • Implantação € 0 • Cancele quando quiser</div>
           <ul class="pricing-features">
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Até 2 usuários simultâneos</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Taxa de Implantação: € 0 (100% Grátis)</strong></li>
@@ -2296,28 +2333,26 @@
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Controle essencial de pedidos, prazos e entregas</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Catálogo digital de tecidos e produtos da fábrica</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Suporte técnico oficial via WhatsApp</li>
-            <li class="disabled"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Emissor fiscal NF-e Focus/SEFAZ Mod 55</li>
             <li class="disabled"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Otimizador de Bobina Nesting DTF</li>
             <li class="disabled"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Portal do Cliente para turmas (nomes/números)</li>
             <li class="disabled"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> DRE Gerencial & Lucro Real por Pedido</li>
-            <li class="disabled"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Gestão avançada de Facções externas</li>
           </ul>
           <a href="https://buy.stripe.com/aFaaEXefn2Wy6v15BC53O08" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="width: 100%; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
             💳 Assinar Plano Básico (€ 29/mês)
           </a>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; font-weight: 700;">
-            <a href="demo.html" target="_blank" style="color: var(--brand-teal); text-decoration: underline;">🎮 Testar sistema antes</a>
-            <a href="https://wa.me/5544999856245?text=Ol%C3%A1%20Guilherme!%20Quero%20assinar%20o%20Plano%20B%C3%A1sico%20de%20R%24%20107%2Fm%C3%AAs%20do%20Bravvi%20ERP." target="_blank" style="color: #16a34a; text-decoration: underline;">💬 Assinar pelo WhatsApp</a>
+            <a href="demo.html" target="_blank" style="color: var(--brand-teal); text-decoration: underline;">🎮 Testar antes</a>
+            <a href="https://wa.me/5544999856245?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20B%C3%A1sico%20(%E2%82%AC%2029%2Fm%C3%AAs)%20do%20Bravvi%20ERP." target="_blank" style="color: #16a34a; text-decoration: underline;">💬 Dúvida no WhatsApp</a>
           </div>
         </div>
 
-        <!-- Plano 2: Pro Industrial (R$ 227/mês) (Destaque) -->
+        <!-- Card 2: Plano Pro Industrial (Mensal) -->
         <div class="pricing-card featured">
-          <div class="pricing-pill">Mais Escolhido • Automação Total da Fábrica</div>
+          <div class="pricing-pill" style="white-space: nowrap;">⭐ Mais Escolhido • Automação Total</div>
           <div class="pricing-name">Plano Pro Industrial</div>
           <div class="pricing-desc">Todas as ferramentas industriais liberadas sem limites para confecções e fábricas que querem escalar e zerar desperdício.</div>
           <div class="pricing-value">€ 49 <span>/ mês</span></div>
-          <div style="font-size: 11.5px; color: var(--brand-teal); margin-top: -6px; margin-bottom: 12px; font-weight: 700;">Ou Anual (€ 490/ano com 2 meses grátis) • Implantação € 0</div>
+          <div style="font-size: 11.5px; color: var(--brand-teal); margin-top: -4px; margin-bottom: 12px; font-weight: 700;">Sem fidelidade • Implantação € 0 • Liberação imediata</div>
           <ul class="pricing-features">
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Usuários e computadores ILIMITADOS</strong></li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Taxa de Implantação: € 0 (100% Gratuita)</strong></li>
@@ -2331,47 +2366,56 @@
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Suporte Prioritário VIP no WhatsApp com fila rápida</strong></li>
           </ul>
           <a href="https://buy.stripe.com/cNifZhb3beFgg5Bggg53O09" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="width: 100%; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
-            🚀 Garantir Plano Pro Industrial (€ 49/mês)
+            🚀 Assinar Plano Pro Mensal (€ 49/mês)
           </a>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; font-weight: 700;">
-            <a href="demo.html" target="_blank" style="color: var(--brand-teal); text-decoration: underline;">🎮 Testar sistema antes</a>
-            <a href="https://wa.me/5544999856245?text=Ol%C3%A1%20Guilherme!%20Quero%20assinar%20o%20Plano%20Pro%20Industrial%20de%20R%24%20227%2Fm%C3%AAs%20do%20Bravvi%20ERP." target="_blank" style="color: #16a34a; text-decoration: underline;">💬 Assinar pelo WhatsApp</a>
+            <a href="demo.html" target="_blank" style="color: var(--brand-teal); text-decoration: underline;">🎮 Testar antes</a>
+            <a href="https://wa.me/5544999856245?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Pro%20Industrial%20(%E2%82%AC%2049%2Fm%C3%AAs)%20do%20Bravvi%20ERP." target="_blank" style="color: #16a34a; text-decoration: underline;">💬 Dúvida no WhatsApp</a>
+          </div>
+        </div>
+
+        <!-- Card 3: Plano Anual Pro (2 Meses Grátis - Lado a Lado!) -->
+        <div class="pricing-card" style="border: 2.5px solid #032b35; background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%); box-shadow: var(--shadow-lg);">
+          <div class="pricing-pill" style="background: #f59e0b; color: #0f172a; white-space: nowrap; font-weight: 900;">🔥 2 Meses Grátis • Máxima Economia</div>
+          <div class="pricing-name">Plano Anual Pro</div>
+          <div class="pricing-desc">Pague apenas 10 meses e utilize 12 meses completos do Plano Pro Industrial com desconto máximo garantido.</div>
+          <div class="pricing-value" style="color: #0f766e;">€ 40,80 <span>/ mês*</span></div>
+          <div style="font-size: 11.5px; color: #b45309; background: #fef3c7; padding: 4px 10px; border-radius: 6px; margin-top: -2px; margin-bottom: 12px; font-weight: 800; display: inline-block;">Cobrado € 490 / ano (paga 10, usa 12) • Economize € 98/ano</div>
+          <ul class="pricing-features">
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Tudo do Plano Pro Industrial 100% liberado</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Economia real de € 98 no ano (2 meses grátis)</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Usuários e computadores ILIMITADOS</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Taxa de Implantação: € 0 (100% Gratuita)</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Otimizador de Bobina Nesting DTF ilimitado</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Radar de Prazos + Fichas Técnicas A4 completas</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Portal do Cliente ilimitado para turmas e times</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>DRE Gerencial & Lucro Limpo por Pedido</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Preço congelado por 12 meses sem reajuste</strong></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Atendimento VIP Prioritário no WhatsApp</strong></li>
+          </ul>
+          <a href="https://buy.stripe.com/dRm6oH0oxdBcaLh8NO53O0a" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="width: 100%; background: #032b35; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
+            🔥 Garantir Plano Anual Pro (€ 490/ano)
+          </a>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; font-weight: 700;">
+            <a href="demo.html" target="_blank" style="color: var(--brand-teal); text-decoration: underline;">🎮 Testar antes</a>
+            <a href="https://wa.me/5544999856245?text=Ol%C3%A1!%20Quero%20assinar%20o%20Plano%20Anual%20Pro%20(%E2%82%AC%20490%2Fano%20com%202%20meses%20gr%C3%A1tis)%20do%20Bravvi%20ERP." target="_blank" style="color: #16a34a; text-decoration: underline;">💬 Dúvida no WhatsApp</a>
           </div>
         </div>
 
       </div>
 
-      <!-- BANNER DE OPÇÃO ANUAL PRO COM DESCONTO & TREINAMENTO VIP -->
-      <div style="max-width: 980px; margin: 32px auto 0 auto; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px;">
-        
-        <!-- Box Anual -->
-        <div style="background: linear-gradient(135deg, #032b35 0%, #0f3f4c 100%); color: #ffffff; border-radius: var(--radius-lg); padding: 22px 26px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; box-shadow: var(--shadow-md);">
+      <!-- BANNER COMPACTO DE TREINAMENTO VIP OPCIONAL -->
+      <div style="max-width: 1200px; margin: 28px auto 0 auto;">
+        <div style="background: #f8fafc; border: 1.5px dashed #0284c7; border-radius: var(--radius-lg); padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; box-shadow: var(--shadow-sm);">
           <div>
-            <div style="font-size: 11px; font-weight: 800; background: rgba(45, 212, 191, 0.2); color: var(--brand-cyan); padding: 3px 10px; border-radius: 20px; display: inline-block; margin-bottom: 6px; text-transform: uppercase;">
-              💡 Máxima Economia
-            </div>
-            <div style="font-size: 17px; font-weight: 800; margin-bottom: 4px;">Prefere o Plano Anual com 2 meses Grátis?</div>
-            <div style="font-size: 12.5px; color: #cbd5e1;">Pague 10 meses e use 12 meses: <strong>€ 490 / ano</strong> (equivale a € 40,80/mês). Economia de € 98 no ano.</div>
+            <span style="font-size: 11px; font-weight: 800; background: #e0f2fe; color: #0284c7; padding: 3px 10px; border-radius: 20px; display: inline-block; margin-bottom: 4px; text-transform: uppercase;">👥 Add-on Opcional</span>
+            <div style="font-size: 15.5px; font-weight: 800; color: #0f172a;">Treinamento VIP da Equipe ao Vivo (€ 59 opcional)</div>
+            <div style="font-size: 12.5px; color: #64748b;">A implantação do sistema já é 100% gratuita com tutoriais. Se desejar 2 horas de mentoria ao vivo por Google Meet para treinar sua equipe, contrate à parte.</div>
           </div>
-          <a href="https://buy.stripe.com/dRm6oH0oxdBcaLh8NO53O0a" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="white-space: nowrap; font-size: 13px; padding: 10px 18px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
-            Garantir Desconto Anual &rarr;
+          <a href="https://buy.stripe.com/aFa8wPb3beFg6v1d4453O0b" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="white-space: nowrap; font-size: 13px; padding: 10px 18px; text-decoration: none;">
+            Contratar Treinamento VIP (€ 59) &rarr;
           </a>
         </div>
-
-        <!-- Box Treinamento VIP -->
-        <div style="background: #ffffff; border: 1.5px dashed #0284c7; border-radius: var(--radius-lg); padding: 22px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow-sm);">
-          <div>
-            <div style="font-size: 11px; font-weight: 800; background: #e0f2fe; color: #0284c7; padding: 3px 10px; border-radius: 20px; display: inline-block; margin-bottom: 6px; text-transform: uppercase;">
-              👥 Add-on Opcional
-            </div>
-            <div style="font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">Treinamento VIP da Equipe (€ 59)</div>
-            <div style="font-size: 12px; color: #64748b; line-height: 1.45;">2 horas de mentoria ao vivo por videoconferência com especialista têxtil para treinar vendas e chão de fábrica.</div>
-          </div>
-          <button type="button" onclick="window.open('https://buy.stripe.com/aFa8wPb3beFg6v1d4453O0b', '_blank');" class="btn btn-secondary" style="margin-top: 12px; font-size: 12px; padding: 8px 14px; text-align: center;">
-            Contratar Treinamento (€ 59)
-          </button>
-        </div>
-
       </div>
 
 
