@@ -716,6 +716,34 @@ module.exports = async function handler(req, res) {
         dbFinal.equipe = dbExistente.equipe || [];
       }
 
+      // BLINDAGEM DE BANCO DE DADOS: Remove binários pesados de artes (somente Mockups 3x4/A4 ficam salvos)
+      if (Array.isArray(dbFinal.pedidos)) {
+        dbFinal.pedidos.forEach(p => {
+          if (Array.isArray(p.artesAnexadas)) {
+            p.artesAnexadas.forEach(a => {
+              delete a.arquivoDataUrl;
+              delete a.arquivoDataUrlOriginal;
+            });
+          }
+        });
+      }
+      if (Array.isArray(dbFinal.ordensServico)) {
+        dbFinal.ordensServico.forEach(os => {
+          if (Array.isArray(os.artesAplicacao)) {
+            os.artesAplicacao.forEach(a => {
+              delete a.arquivoDataUrl;
+              delete a.arquivoDataUrlOriginal;
+            });
+          }
+          if (os.mockupUrl && os.mockupUrl.startsWith('data:') && Array.isArray(dbFinal.pedidos)) {
+            const p = dbFinal.pedidos.find(ped => ped.numero == os.pedidoNumero || ped.id === os.pedidoId);
+            if (p && p.mockupUrl === os.mockupUrl) {
+              os.mockupUrl = '__REF_MOCKUP_PEDIDO__';
+            }
+          }
+        });
+      }
+
       const agora = Date.now();
       await sbFetch('erp_tenants', {
         method: 'POST',

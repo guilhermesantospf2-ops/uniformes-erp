@@ -312,7 +312,105 @@
     return descompactarBancoEmMemoria(banco);
   }
 
-  // Hidrata referências deduplicadas (__REF_ARTE_X__ e __REF_PEDIDO_X__) em memória
+  // Reduz imagem DataURL existente para miniatura leve de histórico (~8KB) após 7 dias da entrega
+  function reduzirDataUrlParaMiniatura(dataUrl, maxWidth = 300, maxHeight = 400, quality = 0.65) {
+    return new Promise((resolve) => {
+      if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/') || dataUrl.startsWith('data:image/svg')) {
+        return resolve(dataUrl);
+      }
+      const img = new Image();
+      img.onload = function() {
+        try {
+          const canvas = document.createElement('canvas');
+          let width = img.width || 300;
+          let height = img.height || 400;
+          if (width > maxWidth || height > maxHeight) {
+            if (width / height > maxWidth / maxHeight) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const webpUrl = canvas.toDataURL('image/webp', quality);
+          if (webpUrl && webpUrl.startsWith('data:image/webp')) {
+            resolve(webpUrl);
+          } else {
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          }
+        } catch (e) {
+          resolve(dataUrl);
+        }
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  }
+
+  // Ciclo de vida automático: 7 dias após pedido marcado como Entregue/Finalizado, converte o Mockup A4 pesado em miniatura leve
+  let verificacaoCicloVidaEmAndamento = false;
+  async function verificarCicloVidaMockups7Dias(banco) {
+    if (!banco || !Array.isArray(banco.pedidos) || verificacaoCicloVidaEmAndamento) return;
+    verificacaoCicloVidaEmAndamento = true;
+    const SETE_DIAS_MS = 7 * 24 * 60 * 60 * 1000;
+    const agora = Date.now();
+    let houveCompactacao = false;
+
+    try {
+      for (const p of banco.pedidos) {
+        if (!p) continue;
+        const isConcluido = (
+          p.status === 'Finalizado' ||
+          p.status === 'Entregue' ||
+          p.status === 'Concluido' ||
+          p.status === 'Concluído' ||
+          p.etapaProducao === 'Entregue' ||
+          p.etapaProducao === 'Entregue ao Cliente'
+        );
+        if (isConcluido) {
+          if (!p.dataConclusaoMs) {
+            p.dataConclusaoMs = agora;
+          } else if ((agora - Number(p.dataConclusaoMs)) >= SETE_DIAS_MS && !p.mockupMiniaturaCompactada) {
+            if (p.mockupUrl && typeof p.mockupUrl === 'string' && p.mockupUrl.startsWith('data:image/') && !p.mockupUrl.startsWith('data:image/svg') && p.mockupUrl.length > 18000) {
+              const thumb = await reduzirDataUrlParaMiniatura(p.mockupUrl, 300, 400, 0.65);
+              if (thumb && thumb.length < p.mockupUrl.length) {
+                p.mockupUrl = thumb;
+                p.mockupMiniaturaCompactada = true;
+                p.ultimaModificacaoMs = agora;
+                houveCompactacao = true;
+              }
+            }
+            if (Array.isArray(p.itens)) {
+              for (const it of p.itens) {
+                if (it && it.mockupUrl && typeof it.mockupUrl === 'string' && it.mockupUrl.startsWith('data:image/') && !it.mockupUrl.startsWith('data:image/svg') && it.mockupUrl.length > 18000) {
+                  it.mockupUrl = await reduzirDataUrlParaMiniatura(it.mockupUrl, 300, 400, 0.65);
+                  houveCompactacao = true;
+                }
+              }
+            }
+            const osVinc = (banco.ordensServico || []).find(o => String(o.pedidoNumero) === String(p.numero));
+            if (osVinc && p.mockupUrl) {
+              osVinc.mockupUrl = p.mockupUrl;
+            }
+          }
+        }
+      }
+      if (houveCompactacao) {
+        salvarEstado(true);
+      }
+    } catch (e) {
+      console.warn('Erro ao processar ciclo de vida de 7 dias dos mockups:', e);
+    } finally {
+      verificacaoCicloVidaEmAndamento = false;
+    }
+  }
+
+  // Hidrata referências deduplicadas (__REF_MOCKUP_PEDIDO__) e remove resíduos legados de arquivos de arte pesados
   function descompactarBancoEmMemoria(banco) {
     if (!banco || typeof banco !== 'object') return banco;
     const mapaPedidos = {};
@@ -320,13 +418,12 @@
       banco.pedidos.forEach(p => {
         if (!p) return;
         mapaPedidos[String(p.numero)] = p;
+        // Limpa resíduos legados de artes pesadas em Base64 (mantendo apenas metadados de local/dimensões)
         if (Array.isArray(p.artesAnexadas)) {
           p.artesAnexadas.forEach(a => {
-            if (a && typeof a.arquivoDataUrl === 'string' && a.arquivoDataUrl.startsWith('__REF_ARTE_')) {
-              const refIdx = parseInt(a.arquivoDataUrl.replace('__REF_ARTE_', '').replace('__', ''), 10);
-              if (!isNaN(refIdx) && p.artesAnexadas[refIdx] && p.artesAnexadas[refIdx].arquivoDataUrl) {
-                a.arquivoDataUrl = p.artesAnexadas[refIdx].arquivoDataUrl;
-              }
+            if (a && a.arquivoDataUrl) {
+              delete a.arquivoDataUrl;
+              delete a.arquivoDataUrlOriginal;
             }
           });
         }
@@ -336,49 +433,54 @@
       banco.ordensServico.forEach(os => {
         if (!os) return;
         const ped = mapaPedidos[String(os.pedidoNumero)];
-        if (ped && Array.isArray(os.artesAplicacao) && Array.isArray(ped.artesAnexadas)) {
-          os.artesAplicacao.forEach((a, idx) => {
-            if (a && (!a.arquivoDataUrl || String(a.arquivoDataUrl).startsWith('__REF_'))) {
-              const arteOrig = ped.artesAnexadas[idx] || ped.artesAnexadas[0];
-              if (arteOrig && arteOrig.arquivoDataUrl) {
-                a.arquivoDataUrl = arteOrig.arquivoDataUrl;
-              }
+        if (ped && (!os.mockupUrl || os.mockupUrl === '__REF_MOCKUP_PEDIDO__')) {
+          os.mockupUrl = ped.mockupUrl;
+        }
+        if (Array.isArray(os.artesAplicacao)) {
+          os.artesAplicacao.forEach(a => {
+            if (a && a.arquivoDataUrl) {
+              delete a.arquivoDataUrl;
             }
           });
         }
       });
     }
+    setTimeout(() => verificarCicloVidaMockups7Dias(banco), 500);
     return banco;
   }
 
-  // Cria cópia enxuta sem duplicar anexos pesados em ordensServico ou dentro do mesmo pedido
+  // Cria cópia enxuta sem duplicar o Mockup na OS e sem qualquer arquivo pesado de arte
   function compactarBancoParaStorage(banco) {
     if (!banco || typeof banco !== 'object') return banco;
     try {
       const clone = JSON.parse(JSON.stringify(banco));
+      const mapaPedidos = {};
       if (Array.isArray(clone.pedidos)) {
         clone.pedidos.forEach(p => {
-          if (!p || !Array.isArray(p.artesAnexadas)) return;
-          const vistos = {};
-          p.artesAnexadas.forEach((a, idx) => {
-            if (a && a.arquivoDataUrl && a.arquivoDataUrl.length > 50000) {
-              if (vistos[a.arquivoDataUrl] !== undefined) {
-                a.arquivoDataUrl = `__REF_ARTE_${vistos[a.arquivoDataUrl]}__`;
-              } else {
-                vistos[a.arquivoDataUrl] = idx;
+          if (!p) return;
+          mapaPedidos[String(p.numero)] = p;
+          if (Array.isArray(p.artesAnexadas)) {
+            p.artesAnexadas.forEach(a => {
+              if (a) {
+                delete a.arquivoDataUrl;
+                delete a.arquivoDataUrlOriginal;
               }
-            }
-          });
+            });
+          }
         });
       }
       if (Array.isArray(clone.ordensServico)) {
         clone.ordensServico.forEach(os => {
-          if (!os || !Array.isArray(os.artesAplicacao)) return;
-          os.artesAplicacao.forEach((a, idx) => {
-            if (a && a.arquivoDataUrl && a.arquivoDataUrl.length > 50000) {
-              a.arquivoDataUrl = `__REF_PEDIDO_${idx}__`;
-            }
-          });
+          if (!os) return;
+          const ped = mapaPedidos[String(os.pedidoNumero)];
+          if (ped && os.mockupUrl && os.mockupUrl === ped.mockupUrl && os.mockupUrl.length > 2000) {
+            os.mockupUrl = '__REF_MOCKUP_PEDIDO__';
+          }
+          if (Array.isArray(os.artesAplicacao)) {
+            os.artesAplicacao.forEach(a => {
+              if (a) delete a.arquivoDataUrl;
+            });
+          }
         });
       }
       return clone;
@@ -408,25 +510,7 @@
       localStorage.removeItem('bravvi_snapshots_' + (tId || 'master'));
       localStorage.setItem(chaveEfetiva, JSON.stringify(dbCompacto));
     } catch (e) {
-      console.warn('Alerta de cota local ao salvar no localStorage (ativando modo ultra-compacto local):', e);
-      try {
-        // Se o cliente anexou um PDF gigante (>4MB), salva metadados e status 100% intactos no localStorage e envia arquivo completo para a nuvem
-        const dbUltraLeve = JSON.parse(JSON.stringify(dbCompacto));
-        if (Array.isArray(dbUltraLeve.pedidos)) {
-          dbUltraLeve.pedidos.forEach(p => {
-            if (Array.isArray(p.artesAnexadas)) {
-              p.artesAnexadas.forEach(a => {
-                if (a && a.arquivoDataUrl && a.arquivoDataUrl.length > 150000) {
-                  a.arquivoDataUrl = '';
-                }
-              });
-            }
-          });
-        }
-        localStorage.setItem(chaveEfetiva, JSON.stringify(dbUltraLeve));
-      } catch (errRetry) {
-        console.warn('Armazenamento local lotado: salvando com prioridade imediata na nuvem.');
-      }
+      console.warn('Alerta de cota local ao salvar no localStorage:', e);
     }
 
     // BLINDAGEM: Nuvem só pode ser atualizada se o boot inicial e autenticação já tiverem hidratado os dados!
@@ -3816,13 +3900,6 @@
                       </div>
                     ` : ''}
                     <span style="display: block; font-size: 10.5px; color: var(--text-gray-500); margin-top: 3px;">${p.tipoPersonalizacao || 'Estampa Conforme Arte'}</span>
-                    ${(p.artesAnexadas && p.artesAnexadas.length > 0) ? `
-                      <div style="margin-top: 4px;">
-                        <button type="button" class="btn btn-secondary btn-xs btn-ver-artes-pedido" data-id="${p.id}" style="font-size: 10px; padding: 2px 7px; color: #0284c7; background: #f0f9ff; border-color: #bae6fd; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;" title="Localizar e baixar arquivos de arte deste pedido">
-                          🎨 Artes (${p.artesAnexadas.length}) ⬇️
-                        </button>
-                      </div>
-                    ` : ''}
                   </td>
                   <td class="text-mono">
                     <div style="font-size: 11px; line-height: 1.3;">
@@ -3967,11 +4044,6 @@
                         </button>
                       ` : `
                         <button class="btn btn-secondary btn-sm btn-ver-os" data-id="${p.id}">OS</button>
-                        ${(p.artesAnexadas && p.artesAnexadas.length > 0) ? `
-                          <button class="btn btn-secondary btn-sm btn-ver-artes-pedido" data-id="${p.id}" style="color: #0369a1; border-color: #bae6fd; background: #f0f9ff; font-weight: 700;" title="Ver e baixar arquivos de arte da peça">
-                            🎨 Artes (${p.artesAnexadas.length})
-                          </button>
-                        ` : ''}
                         ${nfExistente ? `
                           <button class="btn btn-secondary btn-sm btn-abrir-nfe-pedido" data-nfe-id="${nfExistente.id}" style="font-weight: 700; color: #047857; border-color: #a7f3d0; background: #ecfdf5;" title="Visualizar DANFE Oficial A4 / XML da NF-e #${nfExistente.numero}">
                             ✓ NF #${nfExistente.numero}
@@ -4117,11 +4189,6 @@
                           <button class="btn btn-primary btn-sm btn-ver-os" data-id="${p.id}" style="flex: 1;">
                             Ficha OS
                           </button>
-                          ${(p.artesAnexadas && p.artesAnexadas.length > 0) ? `
-                            <button class="btn btn-secondary btn-sm btn-ver-artes-pedido" data-id="${p.id}" style="flex: 1; font-weight: 700; color: #0284c7; border-color: #bae6fd; background: #f0f9ff;" title="Ver e baixar artes deste pedido">
-                              🎨 Artes (${p.artesAnexadas.length})
-                            </button>
-                          ` : ''}
                           <button class="btn btn-secondary btn-sm btn-cancelar-pedido" data-id="${p.id}" style="padding: 3px 6px; color: #dc2626; border-color: #fca5a5;" title="Cancelar este Pedido">
                             ✕
                           </button>
@@ -4164,15 +4231,6 @@
             abrirFichaTecnicaPorPedido(p);
           }
         }
-      });
-    });
-
-    // Ver e Baixar Artes Anexadas do Pedido
-    document.querySelectorAll('.btn-ver-artes-pedido').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = btn.getAttribute('data-id');
-        abrirModalArtesPedido(id);
       });
     });
 
@@ -4752,18 +4810,22 @@
     } else if (novaEtapa === 'Entregue') {
       p.status = 'Finalizado';
       p.etapaProducao = 'Entregue ao Cliente';
+      p.dataConclusaoMs = Date.now();
+      p.dataConclusao = new Date().toISOString().split('T')[0];
     } else {
       p.status = 'Em Producao';
       p.etapaProducao = novaEtapa;
     }
+    p.ultimaModificacaoMs = Date.now();
 
     // Sincroniza na OS
     const os = db.ordensServico.find(o => o.pedidoNumero === p.numero);
     if (os) {
       os.etapaAtual = p.etapaProducao;
+      os.ultimaModificacaoMs = Date.now();
     }
 
-    salvarEstado();
+    salvarEstado(true);
     atualizarBadges();
     renderizarPedidos();
 
@@ -5947,9 +6009,9 @@
                   <div style="display: flex; gap: 10px; align-items: center; min-width: 0;">
                     <img id="previewMockup3x4Orc" src="" style="width: 52px; height: 68px; aspect-ratio: 3/4; object-fit: contain; border: 1px solid var(--border-medium); border-radius: 4px; background: #ffffff; flex-shrink: 0;" alt="Preview 3x4">
                     <div style="flex: 1; min-width: 0;">
-                      <label class="btn btn-secondary btn-sm" style="cursor: pointer; font-size: 10.5px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 5px; margin-bottom: 6px; font-weight: 700; white-space: nowrap;">
+                      <label class="btn btn-secondary btn-sm" style="cursor: pointer; font-size: 10.5px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 5px; margin-bottom: 5px; font-weight: 700; white-space: nowrap;">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="3"/></svg>
-                        Anexar Imagem Mockup
+                        Anexar Imagem Mockup (3x4 + A4)
                         <input type="file" id="inputUploadMockupOrc" accept="image/*" style="display: none;">
                       </label>
                       <div style="display: flex; gap: 4px; flex-wrap: wrap;">
@@ -5958,6 +6020,9 @@
                         <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="branco" style="font-size: 9.5px; padding: 1.5px 6px; font-weight: 600;">Branco</button>
                         <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="preto" style="font-size: 9.5px; padding: 1.5px 6px; font-weight: 600;">Preto</button>
                         <button type="button" class="btn btn-secondary btn-sm btn-mock-orc-preset" data-preset="royal" style="font-size: 9.5px; padding: 1.5px 6px; font-weight: 600;">Royal</button>
+                      </div>
+                      <div style="font-size: 9.5px; color: #64748b; margin-top: 4px; line-height: 1.25;">
+                        ✨ Salvo em alta nitidez p/ impressão da Folha A4 (reduz p/ miniatura leve 7 dias após entregue).
                       </div>
                     </div>
                   </div>
@@ -7205,17 +7270,17 @@
       recalcularBenchmarkModal();
     });
 
-    // Upload de mockup personalizado otimizado para o modelo ativo
+    // Upload de mockup personalizado otimizado para o modelo ativo (1200x1600 WebP p/ nitidez em Folha A4 separada)
     document.getElementById('inputUploadMockupOrc')?.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (file && itensOrcamento[itemAtivoIndex]) {
-        const base64Otimizado = await comprimirImagemDataUrl(file, 800, 800, 0.75);
+        const base64Otimizado = await comprimirImagemDataUrl(file, 1200, 1600, 0.82);
         if (base64Otimizado) {
           itensOrcamento[itemAtivoIndex].mockupUrl = base64Otimizado;
           itensOrcamento[itemAtivoIndex].mockupUploadPersonalizado = true;
           const prev = document.getElementById('previewMockup3x4Orc');
           if (prev) prev.src = base64Otimizado;
-          mostrarToast('Mockup otimizado e anexado com sucesso!', 'green');
+          mostrarToast('Mockup otimizado em resolução A4 e anexado com sucesso!', 'green');
         }
       }
     });
@@ -8926,31 +8991,42 @@
           <div class="modal-header">
             <div>
               <div class="modal-title">Entrada Oficial no Pedido • Confecção & Chão de Fábrica</div>
-              <span style="font-size: 11px; color: var(--text-gray-500);">Designação de costureira, upload obrigatório de artes em alta qualidade e sincronização de sinal financeiro</span>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Designação de costureira, Mockup Oficial (3x4 + Folha A4), especificações de estamparia e sinal financeiro</span>
             </div>
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
 
           <div class="modal-body">
-            <!-- Resumo Informativo da Proposta (Carregado Automaticamente) -->
-            <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                ${mockupDataUrl ? `
-                  <img src="${mockupDataUrl}" style="width: 40px; height: 52px; aspect-ratio: 3/4; object-fit: contain; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.08);" alt="Mockup">
-                ` : ''}
-                <div>
-                  <div style="font-weight: 800; font-size: 13px; color: var(--text-primary);">
-                    ${dadosBase.prod ? dadosBase.prod.nome : dadosBase.produtoNome}
-                  </div>
-                  <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
-                    Cor Principal: <strong style="color: #0f172a;">${dadosBase.corPrincipal || dadosBase.corTecido || 'Azul Marinho'}</strong>
-                    ${dadosBase.observacoesCoresDetalhes ? ` • <em>${dadosBase.observacoesCoresDetalhes}</em>` : ''}
+            <!-- Mockup Oficial do Pedido (3x4 + Folha A4 de Bancada) & Resumo da Proposta -->
+            <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 14px; flex: 1; min-width: 260px;">
+                  <img id="previewMockupAvanco" src="${mockupDataUrl}" style="width: 58px; height: 76px; aspect-ratio: 3/4; object-fit: contain; border: 1.5px solid #94a3b8; border-radius: 6px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.08); flex-shrink: 0;" alt="Mockup">
+                  <div>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                      <span style="font-weight: 800; font-size: 13.5px; color: var(--text-primary);">
+                        ${dadosBase.prod ? dadosBase.prod.nome : dadosBase.produtoNome}
+                      </span>
+                      <span class="status-pill status-blue" style="font-size: 9.5px; font-weight: 700;">
+                        ✓ Mockup 3x4 + Folha A4
+                      </span>
+                    </div>
+                    <div style="font-size: 11.5px; color: #64748b; margin-top: 3px;">
+                      Cor Principal: <strong style="color: #0f172a;">${dadosBase.corPrincipal || dadosBase.corTecido || 'Azul Marinho'}</strong>
+                      ${dadosBase.observacoesCoresDetalhes ? ` • <em>${dadosBase.observacoesCoresDetalhes}</em>` : ''}
+                    </div>
+                    <div style="margin-top: 7px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                      <label class="btn btn-secondary btn-xs" style="cursor: pointer; font-weight: 800; color: #0284c7; border-color: #7dd3fc; background: #f0f9ff; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px;">
+                        📷 Anexar / Trocar Mockup Oficial (3x4 e Folha A4)
+                        <input type="file" id="inputUploadMockupAvanco" accept="image/*" style="display: none;">
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
-              <span class="status-pill status-blue" style="font-size: 10px; font-weight: 700;">
-                ✓ Definido na Proposta
-              </span>
+              <div style="margin-top: 10px; padding: 7px 10px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 11px; color: #1e40af; line-height: 1.4;">
+                📄 <strong>Impressão A4 & Gestão Inteligente de Espaço:</strong> O Mockup acima fica salvo em <strong>alta definição</strong> durante toda a produção para você imprimir tanto o <strong>3x4 na Ficha Técnica</strong> quanto a <strong>Folha A4 Separada de Bancada</strong>. Após <strong>7 dias</strong> que o pedido for marcado como <strong>Concluído / Entregue</strong>, o servidor converte a imagem pesada em uma miniatura leve de histórico para nunca lotar seu banco de dados.
+              </div>
             </div>
 
             <!-- 1. Qual Costureira / Facção vai costurar -->
@@ -8972,29 +9048,29 @@
               </div>
             </div>
 
-            <!-- 2. Artes da Camiseta em Alta Resolução (Checklist com Locais Obrigatórios) -->
+            <!-- 2. Especificações de Estamparia & Locais de Aplicação (Sem Upload Pesado no Banco) -->
             <div class="form-group" style="margin-top: 14px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 4px;">
                 <label class="form-label" style="margin-bottom: 0;">
-                  <strong style="color: #0f172a; font-size: 13px;">Artes da Peça & Personalizações em Alta Resolução</strong> ${todasAplicacoes.length > 0 ? `<span style="color: #dc2626; font-weight: 800;">(${todasAplicacoes.length} aplicações obrigatórias)</span>` : ''}
+                  <strong style="color: #0f172a; font-size: 13px;">Especificações de Estamparia & Locais de Aplicação</strong> ${todasAplicacoes.length > 0 ? `<span style="color: #0284c7; font-weight: 800;">(${todasAplicacoes.length} aplicações configuradas)</span>` : ''}
                 </label>
-                <span style="font-size: 11px; color: #dc2626; font-weight: 700; background: #fef2f2; border: 1px solid #fecaca; padding: 2px 8px; border-radius: 4px;">
-                  ⚠️ Anexo Obrigatório: Não é permitido dar entrada sem os arquivos das artes
+                <span style="font-size: 10.5px; color: #0f766e; font-weight: 700; background: #f0fdfa; border: 1px solid #99f6e4; padding: 2px 8px; border-radius: 4px;">
+                  💡 Sem anexo pesado: selecione as artes do computador direto no Nesting DTF na hora de encaixar
                 </span>
               </div>
               
               ${ehApenasPecaLisa ? `
                 <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 6px; padding: 12px; color: #166534; font-size: 12px;">
                   <strong>✅ Peça Lisa (Sem Estampa / Sem Bordado)</strong>
-                  <p style="margin: 4px 0 0 0; color: #15803d; font-size: 11.5px;">Este pedido foi configurado como peça lisa. Não há necessidade de envio de matrizes ou arquivos de estamparia para o chão de fábrica.</p>
+                  <p style="margin: 4px 0 0 0; color: #15803d; font-size: 11.5px;">Este pedido foi configurado como peça lisa na proposta comercial.</p>
                 </div>
               ` : todasAplicacoes.length > 0 ? `
-                <div class="art-location-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 12px;">
+                <div class="art-location-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 10px;">
                   ${todasAplicacoes.map((app, idx) => `
-                    <div class="art-location-card card-arte-obrigatoria" id="cardArteApp_${idx}" data-idx="${idx}" style="border: 1.5px solid #fecaca; border-left: 5px solid #dc2626; background: #fffdfd; padding: 12px; border-radius: 6px; transition: all 0.25s ease;">
-                      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px;">
+                    <div class="art-location-card" id="cardArteApp_${idx}" data-idx="${idx}" style="border: 1.5px solid #cbd5e1; border-left: 5px solid #0284c7; background: #ffffff; padding: 10px 12px; border-radius: 6px;">
+                      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;">
                         <div style="display: flex; align-items: center; gap: 8px;">
-                          <span style="font-size: 16px;">🎨</span>
+                          <span style="font-size: 15px;">📍</span>
                           <div>
                             <span style="font-weight: 800; font-size: 12.5px; color: #0f172a;">
                               ${(dadosBase.itens && dadosBase.itens.length > 1) ? `<span style="color:#64748b; font-size:11px;">[${app.modeloNome.split(' ')[0]}]</span> ` : ''}<strong>${app.local}</strong>
@@ -9002,44 +9078,13 @@
                             ${app.detalhes ? `<span style="font-size: 10.5px; color: #64748b; display: block;">Especificação: ${app.detalhes}</span>` : ''}
                           </div>
                         </div>
-                        <div style="text-align: right;">
-                          <span style="font-size: 10px; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; display: inline-block;">
-                            ${app.tecnica} • ${app.quantidadePecas} un
-                          </span>
-                          <div id="statusBadgeArteApp_${idx}" style="font-size: 10px; font-weight: 800; color: #dc2626; margin-top: 3px;">
-                            ⚠️ Obrigatório Anexar
-                          </div>
-                        </div>
+                        <span style="font-size: 10px; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; display: inline-block;">
+                          ${app.tecnica} • ${app.quantidadePecas} un
+                        </span>
                       </div>
-
-                      <div style="display: flex; gap: 8px; align-items: center; margin-top: 6px;">
-                        <div style="flex: 1.5;">
-                          <input type="file" id="fileArteApp_${idx}" class="form-input inp-file-arte-dinamica" data-idx="${idx}" style="font-size: 11px; padding: 6px;" accept="image/*,.pdf,.ai,.eps,.cdr,.pes,.dst,.jef" required>
-                        </div>
-                        <div style="flex: 1;">
-                          <input type="text" id="dimArteApp_${idx}" class="form-input" value="${app.dimensoes}" placeholder="Dimensões (LxA cm)" style="font-size: 11px; padding: 6px;">
-                        </div>
-                      </div>
-
-                      <!-- Mini Container de Pré-visualização da Arte Carregada -->
-                      <div id="previewContainerArteApp_${idx}" style="display: none; margin-top: 8px; background: #ffffff; border: 1.5px solid #86efac; border-radius: 6px; padding: 7px 10px; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
-                        <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; min-width: 140px;">
-                          <img id="imgThumbArteApp_${idx}" src="" style="width: 38px; height: 38px; object-fit: contain; border-radius: 4px; border: 1px solid #cbd5e1; background: #f8fafc; display: none;" alt="Preview Arte">
-                          <span id="iconDocArteApp_${idx}" style="font-size: 22px; display: none;">📄</span>
-                          <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                            <span id="nomeArquivoArteApp_${idx}" style="font-size: 11.5px; font-weight: 700; color: #166534; display: block; overflow: hidden; text-overflow: ellipsis;">arquivo.png</span>
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                              <span id="tamanhoArquivoArteApp_${idx}" style="font-size: 10px; color: #64748b;">120 KB</span>
-                              <span id="badgeTratamentoApp_${idx}" style="display: none; font-size: 9px; font-weight: 800; background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 1px 5px; border-radius: 3px;">✨ Pronto DTF</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap;">
-                          <button type="button" class="btn btn-xs btn-tratar-arte-app" data-idx="${idx}" id="btnTratarArteApp_${idx}" style="display: none; padding: 4px 9px; font-size: 10.5px; font-weight: 800; background: linear-gradient(135deg, #0d9488, #059669); color: #ffffff; border: none; border-radius: 4px; cursor: pointer; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(13, 148, 136, 0.35);" title="Abrir Estúdio Cirúrgico: Remover fundo, Auto-Trim e Recorte Manual para DTF">
-                            ✂️ Estúdio & Recorte DTF
-                          </button>
-                          <button type="button" class="btn btn-secondary btn-xs btn-limpar-arte-app" data-idx="${idx}" style="padding: 3px 7px; font-size: 10px; color: #dc2626; border-color: #fca5a5; background: #fff;" title="Remover e escolher outro arquivo">✕ Trocar</button>
-                        </div>
+                      <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+                        <span style="font-size: 11px; color: #475569; font-weight: 700; white-space: nowrap;">Dimensões (LxA cm):</span>
+                        <input type="text" id="dimArteApp_${idx}" class="form-input" value="${app.dimensoes}" placeholder="Ex: 10 x 10 cm" style="font-size: 11.5px; padding: 5px 8px; font-weight: 700;">
                       </div>
                     </div>
                   `).join('')}
@@ -9047,113 +9092,51 @@
               ` : `
                 <div class="art-location-grid">
                   <!-- Peito -->
-                  <div class="art-location-card card-arte-obrigatoria" id="cardArtePeito" style="border: 1.5px solid #fecaca; border-left: 5px solid #dc2626; padding: 10px; border-radius: 6px;">
+                  <div class="art-location-card" id="cardArtePeito" style="border: 1.5px solid #cbd5e1; border-left: 5px solid #0284c7; padding: 10px; border-radius: 6px;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
                       <div style="display: flex; align-items: center; gap: 8px;">
                         <input type="checkbox" id="chkArtePeito" class="quarentena-checkbox chk-arte-fallback" checked data-key="peito">
                         <label for="chkArtePeito" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Peito (Frente)</label>
                       </div>
-                      <span id="statusBadgeArtePeito" style="font-size: 10px; font-weight: 800; color: #dc2626;">⚠️ Obrigatório</span>
+                      <span style="font-size: 10px; font-weight: 800; color: #0284c7;">Medidas p/ OS & Nesting</span>
                     </div>
-                    <div style="display: flex; gap: 6px;">
-                      <input type="file" id="fileArtePeito" class="form-input inp-file-arte-fallback" data-key="peito" style="font-size: 11px; padding: 4px; flex: 1.3;" accept="image/*,.pdf,.ai,.eps,.cdr,.pes,.dst">
-                      <input type="text" id="dimArtePeito" class="form-input" value="9.0 x 7.5 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px; flex: 1;">
-                    </div>
-                    <div id="previewContainerArtePeito" style="display: none; margin-top: 6px; background: #ffffff; border: 1.5px solid #86efac; border-radius: 5px; padding: 6px 8px; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
-                      <div style="display: flex; align-items: center; gap: 6px;">
-                        <img id="imgThumbArtePeito" src="" style="width: 32px; height: 32px; object-fit: contain; border-radius: 3px; border: 1px solid #cbd5e1; display: none;">
-                        <div>
-                          <span id="nomeArquivoArtePeito" style="font-size: 11px; font-weight: 700; color: #166534; display: block;">arquivo.png</span>
-                          <span id="badgeTratamentoPeito" style="display: none; font-size: 9px; font-weight: 800; background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 1px 5px; border-radius: 3px;">✨ Pronto DTF</span>
-                        </div>
-                      </div>
-                      <div style="display: flex; gap: 5px; align-items: center;">
-                        <button type="button" class="btn btn-xs btn-tratar-arte-fallback" data-key="peito" id="btnTratarArtePeito" style="display: none; padding: 3px 8px; font-size: 10px; font-weight: 800; background: linear-gradient(135deg, #0d9488, #059669); color: #fff; border: none; border-radius: 4px; cursor: pointer;">✂️ Estúdio & Recorte</button>
-                        <button type="button" class="btn btn-secondary btn-xs btn-limpar-arte-fallback" data-key="peito" style="padding: 2px 6px; font-size: 10px; color: #dc2626; border-color: #fca5a5; background:#fff;">✕ Trocar</button>
-                      </div>
-                    </div>
+                    <input type="text" id="dimArtePeito" class="form-input" value="9.0 x 7.5 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px;">
                   </div>
 
                   <!-- Costas -->
-                  <div class="art-location-card card-arte-obrigatoria" id="cardArteCostas" style="border: 1.5px solid #e2e8f0; border-left: 5px solid #94a3b8; padding: 10px; border-radius: 6px;">
+                  <div class="art-location-card" id="cardArteCostas" style="border: 1.5px solid #e2e8f0; border-left: 5px solid #94a3b8; padding: 10px; border-radius: 6px;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
                       <div style="display: flex; align-items: center; gap: 8px;">
                         <input type="checkbox" id="chkArteCostas" class="quarentena-checkbox chk-arte-fallback" data-key="costas">
                         <label for="chkArteCostas" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Costas</label>
                       </div>
-                      <span id="statusBadgeArteCostas" style="font-size: 10px; font-weight: 800; color: #64748b;">Opcional</span>
+                      <span style="font-size: 10px; font-weight: 800; color: #64748b;">Opcional</span>
                     </div>
-                    <div style="display: flex; gap: 6px;">
-                      <input type="file" id="fileArteCostas" class="form-input inp-file-arte-fallback" data-key="costas" style="font-size: 11px; padding: 4px; flex: 1.3;" accept="image/*,.pdf,.ai,.eps,.cdr,.pes,.dst">
-                      <input type="text" id="dimArteCostas" class="form-input" value="28.0 x 12.0 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px; flex: 1;">
-                    </div>
-                    <div id="previewContainerArteCostas" style="display: none; margin-top: 6px; background: #ffffff; border: 1.5px solid #86efac; border-radius: 5px; padding: 6px 8px; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
-                      <div style="display: flex; align-items: center; gap: 6px;">
-                        <img id="imgThumbArteCostas" src="" style="width: 32px; height: 32px; object-fit: contain; border-radius: 3px; border: 1px solid #cbd5e1; display: none;">
-                        <div>
-                          <span id="nomeArquivoArteCostas" style="font-size: 11px; font-weight: 700; color: #166534; display: block;">arquivo.png</span>
-                          <span id="badgeTratamentoCostas" style="display: none; font-size: 9px; font-weight: 800; background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 1px 5px; border-radius: 3px;">✨ Pronto DTF</span>
-                        </div>
-                      </div>
-                      <div style="display: flex; gap: 5px; align-items: center;">
-                        <button type="button" class="btn btn-xs btn-tratar-arte-fallback" data-key="costas" id="btnTratarArteCostas" style="display: none; padding: 3px 8px; font-size: 10px; font-weight: 800; background: linear-gradient(135deg, #0d9488, #059669); color: #fff; border: none; border-radius: 4px; cursor: pointer;">✂️ Estúdio & Recorte</button>
-                        <button type="button" class="btn btn-secondary btn-xs btn-limpar-arte-fallback" data-key="costas" style="padding: 2px 6px; font-size: 10px; color: #dc2626; border-color: #fca5a5; background:#fff;">✕ Trocar</button>
-                      </div>
-                    </div>
+                    <input type="text" id="dimArteCostas" class="form-input" value="28.0 x 12.0 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px;">
                   </div>
 
                   <!-- Manga / Ombro -->
-                  <div class="art-location-card card-arte-obrigatoria" id="cardArteOmbro" style="border: 1.5px solid #e2e8f0; border-left: 5px solid #94a3b8; padding: 10px; border-radius: 6px;">
+                  <div class="art-location-card" id="cardArteOmbro" style="border: 1.5px solid #e2e8f0; border-left: 5px solid #94a3b8; padding: 10px; border-radius: 6px;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
                       <div style="display: flex; align-items: center; gap: 8px;">
                         <input type="checkbox" id="chkArteOmbro" class="quarentena-checkbox chk-arte-fallback" data-key="ombro">
                         <label for="chkArteOmbro" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Ombro / Manga</label>
                       </div>
-                      <span id="statusBadgeArteOmbro" style="font-size: 10px; font-weight: 800; color: #64748b;">Opcional</span>
+                      <span style="font-size: 10px; font-weight: 800; color: #64748b;">Opcional</span>
                     </div>
-                    <div style="display: flex; gap: 6px;">
-                      <input type="file" id="fileArteOmbro" class="form-input inp-file-arte-fallback" data-key="ombro" style="font-size: 11px; padding: 4px; flex: 1.3;" accept="image/*,.pdf,.ai,.eps,.cdr,.pes,.dst">
-                      <input type="text" id="dimArteOmbro" class="form-input" value="8.0 x 4.0 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px; flex: 1;">
-                    </div>
-                    <div id="previewContainerArteOmbro" style="display: none; margin-top: 6px; background: #ffffff; border: 1.5px solid #86efac; border-radius: 5px; padding: 6px 8px; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
-                      <div style="display: flex; align-items: center; gap: 6px;">
-                        <img id="imgThumbArteOmbro" src="" style="width: 32px; height: 32px; object-fit: contain; border-radius: 3px; border: 1px solid #cbd5e1; display: none;">
-                        <div>
-                          <span id="nomeArquivoArteOmbro" style="font-size: 11px; font-weight: 700; color: #166534; display: block;">arquivo.png</span>
-                          <span id="badgeTratamentoOmbro" style="display: none; font-size: 9px; font-weight: 800; background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 1px 5px; border-radius: 3px;">✨ Pronto DTF</span>
-                        </div>
-                      </div>
-                      <div style="display: flex; gap: 5px; align-items: center;">
-                        <button type="button" class="btn btn-xs btn-tratar-arte-fallback" data-key="ombro" id="btnTratarArteOmbro" style="display: none; padding: 3px 8px; font-size: 10px; font-weight: 800; background: linear-gradient(135deg, #0d9488, #059669); color: #fff; border: none; border-radius: 4px; cursor: pointer;">✂️ Estúdio & Recorte</button>
-                        <button type="button" class="btn btn-secondary btn-xs btn-limpar-arte-fallback" data-key="ombro" style="padding: 2px 6px; font-size: 10px; color: #dc2626; border-color: #fca5a5; background:#fff;">✕ Trocar</button>
-                      </div>
-                    </div>
+                    <input type="text" id="dimArteOmbro" class="form-input" value="8.0 x 4.0 cm" placeholder="Dimensões (LxA cm)" style="font-size: 11px;">
                   </div>
 
                   <!-- Outro Local -->
-                  <div class="art-location-card card-arte-obrigatoria" id="cardArteOutro" style="border: 1.5px solid #e2e8f0; border-left: 5px solid #94a3b8; padding: 10px; border-radius: 6px;">
+                  <div class="art-location-card" id="cardArteOutro" style="border: 1.5px solid #e2e8f0; border-left: 5px solid #94a3b8; padding: 10px; border-radius: 6px;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
                       <div style="display: flex; align-items: center; gap: 8px;">
                         <input type="checkbox" id="chkArteOutro" class="quarentena-checkbox chk-arte-fallback" data-key="outro">
                         <label for="chkArteOutro" style="font-weight: 700; font-size: 12.5px; cursor: pointer;">Outro Local</label>
                       </div>
-                      <span id="statusBadgeArteOutro" style="font-size: 10px; font-weight: 800; color: #64748b;">Opcional</span>
+                      <span style="font-size: 10px; font-weight: 800; color: #64748b;">Opcional</span>
                     </div>
-                    <input type="text" id="descArteOutro" class="form-input" placeholder="Descreva o local (ex: Gola, Barra, Bolso)" style="font-size: 11px; margin-bottom: 6px;">
-                    <input type="file" id="fileArteOutro" class="form-input inp-file-arte-fallback" data-key="outro" style="font-size: 11px; padding: 4px;" accept="image/*,.pdf,.ai,.eps,.cdr,.pes,.dst">
-                    <div id="previewContainerArteOutro" style="display: none; margin-top: 6px; background: #ffffff; border: 1.5px solid #86efac; border-radius: 5px; padding: 6px 8px; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
-                      <div style="display: flex; align-items: center; gap: 6px;">
-                        <img id="imgThumbArteOutro" src="" style="width: 32px; height: 32px; object-fit: contain; border-radius: 3px; border: 1px solid #cbd5e1; display: none;">
-                        <div>
-                          <span id="nomeArquivoArteOutro" style="font-size: 11px; font-weight: 700; color: #166534; display: block;">arquivo.png</span>
-                          <span id="badgeTratamentoOutro" style="display: none; font-size: 9px; font-weight: 800; background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 1px 5px; border-radius: 3px;">✨ Pronto DTF</span>
-                        </div>
-                      </div>
-                      <div style="display: flex; gap: 5px; align-items: center;">
-                        <button type="button" class="btn btn-xs btn-tratar-arte-fallback" data-key="outro" id="btnTratarArteOutro" style="display: none; padding: 3px 8px; font-size: 10px; font-weight: 800; background: linear-gradient(135deg, #0d9488, #059669); color: #fff; border: none; border-radius: 4px; cursor: pointer;">✂️ Estúdio & Recorte</button>
-                        <button type="button" class="btn btn-secondary btn-xs btn-limpar-arte-fallback" data-key="outro" style="padding: 2px 6px; font-size: 10px; color: #dc2626; border-color: #fca5a5; background:#fff;">✕ Trocar</button>
-                      </div>
-                    </div>
+                    <input type="text" id="descArteOutro" class="form-input" placeholder="Descreva o local (ex: Gola, Barra, Bolso)" style="font-size: 11px;">
                   </div>
                 </div>
               `}
@@ -9307,332 +9290,26 @@
       });
     });
 
-    // Estrutura de armazenamento em memória dos arquivos de arte lidos (DataUrl)
-    const artesArquivosCarregados = {};
-
-    // Função auxiliar para recalcular dimensão proporcional após recorte no estúdio
-    function recalcularDimensaoArteProporcional(inputDim, dataUrl) {
-      if (!inputDim || !inputDim.value || !dataUrl) return;
-      const imgTemp = new Image();
-      imgTemp.onload = () => {
-        const wNatural = imgTemp.naturalWidth || imgTemp.width;
-        const hNatural = imgTemp.naturalHeight || imgTemp.height;
-        if (!wNatural || !hNatural) return;
-        const ratio = wNatural / hNatural;
-        const m = inputDim.value.match(/([0-9]+[.,]?[0-9]*)\s*[xX*]\s*([0-9]+[.,]?[0-9]*)/);
-        if (m) {
-          const largCm = parseFloat(m[1].replace(',', '.'));
-          if (largCm > 0 && ratio > 0) {
-            const novaAltCm = parseFloat((largCm / ratio).toFixed(1));
-            inputDim.value = `${largCm.toFixed(1).replace('.', ',')} x ${novaAltCm.toFixed(1).replace('.', ',')} cm`;
-          }
+    // Upload / Troca do Mockup Oficial em Alta Definição A4 (1200x1600 WebP) direto na entrada do pedido
+    document.getElementById('inputUploadMockupAvanco')?.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try {
+        const base64Otimizado = await comprimirImagemDataUrl(file, 1200, 1600, 0.82);
+        if (base64Otimizado) {
+          mockupDataUrl = base64Otimizado;
+          dadosBase.mockupUrl = base64Otimizado;
+          const prev = document.getElementById('previewMockupAvanco');
+          if (prev) prev.src = base64Otimizado;
+          mostrarToast('✓ Mockup Oficial anexado em alta definição para OS e Folha A4!', 'green');
         }
-      };
-      imgTemp.src = dataUrl;
-    }
-
-    // Pré-carrega artes caso o pedido já possua arquivos anexados previamente
-    if (dadosBase.artesAnexadas && Array.isArray(dadosBase.artesAnexadas)) {
-      dadosBase.artesAnexadas.forEach((art, aIdx) => {
-        if (art && (art.arquivoDataUrl || art.arquivoNome)) {
-          artesArquivosCarregados[aIdx] = {
-            name: art.arquivoNome || `arte_${aIdx + 1}.png`,
-            type: art.arquivoTipo || 'image/png',
-            size: art.arquivoTamanho || 0,
-            dataUrl: art.arquivoDataUrl || '',
-            fundoRemovido: !!art.fundoRemovido,
-            recortado: !!art.recortado
-          };
-          setTimeout(() => {
-            const card = document.getElementById(`cardArteApp_${aIdx}`);
-            const statusBadge = document.getElementById(`statusBadgeArteApp_${aIdx}`);
-            const prevCont = document.getElementById(`previewContainerArteApp_${aIdx}`);
-            const imgThumb = document.getElementById(`imgThumbArteApp_${aIdx}`);
-            const iconDoc = document.getElementById(`iconDocArteApp_${aIdx}`);
-            const nomeArq = document.getElementById(`nomeArquivoArteApp_${aIdx}`);
-            const tamArq = document.getElementById(`tamanhoArquivoArteApp_${aIdx}`);
-            const btnTratar = document.getElementById(`btnTratarArteApp_${aIdx}`);
-            const badgeTrat = document.getElementById(`badgeTratamentoApp_${aIdx}`);
-
-            if (card) {
-              card.style.borderColor = '#86efac';
-              card.style.borderLeft = '5px solid #16a34a';
-              card.style.background = '#f0fdf4';
-            }
-            if (statusBadge) {
-              statusBadge.innerHTML = art.fundoRemovido ? '✓ Arte Pronta & Otimizada p/ DTF' : '✓ Arquivo Já Anexado';
-              statusBadge.style.color = '#16a34a';
-            }
-            if (prevCont) {
-              prevCont.style.display = 'flex';
-              if (nomeArq) nomeArq.textContent = art.arquivoNome || 'Arte Anexa';
-              if (tamArq) tamArq.textContent = formatarTamanhoBytes(art.arquivoTamanho);
-              const isImg = art.arquivoDataUrl && (art.arquivoTipo?.startsWith('image/') || art.arquivoDataUrl.startsWith('data:image/'));
-              if (isImg) {
-                if (imgThumb) { imgThumb.src = art.arquivoDataUrl; imgThumb.style.display = 'block'; }
-                if (iconDoc) iconDoc.style.display = 'none';
-                if (btnTratar) btnTratar.style.display = 'inline-flex';
-                if (badgeTrat && (art.fundoRemovido || art.recortado)) badgeTrat.style.display = 'inline-block';
-              } else {
-                if (imgThumb) imgThumb.style.display = 'none';
-                if (iconDoc) { iconDoc.style.display = 'block'; iconDoc.textContent = '📄'; }
-                if (btnTratar) btnTratar.style.display = 'none';
-              }
-            }
-          }, 30);
-        }
-      });
-    }
-
-    // Listener para inputs de artes dinâmicas (processa arquivo, gera DataURL e atualiza status)
-    document.querySelectorAll('.inp-file-arte-dinamica').forEach(inp => {
-      inp.addEventListener('change', async (e) => {
-        const idx = inp.getAttribute('data-idx');
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
-
-        const card = document.getElementById(`cardArteApp_${idx}`);
-        const statusBadge = document.getElementById(`statusBadgeArteApp_${idx}`);
-        const prevCont = document.getElementById(`previewContainerArteApp_${idx}`);
-        const imgThumb = document.getElementById(`imgThumbArteApp_${idx}`);
-        const iconDoc = document.getElementById(`iconDocArteApp_${idx}`);
-        const nomeArq = document.getElementById(`nomeArquivoArteApp_${idx}`);
-        const tamArq = document.getElementById(`tamanhoArquivoArteApp_${idx}`);
-        const btnTratar = document.getElementById(`btnTratarArteApp_${idx}`);
-        const badgeTrat = document.getElementById(`badgeTratamentoApp_${idx}`);
-
-        if (file.size > 8 * 1024 * 1024) {
-          mostrarToast(`O arquivo "${file.name}" tem ${(file.size / (1024*1024)).toFixed(1)}MB. O limite máximo é 8MB.`, 'red');
-          inp.value = '';
-          return;
-        }
-
-        try {
-          if (statusBadge) {
-            statusBadge.innerHTML = '⏳ Processando arte...';
-            statusBadge.style.color = '#0284c7';
-          }
-
-          const dataUrl = await comprimirImagemDataUrl(file, 1600, 1600, 0.85);
-
-          artesArquivosCarregados[idx] = {
-            name: file.name,
-            type: file.type || 'application/octet-stream',
-            size: file.size,
-            dataUrl: dataUrl,
-            fundoRemovido: false,
-            recortado: false
-          };
-
-          if (card) {
-            card.style.borderColor = '#86efac';
-            card.style.borderLeft = '5px solid #16a34a';
-            card.style.background = '#f0fdf4';
-            card.style.boxShadow = '';
-          }
-          if (statusBadge) {
-            statusBadge.innerHTML = '✓ Arquivo Pronto';
-            statusBadge.style.color = '#16a34a';
-          }
-          if (prevCont) {
-            prevCont.style.display = 'flex';
-            if (nomeArq) nomeArq.textContent = file.name;
-            if (tamArq) tamArq.textContent = formatarTamanhoBytes(file.size);
-            if (badgeTrat) badgeTrat.style.display = 'none';
-
-            if (file.type && file.type.startsWith('image/')) {
-              if (imgThumb) { imgThumb.src = dataUrl; imgThumb.style.display = 'block'; }
-              if (iconDoc) iconDoc.style.display = 'none';
-              if (btnTratar) btnTratar.style.display = 'inline-flex';
-            } else {
-              if (imgThumb) imgThumb.style.display = 'none';
-              if (iconDoc) {
-                iconDoc.style.display = 'block';
-                iconDoc.textContent = file.name.endsWith('.pdf') ? '📕' : file.name.endsWith('.ai') ? '🎨' : '📁';
-              }
-              if (btnTratar) btnTratar.style.display = 'none';
-            }
-          }
-          mostrarToast(`✓ Arte "${file.name}" anexada com sucesso! Toque em "✂️ Estúdio & Recorte" para tratar.`, 'green');
-        } catch (err) {
-          console.error('Erro ao ler arquivo de arte:', err);
-          mostrarToast('Erro ao ler o arquivo de arte. Tente novamente.', 'red');
-        }
-      });
+      } catch (err) {
+        console.error('Erro ao comprimir mockup no avanço:', err);
+        mostrarToast('Erro ao carregar a imagem do Mockup.', 'red');
+      }
     });
 
-    // Botão Limpar / Trocar Arte Dinâmica
-    document.querySelectorAll('.btn-limpar-arte-app').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = btn.getAttribute('data-idx');
-        delete artesArquivosCarregados[idx];
-        const inp = document.getElementById(`fileArteApp_${idx}`);
-        if (inp) inp.value = '';
-        const card = document.getElementById(`cardArteApp_${idx}`);
-        const statusBadge = document.getElementById(`statusBadgeArteApp_${idx}`);
-        const prevCont = document.getElementById(`previewContainerArteApp_${idx}`);
-        if (card) {
-          card.style.borderColor = '#fecaca';
-          card.style.borderLeft = '5px solid #dc2626';
-          card.style.background = '#fffdfd';
-        }
-        if (statusBadge) {
-          statusBadge.innerHTML = '⚠️ Obrigatório Anexar';
-          statusBadge.style.color = '#dc2626';
-        }
-        if (prevCont) prevCont.style.display = 'none';
-      });
-    });
-
-    // Botão Estúdio Cirúrgico & Recorte DTF na Entrada de Pedidos (Dinâmico)
-    document.querySelectorAll('.btn-tratar-arte-app').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = btn.getAttribute('data-idx');
-        const arq = artesArquivosCarregados[idx];
-        if (!arq || !arq.dataUrl) {
-          mostrarToast('Por favor, anexe uma imagem primeiro.', 'yellow');
-          return;
-        }
-
-        if (!arq.dataUrlOriginal) arq.dataUrlOriginal = arq.dataUrl;
-        abrirEstudioCirurgicoFundo(arq.dataUrlOriginal, (novaDataUrl) => {
-          arq.dataUrl = novaDataUrl;
-          arq.fundoRemovido = true;
-          arq.recortado = true;
-
-          const imgThumb = document.getElementById(`imgThumbArteApp_${idx}`);
-          if (imgThumb) {
-            imgThumb.src = novaDataUrl;
-            imgThumb.style.display = 'block';
-          }
-          const badgeTrat = document.getElementById(`badgeTratamentoApp_${idx}`);
-          if (badgeTrat) badgeTrat.style.display = 'inline-block';
-
-          const statusBadge = document.getElementById(`statusBadgeArteApp_${idx}`);
-          if (statusBadge) {
-            statusBadge.innerHTML = '✓ Arte Pronta & Otimizada p/ DTF';
-            statusBadge.style.color = '#059669';
-          }
-
-          // Recalcula proporção da altura automaticamente
-          recalcularDimensaoArteProporcional(document.getElementById(`dimArteApp_${idx}`), novaDataUrl);
-
-          mostrarToast('✓ Arte tratada com sucesso! Fundo removido e recorte salvo para o pedido.', 'green');
-        }, { textoBotaoSalvar: '✓ Salvar Arte no Pedido' });
-      });
-    });
-
-    // Fallback file handlers para propostas sem lista prévia de aplicações
-    document.querySelectorAll('.inp-file-arte-fallback').forEach(inp => {
-      inp.addEventListener('change', async (e) => {
-        const key = inp.getAttribute('data-key');
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
-        const cardKey = key.charAt(0).toUpperCase() + key.slice(1);
-        const card = document.getElementById(`cardArte${cardKey}`);
-        const statusBadge = document.getElementById(`statusBadgeArte${cardKey}`);
-        const prevCont = document.getElementById(`previewContainerArte${cardKey}`);
-        const imgThumb = document.getElementById(`imgThumbArte${cardKey}`);
-        const nomeArq = document.getElementById(`nomeArquivoArte${cardKey}`);
-        const btnTratar = document.getElementById(`btnTratarArte${cardKey}`);
-        const badgeTrat = document.getElementById(`badgeTratamento${cardKey}`);
-
-        try {
-          const dataUrl = await comprimirImagemDataUrl(file, 1600, 1600, 0.85);
-          artesArquivosCarregados[key] = {
-            name: file.name,
-            type: file.type || 'application/octet-stream',
-            size: file.size,
-            dataUrl: dataUrl,
-            fundoRemovido: false,
-            recortado: false
-          };
-          if (card) {
-            card.style.borderColor = '#86efac';
-            card.style.borderLeft = '5px solid #16a34a';
-            card.style.background = '#f0fdf4';
-          }
-          if (statusBadge) {
-            statusBadge.innerHTML = '✓ Arquivo Pronto';
-            statusBadge.style.color = '#16a34a';
-          }
-          if (prevCont) {
-            prevCont.style.display = 'flex';
-            if (nomeArq) nomeArq.textContent = `${file.name} (${formatarTamanhoBytes(file.size)})`;
-            if (badgeTrat) badgeTrat.style.display = 'none';
-
-            if (file.type && file.type.startsWith('image/')) {
-              if (imgThumb) { imgThumb.src = dataUrl; imgThumb.style.display = 'block'; }
-              if (btnTratar) btnTratar.style.display = 'inline-flex';
-            } else {
-              if (imgThumb) imgThumb.style.display = 'none';
-              if (btnTratar) btnTratar.style.display = 'none';
-            }
-          }
-          mostrarToast(`✓ Arte de ${key} anexada! Toque em "✂️ Estúdio & Recorte" para tratar.`, 'green');
-        } catch (err) {
-          console.error(err);
-        }
-      });
-    });
-
-    // Botão Limpar / Trocar Arte Fallback
-    document.querySelectorAll('.btn-limpar-arte-fallback').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const key = btn.getAttribute('data-key');
-        delete artesArquivosCarregados[key];
-        const cardKey = key.charAt(0).toUpperCase() + key.slice(1);
-        const inp = document.getElementById(`fileArte${cardKey}`);
-        if (inp) inp.value = '';
-        const prevCont = document.getElementById(`previewContainerArte${cardKey}`);
-        if (prevCont) prevCont.style.display = 'none';
-        const statusBadge = document.getElementById(`statusBadgeArte${cardKey}`);
-        if (statusBadge) {
-          statusBadge.innerHTML = key === 'peito' ? '⚠️ Obrigatório' : 'Opcional';
-          statusBadge.style.color = key === 'peito' ? '#dc2626' : '#64748b';
-        }
-      });
-    });
-
-    // Botão Estúdio Cirúrgico & Recorte DTF Fallback
-    document.querySelectorAll('.btn-tratar-arte-fallback').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const key = btn.getAttribute('data-key');
-        const arq = artesArquivosCarregados[key];
-        if (!arq || !arq.dataUrl) {
-          mostrarToast('Por favor, anexe uma imagem primeiro.', 'yellow');
-          return;
-        }
-
-        if (!arq.dataUrlOriginal) arq.dataUrlOriginal = arq.dataUrl;
-        abrirEstudioCirurgicoFundo(arq.dataUrlOriginal, (novaDataUrl) => {
-          arq.dataUrl = novaDataUrl;
-          arq.fundoRemovido = true;
-          arq.recortado = true;
-
-          const cardKey = key.charAt(0).toUpperCase() + key.slice(1);
-          const thumb = document.getElementById(`imgThumbArte${cardKey}`);
-          if (thumb) {
-            thumb.src = novaDataUrl;
-            thumb.style.display = 'block';
-          }
-          const badgeTrat = document.getElementById(`badgeTratamento${cardKey}`);
-          if (badgeTrat) badgeTrat.style.display = 'inline-block';
-
-          const statusBadge = document.getElementById(`statusBadgeArte${cardKey}`);
-          if (statusBadge) {
-            statusBadge.innerHTML = '✓ Arte Pronta & Otimizada p/ DTF';
-            statusBadge.style.color = '#059669';
-          }
-
-          recalcularDimensaoArteProporcional(document.getElementById(`dimArte${cardKey}`), novaDataUrl);
-
-          mostrarToast(`✓ Arte de ${key} tratada e salva com sucesso!`, 'green');
-        }, { textoBotaoSalvar: '✓ Salvar Arte no Pedido' });
-      });
-    });
-
-    // Botão Salvar Pedido Final com Validações Estritas
+    // Botão Salvar Pedido Final com Validações Estritas (Sem Anexo Pesado de Artes no Banco)
     document.getElementById('btnConfirmarSalvarPedidoFinal')?.addEventListener('click', () => {
       // 1. Validação da Costureira
       const costureiraId = document.getElementById('selCostureiraAvanco')?.value;
@@ -9646,7 +9323,7 @@
         return;
       }
 
-      // 2. Validação Obrigatória das Artes (BLOQUEIA ENTRADA SE FALTAR ARQUIVO)
+      // 2. Coleta das Especificações de Estamparia & Locais de Aplicação (Apenas Medidas e Metadados Leves)
       let artesLista = [];
       const extrairDimensoesCm = (dimTexto, largPadrao = 10, altPadrao = 10) => {
         if (!dimTexto) return { larg: largPadrao, alt: altPadrao };
@@ -9663,22 +9340,6 @@
         if (todasAplicacoes.length > 0) {
           for (let idx = 0; idx < todasAplicacoes.length; idx++) {
             const app = todasAplicacoes[idx];
-            const arquivoCarregado = artesArquivosCarregados[idx];
-            const cardEl = document.getElementById(`cardArteApp_${idx}`);
-
-            if (!arquivoCarregado || !arquivoCarregado.dataUrl) {
-              if (cardEl) {
-                cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                cardEl.style.borderColor = '#dc2626';
-                cardEl.style.boxShadow = '0 0 0 4px rgba(220, 38, 38, 0.4)';
-                setTimeout(() => {
-                  if (cardEl) cardEl.style.boxShadow = '';
-                }, 3500);
-              }
-              mostrarToast(`⚠️ ARQUIVO OBRIGATÓRIO: Anexe a arte para "${app.local} (${app.tecnica})". Não é permitido dar entrada sem os arquivos das artes.`, 'red');
-              return;
-            }
-
             const dim = document.getElementById(`dimArteApp_${idx}`)?.value || app.dimensoes || 'Padrão';
             const dimsCm = extrairDimensoesCm(dim, app.larguraCm || 10, app.alturaCm || 10);
             artesLista.push({
@@ -9689,12 +9350,6 @@
               larguraCm: dimsCm.larg,
               alturaCm: dimsCm.alt,
               quantidadePecas: app.quantidadePecas,
-              arquivoNome: arquivoCarregado.name,
-              arquivoTipo: arquivoCarregado.type,
-              arquivoTamanho: arquivoCarregado.size,
-              arquivoDataUrl: arquivoCarregado.dataUrl,
-              fundoRemovido: !!arquivoCarregado.fundoRemovido,
-              recortado: !!arquivoCarregado.recortado,
               dataAnexo: new Date().toISOString()
             });
           }
@@ -9705,19 +9360,7 @@
           const chkOmbro = document.getElementById('chkArteOmbro')?.checked;
           const chkOutro = document.getElementById('chkArteOutro')?.checked;
 
-          if (!chkPeito && !chkCostas && !chkOmbro && !chkOutro) {
-            mostrarToast('É obrigatório selecionar ao menos 1 local e anexar a respectiva arte.', 'red');
-            return;
-          }
-
           if (chkPeito) {
-            const arq = artesArquivosCarregados['peito'];
-            if (!arq || !arq.dataUrl) {
-              const card = document.getElementById('cardArtePeito');
-              if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              mostrarToast('⚠️ ARQUIVO OBRIGATÓRIO: Anexe o arquivo de arte para o Peito (Frente).', 'red');
-              return;
-            }
             const dim = document.getElementById('dimArtePeito')?.value || '9.0 x 7.5 cm';
             const dimsCm = extrairDimensoesCm(dim, 9, 7.5);
             artesLista.push({
@@ -9727,24 +9370,11 @@
               larguraCm: dimsCm.larg,
               alturaCm: dimsCm.alt,
               quantidadePecas: dadosBase.grade?.total || 0,
-              arquivoNome: arq.name,
-              arquivoTipo: arq.type,
-              arquivoTamanho: arq.size,
-              arquivoDataUrl: arq.dataUrl,
-              fundoRemovido: !!arq.fundoRemovido,
-              recortado: !!arq.recortado,
               dataAnexo: new Date().toISOString()
             });
           }
 
           if (chkCostas) {
-            const arq = artesArquivosCarregados['costas'];
-            if (!arq || !arq.dataUrl) {
-              const card = document.getElementById('cardArteCostas');
-              if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              mostrarToast('⚠️ ARQUIVO OBRIGATÓRIO: Anexe o arquivo de arte para as Costas.', 'red');
-              return;
-            }
             const dim = document.getElementById('dimArteCostas')?.value || '28.0 x 12.0 cm';
             const dimsCm = extrairDimensoesCm(dim, 28, 12);
             artesLista.push({
@@ -9754,24 +9384,11 @@
               larguraCm: dimsCm.larg,
               alturaCm: dimsCm.alt,
               quantidadePecas: dadosBase.grade?.total || 0,
-              arquivoNome: arq.name,
-              arquivoTipo: arq.type,
-              arquivoTamanho: arq.size,
-              arquivoDataUrl: arq.dataUrl,
-              fundoRemovido: !!arq.fundoRemovido,
-              recortado: !!arq.recortado,
               dataAnexo: new Date().toISOString()
             });
           }
 
           if (chkOmbro) {
-            const arq = artesArquivosCarregados['ombro'];
-            if (!arq || !arq.dataUrl) {
-              const card = document.getElementById('cardArteOmbro');
-              if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              mostrarToast('⚠️ ARQUIVO OBRIGATÓRIO: Anexe o arquivo de arte para o Ombro / Manga.', 'red');
-              return;
-            }
             const dim = document.getElementById('dimArteOmbro')?.value || '8.0 x 4.0 cm';
             const dimsCm = extrairDimensoesCm(dim, 8, 4);
             artesLista.push({
@@ -9781,29 +9398,12 @@
               larguraCm: dimsCm.larg,
               alturaCm: dimsCm.alt,
               quantidadePecas: dadosBase.grade?.total || 0,
-              arquivoNome: arq.name,
-              arquivoTipo: arq.type,
-              arquivoTamanho: arq.size,
-              arquivoDataUrl: arq.dataUrl,
-              fundoRemovido: !!arq.fundoRemovido,
-              recortado: !!arq.recortado,
               dataAnexo: new Date().toISOString()
             });
           }
 
           if (chkOutro) {
-            const desc = document.getElementById('descArteOutro')?.value;
-            if (!desc) {
-              mostrarToast('Por favor, descreva qual é o outro local da arte selecionada.', 'red');
-              return;
-            }
-            const arq = artesArquivosCarregados['outro'];
-            if (!arq || !arq.dataUrl) {
-              const card = document.getElementById('cardArteOutro');
-              if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              mostrarToast(`⚠️ ARQUIVO OBRIGATÓRIO: Anexe o arquivo de arte para "${desc}".`, 'red');
-              return;
-            }
+            const desc = document.getElementById('descArteOutro')?.value || 'Local Especial';
             artesLista.push({
               local: desc,
               tecnica: "Personalização Especial",
@@ -9811,20 +9411,9 @@
               larguraCm: 10,
               alturaCm: 10,
               quantidadePecas: dadosBase.grade?.total || 0,
-              arquivoNome: arq.name,
-              arquivoTipo: arq.type,
-              arquivoTamanho: arq.size,
-              arquivoDataUrl: arq.dataUrl,
-              fundoRemovido: !!arq.fundoRemovido,
-              recortado: !!arq.recortado,
               dataAnexo: new Date().toISOString()
             });
           }
-        }
-
-        if (artesLista.length === 0) {
-          mostrarToast('⚠️ É obrigatório anexar as artes em alta resolução para oficializar a entrada do pedido.', 'red');
-          return;
         }
       }
 
@@ -10016,7 +9605,7 @@
             id: `ART-${Math.floor(10 + Math.random() * 90)}`,
             pedidoNumero: pedidoOficial.numero,
             cliente: clienteNomeFinal,
-            descricao: `${art.modeloNome ? `[${art.modeloNome.split(' ')[0]}] ` : ''}${art.local} (${art.arquivoNome})`,
+            descricao: `${art.modeloNome ? `[${art.modeloNome.split(' ')[0]}] ` : ''}${art.local} (${art.dimensoes || `${w}x${h}cm`})`,
             larguraCm: w,
             alturaCm: h,
             copias: art.quantidadePecas || pedidoOficial.grade.total,
@@ -10599,405 +10188,32 @@
   }
 
   /**
-   * DOWNLOAD DIRETO DE ARTE DO PEDIDO
+   * REDIRECIONAMENTO DE LEGADO PARA O MODAL DE MOCKUP OFICIAL (3x4 + FOLHA A4)
    */
-  function baixarArteDoPedido(dataUrl, nomeArquivo = 'arte_uniforme.png') {
-    if (!dataUrl) {
-      mostrarToast('Arquivo de arte não possui dados salvos para download.', 'red');
-      return;
-    }
+  function baixarArteDoPedido(dataUrl, nomeArquivo = 'mockup_uniforme.png') {
+    if (!dataUrl) return;
     try {
       const a = document.createElement('a');
       a.href = dataUrl;
-      a.download = nomeArquivo || 'arte_uniforme.png';
+      a.download = nomeArquivo || 'mockup_uniforme.png';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      mostrarToast(`✓ Iniciando download: "${nomeArquivo}"`, 'green');
     } catch (err) {
-      console.error('Erro ao baixar arte:', err);
       window.open(dataUrl, '_blank');
     }
   }
 
-  /**
-   * DOWNLOAD DE TODAS AS ARTES DO PEDIDO EM LOTE
-   */
   function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
-    const p = db.pedidos.find(x => x.id === pedidoIdOuNumero || x.numero.toString() === pedidoIdOuNumero.toString());
-    if (!p || !p.artesAnexadas || !p.artesAnexadas.length) {
-      mostrarToast('Nenhuma arte anexada neste pedido para download.', 'red');
-      return;
-    }
-    const artesComArquivo = p.artesAnexadas.filter(a => a.arquivoDataUrl);
-    if (!artesComArquivo.length) {
-      mostrarToast('Nenhum arquivo de arte encontrado.', 'red');
-      return;
-    }
-
-    artesComArquivo.forEach((arte, i) => {
-      setTimeout(() => {
-        baixarArteDoPedido(arte.arquivoDataUrl, arte.arquivoNome || `arte_${i + 1}.png`);
-      }, i * 350);
-    });
-    mostrarToast(`Baixando ${artesComArquivo.length} arquivos de arte do Pedido #${p.numero}...`, 'green');
+    abrirModalMockup3x4(pedidoIdOuNumero);
   }
 
-  /**
-   * CENTRAL DE ARTES & ARQUIVOS DE PRODUÇÃO DO PEDIDO
-   * Local no pedido onde é possível localizar qualquer arte e baixar quando quiser!
-   */
   function abrirModalArtesPedido(pedidoIdOuNumero) {
-    if (!modalContainer) return;
-    const p = db.pedidos.find(x => x.id === pedidoIdOuNumero || x.numero.toString() === pedidoIdOuNumero.toString());
-    if (!p) {
-      mostrarToast('Pedido não encontrado.', 'red');
-      return;
-    }
-
-    const artes = Array.isArray(p.artesAnexadas) ? p.artesAnexadas : [];
-    const artesComArquivo = artes.filter(a => a.arquivoDataUrl);
-
-    const modalEl = criarModalCamada(`
-      <div class="modal-overlay active" id="modalArtesPedidoOverlay">
-        <div class="modal-box" style="max-width: 860px; max-height: 90vh; display: flex; flex-direction: column;">
-          <div class="modal-header" style="background: linear-gradient(135deg, #0f172a, #1e293b); color: #ffffff; border-bottom: none; border-radius: 8px 8px 0 0; padding: 16px 20px;">
-            <div>
-              <div class="modal-title" style="color: #ffffff; display: flex; align-items: center; gap: 8px; font-size: 16px;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
-                <span>Central de Artes & Vetores • Pedido #${p.numero}</span>
-              </div>
-              <span style="font-size: 12px; color: #94a3b8; display: block; margin-top: 2px;">
-                Cliente: <strong style="color: #f1f5f9;">${p.clienteNome}</strong> • Peça: <strong style="color: #f1f5f9;">${p.produtoNome}</strong> (${p.grade?.total || 0} peças) • Status: <strong style="color: #38bdf8;">${p.etapaProducao || p.status}</strong>
-              </span>
-            </div>
-            <button class="modal-close" onclick="window.ERP.fecharModal()" style="color: #cbd5e1; font-size: 22px;">&times;</button>
-          </div>
-
-          <!-- Barra de Ações Rápidas -->
-          <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-            <div style="font-size: 12px; color: #475569; display: flex; align-items: center; gap: 8px;">
-              <span class="status-pill status-blue" style="font-size: 10.5px; font-weight: 800;">
-                ${artes.length} Aplicação(ões) Registrada(s)
-              </span>
-              <span>•</span>
-              <span style="color: #166534; font-weight: 700;">
-                ✓ ${artesComArquivo.length} arquivo(s) prontos para download
-              </span>
-            </div>
-
-            <div style="display: flex; gap: 8px;">
-              ${artesComArquivo.length > 0 ? `
-                <button type="button" class="btn btn-primary btn-sm" id="btnBaixarTodasArtesModal" style="background: #0284c7; border-color: #0284c7; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                  Baixar Todas as Artes (${artesComArquivo.length})
-                </button>
-              ` : ''}
-              <button type="button" class="btn btn-secondary btn-sm" id="btnAdicionarArteAvulsaModal" style="font-weight: 700; color: #047857; border-color: #a7f3d0; background: #ecfdf5;">
-                + Anexar Nova Arte
-              </button>
-            </div>
-          </div>
-
-          <div class="modal-body" style="overflow-y: auto; padding: 18px 20px; flex: 1;">
-            ${artes.length === 0 ? `
-              <div style="text-align: center; padding: 40px 20px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; color: #64748b;">
-                <div style="font-size: 36px; margin-bottom: 8px;">🎨</div>
-                <h4 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">Nenhuma arte anexada neste pedido</h4>
-                <p style="font-size: 12px; max-width: 440px; margin: 0 auto 14px auto;">Este pedido foi registrado como Peça Lisa ou não continha personalizações. Você pode anexar arquivos de estamparia ou bordado a qualquer momento abaixo.</p>
-                <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('formNovaArteAvulsa').style.display='block';">
-                  + Anexar Arquivo de Arte Agora
-                </button>
-              </div>
-            ` : `
-              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 14px;">
-                ${artes.map((art, idx) => {
-                  const temDataUrl = !!art.arquivoDataUrl;
-                  const isImg = temDataUrl && (
-                    (art.arquivoTipo && art.arquivoTipo.startsWith('image/')) ||
-                    art.arquivoDataUrl.startsWith('data:image/') ||
-                    (art.arquivoNome && /\.(png|jpg|jpeg|webp|svg)$/i.test(art.arquivoNome))
-                  );
-                  return `
-                    <div class="card" style="border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px; background: #ffffff; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                      <div>
-                        <!-- Cabeçalho do Card da Arte -->
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
-                          <div>
-                            <span style="font-size: 13px; font-weight: 800; color: #0f172a; display: block;">
-                              📍 ${art.local}
-                            </span>
-                            ${art.modeloNome ? `<span style="font-size: 11px; color: #64748b;">${art.modeloNome}</span>` : ''}
-                          </div>
-                          <div style="display: flex; gap: 4px; align-items: center;">
-                            ${art.fundoRemovido ? `
-                              <span style="font-size: 9.5px; font-weight: 800; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">
-                                ✓ Sem Fundo
-                              </span>
-                            ` : ''}
-                            <span style="font-size: 10px; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 2px 7px; border-radius: 4px; text-transform: uppercase;">
-                              ${art.tecnica || 'DTF'} • ${art.quantidadePecas || p.grade?.total || 0} un
-                            </span>
-                          </div>
-                        </div>
-
-                        <!-- Área Visual de Pré-Visualização / Ícone -->
-                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; min-height: 140px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; position: relative; overflow: hidden;">
-                          ${isImg ? `
-                            <img src="${art.arquivoDataUrl}" style="max-height: 130px; max-width: 100%; object-fit: contain; border-radius: 4px; cursor: pointer;" alt="${art.arquivoNome}" title="Clique para abrir imagem em tamanho real" onclick="window.open('${art.arquivoDataUrl}', '_blank')">
-                          ` : temDataUrl ? `
-                            <div style="text-align: center; padding: 14px;">
-                              <div style="font-size: 38px; margin-bottom: 4px;">
-                                ${art.arquivoNome?.endsWith('.pdf') ? '📕' : art.arquivoNome?.endsWith('.ai') ? '🎨' : '📁'}
-                              </div>
-                              <span style="font-size: 12px; font-weight: 700; color: #0f172a; display: block;">
-                                ${art.arquivoNome || 'Arquivo de Vetor/Bordado'}
-                              </span>
-                              <span style="font-size: 11px; color: #64748b;">Formato Vetorial / Produção</span>
-                            </div>
-                          ` : `
-                            <div style="text-align: center; color: #94a3b8; padding: 14px;">
-                              <div style="font-size: 28px;">⚠️</div>
-                              <span style="font-size: 11px; display: block; margin-top: 4px;">Arquivo não anexado nesta versão</span>
-                            </div>
-                          `}
-                          <span style="position: absolute; bottom: 6px; right: 8px; font-size: 10px; font-weight: 800; background: rgba(15,23,42,0.75); color: #ffffff; padding: 2px 6px; border-radius: 3px;">
-                            📐 ${art.dimensoes || 'Padrão'}
-                          </span>
-                        </div>
-
-                        <!-- Metadados do Arquivo -->
-                        <div style="font-size: 11.5px; color: #334155; line-height: 1.45; margin-bottom: 12px; background: #fdfdfd; padding: 8px; border-radius: 4px; border: 1px solid #f1f5f9;">
-                          <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #64748b;">Nome:</span>
-                            <strong style="color: #0f172a; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${art.arquivoNome}">${art.arquivoNome || 'Sem nome'}</strong>
-                          </div>
-                          <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #64748b;">Tamanho:</span>
-                            <span style="font-weight: 700;">${formatarTamanhoBytes(art.arquivoTamanho)}</span>
-                          </div>
-                          <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #64748b;">Data do Anexo:</span>
-                            <span>${art.dataAnexo ? new Date(art.dataAnexo).toLocaleDateString('pt-BR') : p.dataCriacao || '-'}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Botões de Ação do Card -->
-                      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                        ${temDataUrl ? `
-                          <button type="button" class="btn btn-primary btn-sm btn-baixar-arte-card" data-idx="${idx}" style="flex: 1.2; font-weight: 700; background: #0284c7; border-color: #0284c7; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                            Baixar Arte
-                          </button>
-                          ${isImg ? `
-                            <button type="button" class="btn btn-secondary btn-sm" onclick="window.open('${art.arquivoDataUrl}', '_blank')" style="font-size: 11px; padding: 4px 8px;" title="Ver em tela cheia">
-                              👁️
-                            </button>
-                            <button type="button" class="btn btn-secondary btn-sm btn-tratar-arte-existente-card" data-idx="${idx}" style="font-size: 11px; padding: 4px 8px; font-weight: 700; color: #0f766e; background: #f0fdfa; border-color: #99f6e4; display: inline-flex; align-items: center; gap: 4px;" title="Abrir no Estúdio Cirúrgico & Recorte DTF">
-                              ✂️ Estúdio & Recorte
-                            </button>
-                          ` : ''}
-                        ` : ''}
-                        <label class="btn btn-secondary btn-sm" style="flex: 1; font-size: 11px; cursor: pointer; text-align: center; margin: 0; display: inline-flex; align-items: center; justify-content: center;" title="Substituir por nova versão">
-                          🔄 Trocar
-                          <input type="file" class="inp-trocar-arte-existente" data-idx="${idx}" style="display: none;" accept="image/*,.pdf,.ai,.eps,.cdr,.pes,.dst">
-                        </label>
-                      </div>
-                    </div>
-                  `;
-                }).join('')}
-              </div>
-            `}
-
-            <!-- Formulário Recolhível para Anexar Nova Arte Avulsa -->
-            <div id="formNovaArteAvulsa" style="display: none; margin-top: 18px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 14px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <strong style="font-size: 13px; color: #166534;">+ Adicionar Nova Aplicação / Arte no Pedido #${p.numero}</strong>
-                <button type="button" class="btn btn-secondary btn-xs" onclick="document.getElementById('formNovaArteAvulsa').style.display='none';" style="font-size: 10px;">✕ Fechar</button>
-              </div>
-              <div class="grid-cards-3" style="gap: 8px; margin-bottom: 10px;">
-                <div>
-                  <label class="form-label" style="font-size: 11px;">Local</label>
-                  <input type="text" id="novoLocalArteAvulsa" class="form-input" placeholder="Ex: Peito Esquerdo, Manga..." value="Peito Esquerdo" style="font-size: 11px;">
-                </div>
-                <div>
-                  <label class="form-label" style="font-size: 11px;">Técnica</label>
-                  <select id="novoTecnicaArteAvulsa" class="form-select" style="font-size: 11px;">
-                    <option value="DTF Digital">DTF Digital</option>
-                    <option value="Bordado">Bordado Computadorizado</option>
-                    <option value="Silk Screen">Silk Screen</option>
-                    <option value="Sublimação">Sublimação Total / Local</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="form-label" style="font-size: 11px;">Dimensões (LxA cm)</label>
-                  <input type="text" id="novoDimArteAvulsa" class="form-input" placeholder="10 x 10 cm" value="10 x 10 cm" style="font-size: 11px;">
-                </div>
-              </div>
-              <div style="display: flex; gap: 8px; align-items: center;">
-                <input type="file" id="novoFileArteAvulsa" class="form-input" style="font-size: 11px; padding: 6px; flex: 1.5;" accept="image/*,.pdf,.ai,.eps,.cdr,.pes,.dst">
-                <button type="button" class="btn btn-green btn-sm" id="btnSalvarNovaArteAvulsa" style="font-weight: 700; flex: 1;">
-                  Salvar Arte no Pedido
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="modal-footer" style="background: #ffffff; border-top: 1px solid #e2e8f0; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
-            <div style="font-size: 11px; color: #64748b;">
-              Arquivos salvos e vinculados permanentemente à Ordem de Serviço da Confecção.
-            </div>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.fecharModal()">
-              Fechar
-            </button>
-          </div>
-        </div>
-      </div>
-    `);
-
-    // Eventos do Modal de Artes
-    document.getElementById('btnBaixarTodasArtesModal')?.addEventListener('click', () => {
-      baixarTodasArtesDoPedido(p.id);
-    });
-
-    document.getElementById('btnAdicionarArteAvulsaModal')?.addEventListener('click', () => {
-      const f = document.getElementById('formNovaArteAvulsa');
-      if (f) {
-        f.style.display = f.style.display === 'none' ? 'block' : 'none';
-        if (f.style.display === 'block') f.scrollIntoView({ behavior: 'smooth' });
-      }
-    });
-
-    // Download individual de cada arte
-    modalEl.querySelectorAll('.btn-baixar-arte-card').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = parseInt(btn.getAttribute('data-idx'), 10);
-        const art = artes[idx];
-        if (art && art.arquivoDataUrl) {
-          baixarArteDoPedido(art.arquivoDataUrl, art.arquivoNome || `arte_${art.local || 'estamparia'}.png`);
-        }
-      });
-    });
-
-    // Tratar arte no Estúdio Cirúrgico diretamente do modal de artes
-    modalEl.querySelectorAll('.btn-tratar-arte-existente-card').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = parseInt(btn.getAttribute('data-idx'), 10);
-        const art = artes[idx];
-        if (!art || !art.arquivoDataUrl) return;
-
-        if (!art.arquivoDataUrlOriginal) art.arquivoDataUrlOriginal = art.arquivoDataUrl;
-        abrirEstudioCirurgicoFundo(art.arquivoDataUrlOriginal, (novaDataUrl) => {
-          art.arquivoDataUrl = novaDataUrl;
-          art.fundoRemovido = true;
-          art.recortado = true;
-
-          // Se tiver dimensões no formato LxAlt, ajusta proporcionalmente
-          const imgT = new Image();
-          imgT.onload = () => {
-            const wN = imgT.naturalWidth || imgT.width;
-            const hN = imgT.naturalHeight || imgT.height;
-            if (wN && hN && art.dimensoes) {
-              const m = art.dimensoes.match(/([0-9]+[.,]?[0-9]*)\s*[xX*]\s*([0-9]+[.,]?[0-9]*)/);
-              if (m) {
-                const l = parseFloat(m[1].replace(',', '.'));
-                const ratio = wN / hN;
-                if (l > 0 && ratio > 0) {
-                  const altNova = parseFloat((l / ratio).toFixed(1));
-                  art.dimensoes = `${l.toFixed(1).replace('.', ',')} x ${altNova.toFixed(1).replace('.', ',')} cm`;
-                  art.larguraCm = l;
-                  art.alturaCm = altNova;
-                }
-              }
-            }
-            salvarEstado(true);
-            fecharModal();
-            abrirModalArtesPedido(p.id);
-            mostrarToast(`✓ Arte de "${art.local}" tratada e salva com sucesso!`, 'green');
-          };
-          imgT.src = novaDataUrl;
-        }, { textoBotaoSalvar: '✓ Salvar Arte no Pedido' });
-      });
-    });
-
-    // Trocar arte existente
-    modalEl.querySelectorAll('.inp-trocar-arte-existente').forEach(inp => {
-      inp.addEventListener('change', async (e) => {
-        const idx = parseInt(inp.getAttribute('data-idx'), 10);
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
-
-        try {
-          const dataUrl = await comprimirImagemDataUrl(file, 1600, 1600, 0.85);
-          if (!p.artesAnexadas) p.artesAnexadas = [];
-          if (p.artesAnexadas[idx]) {
-            p.artesAnexadas[idx].arquivoNome = file.name;
-            p.artesAnexadas[idx].arquivoTipo = file.type || 'application/octet-stream';
-            p.artesAnexadas[idx].arquivoTamanho = file.size;
-            p.artesAnexadas[idx].arquivoDataUrl = dataUrl;
-            p.artesAnexadas[idx].dataAnexo = new Date().toISOString();
-          }
-          salvarEstado();
-          fecharModal();
-          abrirModalArtesPedido(p.id);
-          mostrarToast(`✓ Arte substituída com sucesso: "${file.name}"`, 'green');
-        } catch (err) {
-          console.error(err);
-          mostrarToast('Erro ao atualizar arte.', 'red');
-        }
-      });
-    });
-
-    // Salvar nova arte avulsa
-    document.getElementById('btnSalvarNovaArteAvulsa')?.addEventListener('click', async () => {
-      const fileInput = document.getElementById('novoFileArteAvulsa');
-      const file = fileInput?.files && fileInput.files[0];
-      if (!file) {
-        mostrarToast('Selecione um arquivo de imagem ou vetor para anexar.', 'red');
-        return;
-      }
-      const local = document.getElementById('novoLocalArteAvulsa')?.value || 'Peito Esquerdo';
-      const tecnica = document.getElementById('novoTecnicaArteAvulsa')?.value || 'DTF Digital';
-      const dim = document.getElementById('novoDimArteAvulsa')?.value || '10 x 10 cm';
-
-      try {
-        const dataUrl = await comprimirImagemDataUrl(file, 1600, 1600, 0.85);
-        if (!Array.isArray(p.artesAnexadas)) p.artesAnexadas = [];
-        p.artesAnexadas.push({
-          local: local,
-          tecnica: tecnica,
-          modeloNome: p.produtoNome,
-          dimensoes: dim,
-          larguraCm: 10,
-          alturaCm: 10,
-          quantidadePecas: p.grade?.total || 1,
-          arquivoNome: file.name,
-          arquivoTipo: file.type || 'application/octet-stream',
-          arquivoTamanho: file.size,
-          arquivoDataUrl: dataUrl,
-          dataAnexo: new Date().toISOString()
-        });
-        salvarEstado();
-        fecharModal();
-        abrirModalArtesPedido(p.id);
-        renderizarPedidos();
-        mostrarToast(`✓ Nova arte "${file.name}" adicionada ao pedido!`, 'green');
-      } catch (err) {
-        console.error(err);
-        mostrarToast('Erro ao salvar nova arte.', 'red');
-      }
-    });
+    abrirModalMockup3x4(pedidoIdOuNumero);
   }
 
-  function baixarArteDoPedidoDireta(pedidoIdOuNumero, arteIdx) {
-    const p = db.pedidos.find(x => x.id === pedidoIdOuNumero || x.numero.toString() === pedidoIdOuNumero.toString());
-    if (!p || !p.artesAnexadas || !p.artesAnexadas[arteIdx]) {
-      mostrarToast('Arquivo de arte não localizado para este pedido.', 'red');
-      return;
-    }
-    const arte = p.artesAnexadas[arteIdx];
-    baixarArteDoPedido(arte.arquivoDataUrl, arte.arquivoNome);
+  function baixarArteDoPedidoDireta(pedidoIdOuNumero) {
+    abrirModalMockup3x4(pedidoIdOuNumero);
   }
 
   function gerarHtmlCorpoFichaTecnica(os) {
@@ -11183,33 +10399,25 @@
         <p style="color: #475569; font-size: 11px;">${os.instrucoesCorte || 'Corte conforme enfesto industrial padrão com tolerância de 2mm.'}</p>
       </div>
 
-      <!-- 2. Especificações de Estamparia / DTF (Bobina & Arquivos) -->
+      <!-- 2. Especificações de Estamparia / DTF (Bobina & Locais de Aplicação) -->
       <div style="margin-bottom: 10px; background: #fafafa; border: 1px dashed #cbd5e1; padding: 8px 10px; border-radius: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
-          <strong style="color: #0f172a; font-size: 11.5px;">2. ESPECIFICAÇÃO DE ARTES & DTF DIGITAL:</strong>
+          <strong style="color: #0f172a; font-size: 11.5px;">2. ESPECIFICAÇÃO DE ESTAMPARIA & LOCAIS DE APLICAÇÃO:</strong>
           <div style="display: flex; gap: 6px; align-items: center;">
-            <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.abrirModalArtesPedido('${pedido.id || os.pedidoNumero}')" style="font-size: 10px; font-weight: 700; color: #0284c7; border-color: #bae6fd; background: #ffffff; padding: 2px 7px; cursor: pointer;" title="Abrir galeria de artes e baixar em alta resolução">
-              🎨 Central de Downloads das Artes
-            </button>
             <span class="status-pill status-gray" style="font-size: 10px;">
               Bobina DTF: <strong>${larguraDTF} cm Útil</strong> ${larguraDTF == 28 ? '(Bobina Estreita 30cm/A3)' : '(Bobina Industrial 60cm)'}
             </span>
           </div>
         </div>
         <ul style="padding-left: 18px; color: #475569; font-size: 11px; margin-top: 4px;">
-          ${(os.artesAplicacao && os.artesAplicacao.length > 0) ? os.artesAplicacao.map((a, aIdx) => `
+          ${(os.artesAplicacao && os.artesAplicacao.length > 0) ? os.artesAplicacao.map((a) => `
             <li style="margin-bottom: 4px;">
               ${a.modeloNome ? `<strong>[${a.modeloNome.split(' ')[0]}]</strong> ` : ''}
-              <strong>${a.local}:</strong> ${a.dimensoes || a.dimensao || 'Padrão'} • Técnica: <strong>${a.tecnica || 'DTF / Bordado'}</strong> • Arquivo: <strong>${a.arquivoNome || 'Arte Anexa'}</strong>
-              ${a.quantidadePecas ? ` (${a.quantidadePecas} un)` : ''}
-              ${a.arquivoDataUrl ? `
-                <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.baixarArteDoPedidoDireta('${pedido.id || os.pedidoNumero}', ${aIdx})" style="margin-left: 6px; padding: 1px 6px; font-size: 9.5px; font-weight: 700; color: #0284c7; border-color: #bae6fd; background: #ffffff; cursor: pointer;" title="Baixar este arquivo original">
-                  ⬇️ Baixar Arte
-                </button>
-              ` : ''}
+              <strong>${a.local}:</strong> ${a.dimensoes || a.dimensao || 'Padrão'} • Técnica: <strong>${a.tecnica || 'DTF / Bordado'}</strong>
+              ${a.quantidadePecas ? ` • Quantidade: <strong>${a.quantidadePecas} un</strong>` : ''}
             </li>
           `).join('') : `
-            <li>Personalização padrão conforme ficha de estampa e bordado aprovada.</li>
+            <li>Personalização padrão conforme Mockup Oficial (3x4 e Folha A4) aprovado.</li>
           `}
         </ul>
       </div>
@@ -12489,11 +11697,11 @@
                 Selecionar Pedido Principal:
               </label>
               <select id="selNestingPedidoPrincipal" class="form-select" style="font-weight: 700; font-size: 12.5px; border: 1.5px solid #cbd5e1; border-radius: 8px; height: 38px; color: #0f172a;">
-                <option value="" ${state.pedidosSelecionadosIds.length === 0 ? 'selected' : ''}>-- Nenhum Pedido Selecionado (Em Branco) --</option>
+                <option value="" ${state.pedidosSelecionadosIds.length === 0 ? 'selected' : ''}>-- Nenhum Pedido Selecionado (Em Branco / Avulso) --</option>
                 ${todosPedidos.length ? todosPedidos.map(p => {
-                  const totalArtes = (p.artesAnexadas || []).length;
+                  const totalLocais = (p.artesAnexadas || []).length;
                   const selecionado = state.pedidosSelecionadosIds.length === 1 && state.pedidosSelecionadosIds[0] === p.id;
-                  return `<option value="${p.id}" ${selecionado ? 'selected' : ''}>Ped #${p.numero} • ${p.clienteNome} [${p.grade?.total || 0} pçs - ${totalArtes} artes]</option>`;
+                  return `<option value="${p.id}" ${selecionado ? 'selected' : ''}>Ped #${p.numero} • ${p.clienteNome} [${p.grade?.total || 0} pçs${totalLocais ? ` • ${totalLocais} locais` : ''}]</option>`;
                 }).join('') : ''}
               </select>
             </div>
@@ -12661,7 +11869,11 @@
                         <strong style="font-size: 13px; color: #0f172a; display: block; overflow: hidden; text-overflow: ellipsis;" title="${art.nome}">${art.nome}</strong>
                         <span style="font-size: 10.5px; color: #64748b; font-weight: 600;">${art.cliente} ${art.pedidoNumero ? `• Ped #${art.pedidoNumero}` : ''}</span>
                       </div>
-                      <div style="display: flex; gap: 4px; align-items: center;">
+                      <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                        <label class="btn btn-primary btn-xs" style="padding: 3px 9px; font-size: 10.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; background: #0284c7; border: 1.5px solid #0284c7; color: #ffffff; border-radius: 6px; cursor: pointer; margin: 0;" title="Selecionar arquivo de arte do computador para esta posição (100% local, sem consumir banco de dados)">
+                          📂 Arte do PC
+                          <input type="file" class="inp-carregar-arte-pc-slot" data-id="${art.id}" accept="image/*" style="display: none;">
+                        </label>
                         <button type="button" class="btn ${art.fundoRemovido ? 'btn-success' : 'btn-secondary'} btn-xs btn-remover-fundo" data-id="${art.id}" style="padding: 3px 8px; font-size: 10.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; border-radius: 6px;" title="${art.fundoRemovido ? 'Fundo removido (clique para restaurar original)' : 'Remover fundo estilo Canva'}">
                           ${art.fundoRemovido ? '✓ Sem Fundo' : '✨ Remover Fundo'}
                         </button>
@@ -13090,6 +12302,42 @@
       });
     });
 
+    // Carregar Arte do Computador diretamente em um slot do rolo (100% em memória local, sem pesar o banco)
+    document.querySelectorAll('.inp-carregar-arte-pc-slot').forEach(inp => {
+      inp.addEventListener('change', async (e) => {
+        const id = inp.getAttribute('data-id');
+        const file = e.target.files && e.target.files[0];
+        const art = state.artes.find(a => a.id === id);
+        if (!file || !art) return;
+
+        try {
+          const dataUrl = await comprimirImagemDataUrl(file, 2000, 2000, 0.95);
+          if (!dataUrl) return;
+          art.imagemDataUrl = dataUrl;
+          art.imagemOriginal = dataUrl;
+          art.arquivoNome = file.name;
+          art.fundoRemovido = false;
+
+          const imgMedir = new Image();
+          imgMedir.onload = () => {
+            if (imgMedir.naturalWidth > 0 && imgMedir.naturalHeight > 0) {
+              const novoRatio = imgMedir.naturalWidth / imgMedir.naturalHeight;
+              art.aspectRatio = parseFloat(novoRatio.toFixed(4));
+              if (art.manterProporcao !== false && art.larguraCm > 0) {
+                art.alturaCm = parseFloat((art.larguraCm / novoRatio).toFixed(1));
+              }
+            }
+            mostrarToast(`✓ Arte "${file.name}" carregada do computador para "${art.nome}"!`, 'green');
+            renderizarNestingDTF();
+          };
+          imgMedir.src = dataUrl;
+        } catch (err) {
+          console.error('Erro ao carregar arquivo do PC no slot:', err);
+          mostrarToast('Erro ao carregar imagem do computador.', 'red');
+        }
+      });
+    });
+
     // Estúdio Cirúrgico de Fundo (Conta-gotas & Ajuste Fino)
     document.querySelectorAll('.btn-estudio-cirurgico').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -13333,7 +12581,7 @@
                 <label class="form-label">Selecione o Pedido para Adicionar</label>
                 <select id="selOutroPedidoNesting" class="form-select">
                   ${pedidosDisponiveis.map(p => `
-                    <option value="${p.id}">Pedido #${p.numero} • ${p.clienteNome} (${p.grade?.total || 0} pçs - ${(p.artesAnexadas || []).length} artes)</option>
+                    <option value="${p.id}">Pedido #${p.numero} • ${p.clienteNome} (${p.grade?.total || 0} pçs${(p.artesAnexadas || []).length ? ` • ${(p.artesAnexadas || []).length} locais` : ''})</option>
                   `).join('')}
                 </select>
               </div>
@@ -18451,12 +17699,7 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
                   🎨 Cor Principal: <strong>${p.corTecido || 'A Definir'}</strong>
                   ${p.observacoesCoresDetalhes ? ` • <span style="color: #b45309; font-weight: 700;">Detalhes: ${p.observacoesCoresDetalhes}</span>` : ''}<br>
                   Valor Total: <strong>${formatarMoeda(p.valorTotalVenda)}</strong> • Margem Líquida: <strong class="${p.margemLucroPercentual >= 20 ? 'text-green' : 'text-red'}">${(p.margemLucroPercentual || 0).toFixed(1)}%</strong><br>
-                  Costureira: <strong>${p.costureiraNome || 'Oficina Interna'}</strong> • Artes Anexadas: <strong>${(p.artesAnexadas || []).length} locais</strong>
-                  ${(p.artesAnexadas && p.artesAnexadas.length > 0) ? `
-                    <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.abrirModalArtesPedido('${p.id}')" style="margin-left: 6px; padding: 1px 7px; font-size: 10px; color: #0284c7; border-color: #bae6fd; background: #ffffff; font-weight: 700; cursor: pointer;">
-                      🎨 Ver & Baixar Artes
-                    </button>
-                  ` : ''}
+                  Costureira: <strong>${p.costureiraNome || 'Oficina Interna'}</strong> • Personalização: <strong>${p.tipoPersonalizacao || 'Conforme Ficha'}</strong>
                   ${(p.jogadores && p.jogadores.length > 0) ? `
                     <div style="margin-top: 4px;">
                       <span class="status-pill status-green" style="font-size: 10px; font-weight: 800; padding: 2px 7px; display: inline-flex; align-items: center; gap: 4px;">
@@ -18495,16 +17738,14 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
               <div class="quarentena-item" id="itemCheck2">
                 <input type="checkbox" id="chkQuarentena2" class="quarentena-checkbox">
                 <div>
-                  <label for="chkQuarentena2" class="quarentena-label">2. Mockup 3x4 e Artes de Alta Resolução Aprovadas</label>
+                  <label for="chkQuarentena2" class="quarentena-label">2. Mockup Oficial (3x4 + Folha A4) e Especificações de Estamparia Aprovados</label>
                   <div class="quarentena-desc">
-                    Confirmo que o cliente aprovou formalmente por e-mail ou WhatsApp a disposição das estampas no peito, costas e mangas.
-                    ${(p.artesAnexadas && p.artesAnexadas.length > 0) ? `
-                      <div style="margin-top: 6px;">
-                        <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.abrirModalArtesPedido('${p.id}')" style="color: #0284c7; border-color: #bae6fd; background: #ffffff; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; padding: 2px 8px;">
-                          🎨 Inspecionar e Baixar ${p.artesAnexadas.length} Arquivo(s) de Arte
-                        </button>
-                      </div>
-                    ` : ''}
+                    Confirmo que o cliente aprovou formalmente por e-mail ou WhatsApp o Mockup Oficial e a disposição das estampas no peito, costas e mangas.
+                    <div style="margin-top: 6px;">
+                      <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.abrirModalMockup3x4('${p.id}')" style="color: #0284c7; border-color: #bae6fd; background: #ffffff; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; padding: 2px 8px;">
+                        🖼️ Visualizar Mockup Oficial Ampliado (3x4 e Folha A4)
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -21184,13 +20425,17 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
                 <span class="status-pill status-red" style="font-weight: 800;">🚫 PEDIDO CANCELADO</span>
               ` : ''}
             </div>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
               ${pedido ? `
-                ${(pedido && pedido.artesAnexadas && pedido.artesAnexadas.length > 0) ? `
-                  <button type="button" class="btn btn-secondary btn-sm" id="btnModalMockupArtes" style="color: #0284c7; border-color: #bae6fd; font-weight: 700;">
-                    🎨 Ver & Baixar Artes (${pedido.artesAnexadas.length})
-                  </button>
-                ` : ''}
+                ${pedido.mockupMiniaturaCompactada ? `
+                  <span style="font-size: 10px; color: #64748b; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 3px 8px; border-radius: 4px;" title="Pedido concluído há mais de 7 dias: arquivo pesado convertido em miniatura leve para economia de banco de dados.">
+                    📦 Miniatura de Histórico (+7d entregue)
+                  </span>
+                ` : `
+                  <span style="font-size: 10px; color: #0369a1; background: #f0f9ff; border: 1px solid #bae6fd; padding: 3px 8px; border-radius: 4px;" title="Mockup em alta definição pronto para impressão em Folha A4 separada (será compactado automaticamente 7 dias após entregue).">
+                    ✨ Alta Definição A4 Ativa
+                  </span>
+                `}
                 <button type="button" class="btn btn-secondary btn-sm" id="btnModalMockupWpp">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                   Disparar no WhatsApp
@@ -21222,9 +20467,6 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
     });
 
     if (pedido) {
-      document.getElementById('btnModalMockupArtes')?.addEventListener('click', () => {
-        abrirModalArtesPedido(pedido.id);
-      });
       document.getElementById('btnModalMockupCancelar')?.addEventListener('click', () => {
         abrirModalCancelarPedido(pedido.id);
       });
