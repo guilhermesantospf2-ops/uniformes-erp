@@ -924,35 +924,20 @@
           window.dispatchEvent(new Event('storage'));
         } catch (e) {}
 
-        // 3. Sincronização em Nuvem via Supabase (se cliente estiver no 4G de outro dispositivo)
+        // 3. Sincronização em Nuvem via Gateway Blindado (/api/erp-security)
         try {
-          if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
-            const supUrl = "https://nrhygqygcfjyniogjegq.supabase.co";
-            const supKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yaHlncXlnY2ZqeW5pb2dqZWdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0NzU1MTMsImV4cCI6MjEwNjA1MTUxM30.JXAt9Ha1ni2T3G-dMvITGdH9PIPTc7_utI3H9LPrIV4";
-            const client = window.supabase.createClient(supUrl, supKey);
-            client.from('erp_tenants').select('*').limit(1).then(({ data, error }) => {
-              if (data && data.length > 0) {
-                const row = data[0];
-                const dbCloud = row.dados || {};
-                if (dbCloud && Array.isArray(dbCloud.pedidos)) {
-                  const pedCloud = dbCloud.pedidos.find(p => 
-                    p.id === pedidoIdParam || 
-                    (p.numero != null && p.numero.toString() === pedidoIdParam.replace('PED-', '').replace('ORC-', ''))
-                  );
-                  if (pedCloud) {
-                    pedCloud.jogadores = atletasConfirmados;
-                    pedCloud.grade = gradeCalculada;
-                    pedCloud.quantidadeTotal = totalPecas;
-                    pedCloud.status = 'Entrada Pendente';
-                    pedCloud.origemEntrada = 'preenchido_cliente';
-                    pedCloud.dataPreenchimentoCliente = new Date().toISOString();
-                    pedCloud.codigoValidacao = codigoValidacao;
-                    client.from('erp_tenants').update({ dados: dbCloud, atualizado_em: new Date().toISOString() }).eq('id', row.id).then();
-                  }
-                }
-              }
-            }).catch(err => console.warn('Supabase sync background:', err));
-          }
+          fetch('/api/erp-security', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'submit_public_roster',
+              pedidoId: pedidoIdParam,
+              atletas: atletasConfirmados,
+              grade: gradeCalculada,
+              quantidadeTotal: totalPecas,
+              codigoValidacao: codigoValidacao
+            })
+          }).catch(err => console.warn('Gateway sync background:', err));
         } catch (errCloud) {
           console.warn('Falha silenciosa na nuvem:', errCloud);
         }

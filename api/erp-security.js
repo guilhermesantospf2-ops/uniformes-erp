@@ -862,6 +862,100 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    // ========================================================================
+    // 6. TROCA DE SESSÃO LEGADA POR TOKEN ASSINADO (MIGRAÇÃO TRANSPARENTE)
+    // ========================================================================
+    if (action === 'exchange_legacy_session') {
+      const tenantId = (body.tenantId || '').trim();
+      const authHash = (body.authHash || '').trim();
+      const authSalt = (body.authSalt || '').trim();
+      if (!tenantId || !authHash || !authSalt) {
+        return res.status(401).json({ sucesso: false, erro: 'Credenciais de sessão incompletas.' });
+      }
+
+      const { data: rows } = await sbFetch(`erp_tenants?tenant_id=eq.${encodeURIComponent(tenantId)}&select=tenant_id,empresa`);
+      const tRow = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+      const serverAuth = tRow && tRow.empresa && tRow.empresa.auth;
+
+      if (!serverAuth || !serverAuth.hash || !serverAuth.salt) {
+        return res.status(401).json({ sucesso: false, erro: 'Sessão inválida.' });
+      }
+
+      if (serverAuth.hash !== authHash || serverAuth.salt !== authSalt) {
+        return res.status(401).json({ sucesso: false, erro: 'Assinatura de sessão divergente.' });
+      }
+
+      const sessionToken = signSessionToken({
+        tenant_id: tenantId,
+        email: serverAuth.email || tRow.empresa.email || '',
+        perfil: 'dono',
+        role: 'Dono / Diretor'
+      });
+
+      return res.status(200).json({
+        sucesso: true,
+        sessionToken,
+        empresa: sanitizeEmpresaForClient(tRow.empresa)
+      });
+    }
+
+    // ========================================================================
+    // 7. ENVIO PÚBLICO DE LISTA DE ATLETAS/TAMANHOS (cliente.html / coleta.html / time.html)
+    // Atualiza APENAS a lista de jogadores do pedido específico sem expor o banco!
+    // ========================================================================
+    if (action === 'submit_public_roster') {
+      const pedidoIdParam = String(body.pedidoId || '').trim();
+      const atletasConfirmados = Array.isArray(body.atletas) ? body.atletas.slice(0, 500) : [];
+      const gradeCalculada = (body.grade && typeof body.grade === 'object') ? body.grade : {};
+      const totalPecas = Number(body.quantidadeTotal) || atletasConfirmados.length;
+      const codigoValidacao = String(body.codigoValidacao || '').trim();
+      const tenantHint = String(body.tenantId || '').trim();
+
+      if (!pedidoIdParam || atletasConfirmados.length === 0) {
+        return res.status(400).json({ sucesso: false, erro: 'Dados do pedido ou lista de atletas inválidos.' });
+      }
+
+      const queryPath = tenantHint
+        ? `erp_tenants?tenant_id=eq.${encodeURIComponent(tenantHint)}&select=tenant_id,db`
+        : 'erp_tenants?select=tenant_id,db';
+
+      const { data: allTenants } = await sbFetch(queryPath);
+      if (Array.isArray(allTenants)) {
+        const numClean = pedidoIdParam.replace('PED-', '').replace('ORC-', '');
+        for (const tRow of allTenants) {
+          if (tRow.db && Array.isArray(tRow.db.pedidos)) {
+            const ped = tRow.db.pedidos.find(p =>
+              p.id === pedidoIdParam ||
+              (p.numero != null && String(p.numero) === numClean)
+            );
+            if (ped) {
+              ped.jogadores = atletasConfirmados;
+              ped.grade = gradeCalculada;
+              ped.quantidadeTotal = totalPecas;
+              ped.status = 'Entrada Pendente';
+              ped.origemEntrada = 'preenchido_cliente';
+              ped.dataPreenchimentoCliente = new Date().toISOString();
+              ped.codigoValidacao = codigoValidacao;
+              ped.ultimaModificacaoMs = Date.now();
+
+              await sbFetch(`erp_tenants?tenant_id=eq.${encodeURIComponent(tRow.tenant_id)}`, {
+                method: 'PATCH',
+                body: JSON.stringify({
+                  db: tRow.db,
+                  ultima_atualizacao_ms: Date.now(),
+                  updated_at: new Date().toISOString()
+                })
+              });
+
+              return res.status(200).json({ sucesso: true });
+            }
+          }
+        }
+      }
+
+      return res.status(200).json({ sucesso: true, queued: true });
+    }
+
     return res.status(400).json({ sucesso: false, erro: 'Ação desconhecida.' });
   } catch (err) {
     console.error('[ERP Security API] Erro interno:', err);

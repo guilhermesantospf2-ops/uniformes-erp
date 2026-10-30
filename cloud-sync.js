@@ -148,6 +148,38 @@
     } catch (e) {}
   }
 
+  async function garantirTokenSessao() {
+    const tokExistente = obterTokenSessao();
+    if (tokExistente) return tokExistente;
+    try {
+      const tenantId = obterTenantId();
+      if (!tenantId) return null;
+      const emp = obterEmpresaConfig();
+      const authObj = tenantAuthAtivo || (emp && emp.auth) || null;
+      if (authObj && authObj.hash && authObj.salt) {
+        const resp = await fetch('/api/erp-security', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'exchange_legacy_session',
+            tenantId,
+            authHash: authObj.hash,
+            authSalt: authObj.salt
+          })
+        });
+        if (resp && resp.ok) {
+          const resData = await resp.json();
+          if (resData && resData.sucesso && resData.sessionToken) {
+            salvarTokenSessao(resData.sessionToken);
+            if (resData.empresa) salvarEmpresaConfig(resData.empresa);
+            return resData.sessionToken;
+          }
+        }
+      }
+    } catch (e) {}
+    return null;
+  }
+
   function obterPerfilAtivo() {
     try {
       // Blindagem anti-F12: sempre prioriza o cargo assinado no token criptográfico do servidor
@@ -1654,7 +1686,7 @@ with check (true);
     if (!tenantId) return null;
 
     // Camada Segura (/api/erp-security): Filtra dados financeiros por cargo no servidor e oculta hashes
-    const sessionToken = obterTokenSessao();
+    const sessionToken = await garantirTokenSessao();
     if (sessionToken && navigator.onLine) {
       try {
         const resp = await fetch('/api/erp-security', {
@@ -1995,7 +2027,7 @@ with check (true);
 
     definirTextoStatusNuvem('🔄 Gravando na nuvem...', '#dbeafe', '#1d4ed8');
 
-    const sessionToken = obterTokenSessao();
+    const sessionToken = await garantirTokenSessao();
     if (sessionToken && navigator.onLine) {
       try {
         const resp = await fetch('/api/erp-security', {
@@ -2117,7 +2149,7 @@ with check (true);
       const agora = Date.now();
       ultimaAtualizacaoRemota = agora;
 
-      const sessionToken = obterTokenSessao();
+      const sessionToken = await garantirTokenSessao();
       if (sessionToken && navigator.onLine) {
         try {
           const resp = await fetch('/api/erp-security', {
