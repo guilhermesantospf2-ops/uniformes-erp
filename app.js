@@ -2707,6 +2707,90 @@
     });
   }
 
+  // Motor de Inteligência de Planos (Básico vs Pro Industrial)
+  function obterPlanoAtivo() {
+    try {
+      const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
+        ? window.ERP_CLOUD.obterEmpresaConfig()
+        : (db && db.empresa);
+      if (emp && emp.plano) {
+        const p = String(emp.plano).toLowerCase().trim();
+        if (p === 'basico' || p === 'basic') return 'basico';
+        if (p === 'pro' || p === 'anual' || p === 'industrial') return 'pro';
+      }
+    } catch (e) { }
+    return 'basico';
+  }
+
+  function atualizarVisuaisPlano() {
+    const plano = obterPlanoAtivo();
+    const badgeContainer = document.getElementById('sidebarPlanBadge');
+    const badgeDot = document.getElementById('planBadgeDot');
+    const badgeTitle = document.getElementById('planBadgeTitle');
+    const badgeSub = document.getElementById('planBadgeSubtitle');
+    const badgePill = document.getElementById('planBadgePill');
+
+    const itemNesting = document.querySelector('.menu-item[data-aba="nesting"]');
+    const itemQuarentena = document.querySelector('.menu-item[data-aba="quarentena"]');
+
+    if (plano === 'basico') {
+      if (badgeDot) {
+        badgeDot.style.background = '#38bdf8';
+        badgeDot.style.boxShadow = '0 0 8px #38bdf8';
+      }
+      if (badgeTitle) {
+        badgeTitle.textContent = 'PLANO BÁSICO ATIVO';
+        badgeTitle.style.color = '#e2e8f0';
+      }
+      if (badgeSub) badgeSub.textContent = 'Confecção Essencial • 2 Usuários';
+      if (badgePill) {
+        badgePill.textContent = 'BÁSICO';
+        badgePill.style.background = '#334155';
+        badgePill.style.color = '#94a3b8';
+      }
+      if (badgeContainer) {
+        badgeContainer.style.background = 'rgba(15, 23, 42, 0.75)';
+        badgeContainer.style.borderColor = 'rgba(148, 163, 184, 0.25)';
+      }
+
+      // Adiciona etiqueta PRO sutil nos itens bloqueados
+      if (itemNesting && !itemNesting.querySelector('.menu-badge-pro-lock')) {
+        const lock = document.createElement('span');
+        lock.className = 'menu-badge menu-badge-pro-lock';
+        lock.style.cssText = 'background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); font-size: 8.5px; font-weight: 800; padding: 1px 5px; border-radius: 4px; margin-left: auto; letter-spacing: 0.5px;';
+        lock.textContent = '🔒 PRO';
+        itemNesting.appendChild(lock);
+      }
+      if (itemQuarentena && !itemQuarentena.querySelector('.menu-badge-pro-lock')) {
+        const lock = document.createElement('span');
+        lock.className = 'menu-badge menu-badge-pro-lock';
+        lock.style.cssText = 'background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); font-size: 8.5px; font-weight: 800; padding: 1px 5px; border-radius: 4px; margin-left: 6px; letter-spacing: 0.5px;';
+        lock.textContent = '🔒 PRO';
+        itemQuarentena.appendChild(lock);
+      }
+    } else {
+      if (badgeDot) {
+        badgeDot.style.background = '#10b981';
+        badgeDot.style.boxShadow = '0 0 8px #10b981';
+      }
+      if (badgeTitle) {
+        badgeTitle.textContent = 'LICENÇA PRO ATIVA';
+        badgeTitle.style.color = '#2dd4bf';
+      }
+      if (badgeSub) badgeSub.textContent = 'Plano Industrial • Ilimitado';
+      if (badgePill) {
+        badgePill.textContent = 'PRO';
+        badgePill.style.background = '#0d9488';
+        badgePill.style.color = '#ffffff';
+      }
+      if (badgeContainer) {
+        badgeContainer.style.background = 'rgba(3, 43, 53, 0.6)';
+        badgeContainer.style.borderColor = 'rgba(45, 212, 191, 0.3)';
+      }
+      document.querySelectorAll('.menu-badge-pro-lock').forEach(el => el.remove());
+    }
+  }
+
   // Roteador de Abas com Controle de Perfis e Permissões Industriais
   function navegarPara(aba) {
     if (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterPerfilAtivo === 'function') {
@@ -2715,6 +2799,14 @@
         mostrarToast(`Acesso restrito: seu perfil (${perfil.nome}) não possui permissão para acessar esta área.`, 'red');
         aba = perfil.abasPermitidas[0] || 'pedidos';
       }
+    }
+
+    // Bloqueio mandatário de recursos exclusivos do Plano Pro Industrial
+    const planoAtivo = obterPlanoAtivo();
+    const modulosExclusivosPro = ['nesting', 'quarentena'];
+    if (planoAtivo === 'basico' && modulosExclusivosPro.includes(aba)) {
+      abrirModalUpgradePlanoPro(aba);
+      return;
     }
 
     abaAtiva = aba;
@@ -2799,6 +2891,9 @@
       const qtdProducao = db.pedidos.filter(p => p.status === 'Em Producao').length;
       badgePedidos.textContent = qtdProducao;
     }
+
+    // Sincroniza visualização do plano e etiquetas PRO
+    atualizarVisuaisPlano();
   }
 
   /* ==========================================================================
@@ -2904,6 +2999,114 @@
 
   function configurarFechamentoModaisGlobal() {
     // Tecla ESC desativada para fechamento acidental a pedido do usuário (modais fecham apenas no botão 'X' ou 'Cancelar')
+  }
+
+  // Modal de Upsell e Apresentação do Plano Pro Industrial
+  function abrirModalUpgradePlanoPro(modulo = 'geral') {
+    let tituloModulo = 'Recurso Exclusivo do Plano Pro Industrial';
+    let descricaoModulo = 'Esta funcionalidade avançada faz parte do Plano Pro Industrial do Bravvi ERP Têxtil.';
+    let iconeModulo = '🚀';
+
+    if (modulo === 'nesting') {
+      tituloModulo = 'Otimizador de Bobina Nesting DTF';
+      descricaoModulo = 'O motor de nesting DTF organiza automaticamente logotipos e artes na bobina de 60cm, reduzindo o desperdício de filme transfer em até 38% e gerando o mapa de impressão pronto.';
+      iconeModulo = '✂️';
+    } else if (modulo === 'quarentena') {
+      tituloModulo = 'Quarentena de Qualidade & Chão de Fábrica';
+      descricaoModulo = 'Bloqueie lotes com avaria, registre fotos de defeitos de costura/estampa e impeça que peças fora do padrão industrial cheguem aos seus clientes.';
+      iconeModulo = '🛡️';
+    } else if (modulo === 'equipe') {
+      tituloModulo = 'Cadastro de Equipe Ilimitada';
+      descricaoModulo = 'Seu Plano Básico inclui até 2 usuários simultâneos. Com o Plano Pro Industrial, você cadastra operadores de corte, costureiras e vendedores ilimitados com controle de permissões por cargo.';
+      iconeModulo = '👥';
+    }
+
+    const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
+      ? window.ERP_CLOUD.obterEmpresaConfig()
+      : (db && db.empresa);
+    const nomeEmpresa = emp?.nomeFantasia || emp?.razaoSocial || 'Minha Confecção';
+
+    const textoWhatsApp = encodeURIComponent(`Olá! Sou da ${nomeEmpresa} e gostaria de fazer o upgrade do Plano Básico para o Plano Pro Industrial no Bravvi ERP Têxtil.`);
+    const linkWhatsApp = `https://wa.me/5544999856245?text=${textoWhatsApp}`;
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active" style="z-index: 20000000 !important; position: fixed; inset: 0; background: radial-gradient(circle at 50% 15%, #032b35 0%, #02171d 60%, #010a0e 100%); display: flex !important; align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">
+        <div class="modal-box" style="max-width: 520px; width: 100%; border-radius: 16px; box-shadow: 0 35px 90px -15px rgba(0,0,0,0.8), 0 0 0 1px rgba(45, 212, 191, 0.25); overflow: hidden; background: #ffffff; animation: bravviFadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+          <div class="modal-header" style="background: linear-gradient(135deg, #032b35 0%, #0f172a 100%); color: #fff; padding: 22px 24px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(45, 212, 191, 0.15); border: 1px solid rgba(45, 212, 191, 0.3); color: #2dd4bf; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+                ${iconeModulo}
+              </div>
+              <div>
+                <div style="font-size: 11px; font-weight: 800; color: #2dd4bf; text-transform: uppercase; letter-spacing: 0.8px;">PLANO PRO INDUSTRIAL</div>
+                <div class="modal-title" style="color: #ffffff; font-size: 17px; font-weight: 800; letter-spacing: -0.2px; margin-top: 2px;">${tituloModulo}</div>
+              </div>
+            </div>
+            <button class="modal-close" style="color: #94a3b8; font-size: 24px; cursor: pointer; background: none; border: none;" onclick="window.ERP.fecharModal()">&times;</button>
+          </div>
+
+          <div class="modal-body" style="padding: 24px; line-height: 1.5;">
+            <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; font-size: 13px; color: #166534; line-height: 1.5;">
+              🔒 <strong>Recurso Avançado:</strong> ${descricaoModulo}
+            </div>
+
+            <!-- Tabela Comparativa de Planos -->
+            <div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 20px;">
+              <div style="background: #f8fafc; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Seu Plano Atual</div>
+                  <div style="font-size: 14px; font-weight: 800; color: #0f172a;">Básico • R$ 107/mês</div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 11px; font-weight: 700; color: #059669; text-transform: uppercase;">Upgrade Recomendado</div>
+                  <div style="font-size: 14px; font-weight: 800; color: #047857;">Pro Industrial • R$ 227/mês</div>
+                </div>
+              </div>
+
+              <div style="padding: 14px 16px; background: #ffffff; font-size: 12.5px; color: #334155;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                  <span>✂️ Otimizador Nesting Bobina DTF</span>
+                  <span style="font-weight: 700; color: #047857;">Incluso no Pro</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                  <span>🛡️ Quarentena & Controle de Defeitos</span>
+                  <span style="font-weight: 700; color: #047857;">Incluso no Pro</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span>👥 Equipe & Operadores Simultâneos</span>
+                  <span style="font-weight: 700; color: #047857;">Ilimitado no Pro</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="background: #f8fafc; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #475569; text-align: center;">
+              💡 <strong>Diferença de apenas R$ 120/mês</strong> para ter a fábrica 100% automatizada e sem restrições.
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 16px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px;">
+            <a href="${linkWhatsApp}" target="_blank" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 14.5px; font-weight: 800; background: #25d366; border-color: #25d366; color: #ffffff; border-radius: 8px; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.4); text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
+              Fazer Upgrade pelo WhatsApp Agora
+            </a>
+            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()" style="width: 100%; padding: 9px; font-size: 13px; color: #64748b; background: transparent; border: none; cursor: pointer;">
+              Continuar no Plano Básico
+            </button>
+          </div>
+        </div>
+      </div>
+    `, { zIndex: 20000000 });
+
+    return modalEl;
+  }
+
+  function abrirModalDetalhesPlano() {
+    const plano = obterPlanoAtivo();
+    if (plano === 'basico') {
+      abrirModalUpgradePlanoPro('geral');
+    } else {
+      mostrarToast('Sua confecção está no Plano Pro Industrial. Todos os 14 módulos estão liberados!', 'green');
+    }
   }
 
   /* ==========================================================================
@@ -17921,6 +18124,12 @@
   function abrirModalNovoColaboradorInline(callback, colaboradorParaEditar = null) {
     if (!modalContainer) return;
     const isEdit = !!colaboradorParaEditar;
+
+    // Trava de limite de equipe no Plano Básico (máximo 2 usuários)
+    if (!isEdit && obterPlanoAtivo() === 'basico' && (db.equipe || []).length >= 2) {
+      abrirModalUpgradePlanoPro('equipe');
+      return;
+    }
     const col = colaboradorParaEditar || {
       nome: '',
       email: '',
@@ -22221,6 +22430,8 @@
     abrirModalTrocarPerfil: () => abrirModalMeuPerfil(),
     abrirModalAlterarMinhaSenha,
     abrirModalTrocaSenhaPrimeiroAcesso,
+    abrirModalDetalhesPlano,
+    abrirModalUpgradePlanoPro,
     abrirModalRoteiroVendas,
     abrirModalEmitirNfe,
     abrirVisualizadorDanfe,
