@@ -136,6 +136,7 @@
       ],
       linkPadrao: LINK_CAKTO_ANUAL_1890
     },
+    treinamento_equipe: {
       id: 'treinamento_vip_equipe_297',
       nome: 'Treinamento Dedicado VIP da Equipe (Opcional)',
       valor: 297.00,
