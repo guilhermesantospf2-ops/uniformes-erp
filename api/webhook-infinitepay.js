@@ -58,10 +58,14 @@ module.exports = async function handler(req, res) {
     const isPaid = status === 'PAID' || status === 'APPROVED' || status === 'COMPLETED' || payload.event === 'payment.succeeded';
 
     // Identificadores da compra
-    const orderNsu = payload.order_nsu || (payload.data && payload.data.order_nsu) || payload.id || 'inf_' + Date.now();
-    const valor = payload.amount || (payload.data && payload.data.amount) || 97.00;
-    const email = (payload.customer && payload.customer.email) || (payload.data && payload.data.customer && payload.data.customer.email) || '';
+    const orderNsu = payload.order_nsu || (payload.data && payload.data.order_nsu) || payload.id;
+    const valor = Number(payload.amount || (payload.data && payload.data.amount) || 0);
+    const email = ((payload.customer && payload.customer.email) || (payload.data && payload.data.customer && payload.data.customer.email) || '').trim().toLowerCase();
     const nome = (payload.customer && payload.customer.name) || (payload.data && payload.data.customer && payload.data.customer.name) || '';
+
+    if (!orderNsu || !email || !email.includes('@') || !isPaid || valor < 10) {
+      return res.status(400).json({ error: 'Invalid or unapproved InfinitePay payload' });
+    }
 
     // Gera um token criptograficamente seguro e aleatório para a ativação do cliente
     const crypto = require('crypto');

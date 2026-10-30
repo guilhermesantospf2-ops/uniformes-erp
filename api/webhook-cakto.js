@@ -52,12 +52,17 @@ module.exports = async function handler(req, res) {
     const status = (payload.status || (payload.data && payload.data.status) || payload.event || '').toUpperCase();
     const isPaid = status === 'PAID' || status === 'APPROVED' || status === 'PURCHASE_APPROVED' || status === 'COMPLETED';
 
-    const orderId = payload.id || (payload.data && payload.data.id) || payload.order_id || 'cakto_' + Date.now();
-    const valor = payload.amount || (payload.data && payload.data.amount) || payload.price || 397.00;
+    const orderId = payload.id || (payload.data && payload.data.id) || payload.order_id;
+    const valor = Number(payload.amount || (payload.data && payload.data.amount) || payload.price || 0);
     const customer = payload.customer || (payload.data && payload.data.customer) || {};
-    const email = customer.email || payload.email || '';
+    const email = (customer.email || payload.email || '').trim().toLowerCase();
     const nome = customer.name || payload.name || '';
     const phone = customer.phone || customer.cellphone || '';
+
+    // Blindagem: rejeita payloads forjados sem ID real de transação, sem e-mail válido ou não aprovados
+    if (!orderId || !email || !email.includes('@') || !isPaid || valor < 10) {
+      return res.status(400).json({ error: 'Invalid or unapproved payment payload' });
+    }
 
     // Gera um token criptograficamente seguro e aleatório para a ativação do cliente
     const crypto = require('crypto');
@@ -223,15 +228,11 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // Retorna SEMPRE 200 OK para a Cakto com dados de login oficial
+    // Retorna 200 OK sem vazar credenciais na resposta HTTP
     return res.status(200).json({
       received: true,
       order_id: orderId,
-      status: isPaid ? 'approved' : 'received',
-      login_url: 'https://uniformes-erp.vercel.app',
-      email: email,
-      senha_temporaria: 'Bravvi@2026',
-      instrucoes: 'Acesse https://uniformes-erp.vercel.app com seu e-mail e a senha temporária Bravvi@2026.'
+      status: isPaid ? 'approved' : 'received'
     });
 
   } catch (err) {

@@ -55,10 +55,14 @@ module.exports = async function handler(req, res) {
     const isPaid = evento === 'PAYMENT_RECEIVED' || evento === 'PAYMENT_CONFIRMED';
     const isOverdue = evento === 'PAYMENT_OVERDUE';
 
-    const orderId = payment.id || 'asaas_' + Date.now();
-    const valor = payment.value || 397.00;
+    const orderId = payment.id;
+    const valor = Number(payment.value || 0);
     const customerId = payment.customer || '';
     const billingType = payment.billingType || 'PIX_OR_CREDIT_CARD';
+
+    if (!orderId || !customerId || (!isPaid && !isOverdue) || valor < 10) {
+      return res.status(400).json({ error: 'Invalid or ignored Asaas webhook payload' });
+    }
 
     // Gera um token criptograficamente seguro e aleatório para a ativação do cliente
     const crypto = require('crypto');

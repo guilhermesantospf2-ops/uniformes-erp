@@ -116,24 +116,72 @@
     }
   }
 
+  function decodificarPayloadTokenAssinado(token) {
+    if (!token || typeof token !== 'string' || !token.includes('.')) return null;
+    try {
+      const base64Url = token.split('.')[0];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonStr = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+      return JSON.parse(jsonStr);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function obterTokenSessao() {
+    try {
+      return sessionStorage.getItem('BRAVVI_ERP_SESSION_TOKEN') || localStorage.getItem('BRAVVI_ERP_SESSION_TOKEN') || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function salvarTokenSessao(token) {
+    try {
+      if (token) {
+        sessionStorage.setItem('BRAVVI_ERP_SESSION_TOKEN', token);
+        localStorage.setItem('BRAVVI_ERP_SESSION_TOKEN', token);
+      } else {
+        sessionStorage.removeItem('BRAVVI_ERP_SESSION_TOKEN');
+        localStorage.removeItem('BRAVVI_ERP_SESSION_TOKEN');
+      }
+    } catch (e) {}
+  }
+
   function obterPerfilAtivo() {
     try {
+      // Blindagem anti-F12: sempre prioriza o cargo assinado no token criptográfico do servidor
+      const tokenPayload = decodificarPayloadTokenAssinado(obterTokenSessao());
+      if (tokenPayload && tokenPayload.perfil && PERFIS_PERMISSOES[tokenPayload.perfil]) {
+        if (tokenPayload.perfil !== 'dono') {
+          return PERFIS_PERMISSOES[tokenPayload.perfil];
+        }
+      }
       const user = obterUsuarioLogado();
       if (user && user.user_metadata && user.user_metadata.perfil) {
         const pId = user.user_metadata.perfil;
+        if (pId !== 'dono') {
+          return PERFIS_PERMISSOES[pId] || PERFIS_PERMISSOES.oficina;
+        }
         return PERFIS_PERMISSOES[pId] || PERFIS_PERMISSOES.dono;
       }
-      const perfilId = localStorage.getItem(STORAGE_KEY_PERFIL) || localStorage.getItem('TEXPRO_ERP_PERFIL_ATIVO') || 'dono';
-      return PERFIS_PERMISSOES[perfilId] || PERFIS_PERMISSOES.dono;
+      if (isModoDemo()) {
+        const perfilId = localStorage.getItem(STORAGE_KEY_PERFIL) || 'dono';
+        return PERFIS_PERMISSOES[perfilId] || PERFIS_PERMISSOES.dono;
+      }
+      return PERFIS_PERMISSOES.dono;
     } catch (e) {
       return PERFIS_PERMISSOES.dono;
     }
   }
 
   function definirPerfilAtivo(perfilId) {
+    const tokenPayload = decodificarPayloadTokenAssinado(obterTokenSessao());
     const user = obterUsuarioLogado();
-    // Bloqueio de segurança: se o usuário logado possui perfil atribuído pelo admin (ex: vendedor, oficina), ele não pode alterar seu perfil
-    if (user && user.user_metadata && user.user_metadata.perfil && user.user_metadata.perfil !== 'dono') {
+    // Bloqueio rigoroso: se o token assinado ou o usuário logado não for 'dono', impede elevação de privilégio via F12
+    if (tokenPayload && tokenPayload.perfil && tokenPayload.perfil !== 'dono') {
+      perfilId = tokenPayload.perfil;
+    } else if (user && user.user_metadata && user.user_metadata.perfil && user.user_metadata.perfil !== 'dono') {
       perfilId = user.user_metadata.perfil;
     }
     const p = PERFIS_PERMISSOES[perfilId] || PERFIS_PERMISSOES.dono;
@@ -152,8 +200,14 @@
     }
 
     const sel = document.getElementById('selectPerfilUsuario');
-    if (sel && sel.value !== perfil.id) {
-      sel.value = perfil.id;
+    if (sel) {
+      if (sel.value !== perfil.id) sel.value = perfil.id;
+      const tokenPayload = decodificarPayloadTokenAssinado(obterTokenSessao());
+      if (!isModoDemo() && tokenPayload && tokenPayload.perfil && tokenPayload.perfil !== 'dono') {
+        sel.disabled = true;
+        sel.style.pointerEvents = 'none';
+        sel.style.opacity = '0.75';
+      }
     }
 
     const user = obterUsuarioLogado();
@@ -645,6 +699,22 @@ with check (true);
       if (raw) {
         const sessao = JSON.parse(raw);
         if (sessao && sessao.user) {
+          // Blindagem anti-adulteração de localStorage no F12: sincroniza com o payload assinado do token
+          const tokenPayload = decodificarPayloadTokenAssinado(sessao.sessionToken || obterTokenSessao());
+          if (tokenPayload) {
+            if (tokenPayload.exp && Date.now() > tokenPayload.exp) {
+              sessionStorage.removeItem(STORAGE_KEY_AUTH_USER);
+              salvarTokenSessao(null);
+      localStorage.removeItem('BRAVVI_ERP_PERSISTENT_SESSION');
+              salvarTokenSessao(null);
+              return null;
+            }
+            sessao.user.tenant_id = tokenPayload.tenant_id;
+            sessao.user.email = tokenPayload.email;
+            if (!sessao.user.user_metadata) sessao.user.user_metadata = {};
+            sessao.user.user_metadata.perfil = tokenPayload.perfil || 'dono';
+            sessao.user.user_metadata.tenant_id = tokenPayload.tenant_id;
+          }
           usuarioAutenticado = sessao.user;
           if (sessao.auth) {
             tenantAuthAtivo = sessao.auth;
@@ -739,11 +809,7 @@ with check (true);
   }
 
   async function fazerLogin(email, senha) {
-    if (!supabaseClient) inicializarSupabase();
-    if (!supabaseClient) return { sucesso: false, erro: 'Sistema de autenticação não inicializado. Verifique sua conexão.' };
-
     let cleanEmail = (email || '').toLowerCase().trim();
-    // Correção inteligente de erros comuns de digitação em domínios populares (.cor -> .com, .con -> .com, etc.)
     cleanEmail = cleanEmail
       .replace(/@(gmail|hotmail|outlook|yahoo)\.co[rn]$/i, '@$1.com')
       .replace(/@(gmail|hotmail|outlook|yahoo)\.com\.b[rn]$/i, '@$1.com.br');
@@ -753,6 +819,34 @@ with check (true);
     if (!cleanEmail || !senhaStr) {
       return { sucesso: false, erro: 'Por favor, informe seu e-mail e senha de acesso.' };
     }
+
+    // Camada 0 (BLINDAGEM BANCÁRIA): Autenticação via Gateway Serverless (/api/erp-security)
+    // Nunca expõe hashes de senha nem lista outros tenants no navegador!
+    try {
+      const resp = await fetch('/api/erp-security', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'login', email: cleanEmail, senha: senhaStr })
+      });
+      if (resp && resp.status !== 404) {
+        const resData = await resp.json();
+        if (resp.ok && resData && resData.sucesso) {
+          if (resData.sessionToken) salvarTokenSessao(resData.sessionToken);
+          if (resData.empresa) salvarEmpresaConfig(resData.empresa);
+          const perfilId = resData.user?.user_metadata?.perfil || 'dono';
+          definirPerfilAtivo(perfilId);
+          definirUsuarioLogado(resData.user, null);
+          return resData;
+        } else if (resData && resData.erro) {
+          return { sucesso: false, erro: resData.erro };
+        }
+      }
+    } catch (errGateway) {
+      console.warn('Gateway /api/erp-security indisponível (modo local/offline), usando fallback:', errGateway);
+    }
+
+    if (!supabaseClient) inicializarSupabase();
+    if (!supabaseClient) return { sucesso: false, erro: 'Sistema de autenticação não inicializado. Verifique sua conexão.' };
 
     const tenantId = await obterTenantIdPorEmail(cleanEmail);
 
@@ -944,18 +1038,6 @@ with check (true);
 
       if (!errColab && qData && qData.length > 0) {
         rowsColab = qData;
-      } else {
-        // Fallback robusto: busca entre os tenants e filtra por email na equipe (case-insensitive)
-        const { data: allTenants } = await supabaseClient
-          .from('erp_tenants')
-          .select('tenant_id, empresa, db');
-        if (allTenants) {
-          const match = allTenants.find(t => {
-            const eq = (t.db && Array.isArray(t.db.equipe)) ? t.db.equipe : [];
-            return eq.some(c => (c.email || '').toLowerCase().trim() === cleanEmail);
-          });
-          if (match) rowsColab = [match];
-        }
       }
 
       if (rowsColab && rowsColab.length > 0) {
@@ -1135,6 +1217,44 @@ with check (true);
   async function atualizarSenhaColaborador(colaboradorId, novaSenha, tenantIdOpcional) {
     if (!colaboradorId || !novaSenha || novaSenha.length < 6) {
       return { sucesso: false, erro: 'A nova senha deve ter no mínimo 6 caracteres.' };
+    }
+
+    // Blindagem Servidor: Troca de senha via /api/erp-security
+    const sessionToken = obterTokenSessao();
+    if (sessionToken) {
+      try {
+        const empLocal = obterEmpresaConfig();
+        const dbLocal = (window.ERP && typeof window.ERP.obterDb === 'function') ? window.ERP.obterDb() : null;
+        const resp = await fetch('/api/erp-security', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Bravvi-Token': sessionToken },
+          body: JSON.stringify({
+            action: 'update_password',
+            sessionToken,
+            colaboradorId,
+            novaSenha,
+            nomeEmpresa: empLocal?.nomeFantasia || empLocal?.razaoSocial,
+            empresa: empLocal,
+            db: dbLocal
+          })
+        });
+        if (resp && resp.ok) {
+          const resData = await resp.json();
+          if (resData && resData.sucesso) {
+            if (resData.sessionToken) salvarTokenSessao(resData.sessionToken);
+            if (resData.empresa) salvarEmpresaConfig(resData.empresa);
+            const userAtual = obterUsuarioLogado();
+            if (userAtual) {
+              userAtual.precisaTrocarSenha = false;
+              userAtual.primeiroAcessoDono = false;
+              definirUsuarioLogado(userAtual, null);
+            }
+            return { sucesso: true };
+          }
+        }
+      } catch (eApi) {
+        console.warn('Aviso ao atualizar senha via gateway:', eApi);
+      }
     }
 
     const salt = Math.random().toString(36).substring(2) + Date.now().toString(36);
@@ -1485,9 +1605,45 @@ with check (true);
   }
 
   async function carregarBancoTenant(onSucesso) {
-    if (isModoDemo() || !supabaseClient) return null;
+    if (isModoDemo()) return null;
     const tenantId = obterTenantId();
     if (!tenantId) return null;
+
+    // Camada Segura (/api/erp-security): Filtra dados financeiros por cargo no servidor e oculta hashes
+    const sessionToken = obterTokenSessao();
+    if (sessionToken && navigator.onLine) {
+      try {
+        const resp = await fetch('/api/erp-security', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Bravvi-Token': sessionToken },
+          body: JSON.stringify({ action: 'load_tenant', sessionToken })
+        });
+        if (resp && resp.ok) {
+          const resData = await resp.json();
+          if (resData && resData.sucesso && resData.found && resData.db) {
+            if (resData.empresa) salvarEmpresaConfig(resData.empresa);
+            if (resData.perfilAssinado) definirPerfilAtivo(resData.perfilAssinado);
+            let dbFinal = resData.db;
+            try {
+              const chaveTenant = 'bravvi_erp_tenant_' + tenantId;
+              const rawLocal = localStorage.getItem(chaveTenant);
+              if (rawLocal) {
+                const dbLocal = JSON.parse(rawLocal);
+                if (dbLocal && Array.isArray(dbLocal.pedidos)) {
+                  dbFinal = fundirBancosCompletos(dbLocal, resData.db);
+                }
+              }
+            } catch (eLoc) {}
+            if (typeof onSucesso === 'function') onSucesso(dbFinal);
+            return dbFinal;
+          }
+        }
+      } catch (eSec) {
+        console.warn('Aviso ao carregar tenant via gateway seguro:', eSec);
+      }
+    }
+
+    if (!supabaseClient) return null;
 
     try {
       const { data, error } = await supabaseClient
@@ -1778,6 +1934,28 @@ with check (true);
 
     definirTextoStatusNuvem('🔄 Gravando na nuvem...', '#dbeafe', '#1d4ed8');
 
+    const sessionToken = obterTokenSessao();
+    if (sessionToken && navigator.onLine) {
+      try {
+        const resp = await fetch('/api/erp-security', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Bravvi-Token': sessionToken },
+          body: JSON.stringify({
+            action: 'sync_tenant',
+            sessionToken,
+            empresa: obterEmpresaConfig(),
+            db: dbAtual
+          })
+        });
+        if (resp && resp.ok) {
+          atualizarStatusNuvem();
+          return { sucesso: true };
+        }
+      } catch (eSyncSec) {
+        console.warn('Aviso ao sincronizar via gateway seguro:', eSyncSec);
+      }
+    }
+
     if (provedor === 'supabase' && supabaseClient) {
       const empParaSalvar = Object.assign({}, obterEmpresaConfig());
       if (tenantAuthAtivo) {
@@ -1877,6 +2055,26 @@ with check (true);
       if (!tenantId) return;
       const agora = Date.now();
       ultimaAtualizacaoRemota = agora;
+
+      const sessionToken = obterTokenSessao();
+      if (sessionToken && navigator.onLine) {
+        try {
+          const resp = await fetch('/api/erp-security', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Bravvi-Token': sessionToken },
+            body: JSON.stringify({
+              action: 'sync_tenant',
+              sessionToken,
+              empresa: obterEmpresaConfig(),
+              db: dbAtual
+            })
+          });
+          if (resp && resp.ok) {
+            atualizarStatusNuvem();
+            return;
+          }
+        } catch (eDebSec) {}
+      }
 
       if (provedor === 'supabase' && supabaseClient) {
         const empParaSalvar = Object.assign({}, obterEmpresaConfig());

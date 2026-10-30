@@ -181,13 +181,18 @@
 
     <form id="genForm" onsubmit="gerarAcesso(event)">
       <div class="form-group">
+        <label class="form-label">🔒 Senha Master do Administrador *</label>
+        <input type="password" id="adminMasterPass" class="form-input" placeholder="Digite sua senha master para autorizar a geração" required>
+      </div>
+
+      <div class="form-group">
         <label class="form-label">Nome da Confecção do Cliente *</label>
         <input type="text" id="cliNome" class="form-input" placeholder="Ex: Confecções Líder" required>
       </div>
 
       <div class="form-group">
-        <label class="form-label">WhatsApp ou E-mail do Cliente *</label>
-        <input type="text" id="cliContato" class="form-input" placeholder="Ex: (11) 98765-4321" required>
+        <label class="form-label">E-mail de Login do Cliente *</label>
+        <input type="email" id="cliContato" class="form-input" placeholder="Ex: contato@confeccoeslider.com.br" required>
       </div>
 
       <div class="form-group">
@@ -201,7 +206,7 @@
         </select>
       </div>
 
-      <button type="submit" class="btn">
+      <button type="submit" id="btnGerarLink" class="btn">
         ⚡ Gerar Link de Ativação Único
       </button>
     </form>
@@ -221,48 +226,71 @@
   <script>
     let ultimoLink = '';
     let ultimoNome = '';
+    let ultimoEmail = '';
 
-    function gerarAcesso(e) {
+    async function gerarAcesso(e) {
       e.preventDefault();
+      const masterPassword = document.getElementById('adminMasterPass').value.trim();
       const nome = document.getElementById('cliNome').value.trim();
-      const contato = document.getElementById('cliContato').value.trim();
+      const contato = document.getElementById('cliContato').value.trim().toLowerCase();
       const dias = parseInt(document.getElementById('cliPlano').value, 10);
+      const btn = document.getElementById('btnGerarLink');
 
-      const token = 'bravvi_x1_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now().toString(36);
-      const urlBase = window.location.origin || 'https://uniformes-erp.vercel.app';
-      ultimoLink = `${urlBase}/ativar.html?token=${token}&email=${encodeURIComponent(contato)}`;
-      ultimoNome = nome;
+      if (!masterPassword) {
+        alert('Informe a Senha Master do Administrador.');
+        return;
+      }
 
-      // Salva no banco/storage
-      const novoToken = {
-        token: token,
-        nome_cliente: nome,
-        email: contato,
-        dias_acesso: dias,
-        criado_por: 'manual_x1',
-        usado: false,
-        data_criacao: new Date().toISOString()
-      };
+      btn.disabled = true;
+      btn.textContent = '🔒 Validando Senha Master e Provisionando Banco...';
 
       try {
-        const tokensSalvos = JSON.parse(localStorage.getItem('BRAVVI_TOKENS_X1') || '[]');
-        tokensSalvos.push(novoToken);
-        localStorage.setItem('BRAVVI_TOKENS_X1', JSON.stringify(tokensSalvos));
-      } catch(err) {}
+        const resp = await fetch('/api/erp-security', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'admin_create_token',
+            masterPassword,
+            nome,
+            email: contato,
+            dias
+          })
+        });
+        const data = await resp.json();
 
-      document.getElementById('txtLink').textContent = ultimoLink;
-      document.getElementById('resultBox').style.display = 'block';
+        if (!resp.ok || !data.sucesso) {
+          alert('❌ ' + (data.erro || 'Senha Master incorreta ou falha de autorização.'));
+          btn.disabled = false;
+          btn.textContent = '⚡ Gerar Link de Ativação Único';
+          return;
+        }
+
+        const token = data.token;
+        const urlBase = window.location.origin || 'https://uniformes-erp.vercel.app';
+        ultimoLink = `${urlBase}/ativar.html?token=${encodeURIComponent(token)}&email=${encodeURIComponent(contato)}`;
+        ultimoNome = nome;
+        ultimoEmail = contato;
+
+        document.getElementById('txtLink').textContent = ultimoLink;
+        document.getElementById('resultBox').style.display = 'block';
+      } catch (err) {
+        alert('Erro de comunicação com o servidor de segurança.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '⚡ Gerar Link de Ativação Único';
+      }
     }
 
     function copiarMensagemWhatsApp() {
       const msg = `Olá ${ultimoNome}! Pagamento confirmado com sucesso! 🚀
 
-Aqui está o seu link exclusivo para criar o acesso oficial da sua confecção no *Bravvi ERP Têxtil*:
+Aqui está o seu link exclusivo para acessar o *Bravvi ERP Têxtil*:
 👉 ${ultimoLink}
 
-Basta clicar, cadastrar sua senha master e começar a emitir orçamentos com foto e fichas técnicas A4 imediatamente!
+🔑 *E-mail de Login:* ${ultimoEmail}
+🔑 *Senha Temporária de 1º Acesso:* Bravvi@2026
 
-Qualquer dúvida, estou aqui à disposição.`;
+No primeiro acesso, você cadastrará a sua senha pessoal definitiva e já poderá emitir orçamentos e fichas técnicas A4!`;
 
       navigator.clipboard.writeText(msg).then(() => {
         alert('Mensagem copiada para a área de transferência! Basta colar no WhatsApp do cliente.');
