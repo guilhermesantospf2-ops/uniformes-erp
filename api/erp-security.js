@@ -8,13 +8,13 @@
 const crypto = require('crypto');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://nrhygqygcfjyniogjegq.supabase.co';
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yaHlncXlnY2ZqeW5pb2dqZWdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0NzU1MTMsImV4cCI6MjEwNjA1MTUxM30.JXAt9Ha1ni2T3G-dMvITGdH9PIPTc7_utI3H9LPrIV4';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
 
-// Chave secreta de assinatura HMAC dos tokens de sessão (usa env ou chave derivada exclusiva do servidor)
+// Chave secreta de assinatura HMAC dos tokens de sessão (lida do cofre Environment Variables da Vercel)
 const JWT_SECRET = process.env.BRAVVI_JWT_SECRET || process.env.WEBHOOK_SECRET || crypto.createHash('sha256').update('bravvi_erp_master_hmac_secret_2026_' + SUPABASE_KEY).digest('hex');
 
-// Senha Master do Dono do SaaS para o painel /gerar-acesso (pode ser customizada via ADMIN_MASTER_PASSWORD na Vercel)
-const ADMIN_MASTER_PASSWORD = process.env.ADMIN_MASTER_PASSWORD || 'BravviMaster@2026';
+// Senha Master do Dono do SaaS para o painel /gerar-acesso (lida exclusivamente de ADMIN_MASTER_PASSWORD na Vercel)
+const ADMIN_MASTER_PASSWORD = process.env.ADMIN_MASTER_PASSWORD;
 
 // Proteção contra Força Bruta em memória por instância
 const loginAttempts = new Map();

@@ -92,9 +92,9 @@ module.exports = async function handler(req, res) {
 
     console.log('[Cakto Webhook] Registro preparado:', registro);
 
-    // Persistir no Supabase
+    // Persistir no Supabase (usando chaves seguras do ambiente Vercel)
     const supabaseUrl = process.env.SUPABASE_URL || 'https://nrhygqygcfjyniogjegq.supabase.co';
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yaHlncXlnY2ZqeW5pb2dqZWdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0NzU1MTMsImV4cCI6MjEwNjA1MTUxM30.JXAt9Ha1ni2T3G-dMvITGdH9PIPTc7_utI3H9LPrIV4';
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
 
     if (supabaseUrl && supabaseKey) {
       try {
