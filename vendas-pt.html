@@ -1328,6 +1328,12 @@
       </nav>
 
       <div class="header-actions">
+        <!-- Seletor de Idioma da Landing Page -->
+        <button type="button" onclick="abrirModalIdiomaLP()" class="btn-login-link" style="border: 1px solid var(--border-medium); padding: 7px 14px; background: #f8fafc; cursor: pointer;" title="Mudar idioma ou moeda da página">
+          <span id="lpHeaderFlag">🇵🇹</span>
+          <span id="lpHeaderLangCode" style="font-size: 13px; font-weight: 800;">PT-PT</span>
+          <span style="font-size: 10px; color: var(--text-muted);">▼</span>
+        </button>
         <a href="/?login=1" class="btn-login-link" title="Acessar o sistema com seu login e senha">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
           <span>Entrar</span>
@@ -2654,7 +2660,59 @@
         panel.classList.toggle('active', idx === indice);
       });
     }
-  </script>
+  
+    function abrirModalIdiomaLP() {
+      const existente = document.getElementById('modalIdiomaLP');
+      if (existente) existente.remove();
+      const overlay = document.createElement('div');
+      overlay.id = 'modalIdiomaLP';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.72);backdrop-filter:blur(4px);z-index:999999;display:flex;align-items:center;justify-content:center;padding:16px;';
+      overlay.innerHTML = `
+        <div style="background:#ffffff;border-radius:16px;max-width:460px;width:100%;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);border:1px solid #e2e8f0;overflow:hidden;">
+          <div style="padding:18px 22px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;background:#f8fafc;">
+            <div style="font-size:16px;font-weight:800;color:#0f172a;display:flex;align-items:center;gap:8px;">
+              <span>🌐</span> Idioma & Moeda / Idioma y Moneda
+            </div>
+            <button type="button" onclick="document.getElementById('modalIdiomaLP').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#64748b;">&times;</button>
+          </div>
+          <div style="padding:16px 22px;display:flex;flex-direction:column;gap:10px;">
+            <a href="/vendas" onclick="try{localStorage.setItem('bravvi_language','pt-BR')}catch(e){}" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:10px;border:1.5px solid #e2e8f0;background:#ffffff;text-decoration:none;color:#0f172a;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <span style="font-size:24px;">🇧🇷</span>
+                <div>
+                  <div style="font-size:14px;font-weight:800;">Português (Brasil & Paraguai)</div>
+                  <div style="font-size:11.5px;color:#64748b;">Planos em R$ (PIX / Cartão) ou US$</div>
+                </div>
+              </div>
+              <span style="font-size:12px;font-weight:700;color:#0d9488;">Mudar &rarr;</span>
+            </a>
+            <a href="/vendas-py.html" onclick="try{localStorage.setItem('bravvi_language','es')}catch(e){}" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:10px;border:2px solid #0d9488;background:#f0fdfa;text-decoration:none;color:#0f172a;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <span style="font-size:24px;">🇵🇾</span>
+                <div>
+                  <div style="font-size:14px;font-weight:800;color:#0f766e;">Español (Paraguay & América Latina)</div>
+                  <div style="font-size:11.5px;color:#64748b;">Planes en Dólares ($19 / $39 USD)</div>
+                </div>
+              </div>
+              <span style="font-size:12px;font-weight:800;color:#0d9488;">✓ Activo</span>
+            </a>
+            <a href="/pt" onclick="try{localStorage.setItem('bravvi_language','pt-PT')}catch(e){}" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:10px;border:1.5px solid #e2e8f0;background:#ffffff;text-decoration:none;color:#0f172a;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <span style="font-size:24px;">🇵🇹</span>
+                <div>
+                  <div style="font-size:14px;font-weight:700;">Português (Portugal & Europa)</div>
+                  <div style="font-size:11.5px;color:#64748b;">Planos em Euros (€ 19 / € 39)</div>
+                </div>
+              </div>
+              <span style="font-size:12px;font-weight:700;color:#64748b;">Mudar &rarr;</span>
+            </a>
+          </div>
+        </div>
+      `;
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+      document.body.appendChild(overlay);
+    }
+</script>
 
   <!-- Container de Modais de Pagamento & Checkout -->
   <div id="modalContainer"></div>
