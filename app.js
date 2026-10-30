@@ -2731,6 +2731,7 @@
     const badgePill = document.getElementById('planBadgePill');
 
     const itemNesting = document.querySelector('.menu-item[data-aba="nesting"]');
+    const itemNfe = document.querySelector('.menu-item[data-aba="nfe"]');
     const itemQuarentena = document.querySelector('.menu-item[data-aba="quarentena"]');
 
     if (plano === 'basico') {
@@ -2753,7 +2754,10 @@
         badgeContainer.style.borderColor = 'rgba(148, 163, 184, 0.25)';
       }
 
-      // Adiciona etiqueta PRO sutil nos itens bloqueados
+      // Quarentena é essencial e fica 100% liberada no Plano Básico
+      itemQuarentena?.querySelector('.menu-badge-pro-lock')?.remove();
+
+      // Adiciona etiqueta PRO sutil nos itens bloqueados (Nesting DTF e Notas Fiscais)
       if (itemNesting && !itemNesting.querySelector('.menu-badge-pro-lock')) {
         const lock = document.createElement('span');
         lock.className = 'menu-badge menu-badge-pro-lock';
@@ -2761,12 +2765,12 @@
         lock.textContent = '🔒 PRO';
         itemNesting.appendChild(lock);
       }
-      if (itemQuarentena && !itemQuarentena.querySelector('.menu-badge-pro-lock')) {
+      if (itemNfe && !itemNfe.querySelector('.menu-badge-pro-lock')) {
         const lock = document.createElement('span');
         lock.className = 'menu-badge menu-badge-pro-lock';
-        lock.style.cssText = 'background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); font-size: 8.5px; font-weight: 800; padding: 1px 5px; border-radius: 4px; margin-left: 6px; letter-spacing: 0.5px;';
+        lock.style.cssText = 'background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); font-size: 8.5px; font-weight: 800; padding: 1px 5px; border-radius: 4px; margin-left: auto; letter-spacing: 0.5px;';
         lock.textContent = '🔒 PRO';
-        itemQuarentena.appendChild(lock);
+        itemNfe.appendChild(lock);
       }
     } else {
       if (badgeDot) {
@@ -2801,9 +2805,9 @@
       }
     }
 
-    // Bloqueio mandatário de recursos exclusivos do Plano Pro Industrial
+    // Bloqueio mandatário de recursos exclusivos do Plano Pro Industrial (Nesting DTF e Notas Fiscais)
     const planoAtivo = obterPlanoAtivo();
-    const modulosExclusivosPro = ['nesting', 'quarentena'];
+    const modulosExclusivosPro = ['nesting', 'nfe'];
     if (planoAtivo === 'basico' && modulosExclusivosPro.includes(aba)) {
       abrirModalUpgradePlanoPro(aba);
       return;
@@ -3011,10 +3015,10 @@
       tituloModulo = 'Otimizador de Bobina Nesting DTF';
       descricaoModulo = 'O motor de nesting DTF organiza automaticamente logotipos e artes na bobina de 60cm, reduzindo o desperdício de filme transfer em até 38% e gerando o mapa de impressão pronto.';
       iconeModulo = '✂️';
-    } else if (modulo === 'quarentena') {
-      tituloModulo = 'Quarentena de Qualidade & Chão de Fábrica';
-      descricaoModulo = 'Bloqueie lotes com avaria, registre fotos de defeitos de costura/estampa e impeça que peças fora do padrão industrial cheguem aos seus clientes.';
-      iconeModulo = '🛡️';
+    } else if (modulo === 'nfe') {
+      tituloModulo = 'Emissão Integrada de Notas Fiscais (NF-e / NFS-e)';
+      descricaoModulo = 'Emita notas fiscais eletrônicas integradas diretamente à SEFAZ, com cálculo fiscal automatizado, geração de DANFE em PDF e envio automático de XML para seus clientes.';
+      iconeModulo = '📄';
     } else if (modulo === 'equipe') {
       tituloModulo = 'Cadastro de Equipe Ilimitada';
       descricaoModulo = 'Seu Plano Básico inclui até 2 usuários simultâneos. Com o Plano Pro Industrial, você cadastra operadores de corte, costureiras e vendedores ilimitados com controle de permissões por cargo.';
