@@ -1896,15 +1896,32 @@ with check (true);
         // Se existe em ambos, preserva o mais recente e respeita soft-delete
         const tsLocal = item.ultimaModificacaoMs || item.updatedAtMs || 0;
         const tsRemoto = existente.ultimaModificacaoMs || existente.updatedAtMs || 0;
+        let mesclado;
         if (item.deletado === true && (item.deletadoEm || 0) >= tsRemoto) {
-          mapa.set(id, Object.assign({}, existente, item));
+          mesclado = Object.assign({}, existente, item);
         } else if (existente.deletado === true && (existente.deletadoEm || 0) >= tsLocal) {
-          mapa.set(id, Object.assign({}, item, existente));
-        } else if (tsLocal >= tsRemoto) {
-          mapa.set(id, Object.assign({}, existente, item));
+          mesclado = Object.assign({}, item, existente);
+        } else if (tsLocal > tsRemoto) {
+          mesclado = Object.assign({}, existente, item);
+        } else if (tsRemoto > tsLocal) {
+          mesclado = Object.assign({}, item, existente);
         } else {
-          mapa.set(id, Object.assign({}, item, existente));
+          // Se ambos têm mesmo timestamp (ou 0), prioriza o estado mais avançado
+          mesclado = Object.assign({}, existente, item);
         }
+        // BLINDAGEM ANTI-REGRESSÃO DE QUARENTENA: Se o pedido já foi aprovado em local OU remoto, NUNCA volta para Quarentena!
+        if (item.quarentenaAprovada === true || existente.quarentenaAprovada === true ||
+            (item.status && item.status !== 'Quarentena' && existente.status === 'Quarentena') ||
+            (existente.status && existente.status !== 'Quarentena' && item.status === 'Quarentena')) {
+          const aprovadoRef = (item.quarentenaAprovada === true || (item.status && item.status !== 'Quarentena')) ? item : existente;
+          if (mesclado.status === 'Quarentena' && aprovadoRef.status && aprovadoRef.status !== 'Quarentena') {
+            mesclado.status = aprovadoRef.status;
+            mesclado.etapaProducao = aprovadoRef.etapaProducao || 'Corte';
+            mesclado.quarentenaAprovada = true;
+            mesclado.dataQuarentenaAprovada = aprovadoRef.dataQuarentenaAprovada || new Date().toISOString().split('T')[0];
+          }
+        }
+        mapa.set(id, mesclado);
       }
     });
 

@@ -60,7 +60,12 @@
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', quality));
+          const webpUrl = canvas.toDataURL('image/webp', quality);
+          if (webpUrl && webpUrl.startsWith('data:image/webp')) {
+            resolve(webpUrl);
+          } else {
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          }
         };
         img.onerror = function() {
           resolve(e.target.result);
@@ -300,84 +305,145 @@
    * Identifica se um pedido é registro de teste descartável
    */
   function isPedidoTeste(p) {
-    if (!p) return false;
-    const cli = String(p.clienteNome || p.cliente || '').trim().toLowerCase();
-    const prod = String(p.produtoNome || p.produto || '').trim().toLowerCase();
-    const obs = String(p.observacoes || p.obs || '').trim().toLowerCase();
-    const num = String(p.numero || '').trim();
-
-    if (cli === 'teste' || cli.startsWith('teste ') || cli.endsWith(' teste') || cli.includes('teste')) return true;
-    if (prod === 'teste' || prod.includes('teste')) return true;
-    if (obs.includes('teste')) return true;
-    if (num === '1088') return true;
-    return false;
+    return false; // Desativado: nunca exclui pedidos automaticamente em produção!
   }
 
-  /**
-   * Purga completamente pedidos de teste, suas ordens de serviço e lançamentos
-   */
   function expurgarPedidosTeste(banco) {
-    if (!banco || !Array.isArray(banco.pedidos)) return banco;
-    const idsTeste = banco.pedidos.filter(isPedidoTeste).map(p => p.id);
-    if (idsTeste.length > 0) {
-      banco.pedidos = banco.pedidos.filter(p => !idsTeste.includes(p.id));
-      if (Array.isArray(banco.ordensServico)) {
-        banco.ordensServico = banco.ordensServico.filter(os => !idsTeste.includes(os.pedidoId) && !idsTeste.includes(`PED-${os.pedidoNumero}`));
-      }
-      if (Array.isArray(banco.lancamentosFinanceiros)) {
-        banco.lancamentosFinanceiros = banco.lancamentosFinanceiros.filter(l => !idsTeste.some(id => (l.descricao || '').includes(id)));
-      }
-      if (Array.isArray(banco.nestingFila)) {
-        banco.nestingFila = banco.nestingFila.filter(n => !idsTeste.includes(n.pedidoId));
-      }
-      if (Array.isArray(banco.clientes)) {
-        banco.clientes = banco.clientes.filter(c => {
-          const nom = String(c.nomeFantasia || c.razaoSocial || c.nome || '').toLowerCase();
-          return !nom.includes('teste');
-        });
-      }
+    return descompactarBancoEmMemoria(banco);
+  }
+
+  // Hidrata referências deduplicadas (__REF_ARTE_X__ e __REF_PEDIDO_X__) em memória
+  function descompactarBancoEmMemoria(banco) {
+    if (!banco || typeof banco !== 'object') return banco;
+    const mapaPedidos = {};
+    if (Array.isArray(banco.pedidos)) {
+      banco.pedidos.forEach(p => {
+        if (!p) return;
+        mapaPedidos[String(p.numero)] = p;
+        if (Array.isArray(p.artesAnexadas)) {
+          p.artesAnexadas.forEach(a => {
+            if (a && typeof a.arquivoDataUrl === 'string' && a.arquivoDataUrl.startsWith('__REF_ARTE_')) {
+              const refIdx = parseInt(a.arquivoDataUrl.replace('__REF_ARTE_', '').replace('__', ''), 10);
+              if (!isNaN(refIdx) && p.artesAnexadas[refIdx] && p.artesAnexadas[refIdx].arquivoDataUrl) {
+                a.arquivoDataUrl = p.artesAnexadas[refIdx].arquivoDataUrl;
+              }
+            }
+          });
+        }
+      });
+    }
+    if (Array.isArray(banco.ordensServico)) {
+      banco.ordensServico.forEach(os => {
+        if (!os) return;
+        const ped = mapaPedidos[String(os.pedidoNumero)];
+        if (ped && Array.isArray(os.artesAplicacao) && Array.isArray(ped.artesAnexadas)) {
+          os.artesAplicacao.forEach((a, idx) => {
+            if (a && (!a.arquivoDataUrl || String(a.arquivoDataUrl).startsWith('__REF_'))) {
+              const arteOrig = ped.artesAnexadas[idx] || ped.artesAnexadas[0];
+              if (arteOrig && arteOrig.arquivoDataUrl) {
+                a.arquivoDataUrl = arteOrig.arquivoDataUrl;
+              }
+            }
+          });
+        }
+      });
     }
     return banco;
   }
 
-  // Purga pedidos teste logo no boot
-  db = expurgarPedidosTeste(db);
+  // Cria cópia enxuta sem duplicar anexos pesados em ordensServico ou dentro do mesmo pedido
+  function compactarBancoParaStorage(banco) {
+    if (!banco || typeof banco !== 'object') return banco;
+    try {
+      const clone = JSON.parse(JSON.stringify(banco));
+      if (Array.isArray(clone.pedidos)) {
+        clone.pedidos.forEach(p => {
+          if (!p || !Array.isArray(p.artesAnexadas)) return;
+          const vistos = {};
+          p.artesAnexadas.forEach((a, idx) => {
+            if (a && a.arquivoDataUrl && a.arquivoDataUrl.length > 50000) {
+              if (vistos[a.arquivoDataUrl] !== undefined) {
+                a.arquivoDataUrl = `__REF_ARTE_${vistos[a.arquivoDataUrl]}__`;
+              } else {
+                vistos[a.arquivoDataUrl] = idx;
+              }
+            }
+          });
+        });
+      }
+      if (Array.isArray(clone.ordensServico)) {
+        clone.ordensServico.forEach(os => {
+          if (!os || !Array.isArray(os.artesAplicacao)) return;
+          os.artesAplicacao.forEach((a, idx) => {
+            if (a && a.arquivoDataUrl && a.arquivoDataUrl.length > 50000) {
+              a.arquivoDataUrl = `__REF_PEDIDO_${idx}__`;
+            }
+          });
+        });
+      }
+      return clone;
+    } catch (e) {
+      return banco;
+    }
+  }
+
+  db = descompactarBancoEmMemoria(db);
 
   function salvarEstado(forcarImediato = false) {
-    db = expurgarPedidosTeste(db);
+    descompactarBancoEmMemoria(db);
     if (isDemo) {
       try {
-        sessionStorage.setItem('bravvi_erp_demo_temp', JSON.stringify(db));
+        sessionStorage.setItem('bravvi_erp_demo_temp', JSON.stringify(compactarBancoParaStorage(db)));
       } catch (e) {}
       return;
     }
 
     const chaveEfetiva = obterChaveStorageTenant();
+    const dbCompacto = compactarBancoParaStorage(db);
     try {
-      localStorage.setItem(chaveEfetiva, JSON.stringify(db));
-      // Espelho legado para compatibilidade de transição
-      localStorage.setItem('bravvi_erp_prod_v8', JSON.stringify(db));
+      // Remove cópias legadas pesadas que estouravam os 5MB do navegador
+      localStorage.removeItem('bravvi_erp_prod_v8');
+      localStorage.removeItem('texpro_erp_prod_v8');
+      const tId = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterTenantId === 'function') ? window.ERP_CLOUD.obterTenantId() : 'master';
+      localStorage.removeItem('bravvi_snapshots_' + (tId || 'master'));
+      localStorage.setItem(chaveEfetiva, JSON.stringify(dbCompacto));
     } catch (e) {
-      console.warn('Alerta de cota local ao salvar no localStorage (limpando cache não-essencial):', e);
+      console.warn('Alerta de cota local ao salvar no localStorage (ativando modo ultra-compacto local):', e);
       try {
-        localStorage.removeItem('bravvi_erp_prod_v8');
-        localStorage.setItem(chaveEfetiva, JSON.stringify(db));
+        // Se o cliente anexou um PDF gigante (>4MB), salva metadados e status 100% intactos no localStorage e envia arquivo completo para a nuvem
+        const dbUltraLeve = JSON.parse(JSON.stringify(dbCompacto));
+        if (Array.isArray(dbUltraLeve.pedidos)) {
+          dbUltraLeve.pedidos.forEach(p => {
+            if (Array.isArray(p.artesAnexadas)) {
+              p.artesAnexadas.forEach(a => {
+                if (a && a.arquivoDataUrl && a.arquivoDataUrl.length > 150000) {
+                  a.arquivoDataUrl = '';
+                }
+              });
+            }
+          });
+        }
+        localStorage.setItem(chaveEfetiva, JSON.stringify(dbUltraLeve));
       } catch (errRetry) {
-        console.warn('Armazenamento local lotado: salvando com prioridade na nuvem.');
+        console.warn('Armazenamento local lotado: salvando com prioridade imediata na nuvem.');
       }
     }
-
-    // Grava ponto de segurança rotativo
-    criarSnapshotSegurancaLocal(db);
 
     // BLINDAGEM: Nuvem só pode ser atualizada se o boot inicial e autenticação já tiverem hidratado os dados!
     if (sincronizacaoNuvemHabilitada && window.ERP_CLOUD) {
       if (forcarImediato && typeof window.ERP_CLOUD.sincronizarImediatoComNuvem === 'function') {
-        window.ERP_CLOUD.sincronizarImediatoComNuvem(db);
+        window.ERP_CLOUD.sincronizarImediatoComNuvem(dbCompacto);
       } else if (typeof window.ERP_CLOUD.sincronizarComNuvem === 'function') {
-        window.ERP_CLOUD.sincronizarComNuvem(db);
+        window.ERP_CLOUD.sincronizarComNuvem(dbCompacto);
       }
     }
+  }
+
+  function salvarBancoDados() {
+    salvarEstado(true);
+  }
+  function mostrarNotificacaoFeedback(msg) {
+    mostrarToast(msg, 'green');
   }
 
   // Catálogo Oficial de Cores Têxteis Industriais (36 cores comerciais)
@@ -721,9 +787,10 @@
           } else {
             db = migrarOuPreservarBanco(novoDb, window.ERP_INITIAL_DATA);
           }
+          descompactarBancoEmMemoria(db);
           // Auto-reparo imediato: se houver pedidos que não tinham lançamento financeiro, gera agora!
           sincronizarPedidosComFinanceiro(db);
-          salvarEstado();
+          salvarEstado(true);
           atualizarBadges();
         }
       });
@@ -9799,6 +9866,7 @@
       const pedidoOficial = {
         id: novoId,
         numero: novoNum,
+        ultimaModificacaoMs: Date.now(),
         tipoRegistro: "Pedido",
         dataCriacao: new Date().toISOString().split('T')[0],
         clienteId: clienteIdFinal,
@@ -9957,7 +10025,7 @@
         }
       });
 
-      salvarEstado();
+      salvarEstado(true);
       atualizarBadges();
       fecharTodosModais();
       renderizarPedidos();
@@ -12306,7 +12374,10 @@
 
     // Salvar e Aplicar
     document.getElementById('btnSalvarEstudioCirurgico')?.addEventListener('click', () => {
-      const dataUrlFinal = canvas.toDataURL('image/png');
+      let dataUrlFinal = canvas.toDataURL('image/webp', 0.85);
+      if (!dataUrlFinal || !dataUrlFinal.startsWith('data:image/webp')) {
+        dataUrlFinal = canvas.toDataURL('image/png');
+      }
       fechar();
       if (typeof onSalvar === 'function') {
         onSalvar(dataUrlFinal);
@@ -14977,7 +15048,7 @@
 
   // Helper: Cálculo de Depreciação Linear de Equipamento
   function calcularDepreciacaoEquipamento(eq) {
-    const custo = Number(eq.custoAquisicao) || 0;
+    const custo = Number(eq.custoAquisicao !== undefined && eq.custoAquisicao !== '' ? eq.custoAquisicao : (eq.valorCompra !== undefined ? eq.valorCompra : eq.custo)) || 0;
     const residual = Number(eq.valorResidual !== undefined ? eq.valorResidual : (custo * 0.10)) || 0;
     const vidaMeses = Number(eq.vidaUtilMeses) || 60;
     const baseDepreciavel = Math.max(0, custo - residual);
@@ -16258,57 +16329,59 @@
             </div>
           </div>
 
-          <table class="erp-table">
-            <thead>
-              <tr>
-                <th>Código / Máquina</th>
-                <th>Categoria</th>
-                <th>Data Aquisição</th>
-                <th style="text-align: right;">Custo Compra</th>
-                <th style="text-align: right;">Residual</th>
-                <th style="text-align: center;">Vida Útil</th>
-                <th style="text-align: right;">Deprec./Mês</th>
-                <th style="text-align: right;">Deprec. Acumulada</th>
-                <th style="text-align: right;">Valor Contábil</th>
-                <th style="width: 140px;">Uso da Vida Útil</th>
-                <th style="text-align: right;">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${equipamentosComCalculo.length > 0 ? equipamentosComCalculo.map(eq => `
+          <div class="table-wrapper" style="overflow-x: auto; width: 100%; border-radius: 8px;">
+            <table class="erp-table" style="width: 100%; min-width: 980px;">
+              <thead>
                 <tr>
-                  <td>
-                    <strong style="color: #1e40af; font-size: 13px;">${eq.codigo || eq.id}</strong>
-                    <div style="font-weight: 700; color: #0f172a; margin-top: 1px;">${eq.nome}</div>
-                  </td>
-                  <td>
-                    <span class="cc-badge">⚙️ ${eq.categoria}</span>
-                  </td>
-                  <td class="text-mono" style="font-size: 11.5px;">${formatarDataBr(eq.dataAquisicao)}</td>
-                  <td class="text-mono" style="text-align: right; font-weight: 700;">${formatarMoeda(eq.custo)}</td>
-                  <td class="text-mono text-gray-500" style="text-align: right;">${formatarMoeda(eq.residual)}</td>
-                  <td class="text-mono" style="text-align: center;">${eq.mesesDecorridos} / ${eq.vidaMeses}m</td>
-                  <td class="text-mono text-red" style="text-align: right; font-weight: 700;">-${formatarMoeda(eq.depreciacaoMensal)}</td>
-                  <td class="text-mono text-red" style="text-align: right;">-${formatarMoeda(eq.depreciacaoAcumulada)}</td>
-                  <td class="text-mono text-green" style="text-align: right; font-weight: 800; font-size: 13.5px;">${formatarMoeda(eq.valorContabilAtual)}</td>
-                  <td>
-                    <div style="font-size: 10.5px; font-weight: 700; margin-bottom: 2px;">${eq.percVidaUtil.toFixed(0)}% (${eq.mesesDecorridos}m)</div>
-                    <div class="prog-comparativo-bar">
-                      <div class="prog-comparativo-fill" style="width: ${eq.percVidaUtil}%; background: ${eq.percVidaUtil > 80 ? '#dc2626' : (eq.percVidaUtil > 50 ? '#d97706' : '#059669')};"></div>
-                    </div>
-                  </td>
-                  <td style="text-align: right;">
-                    <div style="display: flex; gap: 6px; justify-content: flex-end;">
-                      <button class="btn btn-secondary btn-xs btn-editar-equipamento" data-id="${eq.id}">Editar</button>
-                      <button class="btn btn-red btn-xs btn-excluir-equipamento" data-id="${eq.id}">Excluir</button>
-                    </div>
-                  </td>
+                  <th style="min-width: 210px;">Código / Máquina</th>
+                  <th style="min-width: 150px;">Categoria</th>
+                  <th style="white-space: nowrap;">Aquisição</th>
+                  <th style="text-align: right; white-space: nowrap;">Custo Compra</th>
+                  <th style="text-align: right; white-space: nowrap;">Residual</th>
+                  <th style="text-align: center; white-space: nowrap;">Vida Útil</th>
+                  <th style="text-align: right; white-space: nowrap;">Deprec./Mês</th>
+                  <th style="text-align: right; white-space: nowrap;">Deprec. Acum.</th>
+                  <th style="text-align: right; white-space: nowrap;">Valor Contábil</th>
+                  <th style="width: 130px; min-width: 120px;">Uso Vida Útil</th>
+                  <th style="text-align: right; width: 125px;">Ações</th>
                 </tr>
-              `).join('') : `
-                <tr><td colspan="11" style="text-align: center; padding: 35px; color: var(--text-gray-500);">Nenhum equipamento cadastrado ainda.</td></tr>
-              `}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                ${equipamentosComCalculo.length > 0 ? equipamentosComCalculo.map(eq => `
+                  <tr>
+                    <td>
+                      <span class="text-mono" style="color: #1e40af; font-size: 11px; font-weight: 800; background: #eff6ff; padding: 2px 6px; border-radius: 4px; border: 1px solid #bfdbfe;">${eq.codigo || eq.id}</span>
+                      <div style="font-weight: 700; color: #0f172a; margin-top: 4px; font-size: 12.5px; line-height: 1.3;">${eq.nome}</div>
+                    </td>
+                    <td>
+                      <span class="cc-badge" style="white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">⚙️ ${eq.categoria}</span>
+                    </td>
+                    <td class="text-mono" style="font-size: 11.5px; white-space: nowrap;">${formatarDataBr(eq.dataAquisicao)}</td>
+                    <td class="text-mono" style="text-align: right; font-weight: 800; color: #0f172a; white-space: nowrap;">${formatarMoeda(eq.custo)}</td>
+                    <td class="text-mono text-gray-500" style="text-align: right; white-space: nowrap;">${formatarMoeda(eq.residual)}</td>
+                    <td class="text-mono" style="text-align: center; white-space: nowrap;">${eq.mesesDecorridos} / ${eq.vidaMeses}m</td>
+                    <td class="text-mono text-red" style="text-align: right; font-weight: 700; white-space: nowrap;">-${formatarMoeda(eq.depreciacaoMensal)}</td>
+                    <td class="text-mono text-red" style="text-align: right; white-space: nowrap;">-${formatarMoeda(eq.depreciacaoAcumulada)}</td>
+                    <td class="text-mono text-green" style="text-align: right; font-weight: 800; font-size: 13px; white-space: nowrap;">${formatarMoeda(eq.valorContabilAtual)}</td>
+                    <td>
+                      <div style="font-size: 10.5px; font-weight: 700; margin-bottom: 3px; white-space: nowrap;">${eq.percVidaUtil.toFixed(0)}% (${eq.mesesDecorridos}m)</div>
+                      <div class="prog-comparativo-bar">
+                        <div class="prog-comparativo-fill" style="width: ${eq.percVidaUtil}%; background: ${eq.percVidaUtil > 80 ? '#dc2626' : (eq.percVidaUtil > 50 ? '#d97706' : '#059669')};"></div>
+                      </div>
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                      <div style="display: inline-flex; gap: 6px; justify-content: flex-end;">
+                        <button class="btn btn-secondary btn-xs btn-editar-equipamento" data-id="${eq.id}">Editar</button>
+                        <button class="btn btn-red btn-xs btn-excluir-equipamento" data-id="${eq.id}">Excluir</button>
+                      </div>
+                    </td>
+                  </tr>
+                `).join('') : `
+                  <tr><td colspan="11" style="text-align: center; padding: 35px; color: var(--text-gray-500);">Nenhum equipamento cadastrado ainda.</td></tr>
+                `}
+              </tbody>
+            </table>
+          </div>
         </div>
       `;
     }
@@ -17212,7 +17285,7 @@
               <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px;">
                 <div>
                   <label class="form-label" style="font-weight: 700;">Custo Compra (R$):</label>
-                  <input type="number" step="0.01" id="cadEqCusto" class="form-control text-mono" placeholder="Ex: 45000" value="${eq.custoAquisicao || ''}" required>
+                  <input type="number" step="0.01" id="cadEqCusto" class="form-control text-mono" placeholder="Ex: 45000" value="${eq.custoAquisicao || eq.valorCompra || eq.custo || ''}" required>
                 </div>
                 <div>
                   <label class="form-label" style="font-weight: 700;">Vida Útil (Meses):</label>
@@ -18515,18 +18588,21 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
     });
 
     btnAprovar?.addEventListener('click', () => {
+      const agoraMs = Date.now();
       p.status = 'Em Producao';
       p.etapaProducao = 'Corte';
       p.quarentenaAprovada = true;
       p.dataQuarentenaAprovada = new Date().toISOString().split('T')[0];
+      p.ultimaModificacaoMs = agoraMs;
 
       // Sincroniza na OS
       const os = db.ordensServico.find(o => o.pedidoNumero === p.numero);
       if (os) {
         os.etapaAtual = 'Corte';
+        os.ultimaModificacaoMs = agoraMs;
       }
 
-      salvarEstado();
+      salvarEstado(true);
       atualizarBadges();
       fecharModal(modalEl);
       if (abaAtiva === 'quarentena') {
