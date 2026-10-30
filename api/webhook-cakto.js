@@ -31,14 +31,6 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // Blindagem de Segurança: Validação de Assinatura / Token Secreto
-    const secretEsperado = process.env.CAKTO_WEBHOOK_SECRET || process.env.WEBHOOK_SECRET;
-    const secretRecebido = req.headers['x-cakto-secret'] || req.headers['x-webhook-secret'] || (req.query && req.query.secret);
-    if (secretEsperado && secretRecebido !== secretEsperado) {
-      console.warn('[Cakto Webhook] Requisição rejeitada: token secreto inválido.');
-      return res.status(401).json({ error: 'Unauthorized: Invalid webhook secret' });
-    }
-
     let payload = req.body || {};
     if (typeof payload === 'string') {
       try {
@@ -47,10 +39,21 @@ module.exports = async function handler(req, res) {
         payload = {};
       }
     }
+
+    // Blindagem de Segurança: Validação de Assinatura / Token Secreto Cakto
+    const secretEsperado = process.env.CAKTO_WEBHOOK_SECRET || process.env.WEBHOOK_SECRET;
+    const secretRecebido = payload.secret || req.headers['x-cakto-secret'] || req.headers['x-webhook-secret'] || (req.query && req.query.secret);
+    if (secretEsperado && secretRecebido !== secretEsperado) {
+      console.warn('[Cakto Webhook] Requisição rejeitada: token secreto inválido.');
+      return res.status(401).json({ error: 'Unauthorized: Invalid webhook secret' });
+    }
+
     console.log('[Cakto Webhook] Evento recebido:', JSON.stringify(payload, null, 2));
 
-    const status = (payload.status || (payload.data && payload.data.status) || payload.event || '').toUpperCase();
-    const isPaid = status === 'PAID' || status === 'APPROVED' || status === 'PURCHASE_APPROVED' || status === 'COMPLETED';
+    const status = (payload.status || (payload.data && payload.data.status) || '').toUpperCase();
+    const eventName = (payload.event || '').toUpperCase();
+    const isPaid = status === 'PAID' || status === 'APPROVED' || status === 'COMPLETED' ||
+                   eventName === 'PURCHASE_APPROVED' || eventName === 'SUBSCRIPTION_CREATED' || eventName === 'SUBSCRIPTION_RENEWED';
 
     const orderId = payload.id || (payload.data && payload.data.id) || payload.order_id;
     const valor = Number(payload.amount || (payload.data && payload.data.amount) || payload.price || 0);
