@@ -82,7 +82,7 @@
         'Radar de Prazos Industrial com alertas anti-atraso',
         'Fichas Técnicas A4 com Grade Infantil ao G5',
         'Otimizador de Bobina DTF Nesting (economia de tecido)',
-        'Emissor de NF-e Focus/SEFAZ Modelo 55 integrado',
+        'Controle de Estoque de Tecidos, Rolos e Aviamentos',
         'Portal do Cliente (nomes e números no celular)',
         'DRE Gerencial & Lucro Real por Pedido',
         'Gestão de Facções e Terceirizados',
@@ -106,7 +106,7 @@
         'Radar de Prazos Industrial com alertas anti-atraso',
         'Fichas Técnicas A4 com Grade Infantil ao G5',
         'Otimizador de Bobina DTF Nesting (economia de tecido)',
-        'Emissor de NF-e Focus/SEFAZ Modelo 55 integrado',
+        'Controle de Estoque de Tecidos, Rolos e Aviamentos',
         'Portal do Cliente (nomes e números no celular)',
         'DRE Gerencial & Lucro Real por Pedido',
         'Gestão de Facções e Terceirizados',
@@ -162,7 +162,7 @@
     {
       titulo: '1. Parametrização & Identidade Visual Corporativa',
       icone: '🎨',
-      descricao: 'Vetorização e aplicação do logotipo da sua confecção em alta definição em todos os documentos (Orçamentos 3x4 e Fichas Técnicas A4). Configuração de CNPJ, Inscrição Estadual, chave PIX e integração de NF-e (Focus / SEFAZ).'
+      descricao: 'Vetorização e aplicação do logotipo da sua confecção em alta definição em todos os documentos (Orçamentos 3x4 e Fichas Técnicas A4). Configuração completa dos dados da empresa e formas de pagamento.'
     },
     {
       titulo: '2. Mapeamento & Cadastro de Custos Têxteis',
