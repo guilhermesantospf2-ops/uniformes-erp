@@ -9,9 +9,9 @@
 
   // Detecção de Modo Demonstração (Test Drive)
   const isDemo = (window.BRAVVI_IS_DEMO === true) ||
-                 (window.TEXPRO_IS_DEMO === true) || 
-                 (window.location && window.location.search && window.location.search.includes('demo=1')) || 
-                 (window.location && window.location.pathname && (window.location.pathname.includes('/demo') || window.location.pathname.includes('demo.html')));
+    (window.TEXPRO_IS_DEMO === true) ||
+    (window.location && window.location.search && window.location.search.includes('demo=1')) ||
+    (window.location && window.location.pathname && (window.location.pathname.includes('/demo') || window.location.pathname.includes('demo.html')));
   const ERP_VERSION = isDemo ? 'DEMO_SANDBOX_V1' : '8.5_PROD_BLINDADO';
   let db = null;
   // FLAG DE SEGURANÇA CRÍTICA: Durante o boot, a sincronização com a nuvem fica bloqueada
@@ -41,9 +41,9 @@
         return;
       }
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = function (e) {
         const img = new Image();
-        img.onload = function() {
+        img.onload = function () {
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
@@ -67,12 +67,12 @@
             resolve(canvas.toDataURL('image/jpeg', quality));
           }
         };
-        img.onerror = function() {
+        img.onerror = function () {
           resolve(e.target.result);
         };
         img.src = e.target.result;
       };
-      reader.onerror = function() {
+      reader.onerror = function () {
         resolve(null);
       };
       reader.readAsDataURL(file);
@@ -158,7 +158,7 @@
     }
 
     // 3. Atualiza a versão do schema de forma pacífica
-        // Homologação Automática de Centros de Custo em Lançamentos Legados
+    // Homologação Automática de Centros de Custo em Lançamentos Legados
     if (Array.isArray(banco.despesasFixas)) {
       banco.despesasFixas.forEach(d => {
         if (!d.centroCusto) d.centroCusto = inferirCentroCusto(d);
@@ -193,7 +193,7 @@
       let historico = [];
       try {
         historico = JSON.parse(localStorage.getItem(chaveSnap) || '[]');
-      } catch (e) {}
+      } catch (e) { }
 
       const totalPedidos = Array.isArray(dbParaSalvar.pedidos) ? dbParaSalvar.pedidos.length : 0;
       const totalClientes = Array.isArray(dbParaSalvar.clientes) ? dbParaSalvar.clientes.length : 0;
@@ -213,7 +213,7 @@
 
       if (historico.length > 5) historico = historico.slice(0, 5);
       localStorage.setItem(chaveSnap, JSON.stringify(historico));
-    } catch (e) {}
+    } catch (e) { }
   }
 
   /**
@@ -229,8 +229,8 @@
     banco.pedidos.forEach(p => {
       if (p.status === 'Cancelado' || p.tipoRegistro === 'Orcamento') return;
       const num = p.numero;
-      const jaExiste = banco.lancamentosFinanceiros.some(l => 
-        l.pedidoNumero === num || 
+      const jaExiste = banco.lancamentosFinanceiros.some(l =>
+        l.pedidoNumero === num ||
         (l.descricao && l.descricao.includes(`Pedido #${num}`))
       );
 
@@ -288,8 +288,8 @@
     try {
       const chaveTenant = obterChaveStorageTenant();
       const salvo = localStorage.getItem(chaveTenant) ||
-                    localStorage.getItem('bravvi_erp_prod_v8') ||
-                    localStorage.getItem('texpro_erp_prod_v8');
+        localStorage.getItem('bravvi_erp_prod_v8') ||
+        localStorage.getItem('texpro_erp_prod_v8');
       if (salvo) {
         db = JSON.parse(salvo);
       }
@@ -319,7 +319,7 @@
         return resolve(dataUrl);
       }
       const img = new Image();
-      img.onload = function() {
+      img.onload = function () {
         try {
           const canvas = document.createElement('canvas');
           let width = img.width || 300;
@@ -496,7 +496,7 @@
     if (isDemo) {
       try {
         sessionStorage.setItem('bravvi_erp_demo_temp', JSON.stringify(compactarBancoParaStorage(db)));
-      } catch (e) {}
+      } catch (e) { }
       return;
     }
 
@@ -817,8 +817,8 @@
       navegarPara(abaAtiva);
     } else {
       // Modo Produção Real: Acesso bloqueado até login com senha
-      const user = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterUsuarioLogado === 'function') 
-        ? window.ERP_CLOUD.obterUsuarioLogado() 
+      const user = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterUsuarioLogado === 'function')
+        ? window.ERP_CLOUD.obterUsuarioLogado()
         : null;
 
       if (user) {
@@ -1413,7 +1413,7 @@
     inpLoginEmail?.addEventListener('blur', (e) => {
       let val = (e.target.value || '').trim();
       val = val.replace(/@(gmail|hotmail|outlook|yahoo)\.co[rn]$/i, '@$1.com')
-               .replace(/@(gmail|hotmail|outlook|yahoo)\.com\.b[rn]$/i, '@$1.com.br');
+        .replace(/@(gmail|hotmail|outlook|yahoo)\.com\.b[rn]$/i, '@$1.com.br');
       e.target.value = val;
     });
 
@@ -1421,7 +1421,7 @@
       e.preventDefault();
       let email = gatekeeper.querySelector('#gateLoginEmail').value.trim();
       email = email.replace(/@(gmail|hotmail|outlook|yahoo)\.co[rn]$/i, '@$1.com')
-                   .replace(/@(gmail|hotmail|outlook|yahoo)\.com\.b[rn]$/i, '@$1.com.br');
+        .replace(/@(gmail|hotmail|outlook|yahoo)\.com\.b[rn]$/i, '@$1.com.br');
       gatekeeper.querySelector('#gateLoginEmail').value = email;
 
       const senha = gatekeeper.querySelector('#gateLoginSenha').value;
@@ -1580,8 +1580,8 @@
   }
 
   function atualizarBotaoAuthNavbar() {
-    const user = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterUsuarioLogado === 'function') 
-      ? window.ERP_CLOUD.obterUsuarioLogado() 
+    const user = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterUsuarioLogado === 'function')
+      ? window.ERP_CLOUD.obterUsuarioLogado()
       : null;
     const btn = document.getElementById('btnHeaderAuth');
     const txt = document.getElementById('btnHeaderAuthText');
@@ -1602,11 +1602,11 @@
   }
 
   function confirmarLogout() {
-    const user = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterUsuarioLogado === 'function') 
-      ? window.ERP_CLOUD.obterUsuarioLogado() 
+    const user = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterUsuarioLogado === 'function')
+      ? window.ERP_CLOUD.obterUsuarioLogado()
       : null;
-    const nome = user && user.user_metadata && user.user_metadata.company_name 
-      ? user.user_metadata.company_name 
+    const nome = user && user.user_metadata && user.user_metadata.company_name
+      ? user.user_metadata.company_name
       : 'sua conta';
     if (confirm(`Deseja realmente sair da conta de "${nome}"? Você precisará digitar a senha para entrar novamente.`)) {
       if (window.ERP_CLOUD && typeof window.ERP_CLOUD.fazerLogout === 'function') {
@@ -1616,8 +1616,8 @@
   }
 
   function abrirModalAutenticacao(opcoes = {}) {
-    const user = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterUsuarioLogado === 'function') 
-      ? window.ERP_CLOUD.obterUsuarioLogado() 
+    const user = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterUsuarioLogado === 'function')
+      ? window.ERP_CLOUD.obterUsuarioLogado()
       : null;
 
     if (!user && !isDemo) {
@@ -1706,7 +1706,7 @@
           try {
             const k = obterChaveStorageTenant();
             localStorage.setItem(k, JSON.stringify(db));
-          } catch(e) {}
+          } catch (e) { }
           atualizarBadges();
           navegarPara(abaAtiva);
           mostrarToast('Dados sincronizados em tempo real pela Nuvem!', 'green');
@@ -1856,9 +1856,9 @@
       : mensagem;
     toastElem.innerHTML = `
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        ${tipo === 'green' 
-          ? '<polyline points="20 6 9 17 4 12"></polyline>' 
-          : '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>'}
+        ${tipo === 'green'
+        ? '<polyline points="20 6 9 17 4 12"></polyline>'
+        : '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>'}
       </svg>
       <span>${msgFinal}</span>
     `;
@@ -1901,7 +1901,7 @@
   function formatarTelefone(tel) {
     const limpo = (tel || '').toString().replace(/\D/g, '');
     if (limpo.length === 11) {
-      return `(${limpo.substring(0,2)}) ${limpo.substring(2,7)}-${limpo.substring(7)}`;
+      return `(${limpo.substring(0, 2)}) ${limpo.substring(2, 7)}-${limpo.substring(7)}`;
     }
     return tel || '';
   }
@@ -2026,7 +2026,7 @@
           };
         }
       }
-    } catch (e) {}
+    } catch (e) { }
     return null;
   }
 
@@ -2292,7 +2292,7 @@
             resultado.email = (dE.emails[0].address || '').toLowerCase().trim();
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     return resultado;
@@ -2430,14 +2430,14 @@
   // Valida se o registro é um Orçamento em negociação (não confirmado em produção)
   function isPedidoOrcamento(p) {
     if (!p) return false;
-    return p.tipoRegistro === 'Orcamento' || 
-           p.tipoRegistro === 'Orçamento' || 
-           p.status === 'Orcamento' || 
-           p.status === 'Orçamento' || 
-           p.etapaProducao === 'Orcamento' || 
-           p.etapaProducao === 'Em Negociação' || 
-           p.etapa === 'Orcamento' || 
-           (p.id && String(p.id).startsWith('ORC-'));
+    return p.tipoRegistro === 'Orcamento' ||
+      p.tipoRegistro === 'Orçamento' ||
+      p.status === 'Orcamento' ||
+      p.status === 'Orçamento' ||
+      p.etapaProducao === 'Orcamento' ||
+      p.etapaProducao === 'Em Negociação' ||
+      p.etapa === 'Orcamento' ||
+      (p.id && String(p.id).startsWith('ORC-'));
   }
 
   // Motor de Contagem Regressiva e Alerta Térmico de Prazos dos Pedidos
@@ -3003,10 +3003,10 @@
     }
 
     // 3. Cálculo Dinâmico do Radar & Termômetro de Prazos da Fábrica (Apenas Pedidos Confirmados)
-    const pedidosAtivosPrazos = db.pedidos.filter(p => 
-      p.status !== 'Finalizado' && 
-      p.status !== 'Cancelado' && 
-      p.status !== 'Entregue' && 
+    const pedidosAtivosPrazos = db.pedidos.filter(p =>
+      p.status !== 'Finalizado' &&
+      p.status !== 'Cancelado' &&
+      p.status !== 'Entregue' &&
       !isPedidoOrcamento(p)
     );
     let qtdAtrasados = 0;
@@ -3135,15 +3135,15 @@
 
           <div class="chart-container">
             ${historicoMensal.map(h => {
-              const altIn = maxValorFinanceiro > 0 ? Math.max(Math.round((h.entradas / maxValorFinanceiro) * 100), h.entradas > 0 ? 3 : 0) : 0;
-              const altOut = maxValorFinanceiro > 0 ? Math.max(Math.round((h.saidas / maxValorFinanceiro) * 100), h.saidas > 0 ? 3 : 0) : 0;
-              const saldo = (Number(h.entradas) || 0) - (Number(h.saidas) || 0);
-              const kIn = formatarK(h.entradas);
-              const kOut = formatarK(h.saidas);
-              const kSaldo = formatarK(saldo);
-              const isAtual = h.isAtual;
-              const isPrev = h.isPrevisto;
-              return `
+      const altIn = maxValorFinanceiro > 0 ? Math.max(Math.round((h.entradas / maxValorFinanceiro) * 100), h.entradas > 0 ? 3 : 0) : 0;
+      const altOut = maxValorFinanceiro > 0 ? Math.max(Math.round((h.saidas / maxValorFinanceiro) * 100), h.saidas > 0 ? 3 : 0) : 0;
+      const saldo = (Number(h.entradas) || 0) - (Number(h.saidas) || 0);
+      const kIn = formatarK(h.entradas);
+      const kOut = formatarK(h.saidas);
+      const kSaldo = formatarK(saldo);
+      const isAtual = h.isAtual;
+      const isPrev = h.isPrevisto;
+      return `
                 <div class="bar-col">
                   <div class="bar-dual-vals">
                     <span class="bar-sub-val" style="color: #047857;" title="Entradas: ${formatarMoeda(h.entradas)}">${kIn}</span>
@@ -3157,7 +3157,7 @@
                   <span class="saldo-badge-col ${saldo >= 0 ? 'text-green' : 'text-red'}" title="Saldo Líquido">${saldo >= 0 ? '+' : ''}${kSaldo}</span>
                 </div>
               `;
-            }).join('')}
+    }).join('')}
           </div>
         </div>
 
@@ -3177,10 +3177,10 @@
           </div>
           <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 10px;">
             ${capacidadesProcessadas.map(s => {
-              let corBarra = '#0f172a';
-              if (s.perc > 90) corBarra = '#dc2626';
-              else if (s.perc >= 75) corBarra = 'var(--color-green)';
-              return `
+      let corBarra = '#0f172a';
+      if (s.perc > 90) corBarra = '#dc2626';
+      else if (s.perc >= 75) corBarra = 'var(--color-green)';
+      return `
                 <div class="capacity-item">
                   <div class="capacity-header">
                     <span><strong>${s.nome}</strong> (Capacidade: ${s.capacidadeDiaria} ${s.unidade})</span>
@@ -3191,7 +3191,7 @@
                   </div>
                 </div>
               `;
-            }).join('')}
+    }).join('')}
           </div>
         </div>
       </div>
@@ -3223,14 +3223,14 @@
           </thead>
           <tbody>
             ${db.pedidos.length ? db.pedidos.slice(0, 5).map(p => {
-              const mockup = p.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(p.produtoNome, "#1e3a8a", "#ffffff", p.clienteNome.substring(0, 6));
-              const totalV = Number(p.valorTotalVenda) || 0;
-              const pagoV = Number(p.valorSinalPago) || 0;
-              const saldoV = Math.max(0, totalV - pagoV);
-              const quitV = totalV > 0 && saldoV <= 0;
-              const percV = totalV > 0 ? ((pagoV / totalV) * 100).toFixed(0) : 0;
-              const countdown = calcularContagemRegressivaPedido(p);
-              return `
+      const mockup = p.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(p.produtoNome, "#1e3a8a", "#ffffff", p.clienteNome.substring(0, 6));
+      const totalV = Number(p.valorTotalVenda) || 0;
+      const pagoV = Number(p.valorSinalPago) || 0;
+      const saldoV = Math.max(0, totalV - pagoV);
+      const quitV = totalV > 0 && saldoV <= 0;
+      const percV = totalV > 0 ? ((pagoV / totalV) * 100).toFixed(0) : 0;
+      const countdown = calcularContagemRegressivaPedido(p);
+      return `
                 <tr>
                   <td>
                     <img src="${mockup}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela">
@@ -3276,7 +3276,7 @@
                   </td>
                 </tr>
               `;
-            }).join('') : `
+    }).join('') : `
               <tr>
                 <td colspan="11" style="text-align: center; padding: 40px 20px; color: var(--text-gray-500);">
                   <div style="font-size: 13.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">
@@ -3503,20 +3503,20 @@
               </div>
               <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 6px;">
                 ${sec.chaves.map(ch => {
-                  const itemCat = CATALOGO_TAMANHOS_MESTRE.find(x => x.chave === ch);
-                  const rotulo = itemCat ? itemCat.rotulo : ch.toUpperCase();
-                  const fator = FATORES_CONSUMO_TAMANHO[ch] || 1.0;
-                  const valSalvoKg = (consumosExistentes && consumosExistentes[ch] != null)
-                    ? parseFloat(consumosExistentes[ch])
-                    : parseFloat((baseM * fator).toFixed(3));
+      const itemCat = CATALOGO_TAMANHOS_MESTRE.find(x => x.chave === ch);
+      const rotulo = itemCat ? itemCat.rotulo : ch.toUpperCase();
+      const fator = FATORES_CONSUMO_TAMANHO[ch] || 1.0;
+      const valSalvoKg = (consumosExistentes && consumosExistentes[ch] != null)
+        ? parseFloat(consumosExistentes[ch])
+        : parseFloat((baseM * fator).toFixed(3));
 
-                  const valorInput = isMetros
-                    ? valSalvoKg.toFixed(2)
-                    : Math.round(valSalvoKg * 1000);
+      const valorInput = isMetros
+        ? valSalvoKg.toFixed(2)
+        : Math.round(valSalvoKg * 1000);
 
-                  const isBase = ch === 'm';
+      const isBase = ch === 'm';
 
-                  return `
+      return `
                     <div style="background: ${isBase ? '#eff6ff' : '#ffffff'}; border: 1.5px solid ${isBase ? '#93c5fd' : '#e2e8f0'}; border-radius: 6px; padding: 5px 6px; text-align: center;">
                       <div style="font-size: 11px; font-weight: 800; color: ${isBase ? '#1e40af' : '#1e293b'}; margin-bottom: 3px;">
                         ${rotulo} ${isBase ? '<span style="font-size: 9px; color: #2563eb;">(BASE)</span>' : ''}
@@ -3537,7 +3537,7 @@
                       </span>
                     </div>
                   `;
-                }).join('')}
+    }).join('')}
               </div>
             </div>
           `).join('')}
@@ -3734,9 +3734,9 @@
       const st = statusSelect?.value || 'TODOS';
       const filtrados = db.pedidos.filter(p => {
         const matchesTermo = (p.clienteNome || '').toLowerCase().includes(termo) ||
-                             (p.produtoNome || '').toLowerCase().includes(termo) ||
-                             (p.numero || '').toString().includes(termo) ||
-                             (p.motivoCancelamento || '').toLowerCase().includes(termo);
+          (p.produtoNome || '').toLowerCase().includes(termo) ||
+          (p.numero || '').toString().includes(termo) ||
+          (p.motivoCancelamento || '').toLowerCase().includes(termo);
         let matchesStatus = true;
         if (st === 'TODOS') {
           matchesStatus = true;
@@ -3750,8 +3750,8 @@
 
       const container = document.getElementById('pedidosContainerVisualizacao');
       if (container) {
-        container.innerHTML = visualizacaoPedidos === 'tabela' 
-          ? renderizarTabelaPedidosHtml(filtrados) 
+        container.innerHTML = visualizacaoPedidos === 'tabela'
+          ? renderizarTabelaPedidosHtml(filtrados)
           : renderizarKanbanPedidosHtml(filtrados);
         configurarEventosPedidos();
       }
@@ -3813,19 +3813,19 @@
           </thead>
           <tbody>
             ${pedidos.map(p => {
-              const mockup = p.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(p.produtoNome, "#1e3a8a", "#ffffff", p.clienteNome.substring(0, 6));
-              const totalVenda = Number(p.valorTotalVenda) || 0;
-              const jaPago = Number(p.valorSinalPago) || 0;
-              const saldoDevedor = Math.max(0, totalVenda - jaPago);
-              const quitadoTotal = totalVenda > 0 && saldoDevedor <= 0;
-              const parcialPago = jaPago > 0 && saldoDevedor > 0;
-              const percPago = totalVenda > 0 ? ((jaPago / totalVenda) * 100).toFixed(0) : 0;
-              const isCancelado = p.status === 'Cancelado';
-              const isQuarentena = p.status === 'Quarentena';
-              const isOrcamento = p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento';
-              const countdown = calcularContagemRegressivaPedido(p);
-              const nfExistente = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || n.pedidoNumero === p.numero) && n.statusSefaz !== 'cancelada');
-              return `
+      const mockup = p.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(p.produtoNome, "#1e3a8a", "#ffffff", p.clienteNome.substring(0, 6));
+      const totalVenda = Number(p.valorTotalVenda) || 0;
+      const jaPago = Number(p.valorSinalPago) || 0;
+      const saldoDevedor = Math.max(0, totalVenda - jaPago);
+      const quitadoTotal = totalVenda > 0 && saldoDevedor <= 0;
+      const parcialPago = jaPago > 0 && saldoDevedor > 0;
+      const percPago = totalVenda > 0 ? ((jaPago / totalVenda) * 100).toFixed(0) : 0;
+      const isCancelado = p.status === 'Cancelado';
+      const isQuarentena = p.status === 'Quarentena';
+      const isOrcamento = p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento';
+      const countdown = calcularContagemRegressivaPedido(p);
+      const nfExistente = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || n.pedidoNumero === p.numero) && n.statusSefaz !== 'cancelada');
+      return `
                 <tr style="${isCancelado ? 'opacity: 0.88; background: #fff1f2;' : ''}">
                   <td>
                     <img src="${mockup}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela">
@@ -4062,7 +4062,7 @@
                   </td>
                 </tr>
               `;
-            }).join('')}
+    }).join('')}
           </tbody>
         </table>
       </div>
@@ -4081,8 +4081,8 @@
     return `
       <div class="kanban-board">
         ${colunas.map(col => {
-          const itens = pedidos.filter(col.filtro);
-          return `
+      const itens = pedidos.filter(col.filtro);
+      return `
             <div class="kanban-col" data-col-id="${col.id}" data-etapa="${col.etapaDestino}">
               <div class="kanban-col-header">
                 <span>${col.titulo}</span>
@@ -4090,17 +4090,17 @@
               </div>
               <div class="kanban-items">
                 ${itens.length ? itens.map(p => {
-                  const mockup = p.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(p.produtoNome, "#1e3a8a", "#ffffff", p.clienteNome.substring(0, 6));
-                  const totalVenda = Number(p.valorTotalVenda) || 0;
-                  const jaPago = Number(p.valorSinalPago) || 0;
-                  const saldoDevedor = Math.max(0, totalVenda - jaPago);
-                  const quitadoTotal = totalVenda > 0 && saldoDevedor <= 0;
-                  const parcialPago = jaPago > 0 && saldoDevedor > 0;
-                  const percPago = totalVenda > 0 ? ((jaPago / totalVenda) * 100).toFixed(0) : 0;
-                  const isQuarentena = p.status === 'Quarentena';
-                  const isOrcamento = p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento';
-                  const countdown = calcularContagemRegressivaPedido(p);
-                  return `
+        const mockup = p.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(p.produtoNome, "#1e3a8a", "#ffffff", p.clienteNome.substring(0, 6));
+        const totalVenda = Number(p.valorTotalVenda) || 0;
+        const jaPago = Number(p.valorSinalPago) || 0;
+        const saldoDevedor = Math.max(0, totalVenda - jaPago);
+        const quitadoTotal = totalVenda > 0 && saldoDevedor <= 0;
+        const parcialPago = jaPago > 0 && saldoDevedor > 0;
+        const percPago = totalVenda > 0 ? ((jaPago / totalVenda) * 100).toFixed(0) : 0;
+        const isQuarentena = p.status === 'Quarentena';
+        const isOrcamento = p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento';
+        const countdown = calcularContagemRegressivaPedido(p);
+        return `
                     <div class="kanban-card" draggable="true" data-id="${p.id}" title="Segure e arraste para mudar a etapa do pedido">
                       <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                         <img src="${mockup}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela">
@@ -4196,7 +4196,7 @@
                       </div>
                     </div>
                   `;
-                }).join('') : `
+      }).join('') : `
                   <div style="font-size: 11.5px; color: var(--text-gray-500); text-align: center; padding: 30px 10px;">
                     Nenhum pedido nesta fase
                   </div>
@@ -4204,7 +4204,7 @@
               </div>
             </div>
           `;
-        }).join('')}
+    }).join('')}
       </div>
     `;
   }
@@ -5685,7 +5685,7 @@
 
       document.getElementById('tituloSucessoLink').textContent = `Pedido #${proxNum} Criado com Sucesso!`;
       document.getElementById('descSucessoLink').textContent = `Cliente: ${nomeFinal} • Modalidade: ${modalidade === 'time' ? 'Time Esportivo' : 'Corporativo'}`;
-      
+
       const inpUrl = document.getElementById('inputUrlLinkPronto');
       inpUrl.value = linkFinal;
       document.getElementById('boxPreviaMsgZap').textContent = msgZap;
@@ -5742,32 +5742,32 @@
 
       const appsLegadas = (orcamentoExistente.artesAplicacao && orcamentoExistente.artesAplicacao.length > 0)
         ? orcamentoExistente.artesAplicacao.map((a, idx) => ({
-            id: 'APP-' + Date.now() + '-' + (idx + 1),
-            local: a.local || 'Peito Frente (Logo Esquerdo)',
-            tecnica: (a.tecnica && a.tecnica.includes('Bord')) ? 'Bordado' : (a.tecnica && a.tecnica.includes('Silk')) ? 'Silk' : 'DTF',
+          id: 'APP-' + Date.now() + '-' + (idx + 1),
+          local: a.local || 'Peito Frente (Logo Esquerdo)',
+          tecnica: (a.tecnica && a.tecnica.includes('Bord')) ? 'Bordado' : (a.tecnica && a.tecnica.includes('Silk')) ? 'Silk' : 'DTF',
+          dtfLarguraRolo: orcamentoExistente.dtfLarguraRolo || 58,
+          dtfLarguraArte: 12,
+          dtfAlturaArte: 8,
+          dtfMetroLinear: 60,
+          dtfPrensagem: 1.50,
+          borValorUnitario: 4.50,
+          borMatriz: 0,
+          borEntretela: 0,
+          custoUnitario: 4.50
+        }))
+        : [
+          {
+            id: 'APP-' + Date.now() + '-1',
+            local: 'Peito Frente (Logo Esquerdo)',
+            tecnica: 'DTF',
             dtfLarguraRolo: orcamentoExistente.dtfLarguraRolo || 58,
-            dtfLarguraArte: 12,
+            dtfLarguraArte: 26,
             dtfAlturaArte: 8,
             dtfMetroLinear: 60,
             dtfPrensagem: 1.50,
-            borValorUnitario: 4.50,
-            borMatriz: 0,
-            borEntretela: 0,
-            custoUnitario: 4.50
-          }))
-        : [
-            {
-              id: 'APP-' + Date.now() + '-1',
-              local: 'Peito Frente (Logo Esquerdo)',
-              tecnica: 'DTF',
-              dtfLarguraRolo: orcamentoExistente.dtfLarguraRolo || 58,
-              dtfLarguraArte: 26,
-              dtfAlturaArte: 8,
-              dtfMetroLinear: 60,
-              dtfPrensagem: 1.50,
-              custoUnitario: 5.50
-            }
-          ];
+            custoUnitario: 5.50
+          }
+        ];
 
       itensOrcamento = [{
         id: 'ITEM-' + Date.now() + '-1',
@@ -5796,7 +5796,7 @@
         margemReal: orcamentoExistente.margemLucroPercentual || 25.0
       }];
     } else {
-      itensOrcamento = [ criarItemModeloPadrao(1, null, padroes) ];
+      itensOrcamento = [criarItemModeloPadrao(1, null, padroes)];
     }
 
     let itemAtivoIndex = 0;
@@ -5834,9 +5834,9 @@
                 <div class="inline-input-group">
                   <select id="orcClienteSelect" class="form-select">
                     ${(db.clientes || []).map(c => {
-                      const isSel = isEdicao && (c.id === orcamentoExistente.clienteId || c.nomeFantasia === orcamentoExistente.clienteNome || c.nome === orcamentoExistente.clienteNome);
-                      return `<option value="${c.id}" ${isSel ? 'selected' : ''}>${c.nomeFantasia || c.nome || c.razaoSocial || 'Cliente'} • ${formatarTelefone(c.telefone)} (${c.cidade || 'SP'}/${c.uf || 'SP'})</option>`;
-                    }).join('')}
+      const isSel = isEdicao && (c.id === orcamentoExistente.clienteId || c.nomeFantasia === orcamentoExistente.clienteNome || c.nome === orcamentoExistente.clienteNome);
+      return `<option value="${c.id}" ${isSel ? 'selected' : ''}>${c.nomeFantasia || c.nome || c.razaoSocial || 'Cliente'} • ${formatarTelefone(c.telefone)} (${c.cidade || 'SP'}/${c.uf || 'SP'})</option>`;
+    }).join('')}
                   </select>
                   <button type="button" class="btn btn-secondary btn-inline-add" id="btnCadastrarClienteInline">
                     + Novo Cliente
@@ -5850,14 +5850,14 @@
                 <select id="orcVendedorSelect" class="form-select">
                   <option value="">-- Venda Direta Fábrica (Sem Comissão) --</option>
                   ${(db.equipe || []).map(v => {
-                    const isSel = isEdicao && (v.id === orcamentoExistente.vendedorId || v.nome === orcamentoExistente.vendedorNome);
-                    const regraTexto = v.tipoComissao === 'fixo_por_peca'
-                      ? `(R$ ${v.taxaComissao || 0}/pç)`
-                      : v.tipoComissao === 'percentual_lucro_bruto'
-                        ? `(${v.taxaComissao || 0}% lucro)`
-                        : `(${v.taxaComissao || 3}% venda)`;
-                    return `<option value="${v.id}" ${isSel ? 'selected' : ''}>💼 ${v.nome} ${regraTexto}</option>`;
-                  }).join('')}
+      const isSel = isEdicao && (v.id === orcamentoExistente.vendedorId || v.nome === orcamentoExistente.vendedorNome);
+      const regraTexto = v.tipoComissao === 'fixo_por_peca'
+        ? `(R$ ${v.taxaComissao || 0}/pç)`
+        : v.tipoComissao === 'percentual_lucro_bruto'
+          ? `(${v.taxaComissao || 0}% lucro)`
+          : `(${v.taxaComissao || 3}% venda)`;
+      return `<option value="${v.id}" ${isSel ? 'selected' : ''}>💼 ${v.nome} ${regraTexto}</option>`;
+    }).join('')}
                 </select>
               </div>
 
@@ -6651,7 +6651,7 @@
       if (!query || !textoOriginal) return textoOriginal || '';
       const termos = normalizarBusca(query).split(/\s+/).filter(Boolean);
       if (termos.length === 0) return textoOriginal;
-      
+
       let resultado = textoOriginal;
       try {
         termos.forEach(termo => {
@@ -7043,7 +7043,7 @@
           </div>
         `;
       } else {
-        container.innerHTML = it.aplicacoes.map((app, idx) => 
+        container.innerHTML = it.aplicacoes.map((app, idx) =>
           gerarHtmlCardAplicacao(app, idx, it.grade?.total || 1, padroes)
         ).join('');
       }
@@ -7494,36 +7494,36 @@
                     </thead>
                     <tbody>
                       ${tamanhosExibicao.map(ch => {
-                        const itemCat = CATALOGO_TAMANHOS_MESTRE.find(x => x.chave === ch);
-                        const rotulo = itemCat ? itemCat.rotulo : ch.toUpperCase();
-                        const qtd = parseInt(grade[ch], 10) || 0;
-                        const fator = FATORES_CONSUMO_TAMANHO[ch] || 1.00;
-                        const consumoCalculadoAuto = (consumoBaseM * fator) * fatorPerda;
-                        
-                        const consumoSalvo = (it.consumosCustomizadosPorTamanho && it.consumosCustomizadosPorTamanho[ch] != null)
-                          ? parseFloat(it.consumosCustomizadosPorTamanho[ch])
-                          : consumoCalculadoAuto;
+        const itemCat = CATALOGO_TAMANHOS_MESTRE.find(x => x.chave === ch);
+        const rotulo = itemCat ? itemCat.rotulo : ch.toUpperCase();
+        const qtd = parseInt(grade[ch], 10) || 0;
+        const fator = FATORES_CONSUMO_TAMANHO[ch] || 1.00;
+        const consumoCalculadoAuto = (consumoBaseM * fator) * fatorPerda;
 
-                        const custoTecTam = consumoSalvo * custoTecKg;
-                        const custoAviamEmb = custoAviamento + custoEmbalagem;
-                        const custoCalculadoAuto = (consumoCalculadoAuto * custoTecKg) + custoCostura + custoEstampa + custoAviamEmb;
+        const consumoSalvo = (it.consumosCustomizadosPorTamanho && it.consumosCustomizadosPorTamanho[ch] != null)
+          ? parseFloat(it.consumosCustomizadosPorTamanho[ch])
+          : consumoCalculadoAuto;
 
-                        const custoSalvo = (it.custosCustomizadosPorTamanho && it.custosCustomizadosPorTamanho[ch] != null)
-                          ? parseFloat(it.custosCustomizadosPorTamanho[ch])
-                          : (custoTecTam + custoCostura + custoEstampa + custoAviamEmb);
+        const custoTecTam = consumoSalvo * custoTecKg;
+        const custoAviamEmb = custoAviamento + custoEmbalagem;
+        const custoCalculadoAuto = (consumoCalculadoAuto * custoTecKg) + custoCostura + custoEstampa + custoAviamEmb;
 
-                        const precoSugeridoTam = custoSalvo / divisorMarkup;
+        const custoSalvo = (it.custosCustomizadosPorTamanho && it.custosCustomizadosPorTamanho[ch] != null)
+          ? parseFloat(it.custosCustomizadosPorTamanho[ch])
+          : (custoTecTam + custoCostura + custoEstampa + custoAviamEmb);
 
-                        const isPlus = ['g1', 'g2', 'g3', 'g4', 'g5'].includes(ch);
-                        const isBase = ch === 'm';
+        const precoSugeridoTam = custoSalvo / divisorMarkup;
 
-                        let diffPercStr = `${fator >= 1 ? `+${((fator - 1) * 100).toFixed(0)}%` : `${((fator - 1) * 100).toFixed(0)}%`}`;
-                        if (basePadraoM > 0 && Math.abs(consumoSalvo - consumoCalculadoAuto) > 0.001) {
-                          const dPerc = ((consumoSalvo - basePadraoM) / basePadraoM) * 100;
-                          diffPercStr = `${dPerc >= 0 ? `+${dPerc.toFixed(0)}%` : `${dPerc.toFixed(0)}%`}`;
-                        }
+        const isPlus = ['g1', 'g2', 'g3', 'g4', 'g5'].includes(ch);
+        const isBase = ch === 'm';
 
-                        return `
+        let diffPercStr = `${fator >= 1 ? `+${((fator - 1) * 100).toFixed(0)}%` : `${((fator - 1) * 100).toFixed(0)}%`}`;
+        if (basePadraoM > 0 && Math.abs(consumoSalvo - consumoCalculadoAuto) > 0.001) {
+          const dPerc = ((consumoSalvo - basePadraoM) / basePadraoM) * 100;
+          diffPercStr = `${dPerc >= 0 ? `+${dPerc.toFixed(0)}%` : `${dPerc.toFixed(0)}%`}`;
+        }
+
+        return `
                           <tr style="border-bottom: 1px solid #e2e8f0; background: ${isPlus ? '#fffbeb' : isBase ? '#eff6ff' : '#ffffff'};">
                             <td style="padding: 6px 8px; font-weight: 700;">
                               ${rotulo}
@@ -7578,7 +7578,7 @@
                             </td>
                           </tr>
                         `;
-                      }).join('')}
+      }).join('')}
                     </tbody>
                   </table>
                 </div>
@@ -8080,7 +8080,7 @@
               </h4>
             </div>
             <div style="font-size: 11px; opacity: 0.9; text-align: right;">
-              ${itensOrcamento.map((it, i) => `<span style="display: inline-block; background: rgba(255,255,255,0.1); padding: 1px 6px; border-radius: 3px; margin: 1px;">${i+1}. ${it.produtoNome.split(' ')[0]} (${it.grade?.total || 0} pçs)</span>`).join(' ')}
+              ${itensOrcamento.map((it, i) => `<span style="display: inline-block; background: rgba(255,255,255,0.1); padding: 1px 6px; border-radius: 3px; margin: 1px;">${i + 1}. ${it.produtoNome.split(' ')[0]} (${it.grade?.total || 0} pçs)</span>`).join(' ')}
             </div>
           </div>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; text-align: center; overflow: visible;">
@@ -8590,7 +8590,7 @@
 
         let qtd = 1;
         const matchQtd = linha.match(/(?:^|\s|\(|-)(\d{1,2})\s*(?:x|pçs?|pecas?|peças?|unidades?|un\b)/i) ||
-                         linha.match(/(?:qtd|quant|quantidade)[:\s]*(\d{1,2})\b/i);
+          linha.match(/(?:qtd|quant|quantidade)[:\s]*(\d{1,2})\b/i);
         if (matchQtd) {
           qtd = parseInt(matchQtd[1], 10) || 1;
         }
@@ -9633,7 +9633,7 @@
     const idIframe = 'iframeImpressaoIndustrial';
     const iframeExistente = document.getElementById(idIframe);
     if (iframeExistente) {
-      try { iframeExistente.remove(); } catch (e) {}
+      try { iframeExistente.remove(); } catch (e) { }
     }
 
     const iframe = document.createElement('iframe');
@@ -9748,7 +9748,7 @@
         console.error('Erro na impressão isolada:', err);
       }
       setTimeout(() => {
-        try { iframe.remove(); } catch (e) {}
+        try { iframe.remove(); } catch (e) { }
       }, 2500);
     }, 350);
   }
@@ -9834,11 +9834,11 @@
             </thead>
             <tbody>
               ${p.itens.map((it, idx) => {
-                const appsHtml = (it.aplicacoes && it.aplicacoes.length > 0)
-                  ? it.aplicacoes.map(a => `• <strong>${a.local}:</strong> ${a.tecnica}`).join('<br>')
-                  : '<span style="color: #64748b; font-style: italic;">Peça Lisa</span>';
-                const subtotal = (it.valorSubtotal || ((it.precoVendaUnitario || 0) * (it.grade?.total || 0))) || 0;
-                return `
+      const appsHtml = (it.aplicacoes && it.aplicacoes.length > 0)
+        ? it.aplicacoes.map(a => `• <strong>${a.local}:</strong> ${a.tecnica}`).join('<br>')
+        : '<span style="color: #64748b; font-style: italic;">Peça Lisa</span>';
+      const subtotal = (it.valorSubtotal || ((it.precoVendaUnitario || 0) * (it.grade?.total || 0))) || 0;
+      return `
                   <tr style="border-bottom: 1px solid #e2e8f0;">
                     <td style="padding: 6px 8px; vertical-align: top;">
                       <strong style="color: #0f172a;">${idx + 1}. ${it.produtoNome}</strong>
@@ -9865,7 +9865,7 @@
                     </td>
                   </tr>
                 `;
-              }).join('')}
+    }).join('')}
             </tbody>
             <tfoot>
               <tr style="background: #f8fafc; font-weight: 800; border-top: 2px solid #cbd5e1;">
@@ -9906,15 +9906,15 @@
 
         <!-- Grade de Tamanhos Selecionados (Sem colunas de 0) -->
         ${(() => {
-          const tamsAtivos = obterTamanhosSelecionadosGrade(p.grade);
-          if (!tamsAtivos.length) {
-            return `
+        const tamsAtivos = obterTamanhosSelecionadosGrade(p.grade);
+        if (!tamsAtivos.length) {
+          return `
               <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; font-size: 11px; color: #64748b;">
                 Quantidade Total: <strong>${p.grade?.total || 0} peças</strong> (Grade em definição)
               </div>
             `;
-          }
-          return `
+        }
+        return `
             <table style="margin-bottom: 12px; width: auto; min-width: 260px; border-collapse: collapse; font-size: 11px;">
               <thead>
                 <tr style="background: #f1f5f9; color: #1e293b; border-bottom: 2px solid #cbd5e1;">
@@ -9930,7 +9930,7 @@
               </tbody>
             </table>
           `;
-        })()}
+      })()}
       `}
 
       <!-- Relação Oficial de Atletas / Uniforme de Time na Proposta Comercial -->
@@ -10101,15 +10101,15 @@
           </thead>
           <tbody>
             ${db.ordensServico.length ? db.ordensServico.map(os => {
-              const mockup = os.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(os.produto, "#1e3a8a", "#ffffff", os.cliente.substring(0, 6));
-              const pOrig = (db.pedidos || []).find(x => (x.numero != null && os.pedidoNumero != null && x.numero.toString() === os.pedidoNumero.toString()) || (x.id && (x.id === os.pedidoId || x.id === os.pedidoNumero))) || {};
-              const listaJogOS = (os.jogadores && os.jogadores.length > 0) ? os.jogadores : (pOrig.jogadores || []);
-              const countdown = calcularContagemRegressivaPedido(pOrig.id ? pOrig : {
-                dataPrevisaoEntrega: os.dataPrevisaoEntrega,
-                dataMetaInterna: os.dataMetaInterna,
-                dataCriacao: os.dataEntradaCorte
-              });
-              return `
+      const mockup = os.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(os.produto, "#1e3a8a", "#ffffff", os.cliente.substring(0, 6));
+      const pOrig = (db.pedidos || []).find(x => (x.numero != null && os.pedidoNumero != null && x.numero.toString() === os.pedidoNumero.toString()) || (x.id && (x.id === os.pedidoId || x.id === os.pedidoNumero))) || {};
+      const listaJogOS = (os.jogadores && os.jogadores.length > 0) ? os.jogadores : (pOrig.jogadores || []);
+      const countdown = calcularContagemRegressivaPedido(pOrig.id ? pOrig : {
+        dataPrevisaoEntrega: os.dataPrevisaoEntrega,
+        dataMetaInterna: os.dataMetaInterna,
+        dataCriacao: os.dataEntradaCorte
+      });
+      return `
                 <tr>
                   <td>
                     <img src="${mockup}" class="mockup-thumb-3x4" data-os-id="${os.id}" data-pedido-id="${os.pedidoNumero || pOrig.id || ''}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela" style="cursor: pointer;">
@@ -10157,7 +10157,7 @@
                   </td>
                 </tr>
               `;
-            }).join('') : `
+    }).join('') : `
               <tr>
                 <td colspan="11" style="text-align: center; padding: 40px 20px; color: var(--text-gray-500);">
                   Nenhuma Ordem de Serviço na oficina. Conforme os pedidos forem aprovados, as OS industriais com fichas técnicas A4 serão geradas automaticamente aqui.
@@ -10230,10 +10230,10 @@
     const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
       ? window.ERP_CLOUD.obterEmpresaConfig()
       : (db.empresa || {});
-    const countdown = calcularContagemRegressivaPedido(pedido.id ? pedido : { 
-      dataPrevisaoEntrega: dataEntrega, 
-      dataMetaInterna: dataMeta, 
-      dataCriacao: os.dataEntradaCorte, 
+    const countdown = calcularContagemRegressivaPedido(pedido.id ? pedido : {
+      dataPrevisaoEntrega: dataEntrega,
+      dataMetaInterna: dataMeta,
+      dataCriacao: os.dataEntradaCorte,
       status: os.etapaAtual === 'Entregue' ? 'Entregue' : 'Em Producao',
       etapaProducao: os.etapaAtual
     });
@@ -12966,8 +12966,8 @@
 
     // Filtros aplicados na tabela de saldos
     const itensFiltrados = db.estoque.filter(item => {
-      const matchBusca = !filtroBuscaEstoque || 
-        (item.descricao || '').toLowerCase().includes(filtroBuscaEstoque.toLowerCase()) || 
+      const matchBusca = !filtroBuscaEstoque ||
+        (item.descricao || '').toLowerCase().includes(filtroBuscaEstoque.toLowerCase()) ||
         (item.codigo || '').toLowerCase().includes(filtroBuscaEstoque.toLowerCase());
       const matchCat = filtroCategoriaEstoque === 'todos' || item.categoria === filtroCategoriaEstoque;
       return matchBusca && matchCat;
@@ -13088,11 +13088,11 @@
                   </td>
                 </tr>
               ` : itensFiltrados.map(item => {
-                const saldoNum = Number(item.saldoAtual) || 0;
-                const minNum = Number(item.estoqueMinimo) || 0;
-                const estaCritico = saldoNum <= minNum;
-                const valorTotalItem = saldoNum * (Number(item.custoMedioUnitario) || 0);
-                return `
+      const saldoNum = Number(item.saldoAtual) || 0;
+      const minNum = Number(item.estoqueMinimo) || 0;
+      const estaCritico = saldoNum <= minNum;
+      const valorTotalItem = saldoNum * (Number(item.custoMedioUnitario) || 0);
+      return `
                   <tr>
                     <td class="text-mono"><strong>${item.codigo}</strong></td>
                     <td><strong>${item.descricao}</strong></td>
@@ -13121,7 +13121,7 @@
                     </td>
                   </tr>
                 `;
-              }).join('')}
+    }).join('')}
             </tbody>
           </table>
         </div>
@@ -13247,8 +13247,8 @@
     }
 
     const itemInicial = itemEstoqueId ? db.estoque.find(e => e.id === itemEstoqueId) : db.estoque[0];
-    const userLogado = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterUsuarioLogado === 'function') 
-      ? window.ERP_CLOUD.obterUsuarioLogado() 
+    const userLogado = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterUsuarioLogado === 'function')
+      ? window.ERP_CLOUD.obterUsuarioLogado()
       : null;
     const responsavelPadrao = userLogado?.user_metadata?.full_name || 'Encarregado(a) de Corte';
 
@@ -13678,8 +13678,8 @@
       // Registra no histórico de movimentações (Rastreabilidade Industrial)
       if (!Array.isArray(db.historicoEstoque)) db.historicoEstoque = [];
       const valorTotalCompra = parseFloat((qtdEntrada * precoPago).toFixed(2));
-      const userLogado = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterUsuarioLogado === 'function') 
-        ? window.ERP_CLOUD.obterUsuarioLogado() 
+      const userLogado = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterUsuarioLogado === 'function')
+        ? window.ERP_CLOUD.obterUsuarioLogado()
         : null;
 
       db.historicoEstoque.unshift({
@@ -13760,12 +13760,12 @@
 
       <div class="grid-cards-3">
         ${db.produtosBase.map(prod => {
-          const mapaCons = garantirConsumosPorTamanhoProduto(prod);
-          const isMetros = (prod.unidadeTecido === 'metro') || (prod.consumoMalhaKgPorPeca > 0.8 && !prod.tipoMalhaPadrao.toLowerCase().includes('malha'));
-          const baseM = prod.consumoMalhaKgPorPeca || 0.28;
-          const rotuloBase = isMetros ? `${baseM.toFixed(2)}m` : `${Math.round(baseM * 1000)}g (${baseM.toFixed(3)}kg)`;
+      const mapaCons = garantirConsumosPorTamanhoProduto(prod);
+      const isMetros = (prod.unidadeTecido === 'metro') || (prod.consumoMalhaKgPorPeca > 0.8 && !prod.tipoMalhaPadrao.toLowerCase().includes('malha'));
+      const baseM = prod.consumoMalhaKgPorPeca || 0.28;
+      const rotuloBase = isMetros ? `${baseM.toFixed(2)}m` : `${Math.round(baseM * 1000)}g (${baseM.toFixed(3)}kg)`;
 
-          return `
+      return `
             <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -13789,11 +13789,11 @@
                   </div>
                   <div style="display: flex; flex-wrap: wrap; gap: 3px;">
                     ${['pp', 'p', 'm', 'g', 'gg', 'xg', 'g1', 'g2'].map(ch => {
-                      const cTam = mapaCons[ch] || (baseM * (FATORES_CONSUMO_TAMANHO[ch] || 1.0));
-                      const lbl = isMetros ? `${cTam.toFixed(2)}m` : `${Math.round(cTam * 1000)}g`;
-                      const isM = ch === 'm';
-                      return `<span style="background: ${isM ? '#eff6ff' : '#ffffff'}; border: 1px solid ${isM ? '#93c5fd' : '#cbd5e1'}; padding: 1px 5px; border-radius: 3px; font-family: monospace; font-size: 10px; color: ${isM ? '#1e40af' : '#334155'};"><strong>${ch.toUpperCase()}:</strong> ${lbl}</span>`;
-                    }).join('')}
+        const cTam = mapaCons[ch] || (baseM * (FATORES_CONSUMO_TAMANHO[ch] || 1.0));
+        const lbl = isMetros ? `${cTam.toFixed(2)}m` : `${Math.round(cTam * 1000)}g`;
+        const isM = ch === 'm';
+        return `<span style="background: ${isM ? '#eff6ff' : '#ffffff'}; border: 1px solid ${isM ? '#93c5fd' : '#cbd5e1'}; padding: 1px 5px; border-radius: 3px; font-family: monospace; font-size: 10px; color: ${isM ? '#1e40af' : '#334155'};"><strong>${ch.toUpperCase()}:</strong> ${lbl}</span>`;
+      }).join('')}
                   </div>
                 </div>
 
@@ -13813,7 +13813,7 @@
               </div>
             </div>
           `;
-        }).join('')}
+    }).join('')}
       </div>
     `;
 
@@ -14155,22 +14155,22 @@
 
     // 1. Comercial & Marketing (COM / CC-01)
     if (cat.includes('comiss') || cat.includes('mkt') || cat.includes('marketing') || cat.includes('propaganda') ||
-        desc.includes('comiss') || desc.includes('anúncio') || desc.includes('meta ads') || desc.includes('google ads') || desc.includes('vendedor')) {
+      desc.includes('comiss') || desc.includes('anúncio') || desc.includes('meta ads') || desc.includes('google ads') || desc.includes('vendedor')) {
       return 'CC-01';
     }
     // 2. Produção: Corte & Estamparia (PROD-CORTE / CC-02)
     if (cat.includes('dtf') || cat.includes('estamp') || cat.includes('sublima') || cat.includes('tinta') || cat.includes('corte') || cat.includes('enfrald') || cat.includes('manuten') ||
-        desc.includes('dtf') || desc.includes('prensa') || desc.includes('plotter') || desc.includes('tinta') || desc.includes('filme dtf') || desc.includes('poliamida') || desc.includes('fita térmica') || desc.includes('luz') || desc.includes('enel') || desc.includes('energia')) {
+      desc.includes('dtf') || desc.includes('prensa') || desc.includes('plotter') || desc.includes('tinta') || desc.includes('filme dtf') || desc.includes('poliamida') || desc.includes('fita térmica') || desc.includes('luz') || desc.includes('enel') || desc.includes('energia')) {
       return 'CC-02';
     }
     // 3. Produção: Costura & Facções (PROD-COST / CC-03)
     if (cat.includes('costur') || cat.includes('facç') || cat.includes('aviamen') || cat.includes('malha') || cat.includes('tecido') || cat.includes('matéria-prima') ||
-        desc.includes('costur') || desc.includes('overlock') || desc.includes('reta jack') || desc.includes('linha') || desc.includes('fio') || desc.includes('zíper') || desc.includes('botão') || desc.includes('elástico') || desc.includes('viés') || desc.includes('facção')) {
+      desc.includes('costur') || desc.includes('overlock') || desc.includes('reta jack') || desc.includes('linha') || desc.includes('fio') || desc.includes('zíper') || desc.includes('botão') || desc.includes('elástico') || desc.includes('viés') || desc.includes('facção')) {
       return 'CC-03';
     }
     // 4. Logística & Entregas (LOG / CC-05)
     if (cat.includes('logíst') || cat.includes('entreg') || cat.includes('frete') || cat.includes('transporte') || cat.includes('combust') || cat.includes('embalagen') ||
-        desc.includes('frete') || desc.includes('sedex') || desc.includes('motoboy') || desc.includes('caixa de papelão') || desc.includes('fita gomada') || desc.includes('combustível') || desc.includes('uber') || desc.includes('entrega')) {
+      desc.includes('frete') || desc.includes('sedex') || desc.includes('motoboy') || desc.includes('caixa de papelão') || desc.includes('fita gomada') || desc.includes('combustível') || desc.includes('uber') || desc.includes('entrega')) {
       return 'CC-05';
     }
     // 5. Administrativo & Diretoria (ADM / CC-04) - Aluguel, Escritório, Limpeza, Internet, Softwares
@@ -14683,9 +14683,9 @@
                       <div style="font-size: 10.5px; color: var(--text-gray-500); margin-top: 3px;">${desp.statusInfo.diasTexto}</div>
                     </td>
                     <td class="text-mono" style="font-size: 11.5px;">
-                      ${desp.status === 'Pago' 
-                        ? `${desp.formaPagamentoPago || desp.formaPagamentoPrevista || 'PIX'} <span style="color:#047857; font-weight:700;">(Baixado)</span>`
-                        : (desp.formaPagamentoPrevista || 'Boleto')}
+                      ${desp.status === 'Pago'
+          ? `${desp.formaPagamentoPago || desp.formaPagamentoPrevista || 'PIX'} <span style="color:#047857; font-weight:700;">(Baixado)</span>`
+          : (desp.formaPagamentoPrevista || 'Boleto')}
                     </td>
                     <td style="text-align: right;">
                       <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
@@ -15186,8 +15186,8 @@
         <!-- Cards de Cada Centro de Custo -->
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 22px;">
           ${ccStats.map(cc => {
-            const perc = totalGastoTodosCC > 0 ? (cc.totalGasto / totalGastoTodosCC) * 100 : 0;
-            return `
+        const perc = totalGastoTodosCC > 0 ? (cc.totalGasto / totalGastoTodosCC) * 100 : 0;
+        return `
               <div class="card" style="padding: 14px; border-left: 4px solid ${cc.cor || '#3b82f6'};">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                   <span class="status-pill status-blue" style="font-size: 10px; font-weight: 800; background: #f1f5f9; color: ${cc.cor || '#0f172a'}; border: 1px solid ${cc.cor || '#cbd5e1'};">
@@ -15208,7 +15208,7 @@
                 </div>
               </div>
             `;
-          }).join('')}
+      }).join('')}
         </div>
 
         <!-- Tabela Filtrada de Gastos por Centro de Custo -->
@@ -15389,9 +15389,9 @@
                     </strong>
                   </td>
                   <td>
-                    ${c.comissaoStatus === 'Paga' 
-                      ? `<span class="status-pill status-green" style="font-size: 9.5px;">🟢 PAGA ${c.dataPagamentoComissao ? `(${formatarDataBr(c.dataPagamentoComissao)})` : ''}</span>`
-                      : `<span class="status-pill status-yellow" style="font-size: 9.5px;">🟡 PENDENTE</span>`}
+                    ${c.comissaoStatus === 'Paga'
+          ? `<span class="status-pill status-green" style="font-size: 9.5px;">🟢 PAGA ${c.dataPagamentoComissao ? `(${formatarDataBr(c.dataPagamentoComissao)})` : ''}</span>`
+          : `<span class="status-pill status-yellow" style="font-size: 9.5px;">🟡 PENDENTE</span>`}
                   </td>
                   <td style="text-align: right;">
                     <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
@@ -16301,7 +16301,7 @@
     `);
   }
 
-  
+
   // =========================================================================
   // MODAIS E AÇÕES: CENTROS DE CUSTO, EQUIPAMENTOS (DEPRECIAÇÃO) & COMISSÕES
   // =========================================================================
@@ -16782,12 +16782,12 @@
                 <label class="form-label" style="font-weight: 700;">Centro de Custo *</label>
                 <select id="comCentroCusto" class="form-select" style="font-weight: 700;">
                   ${(db.centrosCusto || [
-                    { id: "CC-01", codigo: "COM", nome: "Comercial & Marketing", icone: "💼" },
-                    { id: "CC-02", codigo: "PROD-CORTE", nome: "Produção: Corte & Estamparia", icone: "✂️" },
-                    { id: "CC-03", codigo: "PROD-COST", nome: "Produção: Costura & Facções", icone: "🪡" },
-                    { id: "CC-04", codigo: "ADM", nome: "Administrativo & Diretoria", icone: "🏢" },
-                    { id: "CC-05", codigo: "LOG", nome: "Logística & Entregas", icone: "🚚" }
-                  ]).map(cc => `
+        { id: "CC-01", codigo: "COM", nome: "Comercial & Marketing", icone: "💼" },
+        { id: "CC-02", codigo: "PROD-CORTE", nome: "Produção: Corte & Estamparia", icone: "✂️" },
+        { id: "CC-03", codigo: "PROD-COST", nome: "Produção: Costura & Facções", icone: "🪡" },
+        { id: "CC-04", codigo: "ADM", nome: "Administrativo & Diretoria", icone: "🏢" },
+        { id: "CC-05", codigo: "LOG", nome: "Logística & Entregas", icone: "🚚" }
+      ]).map(cc => `
                     <option value="${cc.id}" ${cc.codigo === 'ADM' ? 'selected' : ''}>
                       ${cc.icone || '🏢'} ${cc.codigo} - ${cc.nome}
                     </option>
@@ -16835,7 +16835,7 @@
       </div>
     `);
 
-        // Ajuste inteligente automático de Centro de Custo ao escolher categoria
+    // Ajuste inteligente automático de Centro de Custo ao escolher categoria
     document.getElementById('comCategoria')?.addEventListener('change', (e) => {
       const cat = e.target.value;
       const ccSel = document.getElementById('comCentroCusto');
@@ -16846,7 +16846,7 @@
       else if (cat.includes('Logística') || cat.includes('Embalagens')) ccSel.value = 'CC-05';
     });
 
-document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () => {
+    document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () => {
       const fornecedor = document.getElementById('comFornecedor')?.value || "Fornecedor";
       const cat = document.getElementById('comCategoria')?.value || "Manutenção Fábrica";
       const centroCusto = document.getElementById('comCentroCusto')?.value || "CC-04";
@@ -17437,7 +17437,7 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
               </div>
               <div class="card" style="padding: 10px;">
                 <div class="kpi-title">Faturamento Acumulado</div>
-                <div class="kpi-value text-primary">${formatarMoeda(pedidosCli.reduce((a,b)=>a+b.valorTotalVenda, 0))}</div>
+                <div class="kpi-value text-primary">${formatarMoeda(pedidosCli.reduce((a, b) => a + b.valorTotalVenda, 0))}</div>
               </div>
               <div class="card" style="padding: 10px;">
                 <div class="kpi-title">Contato WhatsApp</div>
@@ -17523,9 +17523,9 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
           </thead>
           <tbody>
             ${pedidosQuarentena.length ? pedidosQuarentena.map(p => {
-              const mockup = p.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(p.produtoNome, "#1e3a8a", "#ffffff", p.clienteNome.substring(0, 6));
-              const margemOk = p.margemLucroPercentual >= 20.0;
-              return `
+      const mockup = p.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(p.produtoNome, "#1e3a8a", "#ffffff", p.clienteNome.substring(0, 6));
+      const margemOk = p.margemLucroPercentual >= 20.0;
+      return `
                 <tr>
                   <td>
                     <img src="${mockup}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela">
@@ -17576,7 +17576,7 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
                   </td>
                 </tr>
               `;
-            }).join('') : `
+    }).join('') : `
               <tr><td colspan="10" style="text-align: center; padding: 35px; color: var(--text-gray-500);">Nenhum pedido em quarentena no momento. Todas as ordens estão liberadas para a produção.</td></tr>
             `}
           </tbody>
@@ -17830,23 +17830,23 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
           </thead>
           <tbody>
             ${(db.equipe || []).length > 0 ? db.equipe.map((u, idx) => {
-              const perfilId = u.perfil || (u.nivelAcesso === 'Admin' ? 'dono' : (u.nivelAcesso === 'Comercial' ? 'vendedor' : 'oficina'));
-              const badgePerfil = perfilId === 'dono'
-                ? '<span class="status-pill status-green" style="font-weight: 800;">👑 Dono / Diretor</span>'
-                : (perfilId === 'vendedor'
-                  ? '<span class="status-pill status-blue" style="font-weight: 800; background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">💼 Vendedor</span>'
-                  : '<span class="status-pill status-orange" style="font-weight: 800; background: #fef3c7; color: #92400e; border-color: #fde68a;">✂️ Oficina / Fábrica</span>');
+      const perfilId = u.perfil || (u.nivelAcesso === 'Admin' ? 'dono' : (u.nivelAcesso === 'Comercial' ? 'vendedor' : 'oficina'));
+      const badgePerfil = perfilId === 'dono'
+        ? '<span class="status-pill status-green" style="font-weight: 800;">👑 Dono / Diretor</span>'
+        : (perfilId === 'vendedor'
+          ? '<span class="status-pill status-blue" style="font-weight: 800; background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">💼 Vendedor</span>'
+          : '<span class="status-pill status-orange" style="font-weight: 800; background: #fef3c7; color: #92400e; border-color: #fde68a;">✂️ Oficina / Fábrica</span>');
 
-              const statusSenha = (!u.auth && !u.senha && !u.precisaTrocarSenha)
-                ? '<span class="status-pill status-orange" style="font-size: 10px; background: #fff7ed; color: #c2410c; border: 1px dashed #fdba74;" title="Nenhuma senha provisória foi configurada">⚠️ Sem Senha Definida</span>'
-                : (u.precisaTrocarSenha
-                  ? `<div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
+      const statusSenha = (!u.auth && !u.senha && !u.precisaTrocarSenha)
+        ? '<span class="status-pill status-orange" style="font-size: 10px; background: #fff7ed; color: #c2410c; border: 1px dashed #fdba74;" title="Nenhuma senha provisória foi configurada">⚠️ Sem Senha Definida</span>'
+        : (u.precisaTrocarSenha
+          ? `<div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
                        <span class="status-pill status-orange" title="Funcionário precisa trocar no 1º login" style="font-size: 10px; background: #fff7ed; color: #c2410c; border: 1px dashed #fdba74;">🔑 Provisória</span>
                        ${u.senha ? `<span style="font-family: monospace; font-size: 11px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-weight: 700; color: #1e293b; border: 1px solid #cbd5e1;" title="Senha provisória inicial">${u.senha}</span>` : ''}
                      </div>`
-                  : '<span class="status-pill status-green" title="Senha definitiva configurada" style="font-size: 10px;">✓ Senha Pessoal Criada</span>');
+          : '<span class="status-pill status-green" title="Senha definitiva configurada" style="font-size: 10px;">✓ Senha Pessoal Criada</span>');
 
-              return `
+      return `
                 <tr>
                   <td>
                     <strong>${u.nome}</strong>
@@ -17873,7 +17873,7 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
                   </td>
                 </tr>
               `;
-            }).join('') : `
+    }).join('') : `
               <tr>
                 <td colspan="8" style="text-align: center; padding: 45px 15px; color: var(--text-gray-500);">
                   <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Nenhum colaborador ou usuário cadastrado</div>
@@ -18227,17 +18227,17 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
 
   // 107 Padrões Oficiais de Barras do Padrão Code 128 (SEFAZ Code 128C para Chave 44 Dígitos)
   const CODE_128_PATTERNS = [
-    "212222","222122","222221","121223","121322","131222","122213","122312","132212","221213",
-    "221312","231212","112232","122132","122231","113222","123122","123221","223211","221132",
-    "221231","213212","223112","312131","311222","321122","321221","312212","322112","322211",
-    "212123","212321","232121","111323","131123","131321","112313","132113","132311","211313",
-    "231113","231311","112133","112331","132131","113123","113321","133121","313121","211331",
-    "231131","213113","213311","213131","311123","311321","331121","312113","312311","332111",
-    "314111","221411","431111","111224","111422","121124","121421","141122","141221","112214",
-    "112412","122114","122411","142112","142211","241211","221114","413111","241112","134111",
-    "111242","121142","121241","114212","124112","124211","411212","421112","421211","212141",
-    "214121","412121","111143","111341","131141","114113","114311","411113","411311","113141",
-    "114131","311141","411131","211412","211214","211232","2331112"
+    "212222", "222122", "222221", "121223", "121322", "131222", "122213", "122312", "132212", "221213",
+    "221312", "231212", "112232", "122132", "122231", "113222", "123122", "123221", "223211", "221132",
+    "221231", "213212", "223112", "312131", "311222", "321122", "321221", "312212", "322112", "322211",
+    "212123", "212321", "232121", "111323", "131123", "131321", "112313", "132113", "132311", "211313",
+    "231113", "231311", "112133", "112331", "132131", "113123", "113321", "133121", "313121", "211331",
+    "231131", "213113", "213311", "213131", "311123", "311321", "331121", "312113", "312311", "332111",
+    "314111", "221411", "431111", "111224", "111422", "121124", "121421", "141122", "141221", "112214",
+    "112412", "122114", "122411", "142112", "142211", "241211", "221114", "413111", "241112", "134111",
+    "111242", "121142", "121241", "114212", "124112", "124211", "411212", "421112", "421211", "212141",
+    "214121", "412121", "111143", "111341", "131141", "114113", "114311", "411113", "411311", "113141",
+    "114131", "311141", "411131", "211412", "211214", "211232", "2331112"
   ];
 
   function obterConfigFiscal() {
@@ -18817,7 +18817,7 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
           <tbody>
             ${itens.length ? itens.map((it, idx) => `
               <tr>
-                <td class="text-mono">${it.codigo || `PROD-${String(idx+1).padStart(3, '0')}`}</td>
+                <td class="text-mono">${it.codigo || `PROD-${String(idx + 1).padStart(3, '0')}`}</td>
                 <td>
                   <strong>${it.descricao}</strong>
                   ${it.detalhes ? `<br><span style="font-size: 7px; color: #555;">${it.detalhes}</span>` : ''}
@@ -19266,7 +19266,7 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
     const pedidosDisponiveis = (db.pedidos || []).filter(p => p.status !== 'Cancelado');
 
     // Se passou um pedido já selecionado, obtém o pedido
-    let pedidoSelecionado = pedidoIdPreselecionado 
+    let pedidoSelecionado = pedidoIdPreselecionado
       ? pedidosDisponiveis.find(p => p.id === pedidoIdPreselecionado)
       : null;
 
@@ -19899,8 +19899,8 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
           </thead>
           <tbody id="tbodyGestaoNfe">
             ${notas.length ? notas.map(nf => {
-              const isCanc = nf.statusSefaz === 'cancelada';
-              return `
+      const isCanc = nf.statusSefaz === 'cancelada';
+      return `
                 <tr style="${isCanc ? 'background: #fff1f2; opacity: 0.85;' : ''}">
                   <td class="text-mono">
                     <strong style="font-size: 13px; color: var(--text-primary);">#${nf.numero}</strong>
@@ -19942,7 +19942,7 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
                   </td>
                 </tr>
               `;
-            }).join('') : `
+    }).join('') : `
               <tr>
                 <td colspan="9" style="text-align: center; padding: 50px 20px; color: var(--text-gray-500);">
                   <div style="font-size: 15px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">
@@ -20409,7 +20409,7 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
   // Modal 1: Edição da Performance Financeira Semestral (Entradas e Saídas)
   function abrirModalEditarFinanceiro() {
     const historico = JSON.parse(JSON.stringify(db.historicoFinanceiroMensal || []));
-    
+
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active" id="modalEditarFinOverlay">
         <div class="modal-box" style="max-width: 820px;">
@@ -20451,8 +20451,8 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
                 </thead>
                 <tbody id="corpoTabelaMeses">
                   ${historico.map((m, idx) => {
-                    const saldo = (Number(m.entradas) || 0) - (Number(m.saidas) || 0);
-                    return `
+      const saldo = (Number(m.entradas) || 0) - (Number(m.saidas) || 0);
+      return `
                       <tr>
                         <td>
                           <input type="text" class="input-cell text-mono" style="width: 60px; font-weight: 700;" value="${m.mes}" data-idx="${idx}" data-campo="mes">
@@ -20482,7 +20482,7 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
                         </td>
                       </tr>
                     `;
-                  }).join('')}
+    }).join('')}
                 </tbody>
               </table>
             </div>
@@ -20894,7 +20894,7 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
       const file = e.target.files && e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function(evt) {
+      reader.onload = function (evt) {
         const conteudo = evt.target.result;
         window.ERP_CLOUD.restaurarBackupJson(conteudo, (novoBanco) => {
           db = novoBanco;
@@ -20911,13 +20911,13 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
 
   function carregarDemonstracaoShowroom() {
     const hoje = new Date().toISOString().split('T')[0];
-    
+
     const empDemo = {
       razaoSocial: "Bravvi Confecções e Uniformes Industriais Ltda",
       nomeFantasia: "Bravvi Indústria Têxtil",
       cnpj: "34.582.910/0001-44",
       inscricaoEstadual: "123.456.789.110",
-      telefone: "11987654321",
+      telefone: "44999856245",
       email: "contato@bravvi.com.br",
       chavePix: "34.582.910/0001-44",
       tipoChavePix: "CNPJ",
@@ -21273,12 +21273,12 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
     ];
 
     db.despesasFixas = [
-      { id: "DESP-01", descricao: "Aluguel Galpão Industrial 600m²", categoria: "Instalações", centroCusto: "CC-04", valor: 4500.00, dataVencimento: hoje.substring(0,7) + '-10', status: "Pendente", favorecido: "Imobiliária Central" },
-      { id: "DESP-02", descricao: "Energia Elétrica Trifásica Industrial", categoria: "Utilidades", centroCusto: "CC-02", valor: 1850.00, dataVencimento: hoje.substring(0,7) + '-15', status: "Pendente", favorecido: "CPFL Energia" },
-      { id: "DESP-03", descricao: "Manutenção Preventiva das Máquinas de Costura e DTF", categoria: "Manutenção", centroCusto: "CC-02", valor: 650.00, dataVencimento: hoje.substring(0,7) + '-25', status: "Pendente", favorecido: "Técnica Têxtil Ltda" },
-      { id: "DESP-04", descricao: "Fios, Linhas e Aviamentos de Costura", categoria: "Aviamentos", centroCusto: "CC-03", valor: 1240.00, dataVencimento: hoje.substring(0,7) + '-18', status: "Pago", valorPago: 1240.00, favorecido: "Linhas Corrente & Cia" },
-      { id: "DESP-05", descricao: "Comissões Comerciais sobre Pedidos Entregues", categoria: "Comissões", centroCusto: "CC-01", valor: 980.00, dataVencimento: hoje.substring(0,7) + '-20', status: "Pendente", favorecido: "Equipe Comercial" },
-      { id: "DESP-06", descricao: "Embalagens Plásticas e Caixas de Envio", categoria: "Logística & Entregas", centroCusto: "CC-05", valor: 420.00, dataVencimento: hoje.substring(0,7) + '-12', status: "Pago", valorPago: 420.00, favorecido: "Embalagens Americana" }
+      { id: "DESP-01", descricao: "Aluguel Galpão Industrial 600m²", categoria: "Instalações", centroCusto: "CC-04", valor: 4500.00, dataVencimento: hoje.substring(0, 7) + '-10', status: "Pendente", favorecido: "Imobiliária Central" },
+      { id: "DESP-02", descricao: "Energia Elétrica Trifásica Industrial", categoria: "Utilidades", centroCusto: "CC-02", valor: 1850.00, dataVencimento: hoje.substring(0, 7) + '-15', status: "Pendente", favorecido: "CPFL Energia" },
+      { id: "DESP-03", descricao: "Manutenção Preventiva das Máquinas de Costura e DTF", categoria: "Manutenção", centroCusto: "CC-02", valor: 650.00, dataVencimento: hoje.substring(0, 7) + '-25', status: "Pendente", favorecido: "Técnica Têxtil Ltda" },
+      { id: "DESP-04", descricao: "Fios, Linhas e Aviamentos de Costura", categoria: "Aviamentos", centroCusto: "CC-03", valor: 1240.00, dataVencimento: hoje.substring(0, 7) + '-18', status: "Pago", valorPago: 1240.00, favorecido: "Linhas Corrente & Cia" },
+      { id: "DESP-05", descricao: "Comissões Comerciais sobre Pedidos Entregues", categoria: "Comissões", centroCusto: "CC-01", valor: 980.00, dataVencimento: hoje.substring(0, 7) + '-20', status: "Pendente", favorecido: "Equipe Comercial" },
+      { id: "DESP-06", descricao: "Embalagens Plásticas e Caixas de Envio", categoria: "Logística & Entregas", centroCusto: "CC-05", valor: 420.00, dataVencimento: hoje.substring(0, 7) + '-12', status: "Pago", valorPago: 420.00, favorecido: "Embalagens Americana" }
     ];
 
     db.compras = [
@@ -21735,7 +21735,7 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
       const file = e.target.files && e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function(evt) {
+      reader.onload = function (evt) {
         const conteudo = evt.target.result;
         window.ERP_CLOUD.restaurarBackupJson(conteudo, (novoBanco) => {
           db = novoBanco;
@@ -22115,7 +22115,7 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
         window.BRAVVI_PWA.solicitarInstalacaoApp();
       }
     },
-    forcarResetarBanco: function() {
+    forcarResetarBanco: function () {
       const conf1 = confirm('ATENÇÃO: Deseja realmente zerar o banco de dados? Todos os dados serão perdidos!');
       if (!conf1) return;
       const conf2 = prompt('Digite ZERAR para confirmar:');
@@ -22129,7 +22129,7 @@ document.getElementById('btnSalvarCompraAvulsa')?.addEventListener('click', () =
         localStorage.removeItem(chaveTenant);
         localStorage.removeItem('bravvi_erp_prod_v8');
         localStorage.removeItem('texpro_erp_prod_v8');
-      } catch (e) {}
+      } catch (e) { }
       db = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA));
       db.versao = ERP_VERSION;
       salvarEstado(true);
