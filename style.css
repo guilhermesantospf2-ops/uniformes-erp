@@ -639,12 +639,24 @@ body {
   border: 1px solid var(--border-subtle);
 }
 
+.card:has(.erp-table),
+.card.has-table,
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .erp-table {
   width: 100%;
-  min-width: 1440px; /* Garante que todas as 11 colunas laterais fiquem visíveis sem espremer */
+  min-width: 1000px;
   border-collapse: collapse;
   text-align: left;
   font-size: 12.5px;
+}
+
+.erp-table-pedidos {
+  min-width: 1440px;
 }
 
 .erp-table th {

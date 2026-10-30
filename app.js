@@ -3998,7 +3998,8 @@
             </span>
           </div>
         </div>
-        <table class="erp-table">
+        <div class="table-wrapper" style="margin-bottom: 0;">
+        <table class="erp-table erp-table-pedidos">
           <thead>
             <tr>
               <th>Mockup 3x4</th>
@@ -5332,10 +5333,13 @@
 
   function carregarPadroesSistema() {
     try {
+      const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
+        ? window.ERP_CLOUD.obterEmpresaConfig()
+        : (db && db.empresa);
+      const padroesEmpresa = emp?.padroesSistema || {};
       const raw = localStorage.getItem('UNIFORMES_ERP_PADROES_CUSTOS');
-      if (raw) {
-        return Object.assign({}, CONFIGURACOES_PADRAO_SISTEMA, JSON.parse(raw));
-      }
+      const padroesLocal = raw ? JSON.parse(raw) : {};
+      return Object.assign({}, CONFIGURACOES_PADRAO_SISTEMA, padroesEmpresa, padroesLocal);
     } catch (e) {
       console.warn('Erro ao carregar padrões do sistema:', e);
     }
@@ -5347,6 +5351,17 @@
       const atuais = carregarPadroesSistema();
       const combinados = Object.assign({}, atuais, novosPadroes);
       localStorage.setItem('UNIFORMES_ERP_PADROES_CUSTOS', JSON.stringify(combinados));
+
+      // Sincroniza diretamente na nuvem e no perfil da confecção
+      if (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function') {
+        const emp = window.ERP_CLOUD.obterEmpresaConfig() || {};
+        emp.padroesSistema = combinados;
+        window.ERP_CLOUD.salvarEmpresaConfig(emp);
+      }
+      if (db && db.empresa) {
+        db.empresa.padroesSistema = combinados;
+        salvarEstado();
+      }
       return combinados;
     } catch (e) {
       console.error('Erro ao salvar padrões do sistema:', e);
@@ -5518,6 +5533,7 @@
 
   function gerarHtmlCardAplicacao(app, index, totalPecasGrade, padroes) {
     const custoUnit = calcularCustoUnitarioAplicacao(app, totalPecasGrade);
+    app.custoUnitario = custoUnit;
     const tec = app.tecnica || 'DTF';
     const larguraRolo = app.dtfLarguraRolo || padroes.dtfLarguraRolo || 58;
 
@@ -6500,7 +6516,7 @@
                   </div>
 
                   <div class="form-group" style="flex: 1;">
-                    <label class="form-label" title="Margem de erro / perda no corte e ourela">Margem Erro (%)</label>
+                    <label class="form-label" title="Tolerância percentual sobre o consumo de tecido para cobrir perdas no enfesto, ourela e corte">Perda Tecido / Margem (%)</label>
                     <input type="number" id="inputMargemErroTecido" class="form-input" value="${(padroes.margemErroTecido || 8.0).toFixed(1)}" step="0.5" min="0" max="30">
                   </div>
 
@@ -6745,6 +6761,8 @@
       it.custoEstampaTotal = somaEstampas;
       const inpCustoEstampa = document.getElementById('inputCustoEstampa');
       if (inpCustoEstampa) inpCustoEstampa.value = somaEstampas.toFixed(2);
+      const lblTotal = document.getElementById('lblTotalEstampaModelo');
+      if (lblTotal) lblTotal.textContent = `${formatarMoeda(somaEstampas)} / peça`;
     }
 
     // Renderiza as abas dos modelos no topo
@@ -7317,8 +7335,14 @@
         });
       });
 
+      // Garante cálculo individual de todas as aplicações da lista
+      (it.aplicacoes || []).forEach(a => {
+        a.custoUnitario = calcularCustoUnitarioAplicacao(a, it.grade?.total || 1);
+      });
+
       // Atualiza badge de total de estampa deste modelo
       const totalEstampa = (it.aplicacoes || []).reduce((acc, a) => acc + (a.custoUnitario || 0), 0);
+      it.custoEstampaTotal = totalEstampa;
       const lbl = document.getElementById('lblTotalEstampaModelo');
       if (lbl) lbl.textContent = `${formatarMoeda(totalEstampa)} / peça`;
       const inpEstampa = document.getElementById('inputCustoEstampa');
@@ -10485,6 +10509,22 @@
             <div><strong>Encarregado de Corte:</strong> ${os.responsavelCorte}</div>
             <div><strong>Consumo Estimado:</strong> ${(pedido.consumoTotalTecido ? pedido.consumoTotalTecido.toFixed(2) : os.tecidoConsumidoKg)} ${(pedido.unidadeTecido === 'metro' ? 'metros de tecido' : 'kg de malha')}</div>
           </div>
+
+          <!-- REMUNERAÇÃO & CONTROLE DA COSTUREIRA / FACÇÃO -->
+          <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 4px; padding: 9px 12px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <span style="font-size: 10px; font-weight: 800; color: #15803d; text-transform: uppercase; letter-spacing: 0.5px; display: block;">
+                🧵 Remuneração da Costura (Facção / Produção):
+              </span>
+              <div style="font-size: 13px; font-weight: 800; color: #0f172a;">
+                <span style="color: #047857;">${formatarMoeda(os.valorCosturaPeca || pedido.custoCostura || 7.50)}</span> <span style="font-size: 11px; font-weight: 600; color: #64748b;">/ peça</span> &nbsp;&bull;&nbsp; Total a Pagar à Costureira: <strong style="color: #15803d; font-size: 13.5px;">${formatarMoeda((os.valorCosturaPeca || pedido.custoCostura || 7.50) * (os.quantidadeTotal || 0))}</strong> <span style="font-size: 11px; font-weight: 600; color: #64748b;">(${os.quantidadeTotal} pçs)</span>
+              </div>
+            </div>
+            <div style="text-align: right; font-size: 11px;">
+              <span style="color: #64748b;">Costureira:</span><br>
+              <strong style="color: #047857; font-size: 12px;">${os.costureiraDesignada}</strong>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -10645,6 +10685,25 @@
       </div>
       <div style="font-size: 9.5px; color: #64748b; margin-top: 10px; text-align: center;">
         ${emp.rodapeFicha || 'Ordem de Produção Oficial. Tolerância de corte de 2mm. Em caso de dúvidas, contate o encarregado.'}
+      </div>
+
+      <!-- CANHOTO DESTACÁVEL DE CONTROLE DA COSTUREIRA / FACÇÃO -->
+      <div style="margin-top: 16px; border-top: 2px dashed #94a3b8; padding-top: 10px; font-size: 10.5px; color: #334155;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <strong style="font-size: 11px; color: #0f172a; text-transform: uppercase;">
+            ✂️ CANHOTO DE ACERTO DA COSTURA — CONTROLE DA COSTUREIRA & DA FÁBRICA
+          </strong>
+          <span class="text-mono" style="font-weight: 700; font-size: 11px;">OS #${os.id} • PEDIDO #${os.pedidoNumero}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 4px; padding: 8px 12px; font-size: 11px; flex-wrap: wrap; gap: 8px;">
+          <div><strong>Costureira / Facção:</strong> ${os.costureiraDesignada}</div>
+          <div><strong>Qtd Peças:</strong> ${os.quantidadeTotal} un</div>
+          <div><strong>Valor Unitário MDO:</strong> ${formatarMoeda(os.valorCosturaPeca || pedido.custoCostura || 7.50)} / pç</div>
+          <div><strong>Total a Receber:</strong> <strong style="color: #15803d; font-size: 13px;">${formatarMoeda((os.valorCosturaPeca || pedido.custoCostura || 7.50) * (os.quantidadeTotal || 0))}</strong></div>
+          <div style="border-bottom: 1px solid #475569; width: 150px; text-align: center; font-size: 9px; color: #64748b; margin-top: 6px;">
+            Assinatura / Visto de Entrega
+          </div>
+        </div>
       </div>
     `;
   }
@@ -14794,7 +14853,7 @@
                     </td>
                     <td>${rec.statusBadge}</td>
                     <td style="text-align: right;">
-                      <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
+                      <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center; white-space: nowrap;">
                         ${rec.saldoDevedor > 0 ? `
                           <button class="btn btn-green btn-xs btn-cobrar-pix-receber" data-id="${rec.id}">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
@@ -15225,7 +15284,8 @@
             </div>
           </div>
 
-          <table class="erp-table">
+          <div class="table-wrapper" style="margin-bottom: 0;">
+            <table class="erp-table">
             <thead>
               <tr>
                 <th>Natureza / Categoria Contábil</th>
@@ -15296,6 +15356,7 @@
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       `;
     } else if (subAbaFinanceiro === 'centros_custo') {
@@ -15433,7 +15494,8 @@
             </div>
           </div>
 
-          <table class="erp-table">
+          <div class="table-wrapper" style="margin-bottom: 0;">
+            <table class="erp-table">
             <thead>
               <tr>
                 <th>Centro de Custo</th>
@@ -15444,7 +15506,7 @@
                 <th>Data / Vencimento</th>
                 <th style="text-align: right;">Valor</th>
                 <th>Status</th>
-                <th style="text-align: right;">Ações</th>
+                <th style="text-align: right; min-width: 140px; white-space: nowrap;">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -15473,6 +15535,7 @@
               `}
             </tbody>
           </table>
+          </div>
         </div>
       `;
 
@@ -15552,7 +15615,8 @@
             </div>
           </div>
 
-          <table class="erp-table">
+          <div class="table-wrapper" style="margin-bottom: 0;">
+            <table class="erp-table">
             <thead>
               <tr>
                 <th>Nº Pedido / Data</th>
@@ -15563,7 +15627,7 @@
                 <th>Regra de Comissão</th>
                 <th style="text-align: right;">Comissão (R$)</th>
                 <th>Status</th>
-                <th style="text-align: right; min-width: 170px;">Ações</th>
+                <th style="text-align: right; min-width: 220px; white-space: nowrap;">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -15618,6 +15682,7 @@
               `}
             </tbody>
           </table>
+          </div>
         </div>
       `;
     } else if (subAbaFinanceiro === 'depreciacao') {
@@ -22003,6 +22068,81 @@
           </div>
         </div>
       </div>
+
+      <!-- Card 5: Parâmetros Padrões da Confecção (Padronização do Dono) -->
+      <div class="card" style="margin-top: 20px;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="card-title">5. Parâmetros Padrões de Produção, Custos & Margens da Confecção</div>
+          <span class="status-pill status-blue">PADRONIZAÇÃO OFICIAL</span>
+        </div>
+        <div class="card-body">
+          <p style="font-size: 13px; color: var(--text-gray-600); margin-bottom: 16px; line-height: 1.5;">
+            Defina os custos operacionais padrões da sua fábrica. Novos orçamentos, fichas técnicas e modelos virão <strong>automaticamente pré-preenchidos</strong> com esses valores, economizando tempo e evitando retrabalho.
+          </p>
+
+          <div class="grid-cards-3" style="gap: 14px; margin-bottom: 14px;">
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 700; font-size: 12px;">Custo Costura MDO (R$/un):</label>
+              <input type="number" step="0.50" id="inpPadraoCostura" class="form-control" value="${(carregarPadroesSistema().custoCostura || 7.50).toFixed(2)}">
+              <span style="font-size: 10.5px; color: #64748b;">Valor padrão pago à facção / costureira</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 700; font-size: 12px;">Custo Tecido Base (R$/kg):</label>
+              <input type="number" step="0.50" id="inpPadraoTecidoKg" class="form-control" value="${(carregarPadroesSistema().custoTecidoKg || 48.50).toFixed(2)}">
+              <span style="font-size: 10.5px; color: #64748b;">Preço médio do kg da malha/tecido</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 700; font-size: 12px;">Consumo Padrão (kg/peça M):</label>
+              <input type="number" step="0.01" id="inpPadraoConsumo" class="form-control" value="${(carregarPadroesSistema().consumoTecido || 0.28).toFixed(2)}">
+              <span style="font-size: 10.5px; color: #64748b;">Ex: 0.28 kg para camiseta regular</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 700; font-size: 12px;">Margem Perda Tecido / Refugo (%):</label>
+              <input type="number" step="0.5" id="inpPadraoMargemErro" class="form-control" value="${(carregarPadroesSistema().margemErroTecido || 8.0).toFixed(1)}">
+              <span style="font-size: 10.5px; color: #64748b;">Perda de corte, enfesto e ourela</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 700; font-size: 12px;">Aviamentos por Peça (R$):</label>
+              <input type="number" step="0.10" id="inpPadraoAviamento" class="form-control" value="${(carregarPadroesSistema().custoAviamento || 4.80).toFixed(2)}">
+              <span style="font-size: 10.5px; color: #64748b;">Linhas, etiquetas, saquinho, gola</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 700; font-size: 12px;">Alíquota Imposto Simples (%):</label>
+              <input type="number" step="0.1" id="inpPadraoImposto" class="form-control" value="${(carregarPadroesSistema().aliquotaImposto || 6.5).toFixed(1)}">
+              <span style="font-size: 10.5px; color: #64748b;">Simples Nacional / DAS médio</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 700; font-size: 12px;">Margem Lucro Pretendida (%):</label>
+              <input type="number" step="1.0" id="inpPadraoMargemLucro" class="form-control" value="${(carregarPadroesSistema().margemDesejada || 30.0).toFixed(0)}">
+              <span style="font-size: 10.5px; color: #64748b;">Margem líquida desejada da confecção</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 700; font-size: 12px;">DTF Metro Linear 58cm (R$):</label>
+              <input type="number" step="1.0" id="inpPadraoDtf58" class="form-control" value="${(carregarPadroesSistema().dtfMetroLinear58 || 60.00).toFixed(2)}">
+              <span style="font-size: 10.5px; color: #64748b;">Custo por metro do transfer DTF 60cm</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 700; font-size: 12px;">Prensagem DTF (R$/un):</label>
+              <input type="number" step="0.10" id="inpPadraoPrensagem" class="form-control" value="${(carregarPadroesSistema().dtfPrensagem || 1.50).toFixed(2)}">
+              <span style="font-size: 10.5px; color: #64748b;">Mão de obra da prensa térmica</span>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; padding-top: 10px; border-top: 1px solid #e2e8f0;">
+            <button type="button" class="btn btn-primary" id="btnSalvarPadroesEmpresa" style="background: #047857; border-color: #047857; font-weight: 800; padding: 10px 20px; border-radius: 6px; box-shadow: 0 4px 12px rgba(4, 120, 87, 0.3); cursor: pointer;">
+              💾 Salvar Padrões da Confecção
+            </button>
+          </div>
+        </div>
+      </div>
     `;
 
     function salvarFormularioEmpresa() {
@@ -22053,6 +22193,22 @@
         renderizarConfiguracoesEmpresa();
         mostrarToast('Logotipo removido!', 'green');
       }
+    });
+
+    document.getElementById('btnSalvarPadroesEmpresa')?.addEventListener('click', () => {
+      const novos = {
+        custoCostura: parseFloat(document.getElementById('inpPadraoCostura')?.value || 7.50),
+        custoTecidoKg: parseFloat(document.getElementById('inpPadraoTecidoKg')?.value || 48.50),
+        consumoTecido: parseFloat(document.getElementById('inpPadraoConsumo')?.value || 0.28),
+        margemErroTecido: parseFloat(document.getElementById('inpPadraoMargemErro')?.value || 8.0),
+        custoAviamento: parseFloat(document.getElementById('inpPadraoAviamento')?.value || 4.80),
+        aliquotaImposto: parseFloat(document.getElementById('inpPadraoImposto')?.value || 6.5),
+        margemDesejada: parseFloat(document.getElementById('inpPadraoMargemLucro')?.value || 30.0),
+        dtfMetroLinear58: parseFloat(document.getElementById('inpPadraoDtf58')?.value || 60.00),
+        dtfPrensagem: parseFloat(document.getElementById('inpPadraoPrensagem')?.value || 1.50)
+      };
+      salvarPadroesSistema(novos);
+      mostrarToast('⭐ Padrões da confecção salvos com sucesso! Novos orçamentos e fichas usarão estes valores.', 'green');
     });
 
     document.getElementById('btnExportarBackupEmpresa')?.addEventListener('click', () => {
