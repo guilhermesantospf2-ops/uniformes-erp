@@ -20,6 +20,7 @@
   const WHATSAPP_SUPORTE = '5544999856245';
   const LINK_CAKTO_BASICO_107 = 'https://pay.cakto.com.br/ecrfqfr_1178654';
   const LINK_CAKTO_PRO_227 = 'https://pay.cakto.com.br/rb6atzs_1178556';
+  const LINK_CAKTO_ANUAL_1890 = 'https://pay.cakto.com.br/qczfq37';
   const LINK_WHATSAPP_BASICO = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero assinar o Plano Básico do Bravvi ERP Têxtil por R$ 107/mês com Implantação Grátis.');
   const LINK_WHATSAPP_MENSAL = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero assinar o Plano Pro Industrial do Bravvi ERP Têxtil por R$ 227/mês com Implantação Grátis.');
   const LINK_WHATSAPP_ANUAL = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero contratar o Plano Anual Pro do Bravvi ERP Têxtil (12x de R$ 189 ou R$ 1.890/ano à vista).');
@@ -133,9 +134,8 @@
         'Suporte Prioritário VIP com fila acelerada no WhatsApp',
         'Backup automático na nuvem'
       ],
-      linkPadrao: LINK_CAKTO_PRO_227
+      linkPadrao: LINK_CAKTO_ANUAL_1890
     },
-    treinamento_equipe: {
       id: 'treinamento_vip_equipe_297',
       nome: 'Treinamento Dedicado VIP da Equipe (Opcional)',
       valor: 297.00,
