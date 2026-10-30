@@ -25,17 +25,17 @@
   const LINK_WHATSAPP_ANUAL = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero contratar o Plano Anual Pro do Bravvi ERP Têxtil (12x de R$ 189 ou R$ 1.890/ano à vista).');
   const LINK_WHATSAPP_TREINAMENTO = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero contratar o Treinamento Dedicado VIP da Equipe (R$ 297 taxa única).');
 
-  // Paraguai 🇵🇾 ($19 / $39 USD - Stripe Checkout Oficial)
-  const LINK_STRIPE_BASICO_PY = 'https://buy.stripe.com/dRm7sL9Z79kWf1x4xy53O00';
-  const LINK_STRIPE_PRO_PY = 'https://buy.stripe.com/14A14nc7fdBc9Hd7JK53O01';
-  const LINK_STRIPE_ANUAL_PY = 'https://buy.stripe.com/bJe5kD0oxgNo5qX0hi53O02';
-  const LINK_STRIPE_VIP_PY = 'https://buy.stripe.com/dRm5kD3AJ40C4mTfcc53O03';
+  // Paraguai 🇵🇾 ($29 / $49 USD - Stripe Checkout Oficial)
+  const LINK_STRIPE_BASICO_PY = 'https://buy.stripe.com/00w00jb3bbt4dXte8853O04';
+  const LINK_STRIPE_PRO_PY = 'https://buy.stripe.com/00w7sLgnv0Oqg5B5BC53O05';
+  const LINK_STRIPE_ANUAL_PY = 'https://buy.stripe.com/28E28r9Z754GdXt1lm53O06';
+  const LINK_STRIPE_VIP_PY = 'https://buy.stripe.com/fZu4gz9Z7ap02eLe8853O07';
   const LINK_WHATSAPP_BASICO_PY = LINK_STRIPE_BASICO_PY;
   const LINK_WHATSAPP_PRO_PY = LINK_STRIPE_PRO_PY;
 
-  // Portugal 🇵🇹 (€ 19 / € 39)
-  const LINK_WHATSAPP_BASICO_PT = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá! Escrevo de Portugal e pretendo aderir ao Plano Básico (€ 19/mês) para a minha confeção têxtil.');
-  const LINK_WHATSAPP_PRO_PT = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá! Escrevo de Portugal e pretendo aderir ao Plano Pro Industrial (€ 39/mês) do Bravvi ERP Têxtil.');
+  // Portugal 🇵🇹 (€ 29 / € 49)
+  const LINK_WHATSAPP_BASICO_PT = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá! Escrevo de Portugal e pretendo aderir ao Plano Básico (€ 29/mês) para a minha confeção têxtil.');
+  const LINK_WHATSAPP_PRO_PT = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá! Escrevo de Portugal e pretendo aderir ao Plano Pro Industrial (€ 49/mês) do Bravvi ERP Têxtil.');
 
   // Configuração padrão dos planos e valores oficiais
   const PLANOS_CONFIG = {
