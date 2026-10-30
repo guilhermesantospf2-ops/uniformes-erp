@@ -213,12 +213,15 @@ module.exports = async function handler(req, res) {
               perfil: 'dono',
               role: 'Dono / Diretor'
             });
+            const precisaTrocar = auth.precisaTrocarSenha === true;
+            userObj.precisaTrocarSenha = precisaTrocar;
+            userObj.primeiroAcessoDono = precisaTrocar;
             return res.status(200).json({
               sucesso: true,
               user: userObj,
               empresa: sanitizeEmpresaForClient(emp),
               sessionToken,
-              precisaTrocarSenha: false
+              precisaTrocarSenha: precisaTrocar
             });
           } else if (senhaStr === 'Bravvi@2026' && auth.precisaTrocarSenha !== true) {
             return res.status(401).json({
@@ -412,8 +415,8 @@ module.exports = async function handler(req, res) {
       }
 
       const novaSenha = (body.novaSenha || '').trim();
-      if (novaSenha.length < 8) {
-        return res.status(400).json({ sucesso: false, erro: 'A nova senha deve ter pelo menos 8 caracteres.' });
+      if (novaSenha.length < 6) {
+        return res.status(400).json({ sucesso: false, erro: 'A nova senha deve ter pelo menos 6 caracteres.' });
       }
 
       const salt = crypto.randomBytes(16).toString('hex');

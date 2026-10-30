@@ -20786,13 +20786,17 @@
               </div>
             </div>
 
-            ${perfil?.id === 'dono' ? `
-              <div style="text-align: center; margin-top: 10px;">
-                <button class="btn btn-primary btn-sm" onclick="window.ERP.fecharModal(); window.ERP.navegarPara('equipe');" style="width: 100%; padding: 10px; font-weight: 700;">
+            <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.fecharModal(); window.ERP.abrirModalAlterarMinhaSenha();" style="width: 100%; padding: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid #0284c7; color: #0369a1; background: #f0f9ff; border-radius: 6px; cursor: pointer;">
+                🔑 Alterar Minha Senha de Acesso
+              </button>
+
+              ${perfil?.id === 'dono' ? `
+                <button type="button" class="btn btn-primary btn-sm" onclick="window.ERP.fecharModal(); window.ERP.navegarPara('equipe');" style="width: 100%; padding: 10px; font-weight: 700; border-radius: 6px; cursor: pointer;">
                   👥 Gerenciar Usuários, Senhas & Equipe
                 </button>
-              </div>
-            ` : ''}
+              ` : ''}
+            </div>
           </div>
 
           <div class="modal-footer" style="padding: 14px 22px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between;">
@@ -20802,6 +20806,111 @@
         </div>
       </div>
     `);
+    return modalEl;
+  }
+
+  function abrirModalAlterarMinhaSenha() {
+    if (!window.ERP_CLOUD) return;
+    const user = window.ERP_CLOUD.obterUsuarioLogado();
+    if (!user) {
+      mostrarToast('Você precisa estar autenticado para alterar a senha.', 'red');
+      return;
+    }
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active" style="z-index: 20000000 !important; position: fixed; inset: 0; background: rgba(0,0,0,0.65); display: flex !important; align-items: center; justify-content: center; padding: 16px;">
+        <div class="modal-box" style="max-width: 440px; width: 100%; border-radius: 14px; box-shadow: 0 25px 60px rgba(0,0,0,0.4); overflow: hidden; background: #ffffff;">
+          <div class="modal-header" style="background: linear-gradient(135deg, #032b35 0%, #0f172a 100%); color: #fff; padding: 20px 22px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 22px;">🔐</span>
+              <div>
+                <div class="modal-title" style="color: #ffffff; font-size: 16px; font-weight: 800;">Alterar Senha de Acesso</div>
+                <div style="font-size: 12px; color: #2dd4bf; margin-top: 1px;">Atualize sua credencial com segurança</div>
+              </div>
+            </div>
+            <button class="modal-close" style="color: #fff; font-size: 22px; cursor: pointer; background: none; border: none;" onclick="window.ERP.fecharModal()">&times;</button>
+          </div>
+
+          <div class="modal-body" style="padding: 22px;">
+            <p style="font-size: 13px; color: #475569; margin-bottom: 16px; line-height: 1.5;">
+              Defina a sua nova senha pessoal de acesso ao sistema (mínimo de 6 caracteres).
+            </p>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+              <label class="form-label" style="font-weight: 700; color: #0f172a; margin-bottom: 6px; display: block; font-size: 13px;">Nova Senha *</label>
+              <div style="position: relative;">
+                <input type="password" id="inpModalNovaSenhaGeral" class="form-control" placeholder="Mínimo 6 caracteres" style="font-size: 14px; padding: 10px 40px 10px 12px; border-radius: 8px;">
+                <button type="button" id="btnToggleNovaSenhaGeral" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b; font-size: 16px;" title="Ver ou ocultar senha">👁️</button>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label class="form-label" style="font-weight: 700; color: #0f172a; margin-bottom: 6px; display: block; font-size: 13px;">Confirmar Nova Senha *</label>
+              <input type="password" id="inpModalConfirmaSenhaGeral" class="form-control" placeholder="Digite a nova senha novamente" style="font-size: 14px; padding: 10px 12px; border-radius: 8px;">
+            </div>
+
+            <div id="erroModalAlterarSenhaGeral" style="display: none; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 600; margin-bottom: 14px;"></div>
+          </div>
+
+          <div class="modal-footer" style="padding: 14px 22px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnConfirmarSalvarSenhaGeral" style="background: #047857; border-color: #047857; font-weight: 800; padding: 10px 18px; border-radius: 8px; box-shadow: 0 4px 12px rgba(4, 120, 87, 0.3); cursor: pointer;">
+              Salvar Nova Senha
+            </button>
+          </div>
+        </div>
+      </div>
+    `, { zIndex: 20000000 });
+
+    const inp1 = modalEl.querySelector('#inpModalNovaSenhaGeral');
+    const inp2 = modalEl.querySelector('#inpModalConfirmaSenhaGeral');
+    const erroEl = modalEl.querySelector('#erroModalAlterarSenhaGeral');
+    const btnToggle = modalEl.querySelector('#btnToggleNovaSenhaGeral');
+    const btnSalvar = modalEl.querySelector('#btnConfirmarSalvarSenhaGeral');
+
+    btnToggle?.addEventListener('click', () => {
+      const isPass = inp1.type === 'password';
+      inp1.type = isPass ? 'text' : 'password';
+      inp2.type = isPass ? 'text' : 'password';
+      btnToggle.textContent = isPass ? '🔒' : '👁️';
+    });
+
+    btnSalvar?.addEventListener('click', async () => {
+      const s1 = inp1.value.trim();
+      const s2 = inp2.value.trim();
+
+      if (!s1 || s1.length < 6) {
+        erroEl.textContent = 'A nova senha deve ter no mínimo 6 caracteres.';
+        erroEl.style.display = 'block';
+        inp1.focus();
+        return;
+      }
+      if (s1 !== s2) {
+        erroEl.textContent = 'As senhas digitadas não coincidem. Digite com atenção.';
+        erroEl.style.display = 'block';
+        inp2.focus();
+        return;
+      }
+
+      btnSalvar.disabled = true;
+      btnSalvar.textContent = 'Salvando na nuvem...';
+
+      if (window.ERP_CLOUD && typeof window.ERP_CLOUD.atualizarSenhaColaborador === 'function') {
+        const colabId = user.colaboradorId || user.id;
+        const res = await window.ERP_CLOUD.atualizarSenhaColaborador(colabId, s1, user.tenant_id);
+        if (!res.sucesso) {
+          btnSalvar.disabled = false;
+          btnSalvar.textContent = 'Salvar Nova Senha';
+          erroEl.textContent = res.erro || 'Erro ao atualizar senha.';
+          erroEl.style.display = 'block';
+          return;
+        }
+      }
+
+      fecharModal(modalEl);
+      mostrarToast('Sua senha foi alterada com sucesso!', 'green');
+    });
+
     return modalEl;
   }
 
@@ -21666,6 +21775,25 @@
           </div>
         </div>
       </div>
+
+      <!-- Card 4: Segurança da Conta & Senha de Acesso -->
+      <div class="card" style="margin-top: 20px;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="card-title">4. Segurança da Conta & Senha de Acesso</div>
+          <span class="status-pill status-green">PROTEGIDO</span>
+        </div>
+        <div class="card-body">
+          <p style="font-size: 13px; color: var(--text-gray-600); margin-bottom: 14px; line-height: 1.5;">
+            Sua conta possui proteção de nível bancário com criptografia SHA-256 e isolamento multi-tenant na nuvem. Você pode alterar sua senha pessoal definitiva a qualquer momento.
+          </p>
+          <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-primary btn-sm" onclick="window.ERP.abrirModalAlterarMinhaSenha()" style="background: #032b35; border-color: #032b35; padding: 10px 18px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; border-radius: 6px;">
+              🔑 Alterar Minha Senha de Acesso
+            </button>
+            <span style="font-size: 12px; color: #64748b;">E-mail do administrador: <strong class="text-mono">${emp.email || (window.ERP_CLOUD && window.ERP_CLOUD.obterUsuarioLogado()?.email) || ''}</strong></span>
+          </div>
+        </div>
+      </div>
     `;
 
     function salvarFormularioEmpresa() {
@@ -22090,6 +22218,8 @@
     renderizarConfiguracoesEmpresa,
     abrirModalBackup,
     abrirModalMeuPerfil,
+    abrirModalTrocarPerfil: () => abrirModalMeuPerfil(),
+    abrirModalAlterarMinhaSenha,
     abrirModalTrocaSenhaPrimeiroAcesso,
     abrirModalRoteiroVendas,
     abrirModalEmitirNfe,
