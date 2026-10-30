@@ -11632,18 +11632,10 @@
       return !cli.includes('teste') && !nome.includes('teste');
     });
 
-    const todosPedidos = (db.pedidos || []).filter(p => !isPedidoTeste(p));
-
-    // Se nenhum pedido foi selecionado ainda (apenas na PRIMEIRA carga da sessão), auto-seleciona o primeiro pedido real
+    // Inicialização limpa da bancada local de Nesting (100% arquivos do computador, zero vínculo com banco)
     if (!state.inicializado) {
       state.inicializado = true;
-      if (!state.pedidosSelecionadosIds.length && todosPedidos.length > 0) {
-        const pedidoComArtes = todosPedidos.find(p => Array.isArray(p.artesAnexadas) && p.artesAnexadas.length > 0) || todosPedidos[0];
-        if (pedidoComArtes) {
-          state.pedidosSelecionadosIds = [pedidoComArtes.id];
-          state.artes = extrairArtesDoPedido(pedidoComArtes);
-        }
-      }
+      state.pedidosSelecionadosIds = [];
     }
 
     // Processa o nesting algorítmico 2D
@@ -11651,15 +11643,12 @@
       larguraRoloCm: state.larguraRoloCm,
       espacamentoEntreArtesCm: state.espacamentoCm,
       custoMetroLinear: state.custoMetroLinear,
-      separarPorPedido: state.separarPorPedido,
+      separarPorPedido: false,
       maxMetrosPorArquivo: state.maxMetrosPorArquivo
     });
 
-    // Mapeamento dos pedidos atualmente carregados
-    const pedidosCarregados = todosPedidos.filter(p => state.pedidosSelecionadosIds.includes(p.id));
-
     contentArea.innerHTML = `
-      <!-- BARRA DE SELEÇÃO DE PEDIDOS & CONFIGURAÇÕES TÉCNICAS DO ROLO (HEADER INDUSTRIAL MODERNO) -->
+      <!-- BARRA DE CONFIGURAÇÕES TÉCNICAS DO ROLO DTF (HEADER INDUSTRIAL MODERNO 100% LOCAL) -->
       <div style="margin-bottom: 20px; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05); overflow: hidden;">
         <div style="background: linear-gradient(135deg, #032b35 0%, #06404f 100%); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid rgba(45, 212, 191, 0.2);">
           <div style="display: flex; align-items: center; gap: 12px;">
@@ -11674,7 +11663,7 @@
                   MOTOR 2D SKYLINE ATIVO
                 </span>
               </div>
-              <span style="font-size: 11.5px; color: #94a3b8;">Encaixe First-Fit milimétrico para zero desperdício de filme PET e economia direta de tinta</span>
+              <span style="font-size: 11.5px; color: #94a3b8;">Selecione as artes do seu computador, defina medidas/cópias e exporte o arquivo pronto para impressão</span>
             </div>
           </div>
 
@@ -11683,48 +11672,17 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
               + Adicionar Arquivo do Computador
             </button>
-            <button type="button" class="btn btn-secondary btn-sm" id="btnAdicionarOutroPedido" style="font-weight: 800; color: #2dd4bf; border: 1px solid rgba(45, 212, 191, 0.4); background: rgba(13, 148, 136, 0.15); border-radius: 8px; padding: 7px 14px; cursor: pointer; transition: all 0.2s;">
-              + Incluir Outro Pedido no Rolo
-            </button>
+            ${state.artes.length > 0 ? `
+              <button type="button" class="btn btn-secondary btn-sm" id="btnLimparRoloDTF" style="font-weight: 800; color: #fca5a5; border: 1px solid rgba(248, 113, 113, 0.4); background: rgba(220, 38, 38, 0.15); border-radius: 8px; padding: 7px 14px; cursor: pointer; transition: all 0.2s;">
+                🗑️ Limpar Rolo
+              </button>
+            ` : ''}
           </div>
         </div>
 
         <div style="padding: 16px 20px;">
-          <!-- LINHA 1: SELETOR DE PEDIDO E BADGES DE PEDIDOS ATIVOS -->
-          <div style="display: grid; grid-template-columns: minmax(280px, 1.4fr) minmax(300px, 2fr); gap: 16px; align-items: center; margin-bottom: 14px;">
-            <div>
-              <label class="form-label" style="font-size: 11px; font-weight: 800; color: #334155; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">
-                Selecionar Pedido Principal:
-              </label>
-              <select id="selNestingPedidoPrincipal" class="form-select" style="font-weight: 700; font-size: 12.5px; border: 1.5px solid #cbd5e1; border-radius: 8px; height: 38px; color: #0f172a;">
-                <option value="" ${state.pedidosSelecionadosIds.length === 0 ? 'selected' : ''}>-- Nenhum Pedido Selecionado (Em Branco / Avulso) --</option>
-                ${todosPedidos.length ? todosPedidos.map(p => {
-                  const totalLocais = (p.artesAnexadas || []).length;
-                  const selecionado = state.pedidosSelecionadosIds.length === 1 && state.pedidosSelecionadosIds[0] === p.id;
-                  return `<option value="${p.id}" ${selecionado ? 'selected' : ''}>Ped #${p.numero} • ${p.clienteNome} [${p.grade?.total || 0} pçs${totalLocais ? ` • ${totalLocais} locais` : ''}]</option>`;
-                }).join('') : ''}
-              </select>
-            </div>
-
-            <div>
-              <label class="form-label" style="font-size: 11px; font-weight: 800; color: #334155; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">
-                Pedidos Atualmente no Rolo:
-              </label>
-              <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; min-height: 38px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 5px 10px;">
-                ${pedidosCarregados.length ? pedidosCarregados.map(p => `
-                  <span style="font-size: 11.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; border-radius: 6px; box-shadow: 0 1px 2px rgba(2, 132, 199, 0.08);">
-                    <span>#${p.numero} • ${p.clienteNome}</span>
-                    <button type="button" class="btn-remover-pedido-tag" data-id="${p.id}" style="background: none; border: none; color: #dc2626; font-weight: 900; cursor: pointer; padding: 0 2px; font-size: 14px; line-height: 1;" title="Remover pedido deste rolo">&times;</button>
-                  </span>
-                `).join('') : `
-                  <span style="font-size: 11.5px; color: #94a3b8; font-style: italic;">Nenhum pedido selecionado. Selecione um pedido ao lado.</span>
-                `}
-              </div>
-            </div>
-          </div>
-
-          <!-- LINHA 2: PARÂMETROS TÉCNICOS (LARGURA DO PAPEL, METRAGEM POR ARQUIVO, SEPARAR POR PEDIDO) -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 14px; align-items: flex-end;">
+          <!-- PARÂMETROS TÉCNICOS (LARGURA DO PAPEL, METRAGEM POR ARQUIVO, ESPAÇAMENTO) -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 14px; align-items: flex-end;">
             <div>
               <label class="form-label" style="font-size: 10.5px; font-weight: 800; color: #475569; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Largura do Rolo / Papel</label>
               <select id="selLarguraRolo" class="form-select" style="font-size: 12px; font-weight: 700; border: 1.5px solid #cbd5e1; border-radius: 7px; height: 35px;">
@@ -11767,16 +11725,6 @@
                 <option value="0.5" ${state.espacamentoCm === 0.5 ? 'selected' : ''}>0.5 cm (5mm padrão corte)</option>
                 <option value="1.0" ${state.espacamentoCm === 1.0 ? 'selected' : ''}>1.0 cm (10mm folga grande)</option>
               </select>
-            </div>
-
-            <div style="display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 2px;">
-              <label style="display: flex; align-items: center; gap: 9px; cursor: pointer; user-select: none; margin: 0; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 7px; padding: 6px 10px; height: 35px;">
-                <input type="checkbox" id="chkSepararPorPedido" ${state.separarPorPedido ? 'checked' : ''} style="width: 17px; height: 17px; accent-color: #0284c7; cursor: pointer; margin: 0;">
-                <div style="line-height: 1.1;">
-                  <span style="font-size: 11.5px; font-weight: 800; color: #0f172a; display: block;">Separar por Pedido</span>
-                  <span style="font-size: 9.5px; color: #64748b;">Agrupa com linha de corte</span>
-                </div>
-              </label>
             </div>
           </div>
         </div>
@@ -11926,7 +11874,7 @@
               <div style="text-align: center; padding: 48px 16px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; color: #64748b;">
                 <div style="font-size: 36px; margin-bottom: 8px;">📭</div>
                 <strong style="color: #0f172a; font-size: 14px; display: block; margin-bottom: 4px;">Nenhuma arte carregada neste rolo</strong>
-                <p style="font-size: 11.5px; margin: 0 0 16px 0; max-width: 320px; margin-left: auto; margin-right: auto;">Selecione um pedido cadastrado no topo ou importe arquivos do seu computador para encaixar no rolo DTF.</p>
+                <p style="font-size: 11.5px; margin: 0 0 16px 0; max-width: 320px; margin-left: auto; margin-right: auto;">Importe os arquivos de arte do seu computador para encaixar automaticamente no rolo DTF.</p>
                 <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('btnAdicionarArquivoPC').click()" style="background: #0284c7; font-weight: 800; border-radius: 8px; padding: 8px 16px;">
                   + Adicionar Arquivo do Computador
                 </button>
@@ -12062,43 +12010,13 @@
     // EVENTOS INTERATIVOS DO MÓDULO DE NESTING
     // =========================================================================
 
-    // 1. Mudança de Pedido Principal
-    document.getElementById('selNestingPedidoPrincipal')?.addEventListener('change', (e) => {
-      const pedId = e.target.value;
-      if (!pedId) {
-        state.pedidosSelecionadosIds = [];
-        state.artes = [];
-        state.arquivoAtivoIndex = 0;
-        renderizarNestingDTF();
-        mostrarToast('Rolo DTF esvaziado. Nenhum pedido selecionado.', 'blue');
-        return;
-      }
-      const pedido = db.pedidos.find(p => p.id === pedId);
-      if (pedido) {
-        state.pedidosSelecionadosIds = [pedido.id];
-        state.artes = extrairArtesDoPedido(pedido);
-        state.arquivoAtivoIndex = 0;
-        renderizarNestingDTF();
-        mostrarToast(`Pedido #${pedido.numero} carregado com ${state.artes.length} arte(s) e dimensões oficiais.`, 'green');
-      }
-    });
-
-    // 2. Incluir Outro Pedido no Rolo (+ Multi-pedidos)
-    document.getElementById('btnAdicionarOutroPedido')?.addEventListener('click', () => {
-      abrirModalIncluirOutroPedidoNesting();
-    });
-
-    // 3. Remover Pedido da lista de selecionados
-    document.querySelectorAll('.btn-remover-pedido-tag').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        const pedId = btn.getAttribute('data-id');
-        state.pedidosSelecionadosIds = state.pedidosSelecionadosIds.filter(id => id !== pedId);
-        state.artes = state.artes.filter(a => a.pedidoId !== pedId);
-        renderizarNestingDTF();
-        mostrarToast('Pedido removido do rolo atual.', 'blue');
-      });
+    // 1. Limpar Rolo DTF
+    document.getElementById('btnLimparRoloDTF')?.addEventListener('click', () => {
+      state.pedidosSelecionadosIds = [];
+      state.artes = [];
+      state.arquivoAtivoIndex = 0;
+      renderizarNestingDTF();
+      mostrarToast('Rolo DTF esvaziado com sucesso.', 'blue');
     });
 
     // 4. Alteração da Largura do Rolo
