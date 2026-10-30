@@ -1386,6 +1386,50 @@ with check (true);
       };
     }
 
+    // 1.5 Blindagem Servidor: Cadastro via /api/erp-security (com service_role no servidor)
+    try {
+      const bancoLimpoInit = (typeof window !== 'undefined' && window.ERP_INITIAL_DATA)
+        ? JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA))
+        : { pedidos: [] };
+      bancoLimpoInit.pedidos = [];
+      bancoLimpoInit.ordensServico = [];
+      bancoLimpoInit.lancamentosFinanceiros = [];
+      bancoLimpoInit.quarentena = [];
+      bancoLimpoInit.clientes = [];
+      bancoLimpoInit.despesasFixas = [];
+      bancoLimpoInit.nestingFila = [];
+      bancoLimpoInit.notasFiscais = [];
+      bancoLimpoInit.compras = [];
+
+      const resp = await fetch('/api/erp-security', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'register',
+          email: cleanEmail,
+          nomeEmpresa,
+          nomeResponsavel,
+          whatsapp,
+          senha,
+          bancoInicial: bancoLimpoInit
+        })
+      });
+      if (resp && resp.status !== 404) {
+        const resData = await resp.json();
+        if (resp.ok && resData && resData.sucesso) {
+          if (resData.sessionToken) salvarTokenSessao(resData.sessionToken);
+          if (resData.empresa) salvarEmpresaConfig(resData.empresa);
+          definirPerfilAtivo('dono');
+          definirUsuarioLogado(resData.user, null);
+          return { sucesso: true, user: resData.user };
+        } else if (resData && resData.erro) {
+          return { sucesso: false, erro: resData.erro };
+        }
+      }
+    } catch (eReg) {
+      console.warn('Aviso ao cadastrar via gateway:', eReg);
+    }
+
     // 2. Tenant ID único e determinístico baseado no e-mail
     const tenantId = await obterTenantIdPorEmail(cleanEmail);
 
@@ -2159,6 +2203,22 @@ with check (true);
       }
 
       try {
+        // Carga inicial segura via Gateway /api/erp-security
+        const sTok = obterTokenSessao();
+        if (sTok) {
+          fetch('/api/erp-security', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Bravvi-Token': sTok },
+            body: JSON.stringify({ action: 'load_tenant', sessionToken: sTok })
+          }).then(r => r.json()).then(resData => {
+            if (resData && resData.sucesso && resData.found && resData.db) {
+              if (resData.ultima_atualizacao_ms > (ultimaAtualizacaoRemota + 500)) {
+                ultimaAtualizacaoRemota = resData.ultima_atualizacao_ms;
+                if (typeof onAtualizacaoRemota === 'function') onAtualizacaoRemota(resData.db);
+              }
+            }
+          }).catch(() => {});
+        }
         // Carga inicial do Supabase para garantir sincronização de boot
         supabaseClient
           .from('erp_tenants')
