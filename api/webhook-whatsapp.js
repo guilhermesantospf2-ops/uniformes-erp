@@ -19,21 +19,21 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1N
 // Cache em memória para deduplicação instantânea de retentativas da Meta (evita loops)
 const processedMessageIds = new Map();
 
-// Prompt do SDR Carlos com diretrizes anti-repetição
+// Prompt do SDR Carlos com diretrizes anti-repetição e formato humano fracionado
 const SYSTEM_PROMPT_SDR = `Você é o Carlos, consultor comercial especialista da Bravvi ERP Têxtil.
 Você está conversando no WhatsApp com um dono ou gestor de confecção de uniformes, estamparia ou facção.
 
-REGRAS DE OURO DE CONVERSAÇÃO NO WHATSAPP:
-1. NUNCA se reapresente e NUNCA diga saudações como "Olá! Aqui é o Carlos" se a conversa já começou ou se o cliente já respondeu. Vá DIRETO ao ponto respondendo ao que ele falou.
-2. Responda de forma curta, natural e conversacional (1 a 2 parágrafos curtos, no máximo 3 frases por mensagem). Linguagem de chão de fábrica, sem juridiquês, sem termos técnicos de programação.
-3. Não use emojis em excesso (máximo 1). Nunca mande blocos gigantescos de texto.
-4. Seu objetivo como SDR:
-   - Identificar o nicho do cliente (polo, brim operacional, esportivo, camisetas, jalecos).
-   - Identificar o volume mensal de peças cortadas.
-   - Apresentar como o Bravvi ERP elimina as maiores dores (desperdício de tecido/filme DTF com encaixe inteligente, ficha técnica A4 automática sem expor custos pro cortador, portal do cliente para preenchimento de nomes/tamanhos).
-5. Quando o lead pedir demonstração, preço ou demonstrar interesse em conhecer:
-   - Convide para ver o showroom ao vivo: https://uniformes-erp.vercel.app/demo
-   - Avise que o Guilherme Silva (nosso especialista de implantação) vai chamá-lo para liberar o teste.
+ESTILO DE CONVERSA HUMANA NO WHATSAPP (MUITO IMPORTANTE):
+1. NUNCA envie textão nem blocos grandes explicativos. Isso entrega na hora que é robô.
+2. Escreva mensagens curtas e naturais, como uma pessoa comum teclando no celular.
+3. FRACIONE o que você vai falar em 2 ou 3 mensagens curtas separadas pelo delimitador '|||'.
+   Exemplo de formato obrigatório:
+   Pô, 3.000 peças já é uma produção bem respeitável! ||| O desperdício de filme no DTF é o que mais queima a margem das confecções hoje. ||| Vocês usam algum otimizador de encaixe ou montam no olho na mão?
+4. NUNCA se reapresente e NUNCA diga saudações como "Olá! Aqui é o Carlos" se a conversa já começou. Vá direto ao ponto.
+5. Cada balão de mensagem deve ter no máximo 15 a 25 palavras (1 frase por ideia). Máximo de 2 a 3 balões no total.
+6. Quando o lead pedir demonstração, preço ou demonstrar interesse em conhecer:
+   - Mande um balão dizendo que tem o showroom ao vivo liberado: https://uniformes-erp.vercel.app/demo
+   - E no próximo balão avise que o Guilherme Silva (nosso especialista de implantação) vai chamá-lo para tirar dúvidas e fechar.
    - Adicione a tag oculta [LEAD_QUALIFICADO] no final da resposta.`;
 
 // Busca histórico do lead no Supabase
@@ -269,10 +269,29 @@ module.exports = async function handler(req, res) {
       // 2. Gera resposta inteligente com contexto (sem repetir saudações)
       let respostaIA = await gerarRespostaSDRComContexto(leadState.history || [], leadTexto);
 
-      // 3. Atualiza histórico da conversa
+      // 3. Fracionamento em balões curtos e humanos (separados por ||| ou quebras)
+      let textoBase = respostaIA.replace('[LEAD_QUALIFICADO]', '').trim();
+      let baloes = textoBase
+        .split(/\|\|\||\n\n+/)
+        .map(b => b.trim())
+        .filter(b => b.length > 0);
+
+      // Se não veio com |||, quebra frases longas para não enviar textão
+      if (baloes.length === 1 && baloes[0].length > 160) {
+        const frases = baloes[0].match(/[^.!?]+[.!?]+(\s|$)/g);
+        if (frases && frases.length > 1) {
+          baloes = frases.map(f => f.trim()).filter(Boolean);
+        }
+      }
+
+      // Limita a no máximo 3 balões para ritmo natural e ágil
+      baloes = baloes.slice(0, 3);
+      if (baloes.length === 0) baloes = [textoBase];
+
+      // Atualiza histórico com a resposta consolidada
       const updatedHistory = [...(leadState.history || [])];
       updatedHistory.push({ role: 'user', parts: [{ text: leadTexto }] });
-      updatedHistory.push({ role: 'model', parts: [{ text: respostaIA.replace('[LEAD_QUALIFICADO]', '').trim() }] });
+      updatedHistory.push({ role: 'model', parts: [{ text: baloes.join(' ') }] });
 
       await salvarHistoricoLead(from, {
         history: updatedHistory.slice(-10),
@@ -282,18 +301,24 @@ module.exports = async function handler(req, res) {
 
       // 4. Se for lead qualificado, alerta o Telegram
       if (respostaIA.includes('[LEAD_QUALIFICADO]')) {
-        respostaIA = respostaIA.replace('[LEAD_QUALIFICADO]', '').trim();
         const alerta = `🔥 NOVO LEAD QUALIFICADO NO WHATSAPP! 🔥\n\nContato: https://wa.me/${from} (${from})\nMensagem: "${leadTexto}"\n\nAcesse o WhatsApp para fechar com o cliente!`;
-        notificarTelegramGuilherme(alerta); // Disparo não bloqueante
+        notificarTelegramGuilherme(alerta);
       }
 
-      // 5. Envia resposta oficial pelo WhatsApp
-      const sendResult = await enviarMensagemWhatsApp(phoneId, from, respostaIA);
+      // 5. Envia cada balão em sequência com pequeno delay simulando digitação humana
+      let sendResult = null;
+      for (let i = 0; i < baloes.length; i++) {
+        const balao = baloes[i];
+        sendResult = await enviarMensagemWhatsApp(phoneId, from, balao);
+        if (i < baloes.length - 1) {
+          await new Promise(r => setTimeout(r, 700));
+        }
+      }
 
       // 6. Log informativo no Telegram (não-bloqueante)
-      notificarTelegramGuilherme(`💬 CONVERSA SDR ATIVA\nLead (${from}): "${leadTexto}"\nCarlos: "${respostaIA}"`);
+      notificarTelegramGuilherme(`💬 CONVERSA SDR ATIVA\nLead (${from}): "${leadTexto}"\nCarlos (${baloes.length} balões):\n${baloes.map(b => '• ' + b).join('\n')}`);
 
-      return res.status(200).json({ status: 'REPLY_SENT', to: from, metaResult: sendResult });
+      return res.status(200).json({ status: 'REPLY_SENT', to: from, baloesCount: baloes.length, metaResult: sendResult });
     } catch (err) {
       console.error('[WhatsApp Webhook Handler Error]', err);
       return res.status(200).json({ status: 'ERROR', message: err.message });
