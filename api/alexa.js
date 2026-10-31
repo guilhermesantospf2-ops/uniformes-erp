@@ -22,7 +22,7 @@ async function consultarGemini(pergunta) {
   }
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
     const payload = {
       system_instruction: { parts: [{ text: SYSTEM_PROMPT_VOZ }] },
       contents: [{ role: 'user', parts: [{ text: pergunta }] }],
