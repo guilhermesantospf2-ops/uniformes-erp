@@ -149,7 +149,7 @@ module.exports = async function handler(req, res) {
 
     try {
       const entry = body.entry?.[0];
-      const change = entry?.changes?.[0]?.value;
+      const change = entry?.changes?.[0]?.value || body.value || body;
       const metadata = change?.metadata;
       const phoneId = metadata?.phone_number_id || WHATSAPP_PHONE_NUMBER_ID;
       const messages = change?.messages;
