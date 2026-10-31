@@ -114,6 +114,7 @@ async function salvarHistoricoLead(phone, dbData) {
 // Envio oficial via Meta Cloud API (Texto)
 async function enviarMensagemWhatsApp(phoneId, to, text) {
   const targetPhoneId = phoneId || WHATSAPP_PHONE_NUMBER_ID;
+  const hasLink = text.includes('http');
   try {
     const url = `https://graph.facebook.com/v21.0/${targetPhoneId}/messages`;
     const res = await fetch(url, {
@@ -127,7 +128,7 @@ async function enviarMensagemWhatsApp(phoneId, to, text) {
         recipient_type: 'individual',
         to: to,
         type: 'text',
-        text: { preview_url: false, body: text }
+        text: { preview_url: hasLink, body: text }
       })
     });
     return await res.json();
@@ -429,7 +430,7 @@ module.exports = async function handler(req, res) {
           // Marca imediatamente para travar concorrência ou retentativas
           leadState.videos_enviados = true;
 
-          // Cliente aceitou ou respondeu positivamente: manda Vídeo 1 + Vídeo 2 + Pergunta de qualificação
+          // Cliente aceitou ou respondeu positivamente: manda Vídeo 1 + Vídeo 2 + Link Test Drive + Pergunta de qualificação
           await new Promise(r => setTimeout(r, 1000));
           await enviarMensagemWhatsApp(phoneId, from, 'Maravilha! Segue aqui o vídeo rápido do Guilherme: 👇');
           
@@ -437,9 +438,13 @@ module.exports = async function handler(req, res) {
           await enviarVideoWhatsApp(phoneId, from, VIDEO_BOAS_VINDAS_URL, '🎬 Boas-vindas do Guilherme (Fundador da Bravvi ERP)');
           
           await new Promise(r => setTimeout(r, 2500));
-          await enviarVideoWhatsApp(phoneId, from, VIDEO_DEMO_ERP_URL, '💻 Tour completo pelas telas do sistema! Você também pode testar agora com dados de fábrica no link: https://uniformes-erp.vercel.app/demo');
+          await enviarVideoWhatsApp(phoneId, from, VIDEO_DEMO_ERP_URL, '💻 Tour completo pelas telas do sistema (cálculo de tecido, OS e financeiro)');
           
-          await new Promise(r => setTimeout(r, 2500));
+          await new Promise(r => setTimeout(r, 1800));
+          const mensagemDemo = '🎮 Para testar na prática com dados reais de fábrica, acesse o Test Drive por aqui:\n👉 https://uniformes-erp.vercel.app/demo\n\n(Pode mexer à vontade em todas as telas!)';
+          await enviarMensagemWhatsApp(phoneId, from, mensagemDemo);
+
+          await new Promise(r => setTimeout(r, 2200));
           const perguntaPosVideo = 'Depois de dar uma olhada, me diz: hoje vocês já usam algum sistema aí na confecção ou ainda controlam tudo em planilha e no papel?';
           await enviarMensagemWhatsApp(phoneId, from, perguntaPosVideo);
 
@@ -447,7 +452,7 @@ module.exports = async function handler(req, res) {
             history: [
               ...(leadState.history || []),
               { role: 'user', parts: [{ text: leadTexto }] },
-              { role: 'model', parts: [{ text: perguntaPosVideo }] }
+              { role: 'model', parts: [{ text: `${mensagemDemo}\n\n${perguntaPosVideo}` }] }
             ],
             last_message_id: msgId,
             last_processed_at: Date.now(),
