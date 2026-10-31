@@ -155,7 +155,10 @@ module.exports = async function handler(req, res) {
       const entry = body.entry?.[0];
       const change = entry?.changes?.[0]?.value || body.value || body;
       const metadata = change?.metadata;
-      const phoneId = metadata?.phone_number_id || WHATSAPP_PHONE_NUMBER_ID;
+      let phoneId = metadata?.phone_number_id || WHATSAPP_PHONE_NUMBER_ID;
+      if (phoneId === '123456123' || !phoneId) {
+        phoneId = WHATSAPP_PHONE_NUMBER_ID;
+      }
       const messages = change?.messages;
 
       if (!messages || !Array.isArray(messages) || messages.length === 0) {
