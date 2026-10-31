@@ -418,17 +418,25 @@ module.exports = async function handler(req, res) {
 
       // 🎬 FLUXO ETAPA 2: CLIENTE RESPONDEU SOBRE O VÍDEO
       if (stepAtual === 'aguardando_permissao_video') {
+        // Trava anti-duplicidade absoluta: se já enviou os vídeos para este lead, pula direto para qualificação
+        if (leadState.videos_enviados === true) {
+          return res.status(200).json({ status: 'VIDEOS_ALREADY_SENT_IGNORED' });
+        }
+
         const recusou = /^(não|nao|não precisa|dispensa|só o preço|qual o valor)/i.test(leadTexto.trim());
         
         if (!recusou) {
+          // Marca imediatamente para travar concorrência ou retentativas
+          leadState.videos_enviados = true;
+
           // Cliente aceitou ou respondeu positivamente: manda Vídeo 1 + Vídeo 2 + Pergunta de qualificação
-          await new Promise(r => setTimeout(r, 1500));
+          await new Promise(r => setTimeout(r, 1000));
           await enviarMensagemWhatsApp(phoneId, from, 'Maravilha! Segue aqui o vídeo rápido do Guilherme: 👇');
           
-          await new Promise(r => setTimeout(r, 1500));
+          await new Promise(r => setTimeout(r, 1200));
           await enviarVideoWhatsApp(phoneId, from, VIDEO_BOAS_VINDAS_URL, '🎬 Boas-vindas do Guilherme (Fundador da Bravvi ERP)');
           
-          await new Promise(r => setTimeout(r, 3000));
+          await new Promise(r => setTimeout(r, 2500));
           await enviarVideoWhatsApp(phoneId, from, VIDEO_DEMO_ERP_URL, '💻 Tour completo pelas telas do sistema! Você também pode testar agora com dados de fábrica no link: https://uniformes-erp.vercel.app/demo');
           
           await new Promise(r => setTimeout(r, 2500));
@@ -444,7 +452,8 @@ module.exports = async function handler(req, res) {
             last_message_id: msgId,
             last_processed_at: Date.now(),
             handoff: false,
-            step: 'qualificacao'
+            step: 'qualificacao',
+            videos_enviados: true
           });
 
           return res.status(200).json({ status: 'STEP_2_VIDEOS_ENVIADOS' });
@@ -463,7 +472,8 @@ module.exports = async function handler(req, res) {
             last_message_id: msgId,
             last_processed_at: Date.now(),
             handoff: false,
-            step: 'qualificacao'
+            step: 'qualificacao',
+            videos_enviados: false
           });
 
           return res.status(200).json({ status: 'STEP_2_RECUSOU_VIDEO' });
