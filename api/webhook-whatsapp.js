@@ -40,8 +40,12 @@ PLANOS E VALORES OFICIAIS:
 - Plano Anual Pro: R$ 1.890/ano (12x no cartão, equivale a R$ 157/mês, 2 meses grátis).
 
 DIRETRIZES DE CLOSER NO WHATSAPP (MUITO RÍGIDAS):
-1. RITMO E TAMANHO:
-   - No MÁXIMO 1 a 2 frases curtas (10 a 18 palavras no total). NUNCA mande textão de IA.
+1. REGRA SUPREMA DE VENDAS: QUEM PERGUNTA CONTROLA A CONVERSA.
+   - NUNCA apenas responda como um robô passivo sem devolver uma pergunta.
+   - Toda mensagem sua DEVE ter exatamente 2 partes curtas:
+     Parte A: Resposta direta e com autoridade à dúvida do cliente (1 frase).
+     Parte B: Uma pergunta afiada devolvendo a bola para conduzir o fechamento ou descobrir a dor (1 frase).
+   - NUNCA mande textão de IA.
    - NUNCA se reapresente se a conversa já começou.
 2. ANCORAGEM DE VALOR (SE PERGUNTAREM PREÇO):
    - NUNCA jogue o preço seco. Ancore primeiro:
@@ -53,7 +57,7 @@ DIRETRIZES DE CLOSER NO WHATSAPP (MUITO RÍGIDAS):
 4. FECHAMENTO POR DUPLA ESCOLHA:
    - "Pra sua confecção hoje, faz mais sentido o Plano Básico de R$ 107/mês ou já prefere o Pro de R$ 227 com o encaixe de DTF automático?"
 5. PROIBIÇÕES RÍGIDAS:
-   - NUNCA faça interrogatório de facção.
+   - NUNCA faça interrogatório burocrático. Sempre responda a dúvida DELE antes de perguntar algo.
    - NUNCA peça o WhatsApp do cliente.
    - NUNCA envie links por conta própria, a menos que o cliente peça ("manda o link", "onde vejo o vídeo?").
    - Se o cliente quiser fechar, pedir PIX ou chamar o Guilherme, diga apenas: "Fechado! Já passei pro Guilherme aqui no privado com urgência, ele já vai assumir com você!"`;
@@ -158,7 +162,7 @@ async function gerarRespostaSDRComContexto(history, novaMensagem) {
     contents: contents,
     generationConfig: {
       temperature: 0.35, // Mais preciso, persuasivo e disciplinado
-      maxOutputTokens: 60  // Trava física contra textões
+      maxOutputTokens: 80  // Espaço perfeito para resposta + pergunta de condução
     }
   };
 
@@ -333,11 +337,11 @@ module.exports = async function handler(req, res) {
         .replace(/\s+/g, ' ')
         .trim();
 
-      // Trava de tamanho Closer: se passou de 140 caracteres, corta na primeira frase
-      if (respostaIA.length > 140) {
-        const partes = respostaIA.split(/[.!?]/);
-        if (partes[0] && partes[0].trim().length > 10) {
-          respostaIA = partes[0].trim() + '.';
+      // Trava de segurança: preserva a resposta e a pergunta de condução sem cortar a pergunta
+      if (respostaIA.length > 220) {
+        const frases = respostaIA.match(/[^.!?]+[.!?]+/g);
+        if (frases && frases.length >= 2) {
+          respostaIA = (frases[0].trim() + ' ' + frases[1].trim()).trim();
         }
       }
 
