@@ -1,7 +1,7 @@
 // ============================================================================
 // BRAVVI ERP TÊXTIL — WEBHOOK SERVERLESS WHATSAPP CLOUD API OFICIAL (META)
 // Rota: GET/POST /api/webhook-whatsapp
-// SDR Ultra-Enxuto (1 Frase Curta) + Modo Mudo / Handoff Humano Imediato
+// SDR Closer de Alta Performance (Metodologia Formação Closer Diamond)
 // ============================================================================
 
 const WHATSAPP_VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'bravvi_sdr_webhook_2026';
@@ -19,17 +19,36 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1N
 // Cache em memória para deduplicação instantânea de retentativas da Meta
 const processedMessageIds = new Map();
 
-// Prompt do SDR Carlos: ULTRA ENXUTO (Fala 10% do habitual, sem interrogatório)
-const SYSTEM_PROMPT_SDR = `Você é o Carlos, consultor comercial da Bravvi ERP Têxtil no WhatsApp.
-Você fala como um humano normal ocupado teclando pelo celular: ULTRA ENXUTO, direto, simpático e sem enrolação.
+// Prompt do Closer Carlos (Metodologia Formação Closer Diamond B2B)
+const SYSTEM_PROMPT_SDR = `Você é o Carlos, Closer comercial de alta performance da Bravvi ERP Têxtil no WhatsApp.
+Sua comunicação segue a metodologia da Formação Closer Diamond: autoridade, condução ativa da conversa, ultra-enxuto e foco absoluto em fechamento sem ser chato.
 
-REGRAS DE OURO OBRIGATÓRIAS (EXTREMA PRIORIDADE):
-1. FALE POUCO. Envie NO MÁXIMO 1 ÚNICA FRASE CURTA (máximo 12 a 18 palavras no total).
-2. NUNCA faça interrogatório de facção (NÃO pergunte volume, não pergunte tecido, não pergunte grade se a conversa já começou).
-3. NUNCA, SOB HIPÓTESE ALGUMA, peça o número de WhatsApp do cliente (você JÁ ESTÁ conversando com ele pelo WhatsApp!).
-4. NUNCA envie links por conta própria.
-5. Se o cliente tiver uma dúvida, responda em 1 frase simples e pare.
-6. Se o cliente demonstrar urgência, pressa ou quiser fechar/falar com alguém, diga apenas: "Fechado! Já passei pro Guilherme aqui no privado com urgência, ele já vai te responder."`;
+DIRETRIZES DA FORMAÇÃO CLOSER DIAMOND (MUITO RIGIDAS):
+1. RITMO E TAMANHO:
+   - Fale como um homem de negócios ocupado no celular: ULTRA ENXUTO.
+   - Envie no MÁXIMO 1 a 2 frases curtas (10 a 20 palavras no total).
+   - NUNCA envie textão, listas com marcadores ou linguagem de robô.
+   - NUNCA se reapresente se a conversa já começou.
+
+2. ANCORAGEM DE VALOR (SE PERGUNTAREM PREÇO):
+   - NUNCA jogue o preço seco. Ancore o valor primeiro comparando com a perda real da confecção:
+   - "Temos planos a partir de R$ 107/mês (menos que o tecido que sobra em 2 dias de corte). Mas me diz: o que mais queima sua margem hoje, sobra de tecido ou erro de estampa?"
+
+3. MATRIZ DE QUEBRA DE OBJEÇÕES CLOSER DIAMOND:
+   - Se disser "TÁ CARO": "Caro comparado a quê? Se o encaixe de DTF te salvar 2 bobinas no mês ele já se pagou 3 vezes. Quanto você perde de retalho hoje?"
+   - Se disser "VOU FALAR COM MEU SÓCIO": "Perfeito! Quer que eu te mande um vídeo de 1 min mostrando o sistema rodando pro seu sócio ver que se paga sozinho?"
+   - Se disser "NÃO TENHO TEMPO / TÔ NA CORRERIA": "Você tá na correria justamente porque faz na mão o que o sistema faz em 3 segundos. Leva 2 minutos pra ver funcionando."
+   - Se disser "JÁ USO PLANILHA": "Planilha não calcula encaixe de DTF nem trava grade de cliente no WhatsApp. Tá satisfeito com o tempo que gasta nelas?"
+
+4. FECHAMENTO POR DUPLA ESCOLHA (ALTERNATIVE CLOSE):
+   - NUNCA pergunte "quer fechar?" ou "vai querer?". Conduza com duas opções:
+   - "Pra sua confecção hoje, faz mais sentido começar no Plano Básico de R$ 107/mês ou já prefere o Pro de R$ 227 com o encaixe de DTF automático?"
+
+5. REGRAS PROIBIDAS:
+   - NUNCA faça interrogatório de facção nem fique fazendo perguntas burocráticas.
+   - NUNCA peça o número de WhatsApp do cliente (você já está conversando no WhatsApp com ele!).
+   - NUNCA envie links por conta própria, a menos que o cliente peça explicitamente ("manda o vídeo", "quero ver a demo", "tem link?").
+   - Se o cliente demonstrar urgência, pressa ou quiser fechar, diga apenas: "Fechado! Já passei pro Guilherme aqui no privado com urgência, ele já vai assumir com você!"`;
 
 // Busca histórico e estado do lead no Supabase
 async function buscarHistoricoLead(phone) {
@@ -116,7 +135,7 @@ async function notificarTelegramGuilherme(msg) {
   }
 }
 
-// Geração de Resposta Gemini 3.5 com Contexto
+// Geração de Resposta Gemini com Contexto Closer Diamond
 async function gerarRespostaSDRComContexto(history, novaMensagem) {
   const contents = (history || []).slice(-4).map(item => ({
     role: item.role,
@@ -130,8 +149,8 @@ async function gerarRespostaSDRComContexto(history, novaMensagem) {
     system_instruction: { parts: [{ text: SYSTEM_PROMPT_SDR }] },
     contents: contents,
     generationConfig: {
-      temperature: 0.4,
-      maxOutputTokens: 50 // Trava física: impossível mandar textão
+      temperature: 0.35, // Mais preciso, persuasivo e disciplinado
+      maxOutputTokens: 60  // Trava física contra textões
     }
   };
 
@@ -150,7 +169,7 @@ async function gerarRespostaSDRComContexto(history, novaMensagem) {
     console.error('[Gemini Context Error]', err.message);
   }
 
-  return 'Perfeito, já estou avisando o Guilherme aqui para te atender direto!';
+  return 'Perfeito! Já chamei o Guilherme aqui no privado com urgência para fechar os detalhes com você.';
 }
 
 module.exports = async function handler(req, res) {
@@ -216,7 +235,7 @@ module.exports = async function handler(req, res) {
       const from = msgObj.from;
       const msgType = msgObj.type;
 
-      // 🛡️ 1. DEDUPLICAÇÃO IMEDIATA (Anti-loop de retentativas da Meta)
+      // 🛡️ 1. DEDUPLICAÇÃO IMEDIATA (Anti-retentativas Meta)
       if (processedMessageIds.has(msgId)) {
         return res.status(200).json({ status: 'DUPLICATE_IGNORED', msgId });
       }
@@ -256,14 +275,17 @@ module.exports = async function handler(req, res) {
       // 🛑 3. MODO SILÊNCIO / HANDOFF HUMANO
       // Se o lead já pediu para fechar ou chamou o Guilherme antes, o robô FICA MUDO!
       if (leadState.handoff === true) {
-        await notificarTelegramGuilherme(`🚨 LEAD AGUARDANDO NO WHATSAPP:\nDe: https://wa.me/${from} (${from})\nFala: "${leadTexto}"\n(Bot em silêncio. Assuma a conversa no celular!)`);
+        await notificarTelegramGuilherme(`🚨 LEAD AGUARDANDO NO WHATSAPP:\nDe: https://wa.me/${from} (${from})\nFala: "${leadTexto}"\n(Bot em silêncio. Assuma a conversa no WhatsApp!)`);
         return res.status(200).json({ status: 'HANDOFF_MUTED' });
       }
 
       // 🛑 4. GATILHO DE FECHAMENTO OU CHAMADA DO GUILHERME
-      const querFecharOuChamar = /(fechar|comprar|assinar|contratar|guilherme|chama ele|urgente|atender|falar com|humano|atendente|vendedor|ligar|demora|cadê)/i.test(leadTexto);
+      const querFecharOuChamar = /(fechar|comprar|assinar|contratar|guilherme|chama ele|urgente|atender|falar com|humano|atendente|vendedor|ligar|demora|cadê|pix|cartão|pagamento|link de pagamento)/i.test(leadTexto);
       if (querFecharOuChamar) {
-        const respostaHandoff = 'Perfeito! Já chamei o Guilherme aqui no privado com urgência, ele já vai assumir a conversa com você agora.';
+        const respostaHandoff = 'Fechado! Já passei pro Guilherme aqui no privado com urgência, ele já vai assumir a conversa com você agora para fechar.';
+        
+        // Delay humano (2.5 segundos)
+        await new Promise(r => setTimeout(r, 2500));
         await enviarMensagemWhatsApp(phoneId, from, respostaHandoff);
 
         await salvarHistoricoLead(from, {
@@ -274,43 +296,50 @@ module.exports = async function handler(req, res) {
           ],
           last_message_id: msgId,
           last_processed_at: Date.now(),
-          handoff: true // MUTA O BOT DEFINITIVAMENTE PARA ESTE NÚMERO
+          handoff: true // MUTA O BOT DEFINITIVAMENTE PARA ESTE CLIENTE
         });
 
-        await notificarTelegramGuilherme(`🔥 LEAD QUER FECHAR COM URGÊNCIA! 🔥\nContato: https://wa.me/${from} (${from})\nMensagem: "${leadTexto}"\n\n👉 ASSUMA A CONVERSA NO WHATSAPP AGORA! O bot foi mutado.`);
+        await notificarTelegramGuilherme(`🔥 LEAD PRONTO PARA FECHAR NO WHATSAPP! 🔥\nContato: https://wa.me/${from} (${from})\nMensagem: "${leadTexto}"\n\n👉 ASSUMA A CONVERSA NO WHATSAPP AGORA! O bot foi mutado.`);
         return res.status(200).json({ status: 'HANDOFF_TRIGGERED' });
       }
 
-      // 🛡️ 5. COOLDOWN ANTI-METRALHADORA (Não responde a cada frase se o cliente mandar 3 seguidas)
+      // 🛡️ 5. COOLDOWN ANTI-METRALHADORA (Não atropela cliente que manda 3 frases seguidas)
       const agora = Date.now();
-      if (leadState.last_processed_at && (agora - leadState.last_processed_at < 12000)) {
+      if (leadState.last_processed_at && (agora - leadState.last_processed_at < 10000)) {
         console.log(`[Cooldown] Ignorando rajada de ${from}`);
         return res.status(200).json({ status: 'COOLDOWN_IGNORED' });
       }
 
-      // 💬 6. GERA RESPOSTA ULTRA CURTA (1 ÚNICA FRASE)
+      // 💬 6. GERA RESPOSTA CLOSER DIAMOND (1 A 2 FRASES CURTAS)
       let respostaIA = await gerarRespostaSDRComContexto(leadState.history || [], leadTexto);
 
-      // Limpeza estrita: remove links, tags e quebras
+      // Se o cliente NÃO pediu link expressamente, remove qualquer URL
+      const pediuLink = /(manda|passa|tem|qual|onde).*(link|demo|demonstra|teste|ver|vídeo|video)/i.test(leadTexto);
+      if (!pediuLink) {
+        respostaIA = respostaIA.replace(/https?:\/\/[^\s]+/gi, '').replace(/\s{2,}/g, ' ').trim();
+      }
+
       respostaIA = respostaIA
         .replace(/\[LEAD_QUALIFICADO\]/g, '')
-        .replace(/https?:\/\/[^\s]+/gi, '')
         .replace(/\|\|\|/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
 
-      // Trava de tamanho: se passou de 120 caracteres, pega só a primeira frase
-      if (respostaIA.length > 120) {
+      // Trava de tamanho Closer: se passou de 140 caracteres, corta na primeira frase
+      if (respostaIA.length > 140) {
         const partes = respostaIA.split(/[.!?]/);
         if (partes[0] && partes[0].trim().length > 10) {
           respostaIA = partes[0].trim() + '.';
         }
       }
 
-      // 7. Envia EXATAMENTE 1 MENSAGEM CURTA
+      // ⏳ 7. CADÊNCIA HUMANA DE DIGITAÇÃO (3.5 segundos antes de disparar)
+      await new Promise(r => setTimeout(r, 3500));
+
+      // 8. Envia a mensagem pelo WhatsApp
       const sendResult = await enviarMensagemWhatsApp(phoneId, from, respostaIA);
 
-      // 8. Salva no Supabase
+      // 9. Salva no Supabase
       const updatedHistory = [...(leadState.history || [])];
       updatedHistory.push({ role: 'user', parts: [{ text: leadTexto }] });
       updatedHistory.push({ role: 'model', parts: [{ text: respostaIA }] });
@@ -322,8 +351,8 @@ module.exports = async function handler(req, res) {
         handoff: false
       });
 
-      // 9. Alerta no Telegram
-      notificarTelegramGuilherme(`💬 CONVERSA SDR\nLead (${from}): "${leadTexto}"\nCarlos: "${respostaIA}"`);
+      // 10. Alerta no Telegram
+      notificarTelegramGuilherme(`💬 CLOSER DIAMOND\nLead (${from}): "${leadTexto}"\nCarlos: "${respostaIA}"`);
 
       return res.status(200).json({ status: 'REPLY_SENT', to: from, metaResult: sendResult });
     } catch (err) {
