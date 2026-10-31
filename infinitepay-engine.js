@@ -17,14 +17,14 @@
 (function () {
   'use strict';
 
-  const WHATSAPP_SUPORTE = '5544999856245';
+  const WHATSAPP_SUPORTE = '554499856245';
   const LINK_CAKTO_BASICO_107 = 'https://pay.cakto.com.br/ecrfqfr_1178654';
   const LINK_CAKTO_PRO_227 = 'https://pay.cakto.com.br/rb6atzs_1178556';
   const LINK_CAKTO_ANUAL_1890 = 'https://pay.cakto.com.br/qczfq37';
-  const LINK_WHATSAPP_BASICO = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero assinar o Plano Básico do Bravvi ERP Têxtil por R$ 107/mês com Implantação Grátis.');
-  const LINK_WHATSAPP_MENSAL = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero assinar o Plano Pro Industrial do Bravvi ERP Têxtil por R$ 227/mês com Implantação Grátis.');
-  const LINK_WHATSAPP_ANUAL = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero contratar o Plano Anual Pro do Bravvi ERP Têxtil (12x de R$ 189 ou R$ 1.890/ano à vista).');
-  const LINK_WHATSAPP_TREINAMENTO = 'https://wa.me/5544999856245?text=' + encodeURIComponent('Olá Guilherme! Quero contratar o Treinamento Dedicado VIP da Equipe (R$ 297 taxa única).');
+  const LINK_WHATSAPP_BASICO = 'https://wa.me/554499856245?text=' + encodeURIComponent('Olá Guilherme! Quero assinar o Plano Básico do Bravvi ERP Têxtil por R$ 107/mês com Implantação Grátis.');
+  const LINK_WHATSAPP_MENSAL = 'https://wa.me/554499856245?text=' + encodeURIComponent('Olá Guilherme! Quero assinar o Plano Pro Industrial do Bravvi ERP Têxtil por R$ 227/mês com Implantação Grátis.');
+  const LINK_WHATSAPP_ANUAL = 'https://wa.me/554499856245?text=' + encodeURIComponent('Olá Guilherme! Quero contratar o Plano Anual Pro do Bravvi ERP Têxtil (12x de R$ 189 ou R$ 1.890/ano à vista).');
+  const LINK_WHATSAPP_TREINAMENTO = 'https://wa.me/554499856245?text=' + encodeURIComponent('Olá Guilherme! Quero contratar o Treinamento Dedicado VIP da Equipe (R$ 297 taxa única).');
 
   // Paraguai 🇵🇾 ($29 / $49 USD - Stripe Checkout Oficial)
   const LINK_STRIPE_BASICO_PY = 'https://buy.stripe.com/00w00jb3bbt4dXte8853O04';
@@ -333,7 +333,7 @@
 
           <div style="margin-bottom: 16px;">
             <label style="display: block; font-size: 11.5px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">WhatsApp Comercial de Suporte (DDD + Número):</label>
-            <input type="text" id="cfgIpWhatsapp" value="${config.whatsappSuporte || '5544999856245'}" placeholder="5544999856245" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 12px; box-sizing: border-box;">
+            <input type="text" id="cfgIpWhatsapp" value="${config.whatsappSuporte || '554499856245'}" placeholder="554499856245" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 12px; box-sizing: border-box;">
           </div>
 
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; font-size: 11px; color: #64748b; line-height: 1.4;">
@@ -361,7 +361,7 @@
         linkMensal: overlay.querySelector('#cfgIpLinkMensal').value.trim(),
         linkAnual: overlay.querySelector('#cfgIpLinkAnual').value.trim(),
         linkCombo: overlay.querySelector('#cfgIpLinkCombo').value.trim(),
-        whatsappSuporte: overlay.querySelector('#cfgIpWhatsapp').value.replace(/\D/g, '') || '5544999856245'
+        whatsappSuporte: overlay.querySelector('#cfgIpWhatsapp').value.replace(/\D/g, '') || '554499856245'
       };
       salvarConfiguracoes(novaCfg);
       fechar();

@@ -2895,3 +2895,249 @@ body.sidebar-collapsed .btn-floating-sidebar-open {
 
 
 
+
+/* ==========================================================================
+   BRAVVI ERP TÊXTIL — DESIGN SYSTEM RESPONSIVO DE ALTA PERFORMANCE (MOBILE)
+   ========================================================================== */
+
+/* Backdrop overlay para quando a sidebar estiver aberta no celular */
+.mobile-sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9998;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+body.sidebar-open-mobile .mobile-sidebar-backdrop {
+  display: block;
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  /* 1. Reset e Contenção Global Mobile */
+  html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* 2. Sidebar como Gaveta Deslizante (Drawer) */
+  .erp-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 280px !important;
+    max-width: 82vw !important;
+    height: 100vh !important;
+    z-index: 99999 !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: none !important;
+    background-color: #ffffff !important;
+    border-right: 1px solid var(--border-medium) !important;
+  }
+
+  body.sidebar-open-mobile .erp-sidebar {
+    transform: translateX(0) !important;
+    box-shadow: 10px 0 35px rgba(0, 0, 0, 0.35) !important;
+  }
+
+  /* Botão de Fechar dentro da Sidebar no Celular */
+  .btn-sidebar-collapse {
+    display: inline-flex !important;
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+    border-radius: 6px !important;
+  }
+
+  /* 3. Área Principal do ERP */
+  .erp-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  /* 4. Top Navbar Mobile */
+  .top-navbar {
+    height: 54px !important;
+    padding: 0 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+  }
+
+  .navbar-page-title {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    gap: 8px !important;
+  }
+
+  #pageTitle {
+    font-size: 14.5px !important;
+    font-weight: 800 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 170px !important;
+  }
+
+  #btnToggleSidebar {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    background: #f1f5f9 !important;
+    border: 1px solid var(--border-medium) !important;
+    color: #0f172a !important;
+  }
+
+  /* Oculta excessos na barra superior do celular */
+  #headerEmpresaInfo,
+  .navbar-breadcrumb {
+    display: none !important;
+  }
+
+  .navbar-actions {
+    gap: 6px !important;
+  }
+
+  #btnHeaderLanguage,
+  #btnHeaderAuth {
+    padding: 6px 9px !important;
+    font-size: 11.5px !important;
+    height: 34px !important;
+  }
+
+  /* 5. Banner de Test Drive / Showroom */
+  #demoTopBanner {
+    height: 42px !important;
+    padding: 0 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    font-size: 11.5px !important;
+  }
+
+  #demoTopBanner span:not(:first-child) {
+    display: none !important; /* Esconde texto longo explicativo no celular */
+  }
+
+  #demoTopBanner .btn-sm {
+    font-size: 11px !important;
+    padding: 4px 8px !important;
+    height: 28px !important;
+  }
+
+  /* 6. Conteúdo e Espaçamentos do Sistema */
+  .erp-content {
+    padding: 12px 10px 40px 10px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .card {
+    padding: 14px 12px !important;
+    border-radius: 12px !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* 7. Grids e Dashboards transformados em Coluna Única */
+  .grid-4,
+  .grid-3,
+  .grid-2,
+  .dashboard-kpis,
+  .kpi-grid,
+  .quick-stats-grid,
+  .form-row,
+  .form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .kpi-card {
+    padding: 12px 14px !important;
+  }
+
+  /* 8. Tabelas com Scroll Horizontal Suave */
+  .table-responsive,
+  .card:has(.erp-table),
+  .card.has-table {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 8px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .erp-table {
+    font-size: 12px !important;
+  }
+
+  .table-header-bar {
+    padding: 10px 12px !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .table-title {
+    font-size: 13px !important;
+  }
+
+  /* 9. Modais Otimizados para Celular (Quase Fullscreen) */
+  .modal-container,
+  .modal-dialog,
+  .modal-card {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    margin: 8px auto !important;
+    max-height: 92vh !important;
+    padding: 14px !important;
+    border-radius: 14px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .modal-header {
+    padding-bottom: 10px !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* 10. Toque e Formulários no Mobile (Prevenção de Zoom no iOS Safari) */
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="date"],
+  select,
+  textarea {
+    font-size: 16px !important; /* Previne auto-zoom indesejado no iPhone */
+    height: 42px !important;
+    border-radius: 8px !important;
+  }
+
+  textarea {
+    height: auto !important;
+    min-height: 80px !important;
+  }
+
+  .btn {
+    min-height: 40px !important;
+    font-size: 13px !important;
+    padding: 8px 14px !important;
+  }
+
+  /* 11. Botão Flutuante de Abrir Menu */
+  .btn-floating-sidebar-open {
+    display: none !important; /* No celular usamos o botão padrão da navbar */
+  }
+}

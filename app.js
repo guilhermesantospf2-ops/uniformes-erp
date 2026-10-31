@@ -2649,6 +2649,18 @@
   // CONTROLE DE RECOLHIMENTO DA SIDEBAR (ESCONDER / MOSTRAR MENU LATERAL)
   // =========================================================================
   function alternarSidebar(forcarEstado = null) {
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      const estaAbertoMobile = document.body.classList.contains('sidebar-open-mobile');
+      const novoEstadoMobile = forcarEstado !== null ? forcarEstado : !estaAbertoMobile;
+      if (novoEstadoMobile) {
+        document.body.classList.add('sidebar-open-mobile');
+      } else {
+        document.body.classList.remove('sidebar-open-mobile');
+      }
+      return;
+    }
+
     const estaRecolhido = document.body.classList.contains('sidebar-collapsed');
     const novoEstado = forcarEstado !== null ? forcarEstado : !estaRecolhido;
 
@@ -2669,16 +2681,31 @@
   }
 
   function inicializarSidebarToggle() {
-    // Restaura preferência salva do usuário
-    const salvo = localStorage.getItem('bravvi_sidebar_collapsed');
-    if (salvo === '1') {
-      document.body.classList.add('sidebar-collapsed');
-      const btnToggle = document.getElementById('btnToggleSidebar');
-      if (btnToggle) {
-        btnToggle.title = 'Mostrar Menu Lateral (Ctrl+B)';
-        btnToggle.setAttribute('aria-expanded', 'false');
+    // Restaura preferência salva do usuário (desktop apenas)
+    if (window.innerWidth > 768) {
+      const salvo = localStorage.getItem('bravvi_sidebar_collapsed');
+      if (salvo === '1') {
+        document.body.classList.add('sidebar-collapsed');
+        const btnToggle = document.getElementById('btnToggleSidebar');
+        if (btnToggle) {
+          btnToggle.title = 'Mostrar Menu Lateral (Ctrl+B)';
+          btnToggle.setAttribute('aria-expanded', 'false');
+        }
       }
     }
+
+    // Fecha a sidebar mobile ao tocar no backdrop ou em itens do menu
+    document.getElementById('mobileBackdrop')?.addEventListener('click', () => {
+      document.body.classList.remove('sidebar-open-mobile');
+    });
+
+    document.querySelectorAll('.sidebar-menu .menu-item').forEach(el => {
+      el.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+          document.body.classList.remove('sidebar-open-mobile');
+        }
+      });
+    });
 
     // Configura botões de alternância
     document.getElementById('btnToggleSidebar')?.addEventListener('click', (e) => {
@@ -3031,7 +3058,7 @@
     const nomeEmpresa = emp?.nomeFantasia || emp?.razaoSocial || 'Minha Confecção';
 
     const textoWhatsApp = encodeURIComponent(`Olá! Sou da ${nomeEmpresa} e gostaria de fazer o upgrade do Plano Básico para o Plano Pro Industrial no Bravvi ERP Têxtil.`);
-    const linkWhatsApp = `https://wa.me/5544999856245?text=${textoWhatsApp}`;
+    const linkWhatsApp = `https://wa.me/554499856245?text=${textoWhatsApp}`;
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active" style="z-index: 20000000 !important; position: fixed; inset: 0; background: radial-gradient(circle at 50% 15%, #032b35 0%, #02171d 60%, #010a0e 100%); display: flex !important; align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">

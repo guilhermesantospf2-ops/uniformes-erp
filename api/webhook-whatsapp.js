@@ -66,13 +66,14 @@ FUNIL DE QUALIFICAÇÃO PASSO A PASSO (SIGA A ORDEM EXATA):
    - Ancore o valor acessível e puxe para qualificação:
    - "Temos planos a partir de R$ 107/mês, super acessível. Mas antes de ver o plano ideal: hoje vocês já usam algum sistema aí ou tá tudo na planilha?"
 
-6. SE O CLIENTE DISSER "MANDA O VÍDEO" / "ONDE VEJO":
-   - "Dá uma olhada aqui: https://uniformes-erp.vercel.app/demo - Depois de ver, me diz: faz mais sentido pra você o Plano Básico de R$ 107 ou o Pro com DTF de R$ 227?"
+6. QUANDO O CLIENTE PEDIR DEMONSTRAÇÃO, TESTE, VÍDEO OU LINK:
+   - Envie com entusiasmo o link de demonstração ao vivo e devolva com a pergunta de fechamento:
+   - "Dá uma olhada no sistema funcionando ao vivo aqui: https://uniformes-erp.vercel.app/demo - Depois de ver, me diz: faz mais sentido pra você o Plano Básico de R$ 107 ou o Pro com DTF de R$ 227?"
 
 7. PROIBIÇÕES RÍGIDAS:
    - NUNCA pergunte sobre estoque/tecido no primeiro contato antes de saber se ele já usa sistema.
    - NUNCA peça o WhatsApp do cliente.
-   - NUNCA envie links se o cliente não pediu.
+   - NUNCA envie links por conta própria se o cliente NÃO pediu demonstração, teste ou vídeo.
    - Se o cliente disser que quer fechar, pedir chave PIX ou chamar o Guilherme, diga apenas: "Fechado! Já passei pro Guilherme aqui no privado com urgência, ele já vai assumir a conversa com você agora para fechar."`;
 
 // Busca histórico e estado do lead no Supabase
@@ -338,10 +339,13 @@ module.exports = async function handler(req, res) {
       // 💬 6. GERA RESPOSTA CLOSER DIAMOND (1 A 2 FRASES CURTAS)
       let respostaIA = await gerarRespostaSDRComContexto(leadState.history || [], leadTexto);
 
-      // Se o cliente NÃO pediu link expressamente, remove qualquer URL
-      const pediuLink = /(manda|passa|tem|qual|onde).*(link|demo|demonstra|teste|ver|vídeo|video)/i.test(leadTexto);
+      // Se o cliente pediu demonstração, teste, vídeo ou link
+      const pediuLink = /(link|demo|demonstra|teste|testar|ver|vídeo|video|apresenta|mostrar|conhecer)/i.test(leadTexto);
       if (!pediuLink) {
         respostaIA = respostaIA.replace(/https?:\/\/[^\s]+/gi, '').replace(/\s{2,}/g, ' ').trim();
+      } else if (!respostaIA.includes('http')) {
+        // Se pediu demonstração e a IA esqueceu o link, injeta suavemente
+        respostaIA = `Dá uma olhada no sistema funcionando ao vivo aqui: https://uniformes-erp.vercel.app/demo - Depois de ver, me diz: faz mais sentido pra você o Plano Básico de R$ 107 ou o Pro de R$ 227?`;
       }
 
       respostaIA = respostaIA
