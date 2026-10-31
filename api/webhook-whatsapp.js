@@ -147,6 +147,10 @@ module.exports = async function handler(req, res) {
     }
     body = body || {};
 
+    // Diagnóstico ao vivo no Telegram
+    console.log('[Meta Webhook POST Event]', JSON.stringify(body).substring(0, 300));
+    notificarTelegramGuilherme(`🔔 *WEBHOOK META RECEBIDO!* \n\`\`\`json\n${JSON.stringify(body, null, 2).substring(0, 500)}\n\`\`\``);
+
     try {
       const entry = body.entry?.[0];
       const change = entry?.changes?.[0]?.value || body.value || body;
