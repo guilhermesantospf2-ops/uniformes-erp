@@ -1,5 +1,5 @@
 // ============================================================================
-// BRAVVI / JARVIS — ALEXA CUSTOM SKILL BACKEND (GEMINI 2.5 / 3.0 VOICE)
+// BRAVVI / JARVIS — ALEXA CUSTOM SKILL BACKEND (GEMINI 3.1 FLASH-LITE VOICE)
 // Rota Serverless Vercel: POST /api/alexa
 // Transforma a Echo Dot em um assistente de voz executivo com IA conversacional
 // ============================================================================
@@ -15,6 +15,16 @@ DIRETRIZES FUNDAMENTAIS PARA RESPOSTA DE VOZ:
 2. Seja direto, conciso, inteligente e natural (máximo de 2 a 4 frases por resposta, a menos que o Comandante peça uma explicação detalhada).
 3. Responda em português brasileiro de forma polida, elegante e prestativa ("Comandante Guilherme", "Pois não", "Certamente").
 4. Se o Guilherme perguntar sobre a Bravvi ou sobre a fábrica de uniformes, você sabe que ele é o fundador do Bravvi ERP Têxtil, o melhor sistema para confecções de uniformes no Brasil.`;
+
+function escaparSSML(texto) {
+  if (!texto) return '';
+  return texto
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
 
 async function consultarGemini(pergunta) {
   if (!GEMINI_API_KEY) {
@@ -55,27 +65,31 @@ async function consultarGemini(pergunta) {
 }
 
 function buildAlexaResponse(speechText, shouldEndSession = false, repromptText = null) {
-  const response = {
+  const safeText = speechText || 'Estou em prontidão, Comandante.';
+  const ssmlText = `<speak>${escaparSSML(safeText)}</speak>`;
+
+  const responsePayload = {
     version: '1.0',
+    sessionAttributes: {},
     response: {
       outputSpeech: {
-        type: 'PlainText',
-        text: speechText
+        type: 'SSML',
+        ssml: ssmlText
       },
       shouldEndSession: shouldEndSession
     }
   };
 
   if (repromptText && !shouldEndSession) {
-    response.response.reprompt = {
+    responsePayload.response.reprompt = {
       outputSpeech: {
-        type: 'PlainText',
-        text: repromptText
+        type: 'SSML',
+        ssml: `<speak>${escaparSSML(repromptText)}</speak>`
       }
     };
   }
 
-  return response;
+  return responsePayload;
 }
 
 module.exports = async function handler(req, res) {
@@ -89,9 +103,15 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const alexaReq = req.body || {};
-    const requestType = alexaReq.request?.type;
+    let alexaReq = req.body;
+    if (typeof alexaReq === 'string') {
+      try { alexaReq = JSON.parse(alexaReq); } catch (e) {}
+    } else if (Buffer.isBuffer(alexaReq)) {
+      try { alexaReq = JSON.parse(alexaReq.toString('utf8')); } catch (e) {}
+    }
+    alexaReq = alexaReq || {};
 
+    const requestType = alexaReq.request?.type;
     console.log(`[ALEXA] Tipo de requisição: ${requestType}`);
 
     // 1. Quando o usuário diz: "Alexa, abra o Jarvis"
@@ -133,7 +153,11 @@ module.exports = async function handler(req, res) {
         }
       }
 
+      // Se for FallbackIntent ou se não pegou slot específico
       if (!perguntaUsuario) {
+        if (intentName === 'AMAZON.FallbackIntent') {
+          return res.status(200).json(buildAlexaResponse('Pois não Comandante? Diga por exemplo: me fale sobre tal assunto, ou faça sua pergunta.', false, 'Estou ouvindo.'));
+        }
         return res.status(200).json(buildAlexaResponse('Não compreendi o que você disse, Comandante. Poderia repetir?', false, 'Estou ouvindo.'));
       }
 
@@ -146,7 +170,7 @@ module.exports = async function handler(req, res) {
 
     // 3. Fim da sessão
     if (requestType === 'SessionEndedRequest') {
-      return res.status(200).json(buildAlexaResponse('', true));
+      return res.status(200).json({ version: '1.0', sessionAttributes: {}, response: {} });
     }
 
     // Fallback padrão
