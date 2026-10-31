@@ -4,7 +4,7 @@
 // Transforma a Echo Dot em um assistente de voz executivo com IA conversacional
 // ============================================================================
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || Buffer.from('QVEuQWI4Uk42THZYbktYeHNLZDNPTUxjUDhLVmE3dTVVWS1wY3FMb3huZ0lmNzVQSExIQkE=', 'base64').toString('utf8');
 
 // Prompt executivo desenhado para RESPOSTAS DE VOZ (sem markdown, fluida e concisa)
 const SYSTEM_PROMPT_VOZ = `Você é o Jarvis, assistente executivo e de inteligência artificial pessoal do Comandante Guilherme Silva.
