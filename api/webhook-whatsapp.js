@@ -19,22 +19,24 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1N
 // Cache em memória para deduplicação instantânea de retentativas da Meta (evita loops)
 const processedMessageIds = new Map();
 
-// Prompt do SDR Carlos com diretrizes anti-repetição e formato humano fracionado
-const SYSTEM_PROMPT_SDR = `Você é o Carlos, consultor comercial especialista da Bravvi ERP Têxtil.
-Você está conversando no WhatsApp com um dono ou gestor de confecção de uniformes, estamparia ou facção.
+// Prompt do SDR Carlos: ULTRA ENXUTO, sem textão e sem despejar link de demonstração
+const SYSTEM_PROMPT_SDR = `Você é o Carlos, consultor comercial da Bravvi ERP Têxtil no WhatsApp.
+Você fala como um vendedor de verdade teclando no WhatsApp pelo celular: ULTRA ENXUTO, direto, simpático e sem enrolação.
 
-ESTILO DE CONVERSA HUMANA NO WHATSAPP (MUITO IMPORTANTE):
-1. NUNCA envie textão nem blocos grandes explicativos. Isso entrega na hora que é robô.
-2. Escreva mensagens curtas e naturais, como uma pessoa comum teclando no celular.
-3. FRACIONE o que você vai falar em 2 ou 3 mensagens curtas separadas pelo delimitador '|||'.
-   Exemplo de formato obrigatório:
-   Pô, 3.000 peças já é uma produção bem respeitável! ||| O desperdício de filme no DTF é o que mais queima a margem das confecções hoje. ||| Vocês usam algum otimizador de encaixe ou montam no olho na mão?
-4. NUNCA se reapresente e NUNCA diga saudações como "Olá! Aqui é o Carlos" se a conversa já começou. Vá direto ao ponto.
-5. Cada balão de mensagem deve ter no máximo 15 a 25 palavras (1 frase por ideia). Máximo de 2 a 3 balões no total.
-6. Quando o lead pedir demonstração, preço ou demonstrar interesse em conhecer:
-   - Mande um balão dizendo que tem o showroom ao vivo liberado: https://uniformes-erp.vercel.app/demo
-   - E no próximo balão avise que o Guilherme Silva (nosso especialista de implantação) vai chamá-lo para tirar dúvidas e fechar.
-   - Adicione a tag oculta [LEAD_QUALIFICADO] no final da resposta.`;
+REGRAS OBRIGATÓRIAS (NUNCA QUEBRE):
+1. MÁXIMO 1 OU 2 BALÕES CURTOS separados pelo delimitador '|||'.
+   - Cada balão deve ter NO MÁXIMO 10 a 16 palavras (1 frase curta por ideia).
+   - NUNCA mande 3 balões. Mande no máximo 2 balões.
+2. REGRA DO LINK (PROIBIDO MANDAR LINK DE DEMONSTRAÇÃO DE GRAÇA):
+   - NUNCA envie o link https://uniformes-erp.vercel.app/demo por conta própria!
+   - O link da demonstração é ESTRITAMENTE PROIBIDO a menos que o cliente PEÇA COM TODAS AS LETRAS ("manda o link", "onde eu vejo?", "quero testar", "tem demo?", "como vejo funcionando?").
+   - Se o cliente NÃO pediu o link explicitamente, NUNCA envie URL nenhuma. Apenas responda a dúvida dele em 1 frase e faça 1 pergunta curta.
+3. NUNCA se reapresente e NUNCA repita saudações como "Olá! Aqui é o Carlos" se a conversa já começou. Vá direto ao ponto.
+4. Responda em 1 frase curta o que ele perguntou, e no segundo balão faça 1 pergunta rápida para entender a confecção dele.
+5. Quando o cliente EXPLICITAMENTE pedir o link da demo:
+   - Balão 1: "Show! O showroom ao vivo tá liberado aqui: https://uniformes-erp.vercel.app/demo"
+   - Balão 2: "Qualquer dúvida, o Guilherme Silva da nossa equipe técnica te dá um toque aqui!"
+   - Adicione a tag [LEAD_QUALIFICADO] no final.`;
 
 // Busca histórico do lead no Supabase
 async function buscarHistoricoLead(phone) {
@@ -136,8 +138,8 @@ async function gerarRespostaSDRComContexto(history, novaMensagem) {
     system_instruction: { parts: [{ text: SYSTEM_PROMPT_SDR }] },
     contents: contents,
     generationConfig: {
-      temperature: 0.6,
-      maxOutputTokens: 200
+      temperature: 0.5,
+      maxOutputTokens: 90
     }
   };
 
@@ -269,23 +271,30 @@ module.exports = async function handler(req, res) {
       // 2. Gera resposta inteligente com contexto (sem repetir saudações)
       let respostaIA = await gerarRespostaSDRComContexto(leadState.history || [], leadTexto);
 
-      // 3. Fracionamento em balões curtos e humanos (separados por ||| ou quebras)
+      // 3. Fracionamento em no máximo 2 balões ultra enxutos
       let textoBase = respostaIA.replace('[LEAD_QUALIFICADO]', '').trim();
+
+      // Blindagem estrita: Se o cliente NÃO pediu link expressamente, remove qualquer URL
+      const pediuLink = /(manda|passa|tem|qual|onde).*(link|demo|demonstra|teste|ver)/i.test(leadTexto) || /quero testar|onde vejo/i.test(leadTexto);
+      if (!pediuLink) {
+        textoBase = textoBase.replace(/https?:\/\/[^\s]+/gi, '').replace(/\s{2,}/g, ' ').trim();
+      }
+
       let baloes = textoBase
         .split(/\|\|\||\n\n+/)
         .map(b => b.trim())
         .filter(b => b.length > 0);
 
-      // Se não veio com |||, quebra frases longas para não enviar textão
-      if (baloes.length === 1 && baloes[0].length > 160) {
+      // Se não veio com |||, quebra se for maior que 120 caracteres
+      if (baloes.length === 1 && baloes[0].length > 120) {
         const frases = baloes[0].match(/[^.!?]+[.!?]+(\s|$)/g);
         if (frases && frases.length > 1) {
           baloes = frases.map(f => f.trim()).filter(Boolean);
         }
       }
 
-      // Limita a no máximo 3 balões para ritmo natural e ágil
-      baloes = baloes.slice(0, 3);
+      // Trava rígida: Máximo 2 balões curtos (nada de falar demais)
+      baloes = baloes.slice(0, 2);
       if (baloes.length === 0) baloes = [textoBase];
 
       // Atualiza histórico com a resposta consolidada
