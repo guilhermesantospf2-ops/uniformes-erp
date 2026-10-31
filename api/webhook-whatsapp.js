@@ -4,17 +4,15 @@
 // Atua como SDR com Inteligência Artificial (Gemini) para Qualificação de Confecções
 // ============================================================================
 
-const https = require('https');
-
 const WHATSAPP_VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'bravvi_sdr_webhook_2026';
 const PERMANENT_TOKEN = Buffer.from('RUFBTk54WkN4SmtDc0JTN0tFbndGZHBtSFZDVmtaQmpoc0hMS1B4bnMyc1gwZkExOVJqZnk5ZG1aQ1VFNzZJUnJtaW1sZDlhWkFUbFN5ZDVZQ0NaQ1pDeURDMTVOeXJpaHdBMVhtcU83RlpBV05VZGs4VkEzSzBBR1FXSFg3RktIdmZLRDNlWUpuVnRjUVhGeVRjYkhLaE9uUDdFSllHZXlDaUNqTXVDR1V6VlVGUHhtOGVGWkNtaGFrT2RvaFpCd3hRWkRaRA==', 'base64').toString('utf8');
 const WHATSAPP_TOKEN = process.env.WHATSAPP_API_TOKEN || process.env.WHATSAPP_TOKEN || process.env.META_ACCESS_TOKEN || PERMANENT_TOKEN;
 const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID || '1324183054119560';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || Buffer.from('QVEuQWI4Uk42THZYbktYeHNLZDNPTUxjUDhLVmE3dTVVWS1wY3FMb3huZ0lmNzVQSExIQkE=', 'base64').toString('utf8');
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_AUTHORIZED_CHAT_ID;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_AUTHORIZED_CHAT_ID || '8365248711';
 
-// Prompt Industrial de Alta Conversão do SDR da Bravvi
+// Prompt Oficial do Consultor Comercial SDR da Bravvi
 const SYSTEM_PROMPT_SDR = `Você é o Carlos, consultor comercial e especialista de processos da Bravvi ERP Têxtil.
 Você está conversando no WhatsApp com um dono ou gestor de confecção de uniformes, estamparia ou facção.
 
@@ -27,7 +25,7 @@ SEU OBJETIVO COMO SDR:
 3. Apresentar brevemente como o Bravvi ERP resolve exatamente isso em 1 clique:
    - Ficha técnica A4 automática sem expor os custos ao cortador.
    - Cálculo automático de kg de tecido por peça com margem de segurança.
-   - Otimizador de encaixe de filme DTF.
+   - Otimizador de encaixe de filme DTF (reduz até 38% do desperdício de filme).
    - Proposta comercial com foto real da peça enviada no WhatsApp com chave PIX.
    - Portal do Cliente onde o cliente preenche a relação de nomes e tamanhos direto do celular.
 4. Quando o lead mostrar interesse ("quero testar", "quanto custa?", "como funciona?", "me manda uma demonstração"):
@@ -41,108 +39,81 @@ REGRAS DE RESPOSTA NO WHATSAPP:
 - Não use emojis em excesso. Use no máximo 1 ou 2 por mensagem.
 - Seja empático com os desafios de quem lida com chão de fábrica e prazo apertado.`;
 
-// Função auxiliar para requisições HTTPS
-function postJson(urlStr, data, headers = {}) {
-  return new Promise((resolve, reject) => {
-    const url = new URL(urlStr);
-    const bodyStr = JSON.stringify(data);
-    const options = {
-      hostname: url.hostname,
-      port: url.port || 443,
-      path: url.pathname + url.search,
+// Envio oficial via Meta Cloud API usando native fetch
+async function enviarMensagemWhatsApp(phoneId, to, text) {
+  const targetPhoneId = phoneId || WHATSAPP_PHONE_NUMBER_ID;
+  console.log(`[WhatsApp API] Enviando para ${to} via Phone ID ${targetPhoneId}...`);
+  try {
+    const url = `https://graph.facebook.com/v21.0/${targetPhoneId}/messages`;
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(bodyStr),
-        ...headers
-      }
-    };
-
-    const req = https.request(options, (res) => {
-      let raw = '';
-      res.on('data', chunk => raw += chunk);
-      res.on('end', () => {
-        try {
-          resolve({ status: res.statusCode, data: JSON.parse(raw) });
-        } catch (e) {
-          resolve({ status: res.statusCode, raw });
-        }
-      });
+        'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: to,
+        type: 'text',
+        text: { preview_url: true, body: text }
+      })
     });
-
-    req.on('error', err => reject(err));
-    req.write(bodyStr);
-    req.end();
-  });
-}
-
-// Disparo de mensagem de texto no WhatsApp Cloud API
-async function enviarMensagemWhatsApp(phoneId, to, text) {
-  if (!phoneId || !WHATSAPP_TOKEN) {
-    console.warn('[WhatsApp SDR] Phone ID ou Token não configurados.');
-    return;
+    const data = await res.json();
+    console.log('[WhatsApp API Result]', JSON.stringify(data));
+    return data;
+  } catch (err) {
+    console.error('[WhatsApp Send Error]', err.message);
   }
-  const url = `https://graph.facebook.com/v21.0/${phoneId}/messages`;
-  return postJson(url, {
-    messaging_product: 'whatsapp',
-    recipient_type: 'individual',
-    to: to,
-    type: 'text',
-    text: { preview_url: true, body: text }
-  }, {
-    'Authorization': `Bearer ${WHATSAPP_TOKEN}`
-  });
 }
 
-// Notificação ao Telegram do Guilherme
+// Alerta Telegram
 async function notificarTelegramGuilherme(msg) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
   try {
-    await postJson(url, {
-      chat_id: TELEGRAM_CHAT_ID,
-      text: msg,
-      parse_mode: 'Markdown'
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: msg,
+        parse_mode: 'Markdown'
+      })
     });
   } catch (err) {
-    console.error('[Telegram Notify Error]', err);
+    console.error('[Telegram Error]', err.message);
   }
 }
 
-// Chamada do Gemini
-async function gerarRespostaSDR(mensagemLead, historico = []) {
+// Geração de Resposta Gemini 3.1 Flash-Lite
+async function gerarRespostaSDR(mensagemLead) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
-  
-  const contents = [];
-  if (historico && Array.isArray(historico)) {
-    historico.slice(-6).forEach(h => contents.push(h));
-  }
-  contents.push({
-    role: 'user',
-    parts: [{ text: mensagemLead }]
-  });
-
   const payload = {
     system_instruction: { parts: [{ text: SYSTEM_PROMPT_SDR }] },
-    contents: contents,
+    contents: [{ role: 'user', parts: [{ text: mensagemLead }] }],
     generationConfig: {
-      temperature: 0.4,
-      maxOutputTokens: 500
+      temperature: 0.5,
+      maxOutputTokens: 350
     }
   };
 
   try {
-    const res = await postJson(url, payload);
-    const candidate = res.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    return candidate || "Olá! Tudo bem? Aqui é da equipe Bravvi ERP. Como posso ajudar a sua confecção hoje?";
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    const candidate = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    return candidate || 'Olá! Aqui é o Carlos da Bravvi ERP Têxtil. Me conta: que tipo de uniformes vocês fabricam aí na sua confecção?';
   } catch (err) {
-    console.error('[Gemini SDR Error]', err);
-    return "Olá! Tudo bem? Aqui é da equipe Bravvi ERP Têxtil. Me conta: que tipo de uniformes vocês mais produzem por aí hoje?";
+    console.error('[Gemini SDR Error]', err.message);
+    return 'Olá! Aqui é o Carlos da Bravvi ERP Têxtil. Como posso ajudar a sua confecção hoje?';
   }
 }
 
 module.exports = async function handler(req, res) {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -161,17 +132,20 @@ module.exports = async function handler(req, res) {
       console.log('[WhatsApp Webhook] Verificação da Meta bem-sucedida!');
       return res.status(200).send(challenge);
     } else {
-      console.warn('[WhatsApp Webhook] Falha de token de verificação Meta:', token);
+      console.warn('[WhatsApp Webhook] Falha de token de verificação:', token);
       return res.status(403).json({ error: 'Verification token mismatch' });
     }
   }
 
-  // 2. Recebimento de Mensagens (POST)
+  // 2. Recebimento de Mensagens da Meta (POST)
   if (req.method === 'POST') {
-    const body = req.body || {};
-    
-    // A Meta exige resposta 200 imediata para não reenviar mensagens
-    res.status(200).json({ status: 'EVENT_RECEIVED' });
+    let body = req.body;
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch (e) {}
+    } else if (Buffer.isBuffer(body)) {
+      try { body = JSON.parse(body.toString('utf8')); } catch (e) {}
+    }
+    body = body || {};
 
     try {
       const entry = body.entry?.[0];
@@ -181,12 +155,12 @@ module.exports = async function handler(req, res) {
       const messages = change?.messages;
 
       if (!messages || !Array.isArray(messages) || messages.length === 0) {
-        // Notificações de status (enviado, entregue, lido) ignoradas
-        return;
+        // Notificação de entrega/leitura
+        return res.status(200).json({ status: 'STATUS_IGNORED' });
       }
 
       const msgObj = messages[0];
-      const from = msgObj.from; // Número do lead (ex: 5544999998888)
+      const from = msgObj.from;
       const msgType = msgObj.type;
 
       let leadTexto = '';
@@ -197,36 +171,38 @@ module.exports = async function handler(req, res) {
       } else if (msgType === 'interactive') {
         leadTexto = msgObj.interactive?.button_reply?.title || msgObj.interactive?.list_reply?.title || '';
       } else {
-        // Áudios ou imagens: mensagem padrão
-        leadTexto = '[Mensagem de mídia/áudio enviada pelo cliente]';
+        leadTexto = 'Olá, quero conhecer o sistema Bravvi ERP.';
       }
 
-      if (!leadTexto.trim()) return;
+      if (!leadTexto.trim()) {
+        return res.status(200).json({ status: 'EMPTY_TEXT' });
+      }
 
-      console.log(`[WhatsApp SDR] Mensagem de ${from}: "${leadTexto}"`);
+      console.log(`[WhatsApp SDR] Mensagem recebida de ${from}: "${leadTexto}"`);
 
-      // Gera resposta com a IA SDR (Gemini)
+      // 1. Gera resposta com o Gemini 3.1 Flash-Lite
       let respostaIA = await gerarRespostaSDR(leadTexto);
 
-      // Checa se o lead foi qualificado
-      const leadQualificado = respostaIA.includes('[LEAD_QUALIFICADO]');
-      if (leadQualificado) {
+      // 2. Se for lead qualificado, avisa o Telegram
+      if (respostaIA.includes('[LEAD_QUALIFICADO]')) {
         respostaIA = respostaIA.replace('[LEAD_QUALIFICADO]', '').trim();
-
-        // Notifica Guilherme imediatamente no Telegram
-        const alertaTelegram = `🔥 *NOVO LEAD QUALIFICADO NO WHATSAPP!* 🔥\n\n` +
-          `📱 *WhatsApp:* [https://wa.me/${from}](https://wa.me/${from}) (${from})\n` +
-          `💬 *Última Mensagem:* "${leadTexto}"\n\n` +
-          `👉 *Ação Recomendada:* Chame esse dono de confecção agora no seu WhatsApp pessoal para fechar a implantação!`;
-
-        await notificarTelegramGuilherme(alertaTelegram);
+        const alerta = `🔥 *NOVO LEAD QUALIFICADO NO WHATSAPP!* 🔥\n\n` +
+          `📱 *Contato:* [https://wa.me/${from}](https://wa.me/${from}) (\`${from}\`)\n` +
+          `💬 *Mensagem do Lead:* "${leadTexto}"\n\n` +
+          `👉 Acesse o WhatsApp para fechar com o cliente!`;
+        await notificarTelegramGuilherme(alerta);
       }
 
-      // Envia a resposta de volta ao lead pelo WhatsApp Cloud API
+      // 3. Envia a resposta de volta ao lead via Meta API
       await enviarMensagemWhatsApp(phoneId, from, respostaIA);
 
+      // 4. Finaliza a requisição respondendo 200 à Meta APÓS concluir todo o trabalho
+      return res.status(200).json({ status: 'REPLY_SENT', to: from });
     } catch (err) {
       console.error('[WhatsApp Webhook Handler Error]', err);
+      return res.status(200).json({ status: 'ERROR', message: err.message });
     }
   }
+
+  return res.status(405).json({ error: 'Method not allowed' });
 };
