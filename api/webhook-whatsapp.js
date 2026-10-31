@@ -6,8 +6,8 @@
 
 const WHATSAPP_VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'bravvi_sdr_webhook_2026';
 const PERMANENT_TOKEN = Buffer.from('RUFBTk54WkN4SmtDc0JTN0tFbndGZHBtSFZDVmtaQmpoc0hMS1B4bnMyc1gwZkExOVJqZnk5ZG1aQ1VFNzZJUnJtaW1sZDlhWkFUbFN5ZDVZQ0NaQ1pDeURDMTVOeXJpaHdBMVhtcU83RlpBV05VZGs4VkEzSzBBR1FXSFg3RktIdmZLRDNlWUpuVnRjUVhGeVRjYkhLaE9uUDdFSllHZXlDaUNqTXVDR1V6VlVGUHhtOGVGWkNtaGFrT2RvaFpCd3hRWkRaRA==', 'base64').toString('utf8');
-const WHATSAPP_TOKEN = process.env.WHATSAPP_API_TOKEN || process.env.WHATSAPP_TOKEN || process.env.META_ACCESS_TOKEN || PERMANENT_TOKEN;
-const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID || '1324183054119560';
+const WHATSAPP_TOKEN = PERMANENT_TOKEN; // Prioridade absoluta ao token permanente do System User
+const WHATSAPP_PHONE_NUMBER_ID = '1324183054119560';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || Buffer.from('QVEuQWI4Uk42THZYbktYeHNLZDNPTUxjUDhLVmE3dTVVWS1wY3FMb3huZ0lmNzVQSExIQkE=', 'base64').toString('utf8');
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || Buffer.from('ODg4ODU3MDY5ODpBQUd0elpKdjlWaTBsVDhUMVpCa1NOV2Qzbi1LcTMzRmdyYw==', 'base64').toString('utf8');
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_AUTHORIZED_CHAT_ID || '8365248711';
@@ -64,23 +64,24 @@ async function enviarMensagemWhatsApp(phoneId, to, text) {
     return data;
   } catch (err) {
     console.error('[WhatsApp Send Error]', err.message);
+    return { error: err.message };
   }
 }
 
-// Alerta Telegram
+// Alerta Telegram Seguro (sem quebras de Markdown)
 async function notificarTelegramGuilherme(msg) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
   try {
     const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-    await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: TELEGRAM_CHAT_ID,
-        text: msg,
-        parse_mode: 'Markdown'
+        text: msg
       })
     });
+    return await res.json();
   } catch (err) {
     console.error('[Telegram Error]', err.message);
   }
@@ -122,8 +123,18 @@ module.exports = async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // 1. Verificação do Webhook pela Meta (GET)
+  // 1. Verificação do Webhook pela Meta (GET) ou Diagnóstico Direto
   if (req.method === 'GET') {
+    // Diagnóstico rápido de envio de teste via GET: /api/webhook-whatsapp?test_lead=5544998071870
+    if (req.query.test_lead) {
+      const dest = req.query.test_lead;
+      const testMsg = 'Olá Carlos, tenho uma confecção de camisetas esportivas e quero conhecer o ERP!';
+      const respostaIA = await gerarRespostaSDR(testMsg);
+      const sendResult = await enviarMensagemWhatsApp(WHATSAPP_PHONE_NUMBER_ID, dest, respostaIA);
+      await notificarTelegramGuilherme(`🧪 DIAGNÓSTICO DISPARADO\nDestino: ${dest}\nResposta: ${respostaIA}\nResultado Meta: ${JSON.stringify(sendResult)}`);
+      return res.status(200).json({ ok: true, dest, respostaIA, sendResult });
+    }
+
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
@@ -147,26 +158,39 @@ module.exports = async function handler(req, res) {
     }
     body = body || {};
 
-    // Diagnóstico ao vivo no Telegram
-    console.log('[Meta Webhook POST Event]', JSON.stringify(body).substring(0, 300));
-    notificarTelegramGuilherme(`🔔 *WEBHOOK META RECEBIDO!* \n\`\`\`json\n${JSON.stringify(body, null, 2).substring(0, 500)}\n\`\`\``);
+    // Diagnóstico ao vivo no Telegram para qualquer chamada recebida
+    const previewRaw = JSON.stringify(body, null, 2);
+    await notificarTelegramGuilherme(`🔔 WEBHOOK META EVENTO RECEBIDO!\n${previewRaw.substring(0, 800)}`);
 
     try {
-      const entry = body.entry?.[0];
-      const change = entry?.changes?.[0]?.value || body.value || body;
-      const metadata = change?.metadata;
-      let phoneId = metadata?.phone_number_id || WHATSAPP_PHONE_NUMBER_ID;
-      if (phoneId === '123456123' || !phoneId) {
-        phoneId = WHATSAPP_PHONE_NUMBER_ID;
-      }
-      const messages = change?.messages;
+      let allMessages = [];
+      let phoneId = WHATSAPP_PHONE_NUMBER_ID;
 
-      if (!messages || !Array.isArray(messages) || messages.length === 0) {
-        // Notificação de entrega/leitura
-        return res.status(200).json({ status: 'STATUS_IGNORED' });
+      if (body.entry && Array.isArray(body.entry)) {
+        for (const e of body.entry) {
+          for (const ch of e.changes || []) {
+            if (ch.value) {
+              if (ch.value.metadata?.phone_number_id && ch.value.metadata.phone_number_id !== '123456123') {
+                phoneId = ch.value.metadata.phone_number_id;
+              }
+              if (Array.isArray(ch.value.messages)) {
+                allMessages.push(...ch.value.messages);
+              }
+            }
+          }
+        }
+      } else if (body.value?.messages && Array.isArray(body.value.messages)) {
+        allMessages.push(...body.value.messages);
+      } else if (Array.isArray(body.messages)) {
+        allMessages.push(...body.messages);
       }
 
-      const msgObj = messages[0];
+      if (allMessages.length === 0) {
+        // Relatório de entrega/leitura de mensagens enviadas
+        return res.status(200).json({ status: 'STATUS_OR_EMPTY' });
+      }
+
+      const msgObj = allMessages[0];
       const from = msgObj.from;
       const msgType = msgObj.type;
 
@@ -185,7 +209,8 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ status: 'EMPTY_TEXT' });
       }
 
-      console.log(`[WhatsApp SDR] Mensagem recebida de ${from}: "${leadTexto}"`);
+      console.log(`[WhatsApp SDR] Mensagem de ${from}: "${leadTexto}"`);
+      await notificarTelegramGuilherme(`📩 MENSAGEM DO LEAD RECEBIDA!\nDe: ${from}\nTexto: "${leadTexto}"`);
 
       // 1. Gera resposta com o Gemini 3.1 Flash-Lite
       let respostaIA = await gerarRespostaSDR(leadTexto);
@@ -193,20 +218,21 @@ module.exports = async function handler(req, res) {
       // 2. Se for lead qualificado, avisa o Telegram
       if (respostaIA.includes('[LEAD_QUALIFICADO]')) {
         respostaIA = respostaIA.replace('[LEAD_QUALIFICADO]', '').trim();
-        const alerta = `🔥 *NOVO LEAD QUALIFICADO NO WHATSAPP!* 🔥\n\n` +
-          `📱 *Contato:* [https://wa.me/${from}](https://wa.me/${from}) (\`${from}\`)\n` +
-          `💬 *Mensagem do Lead:* "${leadTexto}"\n\n` +
-          `👉 Acesse o WhatsApp para fechar com o cliente!`;
+        const alerta = `🔥 NOVO LEAD QUALIFICADO NO WHATSAPP! 🔥\n\nContato: https://wa.me/${from} (${from})\nMensagem: "${leadTexto}"\n\nAcesse o WhatsApp para fechar com o cliente!`;
         await notificarTelegramGuilherme(alerta);
       }
 
       // 3. Envia a resposta de volta ao lead via Meta API
-      await enviarMensagemWhatsApp(phoneId, from, respostaIA);
+      const sendResult = await enviarMensagemWhatsApp(phoneId, from, respostaIA);
 
-      // 4. Finaliza a requisição respondendo 200 à Meta APÓS concluir todo o trabalho
-      return res.status(200).json({ status: 'REPLY_SENT', to: from });
+      // 4. Notifica o Telegram com a resposta enviada e o status da Meta
+      await notificarTelegramGuilherme(`🤖 CARLOS SDR RESPONDEU NO WHATSAPP!\nPara: ${from}\nResposta: "${respostaIA}"\nStatus Meta: ${JSON.stringify(sendResult)}`);
+
+      // 5. Finaliza a requisição respondendo 200 à Meta APÓS concluir todo o trabalho
+      return res.status(200).json({ status: 'REPLY_SENT', to: from, metaResult: sendResult });
     } catch (err) {
       console.error('[WhatsApp Webhook Handler Error]', err);
+      await notificarTelegramGuilherme(`❌ ERRO NO PROCESSAMENTO DO WEBHOOK:\n${err.message}`);
       return res.status(200).json({ status: 'ERROR', message: err.message });
     }
   }
