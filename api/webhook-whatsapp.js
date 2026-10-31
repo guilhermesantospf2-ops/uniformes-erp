@@ -161,6 +161,17 @@ async function notificarTelegramGuilherme(msg) {
   }
 }
 
+const GUILHERME_PERSONAL_PHONE = '554498071870'; // Celular particular do Guilherme (44 99807-1870)
+
+// Alerta WhatsApp direto no celular particular do Guilherme
+async function notificarGuilhermeCelular(msg) {
+  try {
+    await enviarMensagemWhatsApp(WHATSAPP_PHONE_NUMBER_ID, GUILHERME_PERSONAL_PHONE, msg);
+  } catch (err) {
+    console.error('[WhatsApp Alerta Celular Guilherme Error]', err.message);
+  }
+}
+
 // Geração de Resposta Gemini com Contexto Closer Diamond
 async function gerarRespostaSDRComContexto(history, novaMensagem) {
   const contents = (history || []).slice(-4).map(item => ({
@@ -301,7 +312,11 @@ module.exports = async function handler(req, res) {
       // 🛑 3. MODO SILÊNCIO / HANDOFF HUMANO
       // Se o lead já pediu para fechar ou chamou o Guilherme antes, o robô FICA MUDO!
       if (leadState.handoff === true) {
-        await notificarTelegramGuilherme(`🚨 LEAD AGUARDANDO NO WHATSAPP:\nDe: https://wa.me/${from} (${from})\nFala: "${leadTexto}"\n(Bot em silêncio. Assuma a conversa no WhatsApp!)`);
+        const alertaMuted = `🚨 *LEAD AGUARDANDO NO WHATSAPP:*\nDe: https://wa.me/${from} (${from})\nFala: "${leadTexto}"\n\n👉 Assuma a conversa no WhatsApp oficial! (O Carlos está em silêncio para este cliente).`;
+        await notificarTelegramGuilherme(alertaMuted);
+        if (from !== GUILHERME_PERSONAL_PHONE && from !== '5544998071870') {
+          await notificarGuilhermeCelular(alertaMuted);
+        }
         return res.status(200).json({ status: 'HANDOFF_MUTED' });
       }
 
@@ -325,7 +340,12 @@ module.exports = async function handler(req, res) {
           handoff: true // MUTA O BOT DEFINITIVAMENTE PARA ESTE CLIENTE
         });
 
-        await notificarTelegramGuilherme(`🔥 LEAD PRONTO PARA FECHAR NO WHATSAPP! 🔥\nContato: https://wa.me/${from} (${from})\nMensagem: "${leadTexto}"\n\n👉 ASSUMA A CONVERSA NO WHATSAPP AGORA! O bot foi mutado.`);
+        const alertaFechamento = `🔥 *LEAD PRONTO PARA FECHAR NO WHATSAPP!* 🔥\nContato: https://wa.me/${from} (${from})\nMensagem: "${leadTexto}"\n\n👉 *ASSUMA A CONVERSA NO WHATSAPP AGORA!* O Carlos já mutou o atendimento.`;
+        await notificarTelegramGuilherme(alertaFechamento);
+        if (from !== GUILHERME_PERSONAL_PHONE && from !== '5544998071870') {
+          await notificarGuilhermeCelular(alertaFechamento);
+        }
+
         return res.status(200).json({ status: 'HANDOFF_TRIGGERED' });
       }
 
