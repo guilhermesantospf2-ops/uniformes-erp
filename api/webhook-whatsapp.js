@@ -344,8 +344,53 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ status: 'HANDOFF_MUTED' });
       }
 
-      // 🛑 4. GATILHO DE FECHAMENTO OU CHAMADA DO GUILHERME
-      const querFecharOuChamar = /(fechar|comprar|assinar|contratar|guilherme|chama ele|urgente|atender|falar com|humano|atendente|vendedor|ligar|demora|cadê|pix|cartão|pagamento|link de pagamento)/i.test(leadTexto);
+      // 🛡️ 5. COOLDOWN ANTI-METRALHADORA (Não atropela cliente que manda 3 frases seguidas)
+      const agora = Date.now();
+      if (leadState.last_processed_at && (agora - leadState.last_processed_at < 8000)) {
+        console.log(`[Cooldown] Ignorando rajada de ${from}`);
+        return res.status(200).json({ status: 'COOLDOWN_IGNORED' });
+      }
+
+      // 🔄 COMANDO DE TESTE PARA RESETAR FLUXO DO ZERO (#reset ou #teste)
+      if (/^#(reset|teste)$/i.test(leadTexto.trim())) {
+        await salvarHistoricoLead(from, {
+          history: [],
+          last_message_id: msgId,
+          last_processed_at: agora,
+          handoff: false,
+          step: 'inicio'
+        });
+        await enviarMensagemWhatsApp(phoneId, from, '🔄 Fluxo resetado com sucesso! Envie qualquer mensagem para iniciar o atendimento do zero.');
+        return res.status(200).json({ status: 'RESET_OK' });
+      }
+
+      const stepAtual = leadState.step || ((!leadState.history || leadState.history.length === 0) ? 'inicio' : 'qualificacao');
+
+      // 🎬 FLUXO ETAPA 1: PRIMEIRO CONTATO DO LEAD
+      // Apresentação + Pergunta se está bem + Pergunta permissão para mandar o vídeo de boas-vindas do Guilherme
+      // NUNCA entra em handoff no primeiro contato, mesmo se o anúncio vier com "Olá Guilherme!"
+      if (stepAtual === 'inicio') {
+        const saudacaoInicial = 'Fala! Tudo bem por aí? Sou o Carlos, consultor aqui da Bravvi ERP Têxtil.\n\nO próprio Guilherme, fundador do sistema e dono de confecção, gravou um vídeo rápido de 1 minuto te dando as boas-vindas e contando como nasceu o sistema. Posso te mandar por aqui?';
+        
+        await new Promise(r => setTimeout(r, 2000));
+        await enviarMensagemWhatsApp(phoneId, from, saudacaoInicial);
+
+        await salvarHistoricoLead(from, {
+          history: [
+            { role: 'user', parts: [{ text: leadTexto }] },
+            { role: 'model', parts: [{ text: saudacaoInicial }] }
+          ],
+          last_message_id: msgId,
+          last_processed_at: Date.now(),
+          handoff: false,
+          step: 'aguardando_permissao_video'
+        });
+
+        return res.status(200).json({ status: 'STEP_1_SAUDACAO_ENVIADA' });
+      }
+
+      // 🛑 4. GATILHO DE FECHAMENTO OU CHAMADA DO GUILHERME (Apenas após o primeiro contato)
+      const querFecharOuChamar = /(quero fechar|vou fechar|quero comprar|vou comprar|quero assinar|vou assinar|como contratar|como faço pra contratar|como faco pra contratar|como faz pra contratar|passa o pix|manda o pix|chave pix|link de pagamento|link de pagar|chama o guilherme|falar com o guilherme|falar com humano|falar com atendente|passa pro guilherme|chamar o dono)/i.test(leadTexto);
       if (querFecharOuChamar) {
         const respostaHandoff = 'Fechado! Já passei pro Guilherme aqui no privado com urgência, ele já vai assumir a conversa com você agora para fechar.';
         
@@ -371,50 +416,6 @@ module.exports = async function handler(req, res) {
         }
 
         return res.status(200).json({ status: 'HANDOFF_TRIGGERED' });
-      }
-
-      // 🛡️ 5. COOLDOWN ANTI-METRALHADORA (Não atropela cliente que manda 3 frases seguidas)
-      const agora = Date.now();
-      if (leadState.last_processed_at && (agora - leadState.last_processed_at < 8000)) {
-        console.log(`[Cooldown] Ignorando rajada de ${from}`);
-        return res.status(200).json({ status: 'COOLDOWN_IGNORED' });
-      }
-
-      // 🔄 COMANDO DE TESTE PARA RESETAR FLUXO DO ZERO (#reset ou #teste)
-      if (/^#(reset|teste)$/i.test(leadTexto.trim())) {
-        await salvarHistoricoLead(from, {
-          history: [],
-          last_message_id: msgId,
-          last_processed_at: agora,
-          handoff: false,
-          step: 'inicio'
-        });
-        await enviarMensagemWhatsApp(phoneId, from, '🔄 Fluxo resetado com sucesso! Envie qualquer mensagem para iniciar o atendimento do zero.');
-        return res.status(200).json({ status: 'RESET_OK' });
-      }
-
-      const stepAtual = leadState.step || ((!leadState.history || leadState.history.length === 0) ? 'inicio' : 'qualificacao');
-
-      // 🎬 FLUXO ETAPA 1: PRIMEIRO CONTATO DO LEAD
-      // Apresentação + Pergunta se está bem + Pergunta permissão para mandar o vídeo de boas-vindas do Guilherme
-      if (stepAtual === 'inicio') {
-        const saudacaoInicial = 'Fala! Tudo bem por aí? Sou o Carlos, consultor aqui da Bravvi ERP Têxtil.\n\nO próprio Guilherme, fundador do sistema e dono de confecção, gravou um vídeo rápido de 1 minuto te dando as boas-vindas e contando como nasceu o sistema. Posso te mandar por aqui?';
-        
-        await new Promise(r => setTimeout(r, 2000));
-        await enviarMensagemWhatsApp(phoneId, from, saudacaoInicial);
-
-        await salvarHistoricoLead(from, {
-          history: [
-            { role: 'user', parts: [{ text: leadTexto }] },
-            { role: 'model', parts: [{ text: saudacaoInicial }] }
-          ],
-          last_message_id: msgId,
-          last_processed_at: Date.now(),
-          handoff: false,
-          step: 'aguardando_permissao_video'
-        });
-
-        return res.status(200).json({ status: 'STEP_1_SAUDACAO_ENVIADA' });
       }
 
       // 🎬 FLUXO ETAPA 2: CLIENTE RESPONDEU SOBRE O VÍDEO
