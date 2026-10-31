@@ -5,7 +5,7 @@
 // ============================================================================
 
 const WHATSAPP_VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'bravvi_sdr_webhook_2026';
-const PERMANENT_TOKEN = Buffer.from('RUFBTk54WkN4SmtDc0JTN0tFbndGZHBtSFZDVmtaQmpoc0hMS1B4bnMyc1gwZkExOVJqZnk5ZG1aQ1VFNzZJUnJtaW1sZDlhWkFUbFN5ZDVZQ0NaQ1pDeURDMTVOeXJpaHdBMVhtcU83RlpBV05VZGs4VkEzSzBBR1FXSFg3RktIdmZLRDNlWUpuVnRjUVhGeVRjYkhLaE9uUDdFSllHZXlDaUNqTXVDR1V6VlVGUHhtOGVGWkNtaGFrT2RvaFpCd3hRWkRaRA==', 'base64').toString('utf8');
+const PERMANENT_TOKEN = Buffer.from('RUFBTk54WkN4SmtDc0JTN0tFbnc1ZHBtSFZDVmtaQmpoc0hMS1B4bnMyc1gwZkExOVJqZnk5ZG1aQ1VFNzZJUnJSbWltbGQ5YVpBVGxTeWQ1WUNDWkNaQ3lEQzE1TnlyaWh3QTFYbXFPN0ZaQVdOVWRrOFZBM0swQUdRV0hYN0ZLSHZmS0QzZVlKblZ0Y1FYRnlUY2JIS2hPblA3RUpZR2V5Q2lDak11Q0dVelZVRlB4bThlRlpDbWhha09kb2haQnd4UVpEWkQ=', 'base64').toString('utf8');
 const WHATSAPP_TOKEN = PERMANENT_TOKEN; // Prioridade absoluta ao token permanente do System User
 const WHATSAPP_PHONE_NUMBER_ID = '1324183054119560';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || Buffer.from('QVEuQWI4Uk42THZYbktYeHNLZDNPTUxjUDhLVmE3dTVVWS1wY3FMb3huZ0lmNzVQSExIQkE=', 'base64').toString('utf8');
