@@ -2736,6 +2736,21 @@
 
   // Motor de Inteligência de Planos (Básico vs Pro Industrial)
   function obterPlanoAtivo() {
+    // 🌟 NO MODO DEMO / SHOWROOM COMERCIAL: 100% PRO INDUSTRIAL TOTALMENTE DESBLOQUEADO!
+    if (
+      (typeof isDemo !== 'undefined' && isDemo) ||
+      window.BRAVVI_IS_DEMO === true ||
+      window.TEXPRO_IS_DEMO === true ||
+      window.BRAVVI_FORCAR_PRO === true ||
+      (typeof window !== 'undefined' && window.location && (
+        window.location.pathname.includes('/demo') ||
+        window.location.pathname.endsWith('demo.html') ||
+        window.location.search.includes('demo=true')
+      ))
+    ) {
+      return 'pro';
+    }
+
     try {
       const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
         ? window.ERP_CLOUD.obterEmpresaConfig()
@@ -21331,10 +21346,11 @@
       nomeFantasia: "Bravvi Indústria Têxtil",
       cnpj: "34.582.910/0001-44",
       inscricaoEstadual: "123.456.789.110",
-      telefone: "44999856245",
+      telefone: "4499856245",
       email: "contato@bravvi.com.br",
       chavePix: "34.582.910/0001-44",
       tipoChavePix: "CNPJ",
+      plano: "pro", // 🌟 100% PRO INDUSTRIAL LIBERADO
       endereco: "Rua Têxtil Industrial, 450",
       bairro: "Distrito Industrial",
       cidade: "Americana",
