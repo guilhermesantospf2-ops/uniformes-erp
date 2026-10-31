@@ -1,7 +1,7 @@
 // ============================================================================
 // BRAVVI ERP TÊXTIL — WEBHOOK SERVERLESS WHATSAPP CLOUD API OFICIAL (META)
 // Rota: GET/POST /api/webhook-whatsapp
-// SDR com Memória Persistente (Supabase) + Inteligência Artificial (Gemini)
+// SDR Ultra-Enxuto (1 Frase Curta) + Modo Mudo / Handoff Humano Imediato
 // ============================================================================
 
 const WHATSAPP_VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'bravvi_sdr_webhook_2026';
@@ -16,29 +16,22 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_AUTHORIZED_CHAT_ID || '8365248711'
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://nrhygqygcfjyniogjegq.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yaHlncXlnY2ZqeW5pb2dqZWdxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDQ3NTUxMywiZXhwIjoyMTA2MDUxNTEzfQ.O3qqAwPQCEVRh11hUC5QBCSY9Nf4qFQTKrMvGYU4EwU';
 
-// Cache em memória para deduplicação instantânea de retentativas da Meta (evita loops)
+// Cache em memória para deduplicação instantânea de retentativas da Meta
 const processedMessageIds = new Map();
 
-// Prompt do SDR Carlos: ULTRA ENXUTO, sem textão e sem despejar link de demonstração
+// Prompt do SDR Carlos: ULTRA ENXUTO (Fala 10% do habitual, sem interrogatório)
 const SYSTEM_PROMPT_SDR = `Você é o Carlos, consultor comercial da Bravvi ERP Têxtil no WhatsApp.
-Você fala como um vendedor de verdade teclando no WhatsApp pelo celular: ULTRA ENXUTO, direto, simpático e sem enrolação.
+Você fala como um humano normal ocupado teclando pelo celular: ULTRA ENXUTO, direto, simpático e sem enrolação.
 
-REGRAS OBRIGATÓRIAS (NUNCA QUEBRE):
-1. MÁXIMO 1 OU 2 BALÕES CURTOS separados pelo delimitador '|||'.
-   - Cada balão deve ter NO MÁXIMO 10 a 16 palavras (1 frase curta por ideia).
-   - NUNCA mande 3 balões. Mande no máximo 2 balões.
-2. REGRA DO LINK (PROIBIDO MANDAR LINK DE DEMONSTRAÇÃO DE GRAÇA):
-   - NUNCA envie o link https://uniformes-erp.vercel.app/demo por conta própria!
-   - O link da demonstração é ESTRITAMENTE PROIBIDO a menos que o cliente PEÇA COM TODAS AS LETRAS ("manda o link", "onde eu vejo?", "quero testar", "tem demo?", "como vejo funcionando?").
-   - Se o cliente NÃO pediu o link explicitamente, NUNCA envie URL nenhuma. Apenas responda a dúvida dele em 1 frase e faça 1 pergunta curta.
-3. NUNCA se reapresente e NUNCA repita saudações como "Olá! Aqui é o Carlos" se a conversa já começou. Vá direto ao ponto.
-4. Responda em 1 frase curta o que ele perguntou, e no segundo balão faça 1 pergunta rápida para entender a confecção dele.
-5. Quando o cliente EXPLICITAMENTE pedir o link da demo:
-   - Balão 1: "Show! O showroom ao vivo tá liberado aqui: https://uniformes-erp.vercel.app/demo"
-   - Balão 2: "Qualquer dúvida, o Guilherme Silva da nossa equipe técnica te dá um toque aqui!"
-   - Adicione a tag [LEAD_QUALIFICADO] no final.`;
+REGRAS DE OURO OBRIGATÓRIAS (EXTREMA PRIORIDADE):
+1. FALE POUCO. Envie NO MÁXIMO 1 ÚNICA FRASE CURTA (máximo 12 a 18 palavras no total).
+2. NUNCA faça interrogatório de facção (NÃO pergunte volume, não pergunte tecido, não pergunte grade se a conversa já começou).
+3. NUNCA, SOB HIPÓTESE ALGUMA, peça o número de WhatsApp do cliente (você JÁ ESTÁ conversando com ele pelo WhatsApp!).
+4. NUNCA envie links por conta própria.
+5. Se o cliente tiver uma dúvida, responda em 1 frase simples e pare.
+6. Se o cliente demonstrar urgência, pressa ou quiser fechar/falar com alguém, diga apenas: "Fechado! Já passei pro Guilherme aqui no privado com urgência, ele já vai te responder."`;
 
-// Busca histórico do lead no Supabase
+// Busca histórico e estado do lead no Supabase
 async function buscarHistoricoLead(phone) {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/erp_tenants?tenant_id=eq.sdr_lead_${phone}&select=db`, {
@@ -54,10 +47,10 @@ async function buscarHistoricoLead(phone) {
   } catch (err) {
     console.error('[Supabase Read Error]', err.message);
   }
-  return { history: [], last_message_id: null, last_processed_at: 0 };
+  return { history: [], last_message_id: null, last_processed_at: 0, handoff: false };
 }
 
-// Salva histórico do lead no Supabase
+// Salva histórico e estado do lead no Supabase
 async function salvarHistoricoLead(phone, dbData) {
   try {
     await fetch(`${SUPABASE_URL}/rest/v1/erp_tenants`, {
@@ -95,7 +88,7 @@ async function enviarMensagemWhatsApp(phoneId, to, text) {
         recipient_type: 'individual',
         to: to,
         type: 'text',
-        text: { preview_url: true, body: text }
+        text: { preview_url: false, body: text }
       })
     });
     return await res.json();
@@ -123,10 +116,9 @@ async function notificarTelegramGuilherme(msg) {
   }
 }
 
-// Geração de Resposta Gemini 3.5 com Contexto de Histórico
+// Geração de Resposta Gemini 3.5 com Contexto
 async function gerarRespostaSDRComContexto(history, novaMensagem) {
-  // Limita histórico recente às últimas 6 interações para máxima velocidade e relevância
-  const contents = (history || []).slice(-6).map(item => ({
+  const contents = (history || []).slice(-4).map(item => ({
     role: item.role,
     parts: item.parts
   }));
@@ -138,8 +130,8 @@ async function gerarRespostaSDRComContexto(history, novaMensagem) {
     system_instruction: { parts: [{ text: SYSTEM_PROMPT_SDR }] },
     contents: contents,
     generationConfig: {
-      temperature: 0.5,
-      maxOutputTokens: 90
+      temperature: 0.4,
+      maxOutputTokens: 50 // Trava física: impossível mandar textão
     }
   };
 
@@ -158,11 +150,7 @@ async function gerarRespostaSDRComContexto(history, novaMensagem) {
     console.error('[Gemini Context Error]', err.message);
   }
 
-  // Se falhar e já houver histórico, resposta contextual sem saudação repetitiva
-  if (history && history.length > 0) {
-    return 'Entendido! Me conta: qual o volume de peças que vocês costumam produzir por mês hoje?';
-  }
-  return 'Olá! Aqui é o Carlos da Bravvi ERP Têxtil. Me conta: que tipo de uniformes vocês fabricam aí na sua confecção?';
+  return 'Perfeito, já estou avisando o Guilherme aqui para te atender direto!';
 }
 
 module.exports = async function handler(req, res) {
@@ -220,7 +208,6 @@ module.exports = async function handler(req, res) {
       }
 
       if (allMessages.length === 0) {
-        // Ignora status de leitura/entrega sem gastar processamento
         return res.status(200).json({ status: 'STATUS_IGNORED' });
       }
 
@@ -229,12 +216,11 @@ module.exports = async function handler(req, res) {
       const from = msgObj.from;
       const msgType = msgObj.type;
 
-      // 🛡️ DEDUPLICAÇÃO IMEDIATA (Evita loop de mensagens repetidas causadas por retentativas da Meta)
+      // 🛡️ 1. DEDUPLICAÇÃO IMEDIATA (Anti-loop de retentativas da Meta)
       if (processedMessageIds.has(msgId)) {
         return res.status(200).json({ status: 'DUPLICATE_IGNORED', msgId });
       }
       processedMessageIds.set(msgId, Date.now());
-      // Limpeza de cache antigo (> 10 minutos)
       if (processedMessageIds.size > 200) {
         const dezMinAtras = Date.now() - 600000;
         for (const [k, v] of processedMessageIds.entries()) {
@@ -242,7 +228,7 @@ module.exports = async function handler(req, res) {
         }
       }
 
-      // Ignora mensagens enviadas pelo próprio bot se houver echo
+      // Ignora mensagens enviadas pelo próprio número oficial
       if (from === WHATSAPP_PHONE_NUMBER_ID || from === '554499856245') {
         return res.status(200).json({ status: 'SELF_ECHO_IGNORED' });
       }
@@ -260,74 +246,86 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ status: 'EMPTY_TEXT' });
       }
 
-      // 1. Busca memória da conversa no Supabase
+      // 🛡️ 2. BUSCA MEMÓRIA NO SUPABASE
       const leadState = await buscarHistoricoLead(from);
 
-      // Trava contra duplicação persistente no banco
       if (leadState.last_message_id === msgId) {
         return res.status(200).json({ status: 'DB_DUPLICATE_IGNORED', msgId });
       }
 
-      // 2. Gera resposta inteligente com contexto (sem repetir saudações)
+      // 🛑 3. MODO SILÊNCIO / HANDOFF HUMANO
+      // Se o lead já pediu para fechar ou chamou o Guilherme antes, o robô FICA MUDO!
+      if (leadState.handoff === true) {
+        await notificarTelegramGuilherme(`🚨 LEAD AGUARDANDO NO WHATSAPP:\nDe: https://wa.me/${from} (${from})\nFala: "${leadTexto}"\n(Bot em silêncio. Assuma a conversa no celular!)`);
+        return res.status(200).json({ status: 'HANDOFF_MUTED' });
+      }
+
+      // 🛑 4. GATILHO DE FECHAMENTO OU CHAMADA DO GUILHERME
+      const querFecharOuChamar = /(fechar|comprar|assinar|contratar|guilherme|chama ele|urgente|atender|falar com|humano|atendente|vendedor|ligar|demora|cadê)/i.test(leadTexto);
+      if (querFecharOuChamar) {
+        const respostaHandoff = 'Perfeito! Já chamei o Guilherme aqui no privado com urgência, ele já vai assumir a conversa com você agora.';
+        await enviarMensagemWhatsApp(phoneId, from, respostaHandoff);
+
+        await salvarHistoricoLead(from, {
+          history: [
+            ...(leadState.history || []),
+            { role: 'user', parts: [{ text: leadTexto }] },
+            { role: 'model', parts: [{ text: respostaHandoff }] }
+          ],
+          last_message_id: msgId,
+          last_processed_at: Date.now(),
+          handoff: true // MUTA O BOT DEFINITIVAMENTE PARA ESTE NÚMERO
+        });
+
+        await notificarTelegramGuilherme(`🔥 LEAD QUER FECHAR COM URGÊNCIA! 🔥\nContato: https://wa.me/${from} (${from})\nMensagem: "${leadTexto}"\n\n👉 ASSUMA A CONVERSA NO WHATSAPP AGORA! O bot foi mutado.`);
+        return res.status(200).json({ status: 'HANDOFF_TRIGGERED' });
+      }
+
+      // 🛡️ 5. COOLDOWN ANTI-METRALHADORA (Não responde a cada frase se o cliente mandar 3 seguidas)
+      const agora = Date.now();
+      if (leadState.last_processed_at && (agora - leadState.last_processed_at < 12000)) {
+        console.log(`[Cooldown] Ignorando rajada de ${from}`);
+        return res.status(200).json({ status: 'COOLDOWN_IGNORED' });
+      }
+
+      // 💬 6. GERA RESPOSTA ULTRA CURTA (1 ÚNICA FRASE)
       let respostaIA = await gerarRespostaSDRComContexto(leadState.history || [], leadTexto);
 
-      // 3. Fracionamento em no máximo 2 balões ultra enxutos
-      let textoBase = respostaIA.replace('[LEAD_QUALIFICADO]', '').trim();
+      // Limpeza estrita: remove links, tags e quebras
+      respostaIA = respostaIA
+        .replace(/\[LEAD_QUALIFICADO\]/g, '')
+        .replace(/https?:\/\/[^\s]+/gi, '')
+        .replace(/\|\|\|/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
 
-      // Blindagem estrita: Se o cliente NÃO pediu link expressamente, remove qualquer URL
-      const pediuLink = /(manda|passa|tem|qual|onde).*(link|demo|demonstra|teste|ver)/i.test(leadTexto) || /quero testar|onde vejo/i.test(leadTexto);
-      if (!pediuLink) {
-        textoBase = textoBase.replace(/https?:\/\/[^\s]+/gi, '').replace(/\s{2,}/g, ' ').trim();
-      }
-
-      let baloes = textoBase
-        .split(/\|\|\||\n\n+/)
-        .map(b => b.trim())
-        .filter(b => b.length > 0);
-
-      // Se não veio com |||, quebra se for maior que 120 caracteres
-      if (baloes.length === 1 && baloes[0].length > 120) {
-        const frases = baloes[0].match(/[^.!?]+[.!?]+(\s|$)/g);
-        if (frases && frases.length > 1) {
-          baloes = frases.map(f => f.trim()).filter(Boolean);
+      // Trava de tamanho: se passou de 120 caracteres, pega só a primeira frase
+      if (respostaIA.length > 120) {
+        const partes = respostaIA.split(/[.!?]/);
+        if (partes[0] && partes[0].trim().length > 10) {
+          respostaIA = partes[0].trim() + '.';
         }
       }
 
-      // Trava rígida: Máximo 2 balões curtos (nada de falar demais)
-      baloes = baloes.slice(0, 2);
-      if (baloes.length === 0) baloes = [textoBase];
+      // 7. Envia EXATAMENTE 1 MENSAGEM CURTA
+      const sendResult = await enviarMensagemWhatsApp(phoneId, from, respostaIA);
 
-      // Atualiza histórico com a resposta consolidada
+      // 8. Salva no Supabase
       const updatedHistory = [...(leadState.history || [])];
       updatedHistory.push({ role: 'user', parts: [{ text: leadTexto }] });
-      updatedHistory.push({ role: 'model', parts: [{ text: baloes.join(' ') }] });
+      updatedHistory.push({ role: 'model', parts: [{ text: respostaIA }] });
 
       await salvarHistoricoLead(from, {
-        history: updatedHistory.slice(-10),
+        history: updatedHistory.slice(-6),
         last_message_id: msgId,
-        last_processed_at: Date.now()
+        last_processed_at: Date.now(),
+        handoff: false
       });
 
-      // 4. Se for lead qualificado, alerta o Telegram
-      if (respostaIA.includes('[LEAD_QUALIFICADO]')) {
-        const alerta = `🔥 NOVO LEAD QUALIFICADO NO WHATSAPP! 🔥\n\nContato: https://wa.me/${from} (${from})\nMensagem: "${leadTexto}"\n\nAcesse o WhatsApp para fechar com o cliente!`;
-        notificarTelegramGuilherme(alerta);
-      }
+      // 9. Alerta no Telegram
+      notificarTelegramGuilherme(`💬 CONVERSA SDR\nLead (${from}): "${leadTexto}"\nCarlos: "${respostaIA}"`);
 
-      // 5. Envia cada balão em sequência com pequeno delay simulando digitação humana
-      let sendResult = null;
-      for (let i = 0; i < baloes.length; i++) {
-        const balao = baloes[i];
-        sendResult = await enviarMensagemWhatsApp(phoneId, from, balao);
-        if (i < baloes.length - 1) {
-          await new Promise(r => setTimeout(r, 700));
-        }
-      }
-
-      // 6. Log informativo no Telegram (não-bloqueante)
-      notificarTelegramGuilherme(`💬 CONVERSA SDR ATIVA\nLead (${from}): "${leadTexto}"\nCarlos (${baloes.length} balões):\n${baloes.map(b => '• ' + b).join('\n')}`);
-
-      return res.status(200).json({ status: 'REPLY_SENT', to: from, baloesCount: baloes.length, metaResult: sendResult });
+      return res.status(200).json({ status: 'REPLY_SENT', to: from, metaResult: sendResult });
     } catch (err) {
       console.error('[WhatsApp Webhook Handler Error]', err);
       return res.status(200).json({ status: 'ERROR', message: err.message });
