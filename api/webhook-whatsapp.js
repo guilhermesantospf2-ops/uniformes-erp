@@ -19,6 +19,10 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1N
 // Cache em memória para deduplicação instantânea de retentativas da Meta
 const processedMessageIds = new Map();
 
+// URLs Oficiais dos Vídeos no Supabase CDN
+const VIDEO_BOAS_VINDAS_URL = 'https://nrhygqygcfjyniogjegq.supabase.co/storage/v1/object/public/videos/bravvi_boas_vindas.mp4';
+const VIDEO_DEMO_ERP_URL = 'https://nrhygqygcfjyniogjegq.supabase.co/storage/v1/object/public/videos/bravvi_demonstracao_erp.mp4';
+
 // Prompt do Closer Carlos (Metodologia Formação Closer Diamond B2B + Pente Fino do ERP)
 const SYSTEM_PROMPT_SDR = `Você é o Carlos, Closer comercial da Bravvi ERP Têxtil no WhatsApp.
 Sua comunicação segue a Formação Closer Diamond: postura consultiva de alto padrão, ultra-enxuto, direto e NUNCA promete o que o sistema não faz.
@@ -45,35 +49,25 @@ REGRA DE OURO CLOSER DIAMOND: QUEM PERGUNTA CONTROLA A CONVERSA.
   Frase 1: Resposta ou validação direta ao que o cliente falou.
   Frase 2: Uma pergunta cirúrgica para avançar o funil de qualificação.
 
-FUNIL DE QUALIFICAÇÃO PASSO A PASSO (SIGA A ORDEM EXATA):
-1. PRIMEIRO CONTATO (ou quando perguntarem "como funciona?"):
-   - Explique em 1 frase resumida o sistema e pergunte OBRIGATORIAMENTE se já usam sistema ou não:
-   - "O Bravvi ERP organiza desde o cálculo de tecido por peça até os pedidos e fichas técnicas da confecção. Hoje vocês já usam algum sistema aí ou controlam tudo em planilha e no papel?"
-
-2. SE O CLIENTE RESPONDER QUE JÁ USA UM SISTEMA (ex: Bling, Tiny, outro):
+FUNIL DE QUALIFICAÇÃO APÓS O ENVIO DOS VÍDEOS:
+1. SE O CLIENTE RESPONDER QUE JÁ USA UM SISTEMA (ex: Bling, Tiny, outro):
    - Valide que sistemas comuns são genéricos e não atendem confecção, e descubra o gargalo do sistema atual:
    - "Esses sistemas genéricos não entendem as dores de confecção. O que você sente que mais falta nele hoje que te dá dor de cabeça aí na produção?"
 
-3. SE O CLIENTE RESPONDER QUE NÃO USA SISTEMA (está em planilha, caderno ou WhatsApp):
+2. SE O CLIENTE RESPONDER QUE NÃO USA SISTEMA (está em planilha, caderno ou WhatsApp):
    - Valide que o controle manual custa caro em tempo e erros, e pergunte pelo gargalo operacional:
    - "Fazer na mão consome horas e sempre gera erro. E hoje o que mais toma o seu tempo ou gera retrabalho: calcular o tecido e custos ou organizar a grade dos pedidos?"
 
-4. APÓS O CLIENTE REVELAR O GARGALO DELE (seja do sistema atual ou da planilha):
-   - Mostre como o Bravvi resolve essa dor específica e ofereça o vídeo curto:
-   - "O Bravvi foi feito exatamente pra travar esse erro. Quer que eu te mande um vídeo de 1 minuto mostrando ele funcionando na prática aí na sua confecção?"
+3. APÓS O CLIENTE REVELAR O GARGALO DELE (seja do sistema atual ou da planilha):
+   - Mostre como o Bravvi resolve essa dor específica e direcione para a demonstração:
+   - "O Bravvi foi feito exatamente pra travar esse erro. Você conseguiu dar uma olhada no link de teste que te mandei com dados reais de fábrica?"
 
-5. SE O CLIENTE PERGUNTAR O PREÇO ANTES DE VER O SISTEMA:
+4. SE O CLIENTE PERGUNTAR O PREÇO:
    - Ancore o valor acessível e puxe para qualificação:
-   - "Temos planos a partir de R$ 107/mês, super acessível. Mas antes de ver o plano ideal: hoje vocês já usam algum sistema aí ou tá tudo na planilha?"
+   - "Temos planos a partir de R$ 107/mês, super acessível. Mas me diz: hoje vocês já usam algum sistema aí ou tá tudo na planilha?"
 
-6. QUANDO O CLIENTE PEDIR DEMONSTRAÇÃO, TESTE, VÍDEO OU LINK:
-   - Envie com entusiasmo o link de demonstração ao vivo e devolva com a pergunta de fechamento:
-   - "Dá uma olhada no sistema funcionando ao vivo aqui: https://uniformes-erp.vercel.app/demo - Depois de ver, me diz: faz mais sentido pra você o Plano Básico de R$ 107 ou o Pro com DTF de R$ 227?"
-
-7. PROIBIÇÕES RÍGIDAS:
-   - NUNCA pergunte sobre estoque/tecido no primeiro contato antes de saber se ele já usa sistema.
+5. PROIBIÇÕES RÍGIDAS:
    - NUNCA peça o WhatsApp do cliente.
-   - NUNCA envie links por conta própria se o cliente NÃO pediu demonstração, teste ou vídeo.
    - Se o cliente disser que quer fechar, pedir chave PIX ou chamar o Guilherme, diga apenas: "Fechado! Já passei pro Guilherme aqui no privado com urgência, ele já vai assumir a conversa com você agora para fechar."`;
 
 // Busca histórico e estado do lead no Supabase
@@ -117,7 +111,7 @@ async function salvarHistoricoLead(phone, dbData) {
   }
 }
 
-// Envio oficial via Meta Cloud API
+// Envio oficial via Meta Cloud API (Texto)
 async function enviarMensagemWhatsApp(phoneId, to, text) {
   const targetPhoneId = phoneId || WHATSAPP_PHONE_NUMBER_ID;
   try {
@@ -139,6 +133,35 @@ async function enviarMensagemWhatsApp(phoneId, to, text) {
     return await res.json();
   } catch (err) {
     console.error('[WhatsApp Send Error]', err.message);
+    return { error: err.message };
+  }
+}
+
+// Envio oficial via Meta Cloud API (Vídeo)
+async function enviarVideoWhatsApp(phoneId, to, videoUrl, caption) {
+  const targetPhoneId = phoneId || WHATSAPP_PHONE_NUMBER_ID;
+  try {
+    const url = `https://graph.facebook.com/v21.0/${targetPhoneId}/messages`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: to,
+        type: 'video',
+        video: {
+          link: videoUrl,
+          caption: caption || ''
+        }
+      })
+    });
+    return await res.json();
+  } catch (err) {
+    console.error('[WhatsApp Video Send Error]', err.message);
     return { error: err.message };
   }
 }
@@ -351,20 +374,110 @@ module.exports = async function handler(req, res) {
 
       // 🛡️ 5. COOLDOWN ANTI-METRALHADORA (Não atropela cliente que manda 3 frases seguidas)
       const agora = Date.now();
-      if (leadState.last_processed_at && (agora - leadState.last_processed_at < 10000)) {
+      if (leadState.last_processed_at && (agora - leadState.last_processed_at < 8000)) {
         console.log(`[Cooldown] Ignorando rajada de ${from}`);
         return res.status(200).json({ status: 'COOLDOWN_IGNORED' });
       }
 
-      // 💬 6. GERA RESPOSTA CLOSER DIAMOND (1 A 2 FRASES CURTAS)
+      // 🔄 COMANDO DE TESTE PARA RESETAR FLUXO DO ZERO (#reset ou #teste)
+      if (/^#(reset|teste)$/i.test(leadTexto.trim())) {
+        await salvarHistoricoLead(from, {
+          history: [],
+          last_message_id: msgId,
+          last_processed_at: agora,
+          handoff: false,
+          step: 'inicio'
+        });
+        await enviarMensagemWhatsApp(phoneId, from, '🔄 Fluxo resetado com sucesso! Envie qualquer mensagem para iniciar o atendimento do zero.');
+        return res.status(200).json({ status: 'RESET_OK' });
+      }
+
+      const stepAtual = leadState.step || ((!leadState.history || leadState.history.length === 0) ? 'inicio' : 'qualificacao');
+
+      // 🎬 FLUXO ETAPA 1: PRIMEIRO CONTATO DO LEAD
+      // Apresentação + Pergunta se está bem + Pergunta permissão para mandar o vídeo de boas-vindas do Guilherme
+      if (stepAtual === 'inicio') {
+        const saudacaoInicial = 'Fala! Tudo bem por aí? Sou o Carlos, consultor aqui da Bravvi ERP Têxtil.\n\nO próprio Guilherme, fundador do sistema e dono de confecção, gravou um vídeo rápido de 1 minuto te dando as boas-vindas e contando como nasceu o sistema. Posso te mandar por aqui?';
+        
+        await new Promise(r => setTimeout(r, 2000));
+        await enviarMensagemWhatsApp(phoneId, from, saudacaoInicial);
+
+        await salvarHistoricoLead(from, {
+          history: [
+            { role: 'user', parts: [{ text: leadTexto }] },
+            { role: 'model', parts: [{ text: saudacaoInicial }] }
+          ],
+          last_message_id: msgId,
+          last_processed_at: Date.now(),
+          handoff: false,
+          step: 'aguardando_permissao_video'
+        });
+
+        return res.status(200).json({ status: 'STEP_1_SAUDACAO_ENVIADA' });
+      }
+
+      // 🎬 FLUXO ETAPA 2: CLIENTE RESPONDEU SOBRE O VÍDEO
+      if (stepAtual === 'aguardando_permissao_video') {
+        const recusou = /^(não|nao|não precisa|dispensa|só o preço|qual o valor)/i.test(leadTexto.trim());
+        
+        if (!recusou) {
+          // Cliente aceitou ou respondeu positivamente: manda Vídeo 1 + Vídeo 2 + Pergunta de qualificação
+          await new Promise(r => setTimeout(r, 1500));
+          await enviarMensagemWhatsApp(phoneId, from, 'Maravilha! Segue aqui o vídeo rápido do Guilherme: 👇');
+          
+          await new Promise(r => setTimeout(r, 1500));
+          await enviarVideoWhatsApp(phoneId, from, VIDEO_BOAS_VINDAS_URL, '🎬 Boas-vindas do Guilherme (Fundador da Bravvi ERP)');
+          
+          await new Promise(r => setTimeout(r, 3000));
+          await enviarVideoWhatsApp(phoneId, from, VIDEO_DEMO_ERP_URL, '💻 Tour completo pelas telas do sistema! Você também pode testar agora com dados de fábrica no link: https://uniformes-erp.vercel.app/demo');
+          
+          await new Promise(r => setTimeout(r, 2500));
+          const perguntaPosVideo = 'Depois de dar uma olhada, me diz: hoje vocês já usam algum sistema aí na confecção ou ainda controlam tudo em planilha e no papel?';
+          await enviarMensagemWhatsApp(phoneId, from, perguntaPosVideo);
+
+          await salvarHistoricoLead(from, {
+            history: [
+              ...(leadState.history || []),
+              { role: 'user', parts: [{ text: leadTexto }] },
+              { role: 'model', parts: [{ text: perguntaPosVideo }] }
+            ],
+            last_message_id: msgId,
+            last_processed_at: Date.now(),
+            handoff: false,
+            step: 'qualificacao'
+          });
+
+          return res.status(200).json({ status: 'STEP_2_VIDEOS_ENVIADOS' });
+        } else {
+          // Cliente recusou vídeo e pediu preço direto
+          const respostaPreco = 'Tranquilo! Nossos planos começam a partir de R$ 107/mês, super acessível. Mas me diz: hoje vocês já usam algum sistema aí ou tá tudo na planilha?';
+          await new Promise(r => setTimeout(r, 2000));
+          await enviarMensagemWhatsApp(phoneId, from, respostaPreco);
+
+          await salvarHistoricoLead(from, {
+            history: [
+              ...(leadState.history || []),
+              { role: 'user', parts: [{ text: leadTexto }] },
+              { role: 'model', parts: [{ text: respostaPreco }] }
+            ],
+            last_message_id: msgId,
+            last_processed_at: Date.now(),
+            handoff: false,
+            step: 'qualificacao'
+          });
+
+          return res.status(200).json({ status: 'STEP_2_RECUSOU_VIDEO' });
+        }
+      }
+
+      // 💬 ETAPA 3 EM DIANTE: QUALIFICAÇÃO CLOSER DIAMOND VIA GEMINI
       let respostaIA = await gerarRespostaSDRComContexto(leadState.history || [], leadTexto);
 
-      // Se o cliente pediu demonstração, teste, vídeo ou link
+      // Se o cliente pediu demonstração, teste, vídeo ou link posteriormente
       const pediuLink = /(link|demo|demonstra|teste|testar|ver|vídeo|video|apresenta|mostrar|conhecer)/i.test(leadTexto);
       if (!pediuLink) {
         respostaIA = respostaIA.replace(/https?:\/\/[^\s]+/gi, '').replace(/\s{2,}/g, ' ').trim();
       } else if (!respostaIA.includes('http')) {
-        // Se pediu demonstração e a IA esqueceu o link, injeta suavemente
         respostaIA = `Dá uma olhada no sistema funcionando ao vivo aqui: https://uniformes-erp.vercel.app/demo - Depois de ver, me diz: faz mais sentido pra você o Plano Básico de R$ 107 ou o Pro de R$ 227?`;
       }
 
@@ -374,7 +487,7 @@ module.exports = async function handler(req, res) {
         .replace(/\s+/g, ' ')
         .trim();
 
-      // Trava de segurança: preserva a resposta e a pergunta de condução sem cortar a pergunta
+      // Trava de segurança: preserva a resposta e a pergunta de condução sem cortar
       if (respostaIA.length > 260) {
         const frases = respostaIA.match(/[^.!?]+[.!?]+/g);
         if (frases && frases.length >= 2) {
@@ -382,10 +495,9 @@ module.exports = async function handler(req, res) {
         }
       }
 
-      // ⏳ 7. CADÊNCIA HUMANA DE DIGITAÇÃO (3.5 segundos antes de disparar)
-      await new Promise(r => setTimeout(r, 3500));
+      // ⏳ Cadência humana antes de enviar resposta consultiva
+      await new Promise(r => setTimeout(r, 3000));
 
-      // 8. Envia a mensagem pelo WhatsApp
       const sendResult = await enviarMensagemWhatsApp(phoneId, from, respostaIA);
 
       // 9. Salva no Supabase
@@ -397,7 +509,8 @@ module.exports = async function handler(req, res) {
         history: updatedHistory.slice(-6),
         last_message_id: msgId,
         last_processed_at: Date.now(),
-        handoff: false
+        handoff: false,
+        step: 'qualificacao'
       });
 
       // 10. Alerta no Telegram
