@@ -367,10 +367,9 @@ module.exports = async function handler(req, res) {
       const stepAtual = leadState.step || ((!leadState.history || leadState.history.length === 0) ? 'inicio' : 'qualificacao');
 
       // 🎬 FLUXO ETAPA 1: PRIMEIRO CONTATO DO LEAD
-      // Apresentação + Pergunta se está bem + Pergunta permissão para mandar o vídeo de boas-vindas do Guilherme
-      // NUNCA entra em handoff no primeiro contato, mesmo se o anúncio vier com "Olá Guilherme!"
+      // Carlos se apresenta da equipe do Guilherme e pergunta sobre o controle atual para liberar o teste
       if (stepAtual === 'inicio') {
-        const saudacaoInicial = 'Fala! Tudo bem por aí? Sou o Carlos, consultor aqui da Bravvi ERP Têxtil.\n\nO próprio Guilherme, fundador do sistema e dono de confecção, gravou um vídeo rápido de 1 minuto te dando as boas-vindas e contando como nasceu o sistema. Posso te mandar por aqui?';
+        const saudacaoInicial = 'Fala! Tudo bem? Sou o Carlos, da equipe do Guilherme na Bravvi ERP.\n\nPra eu já te liberar um acesso de teste do sistema com dados de fábrica, me conta: hoje você faz o controle de corte na planilha ou já usa algum sistema aí na confecção?';
         
         await new Promise(r => setTimeout(r, 2000));
         await enviarMensagemWhatsApp(phoneId, from, saudacaoInicial);
@@ -383,7 +382,7 @@ module.exports = async function handler(req, res) {
           last_message_id: msgId,
           last_processed_at: Date.now(),
           handoff: false,
-          step: 'aguardando_permissao_video'
+          step: 'aguardando_resposta_inicial'
         });
 
         return res.status(200).json({ status: 'STEP_1_SAUDACAO_ENVIADA' });
@@ -418,72 +417,55 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ status: 'HANDOFF_TRIGGERED' });
       }
 
-      // 🎬 FLUXO ETAPA 2: CLIENTE RESPONDEU SOBRE O VÍDEO
-      if (stepAtual === 'aguardando_permissao_video') {
+      // 🎬 FLUXO ETAPA 2: CLIENTE RESPONDEU A PRIMEIRA PERGUNTA -> ENVIA VÍDEO DE BOAS-VINDAS + DEMO DO SISTEMA
+      if (stepAtual === 'aguardando_resposta_inicial' || stepAtual === 'aguardando_permissao_video') {
         // Trava anti-duplicidade absoluta: se já enviou os vídeos para este lead, pula direto para qualificação
         if (leadState.videos_enviados === true) {
           return res.status(200).json({ status: 'VIDEOS_ALREADY_SENT_IGNORED' });
         }
 
-        const recusou = /^(não|nao|não precisa|dispensa|só o preço|qual o valor)/i.test(leadTexto.trim());
-        
-        if (!recusou) {
-          // Marca imediatamente para travar concorrência ou retentativas
-          leadState.videos_enviados = true;
+        // Marca imediatamente para travar concorrência ou retentativas
+        leadState.videos_enviados = true;
 
-          // Cliente aceitou ou respondeu positivamente: manda Vídeo 1 + Vídeo 2 + Link Test Drive + Pergunta de qualificação
-          await new Promise(r => setTimeout(r, 1000));
-          await enviarMensagemWhatsApp(phoneId, from, 'Maravilha! Segue aqui o vídeo rápido do Guilherme: 👇');
-          
-          await new Promise(r => setTimeout(r, 1200));
-          await enviarVideoWhatsApp(phoneId, from, VIDEO_BOAS_VINDAS_URL, '🎬 Boas-vindas do Guilherme (Fundador da Bravvi ERP)');
-          
-          await new Promise(r => setTimeout(r, 2500));
-          await enviarVideoWhatsApp(phoneId, from, VIDEO_DEMO_ERP_URL, '💻 Tour completo pelas telas do sistema (cálculo de tecido, OS e financeiro)');
-          
-          await new Promise(r => setTimeout(r, 1800));
-          const mensagemDemo = '🎮 Para testar na prática com dados reais de fábrica, acesse o Test Drive por aqui:\n👉 https://uniformes-erp.vercel.app/demo\n\n(Pode mexer à vontade em todas as telas!)';
-          await enviarMensagemWhatsApp(phoneId, from, mensagemDemo);
-
-          await new Promise(r => setTimeout(r, 2200));
-          const perguntaPosVideo = 'Depois de dar uma olhada, me diz: hoje vocês já usam algum sistema aí na confecção ou ainda controlam tudo em planilha e no papel?';
-          await enviarMensagemWhatsApp(phoneId, from, perguntaPosVideo);
-
-          await salvarHistoricoLead(from, {
-            history: [
-              ...(leadState.history || []),
-              { role: 'user', parts: [{ text: leadTexto }] },
-              { role: 'model', parts: [{ text: `${mensagemDemo}\n\n${perguntaPosVideo}` }] }
-            ],
-            last_message_id: msgId,
-            last_processed_at: Date.now(),
-            handoff: false,
-            step: 'qualificacao',
-            videos_enviados: true
-          });
-
-          return res.status(200).json({ status: 'STEP_2_VIDEOS_ENVIADOS' });
-        } else {
-          // Cliente recusou vídeo e pediu preço direto
-          const respostaPreco = 'Tranquilo! Nossos planos começam a partir de R$ 107/mês, super acessível. Mas me diz: hoje vocês já usam algum sistema aí ou tá tudo na planilha?';
-          await new Promise(r => setTimeout(r, 2000));
-          await enviarMensagemWhatsApp(phoneId, from, respostaPreco);
-
-          await salvarHistoricoLead(from, {
-            history: [
-              ...(leadState.history || []),
-              { role: 'user', parts: [{ text: leadTexto }] },
-              { role: 'model', parts: [{ text: respostaPreco }] }
-            ],
-            last_message_id: msgId,
-            last_processed_at: Date.now(),
-            handoff: false,
-            step: 'qualificacao',
-            videos_enviados: false
-          });
-
-          return res.status(200).json({ status: 'STEP_2_RECUSOU_VIDEO' });
+        // Saudação inicial de transição reconhecendo a resposta do cliente
+        let textoTransicao = 'Show, entendi perfeitamente! Fazer o controle na prática exige agilidade pra não ter retrabalho na fábrica.';
+        if (/planilha|excel|caderno|papel|na mão|na mao|manual|nenhum|nada/i.test(leadTexto)) {
+          textoTransicao = 'Show, entendi perfeitamente! Controlar na planilha ou papel toma um tempo danado e quase sempre dá sobra ou erro na grade.';
+        } else if (/bling|tiny|totvs|outro|sistema/i.test(leadTexto)) {
+          textoTransicao = 'Entendi! O problema dos sistemas genéricos é que eles não entendem chão de fábrica de confecção, não calculam consumo de tecido nem grade de corte.';
         }
+
+        await new Promise(r => setTimeout(r, 1000));
+        await enviarMensagemWhatsApp(phoneId, from, `${textoTransicao}\n\nO próprio Guilherme gravou esses dois vídeos rápidos para te mostrar a visão de fábrica e as telas do sistema por dentro: 👇`);
+        
+        await new Promise(r => setTimeout(r, 1200));
+        await enviarVideoWhatsApp(phoneId, from, VIDEO_BOAS_VINDAS_URL, '🎬 Boas-vindas do Guilherme (Fundador da Bravvi ERP)');
+        
+        await new Promise(r => setTimeout(r, 2500));
+        await enviarVideoWhatsApp(phoneId, from, VIDEO_DEMO_ERP_URL, '💻 Tour completo pelas telas do sistema (cálculo de tecido, OS e financeiro)');
+        
+        await new Promise(r => setTimeout(r, 1800));
+        const mensagemDemo = '🎮 Para testar na prática com dados reais de fábrica, acesse o Test Drive por aqui:\n👉 https://uniformes-erp.vercel.app/demo\n\n(Pode mexer à vontade em todas as telas!)';
+        await enviarMensagemWhatsApp(phoneId, from, mensagemDemo);
+
+        await new Promise(r => setTimeout(r, 2200));
+        const perguntaPosVideo = 'Depois de dar uma olhada, me conta: hoje qual é o principal tipo de uniforme que você mais produz aí (escolar, esportivo, polo, brim)? E qual parte mais te dá dor de cabeça no dia a dia?';
+        await enviarMensagemWhatsApp(phoneId, from, perguntaPosVideo);
+
+        await salvarHistoricoLead(from, {
+          history: [
+            ...(leadState.history || []),
+            { role: 'user', parts: [{ text: leadTexto }] },
+            { role: 'model', parts: [{ text: `${mensagemDemo}\n\n${perguntaPosVideo}` }] }
+          ],
+          last_message_id: msgId,
+          last_processed_at: Date.now(),
+          handoff: false,
+          step: 'qualificacao',
+          videos_enviados: true
+        });
+
+        return res.status(200).json({ status: 'STEP_2_VIDEOS_ENVIADOS' });
       }
 
       // 💬 ETAPA 3 EM DIANTE: QUALIFICAÇÃO CLOSER DIAMOND VIA GEMINI
