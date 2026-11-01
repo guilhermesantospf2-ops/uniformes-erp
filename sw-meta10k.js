@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bravvi-10k-v1.0.0';
+const CACHE_NAME = 'bravvi-10k-v1.0.2';
 
 const ASSETS = [
   '/meta10k.html',
@@ -33,3 +33,4 @@ self.addEventListener('fetch', (event) => {
     fetch(event.request).catch(() => caches.match(event.request))
   );
 });
+
