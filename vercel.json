@@ -3,6 +3,8 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/br", "destination": "/vendas-br.html" },
+    { "source": "/whatsapp", "destination": "/api/whatsapp" },
+    { "source": "/zap", "destination": "/api/whatsapp" },
     { "source": "/vendas", "destination": "/vendas-br.html" },
     { "source": "/lp", "destination": "/vendas-br.html" },
     { "source": "/py", "destination": "/vendas-py.html" },
