@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bravvi ERP • Operação Rota 10K</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #090d16;
+            --surface: #111827;
+            --surface-hover: #1f2937;
+            --border: #1f2a3e;
+            --border-light: #2d3b55;
+            --text-main: #f9fafb;
+            --text-muted: #94a3b8;
+            --primary: #10b981;
+            --primary-glow: rgba(16, 185, 129, 0.25);
+            --accent: #3b82f6;
+            --gold: #f59e0b;
+            --danger: #ef4444;
+            --radius-lg: 16px;
+            --radius-md: 10px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 24px 20px 60px 20px;
+        }
+
+        .container {
+            max-width: 1240px;
+            margin: 0 auto;
+        }
+
+        /* Top Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand-title {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-badge {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #10b981, #047857);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tag-10k {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #34d399;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 99px;
+            letter-spacing: 0.5px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface-hover);
+            border-color: var(--border-light);
+        }
+
+        /* Thermometer Big Card */
+        .card-thermometer {
+            background: linear-gradient(135deg, #0f172a 0%, #111d33 100%);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-thermometer::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .thermo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .thermo-label {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        .thermo-values {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 28px;
+            font-weight: 800;
+            color: #34d399;
+        }
+
+        .thermo-target {
+            color: var(--text-muted);
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .progress-bar-bg {
+            background: #1e293b;
+            height: 22px;
+            border-radius: 99px;
+            overflow: hidden;
+            position: relative;
+            padding: 3px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 99px;
+            background: linear-gradient(90deg, #059669, #10b981, #34d399);
+            box-shadow: 0 0 16px rgba(16, 185, 129, 0.6);
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 4%;
+            min-width: 14px;
+        }
+
+        .thermo-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* KPI Cards Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .kpi-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 18px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .kpi-card:hover {
+            border-color: var(--border-light);
+            transform: translateY(-2px);
+        }
+
+        .kpi-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .kpi-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
+
+        .kpi-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .kpi-value {
+            font-size: 26px;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: -0.5px;
+        }
+
+        .kpi-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Milestones Section */
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .milestones-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .milestone-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 18px;
+            position: relative;
+        }
+
+        .milestone-card.current {
+            border-color: rgba(16, 185, 129, 0.4);
+            background: linear-gradient(180deg, rgba(16, 185, 129, 0.05) 0%, var(--surface) 100%);
+        }
+
+        .milestone-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .badge-active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-locked {
+            background: rgba(148, 163, 184, 0.1);
+            color: var(--text-muted);
+        }
+
+        .milestone-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .milestone-date {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .milestone-prog-track {
+            height: 8px;
+            background: #1e293b;
+            border-radius: 99px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .milestone-prog-bar {
+            height: 100%;
+            background: #10b981;
+            border-radius: 99px;
+            width: 40%;
+        }
+
+        .milestone-target-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Table Section */
+        .table-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .table-toolbar {
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .search-box {
+            position: relative;
+            min-width: 260px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 9px 12px 9px 36px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background: #0b1120;
+            color: var(--text-main);
+            font-size: 13px;
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        th {
+            background: #0e1526;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .badge-status {
+            padding: 4px 10px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-ativo {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-teste {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .status-cancelado {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .plan-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .actions-cell {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-icon:hover {
+            color: var(--text-main);
+            border-color: var(--primary);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .btn-icon.delete:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-card {
+            background: var(--surface);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 520px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background: #0b1120;
+            color: var(--text-main);
+            font-size: 14px;
+            outline: none;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        /* Script Drawer Box */
+        .script-box {
+            background: #0b1120;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 14px 18px;
+            margin-top: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .script-info {
+            font-size: 13px;
+        }
+
+        .script-info strong {
+            color: #34d399;
+        }
+
+        @media (max-width: 768px) {
+            .thermo-values { font-size: 22px; }
+            .kpi-grid { grid-template-columns: 1fr 1fr; }
+            .table-container { overflow-x: auto; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header -->
+    <header>
+        <div class="brand-title">
+            <div class="brand-badge">🚀</div>
+            <div>
+                <h1>Operação Rota 10K <span class="tag-10k">Bravvi ERP</span></h1>
+                <div class="subtitle">Painel Diretor Comercial • Meta de R$ 10.000,00/mês</div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="exportToCSV()">
+                <i class="fa-solid fa-file-excel" style="color: #10b981;"></i> Baixar Planilha
+            </button>
+            <button class="btn btn-primary" onclick="openModal()">
+                <i class="fa-solid fa-plus"></i> Novo Cliente
+            </button>
+        </div>
+    </header>
+
+    <!-- Big Progress Thermometer -->
+    <div class="card-thermometer">
+        <div class="thermo-header">
+            <div>
+                <div class="thermo-label">Termômetro da Recorrência Mensal (MRR)</div>
+                <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">
+                    Progresso rumo aos R$ 10.000,00 recorrentes por mês
+                </div>
+            </div>
+            <div>
+                <span class="thermo-values" id="mrrDisplay">R$ 394,00</span>
+                <span class="thermo-target">/ R$ 10.000,00</span>
+            </div>
+        </div>
+        <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="mrrProgressBar"></div>
+        </div>
+        <div class="thermo-footer">
+            <span id="mrrPercent">3.9% concluído</span>
+            <span id="mrrRemaining">Faltam R$ 9.606,00 para os 10K</span>
+        </div>
+    </div>
+
+    <!-- 4 KPIs Grid -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-head">
+                <span class="kpi-title">Clientes Ativos</span>
+                <div class="kpi-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+            </div>
+            <div class="kpi-value" id="kpiActiveClients">2</div>
+            <div class="kpi-sub">Meta final: 50 clientes</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-head">
+                <span class="kpi-title">MRR Atual (Recorrente)</span>
+                <div class="kpi-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </div>
+            </div>
+            <div class="kpi-value" id="kpiMrr">R$ 394</div>
+            <div class="kpi-sub">Caindo todo mês no Asaas</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-head">
+                <span class="kpi-title">Caixa Anual à Vista</span>
+                <div class="kpi-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+                    <i class="fa-solid fa-sack-dollar"></i>
+                </div>
+            </div>
+            <div class="kpi-value" id="kpiAnnualCash">R$ 0</div>
+            <div class="kpi-sub">Injeção rápida de caixa</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-head">
+                <span class="kpi-title">Em Teste Grátis (7d)</span>
+                <div class="kpi-icon" style="background: rgba(168, 85, 247, 0.15); color: #c084fc;">
+                    <i class="fa-solid fa-stopwatch"></i>
+                </div>
+            </div>
+            <div class="kpi-value" id="kpiTrial">0</div>
+            <div class="kpi-sub">Próximos a fechar</div>
+        </div>
+    </div>
+
+    <!-- The 3 Milestones Grid -->
+    <div class="section-title">
+        <i class="fa-solid fa-flag-checkered" style="color: #34d399;"></i> Cronograma dos 3 Marcos de Guerra
+    </div>
+
+    <div class="milestones-grid">
+        <!-- Milestone 1 -->
+        <div class="milestone-card current">
+            <span class="milestone-badge badge-active">EM ANDAMENTO</span>
+            <div class="milestone-title">🎯 Marco 1: Sobrevivência (5 Clientes)</div>
+            <div class="milestone-date"><i class="fa-regular fa-calendar"></i> Prazo: até 15 de Novembro de 2026</div>
+            <div class="milestone-prog-track">
+                <div class="milestone-prog-bar" id="m1Bar" style="width: 40%;"></div>
+            </div>
+            <div class="milestone-target-text">
+                <span id="m1Count">2 de 5 clientes fechados</span>
+                <span>Meta: R$ 2.500 no caixa</span>
+            </div>
+        </div>
+
+        <!-- Milestone 2 -->
+        <div class="milestone-card">
+            <span class="milestone-badge badge-locked">PRÓXIMO</span>
+            <div class="milestone-title">🚀 Marco 2: Fôlego (20 Clientes)</div>
+            <div class="milestone-date"><i class="fa-regular fa-calendar"></i> Prazo: até 15 de Dezembro de 2026</div>
+            <div class="milestone-prog-track">
+                <div class="milestone-prog-bar" id="m2Bar" style="width: 10%; background: #3b82f6;"></div>
+            </div>
+            <div class="milestone-target-text">
+                <span id="m2Count">2 de 20 clientes</span>
+                <span>Meta: R$ 5.000/mês</span>
+            </div>
+        </div>
+
+        <!-- Milestone 3 -->
+        <div class="milestone-card">
+            <span class="milestone-badge badge-locked">META FINAL</span>
+            <div class="milestone-title">👑 Marco 3: Independência (50 Clientes)</div>
+            <div class="milestone-date"><i class="fa-regular fa-calendar"></i> Prazo: até 31 de Janeiro de 2027</div>
+            <div class="milestone-prog-track">
+                <div class="milestone-prog-bar" id="m3Bar" style="width: 4%; background: #f59e0b;"></div>
+            </div>
+            <div class="milestone-target-text">
+                <span id="m3Count">2 de 50 clientes</span>
+                <span style="color: #34d399; font-weight: 700;">R$ 10.000+/mês</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customers Table Section -->
+    <div class="table-container">
+        <div class="table-toolbar">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="searchInput" placeholder="Buscar confecção ou telefone..." onkeyup="renderTable()">
+            </div>
+            <div style="font-size: 13px; color: var(--text-muted);">
+                Total na lista: <strong id="totalRowCount" style="color: var(--text-main);">2</strong>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Cliente / Confecção</th>
+                    <th>Telefone / Whats</th>
+                    <th>Cidade / UF</th>
+                    <th>Plano</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Data Início</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="clientsTableBody">
+                <!-- Dynamically Rendered -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Quick Audio Script Helper -->
+    <div class="script-box">
+        <div class="script-info">
+            <i class="fa-solid fa-microphone" style="color: #10b981; margin-right: 8px;"></i>
+            <strong>Roteiro de Fechamento por Áudio:</strong> Use o script de ex-dono de fábrica quando o lead pedir preço.
+        </div>
+        <button class="btn btn-secondary" onclick="copyPitchScript()">
+            <i class="fa-regular fa-copy"></i> Copiar Script
+        </button>
+    </div>
+</div>
+
+<!-- Modal: Adicionar / Editar Cliente -->
+<div class="modal-overlay" id="clientModal">
+    <div class="modal-card">
+        <div class="modal-head">
+            <h3 style="font-size: 16px; font-weight: 700;" id="modalTitle">Cadastrar Novo Assinante</h3>
+            <button onclick="closeModal()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px;">&times;</button>
+        </div>
+        <form id="clientForm" onsubmit="saveClient(event)">
+            <input type="hidden" id="editIndex" value="-1">
+
+            <div class="form-group">
+                <label>Nome da Confecção / Responsável</label>
+                <input type="text" class="form-control" id="formName" required placeholder="Ex: Confecções Alfa (Carlos)">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Telefone / WhatsApp</label>
+                    <input type="text" class="form-control" id="formPhone" required placeholder="Ex: 47998887766">
+                </div>
+                <div class="form-group">
+                    <label>Cidade / UF</label>
+                    <input type="text" class="form-control" id="formCity" placeholder="Ex: Brusque - SC">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Tipo de Plano</label>
+                    <select class="form-control" id="formPlan" onchange="autoFillPrice()">
+                        <option value="Pro Mensal">Pro Mensal (R$ 197/mês)</option>
+                        <option value="Anual Lançamento">Anual Lançamento (R$ 1.490/ano)</option>
+                        <option value="Teste Grátis">Teste Grátis (7 Dias)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Valor (R$)</label>
+                    <input type="number" class="form-control" id="formPrice" value="197" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Status</label>
+                    <select class="form-control" id="formStatus">
+                        <option value="Ativo">Ativo (Pagando)</option>
+                        <option value="Teste">Em Teste (7d)</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Data de Início</label>
+                    <input type="date" class="form-control" id="formDate" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Observações</label>
+                <input type="text" class="form-control" id="formObs" placeholder="Ex: Fechou pelo WhatsApp do anúncio">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar Cliente</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Initial Base
+    const INITIAL_CLIENTS = [
+        {
+            name: "Prime Uniformes",
+            phone: "5547984613671",
+            city: "Joinville - SC",
+            plan: "Pro Mensal",
+            price: 197,
+            status: "Ativo",
+            date: "2026-10-25",
+            obs: "Cliente ativo da base oficial"
+        },
+        {
+            name: "Francisco Abrunhoza (Abrunhoza Gráfica)",
+            phone: "5566984204194",
+            city: "Rondonópolis - MT",
+            plan: "Pro Mensal",
+            price: 197,
+            status: "Ativo",
+            date: "2026-10-28",
+            obs: "Cliente ativo da base oficial"
+        }
+    ];
+
+    // Storage Key
+    const STORAGE_KEY = "bravvi_meta_10k_clients_v1";
+
+    function loadClients() {
+        const data = localStorage.getItem(STORAGE_KEY);
+        if (!data) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_CLIENTS));
+            return INITIAL_CLIENTS;
+        }
+        try {
+            return JSON.parse(data);
+        } catch (e) {
+            return INITIAL_CLIENTS;
+        }
+    }
+
+    function saveClientsList(clients) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
+        updateDashboard();
+    }
+
+    function autoFillPrice() {
+        const plan = document.getElementById("formPlan").value;
+        const priceInput = document.getElementById("formPrice");
+        if (plan === "Pro Mensal") priceInput.value = 197;
+        else if (plan === "Anual Lançamento") priceInput.value = 1490;
+        else if (plan === "Teste Grátis") priceInput.value = 0;
+    }
+
+    function openModal(index = -1) {
+        const modal = document.getElementById("clientModal");
+        const form = document.getElementById("clientForm");
+        document.getElementById("editIndex").value = index;
+
+        if (index >= 0) {
+            const clients = loadClients();
+            const c = clients[index];
+            document.getElementById("modalTitle").innerText = "Editar Cliente";
+            document.getElementById("formName").value = c.name;
+            document.getElementById("formPhone").value = c.phone;
+            document.getElementById("formCity").value = c.city || "";
+            document.getElementById("formPlan").value = c.plan;
+            document.getElementById("formPrice").value = c.price;
+            document.getElementById("formStatus").value = c.status;
+            document.getElementById("formDate").value = c.date;
+            document.getElementById("formObs").value = c.obs || "";
+        } else {
+            document.getElementById("modalTitle").innerText = "Cadastrar Novo Assinante";
+            form.reset();
+            document.getElementById("formDate").value = new Date().toISOString().split('T')[0];
+            autoFillPrice();
+        }
+
+        modal.style.display = "flex";
+    }
+
+    function closeModal() {
+        document.getElementById("clientModal").style.display = "none";
+    }
+
+    function saveClient(e) {
+        e.preventDefault();
+        const clients = loadClients();
+        const index = parseInt(document.getElementById("editIndex").value);
+
+        const newClient = {
+            name: document.getElementById("formName").value.trim(),
+            phone: document.getElementById("formPhone").value.replace(/\D/g, ''),
+            city: document.getElementById("formCity").value.trim(),
+            plan: document.getElementById("formPlan").value,
+            price: parseFloat(document.getElementById("formPrice").value) || 0,
+            status: document.getElementById("formStatus").value,
+            date: document.getElementById("formDate").value,
+            obs: document.getElementById("formObs").value.trim()
+        };
+
+        if (index >= 0) {
+            clients[index] = newClient;
+        } else {
+            clients.unshift(newClient);
+        }
+
+        saveClientsList(clients);
+        closeModal();
+    }
+
+    function deleteClient(index) {
+        if (confirm("Tem certeza que deseja remover este registro?")) {
+            const clients = loadClients();
+            clients.splice(index, 1);
+            saveClientsList(clients);
+        }
+    }
+
+    function updateDashboard() {
+        const clients = loadClients();
+
+        let activeCount = 0;
+        let trialCount = 0;
+        let currentMrr = 0;
+        let annualCash = 0;
+
+        clients.forEach(c => {
+            if (c.status === "Ativo") {
+                activeCount++;
+                if (c.plan === "Pro Mensal") {
+                    currentMrr += c.price;
+                } else if (c.plan === "Anual Lançamento") {
+                    annualCash += c.price;
+                    currentMrr += Math.round(c.price / 12); // Diluído no MRR
+                }
+            } else if (c.status === "Teste") {
+                trialCount++;
+            }
+        });
+
+        // Top Thermometer
+        const targetMrr = 10000;
+        const pct = Math.min(100, (currentMrr / targetMrr) * 100);
+        document.getElementById("mrrDisplay").innerText = `R$ ${currentMrr.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        document.getElementById("mrrProgressBar").style.width = `${Math.max(4, pct)}%`;
+        document.getElementById("mrrPercent").innerText = `${pct.toFixed(1)}% da meta de 10K batida`;
+        
+        const remaining = Math.max(0, targetMrr - currentMrr);
+        document.getElementById("mrrRemaining").innerText = `Faltam R$ ${remaining.toLocaleString('pt-BR', {minimumFractionDigits: 2})} para os 10K`;
+
+        // KPIs
+        document.getElementById("kpiActiveClients").innerText = activeCount;
+        document.getElementById("kpiMrr").innerText = `R$ ${currentMrr.toLocaleString('pt-BR')}`;
+        document.getElementById("kpiAnnualCash").innerText = `R$ ${annualCash.toLocaleString('pt-BR')}`;
+        document.getElementById("kpiTrial").innerText = trialCount;
+
+        // Milestones
+        const m1Pct = Math.min(100, (activeCount / 5) * 100);
+        document.getElementById("m1Bar").style.width = `${m1Pct}%`;
+        document.getElementById("m1Count").innerText = `${activeCount} de 5 clientes fechados`;
+
+        const m2Pct = Math.min(100, (activeCount / 20) * 100);
+        document.getElementById("m2Bar").style.width = `${m2Pct}%`;
+        document.getElementById("m2Count").innerText = `${activeCount} de 20 clientes`;
+
+        const m3Pct = Math.min(100, (activeCount / 50) * 100);
+        document.getElementById("m3Bar").style.width = `${m3Pct}%`;
+        document.getElementById("m3Count").innerText = `${activeCount} de 50 clientes`;
+
+        renderTable();
+    }
+
+    function renderTable() {
+        const clients = loadClients();
+        const search = document.getElementById("searchInput").value.toLowerCase();
+        const tbody = document.getElementById("clientsTableBody");
+        tbody.innerHTML = "";
+
+        let visibleCount = 0;
+
+        clients.forEach((c, index) => {
+            if (search && !c.name.toLowerCase().includes(search) && !c.phone.includes(search) && !(c.city && c.city.toLowerCase().includes(search))) {
+                return;
+            }
+
+            visibleCount++;
+            const tr = document.createElement("tr");
+
+            let statusClass = "status-ativo";
+            if (c.status === "Teste") statusClass = "status-teste";
+            if (c.status === "Cancelado") statusClass = "status-cancelado";
+
+            const cleanPhone = c.phone.replace(/\D/g, '');
+            const waLink = `https://wa.me/${cleanPhone}`;
+
+            tr.innerHTML = `
+                <td>
+                    <div style="font-weight: 700; color: var(--text-main);">${escapeHtml(c.name)}</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">${escapeHtml(c.obs || '')}</div>
+                </td>
+                <td>
+                    <a href="${waLink}" target="_blank" style="color: #34d399; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fa-brands fa-whatsapp"></i> ${escapeHtml(c.phone)}
+                    </a>
+                </td>
+                <td style="color: var(--text-muted);">${escapeHtml(c.city || '—')}</td>
+                <td><span class="plan-tag">${escapeHtml(c.plan)}</span></td>
+                <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #34d399;">R$ ${c.price.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                <td><span class="badge-status ${statusClass}">${escapeHtml(c.status)}</span></td>
+                <td style="color: var(--text-muted); font-size: 12px;">${c.date ? c.date.split('-').reverse().join('/') : '—'}</td>
+                <td>
+                    <div class="actions-cell">
+                        <button class="btn-icon" title="Editar" onclick="openModal(${index})"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <a href="${waLink}" target="_blank" class="btn-icon" title="Abrir WhatsApp"><i class="fa-brands fa-whatsapp" style="color: #10b981;"></i></a>
+                        <button class="btn-icon delete" title="Excluir" onclick="deleteClient(${index})"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById("totalRowCount").innerText = visibleCount;
+    }
+
+    function exportToCSV() {
+        const clients = loadClients();
+        let csv = "Nome,Telefone,Cidade,Plano,Valor_Mensal,Status,Data_Inicio,Observacoes\n";
+
+        clients.forEach(c => {
+            csv += `"${c.name}","${c.phone}","${c.city || ''}","${c.plan}",${c.price},"${c.status}","${c.date}","${c.obs || ''}"\n`;
+        });
+
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `bravvi_erp_clientes_meta10k_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+    }
+
+    function copyPitchScript() {
+        const text = `Fala [Nome], Guilherme aqui! Cara, o Carlos me passou seu contato agora.\n\nComo eu te falei no vídeo, eu tive confecção durante anos e criei o Bravvi exatamente pra resolver essa dor de corte e grade sem complicação.\n\nNosso plano completo é R$ 197 por mês, mas pra quem tá entrando nessa turma agora eu consigo liberar uma condição especial no plano anual com quase 40% de desconto, ou te dou 7 dias de teste grátis pra você rodar suas ordens de corte na prática aí na fábrica.\n\nQuer que eu já libere seu login de teste agora pra você ver como é simples?`;
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Script de Áudio copiado com sucesso! Só colar no WhatsApp.");
+        });
+    }
+
+    function escapeHtml(text) {
+        if (!text) return "";
+        return text.replace(/[&<>"']/g, function(m) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+        });
+    }
+
+    // Run on startup
+    window.onload = function() {
+        updateDashboard();
+    };
+</script>
+
+</body>
+</html>
