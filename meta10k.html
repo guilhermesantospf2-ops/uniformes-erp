@@ -1140,8 +1140,10 @@
                 <div class="form-group">
                     <label>Tipo de Plano</label>
                     <select class="form-control" id="formPlan" onchange="autoFillPrice()">
-                        <option value="Pro Mensal">Pro Mensal (R$ 107/mês)</option>
-                        <option value="Anual Lançamento">Anual Lançamento (R$ 997/ano)</option>
+                        <option value="Básico Mensal">Básico Mensal (R$ 107/mês)</option>
+                        <option value="Pro Mensal">Pro Mensal (R$ 227/mês)</option>
+                        <option value="Anual Básico">Anual Básico (R$ 997/ano)</option>
+                        <option value="Anual Pro">Anual Pro (R$ 1.997/ano)</option>
                         <option value="Teste Grátis">Teste Grátis (7 Dias)</option>
                     </select>
                 </div>
@@ -1254,7 +1256,7 @@
             name: "Prime Uniformes",
             phone: "5547984613671",
             city: "Joinville - SC",
-            plan: "Pro Mensal",
+            plan: "Básico Mensal",
             price: 107,
             status: "Ativo",
             dueDay: 10,
@@ -1266,7 +1268,7 @@
             name: "Francisco Abrunhoza (Abrunhoza Gráfica)",
             phone: "5566984204194",
             city: "Rondonópolis - MT",
-            plan: "Pro Mensal",
+            plan: "Básico Mensal",
             price: 107,
             status: "Ativo",
             dueDay: 10,
@@ -1276,7 +1278,7 @@
         }
     ];
 
-    const STORAGE_KEY = "bravvi_meta_10k_clients_v3";
+    const STORAGE_KEY = "bravvi_meta_10k_clients_v4";
     const CONFIG_KEY = "bravvi_billing_config_v1";
 
     function loadClients() {
@@ -1319,8 +1321,10 @@
     function autoFillPrice() {
         const plan = document.getElementById("formPlan").value;
         const priceInput = document.getElementById("formPrice");
-        if (plan === "Pro Mensal") priceInput.value = 107;
-        else if (plan === "Anual Lançamento") priceInput.value = 997;
+        if (plan === "Básico Mensal") priceInput.value = 107;
+        else if (plan === "Pro Mensal") priceInput.value = 227;
+        else if (plan === "Anual Básico") priceInput.value = 997;
+        else if (plan === "Anual Pro") priceInput.value = 1997;
         else if (plan === "Teste Grátis") priceInput.value = 0;
     }
 
@@ -1443,11 +1447,11 @@
         clients.forEach(c => {
             if (c.status === "Ativo") {
                 activeCount++;
-                if (c.plan === "Pro Mensal") {
-                    currentMrr += c.price;
-                } else if (c.plan === "Anual Lançamento") {
+                if (c.plan && c.plan.includes("Anual")) {
                     annualCash += c.price;
                     currentMrr += Math.round(c.price / 12);
+                } else {
+                    currentMrr += c.price;
                 }
             } else if (c.status === "Teste") {
                 trialCount++;
@@ -1678,7 +1682,7 @@
     }
 
     function copyPitchScript() {
-        const text = `Fala [Nome], Guilherme aqui! Cara, o Carlos me passou seu contato agora.\n\nComo eu te falei no vídeo, eu tive confecção durante anos e criei o Bravvi exatamente pra resolver essa dor de corte e grade sem complicação.\n\nNosso plano completo é R$ 107 por mês, mas pra quem tá entrando nessa turma agora eu consigo liberar uma condição especial no plano anual com quase 30% de desconto, ou te dou 7 dias de teste grátis pra você rodar suas ordens de corte na prática aí na fábrica.\n\nQuer que eu já libere seu login de teste agora pra você ver como é simples?`;
+        const text = `Fala [Nome], Guilherme aqui! Cara, o Carlos me passou seu contato agora.\n\nComo eu te falei no vídeo, eu tive confecção durante anos e criei o Bravvi exatamente pra resolver essa dor de corte e grade sem complicação.\n\nNosso plano Básico é R$ 107 por mês e o Pro completo é R$ 227, mas pra quem tá entrando nessa turma agora eu consigo liberar uma condição especial no plano anual com desconto, ou te dou 7 dias de teste grátis pra você rodar suas ordens de corte na prática aí na fábrica.\n\nQuer que eu já libere seu login de teste agora pra você ver como é simples?`;
         navigator.clipboard.writeText(text).then(() => {
             alert("Script de Áudio copiado com sucesso! Só colar no WhatsApp.");
         });
