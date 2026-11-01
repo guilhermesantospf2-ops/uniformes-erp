@@ -1562,15 +1562,15 @@
       </div>
 
       <div class="hero-actions">
-        <a href="demo.html" target="_blank" class="btn btn-primary btn-lg" title="Testar o sistema real funcionando agora sem precisar cadastrar cartão">
-          🎮 Testar Sistema ao Vivo Agora &rarr;
+        <a href="https://wa.me/554499856245?text=Ol%C3%A1%20Guilherme!%20Vi%20o%20Bravvi%20ERP%20e%20quero%20testar%207%20dias%20gr%C3%A1tis%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-whatsapp btn-lg" style="background: linear-gradient(135deg, #10b981, #059669); color: #ffffff !important; font-weight: 800; font-size: 15.5px; box-shadow: 0 6px 22px rgba(16, 185, 129, 0.45); padding: 15px 24px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff" style="margin-right: 8px;"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z"/></svg>
+          💬 Testar 7 Dias Grátis no WhatsApp &rarr;
+        </a>
+        <a href="demo.html" target="_blank" class="btn btn-secondary btn-lg" title="Testar o sistema real funcionando agora sem precisar cadastrar cartão">
+          🎮 Test Drive da Tela ao Vivo
         </a>
         <a href="#planos" class="btn btn-secondary btn-lg" title="Ver planos a partir de R$ 107/mês e assinar">
-          💳 Ver Planos (A partir de R$ 107)
-        </a>
-        <a href="https://wa.me/554499856245?text=Ol%C3%A1%20Guilherme!%20Vi%20a%20p%C3%A1gina%20do%20Bravvi%20ERP%20e%20quero%20tirar%20uma%20d%C3%BAvida%20sobre%20o%20sistema%20para%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-whatsapp btn-lg">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#ffffff"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z"/></svg>
-          Tirar Dúvida no WhatsApp
+          💳 Planos (A partir de R$ 107)
         </a>
       </div>
 
@@ -2920,5 +2920,219 @@
 
   <!-- Motor de Pagamentos Seguro -->
   <script src="infinitepay-engine.js?v=8.7.1"></script>
+
+  <!-- ========================================== -->
+  <!-- MÁQUINA DE CONVERSÃO WHATSAPP (TURBINADA) -->
+  <!-- ========================================== -->
+  <style>
+    /* Sticky Bottom Bar no Mobile */
+    .bravvi-sticky-bottom {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(10, 15, 29, 0.96);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-top: 2px solid #10b981;
+      padding: 10px 14px;
+      z-index: 999999;
+      box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.6);
+    }
+    .bravvi-sticky-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 600px;
+      margin: 0 auto;
+      gap: 10px;
+    }
+    .bravvi-sticky-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #94a3b8;
+      white-space: nowrap;
+    }
+    .bravvi-sticky-dot {
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10b981;
+      animation: bravvi-pulse 2s infinite;
+    }
+    .bravvi-sticky-btn {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #ffffff !important;
+      text-decoration: none !important;
+      font-weight: 800;
+      font-size: 14px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.5);
+    }
+
+    /* Floating Widget Desktop */
+    .bravvi-float-widget {
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 999999;
+      align-items: center;
+      gap: 12px;
+    }
+    .bravvi-float-bubble {
+      background: #0f172a;
+      color: #f8fafc;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 10px 16px;
+      border-radius: 99px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .bravvi-float-bubble strong {
+      color: #34d399;
+    }
+    .bravvi-float-btn {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10b981, #047857);
+      color: #ffffff !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+      text-decoration: none !important;
+      transition: transform 0.2s;
+      position: relative;
+    }
+    .bravvi-float-btn:hover {
+      transform: scale(1.08);
+    }
+    .bravvi-float-badge {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 20px;
+      height: 20px;
+      background: #ef4444;
+      color: white;
+      font-size: 11px;
+      font-weight: 800;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #0f172a;
+    }
+
+    /* Slide-in Lead Capture Drawer */
+    .bravvi-lead-drawer {
+      position: fixed;
+      bottom: -180px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 92%;
+      max-width: 480px;
+      background: #0f172a;
+      border: 1px solid rgba(16, 185, 129, 0.6);
+      border-radius: 16px;
+      padding: 16px 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+      z-index: 1000000;
+      transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .bravvi-lead-drawer.show {
+      bottom: 74px;
+    }
+    @media(min-width: 769px) {
+      .bravvi-lead-drawer.show {
+        bottom: 24px;
+        left: 24px;
+        transform: none;
+      }
+    }
+
+    @keyframes bravvi-pulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+
+    @media (max-width: 768px) {
+      .bravvi-sticky-bottom { display: block !important; }
+      body { padding-bottom: 75px !important; }
+    }
+    @media (min-width: 769px) {
+      .bravvi-float-widget { display: flex !important; }
+    }
+  </style>
+
+  <!-- Barra Fixa Mobile -->
+  <div class="bravvi-sticky-bottom">
+    <div class="bravvi-sticky-container">
+      <div class="bravvi-sticky-status">
+        <span class="bravvi-sticky-dot"></span>
+        <span>Guilherme Online</span>
+      </div>
+      <a href="https://wa.me/554499856245?text=Ol%C3%A1%20Guilherme!%20Vi%20a%20p%C3%A1gina%20do%20Bravvi%20ERP%20e%20quero%20testar%20gr%C3%A1tis%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="bravvi-sticky-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z"/></svg>
+        <span>Testar 7 Dias Grátis no WhatsApp</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Botão Flutuante Desktop -->
+  <div class="bravvi-float-widget">
+    <div class="bravvi-float-bubble">
+      <span class="bravvi-sticky-dot"></span>
+      <span>Dúvidas na fábrica? Fale com o <strong>Guilherme</strong></span>
+    </div>
+    <a href="https://wa.me/554499856245?text=Ol%C3%A1%20Guilherme!%20Vi%20a%20p%C3%A1gina%20do%20Bravvi%20ERP%20e%20quero%20testar%20gr%C3%A1tis%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="bravvi-float-btn" title="Falar no WhatsApp com o Fundador">
+      <span class="bravvi-float-badge">1</span>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="#ffffff"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z"/></svg>
+    </a>
+  </div>
+
+  <!-- Gaveta de Retenção de Lead -->
+  <div id="bravviLeadDrawer" class="bravvi-lead-drawer">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div style="font-weight:700; font-size:14px; color:#f8fafc; display:flex; align-items:center; gap:6px;">
+        <span class="bravvi-sticky-dot"></span> Teste Grátis no Chão de Fábrica
+      </div>
+      <button onclick="document.getElementById('bravviLeadDrawer').classList.remove('show')" style="background:none; border:none; color:#64748b; font-size:18px; cursor:pointer;">&times;</button>
+    </div>
+    <p style="font-size:12.5px; color:#94a3b8; line-height:1.4; margin:0;">
+      Quer ver como o Bravvi organiza corte, grade e facções na prática? Fale direto com o Guilherme agora e libere 7 dias grátis.
+    </p>
+    <a href="https://wa.me/554499856245?text=Ol%C3%A1%20Guilherme!%20Vi%20o%20Bravvi%20ERP%20e%20quero%20testar%207%20dias%20gr%C3%A1tis%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="bravvi-sticky-btn" style="padding:10px; font-size:13px;">
+      Liberar Teste Grátis no WhatsApp &rarr;
+    </a>
+  </div>
+
+  <script>
+    setTimeout(function() {
+      var d = document.getElementById('bravviLeadDrawer');
+      if (d) d.classList.add('show');
+    }, 10000);
+  </script>
+
 </body>
 </html>
