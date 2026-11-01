@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bravvi ERP • Operação Rota 10K & Gestão de Assinaturas</title>
+    
+    <!-- PWA Settings -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bravvi 10K">
+    <meta name="theme-color" content="#10b981">
+    <link rel="manifest" href="/manifest-meta10k.json">
+    <link rel="apple-touch-icon" href="/assets/icon-192.png">
+    <link rel="icon" type="image/png" href="/assets/icon-192.png">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -841,6 +851,9 @@
             </div>
         </div>
         <div class="header-actions">
+            <button class="btn btn-secondary" id="btnInstallApp" onclick="triggerPwaInstall()" style="border-color: rgba(16, 185, 129, 0.4); color: #34d399;">
+                <i class="fa-solid fa-mobile-screen-button"></i> Instalar App
+            </button>
             <button class="btn btn-secondary" onclick="exportToCSV()">
                 <i class="fa-solid fa-file-excel" style="color: #10b981;"></i> Baixar Planilha
             </button>
@@ -1693,6 +1706,41 @@
         return text.replace(/[&<>"']/g, function(m) {
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
         });
+    }
+
+    // Register Service Worker for PWA App
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw-meta10k.js').catch(() => {});
+        });
+    }
+
+    // PWA Install Logic
+    let deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        const btn = document.getElementById('btnInstallApp');
+        if (btn) {
+            btn.style.display = 'inline-flex';
+            btn.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.5)';
+        }
+    });
+
+    function triggerPwaInstall() {
+        if (deferredInstallPrompt) {
+            deferredInstallPrompt.prompt();
+            deferredInstallPrompt.userChoice.then(() => {
+                deferredInstallPrompt = null;
+            });
+        } else {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isIOS) {
+                alert("📲 Como instalar no iPhone (Safari):\n\n1. Toque no botão de Compartilhar (o ícone de quadrado com seta para cima ⎋ na barra inferior do Safari)\n2. Role um pouco para baixo e toque em 'Adicionar à Tela de Início'\n3. Pronto! O ícone da Bravvi 10K vai aparecer na sua tela inicial como um App.");
+            } else {
+                alert("📲 Como instalar no Android ou PC:\n\n1. No Chrome/Edge, toque nos 3 pontinhos no canto superior\n2. Selecione 'Instalar aplicativo' ou 'Adicionar à tela inicial'\n3. O App será instalado em tela cheia!");
+            }
+        }
     }
 
     window.onload = function() {
