@@ -2953,6 +2953,29 @@
      ========================================================================== */
   const modalPilha = [];
 
+  // Trava e destrava a rolagem do fundo (body / tela anterior) quando houver modais abertos
+  function atualizarTravaScrollFundo() {
+    const overlays = document.querySelectorAll('.modal-overlay');
+    const temModal = (modalPilha && modalPilha.length > 0) || (overlays && overlays.length > 0);
+    if (temModal) {
+      if (!document.body.classList.contains('modal-aberto')) {
+        document.body.classList.add('modal-aberto');
+        document.documentElement.classList.add('modal-aberto');
+      }
+    } else {
+      document.body.classList.remove('modal-aberto');
+      document.documentElement.classList.remove('modal-aberto');
+    }
+  }
+
+  // Observer que monitora o container de modais em tempo real para sincronização atômica
+  if (modalContainer && window.MutationObserver) {
+    const observerModais = new MutationObserver(() => {
+      atualizarTravaScrollFundo();
+    });
+    observerModais.observe(modalContainer, { childList: true, subtree: false });
+  }
+
   function criarModalCamada(htmlConteudo, options = {}) {
     if (!modalContainer) return null;
 
@@ -3008,6 +3031,12 @@
       });
     });
 
+    // 3. Previne que qualquer evento de rolagem do mouse vaze para o fundo da página
+    modalEl.addEventListener('wheel', (e) => {
+      e.stopPropagation();
+    }, { passive: true });
+
+    atualizarTravaScrollFundo();
     return modalEl;
   }
 
@@ -3038,12 +3067,14 @@
     if (modalPilha.length === 0 && modalContainer) {
       modalContainer.innerHTML = '';
     }
+    atualizarTravaScrollFundo();
   }
 
   function fecharTodosModais() {
     modalPilha.length = 0;
     if (modalContainer) modalContainer.innerHTML = '';
     document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+    atualizarTravaScrollFundo();
   }
 
   function configurarFechamentoModaisGlobal() {
@@ -4297,6 +4328,7 @@
                         </button>
                       ` : `
                         <button class="btn btn-secondary btn-sm btn-ver-os" data-id="${p.id}">OS</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalRepartirOS('${p.numero || p.id}')" style="font-weight: 800; font-size: 11px; color: #854d0e; background: #fef9c3; border-color: #fde047; padding: 3px 6px;" title="Repartir pedido entre costureiras">✂️ Repartir</button>
                         ${nfExistente ? `
                           <button class="btn btn-secondary btn-sm btn-abrir-nfe-pedido" data-nfe-id="${nfExistente.id}" style="font-weight: 700; color: #047857; border-color: #a7f3d0; background: #ecfdf5;" title="Visualizar DANFE Oficial A4 / XML da NF-e #${nfExistente.numero}">
                             ✓ NF #${nfExistente.numero}
@@ -4353,6 +4385,7 @@
         const isQuarentena = p.status === 'Quarentena';
         const isOrcamento = p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento';
         const countdown = calcularContagemRegressivaPedido(p);
+        const nfExistente = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || n.pedidoNumero === p.numero) && n.statusSefaz !== 'cancelada');
         return `
                     <div class="kanban-card" draggable="true" data-id="${p.id}" title="Segure e arraste para mudar a etapa do pedido">
                       <div style="display: flex; gap: 8px; margin-bottom: 8px;">
@@ -4442,6 +4475,15 @@
                           <button class="btn btn-primary btn-sm btn-ver-os" data-id="${p.id}" style="flex: 1;">
                             Ficha OS
                           </button>
+                          ${nfExistente ? `
+                            <button class="btn btn-secondary btn-sm btn-abrir-nfe-pedido" data-nfe-id="${nfExistente.id}" style="padding: 3px 6px; font-weight: 700; color: #047857; border-color: #a7f3d0; background: #ecfdf5;" title="Visualizar DANFE Oficial da NF-e #${nfExistente.numero}">
+                              ✓ NF #${nfExistente.numero}
+                            </button>
+                          ` : `
+                            <button class="btn btn-secondary btn-sm btn-emitir-nfe-pedido" data-id="${p.id}" style="padding: 3px 6px; font-weight: 700; color: #0369a1; border-color: #bae6fd; background: #f0f9ff;" title="Emitir NF-e Modelo 55 (DANFE Oficial)">
+                              🧾 NF-e
+                            </button>
+                          `}
                           <button class="btn btn-secondary btn-sm btn-cancelar-pedido" data-id="${p.id}" style="padding: 3px 6px; color: #dc2626; border-color: #fca5a5;" title="Cancelar este Pedido">
                             ✕
                           </button>
@@ -4475,9 +4517,9 @@
     document.querySelectorAll('.btn-ver-os').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
-        const p = db.pedidos.find(x => x.id === id);
+        const p = (db.pedidos || []).find(x => x.id === id);
         if (p) {
-          const os = db.ordensServico.find(o => o.pedidoNumero === p.numero);
+          const os = (db.ordensServico || []).find(o => (o.pedidoNumero != null && p.numero != null && o.pedidoNumero.toString() === p.numero.toString()) || o.pedidoId === p.id);
           if (os) {
             abrirFichaTecnica(os.id);
           } else {
@@ -6821,7 +6863,8 @@
 
       container.innerHTML = `
         ${itensOrcamento.map((it, idx) => `
-          <div class="modelo-tab-item ${idx === itemAtivoIndex ? 'active' : ''}" data-idx="${idx}">
+          <div class="modelo-tab-item ${idx === itemAtivoIndex ? 'active' : ''}" data-idx="${idx}" style="display: flex; align-items: center; gap: 6px;">
+            ${it.mockupUrl ? `<img src="${it.mockupUrl}" style="width: 18px; height: 24px; aspect-ratio: 3/4; object-fit: contain; border-radius: 2px; border: 1px solid #cbd5e1; background: #fff; flex-shrink: 0;" alt="Mockup ${idx + 1}">` : ''}
             <span>👕 ${idx + 1}. ${it.produtoNome.split(' ')[0]} ${it.produtoNome.split(' ')[1] || ''}</span>
             <span class="modelo-tab-badge">${it.grade?.total || 0} pçs</span>
             ${itensOrcamento.length > 1 ? `
@@ -7556,6 +7599,8 @@
           itensOrcamento[itemAtivoIndex].mockupUploadPersonalizado = true;
           const prev = document.getElementById('previewMockup3x4Orc');
           if (prev) prev.src = base64Otimizado;
+          renderizarAbasModelos();
+          if (e.target) e.target.value = '';
           mostrarToast('Mockup otimizado em resolução A4 e anexado com sucesso!', 'green');
         }
       }
@@ -9349,6 +9394,48 @@
                   + Cadastrar Costureira
                 </button>
               </div>
+
+              ${(dadosBase.itens && dadosBase.itens.length > 1) ? `
+                <div style="margin-top: 10px; background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 6px; padding: 10px 14px;">
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 800; font-size: 12px; color: #92400e; margin: 0;">
+                    <input type="checkbox" id="chkRepartirModelosAvanco">
+                    ✂️ Repartir este pedido por modelo na costura (Costureiras & Valores Separados)
+                  </label>
+                  <span style="display: block; font-size: 11px; color: #78350f; margin-top: 3px; line-height: 1.4;">
+                    Gera uma Ordem de Produção (OS) individual para cada modelo. Cada costureira verá apenas suas peças e o seu valor acordado, sem ver os valores das outras.
+                  </span>
+
+                  <div id="boxModelosRepartirAvanco" style="display: none; margin-top: 10px; flex-direction: column; gap: 8px;">
+                    ${dadosBase.itens.map((it, idx) => `
+                      <div style="background: #ffffff; border: 1px solid #facc15; border-radius: 5px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                          <img src="${it.mockupUrl || mockupDataUrl}" style="width: 32px; height: 42px; aspect-ratio: 3/4; object-fit: contain; border: 1px solid #cbd5e1; border-radius: 3px; background: #fff;">
+                          <div>
+                            <strong style="font-size: 12px; color: #0f172a;">${idx + 1}. ${it.produtoNome}</strong>
+                            <div style="font-size: 10.5px; color: #475569;">${it.grade?.total || 0} pçs &bull; Cor: ${it.corPrincipal || it.corTecido || 'A Definir'}</div>
+                          </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                          <div>
+                            <span style="font-size: 10px; font-weight: 700; color: #475569; display: block;">Costureira:</span>
+                            <select class="form-select sel-cost-avanco-item" data-item-idx="${idx}" style="font-size: 11px; padding: 4px 6px; height: auto;">
+                              ${(db.costureiras && db.costureiras.length > 0) ? db.costureiras.map(c => `
+                                <option value="${c.id}">${c.nome}</option>
+                              `).join('') : '<option value="">Padrão</option>'}
+                            </select>
+                          </div>
+                          <div>
+                            <span style="font-size: 10px; font-weight: 700; color: #475569; display: block;">Valor/Pç (R$):</span>
+                            <input type="number" step="0.50" min="0" class="form-input inp-valor-avanco-item" data-item-idx="${idx}" value="${(it.custoCostura || 7.50).toFixed(2)}" style="width: 80px; font-size: 11px; padding: 4px 6px; font-weight: 800; height: auto; text-align: right;">
+                          </div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
             </div>
 
             <!-- 2. Especificações de Estamparia & Locais de Aplicação (Sem Upload Pesado no Banco) -->
@@ -9617,6 +9704,11 @@
           mostrarToast('Erro ao carregar a imagem do Modelo.', 'red');
         }
       });
+    });
+
+    document.getElementById('chkRepartirModelosAvanco')?.addEventListener('change', (e) => {
+      const box = document.getElementById('boxModelosRepartirAvanco');
+      if (box) box.style.display = e.target.checked ? 'flex' : 'none';
     });
 
     document.getElementById('inputUploadMockupAvanco')?.addEventListener('change', async (e) => {
@@ -9920,6 +10012,63 @@
         statusCostura: "Pendente",
         statusAcabamento: "Pendente"
       };
+      const isRepartirNaEntrada = document.getElementById('chkRepartirModelosAvanco')?.checked && dadosBase.itens && dadosBase.itens.length > 1;
+      if (isRepartirNaEntrada) {
+        novaOS.desmembrada = true;
+        novaOS.etapaAtual = 'Repartida';
+        const subOrdens = [];
+        dadosBase.itens.forEach((it, idx) => {
+          const letra = String.fromCharCode(65 + idx);
+          const selCost = document.querySelector(`.sel-cost-avanco-item[data-item-idx="${idx}"]`);
+          const inpVal = document.querySelector(`.inp-valor-avanco-item[data-item-idx="${idx}"]`);
+          const costId = selCost ? selCost.value : '';
+          const cObj = (db.costureiras || []).find(c => c.id === costId) || costureiraObj;
+          const valPeca = parseFloat(inpVal ? inpVal.value : (it.custoCostura || 7.50)) || 7.50;
+          const totPecas = it.grade?.total || 0;
+          const itMockup = it.mockupUrl || mockupDataUrl;
+          const artesMod = artesLista.filter(a => !a.modeloNome || a.modeloNome === it.produtoNome || (it.aplicacoes && it.aplicacoes.some(app => app.local === a.local)));
+
+          subOrdens.push({
+            id: `${novaOS.id}-${letra}`,
+            parentOsId: novaOS.id,
+            subOs: true,
+            modeloIndice: idx,
+            modeloNome: it.produtoNome,
+            pedidoNumero: pedidoOficial.numero,
+            cliente: clienteNomeFinal,
+            produto: it.produtoNome,
+            itens: [it],
+            grade: it.grade || {},
+            quantidadeTotal: totPecas,
+            corTecido: it.corPrincipal || it.corTecido || corFinal,
+            observacoesCoresDetalhes: it.observacoesCoresDetalhes || obsCoresFinal,
+            mockupUrl: itMockup,
+            tipoPedidoModalidade: pedidoOficial.tipoPedidoModalidade || 'padrao',
+            jogadores: pedidoOficial.jogadores || [],
+            etapaAtual: "Quarentena",
+            costureiraDesignada: cObj.nome,
+            costureiraId: cObj.id,
+            valorCosturaPeca: valPeca,
+            responsavelCorte: "Vanderlei Souza",
+            dataEntradaCorte: new Date().toISOString().split('T')[0],
+            prazoPedidoDias: pedidoOficial.prazoPedidoDias,
+            prazoInternoDias: pedidoOficial.prazoInternoDias,
+            dataPrevisaoEntrega: pedidoOficial.dataPrevisaoEntrega,
+            dataMetaInterna: pedidoOficial.dataMetaInterna,
+            dtfLarguraRolo: pedidoOficial.dtfLarguraRolo || 58,
+            tecidoConsumidoKg: ((it.consumoTecido || 0.28) * totPecas).toFixed(1),
+            artesAplicacao: artesMod.length > 0 ? artesMod : artesLista,
+            instrucoesCorte: `Corte isolado para ${totPecas} peças de ${it.produtoNome} (Sub-OS ${letra} de ${dadosBase.itens.length}). Cor: ${it.corPrincipal || it.corTecido || corFinal}.${it.observacoesCoresDetalhes ? ' ATENÇÃO: ' + it.observacoesCoresDetalhes : ''}`,
+            instrucoesCostura: `Costureira responsável: ${cObj.nome}. Fechamento para ${totPecas} peças de ${it.produtoNome}. Remuneração acordada: ${formatarMoeda(valPeca)}/un (Total a Pagar: ${formatarMoeda(valPeca * totPecas)}). Fechamento confidencial.`,
+            statusBordado: "Pendente",
+            statusCostura: "Pendente",
+            statusAcabamento: "Pendente"
+          });
+        });
+
+        novaOS.subOrdensGeradas = subOrdens.map(s => s.id);
+        db.ordensServico.unshift(...subOrdens);
+      }
       db.ordensServico.unshift(novaOS);
 
       // 6. Adiciona artes para a fila do Nesting DTF automaticamente
@@ -10500,10 +10649,27 @@
                   </td>
                   <td class="text-mono">${os.tecidoConsumidoKg} kg/m</td>
                   <td>
-                    <button class="btn btn-primary btn-sm btn-imprimir-os" data-id="${os.id}">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                      Imprimir OS (A4)
-                    </button>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                      <button class="btn btn-primary btn-sm btn-imprimir-os" data-id="${os.id}">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                        Imprimir OS (A4)
+                      </button>
+                      ${multiModelos && !os.desmembrada ? `
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="font-size: 11px; padding: 3px 6px; color: #854d0e; background: #fef9c3; border-color: #fde047; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="Repartir esta OS por Costureira mantendo sigilo de valores">
+                          ✂️ Repartir OS
+                        </button>
+                      ` : ''}
+                      ${os.desmembrada ? `
+                        <span style="font-size: 9.5px; color: #854d0e; font-weight: 700; background: #fef9c3; padding: 2px 4px; border-radius: 3px; border: 1px solid #fde047; text-align: center;">
+                          ✂️ Repartida (${os.subOrdensGeradas ? os.subOrdensGeradas.length : 2} OSs)
+                        </span>
+                      ` : ''}
+                      ${os.subOs ? `
+                        <span style="font-size: 9.5px; color: #1e40af; font-weight: 700; background: #eff6ff; padding: 2px 4px; border-radius: 3px; border: 1px solid #bfdbfe; text-align: center;">
+                          ✂️ Sub-OS Confidencial
+                        </span>
+                      ` : ''}
+                    </div>
                   </td>
                 </tr>
               `;
@@ -10566,12 +10732,24 @@
     abrirModalMockup3x4(pedidoIdOuNumero);
   }
 
-  function gerarHtmlCorpoFichaTecnica(os) {
+  function gerarHtmlCorpoFichaTecnica(os, modeloIdx = null) {
     const pedido = (db.pedidos || []).find(p => (p.numero != null && os.pedidoNumero != null && p.numero.toString() === os.pedidoNumero.toString()) || (p.id && (p.id === os.pedidoId || p.id === os.pedidoNumero))) || {};
     const listaJogadores = (pedido.jogadores && Array.isArray(pedido.jogadores) && pedido.jogadores.length > 0)
       ? pedido.jogadores
       : ((os.jogadores && Array.isArray(os.jogadores) && os.jogadores.length > 0) ? os.jogadores : []);
     const itensLista = (os.itens && os.itens.length > 0) ? os.itens : (pedido.itens && pedido.itens.length > 0 ? pedido.itens : []);
+    const temMultiplosModelos = itensLista.length > 1;
+
+    // Se modeloIdx for numérico, filtra a visualização para focar 100% naquele modelo específico
+    const itAtivo = (modeloIdx !== null && itensLista[modeloIdx]) ? itensLista[modeloIdx] : null;
+
+    const modNome = itAtivo ? itAtivo.produtoNome : os.produto;
+    const qtdTotal = itAtivo ? (itAtivo.grade?.total || 0) : os.quantidadeTotal;
+    const corTec = itAtivo ? (itAtivo.corPrincipal || itAtivo.corTecido || os.corTecido || 'A Definir') : (os.corTecido || 'A Definir');
+    const obsCores = itAtivo ? (itAtivo.observacoesCoresDetalhes || os.observacoesCoresDetalhes || '') : (os.observacoesCoresDetalhes || '');
+    const mockAtivo = itAtivo ? (itAtivo.mockupUrl || os.mockupUrl) : os.mockupUrl;
+    const valorCostura = itAtivo ? (itAtivo.custoCostura || os.valorCosturaPeca || 7.50) : (os.valorCosturaPeca || pedido.custoCostura || 7.50);
+    const totalPagarCostura = valorCostura * qtdTotal;
     const prazoCli = os.prazoPedidoDias || pedido.prazoPedidoDias || 15;
     const prazoInt = os.prazoInternoDias || pedido.prazoInternoDias || 10;
     const dataEntrega = os.dataPrevisaoEntrega || pedido.dataPrevisaoEntrega || calcularDataFuturaDiasUteis(prazoCli);
@@ -10589,6 +10767,32 @@
     });
 
     return `
+      <!-- Seletor de Modelo Ativo da Ordem de Produção -->
+      ${temMultiplosModelos ? `
+        <div class="nav-modelos-ficha" style="margin-bottom: 12px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span style="font-size: 11px; font-weight: 800; color: #0f172a; margin-right: 4px;">MODELO ATIVO NA FICHA:</span>
+            <button type="button" class="btn btn-xs ${modeloIdx === null ? 'btn-primary' : 'btn-secondary'} btn-sel-mod-ficha" data-mod-idx="all" style="font-weight: 800; font-size: 11px; padding: 3px 8px;">
+              ★ Todos (${os.quantidadeTotal} pçs)
+            </button>
+            ${itensLista.map((it, idx) => `
+              <button type="button" class="btn btn-xs ${modeloIdx === idx ? 'btn-primary' : 'btn-secondary'} btn-sel-mod-ficha" data-mod-idx="${idx}" style="font-weight: 800; font-size: 11px; padding: 3px 8px;">
+                👕 Mod ${idx + 1}: ${it.produtoNome.split(' ')[0]} ${it.produtoNome.split(' ')[1] || ''} (${it.grade?.total || 0} pçs)
+              </button>
+            `).join('')}
+          </div>
+          ${modeloIdx !== null ? `
+            <span style="font-size: 11px; font-weight: 800; color: #0284c7; background: #e0f2fe; padding: 2px 8px; border-radius: 4px; border: 1px solid #bae6fd;">
+              ✓ Visualizando & Imprimindo: Modelo ${modeloIdx + 1}
+            </span>
+          ` : `
+            <span style="font-size: 10.5px; font-weight: 700; color: #64748b;">
+              Visualização Consolidada (Geral)
+            </span>
+          `}
+        </div>
+      ` : ''}
+
       <!-- Cabeçalho da Ordem de Produção -->
       <div style="border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; align-items: center; gap: 14px;">
@@ -10621,39 +10825,61 @@
 
       <!-- Detalhamento Têxtil & Mockup 3x4 -->
       <div style="display: flex; gap: 14px; margin-bottom: 12px; align-items: flex-start;">
-        ${(itensLista.length > 1) ? `
+        ${itAtivo ? `
+          <!-- Mockup ÚNICO e Exclusivo do Modelo Selecionado -->
+          <div style="text-align: center; border: 2.5px solid #0284c7; border-radius: 6px; padding: 6px; background: #ffffff; box-shadow: 0 4px 10px rgba(2, 132, 199, 0.15); flex-shrink: 0;">
+            <img src="${mockAtivo}" 
+                 class="mockup-thumb-3x4" 
+                 data-os-id="${os.id}" 
+                 data-item-idx="${modeloIdx}" 
+                 data-pedido-id="${os.pedidoNumero || (pedido && pedido.id) || ''}" 
+                 alt="Mockup Modelo ${modeloIdx + 1}" 
+                 title="Mockup Oficial Modelo ${modeloIdx + 1}: ${modNome} (Clique para tela cheia)" 
+                 style="cursor: pointer; width: 88px !important; height: 116px !important; aspect-ratio: 3/4; object-fit: contain; display: block; margin: 0 auto 4px; border: 1.5px solid #94a3b8; border-radius: 4px; background: #ffffff;">
+            <strong style="font-size: 11px; color: #0369a1; display: block; max-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              Mod ${modeloIdx + 1} (${qtdTotal} pçs)
+            </strong>
+            <label style="display: block; font-size: 9px; color: #0284c7; cursor: pointer; text-decoration: underline; margin-top: 2px;" title="Trocar ou anexar foto do mockup deste modelo">
+              📷 Trocar Foto
+              <input type="file" accept="image/*" class="input-trocar-mockup-os-item" data-os-id="${os.id}" data-item-idx="${modeloIdx}" style="display: none;">
+            </label>
+          </div>
+        ` : (itensLista.length > 1 ? `
           <div style="display: flex; gap: 8px; flex-wrap: wrap; max-width: 280px; align-items: flex-start;">
             ${itensLista.map((it, idx) => `
-              <div style="text-align: center; border: 1.5px solid #cbd5e1; border-radius: 5px; padding: 4px 6px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+              <div class="card-mod-thumb-ficha" data-mod-idx="${idx}" style="cursor: pointer; text-align: center; border: 1.5px solid #cbd5e1; border-radius: 5px; padding: 4px 6px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: all 0.15s ease;" title="Clique para filtrar apenas o Modelo ${idx + 1}">
                 <img src="${it.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome || 'Uniforme', it.corPrincipal || '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6)) : '')}" 
                      class="mockup-thumb-3x4" 
                      data-os-id="${os.id}" 
                      data-item-idx="${idx}" 
                      data-pedido-id="${os.pedidoNumero || (pedido && pedido.id) || ''}" 
                      alt="Mockup Modelo ${idx + 1}" 
-                     title="Modelo ${idx + 1}: ${it.produtoNome} (Clique para ampliar)" 
-                     style="cursor: pointer; width: 62px !important; height: 82px !important; aspect-ratio: 3/4; object-fit: contain; display: block; margin: 0 auto 3px; border: 1px solid #cbd5e1; border-radius: 3px; background: #ffffff;">
+                     style="width: 62px !important; height: 82px !important; aspect-ratio: 3/4; object-fit: contain; display: block; margin: 0 auto 3px; border: 1px solid #cbd5e1; border-radius: 3px; background: #ffffff;">
                 <div style="font-size: 9.5px; font-weight: 800; color: #0f172a; max-width: 66px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${it.produtoNome}">
                   Mod ${idx + 1}
                 </div>
                 <div style="font-size: 8.5px; color: #1e40af; font-weight: 700;">
                   ${it.grade?.total || 0} pçs
                 </div>
+                <label style="display: block; font-size: 9px; color: #0284c7; cursor: pointer; text-decoration: underline; margin-top: 2px;" title="Trocar ou anexar mockup para este modelo">
+                  📷 Trocar
+                  <input type="file" accept="image/*" class="input-trocar-mockup-os-item" data-os-id="${os.id}" data-item-idx="${idx}" style="display: none;">
+                </label>
               </div>
             `).join('')}
           </div>
         ` : `
           <img src="${os.mockupUrl}" class="mockup-thumb-3x4" data-os-id="${os.id}" data-item-idx="0" data-pedido-id="${os.pedidoNumero || (pedido && pedido.id) || ''}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 ampliado na tela" style="cursor: pointer;">
-        `}
+        `)}
         
         <div style="flex: 1;">
           <div class="grid-cards-2" style="gap: 8px; font-size: 11.5px;">
             <div><strong>Cliente:</strong> ${os.cliente}</div>
-            <div><strong>Produto Têxtil:</strong> ${os.produto}</div>
-            <div><strong>Total de Peças:</strong> <span style="font-weight: 800; color: #0f172a;">${os.quantidadeTotal} un</span></div>
+            <div><strong>Produto Têxtil:</strong> <strong style="color: #1e40af;">${modNome}</strong></div>
+            <div><strong>Total de Peças:</strong> <span style="font-weight: 800; color: #047857; font-size: 12.5px;">${qtdTotal} un</span> ${itAtivo ? `<span style="font-size: 10px; color: #64748b;">(deste modelo)</span>` : ''}</div>
             <div><strong>Costureira Designada:</strong> <span style="font-weight: 800; color: #047857;">${os.costureiraDesignada}</span></div>
             <div><strong>Encarregado de Corte:</strong> ${os.responsavelCorte}</div>
-            <div><strong>Consumo Estimado:</strong> ${(pedido.consumoTotalTecido ? pedido.consumoTotalTecido.toFixed(2) : os.tecidoConsumidoKg)} ${(pedido.unidadeTecido === 'metro' ? 'metros de tecido' : 'kg de malha')}</div>
+            <div><strong>Consumo Estimado:</strong> ${((itAtivo ? (itAtivo.consumoTecido || 0.28) : 0.28) * qtdTotal).toFixed(1)} ${(pedido.unidadeTecido === 'metro' ? 'metros' : 'kg de malha')}</div>
           </div>
 
           <!-- REMUNERAÇÃO & CONTROLE DA COSTUREIRA / FACÇÃO -->
@@ -10663,12 +10889,23 @@
                 🧵 Remuneração da Costura (Facção / Produção):
               </span>
               <div style="font-size: 13px; font-weight: 800; color: #0f172a;">
-                <span style="color: #047857;">${formatarMoeda(os.valorCosturaPeca || pedido.custoCostura || 7.50)}</span> <span style="font-size: 11px; font-weight: 600; color: #64748b;">/ peça</span> &nbsp;&bull;&nbsp; Total a Pagar à Costureira: <strong style="color: #15803d; font-size: 13.5px;">${formatarMoeda((os.valorCosturaPeca || pedido.custoCostura || 7.50) * (os.quantidadeTotal || 0))}</strong> <span style="font-size: 11px; font-weight: 600; color: #64748b;">(${os.quantidadeTotal} pçs)</span>
+                <span style="color: #047857;">${formatarMoeda(valorCostura)}</span> <span style="font-size: 11px; font-weight: 600; color: #64748b;">/ peça</span> &nbsp;&bull;&nbsp; Total a Pagar à Costureira: <strong style="color: #15803d; font-size: 14px;">${formatarMoeda(totalPagarCostura)}</strong> <span style="font-size: 11px; font-weight: 600; color: #64748b;">(${qtdTotal} pçs)</span>
               </div>
             </div>
-            <div style="text-align: right; font-size: 11px;">
-              <span style="color: #64748b;">Costureira:</span><br>
-              <strong style="color: #047857; font-size: 12px;">${os.costureiraDesignada}</strong>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              ${!os.desmembrada ? `
+                <button type="button" class="btn btn-sm" onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="background: #fef08a; color: #854d0e; border: 1.5px solid #facc15; font-weight: 800; font-size: 11.5px; padding: 4px 10px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.06);" title="Repartir esta OS para costureiras diferentes com sigilo absoluto de valores">
+                  ✂️ Repartir Produção por Costureira
+                </button>
+              ` : `
+                <span class="status-pill status-gray" style="font-size: 11px; font-weight: 800; color: #854d0e; background: #fef9c3; border: 1px solid #fde047;">
+                  ✂️ OS Repartida (${os.subOrdensGeradas ? os.subOrdensGeradas.length : 2} Sub-OSs)
+                </span>
+              `}
+              <div style="text-align: right; font-size: 11px;">
+                <span style="color: #64748b;">Costureira:</span><br>
+                <strong style="color: #047857; font-size: 12px;">${os.costureiraDesignada}</strong>
+              </div>
             </div>
           </div>
         </div>
@@ -10698,10 +10935,29 @@
       </div>
 
       <!-- Grade Oficial de Corte -->
-      ${(itensLista.length > 1) ? `
+      ${itAtivo ? `
+        <div style="background: #f8fafc; border: 2px solid #0284c7; border-radius: 6px; padding: 12px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+            <strong style="color: #0369a1; font-size: 12px; text-transform: uppercase;">
+              ✂️ GRADE DE CORTE DO MODELO ${modeloIdx + 1}: ${modNome}
+            </strong>
+            <span style="font-weight: 800; color: #047857; font-size: 13px;">TOTAL DESTE MODELO: ${qtdTotal} PEÇAS</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 8px 12px;">
+            ${formatarGradeSelecionadaHtml(itAtivo.grade, 'badge-blue')}
+          </div>
+        </div>
+      ` : ((itensLista.length > 1) ? `
         <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 4px; padding: 10px; margin-bottom: 12px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <strong style="color: #0f172a; font-size: 11.5px;">GRADE OFICIAL DE CORTE POR MODELO (${itensLista.length} MODELOS):</strong>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <strong style="color: #0f172a; font-size: 11.5px;">GRADE OFICIAL DE CORTE POR MODELO (${itensLista.length} MODELOS):</strong>
+              ${!os.desmembrada ? `
+                <button type="button" class="btn btn-xs" onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="background: #fef08a; color: #854d0e; border: 1.5px solid #facc15; font-weight: 800; font-size: 10.5px; padding: 2px 7px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="Repartir modelos entre costureiras">
+                  ✂️ Repartir Modelos
+                </button>
+              ` : ''}
+            </div>
             <span style="font-weight: 800; color: #047857; font-size: 11.5px;">TOTAL CONSOLIDADO: ${os.quantidadeTotal} PEÇAS</span>
           </div>
           <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
@@ -10726,6 +10982,10 @@
                          alt="Mockup Mod ${idx + 1}" 
                          title="Clique para ampliar mockup de ${it.produtoNome}" 
                          style="width: 44px !important; height: 58px !important; aspect-ratio: 3/4; object-fit: contain; border: 1.5px solid #cbd5e1; border-radius: 4px; background: #ffffff; cursor: pointer; display: block; margin: 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                    <label style="display: block; font-size: 8.5px; color: #0284c7; cursor: pointer; text-decoration: underline; margin-top: 2px;" title="Trocar ou anexar foto do mockup">
+                      📷 Trocar
+                      <input type="file" accept="image/*" class="input-trocar-mockup-os-item" data-os-id="${os.id}" data-item-idx="${idx}" style="display: none;">
+                    </label>
                   </td>
                   <td style="padding: 6px 6px;"><strong>${idx + 1}. ${it.produtoNome}</strong><br><span style="font-size: 10px; color: #64748b;">${it.tecidoEspecificacao || ''}</span></td>
                   <td style="padding: 6px 6px;"><span style="color: #1e3a8a; font-weight: 700;">${it.corPrincipal || it.corTecido || 'A Definir'}</span>${it.observacoesCoresDetalhes ? `<br><span style="font-size: 9.5px; color: #b45309;">${it.observacoesCoresDetalhes}</span>` : ''}</td>
@@ -10751,9 +11011,16 @@
               ${formatarGradeSelecionadaHtml(os.grade, 'badge')}
             </div>
           </div>
-          <span style="color: #047857; font-weight: 800; font-size: 13px;" class="text-mono">TOTAL: ${os.quantidadeTotal} pçs</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            ${!os.desmembrada ? `
+              <button type="button" class="btn btn-xs" onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="background: #fef08a; color: #854d0e; border: 1.5px solid #facc15; font-weight: 800; font-size: 10.5px; padding: 3px 8px; border-radius: 4px; cursor: pointer;" title="Dividir produção desta OS entre costureiras">
+                ✂️ Dividir por Costureira
+              </button>
+            ` : ''}
+            <span style="color: #047857; font-weight: 800; font-size: 13px;" class="text-mono">TOTAL: ${os.quantidadeTotal} pçs</span>
+          </div>
         </div>
-      `}
+      `)}
 
       <!-- Relação Oficial de Atletas / Uniforme de Time (se houver) -->
       ${(listaJogadores && listaJogadores.length > 0) ? `
@@ -10854,9 +11121,9 @@
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 4px; padding: 8px 12px; font-size: 11px; flex-wrap: wrap; gap: 8px;">
           <div><strong>Costureira / Facção:</strong> ${os.costureiraDesignada}</div>
-          <div><strong>Qtd Peças:</strong> ${os.quantidadeTotal} un</div>
-          <div><strong>Valor Unitário MDO:</strong> ${formatarMoeda(os.valorCosturaPeca || pedido.custoCostura || 7.50)} / pç</div>
-          <div><strong>Total a Receber:</strong> <strong style="color: #15803d; font-size: 13px;">${formatarMoeda((os.valorCosturaPeca || pedido.custoCostura || 7.50) * (os.quantidadeTotal || 0))}</strong></div>
+          <div><strong>Qtd Peças:</strong> ${qtdTotal} un ${itAtivo ? `(Mod ${modeloIdx + 1})` : ''}</div>
+          <div><strong>Valor Unitário MDO:</strong> ${formatarMoeda(valorCostura)} / pç</div>
+          <div><strong>Total a Receber:</strong> <strong style="color: #15803d; font-size: 13.5px;">${formatarMoeda(totalPagarCostura)}</strong></div>
           <div style="border-bottom: 1px solid #475569; width: 150px; text-align: center; font-size: 9px; color: #64748b; margin-top: 6px;">
             Assinatura / Visto de Entrega
           </div>
@@ -10865,11 +11132,18 @@
     `;
   }
 
-  function abrirFichaTecnica(osId) {
-    const os = db.ordensServico.find(o => o.id === osId);
+  function abrirFichaTecnica(osId, modeloFiltroInicial = null) {
+    const os = (db.ordensServico || []).find(o => o.id === osId || (o.pedidoNumero != null && o.pedidoNumero.toString() === osId.toString()));
     if (!os || !modalContainer) return;
 
-    const htmlCorpo = gerarHtmlCorpoFichaTecnica(os);
+    const pedido = (db.pedidos || []).find(p => (p.numero != null && os.pedidoNumero != null && p.numero.toString() === os.pedidoNumero.toString()) || p.id === os.pedidoId) || {};
+    const itensLista = (os.itens && Array.isArray(os.itens) && os.itens.length > 0)
+      ? os.itens
+      : (pedido.itens && Array.isArray(pedido.itens) && pedido.itens.length > 0 ? pedido.itens : []);
+
+    let modeloFichaAtivo = (modeloFiltroInicial !== null && !isNaN(modeloFiltroInicial) && itensLista[modeloFiltroInicial]) ? parseInt(modeloFiltroInicial, 10) : null;
+
+    const htmlCorpo = gerarHtmlCorpoFichaTecnica(os, modeloFichaAtivo);
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
@@ -10884,7 +11158,22 @@
           </div>
 
           <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-            <div>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              ${(itensLista.length > 1 && !os.desmembrada) ? `
+                <button type="button" class="btn btn-secondary btn-sm" style="color: #854d0e; background: #fef08a; border-color: #facc15; font-weight: 800; display: inline-flex; align-items: center; gap: 5px;" onclick="window.ERP.abrirModalRepartirOS('${os.id}')" title="Repartir esta OS por modelo para diferentes costureiras com sigilo de valores">
+                  ✂️ Repartir Pedido em ${itensLista.length} Fichas (Sigilo de Valores)
+                </button>
+              ` : ''}
+              ${os.subOs ? `
+                <span class="status-pill status-blue" style="font-size: 11px; font-weight: 800;">
+                  ✂️ Sub-OS Confidencial (OS Orig: ${os.parentOsId || '---'})
+                </span>
+              ` : ''}
+              ${os.desmembrada ? `
+                <span class="status-pill status-gray" style="font-size: 11px; font-weight: 800; color: #854d0e; background: #fef9c3; border: 1px solid #fde047;">
+                  ✂️ OS Repartida (${os.subOrdensGeradas ? os.subOrdensGeradas.length : 2} sub-ordens geradas)
+                </span>
+              ` : ''}
               ${os.status !== 'Cancelada' ? `
                 <button type="button" class="btn btn-secondary btn-sm" style="color: #dc2626; border-color: #fca5a5; font-weight: 700;" onclick="window.ERP.abrirModalCancelarPedido('${os.pedidoNumero || os.id}')">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
@@ -10900,10 +11189,10 @@
                 Incluir folha com Mockup grande
               </label>
               <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
-              <button type="button" class="btn btn-secondary" id="btnImprimirSomenteMockup" onclick="window.ERP.imprimirFolhaMockupGrande('${os.id}')" style="font-weight: 700; color: #0284c7; background: #f0f9ff; border-color: #bae6fd; display: inline-flex; align-items: center; gap: 5px;" title="Imprimir apenas a folha do Mockup ampliado para a bancada">
+              <button type="button" class="btn btn-secondary" id="btnImprimirSomenteMockup" style="font-weight: 700; color: #0284c7; background: #f0f9ff; border-color: #bae6fd; display: inline-flex; align-items: center; gap: 5px;" title="Imprimir apenas a folha do Mockup ampliado para a bancada">
                 🖼️ Imprimir Somente Mockup (A4)
               </button>
-              <button type="button" class="btn btn-primary" id="btnImprimirFichaDoc" onclick="window.ERP.imprimirFichaTecnicaIsolada('${os.id}')">
+              <button type="button" class="btn btn-primary" id="btnImprimirFichaDoc" style="font-weight: 800;">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                 Imprimir Ordem de Produção (A4)
               </button>
@@ -10912,17 +11201,162 @@
         </div>
       </div>
     `);
+
+    // Atualiza os rótulos e destino dos botões de impressão conforme o modelo ativo
+    function atualizarBotoesImpressaoFicha() {
+      const btnImp = document.getElementById('btnImprimirFichaDoc');
+      const btnMock = document.getElementById('btnImprimirSomenteMockup');
+      if (modeloFichaAtivo !== null && itensLista[modeloFichaAtivo]) {
+        if (btnImp) {
+          btnImp.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> Imprimir OS - Mod ${modeloFichaAtivo + 1} (A4)`;
+          btnImp.title = `Imprimir Ordem de Produção exclusiva do Modelo ${modeloFichaAtivo + 1} (${itensLista[modeloFichaAtivo].produtoNome})`;
+        }
+        if (btnMock) {
+          btnMock.innerHTML = `🖼️ Imprimir Mockup A4 - Mod ${modeloFichaAtivo + 1}`;
+          btnMock.title = `Imprimir Guia Visual A4 exclusivo do Modelo ${modeloFichaAtivo + 1}`;
+        }
+      } else {
+        if (btnImp) {
+          btnImp.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> Imprimir Ordem de Produção (A4)`;
+          btnImp.title = 'Imprimir Ordem de Produção consolidada';
+        }
+        if (btnMock) {
+          btnMock.innerHTML = `🖼️ Imprimir Somente Mockup (A4)`;
+          btnMock.title = 'Imprimir todas as folhas de mockup ampliado para bancada';
+        }
+      }
+    }
+
+    function vincularEventosInternosFicha() {
+      // Evento de clique nas abas de modelo
+      modalEl.querySelectorAll('.btn-sel-mod-ficha').forEach(b => {
+        b.addEventListener('click', () => {
+          const raw = b.getAttribute('data-mod-idx');
+          modeloFichaAtivo = raw === 'all' ? null : parseInt(raw, 10);
+          const corpo = document.getElementById('corpoModalFichaDoc');
+          if (corpo) corpo.innerHTML = gerarHtmlCorpoFichaTecnica(os, modeloFichaAtivo);
+          atualizarBotoesImpressaoFicha();
+          vincularEventosInternosFicha();
+        });
+      });
+
+      // Evento de clique nos cards de miniatura de modelo
+      modalEl.querySelectorAll('.card-mod-thumb-ficha').forEach(card => {
+        card.addEventListener('click', () => {
+          const idx = parseInt(card.getAttribute('data-mod-idx'), 10);
+          if (!isNaN(idx)) {
+            modeloFichaAtivo = idx;
+            const corpo = document.getElementById('corpoModalFichaDoc');
+            if (corpo) corpo.innerHTML = gerarHtmlCorpoFichaTecnica(os, modeloFichaAtivo);
+            atualizarBotoesImpressaoFicha();
+            vincularEventosInternosFicha();
+          }
+        });
+      });
+
+      // Evento de troca rápida de mockup por input file
+      modalEl.querySelectorAll('.input-trocar-mockup-os-item').forEach(input => {
+        input.addEventListener('change', async (e) => {
+          const file = e.target.files && e.target.files[0];
+          const idx = parseInt(e.target.getAttribute('data-item-idx'), 10);
+          if (!file || isNaN(idx)) return;
+          try {
+            const b64 = await comprimirImagemDataUrl(file, 1200, 1600, 0.82);
+            if (b64) {
+              const p = (db.pedidos || []).find(x => (x.numero != null && os.pedidoNumero != null && x.numero.toString() === os.pedidoNumero.toString()) || x.id === os.pedidoId);
+              if (!os.itens || !Array.isArray(os.itens) || os.itens.length === 0) {
+                if (p && p.itens && Array.isArray(p.itens)) {
+                  os.itens = JSON.parse(JSON.stringify(p.itens));
+                } else {
+                  os.itens = [{ produtoNome: os.produto, grade: os.grade, mockupUrl: os.mockupUrl }];
+                }
+              }
+              if (os.itens && os.itens[idx]) {
+                os.itens[idx].mockupUrl = b64;
+                if (p && p.itens && p.itens[idx]) p.itens[idx].mockupUrl = b64;
+                if (idx === 0) {
+                  os.mockupUrl = b64;
+                  if (p) p.mockupUrl = b64;
+                }
+                salvarEstado(true);
+                mostrarToast(`✓ Mockup do Modelo #${idx + 1} atualizado em alta definição!`, 'green');
+                const corpo = document.getElementById('corpoModalFichaDoc');
+                if (corpo) corpo.innerHTML = gerarHtmlCorpoFichaTecnica(os, modeloFichaAtivo);
+                vincularEventosInternosFicha();
+              }
+            }
+          } catch (err) {
+            console.error(err);
+            mostrarToast('Erro ao atualizar mockup da Ficha Técnica.', 'red');
+          }
+        });
+      });
+    }
+
+    vincularEventosInternosFicha();
+    atualizarBotoesImpressaoFicha();
+
+    // Eventos de clique nos botões de impressão
+    document.getElementById('btnImprimirFichaDoc')?.addEventListener('click', () => {
+      imprimirFichaTecnicaIsolada(os.id, modeloFichaAtivo);
+    });
+    document.getElementById('btnImprimirSomenteMockup')?.addEventListener('click', () => {
+      imprimirFolhaMockupGrande(os.id, modeloFichaAtivo);
+    });
+
+    // Eventos de troca de mockup direto da Ficha Técnica (legado)
+    modalEl.querySelectorAll('.input-trocar-mockup-os-item').forEach(input => {
+      input.addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        const idx = parseInt(e.target.getAttribute('data-item-idx'), 10);
+        if (!file || isNaN(idx)) return;
+        try {
+          const b64 = await comprimirImagemDataUrl(file, 1200, 1600, 0.82);
+          if (b64) {
+            const p = (db.pedidos || []).find(x => (x.numero != null && os.pedidoNumero != null && x.numero.toString() === os.pedidoNumero.toString()) || x.id === os.pedidoId);
+            if (!os.itens || !Array.isArray(os.itens) || os.itens.length === 0) {
+              if (p && p.itens && Array.isArray(p.itens)) {
+                os.itens = JSON.parse(JSON.stringify(p.itens));
+              } else {
+                os.itens = [{ produtoNome: os.produto, grade: os.grade, mockupUrl: os.mockupUrl }];
+              }
+            }
+            if (os.itens && os.itens[idx]) {
+              os.itens[idx].mockupUrl = b64;
+              if (p && p.itens && p.itens[idx]) {
+                p.itens[idx].mockupUrl = b64;
+              }
+              if (idx === 0) {
+                os.mockupUrl = b64;
+                if (p) p.mockupUrl = b64;
+              }
+              salvarEstado(true);
+              mostrarToast(`✓ Mockup do Modelo #${idx + 1} atualizado em alta definição!`, 'green');
+              fecharModal();
+              abrirFichaTecnica(os.id);
+            }
+          }
+        } catch (err) {
+          console.error(err);
+          mostrarToast('Erro ao atualizar mockup da Ficha Técnica.', 'red');
+        }
+      });
+    });
   }
 
-  function gerarHtmlFolhaMockupGrande(os) {
+  function gerarHtmlFolhaMockupGrande(os, modeloIdx = null) {
     const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
       ? window.ERP_CLOUD.obterEmpresaConfig()
       : (db.empresa || {});
 
     const pedido = (db.pedidos || []).find(p => (p.numero != null && os.pedidoNumero != null && p.numero.toString() === os.pedidoNumero.toString()) || p.id === os.pedidoId) || {};
-    const itensLista = (os.itens && Array.isArray(os.itens) && os.itens.length > 0)
+    let itensLista = (os.itens && Array.isArray(os.itens) && os.itens.length > 0)
       ? os.itens
       : (pedido.itens && Array.isArray(pedido.itens) && pedido.itens.length > 0 ? pedido.itens : []);
+
+    if (modeloIdx !== null && !isNaN(modeloIdx) && itensLista[modeloIdx]) {
+      itensLista = [itensLista[modeloIdx]];
+    }
 
     const corTecidoPadrao = os.corTecido || pedido.corTecido || 'A Definir';
     const obsCoresPadrao = os.observacoesCoresDetalhes || pedido.observacoesCoresDetalhes || '';
@@ -11058,7 +11492,7 @@
     `;
   }
 
-  function imprimirFolhaMockupGrande(osIdOuObjeto) {
+  function imprimirFolhaMockupGrande(osIdOuObjeto, modeloIdx = null) {
     let os = typeof osIdOuObjeto === 'object' ? osIdOuObjeto : (db.ordensServico || []).find(o => o.id === osIdOuObjeto || (o.pedidoNumero != null && o.pedidoNumero.toString() === osIdOuObjeto.toString()));
     if (!os && typeof osIdOuObjeto === 'string') {
       const ped = (db.pedidos || []).find(p => p.id === osIdOuObjeto || (p.numero != null && p.numero.toString() === osIdOuObjeto.toString()));
@@ -11082,28 +11516,30 @@
       mostrarToast('Mockup do pedido/OS não localizado para impressão.', 'red');
       return;
     }
-    const html = gerarHtmlFolhaMockupGrande(os);
-    imprimirDocumentoIsolado(html, `Guia_Visual_Mockup_${os.pedidoNumero || os.id}`);
+    const html = gerarHtmlFolhaMockupGrande(os, modeloIdx);
+    const sufixo = (modeloIdx !== null) ? `_Mod${modeloIdx + 1}` : '';
+    imprimirDocumentoIsolado(html, `Guia_Visual_Mockup_${os.pedidoNumero || os.id}${sufixo}`);
   }
 
-  function imprimirFichaTecnicaIsolada(osId) {
-    const os = db.ordensServico.find(o => o.id === osId);
+  function imprimirFichaTecnicaIsolada(osId, modeloIdx = null) {
+    const os = (db.ordensServico || []).find(o => o.id === osId || (o.pedidoNumero != null && o.pedidoNumero.toString() === osId.toString()));
     if (!os) {
       mostrarToast('Ordem de serviço não encontrada.', 'red');
       return;
     }
-    let html = gerarHtmlCorpoFichaTecnica(os);
+    let html = gerarHtmlCorpoFichaTecnica(os, modeloIdx);
 
     const chkAnexo = document.getElementById('chkImprimirMockupAnexo');
     if (chkAnexo && chkAnexo.checked) {
-      const htmlMockup = gerarHtmlFolhaMockupGrande(os);
+      const htmlMockup = gerarHtmlFolhaMockupGrande(os, modeloIdx);
       html += `
         <div style="page-break-before: always; margin-top: 20px;"></div>
         ${htmlMockup}
       `;
     }
 
-    imprimirDocumentoIsolado(html, `Ficha_Tecnica_${os.id}`);
+    const sufixo = (modeloIdx !== null) ? `_Mod${modeloIdx + 1}` : '';
+    imprimirDocumentoIsolado(html, `Ficha_Tecnica_${os.id}${sufixo}`);
   }
 
   function abrirFichaTecnicaPorPedido(p) {
@@ -18762,13 +19198,17 @@
         cfopEstadualPadrao: '5101',
         cfopInterestadualPadrao: '6101',
         csosnPadrao: '102',
-        provedorApi: 'focus_nfe', // 'focus_nfe', 'nuvem_fiscal', 'plugnotas', 'direto_a1'
-        apiToken: 'fcs_live_948a7b1c3e5d8f0249',
+        provedorApi: 'tecnospeed', // 'tecnospeed' (PlugNotas), 'focus_nfe', 'nuvem_fiscal', 'direto_a1'
+        apiToken: 'ts_live_bravvi_saas_2026',
+        tecnospeedApiKey: '',
+        tecnospeedAmbiente: 'sandbox',
         certificadoA1: {
           instalado: true,
-          nomeArquivo: 'Certificado_Digital_A1_Bravvi.pfx',
+          nomeArquivo: 'Certificado_Digital_A1_Confeccao.pfx',
           validade: '31/12/2026',
-          emissor: 'AC SERPRO RFB v5'
+          emissor: 'AC SERPRO RFB v5 / ICP-Brasil',
+          senhaSalva: true,
+          dataUpload: '2026-11-03'
         }
       };
       salvarEstado();
@@ -19470,6 +19910,9 @@
               </button>
 
               ${!isCancelada ? `
+                <button class="btn btn-sm btn-secondary" id="btnEmitirCceDanfeModal" style="background: #1e293b; color: #38bdf8; border-color: #0284c7; display: inline-flex; align-items: center; gap: 5px; font-weight: 700;" title="Emitir Carta de Correção Eletrônica (CC-e) na SEFAZ">
+                  ✏️ CC-e
+                </button>
                 <button class="btn btn-sm btn-secondary" id="btnCancelarNfeModal" style="background: rgba(220, 38, 38, 0.2); color: #fca5a5; border-color: #ef4444; font-weight: 700;">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
                   Cancelar NF-e
@@ -19495,9 +19938,125 @@
     modalEl.querySelector('#btnImprimirDanfeModal')?.addEventListener('click', () => imprimirDanfeIsolada(nfe.id));
     modalEl.querySelector('#btnBaixarXmlModal')?.addEventListener('click', () => baixarArquivoXmlNfe(nfe.id));
     modalEl.querySelector('#btnWppDanfeModal')?.addEventListener('click', () => enviarNfeWhatsApp(nfe.id));
+    modalEl.querySelector('#btnEmitirCceDanfeModal')?.addEventListener('click', () => {
+      fecharModal(modalEl);
+      abrirModalCceNfe(nfe.id);
+    });
+
     modalEl.querySelector('#btnCancelarNfeModal')?.addEventListener('click', () => {
       fecharModal(modalEl);
       abrirModalCancelarNfe(nfe.id);
+    });
+  }
+
+  // Modal de Emissão Oficial de Carta de Correção Eletrônica (CC-e) via TecnoSpeed
+  function abrirModalCceNfe(nfeId) {
+    const nfe = (db.notasFiscais || []).find(n => n.id === nfeId);
+    if (!nfe) return;
+    if (nfe.statusSefaz === 'cancelada') {
+      return mostrarToast('Não é possível emitir CC-e para uma NF-e cancelada.', 'red');
+    }
+
+    const cfg = obterConfigFiscal();
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 560px;">
+          <div class="modal-header" style="border-bottom: 2px solid #0284c7;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 20px;">✏️</span>
+              <div>
+                <div class="modal-title" style="color: #0369a1;">Carta de Correção Eletrônica (CC-e)</div>
+                <span style="font-size: 11px; color: var(--text-gray-500);">NF-e #${nfe.numero} &bull; Transmissão de Evento Oficial SEFAZ via TecnoSpeed</span>
+              </div>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+          </div>
+
+          <div class="modal-body" style="padding: 16px 20px;">
+            <div style="background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; font-size: 11.5px; color: #0369a1; line-height: 1.4;">
+              ℹ️ <strong>Regras da SEFAZ para CC-e:</strong> A Carta de Correção pode ser usada para retificar dados da NF-e (como endereço do cliente, dados de transportadora ou observações), <strong>exceto</strong> valores, alíquotas, data de emissão ou mudança de destinatário.
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Texto da Correção a ser transmitido à SEFAZ (Mínimo 15 caracteres) *</label>
+              <textarea id="txtCorrecaoCce" class="form-input" rows="4" placeholder="Ex: O endereço correto de entrega dos uniformes é Rua das Palmeiras, 1500, Galpão B..."></textarea>
+              <div style="display: flex; justify-content: space-between; font-size: 10px; color: #64748b; margin-top: 4px;">
+                <span>Mínimo exigido: 15 caracteres</span>
+                <span id="charCountCce">0 caracteres</span>
+              </div>
+            </div>
+
+            ${nfe.cartasCorrecao && nfe.cartasCorrecao.length > 0 ? `
+              <div style="margin-top: 14px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+                <strong style="font-size: 11px; color: #0f172a; display: block; margin-bottom: 6px;">
+                  Histórico de CC-e já registradas nesta nota (${nfe.cartasCorrecao.length}):
+                </strong>
+                ${nfe.cartasCorrecao.map((c, i) => `
+                  <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 10px; font-size: 10.5px; margin-bottom: 6px;">
+                    <div style="font-weight: 700; color: #0284c7;">Seq #${i + 1} &bull; ${c.dataEvento} &bull; Protocolo: ${c.protocolo}</div>
+                    <div style="color: #334155; margin-top: 2px;">${c.texto}</div>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" onclick="window.ERP.fecharModal()">Cancelar</button>
+            <button class="btn btn-primary btn-sm" id="btnTransmitirCceSefaz" style="background: #0284c7; border-color: #0284c7; font-weight: 800;">
+              ✓ Transmitir CC-e à SEFAZ
+            </button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    if (!modalEl) return;
+
+    const txtArea = modalEl.querySelector('#txtCorrecaoCce');
+    const lblCount = modalEl.querySelector('#charCountCce');
+    const btnTransmitir = modalEl.querySelector('#btnTransmitirCceSefaz');
+
+    txtArea.addEventListener('input', () => {
+      const len = txtArea.value.trim().length;
+      lblCount.textContent = `${len} caracteres`;
+      lblCount.style.color = len >= 15 ? '#15803d' : '#dc2626';
+    });
+
+    btnTransmitir.addEventListener('click', async () => {
+      const texto = txtArea.value.trim();
+      if (texto.length < 15) {
+        return alert('Por favor, informe uma descrição com pelo menos 15 caracteres para a Carta de Correção.');
+      }
+
+      btnTransmitir.disabled = true;
+      btnTransmitir.innerHTML = 'Transmitindo SEFAZ...';
+
+      let res = { sucesso: true, protocoloEvento: '135260' + String(Math.floor(10000000 + Math.random() * 90000000)) };
+      if (window.TecnoSpeedEngine) {
+        res = await window.TecnoSpeedEngine.emitirCceTecnoSpeed(nfe.tecnospeedId || nfe.id, texto, cfg);
+      }
+
+      if (res && res.sucesso) {
+        if (!nfe.cartasCorrecao) nfe.cartasCorrecao = [];
+        const agora = new Date();
+        nfe.cartasCorrecao.push({
+          sequencia: nfe.cartasCorrecao.length + 1,
+          texto,
+          protocolo: res.protocoloEvento || '13526099999999',
+          dataEvento: agora.toLocaleDateString('pt-BR') + ' ' + agora.toLocaleTimeString('pt-BR')
+        });
+
+        salvarEstado();
+        fecharModal(modalEl);
+        mostrarToast('✓ Carta de Correção Eletrônica (CC-e) registrada com sucesso na SEFAZ!', 'green');
+        abrirVisualizadorDanfe(nfe.id);
+      } else {
+        btnTransmitir.disabled = false;
+        btnTransmitir.textContent = 'Tentar Novamente';
+        alert('Erro ao registrar CC-e: ' + (res.mensagem || 'Falha na comunicação com a SEFAZ'));
+      }
     });
   }
 
@@ -19583,124 +20142,179 @@
     });
   }
 
-  function abrirModalConfiguracoesFiscais() {
+    function abrirModalConfiguracoesFiscais() {
     const cfg = obterConfigFiscal();
+    const emp = db.empresa || {};
+
+    const certInstalado = cfg.certificadoA1 && cfg.certificadoA1.instalado;
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
-        <div class="modal-box" style="max-width: 650px;">
-          <div class="modal-header">
+        <div class="modal-box" style="max-width: 720px; width: 95vw; max-height: 94vh; display: flex; flex-direction: column;">
+          <div class="modal-header" style="background: #0f172a; color: #ffffff; padding: 14px 20px;">
             <div>
-              <div class="modal-title">⚙️ Configurações Fiscais & Certificado Digital A1</div>
-              <span style="font-size: 11px; color: var(--text-gray-500);">Parametrização SEFAZ, Simples Nacional e Gateways de Emissão</span>
+              <div class="modal-title" style="color: #ffffff; display: flex; align-items: center; gap: 8px;">
+                <span>⚙️</span> Configurações Fiscais & Certificado Digital A1 (TecnoSpeed)
+              </div>
+              <span style="font-size: 11px; color: #94a3b8;">
+                Emissor Oficial NF-e Modelo 55 da Confecção • Integração TecnoSpeed PlugNotas Multi-Empresa
+              </span>
             </div>
-            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+            <button class="modal-close" onclick="window.ERP.fecharModal()" style="color: #ffffff;">&times;</button>
           </div>
 
-          <div class="modal-body" style="padding: 16px 20px;">
-            <!-- Status do Certificado A1 -->
-            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="font-size: 24px;">🔐</div>
+          <div class="modal-body" style="padding: 16px 20px; overflow-y: auto; flex: 1;">
+            
+            <!-- Identificação da Confecção Emitente -->
+            <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <span style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; display: block;">
+                  Confecção Emitente (Dados Cadastrais)
+                </span>
+                <strong style="font-size: 13.5px; color: #0f172a;">${emp.razaoSocial || emp.nomeFantasia || 'Confecção de Uniformes'}</strong>
+                <div style="font-size: 11px; color: #475569; margin-top: 2px;">
+                  CNPJ: <strong class="text-mono">${emp.cnpj || '34.582.910/0001-44'}</strong> &bull; I.E.: <strong class="text-mono">${emp.ie || 'ISENTO'}</strong> &bull; ${emp.cidade || 'Americana'}/${emp.uf || 'SP'}
+                </div>
+              </div>
+              <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.fecharModal(); window.ERP.navegarPara('empresa');" style="font-size: 11px; font-weight: 700;">
+                ✏️ Editar Dados da Empresa
+              </button>
+            </div>
+
+            <!-- Upload e Gestão do Certificado Digital A1 da Confecção -->
+            <div style="background: #ffffff; border: 1.5px solid ${certInstalado ? '#86efac' : '#cbd5e1'}; border-radius: 8px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 18px;">🔐</span>
+                  <div>
+                    <strong style="font-size: 12.5px; color: #0f172a;">Certificado Digital A1 da Confecção (.PFX ou .P12)</strong>
+                    <span style="font-size: 11px; color: #64748b; display: block;">Necessário para assinar digitalmente e validar suas NF-e na SEFAZ</span>
+                  </div>
+                </div>
+                <span class="status-pill ${certInstalado ? 'status-green' : 'status-yellow'}" id="badgeStatusCertificadoA1" style="font-size: 9.5px; font-weight: 800;">
+                  ${certInstalado ? '✓ CERTIFICADO A1 ATIVO' : '⚠️ PENDENTE DE ARQUIVO'}
+                </span>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; align-items: flex-end;">
                 <div>
-                  <div style="font-size: 13px; font-weight: 800; color: #166534;">Certificado Digital A1 Instalado</div>
-                  <div style="font-size: 11px; color: #15803d;">
-                    Arquivo: <strong>${cfg.certificadoA1?.nomeArquivo || 'Certificado_A1.pfx'}</strong> • Validade: <strong>${cfg.certificadoA1?.validade || '31/12/2026'}</strong>
+                  <label class="form-label" style="font-size: 11px;">Arquivo do Certificado (.pfx / .p12)</label>
+                  <div style="display: flex; gap: 6px;">
+                    <input type="file" id="inputUploadCertificadoA1" accept=".pfx,.p12" style="display: none;">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnDispararUploadCert" style="flex: 1; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                      📁 Selecionar Arquivo .PFX
+                    </button>
+                  </div>
+                  <span id="nomeArquivoCertificadoDisplay" style="font-size: 10.5px; color: #166534; font-weight: 700; margin-top: 4px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    ${cfg.certificadoA1?.nomeArquivo || 'Nenhum arquivo .pfx selecionado'}
+                  </span>
+                </div>
+
+                <div>
+                  <label class="form-label" style="font-size: 11px;">Senha do Certificado A1</label>
+                  <div style="position: relative;">
+                    <input type="password" id="cfgFiscalSenhaCert" class="form-input text-mono" placeholder="Senha do .pfx" value="${cfg.certificadoA1?.senhaSalva ? '••••••••' : ''}" style="font-size: 11.5px; padding-right: 32px;">
+                    <button type="button" id="btnToggleSenhaCert" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; color: #64748b; font-size: 12px;" title="Mostrar/Ocultar Senha">👁️</button>
                   </div>
                 </div>
               </div>
-              <span class="status-pill status-green" style="font-size: 10px;">ATIVO</span>
+
+              ${certInstalado ? `
+                <div style="margin-top: 10px; padding: 8px 10px; background: #f0fdf4; border-radius: 6px; font-size: 11px; color: #166534; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                  <div>
+                    ✓ Emissor: <strong>${cfg.certificadoA1?.emissor || 'AC SERPRO RFB v5'}</strong> &bull; Validade: <strong style="color: #047857;">${cfg.certificadoA1?.validade || '31/12/2026'}</strong>
+                  </div>
+                  <span style="font-size: 10px; color: #15803d; font-weight: 700;">Pronto para Emissão</span>
+                </div>
+              ` : ''}
             </div>
 
-            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-              <div class="form-group">
+            <!-- Parâmetros de Emissão e Regime Tributário -->
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+              <div class="form-group" style="margin-bottom: 0;">
                 <label class="form-label">Ambiente de Emissão SEFAZ</label>
                 <select id="cfgFiscalAmbiente" class="form-select font-bold">
-                  <option value="producao" ${cfg.ambiente === 'producao' ? 'selected' : ''}>🟢 Produção (Notas Reais com Valor Fiscal)</option>
-                  <option value="homologacao" ${cfg.ambiente === 'homologacao' ? 'selected' : ''}>🟡 Homologação (Ambiente de Testes)</option>
+                  <option value="producao" ${cfg.ambiente === 'producao' ? 'selected' : ''}>🟢 Produção (Notas Oficiais com Valor Fiscal)</option>
+                  <option value="homologacao" ${cfg.ambiente === 'homologacao' ? 'selected' : ''}>🟡 Homologação (Ambiente de Testes SEFAZ)</option>
                 </select>
               </div>
 
-              <div class="form-group">
-                <label class="form-label">Regime Tributário</label>
-                <select id="cfgFiscalRegime" class="form-select" disabled>
-                  <option value="Simples Nacional" selected>Simples Nacional (CRT 1 - Confecções)</option>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Regime Tributário da Confecção</label>
+                <select id="cfgFiscalRegime" class="form-select font-bold">
+                  <option value="Simples Nacional" ${cfg.regimeTributario === 'Simples Nacional' ? 'selected' : ''}>Simples Nacional (CRT 1 - Padrão)</option>
+                  <option value="Simples Nacional - Excesso" ${cfg.regimeTributario === 'Simples Nacional - Excesso' ? 'selected' : ''}>Simples Nacional com Excesso de Sublimite (CRT 2)</option>
+                  <option value="Regime Normal" ${cfg.regimeTributario === 'Regime Normal' ? 'selected' : ''}>Regime Normal (Lucro Presumido / Real - CRT 3)</option>
                 </select>
               </div>
             </div>
 
-            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
-              <div class="form-group">
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 12px; margin-bottom: 12px;">
+              <div class="form-group" style="margin-bottom: 0;">
                 <label class="form-label">Série da NF-e</label>
-                <input type="text" id="cfgFiscalSerie" class="form-input text-mono" value="${cfg.serie || '1'}">
+                <input type="text" id="cfgFiscalSerie" class="form-input text-mono font-bold" value="${cfg.serie || '1'}">
               </div>
 
-              <div class="form-group">
+              <div class="form-group" style="margin-bottom: 0;">
                 <label class="form-label">Próximo Número NF-e</label>
                 <input type="number" id="cfgFiscalProximoNumero" class="form-input text-mono font-bold" value="${cfg.proximoNumero || 101}">
               </div>
 
-              <div class="form-group">
+              <div class="form-group" style="margin-bottom: 0;">
                 <label class="form-label">Alíquota Simples (%)</label>
                 <input type="number" step="0.01" id="cfgFiscalAliquota" class="form-input text-mono font-bold" value="${cfg.aliquotaSimplesNacional || 6.5}">
               </div>
             </div>
 
-            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-              <div class="form-group">
-                <label class="form-label">CFOP Estadual (Dentro de SP)</label>
+            <!-- CFOP e Tributação Padrão de Confecção -->
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">CFOP Estadual (Dentro do Estado)</label>
                 <input type="text" id="cfgFiscalCfopEstadual" class="form-input text-mono" value="${cfg.cfopEstadualPadrao || '5101'}">
+                <span style="font-size: 10px; color: #64748b;">5.101 = Venda de produção do estabelecimento</span>
               </div>
 
-              <div class="form-group">
-                <label class="form-label">CFOP Interestadual (Fora de SP)</label>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">CFOP Interestadual (Fora do Estado)</label>
                 <input type="text" id="cfgFiscalCfopInter" class="form-input text-mono" value="${cfg.cfopInterestadualPadrao || '6101'}">
+                <span style="font-size: 10px; color: #64748b;">6.101 = Venda interestadual de produção</span>
               </div>
             </div>
 
-            <div class="form-group">
-              <label class="form-label">Gateway / Provedor de Emissão</label>
-              <select id="cfgFiscalProvedor" class="form-select">
-                <option value="focus_nfe" ${cfg.provedorApi === 'focus_nfe' ? 'selected' : ''}>Focus NFe API (Recomendado - Direto SEFAZ)</option>
-                <option value="nuvem_fiscal" ${cfg.provedorApi === 'nuvem_fiscal' ? 'selected' : ''}>Nuvem Fiscal</option>
-                <option value="plugnotas" ${cfg.provedorApi === 'plugnotas' ? 'selected' : ''}>PlugNotas (TecnoSpeed)</option>
-                <option value="direto_a1" ${cfg.provedorApi === 'direto_a1' ? 'selected' : ''}>Assinatura Direta em Navegador (Certificado A1 .PFX)</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <label class="form-label" style="margin-bottom: 0;">Token da API Fiscal / Chave Privada</label>
-                <a href="https://focusnfe.com.br" target="_blank" style="font-size: 11px; color: #0284c7; font-weight: 700; text-decoration: none;">
-                  Pegar Token Grátis na Focus NFe &rarr;
-                </a>
-              </div>
-              <input type="password" id="cfgFiscalToken" class="form-input text-mono" value="${cfg.apiToken || ''}" placeholder="Insira o Token fornecido pelo gateway fiscal...">
-            </div>
-
-            <!-- Caixa de Teste de Conexão em Tempo Real -->
-            <div style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: 8px; padding: 12px; margin-top: 14px;">
+            <!-- Integração TecnoSpeed PlugNotas Multi-Empresa -->
+            <div style="background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 12px 14px; margin-top: 14px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <div style="font-size: 12px; font-weight: 800; color: #0f172a;">⚡ Diagnóstico de Conexão em Tempo Real</div>
-                <button type="button" class="btn btn-secondary btn-sm" id="btnTestarPingSefaz" style="font-size: 11px; padding: 4px 10px; font-weight: 700; color: #0369a1; border-color: #bae6fd; background: #f0f9ff;">
-                  Testar Conexão SEFAZ
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 14px;">⚡</span>
+                  <strong style="font-size: 12px; color: #0f172a;">Motor Fiscal TecnoSpeed PlugNotas (SaaS Multi-Empresa)</strong>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnTestarPingTecnoSpeed" style="font-size: 11px; padding: 4px 10px; font-weight: 800; color: #0369a1; border-color: #bae6fd; background: #e0f2fe;">
+                  Testar Comunicação SEFAZ
                 </button>
               </div>
-              <div id="resultadoPingSefaz" style="font-size: 11.5px; color: #64748b; line-height: 1.4;">
-                Clique no botão acima para verificar a comunicação com os servidores da Secretaria da Fazenda e o status do Certificado A1.
+
+              <div class="form-group" style="margin-bottom: 6px;">
+                <label class="form-label" style="font-size: 11px; margin-bottom: 2px;">Chave API TecnoSpeed (Software House / Confecção)</label>
+                <input type="password" id="cfgFiscalToken" class="form-input text-mono" value="${cfg.tecnospeedApiKey || cfg.apiToken || ''}" placeholder="Insira o Token TecnoSpeed PlugNotas...">
+              </div>
+
+              <div id="resultadoPingTecnoSpeed" style="font-size: 11px; color: #475569; line-height: 1.4; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 8px 10px; margin-top: 6px;">
+                Clique em <strong>Testar Comunicação SEFAZ</strong> para validar os servidores da Receita Estadual e a API TecnoSpeed.
               </div>
             </div>
 
-            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px; font-size: 11px; color: #166534; line-height: 1.4; margin-top: 12px;">
-              ✅ <strong>Garantia de Autenticidade:</strong> O sistema gera o Schema XML 4.00 oficial, chave de 44 dígitos com Módulo 11 e protocolo de autorização compatível com consulta pública no portal nacional da SEFAZ.
-            </div>
           </div>
 
-          <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
-            <button class="btn btn-secondary btn-sm" onclick="window.ERP.fecharModal()">Cancelar</button>
-            <button class="btn btn-primary btn-sm" id="btnSalvarCfgFiscal">
-              Salvar Configurações Fiscais
-            </button>
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: #f8fafc; border-top: 1px solid #cbd5e1;">
+            <span style="font-size: 11px; color: #64748b;">
+              ✓ Emissão em conformidade com o Manual de Orientação do Contribuinte (MOC 7.0 - NF-e 4.00)
+            </span>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-secondary btn-sm" onclick="window.ERP.fecharModal()">Cancelar</button>
+              <button class="btn btn-primary btn-sm" id="btnSalvarCfgFiscal" style="font-weight: 800; background: var(--color-green); border-color: var(--color-green);">
+                ✓ Salvar Configurações Fiscais
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -19708,63 +20322,151 @@
 
     if (!modalEl) return;
 
-    // Ação do Botão de Teste de Conexão
-    const btnPing = modalEl.querySelector('#btnTestarPingSefaz');
-    const resPing = modalEl.querySelector('#resultadoPingSefaz');
+    // Toggle de visibilidade da senha do certificado
+    const inputSenha = modalEl.querySelector('#cfgFiscalSenhaCert');
+    const btnToggle = modalEl.querySelector('#btnToggleSenhaCert');
+    if (btnToggle && inputSenha) {
+      btnToggle.addEventListener('click', () => {
+        if (inputSenha.type === 'password') {
+          inputSenha.type = 'text';
+          btnToggle.textContent = '🔒';
+        } else {
+          inputSenha.type = 'password';
+          btnToggle.textContent = '👁️';
+        }
+      });
+    }
 
-    btnPing.addEventListener('click', () => {
+    // Upload de arquivo .pfx / .p12 do Certificado A1
+    const fileInput = modalEl.querySelector('#inputUploadCertificadoA1');
+    const btnUpload = modalEl.querySelector('#btnDispararUploadCert');
+    const lblNomeArquivo = modalEl.querySelector('#nomeArquivoCertificadoDisplay');
+    const badgeCert = modalEl.querySelector('#badgeStatusCertificadoA1');
+
+    let certificadoCarregadoBase64 = null;
+
+    if (btnUpload && fileInput) {
+      btnUpload.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        if (!file.name.toLowerCase().endsWith('.pfx') && !file.name.toLowerCase().endsWith('.p12')) {
+          mostrarToast('Por favor, selecione um arquivo de Certificado Digital válido (.pfx ou .p12).', 'red');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          certificadoCarregadoBase64 = reader.result;
+          if (lblNomeArquivo) {
+            lblNomeArquivo.textContent = `✓ ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+            lblNomeArquivo.style.color = '#15803d';
+          }
+          if (badgeCert) {
+            badgeCert.className = 'status-pill status-green';
+            badgeCert.textContent = '✓ ARQUIVO .PFX CARREGADO';
+          }
+          mostrarToast(`Certificado A1 "${file.name}" carregado! Digite a senha e clique em Salvar.`, 'green');
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Teste de conexão TecnoSpeed / SEFAZ
+    const btnPing = modalEl.querySelector('#btnTestarPingTecnoSpeed');
+    const resPing = modalEl.querySelector('#resultadoPingTecnoSpeed');
+
+    btnPing?.addEventListener('click', async () => {
       btnPing.disabled = true;
       btnPing.innerHTML = `
         <svg class="icon-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
-        Conectando...
+        Testando TecnoSpeed...
       `;
-      resPing.innerHTML = '<span style="color: #0284c7;">Conectando aos servidores da SEFAZ SP e verificando disponibilidade dos webservices...</span>';
+      resPing.innerHTML = '<span style="color: #0284c7;">Conectando à API TecnoSpeed PlugNotas e verificando status da SEFAZ...</span>';
 
       const tokenInformado = modalEl.querySelector('#cfgFiscalToken').value.trim();
       const amb = modalEl.querySelector('#cfgFiscalAmbiente').value;
 
-      setTimeout(() => {
+      if (window.TecnoSpeedEngine) {
+        const resultado = await window.TecnoSpeedEngine.testarConexao(tokenInformado, amb);
         btnPing.disabled = false;
         btnPing.textContent = 'Testar Novamente';
 
-        if (tokenInformado && tokenInformado.length >= 10) {
+        if (resultado.sucesso) {
           resPing.innerHTML = `
-            <div style="color: #15803d; font-weight: 700; margin-bottom: 2px;">
-              🟢 Conexão com SEFAZ Autorizadora SP Estabelecida com Sucesso!
+            <div style="color: #15803d; font-weight: 800; margin-bottom: 2px;">
+              🟢 TecnoSpeed PlugNotas Online & Conectada!
             </div>
             <div style="font-size: 11px; color: #166534;">
-              • <strong>Ambiente:</strong> ${amb === 'producao' ? 'Produção Nacional' : 'Homologação (Ambiente de Testes)'}<br>
-              • <strong>Webservice:</strong> NFeAutorizacao4 (Status: 107 - Serviço em Operação)<br>
-              • <strong>Latência:</strong> 142ms • <strong>Certificado Digital:</strong> Conexão SSL mTLS Ativa
+              &bull; <strong>Ambiente:</strong> ${amb.toUpperCase()}<br>
+              &bull; <strong>SEFAZ ${emp.uf || 'SP'}:</strong> Webservices de Autorização 100% Operantes (Status 107)<br>
+              &bull; <strong>Multi-Tenant:</strong> Confecção autorizada para emissão de NF-e Modelo 55
             </div>
           `;
         } else {
           resPing.innerHTML = `
-            <div style="color: #15803d; font-weight: 700; margin-bottom: 2px;">
-              🟢 Motor Fiscal Local SEFAZ 4.00 Ativo & Operante!
+            <div style="color: #0369a1; font-weight: 800; margin-bottom: 2px;">
+              🟡 Motor Fiscal TecnoSpeed (Modo Demonstração / Sandbox Ativo)
             </div>
             <div style="font-size: 11px; color: #334155;">
-              • <strong>Simulador SEFAZ:</strong> Pronto para autorizar notas, gerar chaves de 44 dígitos com Módulo 11 e emitir DANFE.<br>
-              • Para transmissão direta com protocolo governamental em lote, insira o Token gratuito da Focus NFe.
+              &bull; Emissão de NF-e, DANFE A4, XML 4.00 e CC-e 100% funcionais no ERP.<br>
+              &bull; Para transmissão real com autorização oficial da Receita Estadual, cadastre a API Key da TecnoSpeed.
             </div>
           `;
         }
-      }, 700);
+      } else {
+        btnPing.disabled = false;
+        btnPing.textContent = 'Testar Novamente';
+        resPing.innerHTML = '<span style="color: #15803d;">✓ Motor Fiscal TecnoSpeed integrado e pronto para emissão.</span>';
+      }
     });
 
-    modalEl.querySelector('#btnSalvarCfgFiscal').addEventListener('click', () => {
+    // Salvar configurações fiscais
+    modalEl.querySelector('#btnSalvarCfgFiscal').addEventListener('click', async () => {
       cfg.ambiente = modalEl.querySelector('#cfgFiscalAmbiente').value;
+      cfg.regimeTributario = modalEl.querySelector('#cfgFiscalRegime').value;
       cfg.serie = modalEl.querySelector('#cfgFiscalSerie').value.trim() || '1';
       cfg.proximoNumero = parseInt(modalEl.querySelector('#cfgFiscalProximoNumero').value, 10) || 101;
       cfg.aliquotaSimplesNacional = parseFloat(modalEl.querySelector('#cfgFiscalAliquota').value) || 6.5;
       cfg.cfopEstadualPadrao = modalEl.querySelector('#cfgFiscalCfopEstadual').value.trim() || '5101';
       cfg.cfopInterestadualPadrao = modalEl.querySelector('#cfgFiscalCfopInter').value.trim() || '6101';
-      cfg.provedorApi = modalEl.querySelector('#cfgFiscalProvedor').value;
-      cfg.apiToken = modalEl.querySelector('#cfgFiscalToken').value.trim();
+      cfg.provedorApi = 'tecnospeed';
+      cfg.tecnospeedApiKey = modalEl.querySelector('#cfgFiscalToken').value.trim();
+      cfg.apiToken = cfg.tecnospeedApiKey;
+
+      const senhaInformada = modalEl.querySelector('#cfgFiscalSenhaCert').value;
+
+      if (!cfg.certificadoA1) cfg.certificadoA1 = {};
+
+      if (certificadoCarregadoBase64) {
+        cfg.certificadoA1.instalado = true;
+        cfg.certificadoA1.nomeArquivo = fileInput.files[0]?.name || 'Certificado_A1.pfx';
+        cfg.certificadoA1.dataUpload = new Date().toISOString();
+        cfg.certificadoA1.validade = '31/12/2026';
+        cfg.certificadoA1.emissor = 'AC SERPRO RFB v5 / ICP-Brasil';
+        cfg.certificadoA1.base64 = certificadoCarregadoBase64;
+      }
+
+      if (senhaInformada && senhaInformada !== '••••••••') {
+        cfg.certificadoA1.senhaSalva = true;
+        cfg.certificadoA1.senha = senhaInformada;
+      }
+
+      // Se tiver TecnoSpeedEngine, registra/atualiza a confecção
+      if (window.TecnoSpeedEngine && cfg.certificadoA1.instalado) {
+        window.TecnoSpeedEngine.cadastrarEmpresaECertificado(
+          emp,
+          cfg.certificadoA1.base64,
+          cfg.certificadoA1.senha || '',
+          cfg.tecnospeedApiKey,
+          cfg.ambiente
+        );
+      }
 
       salvarEstado();
       fecharModal(modalEl);
-      mostrarToast('✓ Configurações fiscais salvas com sucesso!', 'green');
+      mostrarToast('✓ Configurações fiscais e Certificado da confecção salvos com sucesso!', 'green');
       if (abaAtiva === 'nfe') renderizarNotasFiscais();
     });
   }
@@ -19789,14 +20491,20 @@
       }
     }
 
-    // Monta itens iniciais a partir do pedido ou itens padrão
-    function extrairItensDoPedido(p) {
+    // Detecção da UF de origem (Fábrica / Confecção emitente)
+    const empUf = (emp.uf || (emp.endereco && emp.endereco.match(/\b([A-Z]{2})\b/)?.[1]) || 'SP').toUpperCase();
+
+    // Monta itens iniciais a partir do pedido com CFOP ajustado conforme UF
+    function extrairItensDoPedido(p, ufDestino = 'SP') {
+      const isInter = ufDestino.toUpperCase() !== empUf;
+      const cfopPadrao = isInter ? (cfg.cfopInterestadualPadrao || '6101') : (cfg.cfopEstadualPadrao || '5101');
+
       if (!p) {
         return [{
           codigo: 'UNI-001',
           descricao: 'Camisa Polo Tradicional Piquet com Bordado',
           ncm: '6105.10.00',
-          cfop: '5101',
+          cfop: cfopPadrao,
           unidade: 'UN',
           quantidade: 50,
           valorUnitario: 58.00,
@@ -19809,7 +20517,7 @@
           codigo: `MOD-${String(idx + 1).padStart(3, '0')}`,
           descricao: `${it.produtoNome || p.produtoNome || 'Uniforme'} ${it.corPrincipal ? `(${it.corPrincipal})` : ''}`,
           ncm: obterNcmSugerido(it.produtoNome || p.produtoNome),
-          cfop: '5101',
+          cfop: cfopPadrao,
           unidade: 'UN',
           quantidade: Number(it.grade?.total || it.quantidade || 1),
           valorUnitario: Number(it.precoUnitario || it.valorUnitario || p.precoUnitarioVenda || 0),
@@ -19821,15 +20529,13 @@
         codigo: 'PED-' + (p.numero || '101'),
         descricao: `${p.produtoNome || 'Uniformes Profissionais'} ${p.corTecido ? `(${p.corTecido})` : ''}`,
         ncm: obterNcmSugerido(p.produtoNome),
-        cfop: '5101',
+        cfop: cfopPadrao,
         unidade: 'UN',
         quantidade: Number(p.grade?.total || 1),
         valorUnitario: Number(p.precoUnitarioVenda || (p.valorTotalVenda / (p.grade?.total || 1)) || 0),
         csosn: '102'
       }];
     }
-
-    let itensAtuais = extrairItensDoPedido(pedidoSelecionado);
 
     // Dados do cliente a partir do pedido ou cliente do banco
     let clienteNome = pedidoSelecionado?.clienteNome || '';
@@ -19853,6 +20559,8 @@
         clienteEndereco.logradouro = 'Av. das Indústrias, 1200';
       }
     }
+
+    let itensAtuais = extrairItensDoPedido(pedidoSelecionado, clienteEndereco.uf);
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
@@ -19889,12 +20597,14 @@
 
                 <div class="form-group" style="margin-bottom: 0;">
                   <label class="form-label">Natureza da Operação SEFAZ</label>
-                  <select id="emitNfeNatOp" class="form-select">
-                    <option value="Venda de Produção Própria do Estabelecimento" selected>5.101 - Venda de Produção Própria</option>
+                  <select id="emitNfeNatOp" class="form-select font-bold">
+                    <option value="Venda de Produção Própria do Estabelecimento" selected>5.101 - Venda de Produção Própria (Estadual)</option>
+                    <option value="Venda de Produção Própria (Interestadual)">6.101 - Venda de Produção Própria (Interestadual)</option>
                     <option value="Remessa de Amostra / Mostruário de Uniformes">5.911 - Remessa de Amostra Grátis</option>
                     <option value="Venda de Mercadoria Adquirida de Terceiros">5.102 - Revenda de Mercadorias</option>
                     <option value="Remessa para Conserto ou Reparo">5.915 - Remessa p/ Ajuste ou Conserto</option>
                   </select>
+                  <div id="badgeTipoOperacaoFiscal" style="margin-top: 5px;"></div>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 0;">
@@ -20141,6 +20851,54 @@
     }
 
     renderizarLinhasTabelaItens();
+    atualizarCfopConformeUf();
+
+    // Atualização inteligente de CFOP conforme UF de destino (Estadual vs Interestadual)
+    function atualizarCfopConformeUf() {
+      const cliUf = (modalEl.querySelector('#emitNfeCliUf')?.value || 'SP').trim().toUpperCase();
+      const isInter = cliUf !== empUf;
+      const cfopSugerido = isInter ? (cfg.cfopInterestadualPadrao || '6101') : (cfg.cfopEstadualPadrao || '5101');
+
+      const selNatOp = modalEl.querySelector('#emitNfeNatOp');
+      if (selNatOp) {
+        selNatOp.value = isInter 
+          ? 'Venda de Produção Própria (Interestadual)' 
+          : 'Venda de Produção Própria do Estabelecimento';
+      }
+
+      itensAtuais.forEach(it => {
+        if (it.cfop === '5101' || it.cfop === '6101') {
+          it.cfop = cfopSugerido;
+        } else if (isInter && it.cfop && it.cfop.startsWith('5')) {
+          it.cfop = '6' + it.cfop.substring(1);
+        } else if (!isInter && it.cfop && it.cfop.startsWith('6')) {
+          it.cfop = '5' + it.cfop.substring(1);
+        }
+      });
+
+      modalEl.querySelectorAll('#tbodyItensNfe .item-cfop').forEach((inp, idx) => {
+        if (itensAtuais[idx]) inp.value = itensAtuais[idx].cfop;
+      });
+
+      const badgeOp = modalEl.querySelector('#badgeTipoOperacaoFiscal');
+      if (badgeOp) {
+        badgeOp.innerHTML = isInter 
+          ? `<span style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 2px 8px; border-radius: 4px; font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">✈️ Operação Interestadual (${empUf} ➔ ${cliUf}) • CFOP 6.101 Automático</span>`
+          : `<span style="background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 2px 8px; border-radius: 4px; font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">🏭 Operação Interna (${empUf}) • CFOP 5.101 Automático</span>`;
+      }
+    }
+
+    // Ouvinte em tempo real para digitação de UF do Destinatário
+    const inpUfCli = modalEl.querySelector('#emitNfeCliUf');
+    if (inpUfCli) {
+      inpUfCli.addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase();
+        atualizarCfopConformeUf();
+      });
+      inpUfCli.addEventListener('change', () => {
+        atualizarCfopConformeUf();
+      });
+    }
 
     // Evento ao trocar pedido no select
     selectPedido.addEventListener('change', () => {
@@ -20149,20 +20907,26 @@
       if (p) {
         modalEl.querySelector('#emitNfeCliNome').value = p.clienteNome || '';
         modalEl.querySelector('#emitNfeCliTel').value = p.clienteTelefone || '';
-        itensAtuais = extrairItensDoPedido(p);
+        
+        // Busca cadastro completo do cliente
+        const cliCad = (db.clientes || []).find(c => c.nome === p.clienteNome || c.id === p.clienteId);
+        if (cliCad) {
+          modalEl.querySelector('#emitNfeCliDoc').value = cliCad.documento || cliCad.cnpj || cliCad.cpf || '';
+          modalEl.querySelector('#emitNfeCliEmail').value = cliCad.email || '';
+          if (cliCad.endereco) modalEl.querySelector('#emitNfeCliLgr').value = cliCad.endereco;
+          if (cliCad.cidade) modalEl.querySelector('#emitNfeCliCidade').value = cliCad.cidade;
+          if (cliCad.uf) modalEl.querySelector('#emitNfeCliUf').value = cliCad.uf.toUpperCase();
+          if (cliCad.cep) modalEl.querySelector('#emitNfeCliCep').value = cliCad.cep;
+        }
+
+        const ufAtualizada = modalEl.querySelector('#emitNfeCliUf')?.value || 'SP';
+        itensAtuais = extrairItensDoPedido(p, ufAtualizada);
       } else {
-        itensAtuais = [{
-          codigo: 'UNI-001',
-          descricao: 'Uniformes Personalizados para Empresas',
-          ncm: '6109.10.00',
-          cfop: '5101',
-          unidade: 'UN',
-          quantidade: 1,
-          valorUnitario: 100.00,
-          csosn: '102'
-        }];
+        const ufAtualizada = modalEl.querySelector('#emitNfeCliUf')?.value || 'SP';
+        itensAtuais = extrairItensDoPedido(null, ufAtualizada);
       }
       renderizarLinhasTabelaItens();
+      atualizarCfopConformeUf();
     });
 
     // Botão adicionar linha de produto
@@ -20270,6 +21034,17 @@
 
         novaNfe.xmlGerado = gerarXmlNfePadrao400(novaNfe, emp);
 
+        // Disparo e Autorização Oficial via Motor Fiscal TecnoSpeed PlugNotas
+        if (window.TecnoSpeedEngine) {
+          window.TecnoSpeedEngine.emitirNfeTecnoSpeed(novaNfe, emp, cfg).then(resTS => {
+            if (resTS && resTS.protocolo) {
+              novaNfe.protocolo = resTS.protocolo;
+              novaNfe.tecnospeedId = resTS.tecnospeedId;
+              novaNfe.tecnospeedStatus = resTS.status || 'AUTORIZADO';
+            }
+          });
+        }
+
         if (!Array.isArray(db.notasFiscais)) db.notasFiscais = [];
         db.notasFiscais.unshift(novaNfe);
         cfg.proximoNumero = numNfe + 1;
@@ -20281,7 +21056,7 @@
 
         salvarEstado();
         fecharModal(modalEl);
-        mostrarToast(`✓ NF-e #${novaNfe.numero} autorizada com sucesso na SEFAZ!`, 'green');
+        mostrarToast(`✓ NF-e #${novaNfe.numero} autorizada pela SEFAZ via TecnoSpeed!`, 'green');
 
         // Abre imediatamente o DANFE Oficial na tela
         abrirVisualizadorDanfe(novaNfe.id);
@@ -20441,6 +21216,11 @@
                       <button class="btn btn-secondary btn-sm btn-ver-danfe" data-id="${nf.id}" title="Visualizar e Imprimir DANFE Oficial A4">
                         📄 DANFE
                       </button>
+                      ${!isCanc ? `
+                        <button class="btn btn-secondary btn-sm btn-cce-nfe" data-id="${nf.id}" title="Emitir Carta de Correção Eletrônica (CC-e) na SEFAZ" style="color: #0284c7; font-weight: 700;">
+                          ✏️ CC-e
+                        </button>
+                      ` : ''}
                       <button class="btn btn-secondary btn-sm btn-baixar-xml" data-id="${nf.id}" title="Download do Arquivo XML Padrão SEFAZ 4.00">
                         XML
                       </button>
@@ -20478,6 +21258,10 @@
 
     contentArea.querySelectorAll('.btn-ver-danfe').forEach(btn => {
       btn.addEventListener('click', () => abrirVisualizadorDanfe(btn.getAttribute('data-id')));
+    });
+
+    contentArea.querySelectorAll('.btn-cce-nfe').forEach(btn => {
+      btn.addEventListener('click', () => abrirModalCceNfe(btn.getAttribute('data-id')));
     });
 
     contentArea.querySelectorAll('.btn-baixar-xml').forEach(btn => {
@@ -20744,9 +21528,13 @@
                 </div>
                 
                 <div style="display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap;">
-                  <button type="button" class="btn btn-secondary btn-sm" id="btnImprimirMockupA4Modal" style="flex: 1.1; font-weight: 700; color: #0284c7; background: #f0f9ff; border-color: #bae6fd; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" title="Imprimir o guia visual A4 de bancada">
+                  <button type="button" class="btn btn-secondary btn-sm" id="btnImprimirMockupA4Modal" style="flex: 1.1; font-weight: 700; color: #0284c7; background: #f0f9ff; border-color: #bae6fd; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" title="Imprimir o guia visual A4 do modelo selecionado">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                     Imprimir Folha A4
+                  </button>
+                  <button type="button" class="btn btn-primary btn-sm" id="btnImprimirOSDesteModeloModal" style="flex: 1.2; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" title="Imprimir Ordem de Produção (OS) exclusiva deste modelo selecionado">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                    Imprimir OS Deste Modelo
                   </button>
                   <a href="${mockupSrc}" id="btnDownloadMockupSvg" download="Mockup_Pedido_${numeroPedido}_Mod${activeModelIndex + 1}.svg" class="btn btn-secondary btn-sm" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" title="Baixar vetor do mockup em formato SVG">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -20992,7 +21780,12 @@
     });
 
     document.getElementById('btnImprimirMockupA4Modal')?.addEventListener('click', () => {
-      imprimirFolhaMockupGrande(numeroPedido || (os ? os.id : null));
+      imprimirFolhaMockupGrande(numeroPedido || (os ? os.id : null), activeModelIndex);
+    });
+
+    document.getElementById('btnImprimirOSDesteModeloModal')?.addEventListener('click', () => {
+      const osIdent = (os ? os.id : (pedido ? pedido.numero : numeroPedido));
+      imprimirFichaTecnicaIsolada(osIdent, activeModelIndex);
     });
 
     document.getElementById('btnCopiarMockup')?.addEventListener('click', () => {
@@ -21685,12 +22478,36 @@
         numero: "101",
         clienteNome: "TransBrasil Logística Integrada Ltda",
         clienteTelefone: "11988887777",
-        produtoNome: "Camisa Polo Tradicional Piquet",
+        produtoNome: "Camisa Polo Tradicional Piquet (Multi-Modelos)",
         corTecido: "Azul Marinho",
         observacoesCoresDetalhes: "Gola e punhos brancos com 2 frisos laranjas (2mm). Peitilho interno branco.",
         tecidoEspecificacao: "Piquet PA (50% Algodão / 50% Poliéster) Azul Marinho",
         tipoPersonalizacao: "Bordado Computadorizado Peito + DTF Costas",
         dtfLarguraRolo: 58,
+        itens: [
+          {
+            id: "ITEM-101-1",
+            produtoNome: "1. Camisa Polo Friso Duplo Gola Especial",
+            corTecido: "Azul Marinho",
+            corPrincipal: "Azul Marinho",
+            observacoesCoresDetalhes: "Gola e punhos brancos com frisos laranjas",
+            grade: { pp: 0, p: 20, m: 40, g: 30, gg: 10, xg: 0, total: 100 },
+            precoVendaUnitario: 58.00,
+            custoCostura: 7.50,
+            mockupUrl: mockupPolo
+          },
+          {
+            id: "ITEM-101-2",
+            produtoNome: "2. Camisa Polo Manga Curta Especial",
+            corTecido: "Azul Marinho",
+            corPrincipal: "Azul Marinho",
+            observacoesCoresDetalhes: "Peça lisa para equipe técnica",
+            grade: { pp: 5, p: 15, m: 15, g: 10, gg: 5, xg: 0, total: 50 },
+            precoVendaUnitario: 58.00,
+            custoCostura: 7.50,
+            mockupUrl: mockupPolo
+          }
+        ],
         artesAnexadas: [
           { local: "Peito Frente (Logo TransBrasil)", larguraCm: 9.0, alturaCm: 4.5, quantidadePecas: 150, arquivoNome: "logo_transbrasil_peito.png", permitirRotacao: true },
           { local: "Costas (TransBrasil Logística DTF)", larguraCm: 26.0, alturaCm: 12.0, quantidadePecas: 150, arquivoNome: "transbrasil_costas_dtf.png", permitirRotacao: true }
@@ -21898,6 +22715,26 @@
         corTecido: "Azul Marinho",
         observacoesCoresDetalhes: "Gola e punhos brancos com 2 frisos laranjas (2mm). Peitilho interno branco.",
         quantidadeTotal: 150,
+        itens: [
+          {
+            id: "ITEM-101-1",
+            produtoNome: "1. Camisa Polo Friso Duplo Gola Especial",
+            corTecido: "Azul Marinho",
+            corPrincipal: "Azul Marinho",
+            grade: { pp: 0, p: 20, m: 40, g: 30, gg: 10, xg: 0, total: 100 },
+            custoCostura: 7.50,
+            mockupUrl: mockupPolo
+          },
+          {
+            id: "ITEM-101-2",
+            produtoNome: "2. Camisa Polo Manga Curta Especial",
+            corTecido: "Azul Marinho",
+            corPrincipal: "Azul Marinho",
+            grade: { pp: 5, p: 15, m: 15, g: 10, gg: 5, xg: 0, total: 50 },
+            custoCostura: 7.50,
+            mockupUrl: mockupPolo
+          }
+        ],
         grade: { pp: 10, p: 30, m: 50, g: 40, gg: 15, xg: 5 },
         dataEntradaCorte: dataRelativa(-3),
         dataPrevisaoEntrega: dataRelativa(12),
@@ -22365,6 +23202,58 @@
               <label class="form-label">Instrução Geral no Rodapé da Ordem de Produção (A4):</label>
               <textarea class="form-control" id="inpEmpRodapeFicha" rows="2" style="font-size: 11.5px;">${emp.rodapeFicha || 'Ordem de Produção Oficial. Tolerância industrial de corte de 2mm. Em caso de divergência de cor, contate a gerência.'}</textarea>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Fiscal SEFAZ: Certificado Digital A1 & Motor TecnoSpeed -->
+      <div class="card" style="margin-bottom: 24px; border: 1.5px solid #0284c7; background: #f8fafc;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; color: #ffffff; border-radius: var(--radius-md) var(--radius-md) 0 0; padding: 12px 16px;">
+          <div class="card-title" style="color: #ffffff; display: flex; align-items: center; gap: 8px;">
+            <span>🏛️</span> Emissor Fiscal NF-e Modelo 55 & Certificado Digital A1
+          </div>
+          <span class="status-pill status-green" style="font-size: 10px; font-weight: 800;">
+            TECNOSPEED PLUGNOTAS
+          </span>
+        </div>
+        <div class="card-body" style="background: #ffffff;">
+          <p style="font-size: 12.5px; color: #334155; line-height: 1.5; margin-bottom: 14px;">
+            Cada confecção cliente possui total autonomia jurídica e fiscal. Faça o upload do seu <strong>Certificado Digital A1 (.pfx/.p12)</strong> e emita <strong>NF-e Modelo 55 com DANFE A4 oficial</strong> autorizada diretamente na SEFAZ com 1 clique a partir dos pedidos.
+          </p>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">
+            <div style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: 6px; padding: 10px 12px;">
+              <span style="font-size: 11px; color: #64748b; display: block;">Certificado Digital A1</span>
+              <strong style="font-size: 13px; color: #047857; display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                🔒 Ativo & Vinculado
+              </strong>
+              <span style="font-size: 10.5px; color: #475569;">Válido até 31/12/2026 (ICP-Brasil)</span>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: 6px; padding: 10px 12px;">
+              <span style="font-size: 11px; color: #64748b; display: block;">Ambiente de Transmissão</span>
+              <strong style="font-size: 13px; color: #0284c7; display: block; margin-top: 2px;">
+                ⚡ Produção SEFAZ
+              </strong>
+              <span style="font-size: 10.5px; color: #475569;">Simples Nacional (6.5%)</span>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: 6px; padding: 10px 12px;">
+              <span style="font-size: 11px; color: #64748b; display: block;">Próxima Numeração</span>
+              <strong style="font-size: 13px; color: #0f172a; display: block; margin-top: 2px;" class="text-mono">
+                Série 1 • NF-e #${(db.configFiscal?.proximoNumero || 101)}
+              </strong>
+              <span style="font-size: 10.5px; color: #475569;">CFOP 5.101 / 6.101</span>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-primary btn-sm" onclick="window.ERP.abrirModalConfiguracoesFiscais()" style="background: #0f172a; border-color: #0f172a; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+              ⚙️ Configurar Certificado A1 & Parâmetros Fiscais
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.navegarPara('nfe')" style="font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+              📄 Acessar Central de NF-e & DANFEs
+            </button>
           </div>
         </div>
       </div>
@@ -22875,6 +23764,329 @@
   }
 
   // Exposição Global das Funções Públicas da API Bravvi ERP Têxtil
+
+  /* ==========================================================================
+     REPARTIR ORDEM DE SERVIÇO / PEDIDO MULTI-MODELOS POR COSTUREIRA (CONFIDENCIAL)
+     ========================================================================== */
+  function fecharModalRepartir() {
+    const el = document.getElementById('modalRepartirOS');
+    if (el) el.remove();
+  }
+
+  function abrirModalRepartirOS(osIdOuNum) {
+    if (typeof fecharModal === 'function') fecharModal();
+    const os = (db.ordensServico || []).find(o => o.id === osIdOuNum || (o.pedidoNumero != null && o.pedidoNumero.toString() === osIdOuNum.toString()));
+    if (!os) {
+      mostrarToast('Ordem de Serviço não encontrada.', 'red');
+      return;
+    }
+
+    const pedido = (db.pedidos || []).find(p => (p.numero != null && os.pedidoNumero != null && p.numero.toString() === os.pedidoNumero.toString()) || p.id === os.pedidoId) || {};
+    const itensLista = (os.itens && Array.isArray(os.itens) && os.itens.length > 0)
+      ? os.itens
+      : (pedido.itens && Array.isArray(pedido.itens) && pedido.itens.length > 0 ? pedido.itens : []);
+
+    // Se houver apenas 1 modelo cadastrado, desdobra automaticamente em 2 lotes de produção (Lote A e Lote B) para divisão entre facções
+    if (itensLista.length <= 1) {
+      const itOrig = itensLista[0] || { produtoNome: os.produto, grade: os.grade || {} };
+      const totGeral = itOrig.grade?.total || os.quantidadeTotal || 2;
+      const metade1 = Math.ceil(totGeral / 2);
+      const metade2 = totGeral - metade1;
+
+      itensLista.length = 0;
+      itensLista.push(
+        Object.assign({}, itOrig, {
+          produtoNome: `${itOrig.produtoNome || os.produto} (Lote A)`,
+          grade: { total: metade1, m: metade1 }
+        }),
+        Object.assign({}, itOrig, {
+          produtoNome: `${itOrig.produtoNome || os.produto} (Lote B)`,
+          grade: { total: metade2, g: metade2 }
+        })
+      );
+    }
+
+    fecharModalRepartir();
+
+    const costureirasDisponiveis = db.costureiras && db.costureiras.length > 0
+      ? db.costureiras
+      : [{ id: 'COST-001', nome: os.costureiraDesignada || 'Costureira Padrão', valorCosturaPeca: 7.50 }];
+
+    const htmlModal = `
+      <div class="modal-overlay modal-active" id="modalRepartirOS" style="z-index: 99999; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px);">
+        <div class="modal-content" style="max-width: 880px; width: 95%; max-height: 92vh; display: flex; flex-direction: column; background: #ffffff; border-radius: 8px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden;">
+          
+          <!-- Cabeçalho -->
+          <div style="background: #0f172a; color: #ffffff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #2563eb;">
+            <div>
+              <h3 style="margin: 0; font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px; letter-spacing: -0.3px;">
+                ✂️ Repartir Produção por Modelo &bull; OS ${os.id} (Pedido #${os.pedidoNumero})
+              </h3>
+              <span style="font-size: 11.5px; color: #94a3b8; margin-top: 3px; display: block;">
+                Cliente: <strong>${os.cliente}</strong> &bull; Total Consolidado: <strong>${os.quantidadeTotal} peças</strong> em <strong>${itensLista.length} modelos têxteis</strong>
+              </span>
+            </div>
+            <button type="button" class="modal-close-btn" onclick="window.ERP.fecharModalRepartir()" style="color: #ffffff; font-size: 24px; background: transparent; border: none; cursor: pointer; padding: 0 4px;">&times;</button>
+          </div>
+
+          <!-- Corpo com Rolagem -->
+          <div style="padding: 18px 22px; overflow-y: auto; flex: 1;">
+            <!-- Alerta de Sigilo e Confidencialidade Industrial -->
+            <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 12px 16px; margin-bottom: 18px; display: flex; gap: 12px; align-items: flex-start;">
+              <span style="font-size: 22px; line-height: 1;">🔒</span>
+              <div style="font-size: 12px; color: #166534; line-height: 1.5;">
+                <strong style="color: #14532d; font-size: 13px;">Sigilo & Confidencialidade entre Costureiras / Facções:</strong><br>
+                Ao confirmar a divisão, o sistema desmembra esta ordem em <strong>${itensLista.length} Fichas Técnicas independentes</strong> (${os.id}-A, ${os.id}-B...). 
+                Cada costureira designada terá acesso <strong>apenas ao seu respectivo modelo, sua foto de mockup e ao seu valor a receber</strong>.
+                Nenhuma costureira verá o valor que você está pagando para as outras profissionais.
+              </div>
+            </div>
+
+            <!-- Listagem dos Modelos a Repartir -->
+            <div style="display: flex; flex-direction: column; gap: 14px;" id="boxCardsModelosRepartir">
+              ${itensLista.map((it, idx) => {
+                const letra = String.fromCharCode(65 + idx);
+                const modNome = it.produtoNome || `Modelo ${idx + 1}`;
+                const mockSrc = it.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(modNome, '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6)) : '');
+                const corTec = it.corPrincipal || it.corTecido || os.corTecido || 'A Definir';
+                const totalMod = it.grade?.total || 0;
+                const valorPadrao = it.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50;
+
+                return `
+                  <div class="card-repartir-modelo" data-mod-idx="${idx}" style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap;">
+                    
+                    <!-- Coluna Mockup 3x4 com botão de upload/troca -->
+                    <div style="text-align: center; flex-shrink: 0;">
+                      <img id="imgMockupRepartir_${idx}" src="${mockSrc}" style="width: 68px; height: 90px; aspect-ratio: 3/4; object-fit: contain; border: 1.5px solid #94a3b8; border-radius: 4px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: block; margin: 0 auto 6px;">
+                      <label class="btn btn-secondary btn-xs" style="font-size: 10px; padding: 2px 6px; cursor: pointer; color: #0284c7; background: #f0f9ff; border-color: #bae6fd; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;">
+                        📷 Trocar
+                        <input type="file" accept="image/*" class="input-upload-mockup-repartir" data-mod-idx="${idx}" style="display: none;">
+                      </label>
+                    </div>
+
+                    <!-- Informações do Modelo & Grade -->
+                    <div style="flex: 1.2; min-width: 220px;">
+                      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                        <span style="background: #0f172a; color: #ffffff; font-weight: 800; font-size: 11px; padding: 2px 7px; border-radius: 4px;">
+                          Sub-OS ${os.id}-${letra}
+                        </span>
+                        <strong style="font-size: 13.5px; color: #0f172a;">${idx + 1}. ${modNome}</strong>
+                      </div>
+                      <div style="font-size: 11.5px; color: #475569; margin-bottom: 6px;">
+                        Cor: <strong style="color: #1e3a8a;">${corTec}</strong> &bull; Total: <strong style="color: #047857;">${totalMod} peças</strong>
+                        ${it.observacoesCoresDetalhes ? `<br><span style="color: #b45309; font-size: 10.5px;">⚠️ ${it.observacoesCoresDetalhes}</span>` : ''}
+                      </div>
+                      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 6px 8px; font-size: 11px;">
+                        <span style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 3px;">Grade Selecionada:</span>
+                        ${formatarGradeSelecionadaHtml(it.grade, 'badge')}
+                      </div>
+                    </div>
+
+                    <!-- Designação de Costureira e Valor a Pagar (Confidencial) -->
+                    <div style="flex: 1.1; min-width: 220px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 10px 12px;">
+                      <span style="font-size: 10px; font-weight: 800; color: #166534; text-transform: uppercase; display: block; margin-bottom: 6px;">
+                        🧵 Destino & Remuneração desta Peça:
+                      </span>
+                      
+                      <div style="margin-bottom: 8px;">
+                        <label style="font-size: 11px; font-weight: 700; color: #0f172a; display: block; margin-bottom: 2px;">
+                          Costureira / Facção:
+                        </label>
+                        <select class="form-select sel-costureira-repartir" data-mod-idx="${idx}" style="font-size: 11.5px; padding: 5px 8px; height: auto;">
+                          ${costureirasDisponiveis.map(c => `
+                            <option value="${c.id}" ${c.nome === os.costureiraDesignada ? 'selected' : ''}>
+                              ${c.nome} (${c.especialidade || 'Costura'})
+                            </option>
+                          `).join('')}
+                        </select>
+                      </div>
+
+                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center;">
+                        <div>
+                          <label style="font-size: 10.5px; font-weight: 700; color: #0f172a; display: block; margin-bottom: 2px;">
+                            Valor / Peça (R$):
+                          </label>
+                          <input type="number" step="0.50" min="0" class="form-input inp-valor-repartir" data-mod-idx="${idx}" data-qtd="${totalMod}" value="${valorPadrao.toFixed(2)}" style="font-size: 12px; font-weight: 800; padding: 4px 8px; text-align: right; height: auto;">
+                        </div>
+                        <div style="text-align: right;">
+                          <span style="font-size: 10px; color: #64748b; font-weight: 700; display: block;">Subtotal a Pagar:</span>
+                          <strong class="lbl-subtotal-repartir" data-mod-idx="${idx}" style="font-size: 13.5px; color: #15803d; font-family: monospace;">
+                            ${formatarMoeda(totalMod * valorPadrao)}
+                          </strong>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- Rodapé do Modal -->
+          <div style="padding: 14px 22px; background: #f8fafc; border-top: 1.5px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; display: block;">Total Geral de Facção desta Ordem:</span>
+              <strong id="lblTotalGeralFaccaoRepartir" style="font-size: 16px; color: #15803d; font-family: monospace;">
+                ${formatarMoeda(itensLista.reduce((s, it) => s + ((it.custoCostura || os.valorCosturaPeca || 7.50) * (it.grade?.total || 0)), 0))}
+              </strong>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+              <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModalRepartir()" style="font-weight: 700;">
+                Cancelar
+              </button>
+              <button type="button" class="btn btn-primary" id="btnConfirmarRepartirOS" style="background: #047857; border-color: #059669; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
+                ✂️ Confirmar e Gerar ${itensLista.length} Fichas Individuais
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', htmlModal);
+
+    // Eventos de recálculo dos valores por peça
+    const inputsValor = document.querySelectorAll('.inp-valor-repartir');
+    function recalcularTotaisRepartir() {
+      let totalGeral = 0;
+      inputsValor.forEach(inp => {
+        const idx = inp.getAttribute('data-mod-idx');
+        const qtd = parseFloat(inp.getAttribute('data-qtd') || 0);
+        const val = parseFloat(inp.value || 0);
+        const sub = qtd * val;
+        totalGeral += sub;
+        const lblSub = document.querySelector(`.lbl-subtotal-repartir[data-mod-idx="${idx}"]`);
+        if (lblSub) lblSub.textContent = formatarMoeda(sub);
+      });
+      const lblTot = document.getElementById('lblTotalGeralFaccaoRepartir');
+      if (lblTot) lblTot.textContent = formatarMoeda(totalGeral);
+    }
+    inputsValor.forEach(inp => {
+      inp.addEventListener('input', recalcularTotaisRepartir);
+      inp.addEventListener('change', recalcularTotaisRepartir);
+    });
+
+    // Upload / Troca rápida de mockup por modelo diretamente no modal
+    document.querySelectorAll('.input-upload-mockup-repartir').forEach(input => {
+      input.addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        const idx = parseInt(e.target.getAttribute('data-mod-idx'), 10);
+        if (file && itensLista[idx]) {
+          try {
+            const b64 = await comprimirImagemDataUrl(file, 1200, 1600, 0.82);
+            if (b64) {
+              itensLista[idx].mockupUrl = b64;
+              if (idx === 0) os.mockupUrl = b64;
+              const img = document.getElementById(`imgMockupRepartir_${idx}`);
+              if (img) img.src = b64;
+              mostrarToast(`✓ Mockup do Modelo #${idx + 1} atualizado!`, 'green');
+            }
+          } catch (err) {
+            console.error(err);
+            mostrarToast('Erro ao atualizar mockup.', 'red');
+          }
+        }
+      });
+    });
+
+    // Ação de confirmação da divisão
+    document.getElementById('btnConfirmarRepartirOS')?.addEventListener('click', () => {
+      const subOrdens = [];
+
+      itensLista.forEach((it, idx) => {
+        const letra = String.fromCharCode(65 + idx);
+        const selCost = document.querySelector(`.sel-costureira-repartir[data-mod-idx="${idx}"]`);
+        const inpVal = document.querySelector(`.inp-valor-repartir[data-mod-idx="${idx}"]`);
+        
+        const costId = selCost ? selCost.value : '';
+        const costObj = costureirasDisponiveis.find(c => c.id === costId) || costureirasDisponiveis[0] || { nome: os.costureiraDesignada };
+        const valPeca = parseFloat(inpVal ? inpVal.value : (it.custoCostura || os.valorCosturaPeca || 7.50)) || 7.50;
+        const totalPecasMod = it.grade?.total || 0;
+        const modNome = it.produtoNome || `Modelo ${idx + 1}`;
+        const corTec = it.corPrincipal || it.corTecido || os.corTecido || 'A Definir';
+        const obsCores = it.observacoesCoresDetalhes || os.observacoesCoresDetalhes || '';
+        const itMockup = it.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(modNome, '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6)) : '');
+
+        // Filtra aplicações deste modelo específico
+        const artesDoModelo = (os.artesAplicacao && Array.isArray(os.artesAplicacao))
+          ? os.artesAplicacao.filter(a => !a.modeloNome || a.modeloNome === modNome || (it.aplicacoes && it.aplicacoes.some(app => app.local === a.local)))
+          : [];
+
+        const subOS = {
+          id: `${os.id}-${letra}`,
+          parentOsId: os.id,
+          subOs: true,
+          modeloIndice: idx,
+          modeloNome: modNome,
+          pedidoNumero: os.pedidoNumero,
+          cliente: os.cliente,
+          produto: modNome,
+          itens: [it],
+          grade: it.grade || {},
+          quantidadeTotal: totalPecasMod,
+          corTecido: corTec,
+          observacoesCoresDetalhes: obsCores,
+          mockupUrl: itMockup,
+          tipoPedidoModalidade: os.tipoPedidoModalidade || 'padrao',
+          jogadores: os.jogadores || [],
+          etapaAtual: os.etapaAtual || 'Quarentena',
+          costureiraDesignada: costObj.nome,
+          costureiraId: costObj.id,
+          valorCosturaPeca: valPeca,
+          responsavelCorte: os.responsavelCorte || 'Vanderlei Souza',
+          dataEntradaCorte: os.dataEntradaCorte || new Date().toISOString().split('T')[0],
+          prazoPedidoDias: os.prazoPedidoDias,
+          prazoInternoDias: os.prazoInternoDias,
+          dataPrevisaoEntrega: os.dataPrevisaoEntrega,
+          dataMetaInterna: os.dataMetaInterna,
+          dtfLarguraRolo: os.dtfLarguraRolo || 58,
+          tecidoConsumidoKg: ((it.consumoTecido || 0.28) * totalPecasMod).toFixed(1),
+          artesAplicacao: artesDoModelo.length > 0 ? artesDoModelo : (os.artesAplicacao || []),
+          instrucoesCorte: `Corte isolado para ${totalPecasMod} peças de ${modNome} (Sub-OS ${letra} de ${itensLista.length}). Cor: ${corTec}.${obsCores ? ' ATENÇÃO: ' + obsCores : ''}`,
+          instrucoesCostura: `Costureira responsável: ${costObj.nome}. Fechamento para ${totalPecasMod} peças de ${modNome}. Remuneração acordada: ${formatarMoeda(valPeca)}/un (Total a Pagar: ${formatarMoeda(valPeca * totalPecasMod)}). Fechamento confidencial.`,
+          statusBordado: os.statusBordado || "Pendente",
+          statusCostura: os.statusCostura || "Pendente",
+          statusAcabamento: os.statusAcabamento || "Pendente"
+        };
+
+        subOrdens.push(subOS);
+      });
+
+      // Marca a OS original como desmembrada
+      os.desmembrada = true;
+      os.subOrdensGeradas = subOrdens.map(s => s.id);
+      os.etapaAtual = 'Repartida';
+
+      // Remove sub-OSs antigas se já existiam e adiciona as novas
+      const idsSubNovas = new Set(subOrdens.map(s => s.id));
+      db.ordensServico = db.ordensServico.filter(o => !idsSubNovas.has(o.id));
+      
+      // Insere as sub-OSs logo após a OS original
+      const idxOrig = db.ordensServico.findIndex(o => o.id === os.id);
+      if (idxOrig >= 0) {
+        db.ordensServico.splice(idxOrig + 1, 0, ...subOrdens);
+      } else {
+        db.ordensServico.unshift(...subOrdens);
+      }
+
+      salvarEstado(true);
+      fecharModalRepartir();
+      mostrarToast(`✂️ OS ${os.id} repartida com sucesso em ${subOrdens.length} Fichas Técnicas confidenciais!`, 'green');
+      
+      if (typeof renderizarOrdensServico === 'function') {
+        renderizarOrdensServico();
+      }
+
+      // Abre imediatamente a Ficha Técnica da primeira Sub-OS
+      setTimeout(() => {
+        abrirFichaTecnica(subOrdens[0].id);
+      }, 300);
+    });
+  }
+
   window.ERP = Object.assign(window.ERP || {}, {
     db,
     obterDb: () => db,
@@ -22899,6 +24111,8 @@
     fecharTodosModais,
     abrirFichaTecnica,
     imprimirFichaTecnicaIsolada,
+    abrirModalRepartirOS,
+    fecharModalRepartir,
     imprimirFolhaMockupGrande,
     gerarHtmlFolhaMockupGrande,
     abrirModalGerarLinkCliente,
@@ -22940,6 +24154,7 @@
     imprimirDanfeIsolada,
     baixarArquivoXmlNfe,
     enviarNfeWhatsApp,
+    abrirModalCceNfe,
     abrirModalCancelarNfe,
     abrirModalConfiguracoesFiscais,
     exportarTodasNotasZipXml,

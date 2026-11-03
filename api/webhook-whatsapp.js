@@ -326,6 +326,14 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ status: 'EMPTY_TEXT' });
       }
 
+      // 🛑 TRAVA DEFINITIVA: CARLOS PAUSADO PELO USUÁRIO (NÃO RESPONDE A NINGUÉM)
+      const CARLOS_PAUSADO = true;
+      if (CARLOS_PAUSADO) {
+        console.log(`[CARLOS PAUSADO] Mensagem de ${from}: "${leadTexto}". Carlos NÃO responderá.`);
+        await notificarTelegramGuilherme(`⏸️ *CARLOS PAUSADO*\nDe: https://wa.me/${from} (${from})\nMensagem: "${leadTexto}"\n👉 *(Carlos está pausado e NÃO respondeu ao cliente).*`);
+        return res.status(200).json({ status: 'CARLOS_PAUSED', from });
+      }
+
       // 🛡️ 2. BUSCA MEMÓRIA NO SUPABASE
       const leadState = await buscarHistoricoLead(from);
 

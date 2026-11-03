@@ -1,3 +1,27 @@
+
+/* ==========================================================================
+   TRAVA DEFINITIVA DE ROLAGEM DO FUNDO AO ABRIR QUALQUER MODAL / TELA
+   ========================================================================== */
+html.modal-aberto,
+body.modal-aberto {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  touch-action: none;
+}
+
+body.modal-aberto .erp-container,
+body.modal-aberto .erp-main,
+body.modal-aberto .content-area {
+  pointer-events: none !important;
+}
+
+#modalContainer,
+.modal-overlay,
+.modal-box,
+.modal-camada-filha {
+  pointer-events: auto !important;
+}
+
 /* ==========================================================================
    BRAVVI ERP TÊXTIL - ENTERPRISE LIGHT DESIGN SYSTEM
    Paleta Estrita: Branco, Preto e Cinza com Verde e Vermelho Funcionais
@@ -1070,6 +1094,7 @@ button.status-pill:hover {
   padding: 12px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain !important;
 }
 
 /* Modais Aninhados em Camada Superior (Submodais) */
@@ -1108,6 +1133,7 @@ button.status-pill:hover {
   position: relative;
   overflow: hidden !important;
   margin: auto;
+  overscroll-behavior: contain !important;
 }
 
 .modal-header {
@@ -1168,6 +1194,7 @@ button.status-pill:hover {
   scrollbar-width: thin;
   scrollbar-color: #64748b #e2e8f0;
   min-height: 80px;
+  overscroll-behavior: contain !important;
 }
 
 .modal-footer {
