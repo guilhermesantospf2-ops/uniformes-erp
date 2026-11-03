@@ -108,6 +108,10 @@
       const atual = obterEmpresaConfig();
       const novo = Object.assign({}, atual, dados);
       localStorage.setItem(STORAGE_KEY_EMPRESA, JSON.stringify(novo));
+      if (window.ERP && typeof window.ERP.obterDb === 'function') {
+        const localDb = window.ERP.obterDb();
+        if (localDb) localDb.empresa = Object.assign({}, localDb.empresa || {}, novo);
+      }
       atualizarElementosVisuaisEmpresa(novo);
       return novo;
     } catch (e) {

@@ -19185,7 +19185,28 @@
     "114131", "311141", "411131", "211412", "211214", "211232", "2331112"
   ];
 
-  function obterConfigFiscal() {
+    // Obtenção Blindada da Empresa Ativa (Multi-Tenant Nuvem)
+  function obterEmpresaAtiva() {
+    let empCloud = null;
+    try {
+      if (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function') {
+        empCloud = window.ERP_CLOUD.obterEmpresaConfig();
+      }
+    } catch (e) {}
+
+    if (empCloud && empCloud.cnpj && empCloud.cnpj !== '34.582.910/0001-44') {
+      if (db) db.empresa = Object.assign({}, db.empresa || {}, empCloud);
+      return empCloud;
+    }
+
+    if (db && db.empresa && db.empresa.cnpj && db.empresa.cnpj !== '34.582.910/0001-44') {
+      return db.empresa;
+    }
+
+    return empCloud || (db && db.empresa) || {};
+  }
+
+function obterConfigFiscal() {
     if (!db.configFiscal) {
       db.configFiscal = {
         ambiente: 'producao', // 'producao' ou 'homologacao'
@@ -20144,9 +20165,7 @@
 
     function abrirModalConfiguracoesFiscais() {
     const cfg = obterConfigFiscal();
-    const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
-      ? window.ERP_CLOUD.obterEmpresaConfig()
-      : (db.empresa || {});
+    const emp = obterEmpresaAtiva();
 
     const certInstalado = cfg.certificadoA1 && cfg.certificadoA1.instalado;
 
@@ -20178,7 +20197,7 @@
                   CNPJ: <strong class="text-mono">${emp.cnpj || '59.441.843/0001-76'}</strong> &bull; I.E.: <strong class="text-mono">${emp.inscricaoEstadual || emp.ie || 'ISENTO'}</strong> &bull; ${emp.cidade || 'Itajaí'}/${emp.uf || 'SC'}
                 </div>
               </div>
-              <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.fecharModal(); window.ERP.navegarPara('empresa');" style="font-size: 11px; font-weight: 700;">
+              <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.fecharTodosModais(); window.ERP.navegarPara('empresa');" style="font-size: 11px; font-weight: 700;">
                 ✏️ Editar Dados da Empresa
               </button>
             </div>
@@ -20475,9 +20494,7 @@
 
   function abrirModalEmitirNfe(pedidoIdPreselecionado = null) {
     const cfg = obterConfigFiscal();
-    const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
-      ? window.ERP_CLOUD.obterEmpresaConfig()
-      : (db.empresa || {});
+    const emp = obterEmpresaAtiva();
     const pedidosDisponiveis = (db.pedidos || []).filter(p => p.status !== 'Cancelado');
 
     // Se passou um pedido já selecionado, obtém o pedido
@@ -21146,7 +21163,7 @@
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
         <div style="display: flex; gap: 10px; align-items: center; flex: 1; max-width: 480px;">
           <div style="position: relative; width: 100%;">
-            <input type="text" id="filtroPesquisaNfe" class="form-input" placeholder="Buscar por Cliente, CNPJ, Número ou Chave..." style="padding-left: 32px;">
+            <input type="text" id="filtroPesquisaNfe" class="form-input" autocomplete="off" name="nfe_search_filter" placeholder="Buscar por Cliente, CNPJ, Número ou Chave..." style="padding-left: 32px;">
             <svg style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           </div>
         </div>
@@ -23069,9 +23086,7 @@
     pageTitleElem.textContent = 'Minha Empresa & Identidade Visual';
     pageBreadcrumbElem.textContent = 'SISTEMA > MINHA EMPRESA';
 
-    const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
-      ? window.ERP_CLOUD.obterEmpresaConfig()
-      : (db.empresa || {});
+    const emp = obterEmpresaAtiva();
 
     contentArea.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
