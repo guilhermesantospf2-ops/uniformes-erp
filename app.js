@@ -20144,7 +20144,9 @@
 
     function abrirModalConfiguracoesFiscais() {
     const cfg = obterConfigFiscal();
-    const emp = db.empresa || {};
+    const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
+      ? window.ERP_CLOUD.obterEmpresaConfig()
+      : (db.empresa || {});
 
     const certInstalado = cfg.certificadoA1 && cfg.certificadoA1.instalado;
 
@@ -20173,7 +20175,7 @@
                 </span>
                 <strong style="font-size: 13.5px; color: #0f172a;">${emp.razaoSocial || emp.nomeFantasia || 'Confecção de Uniformes'}</strong>
                 <div style="font-size: 11px; color: #475569; margin-top: 2px;">
-                  CNPJ: <strong class="text-mono">${emp.cnpj || '34.582.910/0001-44'}</strong> &bull; I.E.: <strong class="text-mono">${emp.ie || 'ISENTO'}</strong> &bull; ${emp.cidade || 'Americana'}/${emp.uf || 'SP'}
+                  CNPJ: <strong class="text-mono">${emp.cnpj || '59.441.843/0001-76'}</strong> &bull; I.E.: <strong class="text-mono">${emp.inscricaoEstadual || emp.ie || 'ISENTO'}</strong> &bull; ${emp.cidade || 'Itajaí'}/${emp.uf || 'SC'}
                 </div>
               </div>
               <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.fecharModal(); window.ERP.navegarPara('empresa');" style="font-size: 11px; font-weight: 700;">
@@ -20473,7 +20475,9 @@
 
   function abrirModalEmitirNfe(pedidoIdPreselecionado = null) {
     const cfg = obterConfigFiscal();
-    const emp = db.empresa || {};
+    const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
+      ? window.ERP_CLOUD.obterEmpresaConfig()
+      : (db.empresa || {});
     const pedidosDisponiveis = (db.pedidos || []).filter(p => p.status !== 'Cancelado');
 
     // Se passou um pedido já selecionado, obtém o pedido
