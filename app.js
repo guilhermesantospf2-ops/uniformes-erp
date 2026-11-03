@@ -299,6 +299,29 @@
 
     // Aplica a migração não-destrutiva garantindo 100% de integridade
     db = migrarOuPreservarBanco(db, window.ERP_INITIAL_DATA);
+
+    // Higienização de notas de teste locais sem comunicação SEFAZ / revertidas
+    if (db && Array.isArray(db.notasFiscais)) {
+      const notaTesteSemSefaz = db.notasFiscais.find(n => n.numero === 33 && !n.tecnospeedId && (!n.protocolo || String(n.protocolo).startsWith('135260')));
+      if (notaTesteSemSefaz) {
+        db.notasFiscais = db.notasFiscais.filter(n => n.id !== notaTesteSemSefaz.id && n.numero !== 33);
+        if (Array.isArray(db.pedidos)) {
+          db.pedidos.forEach(p => {
+            if (p.nfeNumero === 33 || p.nfeId === notaTesteSemSefaz.id) {
+              p.nfeNumero = null;
+              p.nfeId = null;
+            }
+          });
+        }
+        if (db.configFiscal) {
+          db.configFiscal.proximoNumero = 33;
+        }
+        try {
+          const k = obterChaveStorageTenant();
+          localStorage.setItem(k, JSON.stringify(compactarBancoParaStorage(db)));
+        } catch(e) {}
+      }
+    }
   }
 
   /**
@@ -20163,7 +20186,41 @@ function obterConfigFiscal() {
     });
   }
 
-    function abrirModalConfiguracoesFiscais() {
+  function reverterNotaFiscal(nfeId) {
+    if (!Array.isArray(db.notasFiscais)) return;
+    const nfe = db.notasFiscais.find(n => n.id === nfeId || String(n.numero) === String(nfeId));
+    if (!nfe) return;
+
+    if (!confirm(`Deseja realmente reverter e excluir a NF-e #${nfe.numero}?\n\n• O registro será removido permanentemente.\n• O pedido vinculado #${nfe.pedidoNumero || ''} será liberado para nova emissão.\n• O próximo número fiscal voltará para #${nfe.numero}.`)) {
+      return;
+    }
+
+    db.notasFiscais = db.notasFiscais.filter(n => n.id !== nfe.id && n.numero !== nfe.numero);
+
+    if (Array.isArray(db.pedidos)) {
+      db.pedidos.forEach(p => {
+        if (p.nfeId === nfe.id || p.nfeNumero === nfe.numero) {
+          p.nfeId = null;
+          p.nfeNumero = null;
+        }
+      });
+    }
+
+    if (!db.configFiscal) db.configFiscal = {};
+    db.configFiscal.proximoNumero = nfe.numero;
+
+    salvarEstado(true);
+
+    mostrarToast(`✓ NF-e #${nfe.numero} revertida e excluída com sucesso! Próximo número restaurado para #${nfe.numero}.`, 'green');
+
+    if (abaAtiva === 'nfe') {
+      renderizarNotasFiscais();
+    } else if (abaAtiva === 'pedidos') {
+      renderizarPedidos();
+    }
+  }
+
+  function abrirModalConfiguracoesFiscais() {
     const cfg = obterConfigFiscal();
     const emp = obterEmpresaAtiva();
 
@@ -21248,6 +21305,9 @@ function obterConfigFiscal() {
                       <button class="btn btn-secondary btn-sm btn-wpp-nfe" data-id="${nf.id}" title="Enviar link oficial no WhatsApp">
                         📱
                       </button>
+                      <button class="btn btn-secondary btn-sm btn-reverter-nfe" data-id="${nf.id}" title="Reverter e Excluir Nota Fiscal Teste" style="color: #dc2626; border-color: #fca5a5; font-weight: 700;">
+                        🗑️ Reverter
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -21287,6 +21347,10 @@ function obterConfigFiscal() {
 
     contentArea.querySelectorAll('.btn-baixar-xml').forEach(btn => {
       btn.addEventListener('click', () => baixarArquivoXmlNfe(btn.getAttribute('data-id')));
+    });
+
+    contentArea.querySelectorAll('.btn-reverter-nfe').forEach(btn => {
+      btn.addEventListener('click', () => reverterNotaFiscal(btn.getAttribute('data-id')));
     });
 
     contentArea.querySelectorAll('.btn-wpp-nfe').forEach(btn => {
@@ -24175,6 +24239,7 @@ function obterConfigFiscal() {
     enviarNfeWhatsApp,
     abrirModalCceNfe,
     abrirModalCancelarNfe,
+    reverterNotaFiscal,
     abrirModalConfiguracoesFiscais,
     exportarTodasNotasZipXml,
     renderizarNotasFiscais,

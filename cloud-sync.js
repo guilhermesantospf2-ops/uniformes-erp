@@ -1979,7 +1979,19 @@ with check (true);
     base.quarentena = fundirColecaoPorId(local.quarentena, remoto.quarentena, 'id');
     base.despesasFixas = fundirColecaoPorId(local.despesasFixas, remoto.despesasFixas, 'id');
     base.compras = fundirColecaoPorId(local.compras, remoto.compras, 'id');
-    base.notasFiscais = fundirColecaoPorId(local.notasFiscais, remoto.notasFiscais, 'id');
+    // Se na nuvem as notas foram expurgadas/revertidas (length === 0), respeita a nuvem
+    if (Array.isArray(remoto.notasFiscais) && remoto.notasFiscais.length === 0) {
+      base.notasFiscais = [];
+      if (local) local.notasFiscais = [];
+    } else {
+      base.notasFiscais = fundirColecaoPorId(local.notasFiscais, remoto.notasFiscais, 'id');
+    }
+
+    if (remoto.configFiscal && remoto.configFiscal.proximoNumero) {
+      if (!base.configFiscal) base.configFiscal = {};
+      base.configFiscal.proximoNumero = remoto.configFiscal.proximoNumero;
+      if (local && local.configFiscal) local.configFiscal.proximoNumero = remoto.configFiscal.proximoNumero;
+    }
 
     // Catálogos e estoques
     if (!Array.isArray(base.produtosBase) || base.produtosBase.length === 0) {
