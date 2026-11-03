@@ -436,6 +436,9 @@
         if (ped && (!os.mockupUrl || os.mockupUrl === '__REF_MOCKUP_PEDIDO__')) {
           os.mockupUrl = ped.mockupUrl;
         }
+        if (ped && (!os.itens || !Array.isArray(os.itens) || os.itens.length === 0) && Array.isArray(ped.itens) && ped.itens.length > 0) {
+          os.itens = JSON.parse(JSON.stringify(ped.itens));
+        }
         if (Array.isArray(os.artesAplicacao)) {
           os.artesAplicacao.forEach(a => {
             if (a && a.arquivoDataUrl) {
@@ -9272,33 +9275,60 @@
           <div class="modal-body">
             <!-- Mockup Oficial do Pedido (3x4 + Folha A4 de Bancada) & Resumo da Proposta -->
             <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
-              <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
-                <div style="display: flex; align-items: center; gap: 14px; flex: 1; min-width: 260px;">
-                  <img id="previewMockupAvanco" src="${mockupDataUrl}" style="width: 58px; height: 76px; aspect-ratio: 3/4; object-fit: contain; border: 1.5px solid #94a3b8; border-radius: 6px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.08); flex-shrink: 0;" alt="Mockup">
-                  <div>
-                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                      <span style="font-weight: 800; font-size: 13.5px; color: var(--text-primary);">
-                        ${dadosBase.prod ? dadosBase.prod.nome : dadosBase.produtoNome}
-                      </span>
-                      <span class="status-pill status-blue" style="font-size: 9.5px; font-weight: 700;">
-                        ✓ Mockup 3x4 + Folha A4
-                      </span>
-                    </div>
-                    <div style="font-size: 11.5px; color: #64748b; margin-top: 3px;">
-                      Cor Principal: <strong style="color: #0f172a;">${dadosBase.corPrincipal || dadosBase.corTecido || 'Azul Marinho'}</strong>
-                      ${dadosBase.observacoesCoresDetalhes ? ` • <em>${dadosBase.observacoesCoresDetalhes}</em>` : ''}
-                    </div>
-                    <div style="margin-top: 7px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                      <label class="btn btn-secondary btn-xs" style="cursor: pointer; font-weight: 800; color: #0284c7; border-color: #7dd3fc; background: #f0f9ff; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px;">
-                        📷 Anexar / Trocar Mockup Oficial (3x4 e Folha A4)
-                        <input type="file" id="inputUploadMockupAvanco" accept="image/*" style="display: none;">
-                      </label>
+              ${(dadosBase.itens && Array.isArray(dadosBase.itens) && dadosBase.itens.length > 1) ? `
+                <div style="margin-bottom: 10px;">
+                  <span style="font-weight: 800; font-size: 13px; color: #0f172a; display: block; margin-bottom: 8px;">
+                    MOCKUPS OFICIAIS POR MODELO (${dadosBase.itens.length} MODELOS CONFIGURADOS):
+                  </span>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px;">
+                    ${dadosBase.itens.map((it, idx) => `
+                      <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 10px; display: flex; gap: 12px; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <img id="previewMockupAvanco_${idx}" src="${it.mockupUrl || mockupDataUrl}" style="width: 54px; height: 72px; aspect-ratio: 3/4; object-fit: contain; border: 1.5px solid #94a3b8; border-radius: 4px; background: #ffffff; flex-shrink: 0;" alt="Mockup Mod ${idx + 1}">
+                        <div style="flex: 1; min-width: 0;">
+                          <div style="font-weight: 800; font-size: 12px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${it.produtoNome}">
+                            ${idx + 1}. ${it.produtoNome}
+                          </div>
+                          <div style="font-size: 11px; color: #1e3a8a; margin: 2px 0;">
+                            Cor: <strong>${it.corPrincipal || it.corTecido || 'A Definir'}</strong> &bull; <strong>${it.grade?.total || 0} pçs</strong>
+                          </div>
+                          <label class="btn btn-secondary btn-xs" style="cursor: pointer; font-weight: 700; color: #0284c7; border-color: #7dd3fc; background: #f0f9ff; padding: 3px 8px; font-size: 10.5px; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;">
+                            📷 Trocar Mockup Mod ${idx + 1}
+                            <input type="file" class="input-upload-mockup-avanco-item" data-item-idx="${idx}" accept="image/*" style="display: none;">
+                          </label>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : `
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+                  <div style="display: flex; align-items: center; gap: 14px; flex: 1; min-width: 260px;">
+                    <img id="previewMockupAvanco" src="${mockupDataUrl}" style="width: 58px; height: 76px; aspect-ratio: 3/4; object-fit: contain; border: 1.5px solid #94a3b8; border-radius: 6px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.08); flex-shrink: 0;" alt="Mockup">
+                    <div>
+                      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="font-weight: 800; font-size: 13.5px; color: var(--text-primary);">
+                          ${dadosBase.prod ? dadosBase.prod.nome : dadosBase.produtoNome}
+                        </span>
+                        <span class="status-pill status-blue" style="font-size: 9.5px; font-weight: 700;">
+                          ✓ Mockup 3x4 + Folha A4
+                        </span>
+                      </div>
+                      <div style="font-size: 11.5px; color: #64748b; margin-top: 3px;">
+                        Cor Principal: <strong style="color: #0f172a;">${dadosBase.corPrincipal || dadosBase.corTecido || 'Azul Marinho'}</strong>
+                        ${dadosBase.observacoesCoresDetalhes ? ` • <em>${dadosBase.observacoesCoresDetalhes}</em>` : ''}
+                      </div>
+                      <div style="margin-top: 7px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <label class="btn btn-secondary btn-xs" style="cursor: pointer; font-weight: 800; color: #0284c7; border-color: #7dd3fc; background: #f0f9ff; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px;">
+                          📷 Anexar / Trocar Mockup Oficial (3x4 e Folha A4)
+                          <input type="file" id="inputUploadMockupAvanco" accept="image/*" style="display: none;">
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              `}
               <div style="margin-top: 10px; padding: 7px 10px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 11px; color: #1e40af; line-height: 1.4;">
-                📄 <strong>Impressão A4 & Gestão Inteligente de Espaço:</strong> O Mockup acima fica salvo em <strong>alta definição</strong> durante toda a produção para você imprimir tanto o <strong>3x4 na Ficha Técnica</strong> quanto a <strong>Folha A4 Separada de Bancada</strong>. Após <strong>7 dias</strong> que o pedido for marcado como <strong>Concluído / Entregue</strong>, o servidor converte a imagem pesada em uma miniatura leve de histórico para nunca lotar seu banco de dados.
+                📄 <strong>Impressão A4 & Gestão Inteligente de Espaço:</strong> Cada Mockup acima fica salvo em <strong>alta definição</strong> durante toda a produção para você imprimir tanto o <strong>3x4 na Ficha Técnica</strong> quanto a <strong>Folha A4 Separada de Bancada</strong> de cada modelo. Após <strong>7 dias</strong> que o pedido for marcado como <strong>Concluído / Entregue</strong>, o servidor converte os arquivos em miniaturas leves de histórico para nunca lotar seu banco de dados.
               </div>
             </div>
 
@@ -9564,6 +9594,31 @@
     });
 
     // Upload / Troca do Mockup Oficial em Alta Definição A4 (1200x1600 WebP) direto na entrada do pedido
+    // Upload individual de mockup por modelo no avanço
+    document.querySelectorAll('.input-upload-mockup-avanco-item').forEach(inp => {
+      inp.addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        const idx = parseInt(e.target.getAttribute('data-item-idx'), 10);
+        if (!file || isNaN(idx) || !dadosBase.itens || !dadosBase.itens[idx]) return;
+        try {
+          const base64 = await comprimirImagemDataUrl(file, 1200, 1600, 0.82);
+          if (base64) {
+            dadosBase.itens[idx].mockupUrl = base64;
+            if (idx === 0) {
+              mockupDataUrl = base64;
+              dadosBase.mockupUrl = base64;
+            }
+            const img = document.getElementById(`previewMockupAvanco_${idx}`);
+            if (img) img.src = base64;
+            mostrarToast(`✓ Mockup do Modelo #${idx + 1} anexado com sucesso!`, 'green');
+          }
+        } catch (err) {
+          console.error(err);
+          mostrarToast('Erro ao carregar a imagem do Modelo.', 'red');
+        }
+      });
+    });
+
     document.getElementById('inputUploadMockupAvanco')?.addEventListener('change', async (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
@@ -10096,13 +10151,14 @@
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11px;">
             <thead>
               <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1; color: #1e293b;">
-                <th style="padding: 6px 8px; text-align: left; width: 22%;">Item / Modelo</th>
-                <th style="padding: 6px 8px; text-align: left; width: 18%;">Cor / Tecido</th>
-                <th style="padding: 6px 8px; text-align: left; width: 26%;">Personalizações (Locais)</th>
-                <th style="padding: 6px 8px; text-align: left; width: 16%;">Tamanhos Selecionados</th>
+                <th style="padding: 6px 6px; text-align: center; width: 9%;">Mockup</th>
+                <th style="padding: 6px 8px; text-align: left; width: 20%;">Item / Modelo</th>
+                <th style="padding: 6px 8px; text-align: left; width: 17%;">Cor / Tecido</th>
+                <th style="padding: 6px 8px; text-align: left; width: 24%;">Personalizações (Locais)</th>
+                <th style="padding: 6px 8px; text-align: left; width: 15%;">Tamanhos Selecionados</th>
                 <th style="padding: 6px 6px; text-align: center; width: 6%; background: #e2e8f0;">Qtd</th>
-                <th style="padding: 6px 8px; text-align: right; width: 12%;">Unitário</th>
-                <th style="padding: 6px 8px; text-align: right; width: 12%;">Subtotal</th>
+                <th style="padding: 6px 8px; text-align: right; width: 11%;">Unitário</th>
+                <th style="padding: 6px 8px; text-align: right; width: 11%;">Subtotal</th>
               </tr>
             </thead>
             <tbody>
@@ -10111,8 +10167,12 @@
         ? it.aplicacoes.map(a => `• <strong>${a.local}:</strong> ${a.tecnica}`).join('<br>')
         : '<span style="color: #64748b; font-style: italic;">Peça Lisa</span>';
       const subtotal = (it.valorSubtotal || ((it.precoVendaUnitario || 0) * (it.grade?.total || 0))) || 0;
+      const itMockup = it.mockupUrl || p.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, '#1e3a8a', '#ffffff', (p.clienteNome || 'BRAVVI').substring(0, 6)) : '');
       return `
                   <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 4px; text-align: center; vertical-align: middle;">
+                      <img src="${itMockup}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" data-item-idx="${idx}" alt="Mockup Mod ${idx + 1}" style="width: 44px !important; height: 58px !important; aspect-ratio: 3/4; object-fit: contain; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; cursor: pointer; display: block; margin: 0 auto; box-shadow: 0 1px 2px rgba(0,0,0,0.06);" title="Clique para ampliar mockup de ${it.produtoNome}">
+                    </td>
                     <td style="padding: 6px 8px; vertical-align: top;">
                       <strong style="color: #0f172a;">${idx + 1}. ${it.produtoNome}</strong>
                     </td>
@@ -10142,7 +10202,7 @@
             </tbody>
             <tfoot>
               <tr style="background: #f8fafc; font-weight: 800; border-top: 2px solid #cbd5e1;">
-                <td colspan="3" style="padding: 8px 8px; text-align: right; font-size: 11px;">TOTAIS CONSOLIDADOS DO PEDIDO:</td>
+                <td colspan="4" style="padding: 8px 8px; text-align: right; font-size: 11px;">TOTAIS CONSOLIDADOS DO PEDIDO:</td>
                 <td style="padding: 8px 8px; text-align: left;">
                   ${formatarGradeSelecionadaHtml(p.grade, 'badge-blue')}
                 </td>
@@ -10382,10 +10442,27 @@
         dataMetaInterna: os.dataMetaInterna,
         dataCriacao: os.dataEntradaCorte
       });
+      const itensOS = (os.itens && Array.isArray(os.itens) && os.itens.length > 0)
+        ? os.itens
+        : (pOrig.itens && Array.isArray(pOrig.itens) && pOrig.itens.length > 0 ? pOrig.itens : []);
+      const multiModelos = itensOS.length > 1;
+
       return `
                 <tr>
-                  <td>
-                    <img src="${mockup}" class="mockup-thumb-3x4" data-os-id="${os.id}" data-pedido-id="${os.pedidoNumero || pOrig.id || ''}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela" style="cursor: pointer;">
+                  <td style="text-align: center; vertical-align: middle;">
+                    ${multiModelos ? `
+                      <div style="display: flex; gap: 4px; align-items: center; justify-content: center; flex-wrap: wrap; max-width: 90px; margin: 0 auto;">
+                        ${itensOS.slice(0, 3).map((it, idx) => `
+                          <img src="${it.mockupUrl || mockup}" class="mockup-thumb-3x4" data-os-id="${os.id}" data-item-idx="${idx}" data-pedido-id="${os.pedidoNumero || pOrig.id || ''}" alt="Mod ${idx + 1}" title="Modelo ${idx + 1}: ${it.produtoNome} (Clique para ampliar)" style="cursor: pointer; width: 34px !important; height: 46px !important; aspect-ratio: 3/4; object-fit: contain; border: 1px solid #cbd5e1; border-radius: 3px; background: #ffffff; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
+                        `).join('')}
+                      </div>
+                      ${itensOS.length > 3 ? `<span style="font-size: 8.5px; color: #64748b; font-weight: 700;">+${itensOS.length - 3}</span>` : ''}
+                      <span class="status-pill status-blue" style="font-size: 8.5px; padding: 1px 5px; margin-top: 3px; display: inline-block; font-weight: 800;">
+                        ${itensOS.length} Modelos
+                      </span>
+                    ` : `
+                      <img src="${mockup}" class="mockup-thumb-3x4" data-os-id="${os.id}" data-item-idx="0" data-pedido-id="${os.pedidoNumero || pOrig.id || ''}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela" style="cursor: pointer;">
+                    `}
                   </td>
                   <td class="text-mono"><strong>${os.id}</strong></td>
                   <td class="text-mono">#${os.pedidoNumero}</td>
@@ -10544,7 +10621,30 @@
 
       <!-- Detalhamento Têxtil & Mockup 3x4 -->
       <div style="display: flex; gap: 14px; margin-bottom: 12px; align-items: flex-start;">
-        <img src="${os.mockupUrl}" class="mockup-thumb-3x4" data-os-id="${os.id}" data-pedido-id="${os.pedidoNumero || (pedido && pedido.id) || ''}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 ampliado na tela" style="cursor: pointer;">
+        ${(itensLista.length > 1) ? `
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; max-width: 280px; align-items: flex-start;">
+            ${itensLista.map((it, idx) => `
+              <div style="text-align: center; border: 1.5px solid #cbd5e1; border-radius: 5px; padding: 4px 6px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+                <img src="${it.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome || 'Uniforme', it.corPrincipal || '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6)) : '')}" 
+                     class="mockup-thumb-3x4" 
+                     data-os-id="${os.id}" 
+                     data-item-idx="${idx}" 
+                     data-pedido-id="${os.pedidoNumero || (pedido && pedido.id) || ''}" 
+                     alt="Mockup Modelo ${idx + 1}" 
+                     title="Modelo ${idx + 1}: ${it.produtoNome} (Clique para ampliar)" 
+                     style="cursor: pointer; width: 62px !important; height: 82px !important; aspect-ratio: 3/4; object-fit: contain; display: block; margin: 0 auto 3px; border: 1px solid #cbd5e1; border-radius: 3px; background: #ffffff;">
+                <div style="font-size: 9.5px; font-weight: 800; color: #0f172a; max-width: 66px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${it.produtoNome}">
+                  Mod ${idx + 1}
+                </div>
+                <div style="font-size: 8.5px; color: #1e40af; font-weight: 700;">
+                  ${it.grade?.total || 0} pçs
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        ` : `
+          <img src="${os.mockupUrl}" class="mockup-thumb-3x4" data-os-id="${os.id}" data-item-idx="0" data-pedido-id="${os.pedidoNumero || (pedido && pedido.id) || ''}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 ampliado na tela" style="cursor: pointer;">
+        `}
         
         <div style="flex: 1;">
           <div class="grid-cards-2" style="gap: 8px; font-size: 11.5px;">
@@ -10607,17 +10707,28 @@
           <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
             <thead>
               <tr style="background: #e2e8f0; color: #1e293b;">
-                <th style="padding: 5px 6px; text-align: left; width: 30%;">Modelo / Especificação</th>
-                <th style="padding: 5px 6px; text-align: left; width: 25%;">Cor / Detalhes</th>
-                <th style="padding: 5px 6px; text-align: left; width: 30%;">Tamanhos para Corte</th>
-                <th style="padding: 5px 6px; text-align: center; width: 15%; background: #cbd5e1;">Total Modelo</th>
+                <th style="padding: 5px 6px; text-align: center; width: 10%;">Mockup</th>
+                <th style="padding: 5px 6px; text-align: left; width: 28%;">Modelo / Especificação</th>
+                <th style="padding: 5px 6px; text-align: left; width: 22%;">Cor / Detalhes</th>
+                <th style="padding: 5px 6px; text-align: left; width: 28%;">Tamanhos para Corte</th>
+                <th style="padding: 5px 6px; text-align: center; width: 12%; background: #cbd5e1;">Total</th>
               </tr>
             </thead>
             <tbody>
               ${itensLista.map((it, idx) => `
                 <tr style="border-bottom: 1px solid #e2e8f0;">
+                  <td style="padding: 4px; text-align: center; vertical-align: middle;">
+                    <img src="${it.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome || 'Uniforme', it.corPrincipal || '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6)) : '')}" 
+                         class="mockup-thumb-3x4" 
+                         data-os-id="${os.id}" 
+                         data-item-idx="${idx}" 
+                         data-pedido-id="${os.pedidoNumero || (pedido && pedido.id) || ''}" 
+                         alt="Mockup Mod ${idx + 1}" 
+                         title="Clique para ampliar mockup de ${it.produtoNome}" 
+                         style="width: 44px !important; height: 58px !important; aspect-ratio: 3/4; object-fit: contain; border: 1.5px solid #cbd5e1; border-radius: 4px; background: #ffffff; cursor: pointer; display: block; margin: 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                  </td>
                   <td style="padding: 6px 6px;"><strong>${idx + 1}. ${it.produtoNome}</strong><br><span style="font-size: 10px; color: #64748b;">${it.tecidoEspecificacao || ''}</span></td>
-                  <td style="padding: 6px 6px;"><span style="color: #1e3a8a; font-weight: 700;">${it.corPrincipal || 'A Definir'}</span>${it.observacoesCoresDetalhes ? `<br><span style="font-size: 9.5px; color: #b45309;">${it.observacoesCoresDetalhes}</span>` : ''}</td>
+                  <td style="padding: 6px 6px;"><span style="color: #1e3a8a; font-weight: 700;">${it.corPrincipal || it.corTecido || 'A Definir'}</span>${it.observacoesCoresDetalhes ? `<br><span style="font-size: 9.5px; color: #b45309;">${it.observacoesCoresDetalhes}</span>` : ''}</td>
                   <td style="padding: 6px 6px;">${formatarGradeSelecionadaHtml(it.grade, 'badge')}</td>
                   <td style="padding: 6px 6px; text-align: center; font-weight: 800; background: #f1f5f9;" class="text-mono">${it.grade?.total || 0} pçs</td>
                 </tr>
@@ -10625,7 +10736,7 @@
             </tbody>
             <tfoot>
               <tr style="background: #f1f5f9; font-weight: 800; border-top: 2px solid #94a3b8;">
-                <td colspan="2" style="padding: 6px 6px; text-align: right;">SOMA TOTAL DO CORTE:</td>
+                <td colspan="3" style="padding: 6px 6px; text-align: right;">SOMA TOTAL DO CORTE:</td>
                 <td style="padding: 6px 6px;">${formatarGradeSelecionadaHtml(os.grade, 'badge-blue')}</td>
                 <td style="padding: 6px 6px; text-align: center; color: #047857; background: #e2e8f0; font-size: 12px;" class="text-mono">${os.quantidadeTotal} pçs</td>
               </tr>
@@ -10808,11 +10919,87 @@
       ? window.ERP_CLOUD.obterEmpresaConfig()
       : (db.empresa || {});
 
-    const mockupSrc = os.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(os.produto || 'Camisa', '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6));
     const pedido = (db.pedidos || []).find(p => (p.numero != null && os.pedidoNumero != null && p.numero.toString() === os.pedidoNumero.toString()) || p.id === os.pedidoId) || {};
-    const corTecido = os.corTecido || pedido.corTecido || 'A Definir';
-    const obsCores = os.observacoesCoresDetalhes || pedido.observacoesCoresDetalhes || '';
-    const tecnica = os.tipoPersonalizacao || pedido.tipoPersonalizacao || 'Estampa Industrial';
+    const itensLista = (os.itens && Array.isArray(os.itens) && os.itens.length > 0)
+      ? os.itens
+      : (pedido.itens && Array.isArray(pedido.itens) && pedido.itens.length > 0 ? pedido.itens : []);
+
+    const corTecidoPadrao = os.corTecido || pedido.corTecido || 'A Definir';
+    const obsCoresPadrao = os.observacoesCoresDetalhes || pedido.observacoesCoresDetalhes || '';
+    const tecnicaPadrao = os.tipoPersonalizacao || pedido.tipoPersonalizacao || 'Estampa Industrial';
+
+    if (itensLista.length > 1) {
+      return itensLista.map((it, idx) => {
+        const modNome = it.produtoNome || `Modelo ${idx + 1}`;
+        const mockSrc = it.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(modNome, '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6)) : '');
+        const corTecido = it.corPrincipal || it.corTecido || corTecidoPadrao;
+        const obsCores = it.observacoesCoresDetalhes || obsCoresPadrao;
+        const tecnica = (it.aplicacoes && it.aplicacoes.length > 0)
+          ? it.aplicacoes.map(a => `${a.local} (${a.tecnica})`).join(', ')
+          : tecnicaPadrao;
+        const totalPecasMod = it.grade?.total || 0;
+
+        return `
+          <div style="width: 100%; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; ${idx > 0 ? 'page-break-before: always; margin-top: 25px;' : ''}">
+            <!-- Cabeçalho Industrial da Folha de Mockup -->
+            <div style="border-bottom: 2.5px solid #0f172a; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 14px;">
+                <img src="${emp.logoUrl || 'assets/bravvi-logo.png'}" style="max-height: 48px; max-width: 130px; object-fit: contain;">
+                <div>
+                  <h2 style="font-size: 16px; font-weight: 800; color: #0f172a; margin: 0; text-transform: uppercase;">
+                    GUIA VISUAL DE CHÃO DE FÁBRICA • MODELO ${idx + 1} DE ${itensLista.length}
+                  </h2>
+                  <span style="font-size: 12px; font-family: monospace; color: #475569;">
+                    PEDIDO: <strong>#${os.pedidoNumero || '---'}</strong> • ORDEM: <strong>${os.id}</strong> • CLIENTE: <strong>${os.cliente}</strong>
+                  </span>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 14px; font-weight: 800; color: #0f172a;">${modNome}</div>
+                <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 12px;">
+                  ${totalPecasMod} PEÇAS (TOTAL OS: ${os.quantidadeTotal} PEÇAS)
+                </span>
+              </div>
+            </div>
+
+            <!-- Barra de Especificações Rápidas -->
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 8px 12px; margin-bottom: 10px; font-size: 11px;">
+              <div><span style="color: #64748b; font-size: 9.5px; display: block;">COR DO MODELO:</span><strong style="color: #1e40af;">${corTecido}</strong></div>
+              <div><span style="color: #64748b; font-size: 9.5px; display: block;">TÉCNICA DE APLICAÇÃO:</span><strong>${tecnica}</strong></div>
+              <div><span style="color: #64748b; font-size: 9.5px; display: block;">COSTUREIRA / OFICINA:</span><strong style="color: #047857;">${os.costureiraDesignada}</strong></div>
+              <div><span style="color: #64748b; font-size: 9.5px; display: block;">DATA DE ENTRADA:</span><strong>${os.dataEntradaCorte || new Date().toLocaleDateString('pt-BR')}</strong></div>
+            </div>
+
+            ${obsCores ? `
+              <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 4px; padding: 6px 10px; font-size: 11px; color: #92400e; margin-bottom: 10px; line-height: 1.35;">
+                ⚠️ <strong>ATENÇÃO DA BANCADA:</strong> ${obsCores}
+              </div>
+            ` : ''}
+
+            <!-- CONTAINER DO MOCKUP GIGANTE EM PÁGINA CHEIA (PROPORÇÃO 3:4) -->
+            <div style="width: 100%; height: 740px; border: 2px solid #0f172a; border-radius: 6px; background: #ffffff; display: flex; align-items: center; justify-content: center; padding: 12px; box-sizing: border-box; overflow: hidden; position: relative;">
+              <span style="position: absolute; top: 8px; left: 10px; background: #0f172a; color: #ffffff; font-size: 9.5px; font-weight: 800; padding: 2px 8px; border-radius: 3px; letter-spacing: 0.5px;">
+                MODELO ${idx + 1}/${itensLista.length} • PROPORÇÃO 3:4
+              </span>
+              <img src="${mockSrc}" style="max-width: 100%; max-height: 100%; object-fit: contain;" alt="Mockup Oficial ${modNome}">
+            </div>
+
+            <!-- Rodapé de Alerta de Chão de Fábrica -->
+            <div style="margin-top: 10px; border-top: 1.5px solid #cbd5e1; padding-top: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #64748b;">
+              <span style="font-weight: 800; color: #dc2626;">
+                🚨 CONFERÊNCIA OBRIGATÓRIA: BANCADA DEVE CONFERIR CORTE E APLICAÇÃO ESPECÍFICA DO MODELO ${idx + 1}
+              </span>
+              <span>Bravvi ERP Têxtil • Documento de Produção • Guia ${idx + 1} de ${itensLista.length}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    const mockupSrc = os.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(os.produto || 'Camisa', '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6));
+    const corTecido = corTecidoPadrao;
+    const obsCores = obsCoresPadrao;
+    const tecnica = tecnicaPadrao;
     const totalPecas = os.quantidadeTotal || pedido.grade?.total || 0;
 
     return `
@@ -10884,6 +11071,7 @@
           corTecido: ped.corTecido || 'A Definir',
           observacoesCoresDetalhes: ped.observacoesCoresDetalhes || '',
           mockupUrl: ped.mockupUrl,
+          itens: Array.isArray(ped.itens) ? JSON.parse(JSON.stringify(ped.itens)) : [],
           quantidadeTotal: ped.grade?.total || 0,
           costureiraDesignada: ped.costureiraNome || 'Oficina Interna',
           tipoPersonalizacao: ped.tipoPersonalizacao || 'Conforme Arte'
@@ -10927,6 +11115,7 @@
       pedidoNumero: p.numero,
       cliente: p.clienteNome,
       produto: p.produtoNome,
+      itens: Array.isArray(p.itens) ? JSON.parse(JSON.stringify(p.itens)) : [],
       corTecido: corTec,
       observacoesCoresDetalhes: obsCores,
       mockupUrl: p.mockupUrl,
@@ -20389,13 +20578,14 @@
         e.stopPropagation();
         const pedidoId = thumb.getAttribute('data-pedido-id');
         const osId = thumb.getAttribute('data-os-id');
+        const itemIdx = thumb.getAttribute('data-item-idx');
         const src = thumb.getAttribute('src');
-        abrirModalVisualizarMockup({ pedidoId, osId, src });
+        abrirModalVisualizarMockup({ pedidoId, osId, itemIdx, src });
       }
     });
   }
 
-  // Modal de Visualização de Mockup 3x4 Ampliado na Tela do Sistema
+  // Modal de Visualização de Mockup 3x4 Ampliado na Tela do Sistema com Suporte Multi-Modelos
   function abrirModalVisualizarMockup(params) {
     if (!modalContainer) return;
 
@@ -20416,6 +20606,7 @@
     let numeroPedido = "---";
     let sinalPago = false;
     let saldoPendente = 0;
+    let initialItemIdx = 0;
 
     if (params) {
       if (typeof params === 'string') {
@@ -20433,17 +20624,19 @@
         if (params.src) {
           mockupSrc = params.src;
         }
+        if (params.itemIdx != null) {
+          initialItemIdx = parseInt(params.itemIdx, 10) || 0;
+        }
       }
     }
 
-    // Vinculação bidirecional de Pedido e OS para garantir carregamento de atletas
+    // Vinculação bidirecional de Pedido e OS para garantir integridade dos itens
     if (pedido && !os) {
       os = (db.ordensServico || []).find(o => (o.pedidoNumero != null && pedido.numero != null && o.pedidoNumero.toString() === pedido.numero.toString()) || o.pedidoId === pedido.id);
     }
     if (os && !pedido && os.pedidoNumero) {
       pedido = (db.pedidos || []).find(p => (p.numero != null && p.numero.toString() === os.pedidoNumero.toString()) || p.id === os.pedidoNumero);
     }
-    // Fallback por imagem de mockup se ID não tiver sido passado
     if (!pedido && !os && mockupSrc) {
       pedido = (db.pedidos || []).find(p => p.mockupUrl === mockupSrc);
       if (!pedido) {
@@ -20451,20 +20644,20 @@
       }
     }
 
+    const itensLista = (pedido && Array.isArray(pedido.itens) && pedido.itens.length > 0)
+      ? pedido.itens
+      : ((os && Array.isArray(os.itens) && os.itens.length > 0) ? os.itens : []);
+
     const listaJogadores = (pedido && Array.isArray(pedido.jogadores) && pedido.jogadores.length > 0)
       ? pedido.jogadores
       : ((os && Array.isArray(os.jogadores) && os.jogadores.length > 0) ? os.jogadores : []);
     const totalPecasJogadores = listaJogadores.reduce((s, j) => s + Math.max(1, parseInt(j.quantidade || 1, 10)), 0);
 
     if (pedido) {
-      mockupSrc = pedido.mockupUrl || mockupSrc || window.ERP_MOCKUPS.gerarMockupSvg(pedido.produtoNome, "#1e3a8a", "#ffffff", pedido.clienteNome.substring(0, 6));
       tituloModal = `Mockup Técnico Oficial • Pedido #${pedido.numero}`;
-      produtoNome = pedido.produtoNome || produtoNome;
       clienteNome = pedido.clienteNome || clienteNome;
       clienteTelefone = pedido.clienteTelefone || "";
       costureiraNome = pedido.costureiraNome || costureiraNome;
-      tecnicaPersonalizacao = pedido.tipoPersonalizacao || tecnicaPersonalizacao;
-      grade = pedido.grade || grade;
       precoUnit = pedido.precoUnitarioVenda || 0;
       valorTotal = pedido.valorTotalVenda || 0;
       margem = pedido.margemLucroPercentual || 0;
@@ -20473,23 +20666,46 @@
       sinalPago = !!pedido.sinalPago;
       saldoPendente = pedido.saldoPendente || 0;
     } else if (os) {
-      mockupSrc = os.mockupUrl || mockupSrc || window.ERP_MOCKUPS.gerarMockupSvg(os.produto, "#1e3a8a", "#ffffff", os.cliente.substring(0, 6));
       tituloModal = `Mockup Técnico Oficial • Ordem de Serviço ${os.id}`;
-      produtoNome = os.produto || produtoNome;
       clienteNome = os.cliente || clienteNome;
       costureiraNome = os.costureiraDesignada || costureiraNome;
-      grade = os.grade || { total: os.quantidadeTotal || 0 };
       statusEtapa = os.etapaAtual || statusEtapa;
       numeroPedido = os.pedidoNumero || "---";
     }
 
-    if (!mockupSrc) {
-      mockupSrc = window.ERP_MOCKUPS.gerarMockupSvg("polo", "#1e3a8a", "#ffffff", "BRAVVI");
+    let activeModelIndex = (initialItemIdx >= 0 && initialItemIdx < itensLista.length) ? initialItemIdx : 0;
+
+    function extrairDadosDoModeloAtivo(idx) {
+      if (itensLista && itensLista.length > 0 && itensLista[idx]) {
+        const it = itensLista[idx];
+        const mSrc = it.mockupUrl || (pedido ? pedido.mockupUrl : (os ? os.mockupUrl : '')) || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome || "Uniforme", "#1e3a8a", "#ffffff", (clienteNome || "BRAVVI").substring(0, 6)) : '');
+        const pNome = it.produtoNome || produtoNome;
+        const cTec = it.corPrincipal || it.corTecido || (pedido ? pedido.corTecido : (os ? os.corTecido : 'A Definir'));
+        const obs = it.observacoesCoresDetalhes || (pedido ? pedido.observacoesCoresDetalhes : (os ? os.observacoesCoresDetalhes : ''));
+        const grd = it.grade || (pedido ? pedido.grade : (os ? os.grade : { total: 0 }));
+        const tec = (it.aplicacoes && it.aplicacoes.length > 0)
+          ? it.aplicacoes.map(a => `${a.local} (${a.tecnica})`).join(', ')
+          : (pedido ? pedido.tipoPersonalizacao : (os ? os.tipoPersonalizacao : 'Personalização Conforme Ficha'));
+        return { mSrc, pNome, cTec, obs, grd, tec };
+      }
+      const mSrc = (pedido ? pedido.mockupUrl : (os ? os.mockupUrl : mockupSrc)) || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg("Polo", "#1e3a8a", "#ffffff", "BRAVVI") : '');
+      const pNome = (pedido ? pedido.produtoNome : (os ? os.produto : produtoNome));
+      const cTec = (pedido ? pedido.corTecido : (os ? os.corTecido : 'A Definir'));
+      const obs = (pedido ? pedido.observacoesCoresDetalhes : (os ? os.observacoesCoresDetalhes : ''));
+      const grd = (pedido ? pedido.grade : (os ? os.grade : { total: 0 }));
+      const tec = (pedido ? pedido.tipoPersonalizacao : (os ? os.tipoPersonalizacao : 'Personalização Conforme Ficha'));
+      return { mSrc, pNome, cTec, obs, grd, tec };
     }
+
+    const inicial = extrairDadosDoModeloAtivo(activeModelIndex);
+    mockupSrc = inicial.mSrc;
+    produtoNome = inicial.pNome;
+    grade = inicial.grd;
+    tecnicaPersonalizacao = inicial.tec;
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active" id="modalMockupOverlay">
-        <div class="modal-box" style="max-width: 820px;">
+        <div class="modal-box" style="max-width: 840px;">
           <div class="modal-header">
             <div>
               <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
@@ -20497,27 +20713,42 @@
                 <span>${tituloModal}</span>
               </div>
               <span style="font-size: 11px; color: var(--text-gray-500); font-family: var(--font-mono);">
-                ENQUADRAMENTO DE PRODUÇÃO • PROPORÇÃO TÊXTIL 3:4
+                ENQUADRAMENTO DE PRODUÇÃO • PROPORÇÃO TÊXTIL 3:4 ${itensLista.length > 1 ? `• ${itensLista.length} MODELOS CONFIGURADOS` : ''}
               </span>
             </div>
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
 
           <div class="modal-body">
+            ${itensLista.length > 1 ? `
+              <!-- Seletor de Modelos em Abas no Topo do Modal -->
+              <div style="background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; margin-bottom: 12px; display: flex; gap: 6px; overflow-x: auto; align-items: center;">
+                <span style="font-size: 10.5px; font-weight: 800; color: #475569; text-transform: uppercase; white-space: nowrap; margin-right: 4px;">
+                  Modelos do Pedido:
+                </span>
+                ${itensLista.map((it, idx) => `
+                  <button type="button" class="btn btn-sm btn-modal-select-model ${idx === activeModelIndex ? 'btn-primary' : 'btn-secondary'}" data-model-idx="${idx}" style="font-weight: 700; font-size: 11px; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 4px; cursor: pointer;">
+                    <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: ${idx === activeModelIndex ? '#38bdf8' : '#94a3b8'};"></span>
+                    Mod ${idx + 1}: ${it.produtoNome} (${it.grade?.total || 0} pçs)
+                  </button>
+                `).join('')}
+              </div>
+            ` : ''}
+
             <div class="mockup-modal-grid">
               <!-- Coluna 1: Mockup Ampliado 3x4 -->
               <div>
                 <div class="mockup-large-frame">
-                  <span class="mockup-large-badge">PROPORÇÃO 3:4</span>
-                  <img src="${mockupSrc}" class="mockup-large-img" alt="Mockup Oficial 3x4">
+                  <span class="mockup-large-badge" id="lblMockupBadgeFrame">PROPORÇÃO 3:4 • MOD ${activeModelIndex + 1}</span>
+                  <img src="${mockupSrc}" id="imgMockupLargePrincipal" class="mockup-large-img" alt="Mockup Oficial 3x4">
                 </div>
                 
                 <div style="display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap;">
-                  <button type="button" class="btn btn-secondary btn-sm" id="btnImprimirMockupA4Modal" style="flex: 1.1; font-weight: 700; color: #0284c7; background: #f0f9ff; border-color: #bae6fd; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" title="Imprimir somente o mockup em folha A4 cheia para a bancada">
+                  <button type="button" class="btn btn-secondary btn-sm" id="btnImprimirMockupA4Modal" style="flex: 1.1; font-weight: 700; color: #0284c7; background: #f0f9ff; border-color: #bae6fd; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" title="Imprimir o guia visual A4 de bancada">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                     Imprimir Folha A4
                   </button>
-                  <a href="${mockupSrc}" download="Mockup_Pedido_${numeroPedido}.svg" class="btn btn-secondary btn-sm" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" title="Baixar vetor do mockup em formato SVG">
+                  <a href="${mockupSrc}" id="btnDownloadMockupSvg" download="Mockup_Pedido_${numeroPedido}_Mod${activeModelIndex + 1}.svg" class="btn btn-secondary btn-sm" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" title="Baixar vetor do mockup em formato SVG">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                     Baixar SVG
                   </a>
@@ -20552,38 +20783,40 @@
                   </div>
                 </div>
 
-                <div class="mockup-spec-card">
-                  <div class="mockup-spec-title">Ficha Técnica da Modelagem</div>
+                <div class="mockup-spec-card" id="cardFichaModelagemAtiva">
+                  <div class="mockup-spec-title" id="lblFichaModelagemTitulo">Ficha Técnica da Modelagem • Modelo ${activeModelIndex + 1}</div>
                   <div class="mockup-spec-row">
                     <span class="mockup-spec-label">Modelo Têxtil:</span>
-                    <span class="mockup-spec-value">${produtoNome}</span>
+                    <span class="mockup-spec-value" id="valModeloTextilNome">${produtoNome}</span>
                   </div>
                   <div class="mockup-spec-row">
-                    <span class="mockup-spec-label">Cor Principal:</span>
-                    <span class="mockup-spec-value" style="font-weight: 700; color: #1e3a8a;">${(pedido && pedido.corTecido) || (os && os.corTecido) || 'A Definir'}</span>
+                    <span class="mockup-spec-label">Cor do Modelo:</span>
+                    <span class="mockup-spec-value" id="valModeloCorTecido" style="font-weight: 700; color: #1e40af;">${inicial.cTec}</span>
                   </div>
-                  ${((pedido && pedido.observacoesCoresDetalhes) || (os && os.observacoesCoresDetalhes)) ? `
-                    <div style="margin-top: 6px; margin-bottom: 6px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 6px 8px; font-size: 11px; color: #92400e; line-height: 1.35; white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; box-sizing: border-box;">
-                      <strong>Detalhes de Cores / Confecção:</strong> ${(pedido && pedido.observacoesCoresDetalhes) || (os && os.observacoesCoresDetalhes)}
-                    </div>
-                  ` : ''}
+                  <div id="boxObsCoresDetalhesModel">
+                    ${inicial.obs ? `
+                      <div style="margin-top: 6px; margin-bottom: 6px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 6px 8px; font-size: 11px; color: #92400e; line-height: 1.35; white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; box-sizing: border-box;">
+                        <strong>Detalhes de Cores / Confecção:</strong> ${inicial.obs}
+                      </div>
+                    ` : ''}
+                  </div>
                   <div class="mockup-spec-row">
                     <span class="mockup-spec-label">Técnica de Aplicação:</span>
-                    <span class="mockup-spec-value">${tecnicaPersonalizacao}</span>
+                    <span class="mockup-spec-value" id="valModeloTecnica">${tecnicaPersonalizacao}</span>
                   </div>
                   <div class="mockup-spec-row">
                     <span class="mockup-spec-label">Costureira / Oficina:</span>
                     <span class="mockup-spec-value" style="color: var(--color-green);">${costureiraNome}</span>
                   </div>
                   <div class="mockup-spec-row">
-                    <span class="mockup-spec-label">Total de Peças:</span>
-                    <span class="mockup-spec-value text-mono" style="font-size: 13px;">${grade.total || 0} peças</span>
+                    <span class="mockup-spec-label">Peças Deste Modelo:</span>
+                    <span class="mockup-spec-value text-mono" id="valModeloQtdPecas" style="font-size: 13px; font-weight: 800; color: #0f172a;">${grade.total || 0} peças</span>
                   </div>
 
-                  <!-- Grade de Tamanhos -->
+                  <!-- Grade de Tamanhos do Modelo Ativo -->
                   <div style="margin-top: 10px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 8px;">
-                    <div style="font-size: 10.5px; font-weight: 700; color: var(--text-gray-500); margin-bottom: 6px; text-transform: uppercase;">Tamanhos Selecionados</div>
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                    <div style="font-size: 10.5px; font-weight: 700; color: var(--text-gray-500); margin-bottom: 6px; text-transform: uppercase;">Tamanhos Deste Modelo</div>
+                    <div id="boxGradeTamanhosAtiva" style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
                       ${formatarGradeSelecionadaHtml(grade, 'badge')}
                       <span class="text-mono text-green" style="font-weight: 800; font-size: 12px; margin-left: auto;">Total: ${grade.total || 0} pçs</span>
                     </div>
@@ -20633,7 +20866,7 @@
                   <div class="mockup-spec-card">
                     <div class="mockup-spec-title">Fechamento Comercial</div>
                     <div class="mockup-spec-row">
-                      <span class="mockup-spec-label">Preço Unitário:</span>
+                      <span class="mockup-spec-label">Preço Médio Unitário:</span>
                       <span class="mockup-spec-value text-mono">${formatarMoeda(precoUnit)}</span>
                     </div>
                     <div class="mockup-spec-row">
@@ -20691,6 +20924,72 @@
         </div>
       </div>
     `);
+
+    // Eventos de clique nas abas de modelos para alternar mockup e especificações
+    modalEl.querySelectorAll('.btn-modal-select-model').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-model-idx'), 10) || 0;
+        activeModelIndex = idx;
+
+        modalEl.querySelectorAll('.btn-modal-select-model').forEach(b => {
+          b.classList.remove('btn-primary');
+          b.classList.add('btn-secondary');
+          const dot = b.querySelector('span');
+          if (dot) dot.style.background = '#94a3b8';
+        });
+        btn.classList.remove('btn-secondary');
+        btn.classList.add('btn-primary');
+        const activeDot = btn.querySelector('span');
+        if (activeDot) activeDot.style.background = '#38bdf8';
+
+        const dadosMod = extrairDadosDoModeloAtivo(idx);
+        mockupSrc = dadosMod.mSrc;
+
+        const imgEl = document.getElementById('imgMockupLargePrincipal');
+        if (imgEl) imgEl.src = dadosMod.mSrc;
+
+        const lblBadge = document.getElementById('lblMockupBadgeFrame');
+        if (lblBadge) lblBadge.textContent = `PROPORÇÃO 3:4 • MOD ${idx + 1}`;
+
+        const btnDown = document.getElementById('btnDownloadMockupSvg');
+        if (btnDown) {
+          btnDown.href = dadosMod.mSrc;
+          btnDown.setAttribute('download', `Mockup_Pedido_${numeroPedido}_Mod${idx + 1}.svg`);
+        }
+
+        const lblTituloMod = document.getElementById('lblFichaModelagemTitulo');
+        if (lblTituloMod) lblTituloMod.textContent = `Ficha Técnica da Modelagem • Modelo ${idx + 1}`;
+
+        const valNome = document.getElementById('valModeloTextilNome');
+        if (valNome) valNome.textContent = dadosMod.pNome;
+
+        const valCor = document.getElementById('valModeloCorTecido');
+        if (valCor) valCor.textContent = dadosMod.cTec;
+
+        const boxObs = document.getElementById('boxObsCoresDetalhesModel');
+        if (boxObs) {
+          boxObs.innerHTML = dadosMod.obs ? `
+            <div style="margin-top: 6px; margin-bottom: 6px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 6px 8px; font-size: 11px; color: #92400e; line-height: 1.35; white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; box-sizing: border-box;">
+              <strong>Detalhes de Cores / Confecção:</strong> ${dadosMod.obs}
+            </div>
+          ` : '';
+        }
+
+        const valTec = document.getElementById('valModeloTecnica');
+        if (valTec) valTec.textContent = dadosMod.tec;
+
+        const valQtd = document.getElementById('valModeloQtdPecas');
+        if (valQtd) valQtd.textContent = `${dadosMod.grd?.total || 0} peças`;
+
+        const boxGrd = document.getElementById('boxGradeTamanhosAtiva');
+        if (boxGrd) {
+          boxGrd.innerHTML = `
+            ${formatarGradeSelecionadaHtml(dadosMod.grd, 'badge')}
+            <span class="text-mono text-green" style="font-weight: 800; font-size: 12px; margin-left: auto;">Total: ${dadosMod.grd?.total || 0} pçs</span>
+          `;
+        }
+      });
+    });
 
     document.getElementById('btnImprimirMockupA4Modal')?.addEventListener('click', () => {
       imprimirFolhaMockupGrande(numeroPedido || (os ? os.id : null));
