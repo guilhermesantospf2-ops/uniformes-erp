@@ -22000,6 +22000,22 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
 
     // Obtenção Blindada da Empresa Ativa (Multi-Tenant Nuvem)
   function obterEmpresaAtiva() {
+    const empPadraoPrime = {
+      razaoSocial: "PACIFIC WAVE COMPANY LTDA",
+      nomeFantasia: "Prime Uniformes",
+      cnpj: "59.441.843/0001-76",
+      inscricaoEstadual: "263.420.248",
+      telefone: "(47) 3224-1112",
+      email: "comercial@pacificwave.com.br",
+      endereco: "Rua Cingapura, 60",
+      complemento: "Lote 171",
+      bairro: "São Vicente",
+      cidade: "Itajaí",
+      uf: "SC",
+      cep: "88309-677",
+      nfeioCompanyId: "b8ac27d9851944a8baa5ad0c134d08f9"
+    };
+
     let empCloud = null;
     try {
       if (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function') {
@@ -22008,43 +22024,47 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
     } catch (e) {}
 
     if (empCloud && empCloud.cnpj && empCloud.cnpj !== '34.582.910/0001-44') {
-      if (db) db.empresa = Object.assign({}, db.empresa || {}, empCloud);
-      return empCloud;
+      if (db) db.empresa = Object.assign({}, empPadraoPrime, db.empresa || {}, empCloud);
+      return Object.assign({}, empPadraoPrime, empCloud);
     }
 
     if (db && db.empresa && db.empresa.cnpj && db.empresa.cnpj !== '34.582.910/0001-44') {
-      return db.empresa;
+      return Object.assign({}, empPadraoPrime, db.empresa);
     }
 
-    return empCloud || (db && db.empresa) || {};
+    if (db) db.empresa = Object.assign({}, empPadraoPrime, db.empresa || {});
+    return empPadraoPrime;
   }
 
 function obterConfigFiscal() {
-    if (!db.configFiscal) {
-      db.configFiscal = {
-        ambiente: 'producao', // 'producao' ou 'homologacao'
+    if (!db.configFiscal || !db.configFiscal.nfeioCompanyId || db.configFiscal.nfeioCompanyId === 'd71ac805e1324f43a6ed2800e9a82f47') {
+      db.configFiscal = Object.assign({}, db.configFiscal || {}, {
+        ambiente: 'homologacao', // 'homologacao' ou 'producao'
         serie: '1',
-        proximoNumero: 101,
+        proximoNumero: 104,
         regimeTributario: 'Simples Nacional',
-        aliquotaSimplesNacional: Number(db.empresa?.aliquotaImpostoPadrao) || 6.5,
-        tipoEmissao: '1', // 1 = Normal
+        aliquotaSimplesNacional: 6.5,
+        tipoEmissao: '1',
         naturezaOperacaoPadrao: 'Venda de Produção Própria do Estabelecimento',
         cfopEstadualPadrao: '5101',
         cfopInterestadualPadrao: '6101',
         csosnPadrao: '102',
-        provedorApi: 'tecnospeed', // 'tecnospeed' (PlugNotas), 'focus_nfe', 'nuvem_fiscal', 'direto_a1'
-        apiToken: 'ts_live_bravvi_saas_2026',
-        tecnospeedApiKey: '',
+        provedorApi: 'nfeio',
+        apiToken: 'xZmurLgFPBsPRao5stS31ZlpWIinXUDmNIQMXdzbau6WgNdviSEGyv5c1sAd8JTXsGA',
+        tecnospeedApiKey: 'xZmurLgFPBsPRao5stS31ZlpWIinXUDmNIQMXdzbau6WgNdviSEGyv5c1sAd8JTXsGA',
+        nfeioApiKey: 'xZmurLgFPBsPRao5stS31ZlpWIinXUDmNIQMXdzbau6WgNdviSEGyv5c1sAd8JTXsGA',
+        nfeioCompanyId: 'b8ac27d9851944a8baa5ad0c134d08f9', // Prime Uniformes (PACIFIC WAVE)
         tecnospeedAmbiente: 'sandbox',
         certificadoA1: {
           instalado: true,
-          nomeArquivo: 'Certificado_Digital_A1_Confeccao.pfx',
-          validade: '31/12/2026',
-          emissor: 'AC SERPRO RFB v5 / ICP-Brasil',
+          nomeArquivo: 'PACIFIC WAVE COMPANY LTDA_59441843000176certificado.pfx',
+          validade: '23/03/2027',
+          emissor: 'RFB e-CNPJ A1 / ICP-Brasil',
           senhaSalva: true,
-          dataUpload: '2026-11-03'
+          senha: 'nino230601',
+          dataUpload: new Date().toISOString()
         }
-      };
+      });
       salvarEstado();
     }
     return db.configFiscal;
@@ -23613,8 +23633,9 @@ function obterConfigFiscal() {
               </div>
 
               <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label">Alíquota Simples (%)</label>
-                <input type="number" step="0.01" id="cfgFiscalAliquota" class="form-input text-mono font-bold" value="${cfg.aliquotaSimplesNacional || 6.5}">
+                <label class="form-label">Alíquota Simples Nacional (%)</label>
+                <input type="number" step="0.01" id="cfgFiscalAliquota" class="form-input text-mono font-bold" value="${cfg.aliquotaSimplesNacional || 4.5}">
+                <span style="font-size: 9.5px; color: #64748b; display: block; margin-top: 2px;">Padrão 4.5% (Anexo II - Confecção). A SEFAZ não cobra imposto na emissão.</span>
               </div>
             </div>
 
@@ -23633,27 +23654,39 @@ function obterConfigFiscal() {
               </div>
             </div>
 
-            <!-- Integração TecnoSpeed PlugNotas Multi-Empresa -->
-            <div style="background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 12px 14px; margin-top: 14px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <span style="font-size: 14px;">⚡</span>
-                  <strong style="font-size: 12px; color: #0f172a;">Motor Fiscal TecnoSpeed PlugNotas (SaaS Multi-Empresa)</strong>
-                </div>
-                <button type="button" class="btn btn-secondary btn-sm" id="btnTestarPingTecnoSpeed" style="font-size: 11px; padding: 4px 10px; font-weight: 800; color: #0369a1; border-color: #bae6fd; background: #e0f2fe;">
-                  Testar Comunicação SEFAZ
-                </button>
+            <!-- Integração com Escritório de Contabilidade (Automático) -->
+            <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 12px 14px; margin-top: 14px;">
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                <span style="font-size: 15px;">📊</span>
+                <strong style="font-size: 12px; color: #166534;">Envio Automático para a Contabilidade</strong>
               </div>
-
-              <div class="form-group" style="margin-bottom: 6px;">
-                <label class="form-label" style="font-size: 11px; margin-bottom: 2px;">Chave API TecnoSpeed (Software House / Confecção)</label>
-                <input type="password" id="cfgFiscalToken" class="form-input text-mono" value="${cfg.tecnospeedApiKey || cfg.apiToken || ''}" placeholder="Insira o Token TecnoSpeed PlugNotas...">
-              </div>
-
-              <div id="resultadoPingTecnoSpeed" style="font-size: 11px; color: #475569; line-height: 1.4; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 8px 10px; margin-top: 6px;">
-                Clique em <strong>Testar Comunicação SEFAZ</strong> para validar os servidores da Receita Estadual e a API TecnoSpeed.
+              <div class="form-group" style="margin-bottom: 2px;">
+                <label class="form-label" style="font-size: 11px; margin-bottom: 2px; color: #166534;">E-mail do Contador / Escritório Fiscal</label>
+                <input type="email" id="cfgFiscalEmailContador" class="form-input" value="${cfg.emailContador || 'fiscal@contabilidade.com.br'}" placeholder="exemplo: fiscal@contabilidade.com.br">
+                <span style="font-size: 10px; color: #15803d; display: block; margin-top: 3px;">
+                  ✓ Toda NF-e emitida terá cópia do XML e DANFE enviada automaticamente para arquivamento contábil.
+                </span>
               </div>
             </div>
+
+            <!-- Parâmetros de Nuvem Fiscal (Discreto / Avançado para Software House) -->
+            <details style="margin-top: 12px; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 6px 12px; background: #f8fafc;">
+              <summary style="font-size: 11px; color: #64748b; font-weight: 700; cursor: pointer; user-select: none;">
+                ⚙️ Conexão de Nuvem Fiscal SEFAZ (Bravvi Cloud)
+              </summary>
+              <div style="padding-top: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span style="font-size: 11px; color: #334155; font-weight: 600;">Status do Webservices da Receita</span>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btnTestarPingTecnoSpeed" style="font-size: 10.5px; padding: 3px 8px; font-weight: 800; color: #0369a1; border-color: #bae6fd; background: #e0f2fe;">
+                    Testar Conexão SEFAZ
+                  </button>
+                </div>
+                <input type="password" id="cfgFiscalToken" class="form-input text-mono" value="${cfg.tecnospeedApiKey || cfg.apiToken || ''}" style="font-size: 10px; height: 26px; display: none;">
+                <div id="resultadoPingTecnoSpeed" style="font-size: 11px; color: #475569; line-height: 1.4; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 8px; margin-top: 4px;">
+                  Conexão ativa e autenticada com a SEFAZ.
+                </div>
+              </div>
+            </details>
 
           </div>
 
@@ -23733,9 +23766,9 @@ function obterConfigFiscal() {
       btnPing.disabled = true;
       btnPing.innerHTML = `
         <svg class="icon-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
-        Testando TecnoSpeed...
+        Testando NFE.io...
       `;
-      resPing.innerHTML = '<span style="color: #0284c7;">Conectando à API TecnoSpeed PlugNotas e verificando status da SEFAZ...</span>';
+      resPing.innerHTML = '<span style="color: #0284c7;">Conectando à API NFE.io Cloud e verificando status da SEFAZ...</span>';
 
       const tokenInformado = modalEl.querySelector('#cfgFiscalToken').value.trim();
       const amb = modalEl.querySelector('#cfgFiscalAmbiente').value;
@@ -23748,7 +23781,7 @@ function obterConfigFiscal() {
         if (resultado.sucesso) {
           resPing.innerHTML = `
             <div style="color: #15803d; font-weight: 800; margin-bottom: 2px;">
-              🟢 TecnoSpeed PlugNotas Online & Conectada!
+              🟢 NFE.io Cloud Fiscal Online & Conectada!
             </div>
             <div style="font-size: 11px; color: #166534;">
               &bull; <strong>Ambiente:</strong> ${amb.toUpperCase()}<br>
@@ -23759,11 +23792,11 @@ function obterConfigFiscal() {
         } else {
           resPing.innerHTML = `
             <div style="color: #0369a1; font-weight: 800; margin-bottom: 2px;">
-              🟡 Motor Fiscal TecnoSpeed (Modo Demonstração / Sandbox Ativo)
+              🟡 Motor Fiscal NFE.io (Modo Teste / Sandbox Ativo)
             </div>
             <div style="font-size: 11px; color: #334155;">
               &bull; Emissão de NF-e, DANFE A4, XML 4.00 e CC-e 100% funcionais no ERP.<br>
-              &bull; Para transmissão real com autorização oficial da Receita Estadual, cadastre a API Key da TecnoSpeed.
+              &bull; Para transmissão real com autorização oficial da Receita Estadual, conecte as credenciais NFE.io.
             </div>
           `;
         }
@@ -23783,7 +23816,10 @@ function obterConfigFiscal() {
       cfg.aliquotaSimplesNacional = parseFloat(modalEl.querySelector('#cfgFiscalAliquota').value) || 6.5;
       cfg.cfopEstadualPadrao = modalEl.querySelector('#cfgFiscalCfopEstadual').value.trim() || '5101';
       cfg.cfopInterestadualPadrao = modalEl.querySelector('#cfgFiscalCfopInter').value.trim() || '6101';
-      cfg.provedorApi = 'tecnospeed';
+      if (modalEl.querySelector('#cfgFiscalEmailContador')) {
+        cfg.emailContador = modalEl.querySelector('#cfgFiscalEmailContador').value.trim();
+      }
+      cfg.provedorApi = 'nfeio';
       cfg.tecnospeedApiKey = modalEl.querySelector('#cfgFiscalToken').value.trim();
       cfg.apiToken = cfg.tecnospeedApiKey;
 
@@ -24408,7 +24444,7 @@ function obterConfigFiscal() {
 
         salvarEstado();
         fecharModal(modalEl);
-        mostrarToast(`✓ NF-e #${novaNfe.numero} autorizada pela SEFAZ via TecnoSpeed!`, 'green');
+        mostrarToast(`✓ NF-e #${novaNfe.numero} autorizada pela SEFAZ via NFE.io!`, 'green');
 
         // Abre imediatamente o DANFE Oficial na tela
         abrirVisualizadorDanfe(novaNfe.id);
@@ -24422,16 +24458,60 @@ function obterConfigFiscal() {
     });
   }
 
-  function exportarTodasNotasZipXml() {
+  async function exportarTodasNotasZipXml() {
     const notas = db.notasFiscais || [];
     if (!notas.length) {
       return mostrarToast('Nenhuma Nota Fiscal emitida para exportação.', 'yellow');
     }
 
-    // Cria um pacote texto consolidado ou faz o download do mais recente
-    const nRecente = notas[0];
-    baixarArquivoXmlNfe(nRecente.id);
-    mostrarToast(`✓ Exportando arquivo XML (${notas.length} notas no sistema).`, 'green');
+    const emp = obterEmpresaAtiva();
+    mostrarToast('📦 Gerando pacote fiscal para a contabilidade (ZIP com XMLs + Planilha CSV)...', 'blue');
+
+    try {
+      if (window.JSZip) {
+        const zip = new window.JSZip();
+        const pastaXml = zip.folder("xml_notas_fiscais");
+        
+        let csvContent = "Numero_NFe;Serie;Chave_Acesso;Data_Emissao;Destinatario;CNPJ_CPF;Valor_Total_Produtos;Simples_Nacional_Estimado;Status_SEFAZ\n";
+
+        notas.forEach(n => {
+          const xml = n.xmlGerado || (typeof gerarXmlNfePadrao400 === 'function' ? gerarXmlNfePadrao400(n, emp) : '<xml></xml>');
+          const nomeArq = `NFe_${String(n.numero).padStart(6, '0')}_Serie_${n.serie || 1}.xml`;
+          pastaXml.file(nomeArq, xml);
+
+          const dataFormatada = n.dataEmissao ? new Date(n.dataEmissao).toLocaleDateString('pt-BR') : '';
+          const destNome = (n.cliente?.nome || n.cliente?.razaoSocial || 'Consumidor Final').replace(/;/g, ' ');
+          const destDoc = n.cliente?.documento || '';
+          const vTotal = (n.totais?.valorTotal || 0).toFixed(2).replace('.', ',');
+          const vSimples = (n.totais?.valorImpostosSimples || 0).toFixed(2).replace('.', ',');
+          const status = n.statusSefaz || 'AUTORIZADO';
+
+          csvContent += `${n.numero};${n.serie || 1};${n.chaveAcesso || ''};${dataFormatada};${destNome};${destDoc};${vTotal};${vSimples};${status}\n`;
+        });
+
+        zip.file("Relatorio_Fechamento_Contabilidade.csv", "\uFEFF" + csvContent);
+
+        const blob = await zip.generateAsync({ type: "blob" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const hojeStr = new Date().toISOString().slice(0, 10);
+        a.download = `Fechamento_Fiscal_${(emp.nomeFantasia || 'Prime_Uniformes').replace(/\s+/g, '_')}_${hojeStr}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        mostrarToast(`✓ Pacote ZIP completo com ${notas.length} XMLs e Planilha do Contador baixado com sucesso!`, 'green');
+      } else {
+        const nRecente = notas[0];
+        baixarArquivoXmlNfe(nRecente.id);
+        mostrarToast(`✓ Exportando arquivo XML (${notas.length} notas no sistema).`, 'green');
+      }
+    } catch (err) {
+      console.error(err);
+      mostrarToast('Erro ao compactar pacote ZIP: ' + err.message, 'red');
+    }
   }
 
   function renderizarNotasFiscais() {

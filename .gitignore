@@ -21,3 +21,5 @@ telegram_bridge.pid
 leads_meta.csv
 leads_meta.json
 seen_leads.json
+*.pfx
+*.p12
