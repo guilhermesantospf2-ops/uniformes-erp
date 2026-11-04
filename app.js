@@ -10002,6 +10002,9 @@
         vendedorResponsavel: "Marcos Paulo"
       };
 
+      // Sincroniza custos operacionais do novo pedido no financeiro
+      sincronizarCustosOperacionaisDosPedidos();
+
       // Remove orçamento antigo se estiver convertendo
       const idxExistente = db.pedidos.findIndex(p => p.id === dadosBase.id);
       if (idxExistente >= 0) {
@@ -15369,7 +15372,201 @@
   /* ==========================================================================
      MÓDULO 7: FINANCEIRO COMPLETO (CONTAS, DRE, PREVISTO X REALIZADO, CENTROS DE CUSTO, COMISSÕES & DEPRECIAÇÃO)
      ========================================================================== */
+  /**
+   * Sincroniza e homologa todos os custos operacionais (Costura, Tecidos, Aviamentos, Estamparia)
+   * calculados nos pedidos oficiais diretamente para as Contas a Pagar, Centros de Custo e DRE.
+   */
+  function sincronizarCustosOperacionaisDosPedidos() {
+    if (!Array.isArray(db.despesasFixas)) db.despesasFixas = [];
+    if (!Array.isArray(db.pedidos)) return;
+
+    const hojeIso = new Date().toISOString().split('T')[0];
+
+    db.pedidos.forEach(p => {
+      // Ignora orçamentos e pedidos cancelados
+      if (p.status === 'Cancelado' || p.tipoRegistro === 'Orcamento') {
+        db.despesasFixas = db.despesasFixas.filter(d => !(d.pedidoNumero === p.numero && d.origemAutomatica && d.status !== 'Pago'));
+        return;
+      }
+
+      const num = p.numero || p.id;
+      const dataVenc = p.dataPrevisaoEntrega || p.dataMetaInterna || p.dataCriacao || hojeIso;
+      const cliNome = p.clienteNome || 'Cliente';
+
+      // 1. CUSTO DE MÃO DE OBRA / COSTURA (FACÇÃO)
+      let custoCosturaTotal = 0;
+      if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
+        custoCosturaTotal = p.itens.reduce((acc, it) => {
+          const v = (it.custoCostura != null && !isNaN(it.custoCostura) && parseFloat(it.custoCostura) > 0)
+            ? parseFloat(it.custoCostura)
+            : 7.50;
+          return acc + (v * (it.grade?.total || 0));
+        }, 0);
+      } else {
+        custoCosturaTotal = (parseFloat(p.custoCostura) || 7.50) * (p.grade?.total || 1);
+      }
+
+      if (custoCosturaTotal > 0) {
+        const idCostura = `DESP-OP-${num}-COSTURA`;
+        const despExistente = db.despesasFixas.find(d => d.id === idCostura);
+        const costureiraNome = p.costureiraNome || 'Oficina de Costura / Facção';
+
+        if (!despExistente) {
+          db.despesasFixas.push({
+            id: idCostura,
+            pedidoNumero: p.numero,
+            pedidoId: p.id,
+            origemAutomatica: true,
+            origem: `Custo de Produção (Pedido #${p.numero})`,
+            tipoCusto: 'Operacional',
+            descricao: `Costura & Facção • Pedido #${p.numero} (${cliNome})`,
+            categoria: 'Mão de Obra / Facção',
+            centroCusto: 'CC-03',
+            fornecedorFavorecido: costureiraNome,
+            valor: parseFloat(custoCosturaTotal.toFixed(2)),
+            valorMensal: parseFloat(custoCosturaTotal.toFixed(2)),
+            dataVencimento: dataVenc,
+            recorrencia: 'Por Pedido',
+            formaPagamentoPrevista: 'PIX',
+            status: 'Pendente'
+          });
+        } else if (despExistente.status !== 'Pago') {
+          despExistente.valor = parseFloat(custoCosturaTotal.toFixed(2));
+          despExistente.valorMensal = parseFloat(custoCosturaTotal.toFixed(2));
+          despExistente.fornecedorFavorecido = costureiraNome;
+          despExistente.dataVencimento = dataVenc;
+        }
+      }
+
+      // 2. CUSTO DE TECIDOS & MATÉRIA-PRIMA
+      let custoTecidoTotal = 0;
+      if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
+        custoTecidoTotal = p.itens.reduce((acc, it) => {
+          const precoKg = parseFloat(it.custoTecidoKg) || 48.50;
+          const consumo = parseFloat(it.consumoTecido) || 0.28;
+          const margem = 1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100);
+          return acc + (precoKg * consumo * margem * (it.grade?.total || 0));
+        }, 0);
+      } else {
+        custoTecidoTotal = (parseFloat(p.custoTecidoPorPeca) || 14.67) * (p.grade?.total || 1);
+      }
+
+      if (custoTecidoTotal > 0) {
+        const idTecido = `DESP-OP-${num}-TECIDO`;
+        const despExistente = db.despesasFixas.find(d => d.id === idTecido);
+
+        if (!despExistente) {
+          db.despesasFixas.push({
+            id: idTecido,
+            pedidoNumero: p.numero,
+            pedidoId: p.id,
+            origemAutomatica: true,
+            origem: `Custo de Produção (Pedido #${p.numero})`,
+            tipoCusto: 'Operacional',
+            descricao: `Tecidos & Malhas • Pedido #${p.numero} (${cliNome})`,
+            categoria: 'Tecidos & Matéria-Prima',
+            centroCusto: 'CC-03',
+            fornecedorFavorecido: 'Fornecedor Têxtil / Malharia',
+            valor: parseFloat(custoTecidoTotal.toFixed(2)),
+            valorMensal: parseFloat(custoTecidoTotal.toFixed(2)),
+            dataVencimento: dataVenc,
+            recorrencia: 'Por Pedido',
+            formaPagamentoPrevista: 'Boleto Bancário',
+            status: 'Pendente'
+          });
+        } else if (despExistente.status !== 'Pago') {
+          despExistente.valor = parseFloat(custoTecidoTotal.toFixed(2));
+          despExistente.valorMensal = parseFloat(custoTecidoTotal.toFixed(2));
+          despExistente.dataVencimento = dataVenc;
+        }
+      }
+
+      // 3. CUSTO DE AVIAMENTOS & SUPRIMENTOS
+      let custoAviamentoTotal = 0;
+      if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
+        custoAviamentoTotal = p.itens.reduce((acc, it) => {
+          const v = parseFloat(it.custoAviamento) || 4.80;
+          return acc + (v * (it.grade?.total || 0));
+        }, 0);
+      } else {
+        custoAviamentoTotal = 4.80 * (p.grade?.total || 1);
+      }
+
+      if (custoAviamentoTotal > 0) {
+        const idAviamento = `DESP-OP-${num}-AVIAMENTO`;
+        const despExistente = db.despesasFixas.find(d => d.id === idAviamento);
+
+        if (!despExistente) {
+          db.despesasFixas.push({
+            id: idAviamento,
+            pedidoNumero: p.numero,
+            pedidoId: p.id,
+            origemAutomatica: true,
+            origem: `Custo de Produção (Pedido #${p.numero})`,
+            tipoCusto: 'Operacional',
+            descricao: `Aviamentos & Linhas • Pedido #${p.numero} (${cliNome})`,
+            categoria: 'Aviamentos & Suprimentos',
+            centroCusto: 'CC-03',
+            fornecedorFavorecido: 'Fornecedor de Aviamentos',
+            valor: parseFloat(custoAviamentoTotal.toFixed(2)),
+            valorMensal: parseFloat(custoAviamentoTotal.toFixed(2)),
+            dataVencimento: dataVenc,
+            recorrencia: 'Por Pedido',
+            formaPagamentoPrevista: 'Boleto Bancário',
+            status: 'Pendente'
+          });
+        } else if (despExistente.status !== 'Pago') {
+          despExistente.valor = parseFloat(custoAviamentoTotal.toFixed(2));
+          despExistente.valorMensal = parseFloat(custoAviamentoTotal.toFixed(2));
+          despExistente.dataVencimento = dataVenc;
+        }
+      }
+
+      // 4. CUSTO DE ESTAMPARIA / DTF / SUBLIMAÇÃO (SE HOUVER)
+      let custoEstampaTotal = 0;
+      if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
+        custoEstampaTotal = p.itens.reduce((acc, it) => {
+          const v = parseFloat(it.custoEstampaTotal) || 0;
+          return acc + (v * (it.grade?.total || 0));
+        }, 0);
+      }
+
+      if (custoEstampaTotal > 0) {
+        const idEstampa = `DESP-OP-${num}-ESTAMPA`;
+        const despExistente = db.despesasFixas.find(d => d.id === idEstampa);
+
+        if (!despExistente) {
+          db.despesasFixas.push({
+            id: idEstampa,
+            pedidoNumero: p.numero,
+            pedidoId: p.id,
+            origemAutomatica: true,
+            origem: `Custo de Produção (Pedido #${p.numero})`,
+            tipoCusto: 'Operacional',
+            descricao: `Estamparia / DTF Digital • Pedido #${p.numero} (${cliNome})`,
+            categoria: 'Estamparia & DTF',
+            centroCusto: 'CC-02',
+            fornecedorFavorecido: 'Estamparia / DTF Digital',
+            valor: parseFloat(custoEstampaTotal.toFixed(2)),
+            valorMensal: parseFloat(custoEstampaTotal.toFixed(2)),
+            dataVencimento: dataVenc,
+            recorrencia: 'Por Pedido',
+            formaPagamentoPrevista: 'PIX',
+            status: 'Pendente'
+          });
+        } else if (despExistente.status !== 'Pago') {
+          despExistente.valor = parseFloat(custoEstampaTotal.toFixed(2));
+          despExistente.valorMensal = parseFloat(custoEstampaTotal.toFixed(2));
+          despExistente.dataVencimento = dataVenc;
+        }
+      }
+    });
+  }
+
   function renderizarFinanceiro() {
+    // Sincronização prévia obrigatória: homologa os custos dos pedidos oficiais em Contas a Pagar
+    sincronizarCustosOperacionaisDosPedidos();
+
     pageTitleElem.textContent = 'Gestão Financeira, DRE, Previsto x Realizado & Ativos';
     pageBreadcrumbElem.textContent = 'SISTEMA > FINANCEIRO';
 
@@ -15505,7 +15702,7 @@
     const ebitda = margemContribuicao - totalDespesasFixasDRE;
     const ebitLucroReal = ebitda - totalDepreciacaoMensal;
 
-    // 7. Filtragem de Contas a Pagar
+    // 7. Filtragem de Contas a Pagar (com distinção de Despesas Fixas vs Custos Operacionais de Pedidos)
     let despesasFiltradas = despesasLista;
     if (filtroDespesas === 'pendentes') {
       despesasFiltradas = despesasLista.filter(d => d.status !== 'Pago');
@@ -15513,6 +15710,10 @@
       despesasFiltradas = despesasLista.filter(d => d.status !== 'Pago' && d.statusInfo.isAtrasado);
     } else if (filtroDespesas === 'pagas') {
       despesasFiltradas = despesasLista.filter(d => d.status === 'Pago');
+    } else if (filtroDespesas === 'pedidos') {
+      despesasFiltradas = despesasLista.filter(d => d.pedidoNumero != null);
+    } else if (filtroDespesas === 'fixas') {
+      despesasFiltradas = despesasLista.filter(d => !d.pedidoNumero);
     }
 
     // 8. Preparação das Comissões
@@ -15755,6 +15956,8 @@
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
               <div class="filter-pills">
                 <button class="filter-btn-pill ${filtroDespesas === 'todas' ? 'active' : ''}" data-filtro="todas">Todas (${despesasLista.length})</button>
+                <button class="filter-btn-pill ${filtroDespesas === 'pedidos' ? 'active' : ''}" data-filtro="pedidos" title="Custos operacionais de ordens (Costureiras, Tecidos, Aviamentos)">🧵 Custos de Pedidos (${despesasLista.filter(d => d.pedidoNumero != null).length})</button>
+                <button class="filter-btn-pill ${filtroDespesas === 'fixas' ? 'active' : ''}" data-filtro="fixas" title="Despesas fixas da fábrica (Aluguel, Luz, Internet...)">🏢 Fixas da Fábrica (${despesasLista.filter(d => !d.pedidoNumero).length})</button>
                 <button class="filter-btn-pill ${filtroDespesas === 'pendentes' ? 'active' : ''}" data-filtro="pendentes">Pendentes (${despesasPendentes.length})</button>
                 <button class="filter-btn-pill ${filtroDespesas === 'atrasadas' ? 'active' : ''}" data-filtro="atrasadas">Em Atraso (${despesasAtrasadas.length})</button>
                 <button class="filter-btn-pill ${filtroDespesas === 'pagas' ? 'active' : ''}" data-filtro="pagas">Pagas (${despesasPagas.length})</button>
@@ -15784,8 +15987,11 @@
                 ${despesasFiltradas.length > 0 ? despesasFiltradas.map(desp => `
                   <tr>
                     <td>
-                      <strong>${desp.descricao}</strong>
-                      ${desp.fornecedorFavorecido ? `<div style="font-size: 11px; color: var(--text-gray-500);">Favorecido: ${desp.fornecedorFavorecido}</div>` : ''}
+                      <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                        <strong>${desp.descricao}</strong>
+                        ${desp.pedidoNumero ? `<span class="status-pill status-blue" style="font-size: 9px; font-weight: 800; padding: 1.5px 5px;">PEDIDO #${desp.pedidoNumero}</span>` : ''}
+                      </div>
+                      ${desp.fornecedorFavorecido ? `<div style="font-size: 11px; color: var(--text-gray-500);">Favorecido: <strong style="color: #0f172a;">${desp.fornecedorFavorecido}</strong></div>` : ''}
                       ${desp.observacoes ? `<div style="font-size: 10.5px; color: var(--text-gray-400); font-style: italic;">${desp.observacoes}</div>` : ''}
                     </td>
                     <td>
@@ -15936,26 +16142,66 @@
                 <td class="text-mono" style="text-align: right;">${formatarMoeda(receitaLiquida)}</td>
                 <td class="text-mono" style="text-align: right;">${(100 - 6.5).toFixed(1)}%</td>
               </tr>
-              <tr class="dre-row-header">
-                <td>2. (-) CUSTO DAS MERCADORIAS VENDIDAS (CMV DIRETO)</td>
-                <td class="text-mono text-red" style="text-align: right;">- ${formatarMoeda(cmvTotal)}</td>
-                <td class="text-mono" style="text-align: right;">${receitaLiquida > 0 ? ((cmvTotal / receitaLiquida) * 100).toFixed(1) : 0}%</td>
-              </tr>
-              <tr class="dre-row-sub-2">
-                <td>• Malhas, Tecidos Planos e Linhas de Corte</td>
-                <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(cmvTotal * 0.55)}</td>
-                <td></td>
-              </tr>
-              <tr class="dre-row-sub-2">
-                <td>• Mão de Obra de Costura (Facções Externas e Oficinas)</td>
-                <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(cmvTotal * 0.25)}</td>
-                <td></td>
-              </tr>
-              <tr class="dre-row-sub-2">
-                <td>• Suprimentos DTF, Bordado, Serigrafia e Aviamentos</td>
-                <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(cmvTotal * 0.20)}</td>
-                <td></td>
-              </tr>
+              ${(() => {
+                let somaRealTec = 0;
+                let somaRealCost = 0;
+                let somaRealAviam = 0;
+                let somaRealEst = 0;
+
+                pedidosOficiais.forEach(p => {
+                  if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
+                    p.itens.forEach(it => {
+                      const q = it.grade?.total || 0;
+                      const precoKg = parseFloat(it.custoTecidoKg) || 48.50;
+                      const consumo = parseFloat(it.consumoTecido) || 0.28;
+                      const margem = 1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100);
+                      somaRealTec += (precoKg * consumo * margem * q);
+                      somaRealCost += ((parseFloat(it.custoCostura) || 7.50) * q);
+                      somaRealAviam += ((parseFloat(it.custoAviamento) || 4.80) * q);
+                      somaRealEst += ((parseFloat(it.custoEstampaTotal) || 0) * q);
+                    });
+                  } else {
+                    const qTot = p.grade?.total || 1;
+                    somaRealTec += ((parseFloat(p.custoTecidoPorPeca) || 14.67) * qTot);
+                    somaRealCost += ((parseFloat(p.custoCostura) || 7.50) * qTot);
+                    somaRealAviam += (4.80 * qTot);
+                  }
+                });
+
+                const cmvExibicao = (somaRealTec + somaRealCost + somaRealAviam + somaRealEst) > 0 
+                  ? (somaRealTec + somaRealCost + somaRealAviam + somaRealEst) 
+                  : cmvTotal;
+
+                return `
+                  <tr class="dre-row-header">
+                    <td>2. (-) CUSTO DAS MERCADORIAS VENDIDAS (CMV DIRETO DOS PEDIDOS)</td>
+                    <td class="text-mono text-red" style="text-align: right;">- ${formatarMoeda(cmvExibicao)}</td>
+                    <td class="text-mono" style="text-align: right;">${receitaLiquida > 0 ? ((cmvExibicao / receitaLiquida) * 100).toFixed(1) : 0}%</td>
+                  </tr>
+                  <tr class="dre-row-sub-2">
+                    <td>• Malhas, Tecidos Planos & Matéria-Prima (${receitaLiquida > 0 ? ((somaRealTec / receitaLiquida) * 100).toFixed(1) : 0}%)</td>
+                    <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(somaRealTec)}</td>
+                    <td></td>
+                  </tr>
+                  <tr class="dre-row-sub-2">
+                    <td>• Mão de Obra de Costura (Facções Externas e Oficinas) (${receitaLiquida > 0 ? ((somaRealCost / receitaLiquida) * 100).toFixed(1) : 0}%)</td>
+                    <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(somaRealCost)}</td>
+                    <td></td>
+                  </tr>
+                  <tr class="dre-row-sub-2">
+                    <td>• Aviamentos, Linhas, Zíperes e Suprimentos (${receitaLiquida > 0 ? ((somaRealAviam / receitaLiquida) * 100).toFixed(1) : 0}%)</td>
+                    <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(somaRealAviam)}</td>
+                    <td></td>
+                  </tr>
+                  ${somaRealEst > 0 ? `
+                    <tr class="dre-row-sub-2">
+                      <td>• Estamparia, DTF Digital & Sublimação (${receitaLiquida > 0 ? ((somaRealEst / receitaLiquida) * 100).toFixed(1) : 0}%)</td>
+                      <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(somaRealEst)}</td>
+                      <td></td>
+                    </tr>
+                  ` : ''}
+                `;
+              })()}
               <tr class="dre-row-total">
                 <td>(=) MARGEM DE CONTRIBUIÇÃO / LUCRO BRUTO</td>
                 <td class="text-mono text-green" style="text-align: right;">${formatarMoeda(margemContribuicao)}</td>
@@ -16173,17 +16419,27 @@
                   </span>
                 </td>
               </tr>
-              <tr>
-                <td><strong>🧵 Custos Diretos de Produção (Tecido, Facção & Tintas)</strong></td>
-                <td class="text-mono" style="text-align: right;">${formatarMoeda(prevCMV)}</td>
-                <td class="text-mono text-red" style="text-align: right; font-weight: 700;">${formatarMoeda(prevCMV * 0.95)}</td>
-                <td class="text-mono text-green" style="text-align: right;">+ ${formatarMoeda(prevCMV * 0.05)}</td>
-                <td>
-                  <div style="font-size: 11px; font-weight: 700; margin-bottom: 2px;">95.0%</div>
-                  <div class="prog-comparativo-bar"><div class="prog-comparativo-fill" style="width: 95%; background: #059669;"></div></div>
-                </td>
-                <td style="text-align: center;"><span class="status-pill status-green" style="font-size: 9.5px;">DENTRO DA META</span></td>
-              </tr>
+              ${(() => {
+                const realCMVTotalPago = despesasPagas.filter(d => d.pedidoNumero != null).reduce((acc, d) => acc + d.valorReal, 0);
+                const percCMV = prevCMV > 0 ? Math.min(100, (realCMVTotalPago / prevCMV) * 100) : 0;
+                return `
+                  <tr>
+                    <td><strong>🧵 Custos Diretos de Produção (Tecido, Facção & Aviamentos)</strong></td>
+                    <td class="text-mono" style="text-align: right;">${formatarMoeda(prevCMV)}</td>
+                    <td class="text-mono text-red" style="text-align: right; font-weight: 700;">${formatarMoeda(realCMVTotalPago)}</td>
+                    <td class="text-mono ${realCMVTotalPago <= prevCMV ? 'text-green' : 'text-red'}" style="text-align: right;">${formatarMoeda(prevCMV - realCMVTotalPago)}</td>
+                    <td>
+                      <div style="font-size: 11px; font-weight: 700; margin-bottom: 2px;">${percCMV.toFixed(1)}%</div>
+                      <div class="prog-comparativo-bar"><div class="prog-comparativo-fill" style="width: ${percCMV}%; background: #059669;"></div></div>
+                    </td>
+                    <td style="text-align: center;">
+                      <span class="status-pill ${realCMVTotalPago >= prevCMV ? 'status-green' : 'status-yellow'}" style="font-size: 9.5px;">
+                        ${realCMVTotalPago >= prevCMV ? '100% QUITADO' : 'EM PRODUÇÃO'}
+                      </span>
+                    </td>
+                  </tr>
+                `;
+              })()}
               <tr>
                 <td><strong>🏢 Despesas Fixas, Aluguel & Instalações</strong></td>
                 <td class="text-mono" style="text-align: right;">${formatarMoeda(prevDespesasFixas)}</td>
