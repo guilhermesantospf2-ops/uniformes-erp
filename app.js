@@ -17085,7 +17085,44 @@
     const impostosDeducoes = receitaBruta * 0.065; // Simples Nacional médio 6.5%
     const receitaLiquida = receitaBruta - impostosDeducoes;
 
-    const cmvTotal = pedidosOficiais.reduce((acc, p) => acc + (Number(p.custoTotalEstimado) || 0), 0);
+    // Cálculo analítico do CMV industrial por categorias contábeis (Tecidos, Costura, Aviamentos, Estamparia, Taxas e Desvios)
+    let cmvTotalCalculado = 0;
+    pedidosOficiais.forEach(p => {
+      if (p.fechamentoReal && p.fechamentoReal.realizado) {
+        cmvTotalCalculado += (Number(p.fechamentoReal.realizado.total) || 0);
+      } else if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
+        p.itens.forEach(it => {
+          const q = it.grade?.total || 0;
+          const precoKg = parseFloat(it.custoTecidoKg) || 48.50;
+          const consumo = parseFloat(it.consumoTecido) || 0.28;
+          const margem = 1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100);
+          const cTec = precoKg * consumo * margem * q;
+          const cCost = (parseFloat(it.custoCostura) || 7.50) * q;
+          const cAv = (parseFloat(it.custoAviamento) || 4.80) * q;
+          let cEst = 0;
+          if (Array.isArray(it.aplicacoes)) {
+            it.aplicacoes.forEach(ap => {
+              const vApp = parseFloat(ap.custoEstimadoUnitario || ap.custoUnitario) || (ap.tipo === 'Bordado' ? 6.50 : 4.50);
+              cEst += vApp * q;
+            });
+          } else {
+            cEst = (parseFloat(it.custoEstampaTotal) || 0) * q;
+          }
+          cmvTotalCalculado += (cTec + cCost + cAv + cEst);
+        });
+        cmvTotalCalculado += parseFloat(p.taxaTotalOperadoraValor || p.pagamentoDetalhes?.taxaTotalOperadoraValor || 0);
+      } else {
+        const qTot = p.grade?.total || 1;
+        const cTec = (parseFloat(p.custoTecidoPorPeca) || 14.67) * qTot;
+        const cCost = (parseFloat(p.custoCostura) || 7.50) * qTot;
+        const cAv = 4.80 * qTot;
+        const cEst = (parseFloat(p.custoEstampaTotal) || 0);
+        const cTax = parseFloat(p.taxaTotalOperadoraValor || 0);
+        cmvTotalCalculado += (cTec + cCost + cAv + cEst + cTax);
+      }
+    });
+
+    const cmvTotal = cmvTotalCalculado > 0 ? cmvTotalCalculado : pedidosOficiais.reduce((acc, p) => acc + (Number(p.custoTotalEstimado) || 0), 0);
     const margemContribuicao = receitaLiquida - cmvTotal;
     const margemContribuicaoPerc = receitaLiquida > 0 ? (margemContribuicao / receitaLiquida) * 100 : 0;
 
@@ -17209,8 +17246,15 @@
     const totalDepreciacaoAcumulada = equipamentosComCalculo.reduce((acc, eq) => acc + eq.depreciacaoAcumulada, 0);
     const totalPatrimonioLiquidoEquipamentos = equipamentosComCalculo.reduce((acc, eq) => acc + eq.valorContabilAtual, 0);
 
-    // 6. DRE: EBITDA e EBIT (Lucro Líquido Real pós-Depreciação)
-    const totalDespesasFixasDRE = despesasLista.reduce((acc, d) => acc + d.valorReal, 0);
+    // 6. DRE: Separação Contábil Estrita: Despesas Genuinamente Fixas (Aluguel, Luz, Água, Internet, etc.)
+    // Custos variáveis operacionais de pedidos pertencem estritamente ao CMV (item 2 da DRE) e NÃO podem entrar aqui.
+    const despesasGenuinamenteFixas = despesasLista.filter(d => 
+      !d.pedidoNumero && 
+      !d.origemAutomatica && 
+      !(d.id && (d.id.startsWith('DESP-OP-') || d.id.startsWith('DESP-PREJ-'))) &&
+      d.tipoCusto !== 'Operacional'
+    );
+    const totalDespesasFixasDRE = despesasGenuinamenteFixas.reduce((acc, d) => acc + d.valorReal, 0);
     const ebitda = margemContribuicao - totalDespesasFixasDRE;
     const ebitLucroReal = ebitda - totalDepreciacaoMensal;
 
@@ -17670,13 +17714,26 @@
                 <td class="text-mono" style="text-align: right;">${receitaBruta > 0 ? ((receitaLiquida / receitaBruta) * 100).toFixed(1) : 0}%</td>
               </tr>
               ${(() => {
+                // CONSOLIDAÇÃO DO CUSTO DAS MERCADORIAS VENDIDAS (CMV) POR CATEGORIAS CONTÁBEIS
                 let somaRealTec = 0;
                 let somaRealCost = 0;
                 let somaRealAviam = 0;
                 let somaRealEst = 0;
+                let somaRealTaxas = 0;
+                let somaRealDesvios = 0;
 
                 pedidosOficiais.forEach(p => {
-                  if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
+                  if (p.fechamentoReal && p.fechamentoReal.realizado) {
+                    const r = p.fechamentoReal.realizado;
+                    somaRealTec += (Number(r.tecido) || 0);
+                    somaRealCost += (Number(r.costura) || 0);
+                    somaRealAviam += (Number(r.aviamento) || 0);
+                    somaRealEst += (Number(r.estampa) || 0);
+                    somaRealTaxas += (Number(r.taxas) || 0);
+                    if (p.fechamentoReal.prejuizo > 0) {
+                      somaRealDesvios += Number(p.fechamentoReal.prejuizo);
+                    }
+                  } else if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
                     p.itens.forEach(it => {
                       const q = it.grade?.total || 0;
                       const precoKg = parseFloat(it.custoTecidoKg) || 48.50;
@@ -17685,23 +17742,47 @@
                       somaRealTec += (precoKg * consumo * margem * q);
                       somaRealCost += ((parseFloat(it.custoCostura) || 7.50) * q);
                       somaRealAviam += ((parseFloat(it.custoAviamento) || 4.80) * q);
-                      somaRealEst += ((parseFloat(it.custoEstampaTotal) || 0) * q);
+
+                      if (Array.isArray(it.aplicacoes)) {
+                        it.aplicacoes.forEach(ap => {
+                          const vApp = parseFloat(ap.custoEstimadoUnitario || ap.custoUnitario) || (ap.tipo === 'Bordado' ? 6.50 : 4.50);
+                          somaRealEst += vApp * q;
+                        });
+                      } else {
+                        somaRealEst += ((parseFloat(it.custoEstampaTotal) || 0) * q);
+                      }
                     });
+                    somaRealTaxas += parseFloat(p.taxaTotalOperadoraValor || p.pagamentoDetalhes?.taxaTotalOperadoraValor || 0);
                   } else {
                     const qTot = p.grade?.total || 1;
                     somaRealTec += ((parseFloat(p.custoTecidoPorPeca) || 14.67) * qTot);
                     somaRealCost += ((parseFloat(p.custoCostura) || 7.50) * qTot);
                     somaRealAviam += (4.80 * qTot);
+                    somaRealEst += (parseFloat(p.custoEstampaTotal) || 0);
+                    somaRealTaxas += parseFloat(p.taxaTotalOperadoraValor || 0);
                   }
                 });
 
-                const cmvExibicao = (somaRealTec + somaRealCost + somaRealAviam + somaRealEst) > 0 
-                  ? (somaRealTec + somaRealCost + somaRealAviam + somaRealEst) 
+                // Incorpora eventuais despesas operacionais avulsas de produção cadastradas em db.despesasFixas
+                const despOperacionaisAvulsas = despesasLista.filter(d => 
+                  d.tipoCusto === 'Operacional' || 
+                  (d.id && d.id.startsWith('DESP-PREJ-'))
+                );
+                despOperacionaisAvulsas.forEach(d => {
+                  if (d.id && d.id.startsWith('DESP-PREJ-')) {
+                    if (!pedidosOficiais.some(p => p.numero === d.pedidoNumero && p.fechamentoReal)) {
+                      somaRealDesvios += d.valorReal;
+                    }
+                  }
+                });
+
+                const cmvExibicao = (somaRealTec + somaRealCost + somaRealAviam + somaRealEst + somaRealTaxas + somaRealDesvios) > 0 
+                  ? (somaRealTec + somaRealCost + somaRealAviam + somaRealEst + somaRealTaxas + somaRealDesvios) 
                   : cmvTotal;
 
                 return `
                   <tr class="dre-row-header">
-                    <td>2. (-) CUSTO DAS MERCADORIAS VENDIDAS (CMV DIRETO DOS PEDIDOS)</td>
+                    <td>2. (-) CUSTO DAS MERCADORIAS VENDIDAS (CMV DIRETO DA PRODUÇÃO)</td>
                     <td class="text-mono text-red" style="text-align: right;">- ${formatarMoeda(cmvExibicao)}</td>
                     <td class="text-mono" style="text-align: right;">${receitaLiquida > 0 ? ((cmvExibicao / receitaLiquida) * 100).toFixed(1) : 0}%</td>
                   </tr>
@@ -17722,8 +17803,22 @@
                   </tr>
                   ${somaRealEst > 0 ? `
                     <tr class="dre-row-sub-2">
-                      <td>• Estamparia, DTF Digital & Sublimação (${receitaLiquida > 0 ? ((somaRealEst / receitaLiquida) * 100).toFixed(1) : 0}%)</td>
+                      <td>• Estamparia, DTF Digital, Bordados & Sublimação (${receitaLiquida > 0 ? ((somaRealEst / receitaLiquida) * 100).toFixed(1) : 0}%)</td>
                       <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(somaRealEst)}</td>
+                      <td></td>
+                    </tr>
+                  ` : ''}
+                  ${somaRealTaxas > 0 ? `
+                    <tr class="dre-row-sub-2">
+                      <td>• Taxas Financeiras de Operadoras (Cartão / Boletos) (${receitaLiquida > 0 ? ((somaRealTaxas / receitaLiquida) * 100).toFixed(1) : 0}%)</td>
+                      <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(somaRealTaxas)}</td>
+                      <td></td>
+                    </tr>
+                  ` : ''}
+                  ${somaRealDesvios > 0 ? `
+                    <tr class="dre-row-sub-2">
+                      <td>• Desvios Operacionais de Fechamento / Prejuízos de Produção (${receitaLiquida > 0 ? ((somaRealDesvios / receitaLiquida) * 100).toFixed(1) : 0}%)</td>
+                      <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(somaRealDesvios)}</td>
                       <td></td>
                     </tr>
                   ` : ''}
@@ -17739,7 +17834,7 @@
                 <td class="text-mono text-red" style="text-align: right;">- ${formatarMoeda(totalDespesasFixasDRE)}</td>
                 <td class="text-mono" style="text-align: right;">${receitaLiquida > 0 ? ((totalDespesasFixasDRE / receitaLiquida) * 100).toFixed(1) : 0}%</td>
               </tr>
-              ${despesasLista.length > 0 ? despesasLista.map(d => `
+              ${despesasGenuinamenteFixas.length > 0 ? despesasGenuinamenteFixas.map(d => `
                 <tr class="dre-row-sub-2">
                   <td>• ${d.descricao} (${d.categoria}) ${d.centroCusto ? `[${d.centroCusto}]` : ''} ${d.status === 'Pago' ? '<span style="color:#047857; font-weight:bold; font-size:10px;">[QUITADO]</span>' : '<span style="color:#dc2626; font-size:10px;">[PENDENTE]</span>'}</td>
                   <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(d.valorReal)}</td>
@@ -17747,9 +17842,10 @@
                 </tr>
               `).join('') : `
                 <tr class="dre-row-sub-2">
-                  <td colspan="3" style="color: var(--text-gray-500); font-style: italic;">Nenhuma despesa operacional cadastrada.</td>
+                  <td colspan="3" style="color: var(--text-gray-500); font-style: italic;">Nenhuma despesa fixa estrutural cadastrada (ex: Aluguel, Luz, Internet).</td>
                 </tr>
               `}
+
               <tr class="dre-row-total" style="background: #f8fafc;">
                 <td>(=) RESULTADO OPERACIONAL CAIXA (EBITDA)</td>
                 <td class="text-mono ${ebitda >= 0 ? 'text-green' : 'text-red'}" style="text-align: right; font-weight: 800;">${formatarMoeda(ebitda)}</td>
