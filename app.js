@@ -8548,8 +8548,13 @@
         valorTotal: faturamentoTotalGeral,
         custoTotal: custoTotalGeral,
         custoUnitario: totalPecasGeral > 0 ? (custoTotalGeral / totalPecasGeral) : 24.50,
-        custoTecidoPorPeca: itensOrcamento[0].custoTecidoKg * (itensOrcamento[0].consumoTecido || 0.28) * 1.08,
-        consumoRealComPerda: (itensOrcamento[0].consumoTecido || 0.28) * 1.08,
+        custoTecidoPorPeca: totalPecasGeral > 0 
+          ? (itensOrcamento.reduce((s, it) => s + ((it.custoTecidoKg || 0) * (it.consumoTecido || 0.28) * (1 + ((it.margemErroTecido || 8) / 100)) * (it.grade?.total || 0)), 0) / totalPecasGeral)
+          : (itensOrcamento[0]?.custoTecidoKg || 0) * (itensOrcamento[0]?.consumoTecido || 0.28) * 1.08,
+        consumoRealComPerda: totalPecasGeral > 0
+          ? (itensOrcamento.reduce((s, it) => s + ((it.consumoTecido || 0.28) * (1 + ((it.margemErroTecido || 8) / 100)) * (it.grade?.total || 0)), 0) / totalPecasGeral)
+          : (itensOrcamento[0]?.consumoTecido || 0.28) * 1.08,
+        consumoTotalTecido: itensOrcamento.reduce((s, it) => s + ((it.consumoTecido || 0.28) * (1 + ((it.margemErroTecido || 8) / 100)) * (it.grade?.total || 0)), 0),
         margemErroTecido: itensOrcamento[0].margemErroTecido || 8.0,
         lucroLiquido: lucroTotalGeral,
         lucroBruto: lucroTotalGeral,
@@ -10025,7 +10030,9 @@
         dataPrevisaoEntrega: pedidoOficial.dataPrevisaoEntrega,
         dataMetaInterna: pedidoOficial.dataMetaInterna,
         dtfLarguraRolo: pedidoOficial.dtfLarguraRolo || 58,
-        tecidoConsumidoKg: (pedidoOficial.grade.total * (dadosBase.consumoRealComPerda || 0.28)).toFixed(1),
+        tecidoConsumidoKg: (dadosBase.itens && dadosBase.itens.length > 0)
+          ? dadosBase.itens.reduce((acc, it) => acc + (((it.consumoTecido || 0.28) * (1 + ((it.margemErroTecido || 8) / 100))) * (it.grade?.total || 0)), 0).toFixed(1)
+          : (pedidoOficial.grade.total * (dadosBase.consumoRealComPerda || 0.28)).toFixed(1),
         artesAplicacao: artesLista,
         instrucoesCorte: (dadosBase.itens && dadosBase.itens.length > 1)
           ? `Corte múltiplo para ${dadosBase.itens.length} modelos (${pedidoOficial.grade.total} pçs no total). Consulte a grade de cada modelo nesta Ficha Técnica.`
@@ -10766,13 +10773,114 @@
     // Se modeloIdx for numérico, filtra a visualização para focar 100% naquele modelo específico
     const itAtivo = (modeloIdx !== null && itensLista[modeloIdx]) ? itensLista[modeloIdx] : null;
 
-    const modNome = itAtivo ? itAtivo.produtoNome : os.produto;
+    const modNome = itAtivo
+      ? itAtivo.produtoNome
+      : (temMultiplosModelos
+          ? `${itensLista.length} Modelos Unificados`
+          : (os.produto || (itensLista[0] && itensLista[0].produtoNome) || 'Uniforme'));
+
     const qtdTotal = itAtivo ? (itAtivo.grade?.total || 0) : os.quantidadeTotal;
-    const corTec = itAtivo ? (itAtivo.corPrincipal || itAtivo.corTecido || os.corTecido || 'A Definir') : (os.corTecido || 'A Definir');
-    const obsCores = itAtivo ? (itAtivo.observacoesCoresDetalhes || os.observacoesCoresDetalhes || '') : (os.observacoesCoresDetalhes || '');
+
+    // Cores e Observações de Tecido
+    const corTec = itAtivo
+      ? (itAtivo.corPrincipal || itAtivo.corTecido || os.corTecido || 'A Definir')
+      : (temMultiplosModelos
+          ? Array.from(new Set(itensLista.map(it => it.corPrincipal || it.corTecido || os.corTecido).filter(Boolean))).join(' / ') || os.corTecido || 'A Definir'
+          : (os.corTecido || 'A Definir'));
+
+    const obsCores = itAtivo
+      ? (itAtivo.observacoesCoresDetalhes || os.observacoesCoresDetalhes || '')
+      : (os.observacoesCoresDetalhes || '');
+
     const mockAtivo = itAtivo ? (itAtivo.mockupUrl || os.mockupUrl) : os.mockupUrl;
-    const valorCostura = itAtivo ? (itAtivo.custoCostura || os.valorCosturaPeca || 7.50) : (os.valorCosturaPeca || pedido.custoCostura || 7.50);
-    const totalPagarCostura = valorCostura * qtdTotal;
+
+    // Cálculo do Consumo de Tecido Real Consolidado vs Específico
+    let consumoEstimadoTexto = '0.0';
+    if (itAtivo) {
+      const cUnit = (itAtivo.consumoTecido != null && !isNaN(itAtivo.consumoTecido) && parseFloat(itAtivo.consumoTecido) > 0)
+        ? parseFloat(itAtivo.consumoTecido)
+        : (parseFloat(os.consumoTecido) || 0.28);
+      consumoEstimadoTexto = (cUnit * qtdTotal).toFixed(1);
+    } else if (temMultiplosModelos) {
+      const somaConsumo = itensLista.reduce((acc, it) => {
+        const cUnit = (it.consumoTecido != null && !isNaN(it.consumoTecido) && parseFloat(it.consumoTecido) > 0)
+          ? parseFloat(it.consumoTecido)
+          : (parseFloat(os.consumoTecido) || 0.28);
+        const q = it.grade?.total || 0;
+        return acc + (cUnit * q);
+      }, 0);
+      consumoEstimadoTexto = somaConsumo > 0 ? somaConsumo.toFixed(1) : (parseFloat(os.tecidoConsumidoKg) || (0.28 * qtdTotal)).toFixed(1);
+    } else {
+      const cUnit = parseFloat(os.consumoTecido) || 0.28;
+      consumoEstimadoTexto = (cUnit * qtdTotal).toFixed(1);
+    }
+
+    // Remuneração e Custos de Costura / Facção Consolidado vs Específico
+    let valorCosturaUnitario = 7.50;
+    let totalPagarCostura = 0;
+    let htmlRemuneracaoCostura = '';
+
+    if (itAtivo) {
+      valorCosturaUnitario = (itAtivo.custoCostura != null && !isNaN(itAtivo.custoCostura) && parseFloat(itAtivo.custoCostura) > 0)
+        ? parseFloat(itAtivo.custoCostura)
+        : (parseFloat(os.valorCosturaPeca) || parseFloat(pedido.custoCostura) || 7.50);
+      totalPagarCostura = valorCosturaUnitario * qtdTotal;
+
+      htmlRemuneracaoCostura = `
+        <div style="font-size: 13px; font-weight: 800; color: #0f172a;">
+          <span style="color: #047857;">${formatarMoeda(valorCosturaUnitario)}</span> <span style="font-size: 11px; font-weight: 600; color: #64748b;">/ peça</span> &nbsp;&bull;&nbsp; Total a Pagar à Costureira: <strong style="color: #15803d; font-size: 14px;">${formatarMoeda(totalPagarCostura)}</strong> <span style="font-size: 11px; font-weight: 600; color: #64748b;">(${qtdTotal} pçs deste modelo)</span>
+        </div>
+      `;
+    } else if (temMultiplosModelos) {
+      totalPagarCostura = itensLista.reduce((acc, it) => {
+        const vUnit = (it.custoCostura != null && !isNaN(it.custoCostura) && parseFloat(it.custoCostura) > 0)
+          ? parseFloat(it.custoCostura)
+          : (parseFloat(os.valorCosturaPeca) || parseFloat(pedido.custoCostura) || 7.50);
+        const q = it.grade?.total || 0;
+        return acc + (vUnit * q);
+      }, 0);
+
+      const mediaUnit = qtdTotal > 0 ? (totalPagarCostura / qtdTotal) : 0;
+      const todosMesmoValor = itensLista.every(it => {
+        const v1 = (it.custoCostura != null && !isNaN(it.custoCostura) && parseFloat(it.custoCostura) > 0) ? parseFloat(it.custoCostura) : 7.50;
+        const v0 = (itensLista[0].custoCostura != null && !isNaN(itensLista[0].custoCostura) && parseFloat(itensLista[0].custoCostura) > 0) ? parseFloat(itensLista[0].custoCostura) : 7.50;
+        return Math.abs(v1 - v0) < 0.01;
+      });
+
+      if (todosMesmoValor) {
+        const vUnico = (itensLista[0].custoCostura != null && !isNaN(itensLista[0].custoCostura) && parseFloat(itensLista[0].custoCostura) > 0) ? parseFloat(itensLista[0].custoCostura) : 7.50;
+        htmlRemuneracaoCostura = `
+          <div style="font-size: 13px; font-weight: 800; color: #0f172a;">
+            <span style="color: #047857;">${formatarMoeda(vUnico)}</span> <span style="font-size: 11px; font-weight: 600; color: #64748b;">/ peça</span> &nbsp;&bull;&nbsp; Total a Pagar à Costureira: <strong style="color: #15803d; font-size: 15px;">${formatarMoeda(totalPagarCostura)}</strong> <span style="font-size: 11px; font-weight: 600; color: #64748b;">(${qtdTotal} pçs consolidado)</span>
+          </div>
+        `;
+      } else {
+        htmlRemuneracaoCostura = `
+          <div style="font-size: 13px; font-weight: 800; color: #0f172a;">
+            <span style="color: #0369a1;">Soma dos Modelos (Média ${formatarMoeda(mediaUnit)}/pç)</span> &nbsp;&bull;&nbsp; Total Geral à Costureira: <strong style="color: #15803d; font-size: 15px;">${formatarMoeda(totalPagarCostura)}</strong> <span style="font-size: 11px; font-weight: 600; color: #64748b;">(${qtdTotal} pçs no pedido)</span>
+          </div>
+          <div style="margin-top: 5px; font-size: 10.5px; display: flex; gap: 8px; flex-wrap: wrap;">
+            ${itensLista.map((it, idx) => {
+              const v = (it.custoCostura != null && !isNaN(it.custoCostura) && parseFloat(it.custoCostura) > 0) ? parseFloat(it.custoCostura) : 7.50;
+              const q = it.grade?.total || 0;
+              return `
+                <span style="background: #ffffff; border: 1.5px solid #86efac; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); color: #14532d;">
+                  <strong>Mod ${idx + 1} (${q} pçs):</strong> ${formatarMoeda(v)}/pç = <strong style="color: #15803d;">${formatarMoeda(v * q)}</strong>
+                </span>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+    } else {
+      valorCosturaUnitario = parseFloat(os.valorCosturaPeca) || parseFloat(pedido.custoCostura) || 7.50;
+      totalPagarCostura = valorCosturaUnitario * qtdTotal;
+      htmlRemuneracaoCostura = `
+        <div style="font-size: 13px; font-weight: 800; color: #0f172a;">
+          <span style="color: #047857;">${formatarMoeda(valorCosturaUnitario)}</span> <span style="font-size: 11px; font-weight: 600; color: #64748b;">/ peça</span> &nbsp;&bull;&nbsp; Total a Pagar à Costureira: <strong style="color: #15803d; font-size: 14px;">${formatarMoeda(totalPagarCostura)}</strong> <span style="font-size: 11px; font-weight: 600; color: #64748b;">(${qtdTotal} pçs)</span>
+        </div>
+      `;
+    }
     const prazoCli = os.prazoPedidoDias || pedido.prazoPedidoDias || 15;
     const prazoInt = os.prazoInternoDias || pedido.prazoInternoDias || 10;
     const dataEntrega = os.dataPrevisaoEntrega || pedido.dataPrevisaoEntrega || calcularDataFuturaDiasUteis(prazoCli);
@@ -10898,22 +11006,32 @@
         <div style="flex: 1;">
           <div class="grid-cards-2" style="gap: 8px; font-size: 11.5px;">
             <div><strong>Cliente:</strong> ${os.cliente}</div>
-            <div><strong>Produto Têxtil:</strong> <strong style="color: #1e40af;">${modNome}</strong></div>
-            <div><strong>Total de Peças:</strong> <span style="font-weight: 800; color: #047857; font-size: 12.5px;">${qtdTotal} un</span> ${itAtivo ? `<span style="font-size: 10px; color: #64748b;">(deste modelo)</span>` : ''}</div>
+            <div>
+              <strong>Produto Têxtil:</strong> 
+              ${itAtivo ? `
+                <strong style="color: #1e40af;">${modNome}</strong>
+              ` : (temMultiplosModelos ? `
+                <strong style="color: #1e40af;">${itensLista.length} Modelos Unificados</strong>
+                <div style="font-size: 10.5px; color: #475569; margin-top: 3px; line-height: 1.35;">
+                  ${itensLista.map((it, idx) => `<span style="display: inline-block; margin-right: 8px;">• <strong>Mod ${idx + 1}:</strong> ${it.produtoNome} (<strong>${it.grade?.total || 0} pçs</strong>)</span>`).join('')}
+                </div>
+              ` : `
+                <strong style="color: #1e40af;">${modNome}</strong>
+              `)}
+            </div>
+            <div><strong>Total de Peças:</strong> <span style="font-weight: 800; color: #047857; font-size: 12.5px;">${qtdTotal} un</span> ${itAtivo ? `<span style="font-size: 10px; color: #64748b;">(deste modelo)</span>` : (temMultiplosModelos ? `<span style="font-size: 10px; color: #64748b;">(total do pedido)</span>` : '')}</div>
             <div><strong>Costureira Designada:</strong> <span style="font-weight: 800; color: #047857;">${os.costureiraDesignada}</span></div>
             <div><strong>Encarregado de Corte:</strong> ${os.responsavelCorte}</div>
-            <div><strong>Consumo Estimado:</strong> ${((itAtivo ? (itAtivo.consumoTecido || 0.28) : 0.28) * qtdTotal).toFixed(1)} ${(pedido.unidadeTecido === 'metro' ? 'metros' : 'kg de malha')}</div>
+            <div><strong>Consumo Estimado:</strong> <strong>${consumoEstimadoTexto}</strong> ${(pedido.unidadeTecido === 'metro' ? 'metros' : 'kg de malha')}${(!itAtivo && temMultiplosModelos) ? ` <span style="font-size: 10px; color: #64748b;">(soma dos modelos)</span>` : ''}</div>
           </div>
 
           <!-- REMUNERAÇÃO & CONTROLE DA COSTUREIRA / FACÇÃO -->
           <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 4px; padding: 9px 12px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
             <div>
-              <span style="font-size: 10px; font-weight: 800; color: #15803d; text-transform: uppercase; letter-spacing: 0.5px; display: block;">
+              <span style="font-size: 10px; font-weight: 800; color: #15803d; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">
                 🧵 Remuneração da Costura (Facção / Produção):
               </span>
-              <div style="font-size: 13px; font-weight: 800; color: #0f172a;">
-                <span style="color: #047857;">${formatarMoeda(valorCostura)}</span> <span style="font-size: 11px; font-weight: 600; color: #64748b;">/ peça</span> &nbsp;&bull;&nbsp; Total a Pagar à Costureira: <strong style="color: #15803d; font-size: 14px;">${formatarMoeda(totalPagarCostura)}</strong> <span style="font-size: 11px; font-weight: 600; color: #64748b;">(${qtdTotal} pçs)</span>
-              </div>
+              ${htmlRemuneracaoCostura}
             </div>
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
               ${!os.desmembrada ? `
@@ -10942,17 +11060,22 @@
             ESPECIFICAÇÃO DE CORES & DETALHES DE CONFECÇÃO:
           </strong>
           <span style="font-size: 11px; background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 3px; font-weight: 800; border: 1px solid #fde68a;">
-            COR PRINCIPAL: ${(os.corTecido || pedido.corTecido || 'A DEFINIR').toUpperCase()}
+            COR PRINCIPAL: ${(corTec || 'A DEFINIR').toUpperCase()}
           </span>
         </div>
         <div style="font-size: 11.5px; color: #78350f; line-height: 1.45;">
-          ${(os.observacoesCoresDetalhes || pedido.observacoesCoresDetalhes) ? `
+          ${(obsCores) ? `
             <div style="background: #ffffff; border: 1.5px solid #fde68a; border-radius: 3px; padding: 6px 10px; margin-top: 4px;">
               <strong style="color: #b45309;">⚠️ ATENÇÃO CORTE / COSTURA / COMPRA DE MATERIAIS (DETALHES DE COR):</strong><br>
-              <span style="font-size: 12px; font-weight: 700; color: #0f172a;">${os.observacoesCoresDetalhes || pedido.observacoesCoresDetalhes}</span>
+              <span style="font-size: 12px; font-weight: 700; color: #0f172a;">${obsCores}</span>
+            </div>
+          ` : (temMultiplosModelos && !itAtivo && itensLista.some(it => it.observacoesCoresDetalhes)) ? `
+            <div style="background: #ffffff; border: 1.5px solid #fde68a; border-radius: 3px; padding: 6px 10px; margin-top: 4px;">
+              <strong style="color: #b45309;">⚠️ DETALHES POR MODELO:</strong><br>
+              ${itensLista.map((it, idx) => it.observacoesCoresDetalhes ? `<span style="font-size: 11.5px; display: block; margin-top: 2px;">• <strong>Mod ${idx + 1} (${it.produtoNome}):</strong> ${it.observacoesCoresDetalhes}</span>` : '').filter(Boolean).join('')}
             </div>
           ` : `
-            <span style="color: #64748b; font-style: italic;">Peça monocromática na cor principal informada acima. Sem recortes ou frisos contrastantes adicionais.</span>
+            <span style="color: #64748b; font-style: italic;">Peça monocromática na cor informada acima. Sem recortes ou frisos contrastantes adicionais.</span>
           `}
         </div>
       </div>
