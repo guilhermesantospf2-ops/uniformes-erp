@@ -4294,13 +4294,13 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
       }
     }
 
-    // Expõe alternância para o clique no cabeçalho Nº / DATA da tabela
-    window.ERP.alternarOrdenacaoPedidos = function() {
+    function alternarOrdenacaoPedidos() {
       ordenacaoPedidos = (ordenacaoPedidos === 'desc') ? 'asc' : 'desc';
       const sel = document.getElementById('filtroPedidoOrdem');
       if (sel) sel.value = ordenacaoPedidos;
       aplicarFiltros();
-    };
+    }
+    window.ERP.alternarOrdenacaoPedidos = alternarOrdenacaoPedidos;
 
     buscaInput?.addEventListener('input', aplicarFiltros);
     statusSelect?.addEventListener('change', aplicarFiltros);
@@ -4802,7 +4802,9 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
 
     // Ver / Imprimir OS
     document.querySelectorAll('.btn-ver-os').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
         const id = btn.getAttribute('data-id');
         const p = (db.pedidos || []).find(x => x.id === id);
         if (p) {
@@ -12060,12 +12062,20 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
     pageBreadcrumbElem.textContent = 'SISTEMA > OS & FICHAS TÉCNICAS';
 
     contentArea.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <p style="color: var(--text-gray-500);">Fichas de produção com especificações de corte, costureira designada, consumo de malha e artes.</p>
-        <span class="status-pill status-gray text-mono">${db.ordensServico.length} Fichas de Produção Ativas</span>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <p style="color: var(--text-gray-500); margin: 0;">Fichas de produção com especificações de corte, costureira designada, consumo de malha e artes.</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="status-pill status-gray text-mono">${(db.ordensServico || []).length} Fichas de Produção Ativas</span>
+          <button class="btn btn-primary btn-sm" id="btnEmitirNovaOSTopo" style="font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Emitir Nova OS / Ficha Técnica
+          </button>
+        </div>
       </div>
 
-      <div class="table-wrapper">
+<div class="table-wrapper">
         <table class="erp-table">
           <thead>
             <tr>
@@ -12186,7 +12196,11 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
       </div>
     `;
 
-    document.querySelectorAll('.btn-imprimir-os').forEach(btn => {
+        document.getElementById('btnEmitirNovaOSTopo')?.addEventListener('click', () => {
+      abrirModalSelecionarPedidoParaOS();
+    });
+
+document.querySelectorAll('.btn-imprimir-os').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
         abrirFichaTecnica(id);
@@ -12197,7 +12211,88 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
   /**
    * FORMATAÇÃO DE TAMANHO DE ARQUIVOS (BYTES -> KB / MB)
    */
-  function formatarTamanhoBytes(bytes) {
+  
+  /**
+   * MODAL SELETOR DE EMISSÃO RÁPIDA DE ORDEM DE SERVIÇO (OS INDUSTRIAL)
+   */
+  function abrirModalSelecionarPedidoParaOS() {
+    if (!modalContainer) return;
+    const pedidosLista = (db.pedidos || []).filter(p => p.status !== 'Cancelado');
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active" id="modalSelecionarPedidoOSOverlay">
+        <div class="modal-box" style="max-width: 820px;">
+          <div class="modal-header">
+            <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+              Emitir Nova Ordem de Serviço (OS) / Ficha Técnica
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
+          </div>
+          <div class="modal-body" style="padding: 16px 20px;">
+            <p style="font-size: 13px; color: #475569; margin-bottom: 14px;">
+              Selecione o pedido da confecção para gerar e abrir imediatamente a Ordem de Produção Industrial com a Ficha Técnica A4 oficial da oficina:
+            </p>
+
+            <div class="table-wrapper" style="max-height: 420px; overflow-y: auto;">
+              <table class="erp-table">
+                <thead>
+                  <tr>
+                    <th>Pedido</th>
+                    <th>Cliente</th>
+                    <th>Produto / Modelos</th>
+                    <th>Grade Total</th>
+                    <th>Etapa Atual</th>
+                    <th style="text-align: right;">Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${pedidosLista.length > 0 ? pedidosLista.map(p => {
+                    const osExist = (db.ordensServico || []).find(o => (o.pedidoNumero != null && p.numero != null && String(o.pedidoNumero) === String(p.numero)) || o.pedidoId === p.id);
+                    const qtdTotal = p.grade?.total || (Array.isArray(p.itens) ? p.itens.reduce((acc, it) => acc + (it.grade?.total || 0), 0) : 0);
+                    return `
+                      <tr>
+                        <td><strong class="text-mono">#${p.numero || p.id}</strong></td>
+                        <td><strong>${p.clienteNome || 'Cliente'}</strong></td>
+                        <td>${p.produtoNome || (p.itens && p.itens[0]?.produtoNome) || 'Uniforme'}</td>
+                        <td class="text-mono" style="font-weight: 700; color: #047857;">${qtdTotal} pçs</td>
+                        <td><span class="status-pill status-blue">${p.etapaProducao || p.status || 'Ativo'}</span></td>
+                        <td style="text-align: right;">
+                          <button class="btn btn-primary btn-sm btn-emitir-os-linha" data-id="${p.id}" style="font-weight: 800; font-size: 11.5px; padding: 4px 10px;">
+                            ${osExist ? '✓ Abrir OS' : '✂️ Gerar e Emitir OS'}
+                          </button>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('') : `
+                    <tr>
+                      <td colspan="6" style="text-align: center; padding: 30px; color: #64748b;">
+                        Nenhum pedido ativo encontrado. Crie um novo pedido ou aprove um orçamento para emitir a OS.
+                      </td>
+                    </tr>
+                  `}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-footer" style="display: flex; justify-content: flex-end;">
+            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    modalEl.querySelectorAll('.btn-emitir-os-linha').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const pId = btn.getAttribute('data-id');
+        fecharModal();
+        abrirFichaTecnica(pId);
+      });
+    });
+  }
+
+function formatarTamanhoBytes(bytes) {
     if (!bytes || isNaN(bytes)) return 'Arquivo pronto';
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -12221,7 +12316,14 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
     }
   }
 
-  function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
+    function abrirModalMockup3x4(pedidoIdOuNumero, modeloIdx = null) {
+    if (modeloIdx !== null) {
+      return abrirModalVisualizarMockup({ pedidoId: pedidoIdOuNumero, itemIdx: modeloIdx });
+    }
+    return abrirModalVisualizarMockup(pedidoIdOuNumero);
+  }
+
+function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
     abrirModalMockup3x4(pedidoIdOuNumero);
   }
 
@@ -12748,7 +12850,7 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
         <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 4px; padding: 8px 12px; font-size: 11px; flex-wrap: wrap; gap: 8px;">
           <div><strong>Costureira / Facção:</strong> ${os.costureiraDesignada}</div>
           <div><strong>Qtd Peças:</strong> ${qtdTotal} un ${itAtivo ? `(Mod ${modeloIdx + 1})` : ''}</div>
-          <div><strong>Valor Unitário MDO:</strong> ${formatarMoeda(valorCostura)} / pç</div>
+          <div><strong>Valor Unitário MDO:</strong> ${formatarMoeda(valorCosturaUnitario)} / pç</div>
           <div><strong>Total a Receber:</strong> <strong style="color: #15803d; font-size: 13.5px;">${formatarMoeda(totalPagarCostura)}</strong></div>
           <div style="border-bottom: 1px solid #475569; width: 150px; text-align: center; font-size: 9px; color: #64748b; margin-top: 6px;">
             Assinatura / Visto de Entrega
@@ -12759,8 +12861,35 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
   }
 
   function abrirFichaTecnica(osId, modeloFiltroInicial = null) {
-    const os = (db.ordensServico || []).find(o => o.id === osId || (o.pedidoNumero != null && o.pedidoNumero.toString() === osId.toString()));
-    if (!os || !modalContainer) return;
+    if (!modalContainer) return;
+
+    const idStr = String(osId || '').trim();
+    const numLimpo = idStr.replace(/\D/g, '');
+
+    let os = (db.ordensServico || []).find(o =>
+      o.id === idStr ||
+      (o.pedidoNumero != null && String(o.pedidoNumero) === idStr) ||
+      (numLimpo && o.pedidoNumero != null && String(o.pedidoNumero) === numLimpo) ||
+      (o.pedidoId && (o.pedidoId === idStr || o.pedidoId === `PED-${numLimpo}`))
+    );
+
+    if (!os) {
+      // Se a OS ainda nao existe em db.ordensServico, busca o pedido correspondente e gera a OS automaticamente
+      const ped = (db.pedidos || []).find(p =>
+        p.id === idStr ||
+        (p.numero != null && String(p.numero) === idStr) ||
+        (numLimpo && p.numero != null && String(p.numero) === numLimpo) ||
+        (numLimpo && p.id === `PED-${numLimpo}`)
+      );
+      if (ped) {
+        return abrirFichaTecnicaPorPedido(ped, modeloFiltroInicial);
+      }
+    }
+
+    if (!os) {
+      mostrarToast('Ordem de Serviço não localizada para este pedido.', 'yellow');
+      return;
+    }
 
     const pedido = (db.pedidos || []).find(p => (p.numero != null && os.pedidoNumero != null && p.numero.toString() === os.pedidoNumero.toString()) || p.id === os.pedidoId) || {};
     const itensLista = (os.itens && Array.isArray(os.itens) && os.itens.length > 0)
@@ -13148,9 +13277,26 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
   }
 
   function imprimirFichaTecnicaIsolada(osId, modeloIdx = null) {
-    const os = (db.ordensServico || []).find(o => o.id === osId || (o.pedidoNumero != null && o.pedidoNumero.toString() === osId.toString()));
+    const idStr = String(osId || '').trim();
+    const numLimpo = idStr.replace(/\D/g, '');
+
+    let os = (db.ordensServico || []).find(o =>
+      o.id === idStr ||
+      (o.pedidoNumero != null && String(o.pedidoNumero) === idStr) ||
+      (numLimpo && o.pedidoNumero != null && String(o.pedidoNumero) === numLimpo) ||
+      (o.pedidoId && (o.pedidoId === idStr || o.pedidoId === `PED-${numLimpo}`))
+    );
+
     if (!os) {
-      mostrarToast('Ordem de serviço não encontrada.', 'red');
+      const ped = (db.pedidos || []).find(p =>
+        p.id === idStr ||
+        (p.numero != null && String(p.numero) === idStr) ||
+        (numLimpo && p.numero != null && String(p.numero) === numLimpo)
+      );
+      if (ped) {
+        return abrirFichaTecnicaPorPedido(ped, modeloIdx);
+      }
+      mostrarToast('Ordem de Serviço não localizada.', 'red');
       return;
     }
     let html = gerarHtmlCorpoFichaTecnica(os, modeloIdx);
@@ -13168,43 +13314,61 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
     imprimirDocumentoIsolado(html, `Ficha_Tecnica_${os.id}${sufixo}`);
   }
 
-  function abrirFichaTecnicaPorPedido(p) {
-    const corTec = p.corTecido || 'A Definir';
+  function abrirFichaTecnicaPorPedido(p, modeloFiltroInicial = null) {
+    if (!p) {
+      mostrarToast('Nenhum pedido válido selecionado para emitir OS.', 'yellow');
+      return;
+    }
+    const corTec = p.corTecido || p.corPrincipal || 'A Definir';
     const obsCores = p.observacoesCoresDetalhes || '';
+    const numPed = p.numero || (p.id ? String(p.id).replace(/\D/g, '') : '') || Math.floor(100 + Math.random() * 900);
+
+    // Evita duplicar se ja existir
+    let osExistente = (db.ordensServico || []).find(o =>
+      (o.pedidoNumero != null && String(o.pedidoNumero) === String(numPed)) ||
+      (p.id && o.pedidoId === p.id)
+    );
+    if (osExistente) {
+      return abrirFichaTecnica(osExistente.id, modeloFiltroInicial);
+    }
+
+    const totalPecas = p.grade?.total || (Array.isArray(p.itens) ? p.itens.reduce((acc, it) => acc + (it.grade?.total || 0), 0) : 0) || 1;
 
     const osTemp = {
-      id: `OS-${p.numero}`,
-      pedidoNumero: p.numero,
-      cliente: p.clienteNome,
-      produto: p.produtoNome,
-      itens: Array.isArray(p.itens) ? JSON.parse(JSON.stringify(p.itens)) : [],
+      id: `OS-${numPed}`,
+      pedidoId: p.id || `PED-${numPed}`,
+      pedidoNumero: numPed,
+      cliente: p.clienteNome || p.cliente || 'Cliente',
+      produto: p.produtoNome || p.produto || (p.itens && p.itens[0]?.produtoNome) || 'Uniforme',
+      itens: Array.isArray(p.itens) && p.itens.length > 0 ? JSON.parse(JSON.stringify(p.itens)) : [],
       corTecido: corTec,
       observacoesCoresDetalhes: obsCores,
-      mockupUrl: p.mockupUrl,
-      quantidadeTotal: p.grade?.total || 0,
-      grade: p.grade,
+      mockupUrl: p.mockupUrl || (p.itens && p.itens[0]?.mockupUrl) || '',
+      quantidadeTotal: totalPecas,
+      grade: p.grade || (p.itens && p.itens[0]?.grade) || { total: totalPecas },
       tipoPedidoModalidade: p.tipoPedidoModalidade || 'padrao',
       jogadores: Array.isArray(p.jogadores) ? JSON.parse(JSON.stringify(p.jogadores)) : [],
-      etapaAtual: p.etapaProducao,
+      etapaAtual: p.etapaProducao || 'Corte',
       costureiraDesignada: p.costureiraNome || "Oficina Interna",
       responsavelCorte: "Vanderlei Souza",
-      dataEntradaCorte: p.dataCriacao,
+      dataEntradaCorte: p.dataCriacao || new Date().toISOString().split('T')[0],
       prazoPedidoDias: p.prazoPedidoDias || 15,
       prazoInternoDias: p.prazoInternoDias || 10,
       dataPrevisaoEntrega: p.dataPrevisaoEntrega || calcularDataFuturaDiasUteis(15),
       dataMetaInterna: p.dataMetaInterna || calcularDataFuturaDiasUteis(10),
       dtfLarguraRolo: p.dtfLarguraRolo || 58,
-      tecidoConsumidoKg: ((p.grade?.total || 1) * 0.28).toFixed(1),
+      tecidoConsumidoKg: (totalPecas * (parseFloat(p.consumoRealComPerda) || 0.28)).toFixed(1),
       artesAplicacao: p.artesAnexadas || [],
-      instrucoesCorte: `Enfesto e corte padrão para ${p.grade?.total || 0} peças de ${p.produtoNome}. Cor: ${corTec}.${obsCores ? ' ATENÇÃO AOS DETALHES DE COR: ' + obsCores : ''}`,
+      instrucoesCorte: `Enfesto e corte padrão para ${totalPecas} peças. Cor: ${corTec}.${obsCores ? ' ATENÇÃO AOS DETALHES DE COR: ' + obsCores : ''}`,
       instrucoesCostura: `Costura reforçada de ombro a ombro.${obsCores ? ' DETALHES DE CONFECÇÃO: ' + obsCores : ''}`,
       statusBordado: "Pendente",
       statusCostura: "Pendente",
       statusAcabamento: "Pendente"
     };
+    if (!Array.isArray(db.ordensServico)) db.ordensServico = [];
     db.ordensServico.unshift(osTemp);
     salvarEstado();
-    abrirFichaTecnica(osTemp.id);
+    abrirFichaTecnica(osTemp.id, modeloFiltroInicial);
   }
 
   /* ==========================================================================
@@ -26951,6 +27115,16 @@ function obterConfigFiscal() {
     fecharModal,
     fecharTodosModais,
     abrirFichaTecnica,
+    abrirModalOS: (id, modIdx) => abrirFichaTecnica(id, modIdx),
+    emitirOS: (id, modIdx) => abrirFichaTecnica(id, modIdx),
+    abrirOS: (id, modIdx) => abrirFichaTecnica(id, modIdx),
+    imprimirOS: (id, modIdx) => imprimirFichaTecnicaIsolada(id, modIdx),
+    abrirModalSelecionarPedidoParaOS,
+    abrirModalMockup3x4,
+    obterCustosPrevistosPedido,
+    abrirModalFechamentoPrevistoRealizadoPedido,
+    cancelarEntradaEstoque,
+    alternarOrdenacaoPedidos: () => { if (typeof alternarOrdenacaoPedidos === 'function') return alternarOrdenacaoPedidos(); },
     imprimirFichaTecnicaIsolada,
     abrirModalRepartirOS,
     fecharModalRepartir,
