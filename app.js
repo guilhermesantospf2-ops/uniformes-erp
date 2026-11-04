@@ -4840,6 +4840,39 @@
               </div>
             </div>
 
+            <!-- Condição Comercial & Parcelas do Saldo Cadastradas -->
+            ${(p.pagamentoDetalhes && p.pagamentoDetalhes.parcelas && p.pagamentoDetalhes.parcelas.length > 0) ? `
+              <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <strong style="font-size: 11.5px; color: #1e40af;">
+                    📅 Parcelas do Saldo (${p.pagamentoDetalhes.parcelasQtd}x via ${p.pagamentoDetalhes.formaSaldo}):
+                  </strong>
+                  <span style="font-size: 10.5px; color: #1d4ed8; font-weight: 700;">${p.condicaoPagamento || ''}</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  ${p.pagamentoDetalhes.parcelas.map(parc => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 6px 10px; border-radius: 4px; border: 1px solid ${parc.status === 'Pago' ? '#86efac' : '#dbeafe'}; font-size: 11.5px;">
+                      <div>
+                        <strong>${parc.numero}ª Parcela</strong>
+                        <span style="color: var(--text-gray-500); margin-left: 8px;">Venc: ${formatarDataBr(parc.dataVencimento)}</span>
+                        <span class="status-pill ${parc.status === 'Pago' ? 'status-green' : 'status-yellow'}" style="font-size: 9px; margin-left: 6px;">
+                          ${parc.status === 'Pago' ? '✓ QUITADA' : '🟡 PENDENTE'}
+                        </span>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <strong class="text-mono" style="color: ${parc.status === 'Pago' ? '#166534' : '#b45309'};">${formatarMoeda(parc.valor)}</strong>
+                        ${parc.status !== 'Pago' ? `
+                          <button type="button" class="btn btn-secondary btn-xs btn-preencher-parc-avulsa" data-val="${parc.valor}" data-parc="${parc.numero}" data-forma="${parc.formaPagamento}" style="font-size: 10px; font-weight: 700; color: #1d4ed8;">
+                            Baixar Esta Parcela
+                          </button>
+                        ` : ''}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+
             <!-- Histórico de Pagamentos se houver -->
             ${(historico.length > 0 || (jaPago > 0 && historico.length === 0)) ? `
               <div style="margin-bottom: 16px;">
@@ -4950,9 +4983,16 @@
                     <label class="form-label">Data do Recebimento</label>
                     <input type="date" id="pagInputData" class="form-input text-mono" value="${new Date().toISOString().split('T')[0]}">
                   </div>
-                  <div class="form-group" style="flex: 2;">
-                    <label class="form-label">Observações / Comprovante (Opcional)</label>
-                    <input type="text" id="pagInputObs" class="form-input" placeholder="Ex: Entrada em dinheiro na loja, PIX CNPJ...">
+                  <div class="form-group" style="flex: 1;">
+                    <label class="form-label" title="Taxa cobrada pela maquininha/banco neste recebimento">Taxa Operadora (%)</label>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <input type="number" id="pagInputTaxaPerc" class="form-input text-mono" min="0" max="25" step="0.1" value="0.0">
+                      <span style="font-size: 12px; font-weight: 700; color: var(--text-gray-500);">%</span>
+                    </div>
+                  </div>
+                  <div class="form-group" style="flex: 1.5;">
+                    <label class="form-label">Observações / Comprovante</label>
+                    <input type="text" id="pagInputObs" class="form-input" placeholder="Ex: Baixa de parcela, comprovante PIX...">
                   </div>
                 </div>
 
@@ -5049,6 +5089,26 @@
       });
     });
 
+    document.querySelectorAll('.btn-preencher-parc-avulsa').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = parseFloat(btn.getAttribute('data-val') || 0);
+        const parcNum = btn.getAttribute('data-parc');
+        const forma = btn.getAttribute('data-forma');
+        if (inputValor) {
+          inputValor.value = Math.min(saldoDevedor, val).toFixed(2);
+          atualizarCalculosPagamento('valor');
+        }
+        const selForma = document.getElementById('pagInputForma');
+        if (selForma && forma) {
+          selForma.value = forma.includes('Cartão') ? 'Cartão de Crédito' : (forma.includes('Boleto') ? 'Boleto' : (forma.includes('PIX') ? 'PIX' : forma));
+        }
+        const inpObs = document.getElementById('pagInputObs');
+        if (inpObs) {
+          inpObs.value = `Quitação da Parcela ${parcNum} do Pedido #${p.numero}`;
+        }
+      });
+    });
+
     document.getElementById('btnConfirmarRecebimentoPagamento')?.addEventListener('click', () => {
       const valor = parseFloat(inputValor?.value || 0);
       if (isNaN(valor) || valor <= 0) {
@@ -5085,15 +5145,35 @@
         }
       }
 
+      // Registra taxa financeira da operadora se informada na baixa
+      const taxaPercBaixa = parseFloat(document.getElementById('pagInputTaxaPerc')?.value || 0);
+      const taxaValorBaixa = taxaPercBaixa > 0 ? parseFloat(((valor * taxaPercBaixa) / 100).toFixed(2)) : 0;
+      if (taxaValorBaixa > 0) {
+        p.taxaTotalOperadoraValor = parseFloat(((p.taxaTotalOperadoraValor || 0) + taxaValorBaixa).toFixed(2));
+      }
+
+      // Se houver parcelas no pedido, marca a parcela correspondente como Paga
+      if (p.pagamentoDetalhes && Array.isArray(p.pagamentoDetalhes.parcelas)) {
+        const parcPendente = p.pagamentoDetalhes.parcelas.find(pc => pc.status !== 'Pago');
+        if (parcPendente) {
+          parcPendente.status = 'Pago';
+          parcPendente.dataPagamento = dataPag;
+        }
+      }
+
       p.historicoPagamentos.push({
         id: `PAG-${Math.floor(1000 + Math.random() * 9000)}`,
         data: dataPag,
         descricao: quitou ? 'Quitação Integral' : 'Recebimento Parcial',
         formaPagamento: formaPag,
         valor: valor,
+        taxaOperadoraValor: taxaValorBaixa,
         observacao: obsPag,
         saldoRestante: novoSaldoPendente
       });
+
+      // Sincroniza custos financeiros no Contas a Pagar
+      sincronizarCustosOperacionaisDosPedidos();
 
       // Lança no financeiro com o nome do cliente
       db.lancamentosFinanceiros.unshift({
@@ -9604,15 +9684,18 @@
               `}
             </div>
 
-            <!-- 3. Dados Financeiros & Entrada de Sinal (Valor ou Porcentagem) -->
+            <!-- 3. Condições Comerciais, Entrada, Parcelamento do Saldo & Taxas de Operadora -->
             <div style="background: #ffffff; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); padding: 14px; margin-top: 14px;">
-              <span class="form-label" style="font-weight: 800; color: var(--text-primary); margin-bottom: 8px; display: block;">
-                Condições Comerciais, Entrada de Sinal & Saldo Remanescente:
-              </span>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+                <span class="form-label" style="font-weight: 800; color: var(--text-primary); margin: 0; font-size: 13px;">
+                  💳 Condições Comerciais, Entrada de Sinal & Saldo Remanescente
+                </span>
+                <span style="font-size: 11px; color: var(--text-gray-500);">Homologação imediata no Financeiro, Caixa e DRE</span>
+              </div>
 
-              <!-- Atalhos rápidos de porcentagem -->
-              <div style="display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; align-items: center;">
-                <span style="font-size: 11px; color: var(--text-gray-500);">Atalhos de Entrada:</span>
+              <!-- Atalhos rápidos de entrada -->
+              <div style="display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
+                <span style="font-size: 11px; color: var(--text-gray-500); font-weight: 600;">Atalhos de Entrada:</span>
                 <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada" data-perc="0">0% (Sem Entrada)</button>
                 <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada" data-perc="30">30% Entrada</button>
                 <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada" data-perc="40">40% Entrada</button>
@@ -9620,48 +9703,117 @@
                 <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada" data-perc="100">100% (À Vista Total)</button>
               </div>
 
-              <div class="form-row">
-                <div class="form-group" style="flex: 1.2;">
-                  <label class="form-label">Valor Total do Pedido (R$)</label>
-                  <input type="text" id="finValorTotalPedido" class="form-input text-mono" style="font-weight: 800; font-size: 15px;" value="${formatarMoeda(totalVenda)}" readonly>
+              <!-- BLOCO 1: ENTRADA / SINAL INICIAL -->
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span style="font-size: 12px; font-weight: 800; color: #1e3a8a;">💰 1. Entrada / Sinal Inicial (Se houver)</span>
+                  <span id="badgeStatusEntrada" class="status-pill status-green" style="font-size: 9.5px; font-weight: 700;">COM ENTRADA</span>
                 </div>
 
-                <div class="form-group" style="flex: 0.9;">
-                  <label class="form-label">Entrada (%)</label>
-                  <div style="display: flex; align-items: center; gap: 4px;">
-                    <input type="number" id="finPercEntrada" class="form-input text-mono" min="0" max="100" step="5" value="50" style="font-weight: 700; font-size: 15px;">
-                    <span style="font-size: 13px; font-weight: 700; color: var(--text-gray-500);">%</span>
+                <div class="form-row">
+                  <div class="form-group" style="flex: 1.1;">
+                    <label class="form-label">Total Pedido (R$)</label>
+                    <input type="text" id="finValorTotalPedido" class="form-input text-mono" style="font-weight: 800; font-size: 14px;" value="${formatarMoeda(totalVenda)}" readonly>
+                  </div>
+
+                  <div class="form-group" style="flex: 0.8;">
+                    <label class="form-label">Entrada (%)</label>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <input type="number" id="finPercEntrada" class="form-input text-mono" min="0" max="100" step="5" value="50" style="font-weight: 700; font-size: 14px;">
+                      <span style="font-size: 13px; font-weight: 700; color: var(--text-gray-500);">%</span>
+                    </div>
+                  </div>
+
+                  <div class="form-group" style="flex: 1.2;">
+                    <label class="form-label">Valor Entrada (R$)</label>
+                    <input type="number" id="finValorSinalRecebido" class="form-input text-mono" style="font-weight: 800; font-size: 14px; color: var(--color-green);" value="${sinalSugerido.toFixed(2)}" step="10.00">
+                  </div>
+
+                  <div class="form-group" style="flex: 1.4;">
+                    <label class="form-label">Forma de Pagto (Entrada)</label>
+                    <select id="finFormaPagamentoSinal" class="form-select" style="font-size: 12px;">
+                      <option value="PIX">PIX (Banco da Confecção)</option>
+                      <option value="Dinheiro">Dinheiro em Espécie</option>
+                      <option value="Cartão de Débito">Cartão de Débito</option>
+                      <option value="Cartão de Crédito">Cartão de Crédito (1x)</option>
+                      <option value="TED/Transferência">TED / Transferência Bancária</option>
+                      <option value="Boleto à Vista">Boleto Bancário à Vista</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group" style="flex: 1.1;">
+                    <label class="form-label" title="Taxa cobrada pela maquininha/banco na entrada">Taxa Operadora (%)</label>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <input type="number" id="finTaxaEntradaPerc" class="form-input text-mono" min="0" max="25" step="0.1" value="0.0" style="font-size: 13px; font-weight: 700;">
+                      <span style="font-size: 12px; font-weight: 700; color: var(--text-gray-500);">%</span>
+                    </div>
+                    <span id="labelValorTaxaEntrada" style="font-size: 10px; color: #dc2626; font-weight: 700; display: block; margin-top: 2px;">Custo: R$ 0,00</span>
                   </div>
                 </div>
 
-                <div class="form-group" style="flex: 1.3;">
-                  <label class="form-label">Valor da Entrada (R$)</label>
-                  <input type="number" id="finValorSinalRecebido" class="form-input text-mono" style="font-weight: 800; font-size: 15px; color: var(--color-green);" value="${sinalSugerido.toFixed(2)}" step="10.00">
-                </div>
-
-                <div class="form-group" style="flex: 1.4;">
-                  <label class="form-label">Forma de Pagamento</label>
-                  <select id="finFormaPagamentoSinal" class="form-select">
-                    <option value="PIX">PIX (Banco da Confecção)</option>
-                    <option value="Dinheiro">Dinheiro em Espécie</option>
-                    <option value="Cartão de Crédito">Cartão de Crédito</option>
-                    <option value="Cartão de Débito">Cartão de Débito</option>
-                    <option value="TED/Transferência">TED / Transferência Bancária</option>
-                    <option value="Boleto 50%">Boleto Bancário</option>
-                  </select>
+                <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                  <input type="checkbox" id="chkSinalCompensado" class="quarentena-checkbox" checked>
+                  <label for="chkSinalCompensado" style="font-size: 11.5px; font-weight: 700; cursor: pointer; color: var(--text-primary);">
+                    Confirmar sinal já recebido e lançar entrada imediata no Fluxo de Caixa (Financeiro)
+                  </label>
                 </div>
               </div>
 
-              <!-- Saldo Remanescente em tempo real -->
-              <div id="boxSaldoRemanescenteAvanco" style="margin-top: 10px; padding: 10px 12px; border-radius: var(--radius-sm); font-size: 11.5px; background: #fffbeb; border: 1px solid #fde68a; color: #92400e;">
+              <!-- BLOCO 2: SALDO REMANESCENTE & PARCELAMENTO DA OUTRA PARTE -->
+              <div id="boxSaldoRemanescenteContainer" style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span style="font-size: 12px; font-weight: 800; color: #1e40af;">💳 2. Saldo Remanescente & Condição da Outra Parte</span>
+                  <span id="badgeSaldoValor" style="font-size: 11.5px; font-weight: 800; color: #b45309; background: #fef3c7; padding: 2px 8px; border-radius: 4px; border: 1px solid #fde68a;">
+                    Saldo a Quitar: R$ 0,00
+                  </span>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group" style="flex: 1.5;">
+                    <label class="form-label">Forma de Pagto do Saldo</label>
+                    <select id="finFormaPagamentoSaldo" class="form-select" style="font-size: 12px;">
+                      <option value="Cartão de Crédito">Cartão de Crédito Parcelado</option>
+                      <option value="Boleto Bancário Faturado">Boleto Bancário Faturado</option>
+                      <option value="PIX na Entrega">PIX na Entrega</option>
+                      <option value="Dinheiro na Entrega">Dinheiro na Entrega</option>
+                      <option value="Cheque Pré-datado">Cheque Pré-datado</option>
+                      <option value="Carnê / Duplicata">Carnê / Duplicata da Fábrica</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group" style="flex: 1.3;">
+                    <label class="form-label">Parcelamento do Saldo</label>
+                    <select id="finParcelasSaldoQtd" class="form-select" style="font-size: 12px; font-weight: 700;">
+                      <option value="1">1x (À Vista na Entrega)</option>
+                      <option value="2" selected>2x (30 / 60 dias)</option>
+                      <option value="3">3x (30 / 60 / 90 dias)</option>
+                      <option value="4">4x (30 / 60 / 90 / 120 dias)</option>
+                      <option value="5">5x (Mensal)</option>
+                      <option value="6">6x (Mensal)</option>
+                      <option value="10">10x (Mensal)</option>
+                      <option value="12">12x (Mensal)</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group" style="flex: 1.1;">
+                    <label class="form-label" title="Taxa cobrada pela maquininha/banco no saldo">Taxa Operadora (%)</label>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <input type="number" id="finTaxaSaldoPerc" class="form-input text-mono" min="0" max="25" step="0.1" value="4.39" style="font-size: 13px; font-weight: 700;">
+                      <span style="font-size: 12px; font-weight: 700; color: var(--text-gray-500);">%</span>
+                    </div>
+                    <span id="labelValorTaxaSaldo" style="font-size: 10px; color: #dc2626; font-weight: 700; display: block; margin-top: 2px;">Custo: R$ 0,00</span>
+                  </div>
+                </div>
+
+                <!-- Detalhamento dinâmico das parcelas do saldo -->
+                <div id="boxDetalhamentoParcelas" style="margin-top: 8px; padding: 8px 10px; background: #ffffff; border: 1px dashed #93c5fd; border-radius: 4px; font-size: 11.5px; color: #1e3a8a;">
+                  <!-- Preenchido via JS com número de parcelas, valores e vencimentos -->
+                </div>
+              </div>
+
+              <!-- BLOCO 3: RESUMO FINANCEIRO CONSOLIDADO & LÍQUIDO DA FÁBRICA -->
+              <div id="boxResumoFinanceiroConsolidado" style="padding: 10px 14px; border-radius: var(--radius-sm); font-size: 12px; background: #f8fafc; border: 1px solid var(--border-medium); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;">
                 <!-- Preenchido dinamicamente via JS -->
-              </div>
-
-              <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" id="chkSinalCompensado" class="quarentena-checkbox" checked>
-                <label for="chkSinalCompensado" style="font-size: 11.5px; font-weight: 700; cursor: pointer; color: var(--text-primary);">
-                  Confirmar sinal já recebido e lançar entrada imediata no Fluxo de Caixa (Financeiro)
-                </label>
               </div>
             </div>
           </div>
@@ -9693,52 +9845,198 @@
       });
     });
 
-    // Sincronização Dinâmica de Entrada (% vs R$) e Saldo Remanescente no Modal de Avanço
+    // Sincronização Dinâmica Completa: Entrada, Parcelamento do Saldo, Taxas de Operadora & Líquido da Fábrica
     const inpPercAvanco = document.getElementById('finPercEntrada');
     const inpValorAvanco = document.getElementById('finValorSinalRecebido');
-    const boxSaldoAvanco = document.getElementById('boxSaldoRemanescenteAvanco');
+    const selFormaEntrada = document.getElementById('finFormaPagamentoSinal');
+    const inpTaxaEntrada = document.getElementById('finTaxaEntradaPerc');
+    const lblTaxaEntrada = document.getElementById('labelValorTaxaEntrada');
+    const chkSinalComp = document.getElementById('chkSinalCompensado');
+    const badgeEntrada = document.getElementById('badgeStatusEntrada');
+
+    const boxSaldoContainer = document.getElementById('boxSaldoRemanescenteContainer');
+    const badgeSaldoValor = document.getElementById('badgeSaldoValor');
+    const selFormaSaldo = document.getElementById('finFormaPagamentoSaldo');
+    const selParcSaldo = document.getElementById('finParcelasSaldoQtd');
+    const inpTaxaSaldo = document.getElementById('finTaxaSaldoPerc');
+    const lblTaxaSaldo = document.getElementById('labelValorTaxaSaldo');
+    const boxParcelasDet = document.getElementById('boxDetalhamentoParcelas');
+    const boxResumoConsol = document.getElementById('boxResumoFinanceiroConsolidado');
+
+    function sugerirTaxaOperadora(forma, parcelas) {
+      const f = (forma || '').toLowerCase();
+      const p = parseInt(parcelas, 10) || 1;
+      if (f.includes('pix') || f.includes('dinheiro') || f.includes('ted') || f.includes('transferência') || f.includes('cheque') || f.includes('carnê')) {
+        return 0.0;
+      }
+      if (f.includes('débito')) {
+        return 1.39;
+      }
+      if (f.includes('boleto')) {
+        return 2.50;
+      }
+      if (f.includes('crédito') || f.includes('cartão')) {
+        if (p === 1) return 3.19;
+        if (p === 2) return 4.39;
+        if (p === 3) return 5.19;
+        if (p === 4) return 5.99;
+        if (p === 5) return 6.79;
+        if (p === 6) return 7.49;
+        if (p <= 10) return 9.89;
+        return 11.49;
+      }
+      return 0.0;
+    }
 
     function recalcularSaldoAvanco(origem) {
-      if (!inpValorAvanco || !boxSaldoAvanco) return;
-      let val = parseFloat(inpValorAvanco.value) || 0;
-      if (val < 0) val = 0;
+      if (!inpValorAvanco || !boxSaldoContainer) return;
+      let valEntrada = parseFloat(inpValorAvanco.value) || 0;
+      if (valEntrada < 0) valEntrada = 0;
 
       if (origem === 'perc' && inpPercAvanco) {
         let p = parseFloat(inpPercAvanco.value) || 0;
         if (p < 0) p = 0;
         if (p > 100) p = 100;
-        val = (totalVenda * p) / 100;
-        inpValorAvanco.value = val.toFixed(2);
+        valEntrada = (totalVenda * p) / 100;
+        inpValorAvanco.value = valEntrada.toFixed(2);
       } else if (origem === 'valor' && inpPercAvanco) {
-        if (val > totalVenda) val = totalVenda;
-        const p = totalVenda > 0 ? (val / totalVenda) * 100 : 0;
+        if (valEntrada > totalVenda) valEntrada = totalVenda;
+        const p = totalVenda > 0 ? (valEntrada / totalVenda) * 100 : 0;
         inpPercAvanco.value = p.toFixed(0);
       }
 
-      const remanescente = Math.max(0, totalVenda - val);
+      const remanescente = Math.max(0, totalVenda - valEntrada);
 
-      if (remanescente > 0) {
-        boxSaldoAvanco.style.backgroundColor = '#fffbeb';
-        boxSaldoAvanco.style.border = '1px solid #fde68a';
-        boxSaldoAvanco.style.color = '#92400e';
-        boxSaldoAvanco.innerHTML = `
-          <strong>⚠️ Saldo Remanescente: ${formatarMoeda(remanescente)}</strong>
-          <div>Com a entrada de ${formatarMoeda(val)}, faltará <strong>${formatarMoeda(remanescente)}</strong> para quitação do pedido. Este valor continuará como saldo a receber na entrega.</div>
-        `;
+      // Atualiza Status da Entrada
+      if (valEntrada <= 0) {
+        if (badgeEntrada) badgeEntrada.innerHTML = '<span class="status-pill status-gray" style="font-size:9.5px;">SEM ENTRADA (0%)</span>';
+        if (chkSinalComp) { chkSinalComp.checked = false; chkSinalComp.disabled = true; }
+      } else if (valEntrada >= totalVenda) {
+        if (badgeEntrada) badgeEntrada.innerHTML = '<span class="status-pill status-green" style="font-size:9.5px;">100% QUITADO À VISTA</span>';
+        if (chkSinalComp) chkSinalComp.disabled = false;
       } else {
-        boxSaldoAvanco.style.backgroundColor = 'var(--bg-green-soft)';
-        boxSaldoAvanco.style.border = '1px solid var(--border-green)';
-        boxSaldoAvanco.style.color = 'var(--color-green)';
-        boxSaldoAvanco.innerHTML = `
-          <strong>✅ Quitação Integral (100% Pago)</strong>
-          <div>O valor da entrada cobre 100% do pedido. Não haverá saldo remanescente devedor.</div>
+        if (badgeEntrada) badgeEntrada.innerHTML = '<span class="status-pill status-blue" style="font-size:9.5px;">ENTRADA PARCIAL</span>';
+        if (chkSinalComp) chkSinalComp.disabled = false;
+      }
+
+      // Taxa da Entrada
+      const taxaEntradaP = parseFloat(inpTaxaEntrada?.value || 0);
+      const taxaEntradaR = valEntrada > 0 ? (valEntrada * taxaEntradaP) / 100 : 0;
+      if (lblTaxaEntrada) {
+        lblTaxaEntrada.textContent = taxaEntradaR > 0 ? `Custo Taxa: - ${formatarMoeda(taxaEntradaR)}` : 'Custo: R$ 0,00 (Sem Taxa)';
+        lblTaxaEntrada.style.color = taxaEntradaR > 0 ? '#dc2626' : '#16a34a';
+      }
+
+      // Painel do Saldo Remanescente
+      if (remanescente > 0) {
+        boxSaldoContainer.style.display = 'block';
+        if (badgeSaldoValor) badgeSaldoValor.textContent = `Saldo a Quitar: ${formatarMoeda(remanescente)}`;
+
+        // Taxa do Saldo
+        const taxaSaldoP = parseFloat(inpTaxaSaldo?.value || 0);
+        const taxaSaldoR = (remanescente * taxaSaldoP) / 100;
+        if (lblTaxaSaldo) {
+          lblTaxaSaldo.textContent = taxaSaldoR > 0 ? `Custo Taxa: - ${formatarMoeda(taxaSaldoR)}` : 'Custo: R$ 0,00 (Sem Taxa)';
+          lblTaxaSaldo.style.color = taxaSaldoR > 0 ? '#dc2626' : '#16a34a';
+        }
+
+        // Parcelas do Saldo
+        const qtdParc = parseInt(selParcSaldo?.value || 1, 10);
+        const valParc = remanescente / qtdParc;
+        const formaSaldoTxt = selFormaSaldo?.value || 'Cartão de Crédito';
+        
+        let parcelasChipsHtml = '';
+        const dataBasePrevisao = dadosBase.dataPrevisaoEntrega || calcularDataFuturaDiasUteis(dadosBase.prazoPedidoDias || 15);
+        for (let i = 1; i <= qtdParc; i++) {
+          let dtVenc = dataBasePrevisao;
+          try {
+            const d = new Date(dataBasePrevisao + (dataBasePrevisao.includes('T') ? '' : 'T12:00:00'));
+            d.setMonth(d.getMonth() + (i - 1));
+            dtVenc = d.toISOString().split('T')[0];
+          } catch(e){}
+          parcelasChipsHtml += `
+            <span style="display: inline-block; background: #e0f2fe; color: #0369a1; padding: 2px 7px; border-radius: 4px; font-weight: 700; font-size: 11px; margin: 2px;">
+              ${i}ª: ${formatarMoeda(valParc)} (${formatarDataBr(dtVenc)})
+            </span>
+          `;
+        }
+
+        if (boxParcelasDet) {
+          boxParcelasDet.innerHTML = `
+            <div style="font-weight: 700; margin-bottom: 4px;">
+              📌 Projeção: <strong>${qtdParc}x de ${formatarMoeda(valParc)}</strong> via <strong>${formaSaldoTxt}</strong>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;">
+              ${parcelasChipsHtml}
+            </div>
+          `;
+        }
+      } else {
+        boxSaldoContainer.style.display = 'none';
+        if (lblTaxaSaldo) lblTaxaSaldo.textContent = 'Custo: R$ 0,00';
+      }
+
+      // Resumo Consolidado & Líquido Real da Fábrica
+      const taxaTotalGeral = taxaEntradaR + (remanescente > 0 ? ((remanescente * (parseFloat(inpTaxaSaldo?.value || 0))) / 100) : 0);
+      const liquidoFabrica = Math.max(0, totalVenda - taxaTotalGeral);
+
+      if (boxResumoConsol) {
+        boxResumoConsol.innerHTML = `
+          <div style="display: flex; gap: 14px; flex-wrap: wrap; align-items: center;">
+            <div>
+              <span style="font-size: 10px; color: var(--text-gray-500); display: block;">Total do Pedido:</span>
+              <strong class="text-mono" style="font-size: 13.5px; color: #0f172a;">${formatarMoeda(totalVenda)}</strong>
+            </div>
+            <div>
+              <span style="font-size: 10px; color: var(--text-gray-500); display: block;">Entrada (${valEntrada > 0 ? selFormaEntrada?.value : 'Sem Entrada'}):</span>
+              <strong class="text-mono text-green" style="font-size: 13.5px;">${formatarMoeda(valEntrada)}</strong>
+            </div>
+            ${remanescente > 0 ? `
+              <div>
+                <span style="font-size: 10px; color: var(--text-gray-500); display: block;">Saldo (${selParcSaldo?.value}x ${selFormaSaldo?.value}):</span>
+                <strong class="text-mono" style="font-size: 13.5px; color: #b45309;">${formatarMoeda(remanescente)}</strong>
+              </div>
+            ` : ''}
+            <div>
+              <span style="font-size: 10px; color: var(--text-gray-500); display: block;">(-) Taxas de Operadoras (Custo):</span>
+              <strong class="text-mono text-red" style="font-size: 13.5px;">- ${formatarMoeda(taxaTotalGeral)}</strong>
+            </div>
+          </div>
+          <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 6px 12px; border-radius: 4px; text-align: right;">
+            <span style="font-size: 10px; color: #047857; font-weight: 700; display: block;">(=) Líquido Real da Confecção:</span>
+            <strong class="text-mono" style="font-size: 15px; color: #047857;">${formatarMoeda(liquidoFabrica)}</strong>
+          </div>
         `;
       }
     }
 
     inpPercAvanco?.addEventListener('input', () => recalcularSaldoAvanco('perc'));
     inpValorAvanco?.addEventListener('input', () => recalcularSaldoAvanco('valor'));
-    recalcularSaldoAvanco('perc');
+    inpTaxaEntrada?.addEventListener('input', () => recalcularSaldoAvanco('taxaEntrada'));
+    inpTaxaSaldo?.addEventListener('input', () => recalcularSaldoAvanco('taxaSaldo'));
+
+    selFormaEntrada?.addEventListener('change', () => {
+      if (inpTaxaEntrada) {
+        inpTaxaEntrada.value = sugerirTaxaOperadora(selFormaEntrada.value, 1).toFixed(2);
+      }
+      recalcularSaldoAvanco('formaEntrada');
+    });
+
+    selFormaSaldo?.addEventListener('change', () => {
+      if (inpTaxaSaldo) {
+        const qtd = parseInt(selParcSaldo?.value || 1, 10);
+        inpTaxaSaldo.value = sugerirTaxaOperadora(selFormaSaldo.value, qtd).toFixed(2);
+      }
+      recalcularSaldoAvanco('formaSaldo');
+    });
+
+    selParcSaldo?.addEventListener('change', () => {
+      if (inpTaxaSaldo) {
+        const qtd = parseInt(selParcSaldo.value || 1, 10);
+        inpTaxaSaldo.value = sugerirTaxaOperadora(selFormaSaldo?.value || 'Cartão de Crédito', qtd).toFixed(2);
+      }
+      recalcularSaldoAvanco('parcSaldo');
+    });
 
     document.querySelectorAll('.btn-quick-entrada').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -9751,6 +10049,8 @@
         }
       });
     });
+
+    recalcularSaldoAvanco('perc');
 
     // Upload / Troca do Mockup Oficial em Alta Definição A4 (1200x1600 WebP) direto na entrada do pedido
     // Upload individual de mockup por modelo no avanço
@@ -9909,11 +10209,17 @@
         }
       }
 
-      // 3. Validação dos Valores e Sinal Recebido
+      // 3. Validação das Condições Comerciais, Entrada, Saldo e Taxas
       const valorSinalRecebido = parseFloat(document.getElementById('finValorSinalRecebido')?.value || 0);
       const percEntrada = parseFloat(document.getElementById('finPercEntrada')?.value || 0);
-      const formaPagamento = document.getElementById('finFormaPagamentoSinal')?.value || 'PIX';
-      const sinalCompensado = document.getElementById('chkSinalCompensado')?.checked !== false;
+      const formaPagamentoEntrada = document.getElementById('finFormaPagamentoSinal')?.value || 'PIX';
+      const taxaEntradaPerc = parseFloat(document.getElementById('finTaxaEntradaPerc')?.value || 0);
+      const taxaEntradaValor = parseFloat(((valorSinalRecebido * taxaEntradaPerc) / 100).toFixed(2));
+      const sinalCompensado = valorSinalRecebido > 0 ? (document.getElementById('chkSinalCompensado')?.checked !== false) : false;
+
+      const formaPagamentoSaldo = document.getElementById('finFormaPagamentoSaldo')?.value || 'Cartão de Crédito';
+      const parcelasSaldoQtd = parseInt(document.getElementById('finParcelasSaldoQtd')?.value || 1, 10);
+      const taxaSaldoPerc = parseFloat(document.getElementById('finTaxaSaldoPerc')?.value || 0);
 
       if (isNaN(valorSinalRecebido) || valorSinalRecebido < 0) {
         mostrarToast('Por favor, informe um valor de sinal válido.', 'red');
@@ -9940,8 +10246,50 @@
       const saldoRestante = Math.max(0, totalVendaFinal - valorEfetivoPago);
       const isQuitadoNaEntrada = valorEfetivoPago >= totalVendaFinal;
 
+      const taxaSaldoValor = saldoRestante > 0 ? parseFloat(((saldoRestante * taxaSaldoPerc) / 100).toFixed(2)) : 0;
+      const taxaTotalOperadoraValor = parseFloat((taxaEntradaValor + taxaSaldoValor).toFixed(2));
+      const valorLiquidoFabrica = parseFloat((totalVendaFinal - taxaTotalOperadoraValor).toFixed(2));
+
+      // Geração das parcelas do saldo remanescente
+      const parcelasSaldo = [];
+      const dataBasePrevisao = dadosBase.dataPrevisaoEntrega || calcularDataFuturaDiasUteis(dadosBase.prazoPedidoDias || 15);
+      if (saldoRestante > 0) {
+        const valUnitParcela = parseFloat((saldoRestante / parcelasSaldoQtd).toFixed(2));
+        for (let i = 1; i <= parcelasSaldoQtd; i++) {
+          let dtVenc = dataBasePrevisao;
+          try {
+            const d = new Date(dataBasePrevisao + (dataBasePrevisao.includes('T') ? '' : 'T12:00:00'));
+            d.setMonth(d.getMonth() + (i - 1));
+            dtVenc = d.toISOString().split('T')[0];
+          } catch(e){}
+          const valFinal = (i === parcelasSaldoQtd)
+            ? parseFloat((saldoRestante - (valUnitParcela * (parcelasSaldoQtd - 1))).toFixed(2))
+            : valUnitParcela;
+          parcelasSaldo.push({
+            id: `PARC-${novoNum}-${i}`,
+            numero: i,
+            totalParcelas: parcelasSaldoQtd,
+            valor: valFinal,
+            dataVencimento: dtVenc,
+            formaPagamento: formaPagamentoSaldo,
+            status: 'Pendente',
+            dataPagamento: null
+          });
+        }
+      }
+
       const corFinal = (dadosBase.corPrincipal || dadosBase.corTecido || 'Azul Marinho').trim();
       const obsCoresFinal = (dadosBase.observacoesCoresDetalhes || '').trim();
+
+      // Monta texto detalhado das condições comerciais
+      let condicaoComercialTexto = '';
+      if (isQuitadoNaEntrada) {
+        condicaoComercialTexto = `100% Quitado à Vista (${formaPagamentoEntrada})`;
+      } else if (valorEfetivoPago > 0) {
+        condicaoComercialTexto = `Entrada ${formatarMoeda(valorEfetivoPago)} (${formaPagamentoEntrada}) + Saldo ${formatarMoeda(saldoRestante)} (${parcelasSaldoQtd}x ${formaPagamentoSaldo})`;
+      } else {
+        condicaoComercialTexto = `Sem Entrada • Saldo Faturado ${formatarMoeda(saldoRestante)} (${parcelasSaldoQtd}x ${formaPagamentoSaldo})`;
+      }
 
       // Cria ou atualiza pedido oficial
       const pedidoOficial = {
@@ -9977,19 +10325,35 @@
         custoTotalEstimado: custoTotalFinal,
         lucroLiquidoEstimado: lucroFinal,
         margemLucroPercentual: margemFinal,
-        condicaoPagamento: isQuitadoNaEntrada
-          ? "100% Quitado à Vista na Entrada"
-          : valorEfetivoPago > 0
-            ? `Entrada ${formatarMoeda(valorEfetivoPago)} (${percEntrada}%) + Saldo ${formatarMoeda(saldoRestante)} na Entrega`
-            : `A Faturar / Pagamento na Entrega (${formatarMoeda(totalVendaFinal)})`,
+        condicaoPagamento: condicaoComercialTexto,
         sinalPago: valorEfetivoPago > 0,
         valorSinalPago: valorEfetivoPago,
         saldoPendente: saldoRestante,
+        taxaTotalOperadoraValor: taxaTotalOperadoraValor,
+        valorLiquidoFabrica: valorLiquidoFabrica,
+        pagamentoDetalhes: {
+          temEntrada: valorEfetivoPago > 0,
+          valorEntrada: valorEfetivoPago,
+          percEntrada: percEntrada,
+          formaEntrada: formaPagamentoEntrada,
+          taxaEntradaPerc: taxaEntradaPerc,
+          taxaEntradaValor: taxaEntradaValor,
+          sinalCompensado: sinalCompensado,
+          temSaldo: saldoRestante > 0,
+          valorSaldo: saldoRestante,
+          formaSaldo: formaPagamentoSaldo,
+          parcelasQtd: parcelasSaldoQtd,
+          taxaSaldoPerc: taxaSaldoPerc,
+          taxaSaldoValor: taxaSaldoValor,
+          taxaTotalOperadoraValor: taxaTotalOperadoraValor,
+          valorLiquidoFabrica: valorLiquidoFabrica,
+          parcelas: parcelasSaldo
+        },
         historicoPagamentos: valorEfetivoPago > 0 ? [{
           id: `PAG-${Math.floor(1000 + Math.random() * 9000)}`,
           data: new Date().toISOString().split('T')[0],
           descricao: isQuitadoNaEntrada ? "Quitação Integral na Entrada" : `Entrada / Sinal Inicial (${percEntrada}%)`,
-          formaPagamento: formaPagamento,
+          formaPagamento: formaPagamentoEntrada,
           valor: valorEfetivoPago,
           saldoRestante: saldoRestante
         }] : [],
@@ -10002,15 +10366,15 @@
         vendedorResponsavel: "Marcos Paulo"
       };
 
-      // Sincroniza custos operacionais do novo pedido no financeiro
-      sincronizarCustosOperacionaisDosPedidos();
-
-      // Remove orçamento antigo se estiver convertendo
+      // Remove orçamento antigo se estiver convertendo e adiciona pedido oficial
       const idxExistente = db.pedidos.findIndex(p => p.id === dadosBase.id);
       if (idxExistente >= 0) {
         db.pedidos.splice(idxExistente, 1);
       }
       db.pedidos.unshift(pedidoOficial);
+
+      // Sincroniza custos operacionais do novo pedido no financeiro (Costura, Tecido, Aviamento, Estampa e Taxas de Cartão)
+      sincronizarCustosOperacionaisDosPedidos();
 
       // 4. LANÇAMENTO AUTOMÁTICO NO FINANCEIRO (ENTRADAS & CONTAS A RECEBER)
       if (!Array.isArray(db.lancamentosFinanceiros)) db.lancamentosFinanceiros = [];
@@ -10025,18 +10389,34 @@
           tipo: "Entrada",
           status: "Confirmado",
           descricao: isQuitadoNaEntrada
-            ? `Quitação 100% Pedido #${pedidoOficial.numero} (${pedidoOficial.grade.total}x ${pedidoOficial.produtoNome})`
-            : `Sinal Entrada Pedido #${pedidoOficial.numero} (${pedidoOficial.grade.total}x ${pedidoOficial.produtoNome})`,
+            ? `Quitação 100% Pedido #${pedidoOficial.numero} (${pedidoOficial.grade.total}x ${pedidoOficial.produtoNome}) via ${formaPagamentoEntrada}`
+            : `Sinal Entrada Pedido #${pedidoOficial.numero} (${pedidoOficial.grade.total}x ${pedidoOficial.produtoNome}) via ${formaPagamentoEntrada}`,
           cliente: clienteNomeFinal,
           valor: valorEfetivoPago,
-          formaPagamento: formaPagamento,
+          formaPagamento: formaPagamentoEntrada,
           categoria: "Vendas de Uniformes"
         });
       }
 
-      // 4.2 Lançamento de Contas a Receber / Saldo Restante / Vendas A Faturar
-      // BLINDAGEM: Garante que vendas a prazo nunca sumam do Financeiro!
-      if (saldoRestante > 0) {
+      // 4.2 Lançamento de Contas a Receber / Parcelas do Saldo
+      if (parcelasSaldo.length > 0) {
+        parcelasSaldo.forEach(parc => {
+          db.lancamentosFinanceiros.unshift({
+            id: `LAN-${Math.floor(100 + Math.random() * 9000)}`,
+            pedidoId: pedidoOficial.id,
+            pedidoNumero: pedidoOficial.numero,
+            parcelaId: parc.id,
+            data: parc.dataVencimento,
+            tipo: valorEfetivoPago > 0 ? "A Receber" : "Venda A Faturar",
+            status: "Pendente",
+            descricao: `Saldo Parc. ${parc.numero}/${parc.totalParcelas} Pedido #${pedidoOficial.numero} (${pedidoOficial.grade.total}x ${pedidoOficial.produtoNome})`,
+            cliente: clienteNomeFinal,
+            valor: parc.valor,
+            formaPagamento: parc.formaPagamento,
+            categoria: "Vendas de Uniformes"
+          });
+        });
+      } else if (saldoRestante > 0) {
         db.lancamentosFinanceiros.unshift({
           id: `LAN-${Math.floor(100 + Math.random() * 9000)}`,
           pedidoId: pedidoOficial.id,
@@ -10049,7 +10429,7 @@
             : `Venda A Faturar Pedido #${pedidoOficial.numero} (${pedidoOficial.grade.total}x ${pedidoOficial.produtoNome})`,
           cliente: clienteNomeFinal,
           valor: saldoRestante,
-          formaPagamento: formaPagamento || "A Receber na Entrega",
+          formaPagamento: formaPagamentoSaldo || "A Receber na Entrega",
           categoria: "Vendas de Uniformes"
         });
       }
@@ -15560,6 +15940,41 @@
           despExistente.dataVencimento = dataVenc;
         }
       }
+
+      // 5. CUSTO DE TAXAS DE OPERADORA / MEIOS DE PAGAMENTO (HOMOLOGAÇÃO FINANCEIRA)
+      const taxaOperadora = parseFloat(p.taxaTotalOperadoraValor || p.pagamentoDetalhes?.taxaTotalOperadoraValor || 0);
+      if (taxaOperadora > 0) {
+        const idTaxa = `DESP-OP-${num}-TAXA-PAG`;
+        const despExistente = db.despesasFixas.find(d => d.id === idTaxa);
+        const resumoMeios = p.pagamentoDetalhes
+          ? `${p.pagamentoDetalhes.formaEntrada || 'Entrada'} + ${p.pagamentoDetalhes.formaSaldo || 'Saldo'}`
+          : 'Cartão / Gateway';
+
+        if (!despExistente) {
+          db.despesasFixas.push({
+            id: idTaxa,
+            pedidoNumero: p.numero,
+            pedidoId: p.id,
+            origemAutomatica: true,
+            origem: `Taxas Financeiras (Pedido #${p.numero})`,
+            tipoCusto: 'Operacional',
+            descricao: `Taxas de Meios de Pagamento • Pedido #${p.numero} (${resumoMeios})`,
+            categoria: 'Taxas & Encargos Financeiros',
+            centroCusto: 'CC-04',
+            fornecedorFavorecido: 'Operadora de Cartão / Gateway Bancário',
+            valor: parseFloat(taxaOperadora.toFixed(2)),
+            valorMensal: parseFloat(taxaOperadora.toFixed(2)),
+            dataVencimento: dataVenc,
+            recorrencia: 'Por Pedido',
+            formaPagamentoPrevista: 'Retenção na Fonte / Débito',
+            status: (p.pagamentoDetalhes?.sinalCompensado && (!p.pagamentoDetalhes?.taxaSaldoValor || p.pagamentoDetalhes?.taxaSaldoValor === 0)) ? 'Pago' : 'Pendente'
+          });
+        } else if (despExistente.status !== 'Pago') {
+          despExistente.valor = parseFloat(taxaOperadora.toFixed(2));
+          despExistente.valorMensal = parseFloat(taxaOperadora.toFixed(2));
+          despExistente.dataVencimento = dataVenc;
+        }
+      }
     });
   }
 
@@ -15668,7 +16083,10 @@
           dataVencimento: vencClean,
           statusCobranca,
           statusBadge,
-          tipoRegistro: p.tipoRegistro || 'Pedido'
+          tipoRegistro: p.tipoRegistro || 'Pedido',
+          condicaoPagamento: p.condicaoPagamento || '',
+          taxaTotalOperadoraValor: parseFloat(p.taxaTotalOperadoraValor || p.pagamentoDetalhes?.taxaTotalOperadoraValor || 0),
+          parcelas: p.pagamentoDetalhes?.parcelas || []
         };
       });
 
@@ -15893,7 +16311,9 @@
                     <td>
                       <strong style="color: var(--text-primary); font-size: 13.5px;">#${rec.numero}</strong>
                       <span style="display: block; font-size: 11.5px; font-weight: 600; color: #1e3a8a;">${rec.clienteNome}</span>
-                      ${rec.clienteTelefone ? `<span style="font-size: 10.5px; color: var(--text-gray-500);">📱 ${rec.clienteTelefone}</span>` : ''}
+                      ${rec.clienteTelefone ? `<span style="font-size: 10.5px; color: var(--text-gray-500); display: block;">📱 ${rec.clienteTelefone}</span>` : ''}
+                      ${rec.condicaoPagamento ? `<div style="font-size: 10px; color: #4338ca; font-weight: 600; margin-top: 2px;">💳 ${rec.condicaoPagamento}</div>` : ''}
+                      ${rec.taxaTotalOperadoraValor > 0 ? `<div style="font-size: 9.5px; color: #dc2626; font-weight: 700;">📉 Taxas de Operadora: - ${formatarMoeda(rec.taxaTotalOperadoraValor)}</div>` : ''}
                     </td>
                     <td>
                       <strong>${rec.produtoNome}</strong>
@@ -16137,10 +16557,23 @@
                 <td class="text-mono text-red" style="text-align: right;">- ${formatarMoeda(impostosDeducoes)}</td>
                 <td class="text-mono" style="text-align: right;">6.5%</td>
               </tr>
+              ${(() => {
+                const totalTaxasOperadorasDRE = pedidosOficiais.reduce((acc, p) => acc + (Number(p.taxaTotalOperadoraValor || p.pagamentoDetalhes?.taxaTotalOperadoraValor) || 0), 0);
+                if (totalTaxasOperadorasDRE > 0) {
+                  return `
+                    <tr class="dre-row-sub">
+                      <td>(-) Despesas Financeiras & Taxas de Meios de Pagamento (Cartão, Gateway & Boletos)</td>
+                      <td class="text-mono text-red" style="text-align: right;">- ${formatarMoeda(totalTaxasOperadorasDRE)}</td>
+                      <td class="text-mono" style="text-align: right;">${receitaBruta > 0 ? ((totalTaxasOperadorasDRE / receitaBruta) * 100).toFixed(1) : 0}%</td>
+                    </tr>
+                  `;
+                }
+                return '';
+              })()}
               <tr class="dre-row-total">
                 <td>(=) RECEITA OPERACIONAL LÍQUIDA</td>
                 <td class="text-mono" style="text-align: right;">${formatarMoeda(receitaLiquida)}</td>
-                <td class="text-mono" style="text-align: right;">${(100 - 6.5).toFixed(1)}%</td>
+                <td class="text-mono" style="text-align: right;">${receitaBruta > 0 ? ((receitaLiquida / receitaBruta) * 100).toFixed(1) : 0}%</td>
               </tr>
               ${(() => {
                 let somaRealTec = 0;
