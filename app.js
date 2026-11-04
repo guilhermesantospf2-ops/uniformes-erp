@@ -814,6 +814,7 @@
   // Estado da Aplicação
   let abaAtiva = 'abertura';
   let visualizacaoPedidos = 'tabela'; // 'tabela' ou 'kanban'
+  let ordenacaoPedidos = 'desc'; // 'desc' (mais novos primeiro) ou 'asc' (mais velhos primeiro)
   let visualizacaoEstoque = 'saldos'; // 'saldos' ou 'historico'
   let filtroBuscaEstoque = '';
   let filtroCategoriaEstoque = 'todos';
@@ -3976,9 +3977,9 @@
 
     contentArea.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <input type="text" id="filtroPedidoBusca" class="form-input" style="width: 260px;" placeholder="Buscar cliente, número ou modelo...">
-          <select id="filtroPedidoStatus" class="form-select" style="width: 185px;">
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <input type="text" id="filtroPedidoBusca" class="form-input" style="width: 240px;" placeholder="Buscar cliente, número ou modelo...">
+          <select id="filtroPedidoStatus" class="form-select" style="width: 175px;">
             <option value="TODOS">Todos os Status</option>
             <option value="ATIVOS">Apenas Ativos (Sem Cancelados)</option>
             <option value="Em Producao">Em Produção</option>
@@ -3986,6 +3987,10 @@
             <option value="Orcamento">Apenas Orçamento</option>
             <option value="Finalizado">Finalizados</option>
             <option value="Cancelado">🚫 Apenas Cancelados</option>
+          </select>
+          <select id="filtroPedidoOrdem" class="form-select" style="width: 180px;" title="Ordenar pedidos por número e data">
+            <option value="desc" ${ordenacaoPedidos === 'desc' ? 'selected' : ''}>🔽 Mais novos primeiro</option>
+            <option value="asc" ${ordenacaoPedidos === 'asc' ? 'selected' : ''}>🔼 Mais velhos primeiro</option>
           </select>
         </div>
 
@@ -4014,7 +4019,7 @@
       </div>
 
       <div id="pedidosContainerVisualizacao">
-        ${visualizacaoPedidos === 'tabela' ? renderizarTabelaPedidosHtml(db.pedidos) : renderizarKanbanPedidosHtml(db.pedidos)}
+        ${visualizacaoPedidos === 'tabela' ? renderizarTabelaPedidosHtml(ordenarListaPedidos(db.pedidos)) : renderizarKanbanPedidosHtml(ordenarListaPedidos(db.pedidos))}
       </div>
     `;
 
@@ -4034,10 +4039,14 @@
 
     const buscaInput = document.getElementById('filtroPedidoBusca');
     const statusSelect = document.getElementById('filtroPedidoStatus');
+    const ordemSelect = document.getElementById('filtroPedidoOrdem');
 
     function aplicarFiltros() {
       const termo = (buscaInput?.value || '').toLowerCase();
       const st = statusSelect?.value || 'TODOS';
+      const ord = ordemSelect?.value || ordenacaoPedidos || 'desc';
+      ordenacaoPedidos = ord;
+
       const filtrados = db.pedidos.filter(p => {
         const matchesTermo = (p.clienteNome || '').toLowerCase().includes(termo) ||
           (p.produtoNome || '').toLowerCase().includes(termo) ||
@@ -4054,19 +4063,44 @@
         return matchesTermo && matchesStatus;
       });
 
+      const ordenados = ordenarListaPedidos(filtrados);
+
       const container = document.getElementById('pedidosContainerVisualizacao');
       if (container) {
         container.innerHTML = visualizacaoPedidos === 'tabela'
-          ? renderizarTabelaPedidosHtml(filtrados)
-          : renderizarKanbanPedidosHtml(filtrados);
+          ? renderizarTabelaPedidosHtml(ordenados)
+          : renderizarKanbanPedidosHtml(ordenados);
         configurarEventosPedidos();
       }
     }
 
+    // Expõe alternância para o clique no cabeçalho Nº / DATA da tabela
+    window.ERP.alternarOrdenacaoPedidos = function() {
+      ordenacaoPedidos = (ordenacaoPedidos === 'desc') ? 'asc' : 'desc';
+      const sel = document.getElementById('filtroPedidoOrdem');
+      if (sel) sel.value = ordenacaoPedidos;
+      aplicarFiltros();
+    };
+
     buscaInput?.addEventListener('input', aplicarFiltros);
     statusSelect?.addEventListener('change', aplicarFiltros);
+    ordemSelect?.addEventListener('change', aplicarFiltros);
 
     configurarEventosPedidos();
+  }
+
+  function ordenarListaPedidos(lista) {
+    if (!Array.isArray(lista)) return [];
+    return [...lista].sort((a, b) => {
+      const numA = parseInt(a.numero, 10) || 0;
+      const numB = parseInt(b.numero, 10) || 0;
+      if (numA !== numB) {
+        return ordenacaoPedidos === 'asc' ? numA - numB : numB - numA;
+      }
+      const dataA = a.dataCriacao || '';
+      const dataB = b.dataCriacao || '';
+      return ordenacaoPedidos === 'asc' ? dataA.localeCompare(dataB) : dataB.localeCompare(dataA);
+    });
   }
 
   function renderizarTabelaPedidosHtml(pedidos) {
@@ -4106,7 +4140,17 @@
           <thead>
             <tr>
               <th>Mockup 3x4</th>
-              <th>Nº / Data</th>
+              <th onclick="window.ERP.alternarOrdenacaoPedidos()" 
+                  id="thSortNumeroData" 
+                  style="cursor: pointer; user-select: none; transition: background 0.15s ease;" 
+                  title="Clique para alternar ordenação: Mais Novo ⇄ Mais Velho">
+                <div style="display: inline-flex; align-items: center; gap: 6px;">
+                  <span style="font-weight: 800;">Nº / DATA</span>
+                  <span class="badge-sort-indicador" style="font-size: 10px; padding: 1.5px 6px; border-radius: 4px; background: ${ordenacaoPedidos === 'desc' ? '#e0f2fe' : '#fef3c7'}; color: ${ordenacaoPedidos === 'desc' ? '#0369a1' : '#b45309'}; border: 1px solid ${ordenacaoPedidos === 'desc' ? '#bae6fd' : '#fde68a'}; font-weight: 800; display: inline-flex; align-items: center; gap: 3px;">
+                    ${ordenacaoPedidos === 'desc' ? '▼ Mais Novo' : '▲ Mais Velho'}
+                  </span>
+                </div>
+              </th>
               <th>Cliente / Contato</th>
               <th>Modelo Têxtil</th>
               <th>Grade (Tamanhos)</th>
