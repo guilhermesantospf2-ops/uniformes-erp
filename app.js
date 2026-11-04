@@ -158,6 +158,31 @@
       banco.equipamentosDepreciacao = JSON.parse(JSON.stringify(templatePadrao?.equipamentosDepreciacao || []));
     }
 
+    // Inicialização e preservação de taxas padrão configuradas pelo usuário para cada forma de pagamento
+    if (!banco.taxasPadraoPagamento || typeof banco.taxasPadraoPagamento !== 'object') {
+      banco.taxasPadraoPagamento = {
+        'PIX': 0.0,
+        'Dinheiro': 0.0,
+        'TED/Transferência': 0.0,
+        'Cartão de Débito': 1.39,
+        'Boleto à Vista': 2.00,
+        'Boleto Bancário Faturado': 2.50,
+        'Cartão de Crédito_1': 3.19,
+        'Cartão de Crédito_2': 4.39,
+        'Cartão de Crédito_3': 5.19,
+        'Cartão de Crédito_4': 5.99,
+        'Cartão de Crédito_5': 6.79,
+        'Cartão de Crédito_6': 7.49,
+        'Cartão de Crédito_10': 9.89,
+        'Cartão de Crédito_12': 11.49,
+        'Cartão de Crédito': 4.39,
+        'PIX na Entrega': 0.0,
+        'Dinheiro na Entrega': 0.0,
+        'Cheque Pré-datado': 0.0,
+        'Carnê / Duplicata': 0.0
+      };
+    }
+
     // 3. Atualiza a versão do schema de forma pacífica
     // Homologação Automática de Centros de Custo em Lançamentos Legados
     if (Array.isArray(banco.despesasFixas)) {
@@ -10351,10 +10376,15 @@
                     </select>
                   </div>
 
-                  <div class="form-group" style="flex: 1.1;">
-                    <label class="form-label" title="Taxa cobrada pela maquininha/banco na entrada">Taxa Operadora (%)</label>
+                  <div class="form-group" style="flex: 1.2;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                      <label class="form-label" style="margin-bottom: 0;" title="Taxa cobrada pela maquininha/banco na entrada">Taxa Operadora (%)</label>
+                      <button type="button" class="btn btn-secondary btn-xs" id="btnSalvarTaxaPadraoEntrada" style="padding: 1px 6px; font-size: 10px; font-weight: 700; color: #0284c7; border-color: #bae6fd; background: #f0f9ff;" title="Salvar como taxa padrão permanente para esta forma de pagamento">
+                        💾 Salvar Padrão
+                      </button>
+                    </div>
                     <div style="display: flex; align-items: center; gap: 4px;">
-                      <input type="number" id="finTaxaEntradaPerc" class="form-input text-mono" min="0" max="25" step="0.1" value="0.0" style="font-size: 13px; font-weight: 700;">
+                      <input type="number" id="finTaxaEntradaPerc" class="form-input text-mono" min="0" max="30" step="0.01" value="0.0" style="font-size: 13px; font-weight: 700;">
                       <span style="font-size: 12px; font-weight: 700; color: var(--text-gray-500);">%</span>
                     </div>
                     <span id="labelValorTaxaEntrada" style="font-size: 10px; color: #dc2626; font-weight: 700; display: block; margin-top: 2px;">Custo: R$ 0,00</span>
@@ -10405,10 +10435,15 @@
                     </select>
                   </div>
 
-                  <div class="form-group" style="flex: 1.1;">
-                    <label class="form-label" title="Taxa cobrada pela maquininha/banco no saldo">Taxa Operadora (%)</label>
+                  <div class="form-group" style="flex: 1.2;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                      <label class="form-label" style="margin-bottom: 0;" title="Taxa cobrada pela maquininha/banco no saldo">Taxa Operadora (%)</label>
+                      <button type="button" class="btn btn-secondary btn-xs" id="btnSalvarTaxaPadraoSaldo" style="padding: 1px 6px; font-size: 10px; font-weight: 700; color: #0284c7; border-color: #bae6fd; background: #f0f9ff;" title="Salvar como taxa padrão permanente para esta forma de pagamento e parcelamento">
+                        💾 Salvar Padrão
+                      </button>
+                    </div>
                     <div style="display: flex; align-items: center; gap: 4px;">
-                      <input type="number" id="finTaxaSaldoPerc" class="form-input text-mono" min="0" max="25" step="0.1" value="4.39" style="font-size: 13px; font-weight: 700;">
+                      <input type="number" id="finTaxaSaldoPerc" class="form-input text-mono" min="0" max="30" step="0.01" value="2.50" style="font-size: 13px; font-weight: 700;">
                       <span style="font-size: 12px; font-weight: 700; color: var(--text-gray-500);">%</span>
                     </div>
                     <span id="labelValorTaxaSaldo" style="font-size: 10px; color: #dc2626; font-weight: 700; display: block; margin-top: 2px;">Custo: R$ 0,00</span>
@@ -10472,6 +10507,32 @@
     const lblTaxaSaldo = document.getElementById('labelValorTaxaSaldo');
     const boxParcelasDet = document.getElementById('boxDetalhamentoParcelas');
     const boxResumoConsol = document.getElementById('boxResumoFinanceiroConsolidado');
+
+    function obterTaxaPadraoPagamento(forma, parcelas) {
+      if (!db.taxasPadraoPagamento) db.taxasPadraoPagamento = {};
+      const f = forma || '';
+      const p = parseInt(parcelas, 10) || 1;
+      const chaveComposta = `${f}_${p}`;
+      if (db.taxasPadraoPagamento[chaveComposta] != null && !isNaN(db.taxasPadraoPagamento[chaveComposta])) {
+        return Number(db.taxasPadraoPagamento[chaveComposta]);
+      }
+      if (db.taxasPadraoPagamento[f] != null && !isNaN(db.taxasPadraoPagamento[f])) {
+        return Number(db.taxasPadraoPagamento[f]);
+      }
+      return sugerirTaxaOperadora(f, p);
+    }
+
+    function salvarTaxaPadraoPagamento(forma, taxa, parcelas) {
+      if (!db.taxasPadraoPagamento) db.taxasPadraoPagamento = {};
+      const f = forma || '';
+      const p = parseInt(parcelas, 10) || 1;
+      const t = parseFloat(taxa) || 0;
+      if (f.includes('Cartão') && p > 1) {
+        db.taxasPadraoPagamento[`${f}_${p}`] = t;
+      }
+      db.taxasPadraoPagamento[f] = t;
+      salvarEstado();
+    }
 
     function sugerirTaxaOperadora(forma, parcelas) {
       const f = (forma || '').toLowerCase();
@@ -10550,37 +10611,11 @@
           lblTaxaSaldo.style.color = taxaSaldoR > 0 ? '#dc2626' : '#16a34a';
         }
 
-        // Parcelas do Saldo
+        // Parcelas do Saldo 100% Editáveis (Datas e Valores personalizados)
         const qtdParc = parseInt(selParcSaldo?.value || 1, 10);
-        const valParc = remanescente / qtdParc;
-        const formaSaldoTxt = selFormaSaldo?.value || 'Cartão de Crédito';
+        const formaSaldoTxt = selFormaSaldo?.value || 'Boleto Bancário Faturado';
         
-        let parcelasChipsHtml = '';
-        const dataBasePrevisao = dadosBase.dataPrevisaoEntrega || calcularDataFuturaDiasUteis(dadosBase.prazoPedidoDias || 15);
-        for (let i = 1; i <= qtdParc; i++) {
-          let dtVenc = dataBasePrevisao;
-          try {
-            const d = new Date(dataBasePrevisao + (dataBasePrevisao.includes('T') ? '' : 'T12:00:00'));
-            d.setMonth(d.getMonth() + (i - 1));
-            dtVenc = d.toISOString().split('T')[0];
-          } catch(e){}
-          parcelasChipsHtml += `
-            <span style="display: inline-block; background: #e0f2fe; color: #0369a1; padding: 2px 7px; border-radius: 4px; font-weight: 700; font-size: 11px; margin: 2px;">
-              ${i}ª: ${formatarMoeda(valParc)} (${formatarDataBr(dtVenc)})
-            </span>
-          `;
-        }
-
-        if (boxParcelasDet) {
-          boxParcelasDet.innerHTML = `
-            <div style="font-weight: 700; margin-bottom: 4px;">
-              📌 Projeção: <strong>${qtdParc}x de ${formatarMoeda(valParc)}</strong> via <strong>${formaSaldoTxt}</strong>
-            </div>
-            <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;">
-              ${parcelasChipsHtml}
-            </div>
-          `;
-        }
+        sincronizarParcelasSaldoEditaveis(remanescente, qtdParc, formaSaldoTxt, origem);
       } else {
         boxSaldoContainer.style.display = 'none';
         if (lblTaxaSaldo) lblTaxaSaldo.textContent = 'Custo: R$ 0,00';
@@ -10625,9 +10660,172 @@
     inpTaxaEntrada?.addEventListener('input', () => recalcularSaldoAvanco('taxaEntrada'));
     inpTaxaSaldo?.addEventListener('input', () => recalcularSaldoAvanco('taxaSaldo'));
 
+    // Array dinâmico de parcelas editáveis em memória do modal
+    let parcelasSaldoEditaveis = [];
+
+    function sincronizarParcelasSaldoEditaveis(remanescente, qtdParc, formaSaldoTxt, motivoOrigem) {
+      if (!boxParcelasDet) return;
+
+      // Recalcula parcelas padrão se mudou a quantidade de parcelas, mudou o saldo ou foi solicitado
+      const precisaRecriar = (motivoOrigem === 'parcSaldo' || motivoOrigem === 'formaSaldo' || parcelasSaldoEditaveis.length !== qtdParc || motivoOrigem === 'perc' || motivoOrigem === 'valor');
+      
+      if (precisaRecriar || parcelasSaldoEditaveis.length === 0) {
+        parcelasSaldoEditaveis = [];
+        const valBase = parseFloat((remanescente / qtdParc).toFixed(2));
+        const dataHoje = new Date();
+        const dataEntregaStr = dadosBase.dataPrevisaoEntrega || calcularDataFuturaDiasUteis(dadosBase.prazoPedidoDias || 15);
+        let dBase = new Date(dataEntregaStr + (dataEntregaStr.includes('T') ? '' : 'T12:00:00'));
+        if (isNaN(dBase.getTime())) dBase = new Date();
+
+        for (let i = 1; i <= qtdParc; i++) {
+          const dVenc = new Date(dBase.getTime());
+          if (qtdParc > 1) {
+            // Intervalos reais de 30 dias (30 / 60 / 90 / 120 dias)
+            dVenc.setDate(dVenc.getDate() + (30 * (i - 1)));
+          }
+          const dtIso = dVenc.toISOString().split('T')[0];
+          const valFinal = (i === qtdParc)
+            ? parseFloat((remanescente - (valBase * (qtdParc - 1))).toFixed(2))
+            : valBase;
+
+          parcelasSaldoEditaveis.push({
+            numero: i,
+            valor: Math.max(0, valFinal),
+            dataVencimento: dtIso
+          });
+        }
+      }
+
+      renderizarGradeParcelasEditaveis(remanescente, formaSaldoTxt);
+    }
+
+    function renderizarGradeParcelasEditaveis(remanescente, formaSaldoTxt) {
+      if (!boxParcelasDet) return;
+
+      const somaAtual = parcelasSaldoEditaveis.reduce((acc, p) => acc + (parseFloat(p.valor) || 0), 0);
+      const dif = parseFloat((somaAtual - remanescente).toFixed(2));
+      const bateu = Math.abs(dif) < 0.05;
+
+      let htmlLinhas = '';
+      parcelasSaldoEditaveis.forEach((p, idx) => {
+        htmlLinhas += `
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 10px;">
+            <div style="display: flex; align-items: center; gap: 6px; min-width: 110px;">
+              <span class="status-pill status-blue" style="font-size: 11px; font-weight: 800; padding: 2px 7px;">
+                ${p.numero}ª Parcela
+              </span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 11px; font-weight: 700; color: #475569;">Valor:</span>
+              <div style="display: flex; align-items: center; gap: 2px;">
+                <span style="font-size: 11.5px; font-weight: 800; color: #1e3a8a;">R$</span>
+                <input type="number" step="0.01" min="0" class="form-input text-mono inp-custom-parc-valor" data-idx="${idx}" value="${(parseFloat(p.valor) || 0).toFixed(2)}" style="width: 105px; font-weight: 800; font-size: 12.5px; text-align: right; padding: 4px 6px; height: auto;">
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 11px; font-weight: 700; color: #475569;">Vencimento:</span>
+              <input type="date" class="form-input inp-custom-parc-data" data-idx="${idx}" value="${p.dataVencimento}" style="width: 135px; font-weight: 700; font-size: 11.5px; padding: 4px 6px; height: auto;">
+            </div>
+
+            <div style="font-size: 10.5px; color: #64748b; font-weight: 600;">
+              ${formaSaldoTxt}
+            </div>
+          </div>
+        `;
+      });
+
+      boxParcelasDet.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+          <div style="font-weight: 800; font-size: 11.5px; color: #1e40af; display: flex; align-items: center; gap: 6px;">
+            <span>📅 Vencimentos & Valores das Parcelas (Preenchidos & 100% Editáveis):</span>
+          </div>
+          <div id="statusSomaParcelasSaldo">
+            ${bateu ? `
+              <span style="font-size: 11px; font-weight: 800; color: #15803d; background: #dcfce7; padding: 2px 8px; border-radius: 4px; border: 1px solid #86efac;">
+                ✓ Soma: ${formatarMoeda(somaAtual)} (Bate com saldo)
+              </span>
+            ` : `
+              <span style="font-size: 11px; font-weight: 800; color: #b91c1c; background: #fee2e2; padding: 2px 8px; border-radius: 4px; border: 1px solid #fca5a5;">
+                ⚠️ Soma: ${formatarMoeda(somaAtual)} • Dif: ${formatarMoeda(dif)}
+              </span>
+              <button type="button" class="btn btn-secondary btn-xs" id="btnAjustarCentavosParcelas" style="margin-left: 4px; font-size: 10px; padding: 1px 6px; font-weight: 700; color: #0284c7;">
+                ⚡ Ajustar Diferença
+              </button>
+            `}
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          ${htmlLinhas}
+        </div>
+      `;
+
+      // Eventos para atualização manual de cada parcela
+      boxParcelasDet.querySelectorAll('.inp-custom-parc-valor').forEach(inp => {
+        inp.addEventListener('input', (e) => {
+          const idx = parseInt(e.target.getAttribute('data-idx'), 10);
+          if (!isNaN(idx) && parcelasSaldoEditaveis[idx]) {
+            parcelasSaldoEditaveis[idx].valor = parseFloat(e.target.value) || 0;
+            // Atualiza status da soma sem reconstruir os inputs
+            const somaNova = parcelasSaldoEditaveis.reduce((acc, p) => acc + (parseFloat(p.valor) || 0), 0);
+            const difNova = parseFloat((somaNova - remanescente).toFixed(2));
+            const statusEl = document.getElementById('statusSomaParcelasSaldo');
+            if (statusEl) {
+              const bateuNova = Math.abs(difNova) < 0.05;
+              statusEl.innerHTML = bateuNova ? `
+                <span style="font-size: 11px; font-weight: 800; color: #15803d; background: #dcfce7; padding: 2px 8px; border-radius: 4px; border: 1px solid #86efac;">
+                  ✓ Soma: ${formatarMoeda(somaNova)} (Bate com saldo)
+                </span>
+              ` : `
+                <span style="font-size: 11px; font-weight: 800; color: #b91c1c; background: #fee2e2; padding: 2px 8px; border-radius: 4px; border: 1px solid #fca5a5;">
+                  ⚠️ Soma: ${formatarMoeda(somaNova)} • Dif: ${formatarMoeda(difNova)}
+                </span>
+              `;
+            }
+          }
+        });
+      });
+
+      boxParcelasDet.querySelectorAll('.inp-custom-parc-data').forEach(inp => {
+        inp.addEventListener('change', (e) => {
+          const idx = parseInt(e.target.getAttribute('data-idx'), 10);
+          if (!isNaN(idx) && parcelasSaldoEditaveis[idx]) {
+            parcelasSaldoEditaveis[idx].dataVencimento = e.target.value;
+          }
+        });
+      });
+
+      document.getElementById('btnAjustarCentavosParcelas')?.addEventListener('click', () => {
+        const ultIdx = parcelasSaldoEditaveis.length - 1;
+        if (ultIdx >= 0) {
+          const somaDemais = parcelasSaldoEditaveis.slice(0, ultIdx).reduce((acc, p) => acc + (parseFloat(p.valor) || 0), 0);
+          parcelasSaldoEditaveis[ultIdx].valor = Math.max(0, parseFloat((remanescente - somaDemais).toFixed(2)));
+          renderizarGradeParcelasEditaveis(remanescente, formaSaldoTxt);
+        }
+      });
+    }
+
+    // Botões para salvar taxa como padrão permanente
+    document.getElementById('btnSalvarTaxaPadraoEntrada')?.addEventListener('click', () => {
+      const forma = selFormaEntrada?.value || 'PIX';
+      const taxa = parseFloat(inpTaxaEntrada?.value || 0);
+      salvarTaxaPadraoPagamento(forma, taxa, 1);
+      mostrarToast(`✓ Taxa de ${taxa.toFixed(2)}% salva como padrão permanente para ${forma}!`, 'green');
+    });
+
+    document.getElementById('btnSalvarTaxaPadraoSaldo')?.addEventListener('click', () => {
+      const forma = selFormaSaldo?.value || 'Cartão de Crédito';
+      const qtd = parseInt(selParcSaldo?.value || 1, 10);
+      const taxa = parseFloat(inpTaxaSaldo?.value || 0);
+      salvarTaxaPadraoPagamento(forma, taxa, qtd);
+      mostrarToast(`✓ Taxa de ${taxa.toFixed(2)}% salva como padrão permanente para ${forma}${forma.includes('Cartão') ? ` (${qtd}x)` : ''}!`, 'green');
+    });
+
     selFormaEntrada?.addEventListener('change', () => {
       if (inpTaxaEntrada) {
-        inpTaxaEntrada.value = sugerirTaxaOperadora(selFormaEntrada.value, 1).toFixed(2);
+        inpTaxaEntrada.value = obterTaxaPadraoPagamento(selFormaEntrada.value, 1).toFixed(2);
       }
       recalcularSaldoAvanco('formaEntrada');
     });
@@ -10635,7 +10833,7 @@
     selFormaSaldo?.addEventListener('change', () => {
       if (inpTaxaSaldo) {
         const qtd = parseInt(selParcSaldo?.value || 1, 10);
-        inpTaxaSaldo.value = sugerirTaxaOperadora(selFormaSaldo.value, qtd).toFixed(2);
+        inpTaxaSaldo.value = obterTaxaPadraoPagamento(selFormaSaldo.value, qtd).toFixed(2);
       }
       recalcularSaldoAvanco('formaSaldo');
     });
@@ -10643,7 +10841,7 @@
     selParcSaldo?.addEventListener('change', () => {
       if (inpTaxaSaldo) {
         const qtd = parseInt(selParcSaldo.value || 1, 10);
-        inpTaxaSaldo.value = sugerirTaxaOperadora(selFormaSaldo?.value || 'Cartão de Crédito', qtd).toFixed(2);
+        inpTaxaSaldo.value = obterTaxaPadraoPagamento(selFormaSaldo?.value || 'Cartão de Crédito', qtd).toFixed(2);
       }
       recalcularSaldoAvanco('parcSaldo');
     });
@@ -10860,31 +11058,45 @@
       const taxaTotalOperadoraValor = parseFloat((taxaEntradaValor + taxaSaldoValor).toFixed(2));
       const valorLiquidoFabrica = parseFloat((totalVendaFinal - taxaTotalOperadoraValor).toFixed(2));
 
-      // Geração das parcelas do saldo remanescente
+      // Geração e consolidação das parcelas do saldo remanescente preenchidas/editadas pelo usuário
       const parcelasSaldo = [];
       const dataBasePrevisao = dadosBase.dataPrevisaoEntrega || calcularDataFuturaDiasUteis(dadosBase.prazoPedidoDias || 15);
+
       if (saldoRestante > 0) {
-        const valUnitParcela = parseFloat((saldoRestante / parcelasSaldoQtd).toFixed(2));
-        for (let i = 1; i <= parcelasSaldoQtd; i++) {
-          let dtVenc = dataBasePrevisao;
-          try {
-            const d = new Date(dataBasePrevisao + (dataBasePrevisao.includes('T') ? '' : 'T12:00:00'));
-            d.setMonth(d.getMonth() + (i - 1));
-            dtVenc = d.toISOString().split('T')[0];
-          } catch(e){}
-          const valFinal = (i === parcelasSaldoQtd)
-            ? parseFloat((saldoRestante - (valUnitParcela * (parcelasSaldoQtd - 1))).toFixed(2))
-            : valUnitParcela;
-          parcelasSaldo.push({
-            id: `PARC-${novoNum}-${i}`,
-            numero: i,
-            totalParcelas: parcelasSaldoQtd,
-            valor: valFinal,
-            dataVencimento: dtVenc,
-            formaPagamento: formaPagamentoSaldo,
-            status: 'Pendente',
-            dataPagamento: null
+        if (Array.isArray(parcelasSaldoEditaveis) && parcelasSaldoEditaveis.length > 0) {
+          parcelasSaldoEditaveis.forEach((pc, idx) => {
+            parcelasSaldo.push({
+              id: `PARC-${novoNum}-${idx + 1}`,
+              numero: idx + 1,
+              totalParcelas: parcelasSaldoEditaveis.length,
+              valor: parseFloat((parseFloat(pc.valor) || 0).toFixed(2)),
+              dataVencimento: pc.dataVencimento || dataBasePrevisao,
+              formaPagamento: formaPagamentoSaldo,
+              status: 'Pendente',
+              dataPagamento: null
+            });
           });
+        } else {
+          // Fallback caso não haja edição direta no DOM
+          const valUnitParcela = parseFloat((saldoRestante / parcelasSaldoQtd).toFixed(2));
+          for (let i = 1; i <= parcelasSaldoQtd; i++) {
+            const d = new Date(dataBasePrevisao + (dataBasePrevisao.includes('T') ? '' : 'T12:00:00'));
+            if (parcelasSaldoQtd > 1) d.setDate(d.getDate() + (30 * (i - 1)));
+            const dtVenc = d.toISOString().split('T')[0];
+            const valFinal = (i === parcelasSaldoQtd)
+              ? parseFloat((saldoRestante - (valUnitParcela * (parcelasSaldoQtd - 1))).toFixed(2))
+              : valUnitParcela;
+            parcelasSaldo.push({
+              id: `PARC-${novoNum}-${i}`,
+              numero: i,
+              totalParcelas: parcelasSaldoQtd,
+              valor: valFinal,
+              dataVencimento: dtVenc,
+              formaPagamento: formaPagamentoSaldo,
+              status: 'Pendente',
+              dataPagamento: null
+            });
+          }
         }
       }
 
