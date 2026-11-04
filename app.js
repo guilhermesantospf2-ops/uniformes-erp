@@ -16942,7 +16942,7 @@
       !(d.id && String(d.id).startsWith('DESP-OP-'))
     );
     if (db.despesasFixas.length !== qtdAntes) {
-      salvarBanco();
+      salvarBancoDados();
     }
   }
 
@@ -18400,20 +18400,52 @@
 
       const vendedoresUnicos = [...new Set(pedidosComissao.map(c => c.vendedorNome))];
 
+      // Cálculos específicos para o vendedor filtrado (ou global)
+      const comissoesPendentesFiltradas = comissoesFiltradas.filter(c => c.comissaoStatus === 'Pendente');
+      const totalComissoesPendentesFiltradas = comissoesPendentesFiltradas.reduce((acc, c) => acc + c.comissaoValor, 0);
+      const comissoesPagasFiltradas = comissoesFiltradas.filter(c => c.comissaoStatus === 'Paga');
+      const totalComissoesPagasFiltradas = comissoesPagasFiltradas.reduce((acc, c) => acc + c.comissaoValor, 0);
+      const totalVendasFiltradas = comissoesFiltradas.reduce((acc, c) => acc + c.totalVenda, 0);
+      const totalComissoesGeradasFiltradas = comissoesFiltradas.reduce((acc, c) => acc + c.comissaoValor, 0);
+
       conteudoSubAbaHtml = `
         <div class="card" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <div>
             <div style="font-size: 15px; font-weight: 800; color: #0f172a;">Plano de Comissões da Equipe Comercial</div>
             <div style="font-size: 11.5px; color: var(--text-gray-500);">Regras automáticas por percentual do faturamento, margem bruta ou fixo por peça com liquidação e baixa integrada</div>
           </div>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <label style="font-size: 11.5px; font-weight: 600; color: #64748b;">Vendedor:</label>
-            <select id="selectFiltroVendedorComissao" class="form-control" style="width: 190px; height: 32px; font-size: 12px;">
-              <option value="todos" ${vendedorFiltroComissao === 'todos' ? 'selected' : ''}>Todos os Vendedores</option>
-              ${vendedoresUnicos.map(v => `
-                <option value="${v}" ${vendedorFiltroComissao === v ? 'selected' : ''}>${v}</option>
-              `).join('')}
-            </select>
+          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <label style="font-size: 11.5px; font-weight: 700; color: #475569;">Vendedor:</label>
+              <select id="selectFiltroVendedorComissao" class="form-control" style="width: 190px; height: 34px; font-size: 12px; font-weight: 600;">
+                <option value="todos" ${vendedorFiltroComissao === 'todos' ? 'selected' : ''}>Todos os Vendedores</option>
+                ${vendedoresUnicos.map(v => `
+                  <option value="${v}" ${vendedorFiltroComissao === v ? 'selected' : ''}>${v}</option>
+                `).join('')}
+              </select>
+            </div>
+
+            <!-- Total a Pagar e Botão Pagar Todas as Comissões -->
+            ${totalComissoesPendentesFiltradas > 0 ? `
+              <div style="display: flex; align-items: center; gap: 10px; background: #fef2f2; border: 1.5px solid #fca5a5; padding: 4px 12px; border-radius: 6px;">
+                <div style="display: flex; flex-direction: column; text-align: right;">
+                  <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase;">Total a Pagar ${vendedorFiltroComissao !== 'todos' ? `(${vendedorFiltroComissao})` : ''}:</span>
+                  <span style="font-size: 13.5px; font-weight: 800; color: #dc2626; font-family: monospace;">
+                    ${formatarMoeda(totalComissoesPendentesFiltradas)}
+                  </span>
+                </div>
+                <button type="button" class="btn btn-green btn-sm btn-pagar-todas-comissoes-vendedor" style="height: 32px; font-weight: 800; font-size: 11.5px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  Pagar Todas as Comissões
+                </button>
+              </div>
+            ` : (comissoesFiltradas.length > 0 ? `
+              <div style="display: inline-flex; align-items: center; gap: 6px; background: #f0fdf4; border: 1.5px solid #86efac; padding: 6px 12px; border-radius: 6px;">
+                <span class="status-pill status-green" style="font-size: 11px; font-weight: 700; border: none; padding: 0;">
+                  ✓ Todas as Comissões Pagas (${formatarMoeda(totalComissoesPagasFiltradas)})
+                </span>
+              </div>
+            ` : '')}
           </div>
         </div>
 
@@ -18424,8 +18456,8 @@
               <span>Total Vendas Faturadas</span>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
             </div>
-            <div class="kpi-value text-primary">${formatarMoeda(totalVendasComissao)}</div>
-            <div class="kpi-desc"><span>${pedidosComissao.length} pedidos elegíveis</span></div>
+            <div class="kpi-value text-primary">${formatarMoeda(totalVendasFiltradas)}</div>
+            <div class="kpi-desc"><span>${comissoesFiltradas.length} pedidos elegíveis ${vendedorFiltroComissao !== 'todos' ? `(${vendedorFiltroComissao})` : ''}</span></div>
           </div>
 
           <div class="card">
@@ -18433,8 +18465,8 @@
               <span>Total Comissões Geradas</span>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
             </div>
-            <div class="kpi-value text-primary">${formatarMoeda(totalComissoesGeradas)}</div>
-            <div class="kpi-desc"><span>Média: ${totalVendasComissao > 0 ? ((totalComissoesGeradas / totalVendasComissao) * 100).toFixed(1) : 0}% das vendas</span></div>
+            <div class="kpi-value text-primary">${formatarMoeda(totalComissoesGeradasFiltradas)}</div>
+            <div class="kpi-desc"><span>Média: ${totalVendasFiltradas > 0 ? ((totalComissoesGeradasFiltradas / totalVendasFiltradas) * 100).toFixed(1) : 0}% das vendas</span></div>
           </div>
 
           <div class="card">
@@ -18442,8 +18474,8 @@
               <span>Comissões a Pagar (Pendentes)</span>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line></svg>
             </div>
-            <div class="kpi-value text-red">${formatarMoeda(totalComissoesPendentes)}</div>
-            <div class="kpi-desc"><span class="text-red">${comissoesPendentes.length} pagamento(s) pendente(s)</span></div>
+            <div class="kpi-value text-red">${formatarMoeda(totalComissoesPendentesFiltradas)}</div>
+            <div class="kpi-desc"><span class="text-red">${comissoesPendentesFiltradas.length} pagamento(s) pendente(s)</span></div>
           </div>
 
           <div class="card">
@@ -18451,18 +18483,24 @@
               <span>Comissões Já Liquidadas</span>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
             </div>
-            <div class="kpi-value text-green">${formatarMoeda(totalComissoesPagas)}</div>
-            <div class="kpi-desc"><span>${comissoesPagas.length} comissões pagas e baixadas</span></div>
+            <div class="kpi-value text-green">${formatarMoeda(totalComissoesPagasFiltradas)}</div>
+            <div class="kpi-desc"><span>${comissoesPagasFiltradas.length} comissões pagas e baixadas</span></div>
           </div>
         </div>
 
         <!-- Tabela de Comissões por Pedido -->
         <div class="card">
-          <div class="table-header-bar" style="padding: 0 0 14px 0;">
+          <div class="table-header-bar" style="padding: 0 0 14px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div>
               <div class="table-title">Extrato de Comissões por Pedido</div>
-              <span style="font-size: 11px; color: var(--text-gray-500);">Clique em "✓ Pagar Comissão" para lançar automaticamente o pagamento como despesa comercial e registrar saída no caixa</span>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Clique em "✓ Pagar Comissão" para lançar individualmente ou use o botão para quitar em lote</span>
             </div>
+            ${totalComissoesPendentesFiltradas > 0 ? `
+              <button type="button" class="btn btn-green btn-xs btn-pagar-todas-comissoes-vendedor" style="font-weight: 800; padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Pagar Todas as Comissões (${formatarMoeda(totalComissoesPendentesFiltradas)})
+              </button>
+            ` : ''}
           </div>
 
           <div class="table-wrapper" style="margin-bottom: 0;">
@@ -18805,6 +18843,12 @@
     document.getElementById('selectFiltroVendedorComissao')?.addEventListener('change', (e) => {
       vendedorFiltroComissao = e.target.value;
       renderizarFinanceiro();
+    });
+
+    document.querySelectorAll('.btn-pagar-todas-comissoes-vendedor').forEach(btn => {
+      btn.addEventListener('click', () => {
+        pagarTodasComissoesVendedor(vendedorFiltroComissao);
+      });
     });
 
     document.querySelectorAll('.btn-pagar-comissao').forEach(btn => {
@@ -19798,6 +19842,110 @@
 
     salvarBancoDados();
     mostrarNotificacaoFeedback(`✅ Comissão de ${formatarMoeda(comissaoValor)} paga e baixada para ${vendedorNome}!`);
+    renderizarFinanceiro();
+  }
+
+  // Pagar Todas as Comissões em Lote (Filtrado por Vendedor ou Geral)
+  function pagarTodasComissoesVendedor(vendedorAlvo) {
+    let pendentes = [];
+    if (vendedorAlvo && vendedorAlvo !== 'todos') {
+      pendentes = (db.pedidos || []).filter(p => 
+        p.status !== 'Cancelado' && 
+        p.tipoRegistro !== 'Orcamento' && 
+        p.comissaoStatus !== 'Paga' && 
+        (p.vendedorId === vendedorAlvo || p.vendedorNome === vendedorAlvo)
+      );
+    } else {
+      pendentes = (db.pedidos || []).filter(p => 
+        p.status !== 'Cancelado' && 
+        p.tipoRegistro !== 'Orcamento' && 
+        p.comissaoStatus !== 'Paga'
+      );
+    }
+
+    if (!pendentes || pendentes.length === 0) {
+      alert('Nenhuma comissão pendente encontrada para liquidar.');
+      return;
+    }
+
+    let totalLiquidar = 0;
+    const pedidosCalculados = pendentes.map(ped => {
+      const valorVenda = Number(ped.valorTotalVenda) || 0;
+      const cmv = Number(ped.custoTotalEstimado) || 0;
+      const lucroBruto = valorVenda - cmv;
+      const totalPecas = Number(ped.grade?.total) || 1;
+
+      let comissaoValor = Number(ped.comissaoValor);
+      if (isNaN(comissaoValor) || comissaoValor <= 0) {
+        const vendedorObj = (db.colaboradores || []).find(c => c.nome === ped.vendedorNome || c.id === ped.vendedorId);
+        const taxa = vendedorObj?.taxaComissao ? Number(vendedorObj.taxaComissao) : 3.0;
+        const tipo = vendedorObj?.tipoComissao || 'perc_venda';
+        if (tipo === 'perc_margem') {
+          comissaoValor = Math.max(0, lucroBruto * (taxa / 100));
+        } else if (tipo === 'fixo_peca') {
+          comissaoValor = totalPecas * taxa;
+        } else {
+          comissaoValor = valorVenda * (taxa / 100);
+        }
+      }
+      totalLiquidar += comissaoValor;
+      return { ped, comissaoValor, valorVenda };
+    });
+
+    const nomeRef = (vendedorAlvo && vendedorAlvo !== 'todos') ? `o vendedor "${vendedorAlvo}"` : 'todos os vendedores';
+    const msg = `Confirmar liquidação em lote de ${pedidosCalculados.length} comissões no valor total de ${formatarMoeda(totalLiquidar)} para ${nomeRef}?\n\nSerão geradas as despesas comerciais pagas e registrados os lançamentos de saída no Livro Caixa para cada comissão.`;
+
+    if (!confirm(msg)) return;
+
+    const hoje = new Date().toISOString().split('T')[0];
+    const timestampBase = Date.now();
+
+    if (!db.despesasFixas) db.despesasFixas = [];
+    if (!db.lancamentosFinanceiros) db.lancamentosFinanceiros = [];
+
+    pedidosCalculados.forEach((item, idx) => {
+      const { ped, comissaoValor, valorVenda } = item;
+      const vendedorNome = ped.vendedorNome || 'Vendedor Comercial';
+
+      // 1. Atualiza pedido
+      ped.comissaoStatus = 'Paga';
+      ped.comissaoValor = comissaoValor;
+      ped.dataPagamentoComissao = hoje;
+
+      // 2. Registra despesa comercial paga
+      const idDesp = `DESP-COM-${ped.id}-${timestampBase}-${idx}`;
+      db.despesasFixas.unshift({
+        id: idDesp,
+        descricao: `Comissão Venda - Pedido #${ped.numero} (${vendedorNome})`,
+        categoria: 'Comissões de Vendas',
+        centroCusto: 'CC-01 - Comercial & Marketing',
+        valor: comissaoValor,
+        valorPago: comissaoValor,
+        status: 'Pago',
+        dataVencimento: hoje,
+        dataPagamento: hoje,
+        formaPagamentoPago: 'PIX',
+        fornecedorFavorecido: vendedorNome,
+        observacoes: `Comissão do pedido #${ped.numero} de ${ped.clienteNome}. Faturamento: ${formatarMoeda(valorVenda)}`
+      });
+
+      // 3. Registra saída no Livro Caixa
+      db.lancamentosFinanceiros.unshift({
+        id: `LANC-COM-${timestampBase}-${idx}`,
+        data: hoje,
+        descricao: `Pagamento de Comissão Comercial - Pedido #${ped.numero} (${vendedorNome})`,
+        tipo: 'Saida',
+        categoria: 'Comissões de Vendas',
+        centroCusto: 'CC-01 - Comercial & Marketing',
+        valor: comissaoValor,
+        formaPagamento: 'PIX',
+        status: 'Efetivado',
+        pedidoId: ped.id
+      });
+    });
+
+    salvarBancoDados();
+    mostrarNotificacaoFeedback(`✓ ${pedidosCalculados.length} comissões no valor total de ${formatarMoeda(totalLiquidar)} pagas e baixadas para ${nomeRef}!`);
     renderizarFinanceiro();
   }
 
