@@ -22156,7 +22156,7 @@ function obterConfigFiscal() {
     const barcodeSvg = gerarSvgCodigoBarrasDanfe(nfe.chaveAcesso);
 
     return `
-      <div class="danfe-sheet ${isCancelada ? 'danfe-cancelada' : ''}" style="position: relative;">
+      <div class="danfe-sheet ${isCancelada ? 'danfe-cancelada' : ''}" style="position: relative; min-height: 297mm; display: flex; flex-direction: column; justify-content: space-between;">
         ${isCancelada ? `
           <div class="danfe-watermark-cancelada" id="danfeWatermarkCancelled">
             NF-e CANCELADA NA SEFAZ
@@ -22225,7 +22225,7 @@ function obterConfigFiscal() {
             <div style="width: 100%;">${barcodeSvg}</div>
             <div>
               <span class="danfe-box-lbl" style="text-align: center;">CHAVE DE ACESSO</span>
-              <div class="danfe-box-val text-mono" style="font-size: 8px; text-align: center; letter-spacing: 0.5px;">${chaveFormatada}</div>
+              <div class="danfe-box-val text-mono" style="font-size: 9.5px; font-weight: 800; text-align: center; letter-spacing: 0.8px;">${chaveFormatada}</div>
             </div>
             <div style="font-size: 6.5px; text-align: center; color: #444; border-top: 1px solid #ddd; padding-top: 1px;">
               Consulta de autenticidade no portal da NF-e <strong>www.nfe.fazenda.gov.br/portal</strong> ou na SEFAZ Autorizadora
@@ -22464,8 +22464,8 @@ function obterConfigFiscal() {
 
         <!-- 9. DADOS ADICIONAIS / INFORMAÇÕES COMPLEMENTARES -->
         <div class="danfe-header-title">DADOS ADICIONAIS</div>
-        <div style="display: flex; gap: 4px; margin-bottom: 2px;">
-          <div class="danfe-box" style="flex: 8; min-height: 55px; font-size: 8px; line-height: 1.35;">
+        <div style="display: flex; gap: 4px; margin-bottom: 2px; flex: 1; min-height: 110px;">
+          <div class="danfe-box" style="flex: 8; min-height: 110px; font-size: 8.5px; line-height: 1.45;">
             <span class="danfe-box-lbl">INFORMAÇÕES COMPLEMENTARES</span>
             <div>
               <strong>I - DOCUMENTO EMITIDO POR ME OU EPP OPTANTE PELO SIMPLES NACIONAL.</strong><br>
@@ -22476,7 +22476,7 @@ function obterConfigFiscal() {
               ${nfe.informacoesComplementares ? `Observações Adicionais: ${nfe.informacoesComplementares}<br>` : ''}
             </div>
           </div>
-          <div class="danfe-box" style="flex: 4; min-height: 55px;">
+          <div class="danfe-box" style="flex: 4; min-height: 110px;">
             <span class="danfe-box-lbl">RESERVADO AO FISCO</span>
             <span class="text-mono" style="font-size: 7.5px; color: #666;">
               Ambiente SEFAZ: ${nfe.ambiente === 'producao' ? 'PRODUÇÃO' : 'HOMOLOGAÇÃO'}<br>
@@ -22493,24 +22493,156 @@ function obterConfigFiscal() {
     const nfe = (db.notasFiscais || []).find(n => n.id === nfeId);
     if (!nfe) return mostrarToast('Nota Fiscal não localizada para impressão.', 'red');
 
-    const htmlCorpo = `
-      <style>
-        @page { size: A4 portrait; margin: 4mm 5mm; }
-        body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background: #ffffff !important; }
-        .danfe-sheet { width: 100% !important; max-width: 100% !important; border: 1.5px solid #000; padding: 6px; box-sizing: border-box; }
-        .danfe-box { border: 1px solid #000; padding: 2px 4px; box-sizing: border-box; min-height: 28px; }
-        .danfe-box-lbl { font-size: 7.5px; font-weight: 700; text-transform: uppercase; display: block; line-height: 1; margin-bottom: 1px; color: #222; }
-        .danfe-box-val { font-size: 9.5px; font-weight: 800; line-height: 1.15; }
-        .danfe-header-title { font-size: 8px; font-weight: 800; text-transform: uppercase; background: #e2e8f0; padding: 2px 4px; border: 1px solid #000; border-bottom: none; margin-top: 3px; }
-        .danfe-table { width: 100%; border-collapse: collapse; font-size: 8px; border: 1px solid #000; }
-        .danfe-table th { background: #f1f5f9; border: 1px solid #000; padding: 2px 3px; font-size: 7.5px; font-weight: 800; text-transform: uppercase; text-align: left; }
-        .danfe-table td { border: 1px solid #000; padding: 2px 3px; font-size: 8px; }
-        .danfe-barcode-svg { display: block; width: 100%; height: 34px; }
-        .danfe-watermark-cancelada { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) rotate(-28deg); font-size: 38px; font-weight: 900; color: rgba(220, 38, 38, 0.4); border: 5px dashed rgba(220, 38, 38, 0.4); padding: 10px 24px; text-transform: uppercase; letter-spacing: 3px; }
-      </style>
-      ${gerarDanfeHtml(nfe, db.empresa)}
-    `;
-    imprimirDocumentoIsolado(htmlCorpo, `DANFE_NFe_${nfe.numero}_${db.empresa.nomeFantasia}`);
+    const idIframe = 'iframeImpressaoDanfeA4';
+    const iframeExistente = document.getElementById(idIframe);
+    if (iframeExistente) {
+      try { iframeExistente.remove(); } catch (e) { }
+    }
+
+    const iframe = document.createElement('iframe');
+    iframe.id = idIframe;
+    iframe.style.position = 'fixed';
+    iframe.style.top = '-9999px';
+    iframe.style.left = '-9999px';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    iframe.style.opacity = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8">
+        <title>DANFE_NFe_${nfe.numero}_${db.empresa?.nomeFantasia || 'Bravvi'}</title>
+        <style>
+          @page {
+            size: A4 portrait;
+            margin: 4mm 5mm;
+          }
+          * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+          }
+          body {
+            font-family: Arial, Helvetica, sans-serif;
+            color: #000000;
+            background: #ffffff;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .danfe-sheet {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-height: 284mm !important;
+            border: 1.5px solid #000000;
+            padding: 5mm;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            page-break-inside: avoid;
+          }
+          .danfe-box {
+            border: 1px solid #000000;
+            padding: 3px 6px;
+            box-sizing: border-box;
+            background: #ffffff;
+            min-height: 35px;
+          }
+          .danfe-box-lbl {
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #222222;
+            display: block;
+            line-height: 1.1;
+            margin-bottom: 2px;
+          }
+          .danfe-box-val {
+            font-size: 11px;
+            font-weight: 800;
+            color: #000000;
+            line-height: 1.2;
+          }
+          .danfe-header-title {
+            font-size: 8.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            background: #e2e8f0;
+            padding: 3px 6px;
+            border: 1px solid #000000;
+            border-bottom: none;
+            margin-top: 4px;
+          }
+          .danfe-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9.5px;
+            border: 1px solid #000000;
+          }
+          .danfe-table th {
+            background: #f1f5f9;
+            border: 1px solid #000000;
+            padding: 3px 4px;
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            text-align: left;
+          }
+          .danfe-table td {
+            border: 1px solid #000000;
+            padding: 4px;
+            font-size: 9px;
+            line-height: 1.2;
+          }
+          .danfe-barcode-svg {
+            display: block;
+            width: 100%;
+            height: 42px;
+          }
+          .text-mono {
+            font-family: 'JetBrains Mono', Consolas, monospace;
+          }
+          .danfe-watermark-cancelada {
+            position: absolute;
+            top: 42%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-28deg);
+            font-size: 44px;
+            font-weight: 900;
+            color: rgba(220, 38, 38, 0.35);
+            border: 6px dashed rgba(220, 38, 38, 0.45);
+            padding: 14px 32px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            pointer-events: none;
+            z-index: 100;
+            white-space: nowrap;
+          }
+        </style>
+      </head>
+      <body>
+        ${gerarDanfeHtml(nfe, db.empresa)}
+      </body>
+      </html>
+    `);
+    doc.close();
+
+    setTimeout(() => {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } catch (err) {
+        console.error('Erro na impressão da DANFE A4:', err);
+      }
+    }, 350);
   }
 
   function baixarArquivoXmlNfe(nfeId) {
@@ -22550,7 +22682,7 @@ function obterConfigFiscal() {
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
-        <div class="modal-box" style="max-width: 920px; width: 95vw; max-height: 94vh; display: flex; flex-direction: column; padding: 0;">
+        <div class="modal-box" style="max-width: 1060px; width: 96vw; max-height: 96vh; display: flex; flex-direction: column; padding: 0;">
           <!-- Barra de Ações Superior do Visualizador -->
           <div class="modal-header" style="background: #0f172a; color: #ffffff; padding: 12px 20px; border-bottom: none; display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -22594,7 +22726,7 @@ function obterConfigFiscal() {
           </div>
 
           <!-- Corpo com a Folha A4 DANFE -->
-          <div class="danfe-preview-wrapper" style="flex: 1; overflow-y: auto; max-height: calc(94vh - 60px);">
+          <div class="danfe-preview-wrapper" style="flex: 1; overflow-y: auto; max-height: calc(96vh - 60px); padding: 24px 16px; background: #475569;">
             <div class="danfe-sheet-shadow">
               ${gerarDanfeHtml(nfe, db.empresa)}
             </div>
