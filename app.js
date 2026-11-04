@@ -109,6 +109,15 @@
       }
     });
 
+    // Expurgar qualquer custo de pedido inserido no Contas a Pagar (despesasFixas)
+    if (Array.isArray(banco.despesasFixas)) {
+      banco.despesasFixas = banco.despesasFixas.filter(d => 
+        !d.origemAutomatica && 
+        !d.pedidoNumero && 
+        !(d.id && String(d.id).startsWith('DESP-OP-'))
+      );
+    }
+
     // 2. Catálogos e Tabelas Base (Não sobrescreve se o cliente já possui)
     if (!Array.isArray(banco.produtosBase) || banco.produtosBase.length === 0) {
       banco.produtosBase = JSON.parse(JSON.stringify(templatePadrao?.produtosBase || []));
@@ -2452,8 +2461,28 @@
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
 
-    const partes = despesa.dataVencimento.split('T')[0].split('-');
-    const venc = new Date(parseInt(partes[0], 10), parseInt(partes[1], 10) - 1, parseInt(partes[2], 10));
+    let venc;
+    const strVenc = String(despesa.dataVencimento).split('T')[0].trim();
+    if (strVenc.includes('/')) {
+      const p = strVenc.split('/');
+      venc = new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10));
+    } else if (strVenc.includes('-')) {
+      const p = strVenc.split('-');
+      venc = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+    } else {
+      venc = new Date(strVenc);
+    }
+    if (isNaN(venc.getTime())) {
+      return {
+        tipo: 'pendente',
+        label: 'A Vencer',
+        badgeHtml: `<span class="status-pill status-yellow">A VENCER</span>`,
+        diasTexto: 'Vencimento pendente',
+        dias: 0,
+        isAtrasado: false,
+        isPago: false
+      };
+    }
     venc.setHours(0, 0, 0, 0);
 
     const diffMs = hoje.getTime() - venc.getTime();
@@ -2716,6 +2745,67 @@
   let mesFiltroPrevistoRealizado = new Date().toISOString().substring(0, 7); // 'YYYY-MM'
   let vendedorFiltroComissao = 'todos';
   let centroCustoFiltro = 'todos';
+  let filtroDataFinanceiroPeriodo = 'todos'; // 'todos' | 'mes_atual' | 'mes_anterior' | 'ultimos_30' | 'ultimos_90' | 'ano_atual' | 'custom'
+  let filtroDataFinanceiroInicio = '';
+  let filtroDataFinanceiroFim = '';
+
+  function obterIntervaloFiltroDataFinanceiro() {
+    const agora = new Date();
+    const anoAtual = agora.getFullYear();
+    const mesAtual = agora.getMonth();
+
+    function formatarIso(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const dia = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${dia}`;
+    }
+
+    if (filtroDataFinanceiroPeriodo === 'mes_atual') {
+      const dtIni = new Date(anoAtual, mesAtual, 1);
+      const dtFim = new Date(anoAtual, mesAtual + 1, 0);
+      return [formatarIso(dtIni), formatarIso(dtFim)];
+    }
+    if (filtroDataFinanceiroPeriodo === 'mes_anterior') {
+      const dtIni = new Date(anoAtual, mesAtual - 1, 1);
+      const dtFim = new Date(anoAtual, mesAtual, 0);
+      return [formatarIso(dtIni), formatarIso(dtFim)];
+    }
+    if (filtroDataFinanceiroPeriodo === 'ultimos_30') {
+      const dtIni = new Date();
+      dtIni.setDate(dtIni.getDate() - 30);
+      return [formatarIso(dtIni), formatarIso(agora)];
+    }
+    if (filtroDataFinanceiroPeriodo === 'ultimos_90') {
+      const dtIni = new Date();
+      dtIni.setDate(dtIni.getDate() - 90);
+      return [formatarIso(dtIni), formatarIso(agora)];
+    }
+    if (filtroDataFinanceiroPeriodo === 'ano_atual') {
+      return [`${anoAtual}-01-01`, `${anoAtual}-12-31`];
+    }
+    if (filtroDataFinanceiroPeriodo === 'custom' && filtroDataFinanceiroInicio && filtroDataFinanceiroFim) {
+      return [filtroDataFinanceiroInicio, filtroDataFinanceiroFim];
+    }
+    return ['', '']; // 'todos'
+  }
+
+  function dataEstaNoIntervaloFinanceiro(dataStr, dtInicio, dtFim) {
+    if (!dtInicio && !dtFim) return true;
+    if (!dataStr) return true;
+    let dClean = String(dataStr).trim();
+    if (dClean.includes('/')) {
+      const p = dClean.split('/');
+      if (p.length === 3) {
+        dClean = `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+      }
+    } else if (dClean.includes('T')) {
+      dClean = dClean.split('T')[0];
+    }
+    if (dtInicio && dClean < dtInicio) return false;
+    if (dtFim && dClean > dtFim) return false;
+    return true;
+  }
 
   // Configuração dos Menus da Sidebar
   function configurarMenuNavegacao() {
@@ -16843,244 +16933,32 @@
    */
   function sincronizarCustosOperacionaisDosPedidos() {
     if (!Array.isArray(db.despesasFixas)) db.despesasFixas = [];
-    if (!Array.isArray(db.pedidos)) return;
-
-    const hojeIso = new Date().toISOString().split('T')[0];
-
-    db.pedidos.forEach(p => {
-      // Ignora orçamentos e pedidos cancelados
-      if (p.status === 'Cancelado' || p.tipoRegistro === 'Orcamento') {
-        db.despesasFixas = db.despesasFixas.filter(d => !(d.pedidoNumero === p.numero && d.origemAutomatica && d.status !== 'Pago'));
-        return;
-      }
-
-      const num = p.numero || p.id;
-      const dataVenc = p.dataPrevisaoEntrega || p.dataMetaInterna || p.dataCriacao || hojeIso;
-      const cliNome = p.clienteNome || 'Cliente';
-
-      // 1. CUSTO DE MÃO DE OBRA / COSTURA (FACÇÃO)
-      let custoCosturaTotal = 0;
-      if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
-        custoCosturaTotal = p.itens.reduce((acc, it) => {
-          const v = (it.custoCostura != null && !isNaN(it.custoCostura) && parseFloat(it.custoCostura) > 0)
-            ? parseFloat(it.custoCostura)
-            : 7.50;
-          return acc + (v * (it.grade?.total || 0));
-        }, 0);
-      } else {
-        custoCosturaTotal = (parseFloat(p.custoCostura) || 7.50) * (p.grade?.total || 1);
-      }
-
-      if (custoCosturaTotal > 0) {
-        const idCostura = `DESP-OP-${num}-COSTURA`;
-        const despExistente = db.despesasFixas.find(d => d.id === idCostura);
-        const costureiraNome = p.costureiraNome || 'Oficina de Costura / Facção';
-
-        if (!despExistente) {
-          db.despesasFixas.push({
-            id: idCostura,
-            pedidoNumero: p.numero,
-            pedidoId: p.id,
-            origemAutomatica: true,
-            origem: `Custo de Produção (Pedido #${p.numero})`,
-            tipoCusto: 'Operacional',
-            descricao: `Costura & Facção • Pedido #${p.numero} (${cliNome})`,
-            categoria: 'Mão de Obra / Facção',
-            centroCusto: 'CC-03',
-            fornecedorFavorecido: costureiraNome,
-            valor: parseFloat(custoCosturaTotal.toFixed(2)),
-            valorMensal: parseFloat(custoCosturaTotal.toFixed(2)),
-            dataVencimento: dataVenc,
-            recorrencia: 'Por Pedido',
-            formaPagamentoPrevista: 'PIX',
-            status: 'Pendente'
-          });
-        } else if (despExistente.status !== 'Pago') {
-          despExistente.valor = parseFloat(custoCosturaTotal.toFixed(2));
-          despExistente.valorMensal = parseFloat(custoCosturaTotal.toFixed(2));
-          despExistente.fornecedorFavorecido = costureiraNome;
-          despExistente.dataVencimento = dataVenc;
-        }
-      }
-
-      // 2. CUSTO DE TECIDOS & MATÉRIA-PRIMA
-      const usouEstoqueFisico = (p.itens && Array.isArray(p.itens) && p.itens.some(it => it.utilizarEstoque)) || p.utilizarEstoque;
-      const idTecido = `DESP-OP-${num}-TECIDO`;
-
-      if (usouEstoqueFisico) {
-        // REGRA DE OURO FINANCEIRA: Matéria-prima retirada do estoque físico já foi paga na entrada do estoque!
-        // Não gera nova conta a pagar para fornecedor e remove qualquer despesa pendente gerada anteriormente.
-        db.despesasFixas = db.despesasFixas.filter(d => d.id !== idTecido);
-      } else {
-        // Compra sob demanda para este pedido: gera conta a pagar no Contas a Pagar
-        let custoTecidoTotal = 0;
-        if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
-          custoTecidoTotal = p.itens.reduce((acc, it) => {
-            const precoKg = parseFloat(it.custoTecidoKg) || 48.50;
-            const consumo = parseFloat(it.consumoTecido) || 0.28;
-            const margem = 1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100);
-            return acc + (precoKg * consumo * margem * (it.grade?.total || 0));
-          }, 0);
-        } else {
-          custoTecidoTotal = (parseFloat(p.custoTecidoPorPeca) || 14.67) * (p.grade?.total || 1);
-        }
-
-        if (custoTecidoTotal > 0) {
-          const despExistente = db.despesasFixas.find(d => d.id === idTecido);
-          if (!despExistente) {
-            db.despesasFixas.push({
-              id: idTecido,
-              pedidoNumero: p.numero,
-              pedidoId: p.id,
-              origemAutomatica: true,
-              origem: `Custo de Produção (Pedido #${p.numero})`,
-              tipoCusto: 'Operacional',
-              descricao: `Tecidos & Malhas • Pedido #${p.numero} (${cliNome})`,
-              categoria: 'Tecidos & Matéria-Prima',
-              centroCusto: 'CC-06',
-              fornecedorFavorecido: 'Fornecedor Têxtil / Malharia',
-              valor: parseFloat(custoTecidoTotal.toFixed(2)),
-              valorMensal: parseFloat(custoTecidoTotal.toFixed(2)),
-              dataVencimento: dataVenc,
-              recorrencia: 'Por Pedido',
-              formaPagamentoPrevista: 'Boleto Bancário',
-              status: 'Pendente'
-            });
-          } else if (despExistente.status !== 'Pago') {
-            despExistente.valor = parseFloat(custoTecidoTotal.toFixed(2));
-            despExistente.valorMensal = parseFloat(custoTecidoTotal.toFixed(2));
-            despExistente.dataVencimento = dataVenc;
-            despExistente.centroCusto = 'CC-06';
-          }
-        }
-      }
-
-      // 3. CUSTO DE AVIAMENTOS & SUPRIMENTOS
-      let custoAviamentoTotal = 0;
-      if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
-        custoAviamentoTotal = p.itens.reduce((acc, it) => {
-          const v = parseFloat(it.custoAviamento) || 4.80;
-          return acc + (v * (it.grade?.total || 0));
-        }, 0);
-      } else {
-        custoAviamentoTotal = 4.80 * (p.grade?.total || 1);
-      }
-
-      if (custoAviamentoTotal > 0) {
-        const idAviamento = `DESP-OP-${num}-AVIAMENTO`;
-        const despExistente = db.despesasFixas.find(d => d.id === idAviamento);
-
-        if (!despExistente) {
-          db.despesasFixas.push({
-            id: idAviamento,
-            pedidoNumero: p.numero,
-            pedidoId: p.id,
-            origemAutomatica: true,
-            origem: `Custo de Produção (Pedido #${p.numero})`,
-            tipoCusto: 'Operacional',
-            descricao: `Aviamentos & Linhas • Pedido #${p.numero} (${cliNome})`,
-            categoria: 'Aviamentos & Suprimentos',
-            centroCusto: 'CC-03',
-            fornecedorFavorecido: 'Fornecedor de Aviamentos',
-            valor: parseFloat(custoAviamentoTotal.toFixed(2)),
-            valorMensal: parseFloat(custoAviamentoTotal.toFixed(2)),
-            dataVencimento: dataVenc,
-            recorrencia: 'Por Pedido',
-            formaPagamentoPrevista: 'Boleto Bancário',
-            status: 'Pendente'
-          });
-        } else if (despExistente.status !== 'Pago') {
-          despExistente.valor = parseFloat(custoAviamentoTotal.toFixed(2));
-          despExistente.valorMensal = parseFloat(custoAviamentoTotal.toFixed(2));
-          despExistente.dataVencimento = dataVenc;
-        }
-      }
-
-      // 4. CUSTO DE ESTAMPARIA / DTF / SUBLIMAÇÃO (SE HOUVER)
-      let custoEstampaTotal = 0;
-      if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
-        custoEstampaTotal = p.itens.reduce((acc, it) => {
-          const v = parseFloat(it.custoEstampaTotal) || 0;
-          return acc + (v * (it.grade?.total || 0));
-        }, 0);
-      }
-
-      if (custoEstampaTotal > 0) {
-        const idEstampa = `DESP-OP-${num}-ESTAMPA`;
-        const despExistente = db.despesasFixas.find(d => d.id === idEstampa);
-
-        if (!despExistente) {
-          db.despesasFixas.push({
-            id: idEstampa,
-            pedidoNumero: p.numero,
-            pedidoId: p.id,
-            origemAutomatica: true,
-            origem: `Custo de Produção (Pedido #${p.numero})`,
-            tipoCusto: 'Operacional',
-            descricao: `Estamparia / DTF Digital • Pedido #${p.numero} (${cliNome})`,
-            categoria: 'Estamparia & DTF',
-            centroCusto: 'CC-02',
-            fornecedorFavorecido: 'Estamparia / DTF Digital',
-            valor: parseFloat(custoEstampaTotal.toFixed(2)),
-            valorMensal: parseFloat(custoEstampaTotal.toFixed(2)),
-            dataVencimento: dataVenc,
-            recorrencia: 'Por Pedido',
-            formaPagamentoPrevista: 'PIX',
-            status: 'Pendente'
-          });
-        } else if (despExistente.status !== 'Pago') {
-          despExistente.valor = parseFloat(custoEstampaTotal.toFixed(2));
-          despExistente.valorMensal = parseFloat(custoEstampaTotal.toFixed(2));
-          despExistente.dataVencimento = dataVenc;
-        }
-      }
-
-      // 5. CUSTO DE TAXAS DE OPERADORA / MEIOS DE PAGAMENTO (HOMOLOGAÇÃO FINANCEIRA)
-      const taxaOperadora = parseFloat(p.taxaTotalOperadoraValor || p.pagamentoDetalhes?.taxaTotalOperadoraValor || 0);
-      if (taxaOperadora > 0) {
-        const idTaxa = `DESP-OP-${num}-TAXA-PAG`;
-        const despExistente = db.despesasFixas.find(d => d.id === idTaxa);
-        const resumoMeios = p.pagamentoDetalhes
-          ? `${p.pagamentoDetalhes.formaEntrada || 'Entrada'} + ${p.pagamentoDetalhes.formaSaldo || 'Saldo'}`
-          : 'Cartão / Gateway';
-
-        if (!despExistente) {
-          db.despesasFixas.push({
-            id: idTaxa,
-            pedidoNumero: p.numero,
-            pedidoId: p.id,
-            origemAutomatica: true,
-            origem: `Taxas Financeiras (Pedido #${p.numero})`,
-            tipoCusto: 'Operacional',
-            descricao: `Taxas de Meios de Pagamento • Pedido #${p.numero} (${resumoMeios})`,
-            categoria: 'Taxas & Encargos Financeiros',
-            centroCusto: 'CC-04',
-            fornecedorFavorecido: 'Operadora de Cartão / Gateway Bancário',
-            valor: parseFloat(taxaOperadora.toFixed(2)),
-            valorMensal: parseFloat(taxaOperadora.toFixed(2)),
-            dataVencimento: dataVenc,
-            recorrencia: 'Por Pedido',
-            formaPagamentoPrevista: 'Retenção na Fonte / Débito',
-            status: (p.pagamentoDetalhes?.sinalCompensado && (!p.pagamentoDetalhes?.taxaSaldoValor || p.pagamentoDetalhes?.taxaSaldoValor === 0)) ? 'Pago' : 'Pendente'
-          });
-        } else if (despExistente.status !== 'Pago') {
-          despExistente.valor = parseFloat(taxaOperadora.toFixed(2));
-          despExistente.valorMensal = parseFloat(taxaOperadora.toFixed(2));
-          despExistente.dataVencimento = dataVenc;
-        }
-      }
-    });
+    // Expurgar qualquer custo operacional de pedido do Contas a Pagar.
+    // Custos diretos de pedidos pertencem exclusivamente à formação de preço / CMV (CPV).
+    const qtdAntes = db.despesasFixas.length;
+    db.despesasFixas = db.despesasFixas.filter(d => 
+      !d.origemAutomatica && 
+      !d.pedidoNumero && 
+      !(d.id && String(d.id).startsWith('DESP-OP-'))
+    );
+    if (db.despesasFixas.length !== qtdAntes) {
+      salvarBanco();
+    }
   }
 
   function renderizarFinanceiro() {
-    // Sincronização prévia obrigatória: homologa os custos dos pedidos oficiais em Contas a Pagar
+    // Sincronização contábil: garante que custos de pedidos permaneçam apenas no Custo do Produto
     sincronizarCustosOperacionaisDosPedidos();
+
+    const [finDtInicio, finDtFim] = obterIntervaloFiltroDataFinanceiro();
 
     pageTitleElem.textContent = 'Gestão Financeira, DRE, Previsto x Realizado & Ativos';
     pageBreadcrumbElem.textContent = 'SISTEMA > FINANCEIRO';
 
-    // 1. Cálculos de Vendas e Margens
-    const pedidosOficiais = (db.pedidos || []).filter(p => p.status !== 'Cancelado' && p.tipoRegistro !== 'Orcamento');
+    // 1. Cálculos de Vendas e Margens (Filtrados pelo período selecionado)
+    const pedidosOficiais = (db.pedidos || [])
+      .filter(p => p.status !== 'Cancelado' && p.tipoRegistro !== 'Orcamento')
+      .filter(p => dataEstaNoIntervaloFinanceiro(p.dataCriacao || p.dataEntrada || p.dataPrevisaoEntrega, finDtInicio, finDtFim));
     const receitaBruta = pedidosOficiais.reduce((acc, p) => acc + (Number(p.valorTotalVenda) || 0), 0);
     const impostosDeducoes = receitaBruta * 0.065; // Simples Nacional médio 6.5%
     const receitaLiquida = receitaBruta - impostosDeducoes;
@@ -17126,8 +17004,11 @@
     const margemContribuicao = receitaLiquida - cmvTotal;
     const margemContribuicaoPerc = receitaLiquida > 0 ? (margemContribuicao / receitaLiquida) * 100 : 0;
 
-    // 2. Mapeamento Completo de Despesas com Dias de Atraso e Status
-    const despesasLista = (db.despesasFixas || []).map(d => {
+    // 2. Mapeamento Completo de Despesas da Fábrica (Contas reais a pagar, filtradas pelo período)
+    const despesasLista = (db.despesasFixas || [])
+      .filter(d => !d.origemAutomatica && !d.pedidoNumero && !(d.id && d.id.startsWith('DESP-OP-')))
+      .filter(d => dataEstaNoIntervaloFinanceiro(d.dataVencimento || d.dataPagamento || d.data, finDtInicio, finDtFim))
+      .map(d => {
       const statusInfo = calcularStatusDespesa(d);
       return {
         ...d,
@@ -17145,23 +17026,26 @@
     const despesasAtrasadas = despesasPendentes.filter(d => d.statusInfo.isAtrasado);
     const totalDespesasAtrasadas = despesasAtrasadas.reduce((acc, d) => acc + d.valorReal, 0);
 
-    // 3. Livro Caixa (Entradas e Saídas)
+    // 3. Livro Caixa (Entradas e Saídas Filtradas pelo Período)
     const totalEntradasCaixa = (db.lancamentosFinanceiros || [])
       .filter(l => (l.tipo === 'Entrada' || l.tipo === 'Receita') && l.status !== 'Cancelado')
+      .filter(l => dataEstaNoIntervaloFinanceiro(l.data, finDtInicio, finDtFim))
       .reduce((acc, l) => acc + (Number(l.valor) || 0), 0);
 
     const totalSaidasCaixa = (db.lancamentosFinanceiros || [])
       .filter(l => (l.tipo === 'Saida' || l.tipo === 'Despesa') && l.status !== 'Cancelado')
+      .filter(l => dataEstaNoIntervaloFinanceiro(l.data, finDtInicio, finDtFim))
       .reduce((acc, l) => acc + (Number(l.valor) || 0), 0);
 
     const saldoAtualCaixa = totalEntradasCaixa - totalSaidasCaixa;
 
-    // 4. Mapeamento Completo de Contas a Receber
+    // 4. Mapeamento Completo de Contas a Receber (Filtrado pelo Período)
     const hojeIso = new Date().toISOString().split('T')[0];
     const hojeObj = new Date(hojeIso + 'T12:00:00');
 
     const receberLista = (db.pedidos || [])
       .filter(p => p.status !== 'Cancelado')
+      .filter(p => dataEstaNoIntervaloFinanceiro(p.dataVencimentoSaldo || p.dataPrevisaoEntrega || p.dataCriacao, finDtInicio, finDtFim))
       .map(p => {
         const totalVenda = Number(p.valorTotalVenda) || 0;
         const jaPago = Number(p.valorSinalPago) || (p.sinalPago ? totalVenda * 0.5 : 0);
@@ -17330,8 +17214,36 @@
     const totalComissoesGeradas = pedidosComissao.reduce((acc, c) => acc + c.comissaoValor, 0);
     const totalVendasComissao = pedidosComissao.reduce((acc, c) => acc + c.totalVenda, 0);
 
+    // BARRA UNIVERSAL DE FILTRO DE DATA / PERÍODO DO FINANCEIRO
+    let barraFiltroDataHtml = `
+      <div class="card" style="margin-bottom: 14px; padding: 10px 16px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span style="font-weight: 800; font-size: 12.5px; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+            <span>📅 Filtrar Período / Mês:</span>
+          </span>
+          <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-secondary btn-xs btn-filtro-data-fin ${filtroDataFinanceiroPeriodo === 'mes_atual' ? 'active' : ''}" data-periodo="mes_atual" style="font-weight: 700; ${filtroDataFinanceiroPeriodo === 'mes_atual' ? 'background: #0284c7; color: #ffffff; border-color: #0284c7;' : ''}">Este Mês</button>
+            <button type="button" class="btn btn-secondary btn-xs btn-filtro-data-fin ${filtroDataFinanceiroPeriodo === 'mes_anterior' ? 'active' : ''}" data-periodo="mes_anterior" style="font-weight: 700; ${filtroDataFinanceiroPeriodo === 'mes_anterior' ? 'background: #0284c7; color: #ffffff; border-color: #0284c7;' : ''}">Mês Anterior</button>
+            <button type="button" class="btn btn-secondary btn-xs btn-filtro-data-fin ${filtroDataFinanceiroPeriodo === 'ultimos_30' ? 'active' : ''}" data-periodo="ultimos_30" style="font-weight: 700; ${filtroDataFinanceiroPeriodo === 'ultimos_30' ? 'background: #0284c7; color: #ffffff; border-color: #0284c7;' : ''}">Últimos 30 Dias</button>
+            <button type="button" class="btn btn-secondary btn-xs btn-filtro-data-fin ${filtroDataFinanceiroPeriodo === 'ano_atual' ? 'active' : ''}" data-periodo="ano_atual" style="font-weight: 700; ${filtroDataFinanceiroPeriodo === 'ano_atual' ? 'background: #0284c7; color: #ffffff; border-color: #0284c7;' : ''}">Este Ano</button>
+            <button type="button" class="btn btn-secondary btn-xs btn-filtro-data-fin ${filtroDataFinanceiroPeriodo === 'todos' ? 'active' : ''}" data-periodo="todos" style="font-weight: 700; ${filtroDataFinanceiroPeriodo === 'todos' ? 'background: #0284c7; color: #ffffff; border-color: #0284c7;' : ''}">Todo o Período</button>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <span style="font-size: 11px; color: #64748b; font-weight: 700;">De:</span>
+          <input type="date" id="inpFiltroFinDataInicio" class="form-input" style="width: 130px; font-size: 11px; padding: 2px 6px; height: 28px;" value="${finDtInicio || ''}">
+          <span style="font-size: 11px; color: #64748b; font-weight: 700;">Até:</span>
+          <input type="date" id="inpFiltroFinDataFim" class="form-input" style="width: 130px; font-size: 11px; padding: 2px 6px; height: 28px;" value="${finDtFim || ''}">
+          <button type="button" class="btn btn-primary btn-xs" id="btnFiltrarDataFinCustom" style="padding: 2px 10px; font-weight: 800; font-size: 11px; height: 28px;">
+            🔍 Filtrar
+          </button>
+        </div>
+      </div>
+    `;
+
     // BARRA DE SUB-ABAS FINANCEIRAS
-    let subNavHtml = `
+    let subNavHtml = barraFiltroDataHtml + `
       <div class="fin-subtabs-nav">
         <button class="fin-subtab-btn ${subAbaFinanceiro === 'visao_geral' ? 'active' : ''}" data-subaba="visao_geral">
           <span>📊 Visão Geral, Contas & DRE</span>
@@ -17514,8 +17426,6 @@
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
               <div class="filter-pills">
                 <button class="filter-btn-pill ${filtroDespesas === 'todas' ? 'active' : ''}" data-filtro="todas">Todas (${despesasLista.length})</button>
-                <button class="filter-btn-pill ${filtroDespesas === 'pedidos' ? 'active' : ''}" data-filtro="pedidos" title="Custos operacionais de ordens (Costureiras, Tecidos, Aviamentos)">🧵 Custos de Pedidos (${despesasLista.filter(d => d.pedidoNumero != null).length})</button>
-                <button class="filter-btn-pill ${filtroDespesas === 'fixas' ? 'active' : ''}" data-filtro="fixas" title="Despesas fixas da fábrica (Aluguel, Luz, Internet...)">🏢 Fixas da Fábrica (${despesasLista.filter(d => !d.pedidoNumero).length})</button>
                 <button class="filter-btn-pill ${filtroDespesas === 'pendentes' ? 'active' : ''}" data-filtro="pendentes">Pendentes (${despesasPendentes.length})</button>
                 <button class="filter-btn-pill ${filtroDespesas === 'atrasadas' ? 'active' : ''}" data-filtro="atrasadas">Em Atraso (${despesasAtrasadas.length})</button>
                 <button class="filter-btn-pill ${filtroDespesas === 'pagas' ? 'active' : ''}" data-filtro="pagas">Pagas (${despesasPagas.length})</button>
@@ -18183,7 +18093,7 @@
         itemOriginal: d
       }));
 
-      const listaComprasAvulsas = (db.compras || []).map(c => ({
+      const listaComprasAvulsas = (db.compras || []).filter(c => dataEstaNoIntervaloFinanceiro(c.data, finDtInicio, finDtFim)).map(c => ({
         id: c.id,
         origem: 'Compra Avulsa',
         badgeOrigem: '<span class="status-pill status-yellow" style="font-size: 9px;">COMPRA AVULSA</span>',
@@ -18204,6 +18114,7 @@
           if (l.pedidoId) return false;
           if (l.compraId || (l.id && l.id.startsWith('LAN-COM-'))) return false;
           if (despesasLista.some(d => d.id === l.despesaId)) return false;
+          if (!dataEstaNoIntervaloFinanceiro(l.data, finDtInicio, finDtFim)) return false;
           // Elimina duplicidade com db.compras (se for lançamento financeiro originado de compra de insumo)
           const jaExisteEmCompras = (db.compras || []).some(c => 
             c.id === l.compraId ||
@@ -18771,6 +18682,31 @@
         renderizarFinanceiro();
       });
     });
+
+    // Listeners do Filtro Universal de Data / Periodo do Financeiro
+    document.querySelectorAll('.btn-filtro-data-fin').forEach(btn => {
+      btn.addEventListener('click', () => {
+        filtroDataFinanceiroPeriodo = btn.getAttribute('data-periodo') || 'mes_atual';
+        if (filtroDataFinanceiroPeriodo !== 'custom') {
+          const [ini, fim] = obterIntervaloFiltroDataFinanceiro();
+          filtroDataFinanceiroInicio = ini;
+          filtroDataFinanceiroFim = fim;
+        }
+        renderizarFinanceiro();
+      });
+    });
+
+    const btnCustomFin = document.getElementById('btnFiltrarDataFinCustom');
+    if (btnCustomFin) {
+      btnCustomFin.addEventListener('click', () => {
+        filtroDataFinanceiroPeriodo = 'custom';
+        const inpIni = document.getElementById('inpFiltroFinDataInicio');
+        const inpFim = document.getElementById('inpFiltroFinDataFim');
+        filtroDataFinanceiroInicio = inpIni ? inpIni.value : '';
+        filtroDataFinanceiroFim = inpFim ? inpFim.value : '';
+        renderizarFinanceiro();
+      });
+    }
 
     // Listeners de Filtro de Despesas
     document.querySelectorAll('.filter-btn-pill[data-filtro]').forEach(btn => {
