@@ -432,34 +432,61 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
     // Aplica a migração não-destrutiva garantindo 100% de integridade
     db = migrarOuPreservarBanco(db, window.ERP_INITIAL_DATA);
 
-        // Higienização completa dos 100kg de teste de estoque
-    if (db && limparEntradaTeste100kgEstoque(db)) {
+    // Inicialização Limpa e Zerada para Operação Real (Prime Uniformes)
+    if (db && !db.primeProducaoLimpaV1) {
+      db.pedidos = [];
+      db.clientes = [];
+      db.notasFiscais = [];
+      db.ordensServico = [];
+      db.despesasFixas = [];
+      db.lancamentosFinanceiros = [];
+      db.nestingFila = [];
+      db.compras = [];
+      if (Array.isArray(db.estoque)) {
+        db.estoque.forEach(i => i.saldoAtual = 0);
+      }
+      db.empresa = {
+        razaoSocial: "PACIFIC WAVE COMPANY LTDA",
+        nomeFantasia: "Prime Uniformes",
+        cnpj: "59.441.843/0001-76",
+        inscricaoEstadual: "263.420.248",
+        telefone: "(47) 3224-1112",
+        email: "comercial@pacificwave.com.br",
+        chavePix: "59.441.843/0001-76",
+        tipoChavePix: "CNPJ",
+        endereco: "Rua Cingapura, 60",
+        complemento: "Lote 171",
+        bairro: "São Vicente",
+        cidade: "Itajaí",
+        uf: "SC",
+        cep: "88309-677",
+        nfeioCompanyId: "b8ac27d9851944a8baa5ad0c134d08f9"
+      };
+      if (!db.configFiscal) db.configFiscal = {};
+      db.configFiscal.proximoNumero = 1;
+      db.configFiscal.serie = '1';
+      db.configFiscal.ambiente = 'homologacao';
+      db.configFiscal.regimeTributario = 'Simples Nacional';
+      db.configFiscal.aliquotaSimplesNacional = 4.5;
+      db.configFiscal.cfopEstadualPadrao = '5101';
+      db.configFiscal.cfopInterestadualPadrao = '6101';
+      db.configFiscal.csosnPadrao = '102';
+      db.configFiscal.emailContador = 'comercial@pacificwave.com.br';
+      db.configFiscal.nfeioCompanyId = 'b8ac27d9851944a8baa5ad0c134d08f9';
+      db.configFiscal.certificadoA1 = {
+        instalado: true,
+        nomeArquivo: 'PACIFIC WAVE COMPANY LTDA_59441843000176certificado.pfx',
+        validade: '23/03/2027',
+        emissor: 'RFB e-CNPJ A1 / ICP-Brasil',
+        senhaSalva: true,
+        senha: 'nino230601',
+        dataUpload: new Date().toISOString()
+      };
+      db.primeProducaoLimpaV1 = true;
       try {
         const k = obterChaveStorageTenant();
         localStorage.setItem(k, JSON.stringify(compactarBancoParaStorage(db)));
       } catch(e) {}
-    }
-
-    if (db && Array.isArray(db.notasFiscais)) {
-      const notaTesteSemSefaz = db.notasFiscais.find(n => n.numero === 33 && !n.tecnospeedId && (!n.protocolo || String(n.protocolo).startsWith('135260')));
-      if (notaTesteSemSefaz) {
-        db.notasFiscais = db.notasFiscais.filter(n => n.id !== notaTesteSemSefaz.id && n.numero !== 33);
-        if (Array.isArray(db.pedidos)) {
-          db.pedidos.forEach(p => {
-            if (p.nfeNumero === 33 || p.nfeId === notaTesteSemSefaz.id) {
-              p.nfeNumero = null;
-              p.nfeId = null;
-            }
-          });
-        }
-        if (db.configFiscal) {
-          db.configFiscal.proximoNumero = 33;
-        }
-        try {
-          const k = obterChaveStorageTenant();
-          localStorage.setItem(k, JSON.stringify(compactarBancoParaStorage(db)));
-        } catch(e) {}
-      }
     }
   }
 

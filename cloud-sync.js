@@ -16,24 +16,25 @@
            (window.location && window.location.pathname && (window.location.pathname.includes('/demo') || window.location.pathname.includes('demo.html')));
   }
 
-  // Configuração Padrão Inicial da Empresa
+  // Configuração Padrão Inicial da Empresa (Prime Uniformes Oficial)
   const EMPRESA_PADRAO = {
-    razaoSocial: "Bravvi Confecções e Uniformes Industriais Ltda",
-    nomeFantasia: "Bravvi Indústria Têxtil",
-    cnpj: "34.582.910/0001-44",
-    inscricaoEstadual: "123.456.789.110",
-    telefone: "11987654321",
-    email: "contato@bravvi.com.br",
-    chavePix: "financeiro@bravvi.com.br",
-    tipoChavePix: "E-mail",
-    endereco: "Rua Têxtil Industrial, 450",
-    bairro: "Distrito Industrial",
-    cidade: "Americana",
-    uf: "SP",
-    cep: "13465-000",
-    logoUrl: "assets/bravvi-logo.png", // Logotipo oficial Bravvi em alta resolução
-    rodapeProposta: "Proposta válida por 15 dias. Pagamento de 50% de sinal na aprovação e saldo na retirada.",
-    rodapeFicha: "Ordem de Produção Oficial. Tolerância de corte de 2mm. Em caso de dúvidas, contate o encarregado."
+    razaoSocial: "PACIFIC WAVE COMPANY LTDA",
+    nomeFantasia: "Prime Uniformes",
+    cnpj: "59.441.843/0001-76",
+    inscricaoEstadual: "263.420.248",
+    telefone: "(47) 3224-1112",
+    email: "comercial@pacificwave.com.br",
+    chavePix: "59.441.843/0001-76",
+    tipoChavePix: "CNPJ",
+    endereco: "Rua Cingapura, 60",
+    complemento: "Lote 171",
+    bairro: "São Vicente",
+    cidade: "Itajaí",
+    uf: "SC",
+    cep: "88309-677",
+    logoUrl: "assets/bravvi-logo.png",
+    rodapeProposta: "Proposta válida por 15 dias corridos. Condições padrão de fornecimento Prime Uniformes.",
+    rodapeFicha: "Ordem de Produção Oficial Prime Uniformes. Conferir grade e aviamentos antes do corte."
   };
 
   // Perfis de Acesso e Permissões
