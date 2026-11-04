@@ -433,7 +433,7 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
     db = migrarOuPreservarBanco(db, window.ERP_INITIAL_DATA);
 
     // Inicialização Limpa e Zerada para Operação Real (Prime Uniformes)
-    if (db && !db.primeProducaoLimpaV1) {
+    if (db && !db.primeProducaoLimpaV2) {
       db.pedidos = [];
       db.clientes = [];
       db.notasFiscais = [];
@@ -482,7 +482,7 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
         senha: 'nino230601',
         dataUpload: new Date().toISOString()
       };
-      db.primeProducaoLimpaV1 = true;
+      db.primeProducaoLimpaV2 = true;
       try {
         const k = obterChaveStorageTenant();
         localStorage.setItem(k, JSON.stringify(compactarBancoParaStorage(db)));
