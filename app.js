@@ -10323,6 +10323,24 @@
         precoUnitarioVenda: precoUnitFinal,
         valorTotalVenda: totalVendaFinal,
         custoTotalEstimado: custoTotalFinal,
+        custoTecidoTotal: (dadosBase.itens && dadosBase.itens.length > 0)
+          ? dadosBase.itens.reduce((acc, it) => acc + ((parseFloat(it.custoTecidoKg) || 48.50) * (parseFloat(it.consumoTecido) || 0.28) * (1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100)) * (it.grade?.total || 0)), 0)
+          : (parseFloat(dadosBase.custoTecidoPorPeca) || 14.67) * (gradeFinal.total || 1),
+        custoCosturaTotal: (dadosBase.itens && dadosBase.itens.length > 0)
+          ? dadosBase.itens.reduce((acc, it) => acc + ((parseFloat(it.custoCostura) || 7.50) * (it.grade?.total || 0)), 0)
+          : (parseFloat(dadosBase.custoCostura) || 7.50) * (gradeFinal.total || 1),
+        custoAviamentoTotal: (dadosBase.itens && dadosBase.itens.length > 0)
+          ? dadosBase.itens.reduce((acc, it) => acc + ((parseFloat(it.custoAviamento) || 4.80) * (it.grade?.total || 0)), 0)
+          : 4.80 * (gradeFinal.total || 1),
+        custoEstampaTotal: (dadosBase.itens && dadosBase.itens.length > 0)
+          ? dadosBase.itens.reduce((acc, it) => acc + ((parseFloat(it.custoEstampaTotal) || 0) * (it.grade?.total || 0)), 0)
+          : 0,
+        custoCostura: (dadosBase.itens && dadosBase.itens.length > 0)
+          ? (dadosBase.itens.reduce((acc, it) => acc + ((parseFloat(it.custoCostura) || 7.50) * (it.grade?.total || 0)), 0) / Math.max(1, gradeFinal.total))
+          : (parseFloat(dadosBase.custoCostura) || 7.50),
+        consumoTecido: (dadosBase.itens && dadosBase.itens.length > 0)
+          ? (dadosBase.itens.reduce((acc, it) => acc + ((parseFloat(it.consumoTecido) || 0.28) * (it.grade?.total || 0)), 0) / Math.max(1, gradeFinal.total))
+          : (parseFloat(dadosBase.consumoRealComPerda) || 0.28),
         lucroLiquidoEstimado: lucroFinal,
         margemLucroPercentual: margemFinal,
         condicaoPagamento: condicaoComercialTexto,
@@ -10450,6 +10468,13 @@
         jogadores: Array.isArray(pedidoOficial.jogadores) ? JSON.parse(JSON.stringify(pedidoOficial.jogadores)) : (Array.isArray(dadosBase.jogadores) ? JSON.parse(JSON.stringify(dadosBase.jogadores)) : []),
         etapaAtual: "Quarentena",
         costureiraDesignada: costureiraObj.nome,
+        costureiraId: costureiraObj.id,
+        valorCosturaPeca: (dadosBase.itens && dadosBase.itens.length > 0)
+          ? (dadosBase.itens.reduce((acc, it) => acc + ((parseFloat(it.custoCostura) || 7.50) * (it.grade?.total || 0)), 0) / Math.max(1, pedidoOficial.grade.total))
+          : (parseFloat(dadosBase.custoCostura) || 7.50),
+        consumoTecido: (dadosBase.itens && dadosBase.itens.length > 0)
+          ? (dadosBase.itens.reduce((acc, it) => acc + ((parseFloat(it.consumoTecido) || 0.28) * (it.grade?.total || 0)), 0) / Math.max(1, pedidoOficial.grade.total))
+          : (parseFloat(dadosBase.consumoRealComPerda) || 0.28),
         responsavelCorte: "Vanderlei Souza",
         dataEntradaCorte: new Date().toISOString().split('T')[0],
         prazoPedidoDias: pedidoOficial.prazoPedidoDias,
@@ -11194,7 +11219,15 @@
     const listaJogadores = (pedido.jogadores && Array.isArray(pedido.jogadores) && pedido.jogadores.length > 0)
       ? pedido.jogadores
       : ((os.jogadores && Array.isArray(os.jogadores) && os.jogadores.length > 0) ? os.jogadores : []);
-    const itensLista = (os.itens && os.itens.length > 0) ? os.itens : (pedido.itens && pedido.itens.length > 0 ? pedido.itens : []);
+    // Sincroniza e recupera lista completa de modelos entre OS e Pedido Oficial
+    let itensLista = (os.itens && Array.isArray(os.itens) && os.itens.length > 0) ? os.itens : [];
+    if (pedido.itens && Array.isArray(pedido.itens) && pedido.itens.length > itensLista.length) {
+      itensLista = pedido.itens;
+      os.itens = pedido.itens;
+    }
+    if (itensLista.length === 0 && pedido.itens && pedido.itens.length > 0) {
+      itensLista = pedido.itens;
+    }
     const temMultiplosModelos = itensLista.length > 1;
 
     // Se modeloIdx for numérico, filtra a visualização para focar 100% naquele modelo específico
@@ -11233,8 +11266,9 @@
         const cUnit = (it.consumoTecido != null && !isNaN(it.consumoTecido) && parseFloat(it.consumoTecido) > 0)
           ? parseFloat(it.consumoTecido)
           : (parseFloat(os.consumoTecido) || 0.28);
+        const margem = 1 + ((parseFloat(it.margemErroTecido || os.margemErroTecido || 8)) / 100);
         const q = it.grade?.total || 0;
-        return acc + (cUnit * q);
+        return acc + (cUnit * margem * q);
       }, 0);
       consumoEstimadoTexto = somaConsumo > 0 ? somaConsumo.toFixed(1) : (parseFloat(os.tecidoConsumidoKg) || (0.28 * qtdTotal)).toFixed(1);
     } else {
@@ -12336,10 +12370,10 @@
 
     const backdrop = document.createElement('div');
     backdrop.id = 'modalEstudioCirurgicoBackdrop';
-    backdrop.style.cssText = 'position: fixed; inset: 0; background: rgba(2, 22, 29, 0.88); backdrop-filter: blur(8px); z-index: 100050; display: flex; align-items: center; justify-content: center; padding: 10px; box-sizing: border-box;';
+    backdrop.style.cssText = 'position: fixed; inset: 0; background: rgba(2, 22, 29, 0.88); backdrop-filter: blur(8px); z-index: 100050; display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 10px; box-sizing: border-box;';
 
     backdrop.innerHTML = `
-      <div style="background: #041f27; border: 1.5px solid #0d9488; border-radius: 14px; width: 100%; max-width: 1080px; height: 92vh; max-height: 840px; display: flex; flex-direction: column; box-shadow: 0 30px 90px rgba(0,0,0,0.85); overflow: hidden; animation: modalFadeIn 0.2s ease; color: #f1f5f9; box-sizing: border-box;">
+      <div style="background: #041f27; border: 1.5px solid #0d9488; border-radius: 14px; width: 100%; max-width: 1080px; height: calc(100vh - 20px); max-height: 800px; margin: auto; display: flex; flex-direction: column; box-shadow: 0 30px 90px rgba(0,0,0,0.85); overflow: hidden; animation: modalFadeIn 0.2s ease; color: #f1f5f9; box-sizing: border-box;">
         <!-- Header Industrial Moderno e Compacto -->
         <div style="padding: 10px 18px; background: linear-gradient(135deg, #02141a 0%, #032b35 100%); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(45, 212, 191, 0.2); flex-shrink: 0;">
           <div style="display: flex; align-items: center; gap: 10px;">
@@ -12354,7 +12388,7 @@
               <span style="font-size: 10.5px; color: #94a3b8;">Auto-Trim inteligente • Recorte manual de enquadramento • Remoção cirúrgica de fundo</span>
             </div>
           </div>
-          <button type="button" id="btnFecharEstudioX" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #cbd5e1; font-size: 16px; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">✕</button>
+          <button type="button" id="btnFecharEstudioX" style="background: rgba(239, 68, 68, 0.18); border: 1.5px solid #ef4444; color: #fca5a5; font-size: 16px; font-weight: 800; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Fechar Estúdio (Esc)">✕</button>
         </div>
 
         <!-- Body: 2 Colunas com Altura Flexível e Scroll Interno nos Controles -->
@@ -12590,8 +12624,16 @@
     let modoManualAtivo = false;
 
     function fechar() {
+      window.removeEventListener('keydown', onKeyDownEstudio);
       backdrop.remove();
     }
+
+    function onKeyDownEstudio(e) {
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        fechar();
+      }
+    }
+    window.addEventListener('keydown', onKeyDownEstudio);
 
     document.getElementById('btnFecharEstudioX')?.addEventListener('click', fechar);
     document.getElementById('btnCancelarEstudio')?.addEventListener('click', fechar);
@@ -12677,7 +12719,11 @@
       ctx.drawImage(tempCanvas, 0, 0);
 
       origImageData = ctx.getImageData(0, 0, bbox.w, bbox.h);
-      atualizarProcessamento();
+      processedImageData = ctx.getImageData(0, 0, bbox.w, bbox.h);
+
+      if (labelDim) {
+        labelDim.textContent = `${bbox.w} x ${bbox.h} px`;
+      }
 
       // Desativa modo manual se estivesse aberto
       modoManualAtivo = false;
@@ -16853,24 +16899,87 @@
                 </td>
               </tr>
               ${(() => {
-                const realCMVTotalPago = despesasPagas.filter(d => d.pedidoNumero != null).reduce((acc, d) => acc + d.valorReal, 0);
-                const percCMV = prevCMV > 0 ? Math.min(100, (realCMVTotalPago / prevCMV) * 100) : 0;
+                // Cálculos Discriminados dos Custos de Produção Previstos nos Pedidos do Mês
+                const prevCostura = pedidosMes.reduce((acc, p) => {
+                  if (p.itens && p.itens.length > 0) {
+                    return acc + p.itens.reduce((s, it) => s + ((parseFloat(it.custoCostura) || 7.50) * (it.grade?.total || 0)), 0);
+                  }
+                  return acc + ((parseFloat(p.custoCostura) || 7.50) * (p.grade?.total || 1));
+                }, 0);
+
+                const prevTecido = pedidosMes.reduce((acc, p) => {
+                  if (p.itens && p.itens.length > 0) {
+                    return acc + p.itens.reduce((s, it) => s + ((parseFloat(it.custoTecidoKg) || 48.50) * (parseFloat(it.consumoTecido) || 0.28) * (1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100)) * (it.grade?.total || 0)), 0);
+                  }
+                  return acc + ((parseFloat(p.custoTecidoPorPeca) || 14.67) * (p.grade?.total || 1));
+                }, 0);
+
+                const prevAviamento = pedidosMes.reduce((acc, p) => {
+                  if (p.itens && p.itens.length > 0) {
+                    return acc + p.itens.reduce((s, it) => s + ((parseFloat(it.custoAviamento) || 4.80) * (it.grade?.total || 0)), 0);
+                  }
+                  return acc + (4.80 * (p.grade?.total || 1));
+                }, 0);
+
+                const prevEstampa = pedidosMes.reduce((acc, p) => {
+                  if (p.itens && p.itens.length > 0) {
+                    return acc + p.itens.reduce((s, it) => s + ((parseFloat(it.custoEstampaTotal) || 0) * (it.grade?.total || 0)), 0);
+                  }
+                  return acc + 0;
+                }, 0);
+
+                const prevTaxasOperadora = pedidosMes.reduce((acc, p) => acc + (Number(p.taxaTotalOperadoraValor || p.pagamentoDetalhes?.taxaTotalOperadoraValor) || 0), 0);
+
+                // Custos Efetivamente Pagos no Caixa / Contas a Pagar
+                const realCostura = despesasPagas.filter(d => d.categoria === 'Mão de Obra / Facção' || d.id.includes('-COSTURA')).reduce((acc, d) => acc + d.valorReal, 0);
+                const realTecido = despesasPagas.filter(d => d.categoria === 'Tecidos & Matéria-Prima' || d.id.includes('-TECIDO')).reduce((acc, d) => acc + d.valorReal, 0);
+                const realAviamento = despesasPagas.filter(d => d.categoria === 'Aviamentos & Suprimentos' || d.id.includes('-AVIAMENTO')).reduce((acc, d) => acc + d.valorReal, 0);
+                const realEstampa = despesasPagas.filter(d => d.categoria === 'Estamparia & DTF' || d.id.includes('-ESTAMPA')).reduce((acc, d) => acc + d.valorReal, 0);
+                const realTaxasOperadora = despesasPagas.filter(d => d.categoria === 'Taxas & Encargos Financeiros' || d.id.includes('-TAXA-PAG')).reduce((acc, d) => acc + d.valorReal, 0);
+
+                function gerarLinhaItem(titulo, prev, real, corBarra) {
+                  const perc = prev > 0 ? Math.min(100, (real / prev) * 100) : (real > 0 ? 100 : 0);
+                  const varVal = prev - real;
+                  return `
+                    <tr>
+                      <td><div style="padding-left: 12px;">${titulo}</div></td>
+                      <td class="text-mono" style="text-align: right;">${formatarMoeda(prev)}</td>
+                      <td class="text-mono text-red" style="text-align: right; font-weight: 700;">${formatarMoeda(real)}</td>
+                      <td class="text-mono ${real <= prev ? 'text-green' : 'text-red'}" style="text-align: right;">${formatarMoeda(varVal)}</td>
+                      <td>
+                        <div style="font-size: 11px; font-weight: 700; margin-bottom: 2px;">${perc.toFixed(1)}%</div>
+                        <div class="prog-comparativo-bar"><div class="prog-comparativo-fill" style="width: ${perc}%; background: ${corBarra};"></div></div>
+                      </td>
+                      <td style="text-align: center;">
+                        <span class="status-pill ${real >= prev && prev > 0 ? 'status-green' : 'status-yellow'}" style="font-size: 9px;">
+                          ${real >= prev && prev > 0 ? 'QUITADO' : 'EM PRODUÇÃO'}
+                        </span>
+                      </td>
+                    </tr>
+                  `;
+                }
+
                 return `
-                  <tr>
-                    <td><strong>🧵 Custos Diretos de Produção (Tecido, Facção & Aviamentos)</strong></td>
-                    <td class="text-mono" style="text-align: right;">${formatarMoeda(prevCMV)}</td>
-                    <td class="text-mono text-red" style="text-align: right; font-weight: 700;">${formatarMoeda(realCMVTotalPago)}</td>
-                    <td class="text-mono ${realCMVTotalPago <= prevCMV ? 'text-green' : 'text-red'}" style="text-align: right;">${formatarMoeda(prevCMV - realCMVTotalPago)}</td>
+                  <!-- Linha Consolidada de Produção (Totalizador) -->
+                  <tr style="background: rgba(13, 148, 136, 0.05); font-weight: 800;">
+                    <td><strong>🧵 Custos Diretos de Produção (Total Consolidado da Fábrica)</strong></td>
+                    <td class="text-mono" style="text-align: right; font-weight: 800;">${formatarMoeda(prevCMV)}</td>
+                    <td class="text-mono text-red" style="text-align: right; font-weight: 800;">${formatarMoeda(realCostura + realTecido + realAviamento + realEstampa)}</td>
+                    <td class="text-mono ${(realCostura + realTecido + realAviamento + realEstampa) <= prevCMV ? 'text-green' : 'text-red'}" style="text-align: right;">${formatarMoeda(prevCMV - (realCostura + realTecido + realAviamento + realEstampa))}</td>
                     <td>
-                      <div style="font-size: 11px; font-weight: 700; margin-bottom: 2px;">${percCMV.toFixed(1)}%</div>
-                      <div class="prog-comparativo-bar"><div class="prog-comparativo-fill" style="width: ${percCMV}%; background: #059669;"></div></div>
+                      <div style="font-size: 11px; font-weight: 800; margin-bottom: 2px;">${prevCMV > 0 ? (((realCostura + realTecido + realAviamento + realEstampa) / prevCMV) * 100).toFixed(1) : 0}%</div>
+                      <div class="prog-comparativo-bar"><div class="prog-comparativo-fill" style="width: ${prevCMV > 0 ? Math.min(100, ((realCostura + realTecido + realAviamento + realEstampa) / prevCMV) * 100) : 0}%; background: #0d9488;"></div></div>
                     </td>
                     <td style="text-align: center;">
-                      <span class="status-pill ${realCMVTotalPago >= prevCMV ? 'status-green' : 'status-yellow'}" style="font-size: 9.5px;">
-                        ${realCMVTotalPago >= prevCMV ? '100% QUITADO' : 'EM PRODUÇÃO'}
-                      </span>
+                      <span class="status-pill status-blue" style="font-size: 9.5px;">PRODUÇÃO</span>
                     </td>
                   </tr>
+                  <!-- Sublinhas Discriminadas Homologadas -->
+                  ${gerarLinhaItem('🪡 Mão de Obra de Costura / Facção', prevCostura, realCostura, '#d97706')}
+                  ${gerarLinhaItem('🧶 Tecidos & Matéria-Prima Têxtil', prevTecido, realTecido, '#0284c7')}
+                  ${gerarLinhaItem('✂️ Aviamentos, Linhas & Suprimentos', prevAviamento, realAviamento, '#64748b')}
+                  ${prevEstampa > 0 || realEstampa > 0 ? gerarLinhaItem('🎨 Estamparia, DTF & Personalizações', prevEstampa, realEstampa, '#8b5cf6') : ''}
+                  ${prevTaxasOperadora > 0 || realTaxasOperadora > 0 ? gerarLinhaItem('💳 Taxas de Meios de Pagamento (Cartão / Gateway)', prevTaxasOperadora, realTaxasOperadora, '#ef4444') : ''}
                 `;
               })()}
               <tr>

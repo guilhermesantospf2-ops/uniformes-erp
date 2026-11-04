@@ -602,32 +602,19 @@ window.DtfNestingEngine = {
         const cx = curIdx % w;
         const cy = (curIdx / w) | 0;
 
-        if (cx > 0) {
-          const left = curIdx - 1;
-          if (!isFundoFinal[left] && (isCandidato[left] || srcData[left * 4 + 3] < 25)) {
-            isFundoFinal[left] = 1;
-            fila[filaFim++] = left;
-          }
-        }
-        if (cx < w - 1) {
-          const right = curIdx + 1;
-          if (!isFundoFinal[right] && (isCandidato[right] || srcData[right * 4 + 3] < 25)) {
-            isFundoFinal[right] = 1;
-            fila[filaFim++] = right;
-          }
-        }
-        if (cy > 0) {
-          const up = curIdx - w;
-          if (!isFundoFinal[up] && (isCandidato[up] || srcData[up * 4 + 3] < 25)) {
-            isFundoFinal[up] = 1;
-            fila[filaFim++] = up;
-          }
-        }
-        if (cy < h - 1) {
-          const down = curIdx + w;
-          if (!isFundoFinal[down] && (isCandidato[down] || srcData[down * 4 + 3] < 25)) {
-            isFundoFinal[down] = 1;
-            fila[filaFim++] = down;
+        // Flood Fill 8-conectado: alcança diagonais e contorna qualquer ruído de compressão JPEG
+        for (let dy = -1; dy <= 1; dy++) {
+          const ny = cy + dy;
+          if (ny < 0 || ny >= h) continue;
+          for (let dx = -1; dx <= 1; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            const nx = cx + dx;
+            if (nx < 0 || nx >= w) continue;
+            const nIdx = ny * w + nx;
+            if (!isFundoFinal[nIdx] && (isCandidato[nIdx] || srcData[nIdx * 4 + 3] < 25)) {
+              isFundoFinal[nIdx] = 1;
+              fila[filaFim++] = nIdx;
+            }
           }
         }
       }
@@ -907,8 +894,8 @@ window.DtfNestingEngine = {
               if (estourou) break;
             }
 
-            // Se for um bloco menor que 30 pixels e com dimensões <= 7x7px solto no vazio, apaga!
-            if (!estourou && sFim <= 30 && (maxSx - minSx <= 7) && (maxSy - minSy <= 7)) {
+            // Despeckle Cirúrgico HD: elimina pontinhos e manchas de compressão JPEG soltas (até 250px e até 24x24px)
+            if (!estourou && sFim <= 250 && (maxSx - minSx <= 24) && (maxSy - minSy <= 24)) {
               for (let k = 0; k < sFim; k++) {
                 data[qSpeckle[k] * 4 + 3] = 0;
               }
@@ -1038,14 +1025,10 @@ window.DtfNestingEngine = {
         let isContent = false;
 
         if (temTransparenciaSignificativa) {
-          // Imagem já tratada ou PNG com canal alfa: pixel é conteúdo se alfa for nítido
-          const a = data[idx + 3];
-          if (a >= 35) {
-            const r = data[idx], g = data[idx + 1], b = data[idx + 2];
-            const diff = Math.max(Math.abs(r - bgR), Math.abs(g - bgG), Math.abs(b - bgB));
-            if (a > 60 || diff > 15) {
-              isContent = true;
-            }
+          // Imagem já tratada ou PNG com canal alfa: se o pixel é visível (alfa > 15), ele É CONTEÚDO da logo!
+          // Não compara com bgR/bgG/bgB para não descartar cores autênticas da arte que coincidam com o fundo original
+          if (data[idx + 3] > 15) {
+            isContent = true;
           }
         } else {
           // Imagem opaca: pixel é conteúdo se difere da cor do fundo com tolerância
