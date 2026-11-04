@@ -23888,16 +23888,7 @@ function obterConfigFiscal() {
       const cfopPadrao = isInter ? (cfg.cfopInterestadualPadrao || '6101') : (cfg.cfopEstadualPadrao || '5101');
 
       if (!p) {
-        return [{
-          codigo: 'UNI-001',
-          descricao: 'Camisa Polo Tradicional Piquet com Bordado',
-          ncm: '6105.10.00',
-          cfop: cfopPadrao,
-          unidade: 'UN',
-          quantidade: 50,
-          valorUnitario: 58.00,
-          csosn: '102'
-        }];
+        return [];
       }
 
       if (p.itens && p.itens.length > 0) {
@@ -23925,14 +23916,14 @@ function obterConfigFiscal() {
       }];
     }
 
-    // Dados do cliente a partir do pedido ou cliente do banco
+    // Dados do cliente a partir do pedido ou cliente do banco (Vazio se não houver pedido)
     let clienteNome = pedidoSelecionado?.clienteNome || '';
     let clienteDoc = '';
     let clienteTel = pedidoSelecionado?.clienteTelefone || '';
     let clienteEmail = '';
-    let clienteEndereco = { logradouro: '', numero: '', bairro: '', cidade: 'Americana', uf: 'SP', cep: '13470-000' };
+    let clienteEndereco = { logradouro: '', numero: '', bairro: '', cidade: '', uf: (emp.uf || 'SC'), cep: '' };
 
-    if (clienteNome) {
+    if (pedidoSelecionado && clienteNome) {
       const cliDb = (db.clientes || []).find(c => c.nome === clienteNome || c.id === pedidoSelecionado?.clienteId);
       if (cliDb) {
         clienteDoc = cliDb.documento || cliDb.cnpj || cliDb.cpf || '';
@@ -23942,9 +23933,6 @@ function obterConfigFiscal() {
         if (cliDb.uf) clienteEndereco.uf = cliDb.uf;
         if (cliDb.endereco) clienteEndereco.logradouro = cliDb.endereco;
         if (cliDb.cep) clienteEndereco.cep = cliDb.cep;
-      } else {
-        clienteDoc = '34.582.910/0001-44';
-        clienteEndereco.logradouro = 'Av. das Indústrias, 1200';
       }
     }
 
@@ -24096,7 +24084,7 @@ function obterConfigFiscal() {
             <div style="background: #f1f5f9; border: 1px solid var(--border-medium); border-radius: 8px; padding: 12px 14px;">
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
                 <div>
-                  <span style="font-size: 11px; color: var(--text-gray-500); display: block;">Regime Simples Nacional (Alíquota ${cfg.aliquotaSimplesNacional}%)</span>
+                  <span style="font-size: 11px; color: var(--text-gray-500); display: block;">Regime Simples Nacional (Alíquota ${cfg.aliquotaSimplesNacional || 4.5}%)</span>
                   <div style="font-size: 12px; color: #0f172a;">
                     Imposto Estimado Simples: <strong id="lblImpostoEstimadoNfe" class="text-mono" style="color: #0369a1;">R$ 0,00</strong> • 
                     Tributos Aprox. IBPT (13,45%): <strong id="lblIbptNfe" class="text-mono" style="color: #475569;">R$ 0,00</strong>
@@ -24137,10 +24125,23 @@ function obterConfigFiscal() {
     const lblIbpt = modalEl.querySelector('#lblIbptNfe');
 
     function renderizarLinhasTabelaItens() {
+      if (!itensAtuais || itensAtuais.length === 0) {
+        tbodyItens.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 28px 16px; color: #64748b; font-size: 12px;">
+              <span style="font-size: 20px; display: block; margin-bottom: 6px;">📦</span>
+              Nenhum item selecionado. Selecione um <strong>Pedido</strong> acima para carregar os produtos ou clique em <strong>+ Adicionar Item</strong>.
+            </td>
+          </tr>
+        `;
+        recalcularTotais();
+        return;
+      }
+
       tbodyItens.innerHTML = itensAtuais.map((it, idx) => `
         <tr data-index="${idx}">
           <td>
-            <input type="text" class="form-input item-desc font-bold" value="${it.descricao || ''}" style="font-size: 11px; padding: 3px 6px;">
+            <input type="text" class="form-input item-desc font-bold" value="${it.descricao || ''}" style="font-size: 11px; padding: 3px 6px;" placeholder="Descrição da peça...">
           </td>
           <td>
             <input type="text" class="form-input item-ncm text-mono" value="${it.ncm || '6109.10.00'}" style="font-size: 11px; padding: 3px 6px;">
@@ -24152,10 +24153,10 @@ function obterConfigFiscal() {
             <input type="number" step="1" min="1" class="form-input item-qtd text-mono text-right" value="${it.quantidade}" style="font-size: 11px; padding: 3px 6px;">
           </td>
           <td>
-            <input type="number" step="0.01" min="0" class="form-input item-unit text-mono text-right" value="${it.valorUnitario.toFixed(2)}" style="font-size: 11px; padding: 3px 6px;">
+            <input type="number" step="0.01" min="0" class="form-input item-unit text-mono text-right" value="${Number(it.valorUnitario || 0).toFixed(2)}" style="font-size: 11px; padding: 3px 6px;">
           </td>
           <td class="text-mono text-right" style="font-size: 12px; font-weight: 800;">
-            ${formatarMoeda(it.quantidade * it.valorUnitario)}
+            ${formatarMoeda((Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0))}
           </td>
           <td style="text-align: center;">
             <button type="button" class="btn-remover-item-nfe" data-index="${idx}" style="background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 14px; font-weight: bold;" title="Remover item">&times;</button>
@@ -24173,7 +24174,7 @@ function obterConfigFiscal() {
         subtotal += (Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0);
       });
 
-      const aliq = Number(cfg.aliquotaSimplesNacional) || 6.5;
+      const aliq = Number(cfg.aliquotaSimplesNacional) || 4.5;
       const vlrImposto = subtotal * (aliq / 100);
       const vlrIbpt = subtotal * 0.1345;
 
@@ -24321,12 +24322,12 @@ function obterConfigFiscal() {
     modalEl.querySelector('#btnAdicionarLinhaItemNfe').addEventListener('click', () => {
       itensAtuais.push({
         codigo: `PROD-${String(itensAtuais.length + 1).padStart(3, '0')}`,
-        descricao: 'Peça de Uniforme Adicional',
+        descricao: '',
         ncm: '6109.10.00',
-        cfop: '5101',
+        cfop: cfg.cfopEstadualPadrao || '5101',
         unidade: 'UN',
-        quantidade: 10,
-        valorUnitario: 45.00,
+        quantidade: 1,
+        valorUnitario: 0.00,
         csosn: '102'
       });
       renderizarLinhasTabelaItens();
