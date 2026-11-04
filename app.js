@@ -150,7 +150,8 @@
         { id: "CC-02", codigo: "PROD-CORTE", nome: "Produção: Corte & Estamparia", icone: "✂️", cor: "#059669" },
         { id: "CC-03", codigo: "PROD-COST", nome: "Produção: Costura & Facções", icone: "🪡", cor: "#d97706" },
         { id: "CC-04", codigo: "ADM", nome: "Administrativo & Diretoria", icone: "🏢", cor: "#6366f1" },
-        { id: "CC-05", codigo: "LOG", nome: "Logística & Entregas", icone: "🚚", cor: "#ec4899" }
+        { id: "CC-05", codigo: "LOG", nome: "Logística & Entregas", icone: "🚚", cor: "#ec4899" },
+        { id: "CC-06", codigo: "MAT-TEC", nome: "Matéria-Prima, Tecidos & Malharia", icone: "🧶", cor: "#0284c7" }
       ]));
     }
     if (!Array.isArray(banco.equipamentosDepreciacao) || banco.equipamentosDepreciacao.length === 0) {
@@ -299,6 +300,39 @@
 
     // Aplica a migração não-destrutiva garantindo 100% de integridade
     db = migrarOuPreservarBanco(db, window.ERP_INITIAL_DATA);
+
+    // Higienização cirúrgica da entrada de teste feita no login do Prime Uniformes (NF-8924 / 100 kg Malha Piquet PA)
+    if (db) {
+      let limpouTestePrime = false;
+      if (Array.isArray(db.compras)) {
+        const antes = db.compras.length;
+        db.compras = db.compras.filter(c => !(c.itens && c.itens.includes('NF-8924')));
+        if (db.compras.length !== antes) limpouTestePrime = true;
+      }
+      if (Array.isArray(db.lancamentosFinanceiros)) {
+        const antes = db.lancamentosFinanceiros.length;
+        db.lancamentosFinanceiros = db.lancamentosFinanceiros.filter(l => !(l.descricao && l.descricao.includes('NF-8924')));
+        if (db.lancamentosFinanceiros.length !== antes) limpouTestePrime = true;
+      }
+      if (Array.isArray(db.historicoEstoque)) {
+        const antes = db.historicoEstoque.length;
+        db.historicoEstoque = db.historicoEstoque.filter(h => !((h.motivo && h.motivo.includes('NF-8924')) || (h.observacoes && h.observacoes.includes('NF-8924'))));
+        if (db.historicoEstoque.length !== antes) limpouTestePrime = true;
+      }
+      if (Array.isArray(db.estoque) && limpouTestePrime) {
+        const itemPiquet = db.estoque.find(e => e.codigo === 'INS-MAL-PIQ-AZUL' || (e.descricao && e.descricao.toLowerCase().includes('piquet') && e.descricao.toLowerCase().includes('azul')));
+        if (itemPiquet) {
+          itemPiquet.saldoAtual = Math.max(0, parseFloat(((Number(itemPiquet.saldoAtual) || 0) - 100).toFixed(2)));
+          itemPiquet.custoMedioUnitario = 48.50;
+        }
+      }
+      if (limpouTestePrime) {
+        try {
+          const k = obterChaveStorageTenant();
+          localStorage.setItem(k, JSON.stringify(compactarBancoParaStorage(db)));
+        } catch(e) {}
+      }
+    }
 
     // Higienização de notas de teste locais sem comunicação SEFAZ / revertidas
     if (db && Array.isArray(db.notasFiscais)) {
@@ -5250,10 +5284,9 @@
       p.etapaProducao = 'Aguardando Aprovação Técnica';
       p.quarentenaAprovada = false;
     } else if (novaEtapa === 'Entregue') {
-      p.status = 'Finalizado';
-      p.etapaProducao = 'Entregue ao Cliente';
-      p.dataConclusaoMs = Date.now();
-      p.dataConclusao = new Date().toISOString().split('T')[0];
+      // APURAÇÃO DE PREVISTO X REALIZADO: Obrigatória antes de concluir a entrega
+      abrirModalFechamentoPrevistoRealizadoPedido(p);
+      return;
     } else {
       p.status = 'Em Producao';
       p.etapaProducao = novaEtapa;
@@ -5276,6 +5309,507 @@
     // Abre imediatamente o modal com a mensagem pronta personalizada para o WhatsApp do cliente
     abrirModalWhatsApp(p.id);
   }
+
+  /* ==========================================================================
+     MÓDULO DE FECHAMENTO OPERACIONAL: PREVISTO X REALIZADO NA ENTREGA
+     ========================================================================== */
+  function obterCustosPrevistosPedido(p) {
+    let custoCostura = 0;
+    let custoTecido = 0;
+    let custoAviamento = 0;
+    let custoEstampa = 0;
+
+    const totalGrade = (p.grade && p.grade.total) ? p.grade.total : ((p.itens || []).reduce((acc, it) => acc + (it.grade?.total || 0), 0) || 1);
+
+    if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
+      p.itens.forEach(it => {
+        const qtd = it.grade?.total || 0;
+        const vCost = (it.custoCostura != null && !isNaN(it.custoCostura) && parseFloat(it.custoCostura) > 0) ? parseFloat(it.custoCostura) : 7.50;
+        custoCostura += vCost * qtd;
+
+        const precoKg = parseFloat(it.custoTecidoKg) || 48.50;
+        const consumo = parseFloat(it.consumoTecido) || 0.28;
+        const margem = 1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100);
+        custoTecido += precoKg * consumo * margem * qtd;
+
+        const vAv = parseFloat(it.custoAviamento) || 4.80;
+        custoAviamento += vAv * qtd;
+
+        if (Array.isArray(it.aplicacoes)) {
+          it.aplicacoes.forEach(ap => {
+            const vApp = parseFloat(ap.custoEstimadoUnitario || ap.custoUnitario) || (ap.tipo === 'Bordado' ? 6.50 : 4.50);
+            custoEstampa += vApp * qtd;
+          });
+        }
+      });
+    } else {
+      custoCostura = (parseFloat(p.custoCostura) || 7.50) * totalGrade;
+      custoTecido = (parseFloat(p.custoTecidoPorPeca) || 14.67) * totalGrade;
+      custoAviamento = 4.80 * totalGrade;
+      custoEstampa = (parseFloat(p.custoEstampaTotal) || 0);
+    }
+
+    // Taxas financeiras estimadas (ex: 2.5% a 3.5% ou de acordo com taxa definida)
+    const taxaPerc = (parseFloat(p.taxaPagamentoPercentual) || 2.5) / 100;
+    const custoTaxas = parseFloat(((Number(p.valorTotal) || 0) * taxaPerc).toFixed(2));
+
+    const total = parseFloat((custoCostura + custoTecido + custoAviamento + custoEstampa + custoTaxas).toFixed(2));
+
+    return {
+      costura: parseFloat(custoCostura.toFixed(2)),
+      tecido: parseFloat(custoTecido.toFixed(2)),
+      aviamento: parseFloat(custoAviamento.toFixed(2)),
+      estampa: parseFloat(custoEstampa.toFixed(2)),
+      taxas: custoTaxas,
+      total: total
+    };
+  }
+  window.ERP.obterCustosPrevistosPedido = obterCustosPrevistosPedido;
+
+  function abrirModalFechamentoPrevistoRealizadoPedido(p) {
+    if (!p) return;
+
+    const prev = obterCustosPrevistosPedido(p);
+    const fechSalvo = p.fechamentoReal || {};
+    const realizadoSalvo = fechSalvo.realizado || {};
+
+    const iniTecido = realizadoSalvo.tecido != null ? realizadoSalvo.tecido : prev.tecido;
+    const iniCostura = realizadoSalvo.costura != null ? realizadoSalvo.costura : prev.costura;
+    const iniAviamento = realizadoSalvo.aviamento != null ? realizadoSalvo.aviamento : prev.aviamento;
+    const iniEstampa = realizadoSalvo.estampa != null ? realizadoSalvo.estampa : prev.estampa;
+    const iniTaxas = realizadoSalvo.taxas != null ? realizadoSalvo.taxas : prev.taxas;
+
+    const modalId = 'modalFechamentoEntrega';
+    let modalEl = document.getElementById(modalId);
+    if (!modalEl) {
+      modalEl = document.createElement('div');
+      modalEl.id = modalId;
+      modalEl.className = 'modal-backdrop';
+      document.body.appendChild(modalEl);
+    }
+
+    const totalPecas = (p.grade && p.grade.total) ? p.grade.total : ((p.itens || []).reduce((acc, it) => acc + (it.grade?.total || 0), 0) || 1);
+    const valorVenda = Number(p.valorTotal) || 0;
+
+    modalEl.innerHTML = `
+      <div class="modal-content" style="max-width: 820px; border-top: 5px solid #0284c7; max-height: 94vh; overflow-y: auto;">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 22px;">📦</span>
+              <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: #0f172a;">
+                Fechamento Operacional: Previsto x Realizado
+              </h3>
+            </div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+              Pedido <strong>#${p.numero}</strong> • Cliente: <strong>${p.clienteNome || 'Cliente'}</strong> • <strong>${totalPecas} peças</strong> • Venda: <strong>${formatarMoeda(valorVenda)}</strong>
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-xs" id="btnFecharModalFechamento" style="font-size: 18px; line-height: 1; padding: 4px 8px;">✕</button>
+        </div>
+
+        <div class="modal-body" style="padding: 16px 0;">
+          <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 12px; color: #334155; line-height: 1.45;">
+            <strong>ℹ️ Apuração Obrigatória de Entrega:</strong> Insira os valores reais efetivamente gastos na produção deste pedido. O sistema comparará com o orçamento previsto e <strong>contabilizará desvios ou prejuízos operacionais na hora</strong> no financeiro e centros de custo.
+          </div>
+
+          <!-- TABELA DE CUSTOS PREVISTO X REALIZADO -->
+          <table class="erp-table" style="margin-bottom: 16px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+            <thead>
+              <tr style="background: #f1f5f9;">
+                <th style="min-width: 200px;">Centro de Custo / Categoria</th>
+                <th style="text-align: right; width: 140px;">Previsto no Orçamento</th>
+                <th style="text-align: right; width: 170px;">Custo Real Efetivo (R$)</th>
+                <th style="text-align: right; width: 140px;">Diferença / Desvio</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <strong style="color: #0f172a;">🧶 Tecidos & Malharia</strong>
+                  <div style="font-size: 11px; color: #64748b;">Consumo de malhas, brim e ribanas</div>
+                </td>
+                <td class="text-mono" style="text-align: right; font-weight: 700; color: #475569;">
+                  ${formatarMoeda(prev.tecido)}
+                </td>
+                <td>
+                  <input type="number" id="inpRealTecido" class="form-input text-mono" style="text-align: right; font-weight: 800; font-size: 13px;" value="${iniTecido.toFixed(2)}" step="0.50">
+                </td>
+                <td class="text-mono" id="difTecido" style="text-align: right; font-weight: 800; font-size: 12.5px;">-</td>
+              </tr>
+              <tr>
+                <td>
+                  <strong style="color: #0f172a;">🪡 Costura & Mão de Obra</strong>
+                  <div style="font-size: 11px; color: #64748b;">Costureiras internas e facções externas</div>
+                </td>
+                <td class="text-mono" style="text-align: right; font-weight: 700; color: #475569;">
+                  ${formatarMoeda(prev.costura)}
+                </td>
+                <td>
+                  <input type="number" id="inpRealCostura" class="form-input text-mono" style="text-align: right; font-weight: 800; font-size: 13px;" value="${iniCostura.toFixed(2)}" step="0.50">
+                </td>
+                <td class="text-mono" id="difCostura" style="text-align: right; font-weight: 800; font-size: 12.5px;">-</td>
+              </tr>
+              <tr>
+                <td>
+                  <strong style="color: #0f172a;">🏷️ Aviamentos & Embalagem</strong>
+                  <div style="font-size: 11px; color: #64748b;">Linhas, zíperes, botões, saquinhos e tags</div>
+                </td>
+                <td class="text-mono" style="text-align: right; font-weight: 700; color: #475569;">
+                  ${formatarMoeda(prev.aviamento)}
+                </td>
+                <td>
+                  <input type="number" id="inpRealAviamento" class="form-input text-mono" style="text-align: right; font-weight: 800; font-size: 13px;" value="${iniAviamento.toFixed(2)}" step="0.50">
+                </td>
+                <td class="text-mono" id="difAviamento" style="text-align: right; font-weight: 800; font-size: 12.5px;">-</td>
+              </tr>
+              <tr>
+                <td>
+                  <strong style="color: #0f172a;">🎨 Estamparia, DTF & Bordado</strong>
+                  <div style="font-size: 11px; color: #64748b;">Filme térmico, tinta, poliamida e matrizes</div>
+                </td>
+                <td class="text-mono" style="text-align: right; font-weight: 700; color: #475569;">
+                  ${formatarMoeda(prev.estampa)}
+                </td>
+                <td>
+                  <input type="number" id="inpRealEstampa" class="form-input text-mono" style="text-align: right; font-weight: 800; font-size: 13px;" value="${iniEstampa.toFixed(2)}" step="0.50">
+                </td>
+                <td class="text-mono" id="difEstampa" style="text-align: right; font-weight: 800; font-size: 12.5px;">-</td>
+              </tr>
+              <tr>
+                <td>
+                  <strong style="color: #0f172a;">💳 Taxas Financeiras & Frete</strong>
+                  <div style="font-size: 11px; color: #64748b;">Taxas de cartão de crédito e logística</div>
+                </td>
+                <td class="text-mono" style="text-align: right; font-weight: 700; color: #475569;">
+                  ${formatarMoeda(prev.taxas)}
+                </td>
+                <td>
+                  <input type="number" id="inpRealTaxas" class="form-input text-mono" style="text-align: right; font-weight: 800; font-size: 13px;" value="${iniTaxas.toFixed(2)}" step="0.50">
+                </td>
+                <td class="text-mono" id="difTaxas" style="text-align: right; font-weight: 800; font-size: 12.5px;">-</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr style="background: #f8fafc; font-weight: 800; border-top: 2px solid #cbd5e1;">
+                <td style="font-size: 13px; color: #0f172a;">TOTAL DOS CUSTOS:</td>
+                <td class="text-mono" style="text-align: right; font-size: 14px; font-weight: 800; color: #475569;">
+                  ${formatarMoeda(prev.total)}
+                </td>
+                <td class="text-mono" id="totalRealTexto" style="text-align: right; font-size: 15px; font-weight: 900; color: #0f172a;">
+                  R$ 0,00
+                </td>
+                <td class="text-mono" id="totalDifTexto" style="text-align: right; font-size: 14px; font-weight: 900;">
+                  -
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <!-- CARDS DE RESULTADO INDUSTRIAL & IMPACTO NO FINANCEIRO -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
+            <div class="card" style="padding: 12px; border-left: 4px solid #6366f1; background: #faf5ff;">
+              <div style="font-size: 11px; color: #6b21a8; font-weight: 700;">FATURAMENTO BRUTO</div>
+              <div class="text-mono" style="font-size: 18px; font-weight: 900; color: #581c87; margin-top: 4px;">
+                ${formatarMoeda(valorVenda)}
+              </div>
+              <div style="font-size: 10px; color: #9333ea; margin-top: 2px;">Valor total cobrado do cliente</div>
+            </div>
+
+            <div class="card" id="cardResultadoOperacional" style="padding: 12px; border-left: 4px solid #16a34a; background: #f0fdf4;">
+              <div style="font-size: 11px; font-weight: 700;" id="labelResultadoOperacional">DESVIO OPERACIONAL</div>
+              <div class="text-mono" id="valorResultadoOperacional" style="font-size: 18px; font-weight: 900; margin-top: 4px;">
+                R$ 0,00
+              </div>
+              <div style="font-size: 10px; margin-top: 2px;" id="subResultadoOperacional">Calculando...</div>
+            </div>
+
+            <div class="card" style="padding: 12px; border-left: 4px solid #0284c7; background: #f0f9ff;">
+              <div style="font-size: 11px; color: #0369a1; font-weight: 700;">LUCRO LÍQUIDO REALIZADO</div>
+              <div class="text-mono" id="lucroRealizadoTexto" style="font-size: 18px; font-weight: 900; color: #0c4a6e; margin-top: 4px;">
+                R$ 0,00
+              </div>
+              <div style="font-size: 10px; color: #0284c7; margin-top: 2px;" id="margemRealizadaTexto">Margem Real: 0%</div>
+            </div>
+          </div>
+
+          <!-- ALERTA DE LANÇAMENTO CONTÁBIL -->
+          <div id="boxAlertaContabil" style="border-radius: 8px; padding: 12px 14px; font-size: 11.5px; line-height: 1.4; display: none;"></div>
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
+          <button type="button" class="btn btn-secondary" id="btnCancelarFechamento">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btnConfirmarFechamento" style="background: #16a34a; border-color: #16a34a; font-weight: 800; padding: 8px 18px;">
+            ✓ Confirmar Fechamento & Entregar ao Cliente
+          </button>
+        </div>
+      </div>
+    `;
+
+    modalEl.style.display = 'flex';
+
+    function recalcularTabela() {
+      const rTec = parseFloat(document.getElementById('inpRealTecido')?.value || 0);
+      const rCost = parseFloat(document.getElementById('inpRealCostura')?.value || 0);
+      const rAv = parseFloat(document.getElementById('inpRealAviamento')?.value || 0);
+      const rEst = parseFloat(document.getElementById('inpRealEstampa')?.value || 0);
+      const rTax = parseFloat(document.getElementById('inpRealTaxas')?.value || 0);
+
+      const difTec = rTec - prev.tecido;
+      const difCost = rCost - prev.costura;
+      const difAv = rAv - prev.aviamento;
+      const difEst = rEst - prev.estampa;
+      const difTax = rTax - prev.taxas;
+
+      function renderDif(elId, dif) {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        if (Math.abs(dif) < 0.01) {
+          el.innerHTML = '<span style="color: #64748b;">R$ 0,00</span>';
+        } else if (dif > 0) {
+          el.innerHTML = `<span style="color: #dc2626;">+${formatarMoeda(dif)} 🔺</span>`;
+        } else {
+          el.innerHTML = `<span style="color: #16a34a;">-${formatarMoeda(Math.abs(dif))} 🔻</span>`;
+        }
+      }
+
+      renderDif('difTecido', difTec);
+      renderDif('difCostura', difCost);
+      renderDif('difAviamento', difAv);
+      renderDif('difEstampa', difEst);
+      renderDif('difTaxas', difTax);
+
+      const totalReal = rTec + rCost + rAv + rEst + rTax;
+      const totalDif = totalReal - prev.total;
+
+      const elTotReal = document.getElementById('totalRealTexto');
+      if (elTotReal) elTotReal.textContent = formatarMoeda(totalReal);
+
+      const elTotDif = document.getElementById('totalDifTexto');
+      if (elTotDif) {
+        if (Math.abs(totalDif) < 0.01) {
+          elTotDif.innerHTML = '<span style="color: #64748b;">R$ 0,00 (Exato)</span>';
+        } else if (totalDif > 0) {
+          elTotDif.innerHTML = `<span style="color: #dc2626; font-size: 15px;">+${formatarMoeda(totalDif)} (Estouro)</span>`;
+        } else {
+          elTotDif.innerHTML = `<span style="color: #16a34a; font-size: 15px;">-${formatarMoeda(Math.abs(totalDif))} (Economia)</span>`;
+        }
+      }
+
+      // Painel de cards
+      const lucroReal = valorVenda - totalReal;
+      const margemReal = valorVenda > 0 ? (lucroReal / valorVenda) * 100 : 0;
+
+      const elLucro = document.getElementById('lucroRealizadoTexto');
+      if (elLucro) {
+        elLucro.textContent = formatarMoeda(lucroReal);
+        elLucro.style.color = lucroReal >= 0 ? '#0c4a6e' : '#dc2626';
+      }
+      const elMargem = document.getElementById('margemRealizadaTexto');
+      if (elMargem) {
+        elMargem.textContent = `Margem Real: ${margemReal.toFixed(1)}% do faturamento`;
+      }
+
+      const cardRes = document.getElementById('cardResultadoOperacional');
+      const lblRes = document.getElementById('labelResultadoOperacional');
+      const valRes = document.getElementById('valorResultadoOperacional');
+      const subRes = document.getElementById('subResultadoOperacional');
+      const boxAlerta = document.getElementById('boxAlertaContabil');
+
+      if (totalDif > 0.01) {
+        // Prejuízo / Estouro Operacional
+        if (cardRes) {
+          cardRes.style.borderLeftColor = '#dc2626';
+          cardRes.style.background = '#fef2f2';
+        }
+        if (lblRes) {
+          lblRes.textContent = '⚠️ PREJUÍZO OPERACIONAL (DESVIO)';
+          lblRes.style.color = '#991b1b';
+        }
+        if (valRes) {
+          valRes.textContent = `+${formatarMoeda(totalDif)}`;
+          valRes.style.color = '#dc2626';
+        }
+        if (subRes) {
+          subRes.textContent = 'Gasto superior ao orçado pelo cliente';
+          subRes.style.color = '#b91c1c';
+        }
+        if (boxAlerta) {
+          boxAlerta.style.display = 'block';
+          boxAlerta.style.background = '#fff1f2';
+          boxAlerta.style.border = '1.5px solid #fecdd3';
+          boxAlerta.style.color = '#9f1239';
+          boxAlerta.innerHTML = `
+            <strong>🚨 Impacto Contábil Imediato:</strong> O custo real superou o orçamento previsto em <strong>${formatarMoeda(totalDif)}</strong>. 
+            Ao confirmar, este desvio será <strong>lançado automaticamente no Financeiro como Despesa Operacional / Prejuízo de Produção</strong> 
+            no Centro de Custo <strong>CC-03 (Produção: Costura & Facções)</strong> e debitado do Fluxo de Caixa.
+          `;
+        }
+      } else {
+        // Economia de Produção
+        if (cardRes) {
+          cardRes.style.borderLeftColor = '#16a34a';
+          cardRes.style.background = '#f0fdf4';
+        }
+        if (lblRes) {
+          lblRes.textContent = '✓ ECONOMIA OPERACIONAL';
+          lblRes.style.color = '#166534';
+        }
+        if (valRes) {
+          valRes.textContent = (Math.abs(totalDif) < 0.01) ? 'R$ 0,00' : `-${formatarMoeda(Math.abs(totalDif))}`;
+          valRes.style.color = '#15803d';
+        }
+        if (subRes) {
+          subRes.textContent = (Math.abs(totalDif) < 0.01) ? 'Custos 100% alinhados à previsão' : 'Gasto menor retido como lucro extra';
+          subRes.style.color = '#166534';
+        }
+        if (boxAlerta) {
+          boxAlerta.style.display = 'block';
+          boxAlerta.style.background = '#f0fdf4';
+          boxAlerta.style.border = '1px solid #bbf7d0';
+          boxAlerta.style.color = '#166534';
+          boxAlerta.innerHTML = `
+            <strong>✓ Produção Eficiente:</strong> A fábrica operou rigorosamente dentro do orçamento orçado (${formatarMoeda(prev.total)}). 
+            Nenhum prejuízo adicional será gerado no financeiro.
+          `;
+        }
+      }
+    }
+
+    ['inpRealTecido', 'inpRealCostura', 'inpRealAviamento', 'inpRealEstampa', 'inpRealTaxas'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', recalcularTabela);
+    });
+
+    recalcularTabela();
+
+    function fecharModal() {
+      if (modalEl) modalEl.style.display = 'none';
+    }
+
+    document.getElementById('btnFecharModalFechamento')?.addEventListener('click', fecharModal);
+    document.getElementById('btnCancelarFechamento')?.addEventListener('click', fecharModal);
+
+    document.getElementById('btnConfirmarFechamento')?.addEventListener('click', () => {
+      const rTec = parseFloat(document.getElementById('inpRealTecido')?.value || 0);
+      const rCost = parseFloat(document.getElementById('inpRealCostura')?.value || 0);
+      const rAv = parseFloat(document.getElementById('inpRealAviamento')?.value || 0);
+      const rEst = parseFloat(document.getElementById('inpRealEstampa')?.value || 0);
+      const rTax = parseFloat(document.getElementById('inpRealTaxas')?.value || 0);
+
+      const totalReal = parseFloat((rTec + rCost + rAv + rEst + rTax).toFixed(2));
+      const desvio = parseFloat((totalReal - prev.total).toFixed(2));
+      const hojeIso = new Date().toISOString().split('T')[0];
+
+      // 1. Grava no objeto do Pedido o fechamento consolidado
+      p.fechamentoReal = {
+        dataFechamento: new Date().toISOString(),
+        previsto: { ...prev },
+        realizado: {
+          tecido: rTec,
+          costura: rCost,
+          aviamento: rAv,
+          estampa: rEst,
+          taxas: rTax,
+          total: totalReal
+        },
+        desvio: desvio,
+        prejuizo: desvio > 0 ? desvio : 0,
+        economia: desvio < 0 ? Math.abs(desvio) : 0,
+        faturamento: valorVenda,
+        lucroReal: parseFloat((valorVenda - totalReal).toFixed(2)),
+        responsavel: 'Almoxarifado & Chão de Fábrica'
+      };
+
+      // 2. CONTABILIZAÇÃO FINANCEIRA DE PREJUÍZO OPERACIONAL (SE HOUVER DESVIO POSITIVO)
+      const idDespPrej = `DESP-PREJ-${p.numero}`;
+      const idLanPrej = `LAN-PREJ-${p.numero}`;
+
+      if (!Array.isArray(db.despesasFixas)) db.despesasFixas = [];
+      if (!Array.isArray(db.lancamentosFinanceiros)) db.lancamentosFinanceiros = [];
+
+      if (desvio > 0) {
+        // Registra a Despesa Operacional de Prejuízo
+        const despExistente = db.despesasFixas.find(d => d.id === idDespPrej);
+        if (!despExistente) {
+          db.despesasFixas.push({
+            id: idDespPrej,
+            pedidoNumero: p.numero,
+            pedidoId: p.id,
+            origemAutomatica: true,
+            origem: `Fechamento de Entrega (Pedido #${p.numero})`,
+            tipoCusto: 'Operacional',
+            descricao: `Prejuízo / Desvio de Produção • Pedido #${p.numero} (${p.clienteNome || 'Cliente'})`,
+            categoria: 'Desvio Operacional / Prejuízo de Produção',
+            centroCusto: 'CC-03',
+            fornecedorFavorecido: 'Oficina / Fábrica (Desvio Interno)',
+            valor: desvio,
+            valorMensal: desvio,
+            dataVencimento: hojeIso,
+            recorrencia: 'Única',
+            formaPagamentoPrevista: 'Ajuste Operacional',
+            status: 'Pago'
+          });
+        } else {
+          despExistente.valor = desvio;
+          despExistente.valorMensal = desvio;
+          despExistente.status = 'Pago';
+        }
+
+        // Lança saída no Livro Caixa para abater do saldo real e DRE
+        const lanExistente = db.lancamentosFinanceiros.find(l => l.id === idLanPrej);
+        if (!lanExistente) {
+          db.lancamentosFinanceiros.push({
+            id: idLanPrej,
+            despesaId: idDespPrej,
+            pedidoId: p.id,
+            tipo: 'Saida',
+            descricao: `Desvio Operacional / Prejuízo • Pedido #${p.numero} (${p.clienteNome || 'Cliente'})`,
+            categoria: 'Desvio Operacional / Prejuízo de Produção',
+            centroCusto: 'CC-03',
+            valor: desvio,
+            data: hojeIso,
+            status: 'Pago',
+            origem: 'Fechamento Previsto x Realizado'
+          });
+        } else {
+          lanExistente.valor = desvio;
+        }
+      } else {
+        // Se não houve prejuízo, expurga eventuais lançamentos antigos de prejuízo desse pedido
+        db.despesasFixas = db.despesasFixas.filter(d => d.id !== idDespPrej);
+        db.lancamentosFinanceiros = db.lancamentosFinanceiros.filter(l => l.id !== idLanPrej);
+      }
+
+      // 3. Atualiza Etapa e Conclusão do Pedido
+      p.status = 'Finalizado';
+      p.etapaProducao = 'Entregue ao Cliente';
+      p.dataConclusaoMs = Date.now();
+      p.dataConclusao = hojeIso;
+      p.ultimaModificacaoMs = Date.now();
+
+      // Sincroniza Ordem de Serviço
+      const os = (db.ordensServico || []).find(o => o.pedidoNumero === p.numero);
+      if (os) {
+        os.etapaAtual = 'Entregue ao Cliente';
+        os.ultimaModificacaoMs = Date.now();
+      }
+
+      salvarEstado(true);
+      atualizarBadges();
+      renderizarPedidos();
+      fecharModal();
+
+      if (desvio > 0) {
+        mostrarToast(`⚠️ Pedido #${p.numero} entregue! Prejuízo de ${formatarMoeda(desvio)} lançado no Financeiro (CC-03).`, 'yellow');
+      } else {
+        mostrarToast(`✓ Pedido #${p.numero} entregue e finalizado com sucesso! Sem desvios.`, 'green');
+      }
+
+      // Abre WhatsApp para notificar cliente
+      abrirModalWhatsApp(p.id);
+    });
+  }
+  window.ERP.abrirModalFechamentoPrevistoRealizadoPedido = abrirModalFechamentoPrevistoRealizadoPedido;
 
   /* ==========================================================================
      CANCELAMENTO & REATIVAÇÃO DE PEDIDOS E ORÇAMENTOS
@@ -6725,6 +7259,35 @@
                   </div>
                 </div>
                 
+                <!-- SELETOR DE ORIGEM: ESTOQUE FÍSICO VS COMPRA SOB DEMANDA -->
+                <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                    <label style="display: flex; align-items: center; gap: 7px; cursor: pointer; margin: 0; font-size: 11.5px; font-weight: 800; color: #15803d;">
+                      <input type="checkbox" id="chkUtilizarEstoqueFisico" style="width: 15px; height: 15px; accent-color: #16a34a; margin: 0;">
+                      <span>📦 Utilizar Matéria-Prima / Tecido do Estoque Físico</span>
+                    </label>
+                    <span id="badgeInfoEstoqueOrigem" style="font-size: 10px; font-weight: 700; color: #166534; background: #dcfce7; padding: 2px 7px; border-radius: 4px; border: 1px solid #bbf7d0;">
+                      Baixa Automática
+                    </span>
+                  </div>
+                  <div id="boxSeletorEstoqueItem" style="display: none; margin-top: 10px; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px;">
+                    <label class="form-label" style="font-size: 11px; color: #15803d; margin-bottom: 4px; font-weight: 700;">
+                      Selecione o Tecido / Insumo ou Lote com Saldo:
+                    </label>
+                    <select id="selEstoqueItemAlvo" class="form-select" style="font-size: 12px; font-weight: 700; width: 100%;">
+                      <option value="">-- Selecione o Insumo em Estoque --</option>
+                      ${(db.estoque || []).map(e => `
+                        <option value="${e.id}" data-preco="${e.custoMedioUnitario}" data-saldo="${e.saldoAtual}" data-unid="${e.unidade}">
+                          ${e.descricao} [Saldo: ${e.saldoAtual} ${e.unidade} • Custo: ${formatarMoeda(e.custoMedioUnitario)}/${e.unidade}]
+                        </option>
+                      `).join('')}
+                    </select>
+                    <div id="alertaEstoqueSelecionado" style="font-size: 10.5px; color: #166534; margin-top: 5px; line-height: 1.35;">
+                      ✓ Ao selecionar do estoque, o preço de custo unitário é preenchido automaticamente e a fábrica não gerará nova compra a pagar no financeiro (evitando duplicar o custo da matéria-prima já comprada).
+                    </div>
+                  </div>
+                </div>
+
                 <div class="form-row">
                   <div class="form-group" style="flex: 1.2;">
                     <label class="form-label" id="labelInputCustoTecido">Custo Tecido (R$/kg)</label>
@@ -6905,6 +7468,15 @@
         it.grade = novaGrade;
       }
 
+      it.utilizarEstoque = document.getElementById('chkUtilizarEstoqueFisico')?.checked || false;
+      it.estoqueItemId = document.getElementById('selEstoqueItemAlvo')?.value || '';
+      if (it.utilizarEstoque && it.estoqueItemId) {
+        const itemEst = (db.estoque || []).find(e => e.id === it.estoqueItemId);
+        if (itemEst) {
+          it.estoqueItemDesc = itemEst.descricao;
+          it.estoqueLote = itemEst.lote || null;
+        }
+      }
       it.custoTecidoKg = parseFloat(document.getElementById('inputCustoTecido')?.value || padroes.custoTecidoKg || 48.50);
       let consumoLido = parseFloat(document.getElementById('inputConsumoTecido')?.value || 0.28);
       // Se digitou em gramas (> 10, ex: 280), converte automaticamente para kg (0.28)
@@ -7481,6 +8053,18 @@
       if (inpMD) inpMD.value = (it.margemDesejada || 30.0).toFixed(0);
       const inpImp = document.getElementById('inputAliquotaImposto');
       if (inpImp) inpImp.value = (it.aliquotaImposto || 6.5).toFixed(1);
+
+      // Origem de Estoque Físico
+      const chkEst = document.getElementById('chkUtilizarEstoqueFisico');
+      const boxEst = document.getElementById('boxSeletorEstoqueItem');
+      const selEst = document.getElementById('selEstoqueItemAlvo');
+      if (chkEst && boxEst && selEst) {
+        chkEst.checked = !!it.utilizarEstoque;
+        boxEst.style.display = it.utilizarEstoque ? 'block' : 'none';
+        if (it.estoqueItemId) {
+          selEst.value = it.estoqueItemId;
+        }
+      }
 
       // Renderiza as aplicações de personalização
       renderizarAplicacoes();
@@ -8696,6 +9280,32 @@
         consumoTotalTecido: itensOrcamento.reduce((s, it) => s + (it.consumoTotalTecido || 0), 0)
       };
     }
+
+    // Eventos do Seletor de Estoque Físico
+    document.getElementById('chkUtilizarEstoqueFisico')?.addEventListener('change', (e) => {
+      const box = document.getElementById('boxSeletorEstoqueItem');
+      if (box) box.style.display = e.target.checked ? 'block' : 'none';
+      if (!e.target.checked) {
+        const sel = document.getElementById('selEstoqueItemAlvo');
+        if (sel) sel.value = '';
+      }
+      sincronizarItemAtivoDoDOM();
+      recalcularBenchmarkModal();
+    });
+
+    document.getElementById('selEstoqueItemAlvo')?.addEventListener('change', (e) => {
+      const sel = e.target;
+      const opt = sel.options[sel.selectedIndex];
+      if (opt && opt.value) {
+        const preco = parseFloat(opt.getAttribute('data-preco')) || 0;
+        const inpCusto = document.getElementById('inputCustoTecido');
+        if (inpCusto && preco > 0) {
+          inpCusto.value = preco.toFixed(2);
+        }
+      }
+      sincronizarItemAtivoDoDOM();
+      recalcularBenchmarkModal();
+    });
 
     // Inputs que disparam recálculo do item ativo (tamanhos regulares + especiais + custos)
     const inputsRecalculo = [
@@ -10390,6 +11000,42 @@
         db.pedidos.splice(idxExistente, 1);
       }
       db.pedidos.unshift(pedidoOficial);
+
+      // Baixa automática de estoque físico para modelos que utilizaram matéria-prima da fábrica
+      if (Array.isArray(pedidoOficial.itens)) {
+        pedidoOficial.itens.forEach(it => {
+          if (it.utilizarEstoque && it.estoqueItemId) {
+            const itemEst = (db.estoque || []).find(e => e.id === it.estoqueItemId);
+            if (itemEst) {
+              const consumoUnid = (parseFloat(it.consumoTecido) || 0.28) * (1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100));
+              const consumoTotal = parseFloat((consumoUnid * (it.grade?.total || 0)).toFixed(2));
+              if (consumoTotal > 0) {
+                const saldoAnt = Number(itemEst.saldoAtual) || 0;
+                itemEst.saldoAtual = Math.max(0, parseFloat((saldoAnt - consumoTotal).toFixed(2)));
+
+                if (!Array.isArray(db.historicoEstoque)) db.historicoEstoque = [];
+                db.historicoEstoque.unshift({
+                  id: `SAI-${Date.now().toString().slice(-6)}`,
+                  tipo: 'Baixa',
+                  itemId: itemEst.id,
+                  itemCodigo: itemEst.codigo,
+                  itemDescricao: itemEst.descricao,
+                  quantidade: consumoTotal,
+                  unidade: itemEst.unidade,
+                  custoUnitario: itemEst.custoMedioUnitario,
+                  valorTotal: parseFloat((consumoTotal * itemEst.custoMedioUnitario).toFixed(2)),
+                  saldoAnterior: saldoAnt,
+                  novoSaldo: itemEst.saldoAtual,
+                  motivo: `Consumo no Pedido #${pedidoOficial.numero} (${pedidoOficial.clienteNome})`,
+                  pedidoId: pedidoOficial.numero,
+                  responsavel: 'Chão de Fábrica',
+                  data: new Date().toISOString()
+                });
+              }
+            }
+          }
+        });
+      }
 
       // Sincroniza custos operacionais do novo pedido no financeiro (Costura, Tecido, Aviamento, Estampa e Taxas de Cartão)
       sincronizarCustosOperacionaisDosPedidos();
@@ -14692,12 +15338,13 @@
                 <th>Motivo / Justificativa</th>
                 <th>Pedido / OP</th>
                 <th>Responsável</th>
+                <th style="text-align: right; min-width: 140px;">Ações</th>
               </tr>
             </thead>
             <tbody>
               ${db.historicoEstoque.length === 0 ? `
                 <tr>
-                  <td colspan="9" style="text-align: center; padding: 40px; color: var(--text-gray-500);">
+                  <td colspan="10" style="text-align: center; padding: 40px; color: var(--text-gray-500);">
                     <div style="font-size: 28px; margin-bottom: 6px;">📋</div>
                     <div style="font-weight: 700; font-size: 14px; color: #1e293b;">Nenhuma movimentação registrada ainda</div>
                     <div style="font-size: 12px; margin-top: 4px;">Utilize os botões acima para cadastrar Entradas ou dar Baixas de material da fábrica.</div>
@@ -14733,6 +15380,13 @@
                   </td>
                   <td style="font-size: 12px; color: #475569;">
                     ${mov.responsavel || 'Sistema'}
+                  </td>
+                  <td style="text-align: right; white-space: nowrap;">
+                    ${mov.tipo === 'Entrada' && !mov.estornado ? `
+                      <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.cancelarEntradaEstoque('${mov.id}')" style="color: #dc2626; border-color: #fca5a5; font-weight: 700; padding: 2px 8px;" title="Cancelar esta entrada de estoque e estornar compras/caixa">
+                        🚫 Cancelar Entrada
+                      </button>
+                    ` : (mov.estornado ? '<span class="status-pill status-gray" style="font-size: 9px; font-weight: 800;">ESTORNADA</span>' : '<span style="color: #94a3b8; font-size: 11px;">—</span>')}
                   </td>
                 </tr>
               `).join('')}
@@ -15113,6 +15767,37 @@
               </select>
             </div>
 
+            <!-- SELETOR DE LOTE SEPARADO VS MESCLAGEM COM CUSTO MÉDIO -->
+            <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <strong style="font-size: 11.5px; color: #15803d; text-transform: uppercase; letter-spacing: 0.3px;">
+                  🏷️ Gestão de Lote & Rastreabilidade de Preço:
+                </strong>
+                <span style="font-size: 10px; font-weight: 700; color: #166534; background: #dcfce7; padding: 2px 7px; border-radius: 4px; border: 1px solid #bbf7d0;">
+                  Precificação Exata
+                </span>
+              </div>
+              <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 11.5px; font-weight: 700; color: #166534;">
+                  <input type="radio" name="radioModoLote" id="radioLoteMesclar" value="mesclar" checked style="accent-color: #16a34a;">
+                  <span>Mesclar no Estoque Existente (Custo Médio Ponderado)</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 11.5px; font-weight: 700; color: #1e40af;">
+                  <input type="radio" name="radioModoLote" id="radioLoteSeparar" value="separar" style="accent-color: #2563eb;">
+                  <span>✨ Separar em Novo Lote (Isolar Custo & Saldo)</span>
+                </label>
+              </div>
+              <div id="boxInputCodigoLote" style="display: none; margin-top: 10px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px;">
+                <label class="form-label" style="font-size: 11px; color: #1e40af; margin-bottom: 3px; font-weight: 700;">
+                  Identificador / Código do Novo Lote:
+                </label>
+                <input type="text" id="entCodigoLote" class="form-input" style="font-weight: 800; font-family: monospace; font-size: 13px;" value="LOTE-${new Date().getFullYear()}-${String(Math.floor(100 + Math.random() * 900))}">
+                <span style="font-size: 10.5px; color: #475569; margin-top: 3px; display: block;">
+                  💡 <strong>Por que separar?</strong> Se este lote tiver valor diferente, você poderá selecioná-lo especificamente na hora de lançar o pedido, garantindo que o custo real e a margem do cliente reflitam exatamente este preço!
+                </span>
+              </div>
+            </div>
+
             <div class="form-row" style="margin-bottom: 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
               <div class="form-group" style="margin: 0;">
                 <label class="form-label">Cor / Variante do Lote</label>
@@ -15172,7 +15857,21 @@
       </div>
     `);
 
+    // Eventos de troca de modo de lote
+    const radioMesclar = document.getElementById('radioLoteMesclar');
+    const radioSeparar = document.getElementById('radioLoteSeparar');
+    const boxLote = document.getElementById('boxInputCodigoLote');
+
+    radioMesclar?.addEventListener('change', () => {
+      if (boxLote) boxLote.style.display = 'none';
+    });
+    radioSeparar?.addEventListener('change', () => {
+      if (boxLote) boxLote.style.display = 'block';
+    });
+
     document.getElementById('btnSalvarEntradaEstoque')?.addEventListener('click', () => {
+      const isLoteSeparado = document.getElementById('radioLoteSeparar')?.checked === true;
+      const codigoLote = (document.getElementById('entCodigoLote')?.value || 'LOTE-1').trim().toUpperCase();
       let itemExistente = itemPreselecionado;
       let descItem = '';
       let unidadeInsumo = 'kg';
@@ -15203,28 +15902,62 @@
         itemExistente = db.estoque.find(e => e.descricao.toLowerCase() === descItem.toLowerCase());
       }
 
-      const saldoAntigo = itemExistente ? (Number(itemExistente.saldoAtual) || 0) : 0;
-      const custoAntigo = itemExistente ? (Number(itemExistente.custoMedioUnitario) || precoPago) : precoPago;
-      const novoSaldo = saldoAntigo + qtdEntrada;
-      const novoCustoMedio = ((saldoAntigo * custoAntigo) + (qtdEntrada * precoPago)) / (novoSaldo || 1);
+      let saldoAntigo = 0;
+      let custoAntigo = precoPago;
 
-      if (itemExistente) {
-        itemExistente.saldoAtual = parseFloat(novoSaldo.toFixed(2));
-        itemExistente.custoMedioUnitario = parseFloat(novoCustoMedio.toFixed(2));
-        itemExistente.fornecedorUltimo = fornecedor;
+      if (isLoteSeparado) {
+        // MODO LOTE SEPARADO: Cria ou atualiza o item isolado deste lote específico
+        const descComLote = `${descItem} [Lote: ${codigoLote}]`;
+        let itemLoteExistente = db.estoque.find(e => e.descricao === descComLote || (e.lote === codigoLote && e.categoria === categoriaInsumo));
+
+        if (itemLoteExistente) {
+          saldoAntigo = Number(itemLoteExistente.saldoAtual) || 0;
+          custoAntigo = Number(itemLoteExistente.custoMedioUnitario) || precoPago;
+          itemLoteExistente.saldoAtual = parseFloat((saldoAntigo + qtdEntrada).toFixed(2));
+          itemLoteExistente.custoMedioUnitario = parseFloat(precoPago.toFixed(2));
+          itemLoteExistente.fornecedorUltimo = fornecedor;
+          itemExistente = itemLoteExistente;
+        } else {
+          itemExistente = {
+            id: `EST-LOT-${Date.now().toString().slice(-6)}`,
+            codigo: `LOT-${codigoLote}`,
+            descricao: descComLote,
+            lote: codigoLote,
+            categoria: categoriaInsumo,
+            unidade: unidadeInsumo,
+            saldoAtual: parseFloat(qtdEntrada.toFixed(2)),
+            estoqueMinimo: estoqueMin,
+            custoMedioUnitario: parseFloat(precoPago.toFixed(2)),
+            fornecedorUltimo: fornecedor,
+            notaFiscal: nfe
+          };
+          db.estoque.unshift(itemExistente);
+        }
       } else {
-        itemExistente = {
-          id: `EST-${Math.floor(100 + Math.random() * 900)}`,
-          codigo: `INS-${Math.floor(1000 + Math.random() * 9000)}`,
-          descricao: descItem,
-          categoria: categoriaInsumo,
-          unidade: unidadeInsumo,
-          saldoAtual: parseFloat(qtdEntrada.toFixed(2)),
-          estoqueMinimo: estoqueMin,
-          custoMedioUnitario: parseFloat(precoPago.toFixed(2)),
-          fornecedorUltimo: fornecedor
-        };
-        db.estoque.unshift(itemExistente);
+        // MODO MESCLAGEM: Recalcula Custo Médio Ponderado no item comum
+        saldoAntigo = itemExistente ? (Number(itemExistente.saldoAtual) || 0) : 0;
+        custoAntigo = itemExistente ? (Number(itemExistente.custoMedioUnitario) || precoPago) : precoPago;
+        const novoSaldo = saldoAntigo + qtdEntrada;
+        const novoCustoMedio = ((saldoAntigo * custoAntigo) + (qtdEntrada * precoPago)) / (novoSaldo || 1);
+
+        if (itemExistente) {
+          itemExistente.saldoAtual = parseFloat(novoSaldo.toFixed(2));
+          itemExistente.custoMedioUnitario = parseFloat(novoCustoMedio.toFixed(2));
+          itemExistente.fornecedorUltimo = fornecedor;
+        } else {
+          itemExistente = {
+            id: `EST-${Math.floor(100 + Math.random() * 900)}`,
+            codigo: `INS-${Math.floor(1000 + Math.random() * 9000)}`,
+            descricao: descItem,
+            categoria: categoriaInsumo,
+            unidade: unidadeInsumo,
+            saldoAtual: parseFloat(qtdEntrada.toFixed(2)),
+            estoqueMinimo: estoqueMin,
+            custoMedioUnitario: parseFloat(precoPago.toFixed(2)),
+            fornecedorUltimo: fornecedor
+          };
+          db.estoque.unshift(itemExistente);
+        }
       }
 
       // Registra no histórico de movimentações (Rastreabilidade Industrial)
@@ -15253,10 +15986,11 @@
         data: new Date().toISOString()
       });
 
-      // Sincroniza em compras
+      // Sincroniza em compras e financeiro com ID vinculado (PREVENÇÃO TOTAL DE DUPLICIDADE)
       if (!Array.isArray(db.compras)) db.compras = [];
+      const idCompra = `COM-${Date.now().toString().slice(-6)}`;
       db.compras.unshift({
-        id: `COM-${Math.floor(600 + db.compras.length)}`,
+        id: idCompra,
         data: new Date().toISOString().split('T')[0],
         fornecedor: fornecedor,
         categoria: categoriaInsumo,
@@ -15264,20 +15998,24 @@
         valorTotal: valorTotalCompra,
         status: "Entregue",
         previsaoChegada: new Date().toISOString().split('T')[0],
-        lancadoEstoque: true
+        lancadoEstoque: true,
+        lote: isLoteSeparado ? codigoLote : null,
+        nfe: nfe
       });
 
-      // Lança a saída no financeiro
+      // Lança a quitação financeira no caixa VINCULADA À COMPRA (impede soma duplicada em centros de custo)
       if (!Array.isArray(db.lancamentosFinanceiros)) db.lancamentosFinanceiros = [];
       db.lancamentosFinanceiros.unshift({
-        id: `LAN-${Math.floor(100 + Math.random() * 900)}`,
+        id: `LAN-COM-${idCompra}`,
+        compraId: idCompra,
         data: new Date().toISOString().split('T')[0],
         tipo: "Saida",
         descricao: `Compra de Insumos: ${itemExistente.descricao} (NF ${nfe})`,
         cliente: fornecedor,
         valor: valorTotalCompra,
         formaPagamento: "Boleto 30dd",
-        categoria: categoriaInsumo
+        categoria: categoriaInsumo,
+        centroCusto: 'CC-06'
       });
 
       salvarEstado();
@@ -15288,6 +16026,90 @@
     });
   }
 
+
+  /**
+   * CANCELAR / ESTORNAR ENTRADA DE ESTOQUE
+   * Reverte o saldo físico, cancela a compra e remove a saída do caixa sem deixar resíduos
+   */
+  function cancelarEntradaEstoque(movId) {
+    if (!db || !Array.isArray(db.historicoEstoque)) return;
+    const mov = db.historicoEstoque.find(h => h.id === movId);
+    if (!mov) {
+      mostrarToast('Movimentação de estoque não encontrada.', 'red');
+      return;
+    }
+
+    if (mov.tipo !== 'Entrada') {
+      mostrarToast('Apenas entradas de estoque podem ser canceladas por esta opção.', 'yellow');
+      return;
+    }
+
+    const desc = mov.itemDescricao || 'Insumo';
+    const qtd = mov.quantidade || 0;
+    const unid = mov.unidade || 'kg';
+    const val = formatarMoeda(mov.valorTotal || 0);
+
+    if (!confirm(`⚠️ DESEJA REALMENTE CANCELAR ESTA ENTRADA?\n\n• Item: ${desc}\n• Quantidade: ${qtd} ${unid}\n• Valor Total: ${val}\n\nO saldo será subtraído do estoque e os lançamentos em Compras e no Financeiro serão estornados automaticamente.`)) {
+      return;
+    }
+
+    // 1. Reverte o saldo físico do item no estoque
+    const itemEst = (db.estoque || []).find(e => e.id === mov.itemId || e.codigo === mov.itemCodigo || e.descricao === mov.itemDescricao);
+    if (itemEst) {
+      itemEst.saldoAtual = Math.max(0, parseFloat(((Number(itemEst.saldoAtual) || 0) - Number(qtd)).toFixed(2)));
+    }
+
+    // 2. Remove / estorna de db.compras
+    if (Array.isArray(db.compras)) {
+      db.compras = db.compras.filter(c => {
+        if (c.itens && (c.itens.includes(desc) || desc.includes(c.itens))) {
+          if (Math.abs((Number(c.valorTotal) || 0) - (Number(mov.valorTotal) || 0)) < 0.05) {
+            return false;
+          }
+        }
+        return true;
+      });
+    }
+
+    // 3. Remove / estorna de db.lancamentosFinanceiros
+    if (Array.isArray(db.lancamentosFinanceiros)) {
+      db.lancamentosFinanceiros = db.lancamentosFinanceiros.filter(l => {
+        if (l.descricao && (l.descricao.includes(desc) || desc.includes(l.descricao.replace('Compra de Insumos: ', '')))) {
+          if (Math.abs((Number(l.valor) || 0) - (Number(mov.valorTotal) || 0)) < 0.05) {
+            return false;
+          }
+        }
+        return true;
+      });
+    }
+
+    // 4. Marca o histórico como cancelado/estornado
+    mov.estornado = true;
+    mov.observacoes = (mov.observacoes ? mov.observacoes + ' | ' : '') + 'ENTRADA CANCELADA / ESTORNADA PELO USUÁRIO';
+
+    // Registra contra-lançamento de estorno no histórico
+    db.historicoEstoque.unshift({
+      id: `EST-CAN-${Date.now().toString().slice(-6)}`,
+      tipo: 'Baixa',
+      itemId: mov.itemId,
+      itemCodigo: mov.itemCodigo,
+      itemDescricao: mov.itemDescricao,
+      quantidade: qtd,
+      unidade: unid,
+      custoUnitario: mov.custoUnitario,
+      valorTotal: mov.valorTotal,
+      saldoAnterior: itemEst ? itemEst.saldoAtual + qtd : qtd,
+      novoSaldo: itemEst ? itemEst.saldoAtual : 0,
+      motivo: `Estorno / Cancelamento da Entrada ${mov.id}`,
+      data: new Date().toISOString(),
+      responsavel: 'Almoxarifado'
+    });
+
+    salvarEstado();
+    renderizarEstoque();
+    mostrarToast(`✓ Entrada de ${qtd} ${unid} cancelada com sucesso! Saldo e financeiro estornados.`, 'green');
+  }
+  window.ERP.cancelarEntradaEstoque = cancelarEntradaEstoque;
 
   /* ==========================================================================
      MÓDULO 6: PRODUTOS & CATÁLOGO DE MODELAGEM COMPLETO (28 MODELOS)
@@ -15715,8 +16537,13 @@
       desc.includes('dtf') || desc.includes('prensa') || desc.includes('plotter') || desc.includes('tinta') || desc.includes('filme dtf') || desc.includes('poliamida') || desc.includes('fita térmica') || desc.includes('luz') || desc.includes('enel') || desc.includes('energia')) {
       return 'CC-02';
     }
-    // 3. Produção: Costura & Facções (PROD-COST / CC-03)
-    if (cat.includes('costur') || cat.includes('facç') || cat.includes('aviamen') || cat.includes('malha') || cat.includes('tecido') || cat.includes('matéria-prima') ||
+    // 3. Matéria-Prima, Tecidos & Malharia (MAT-TEC / CC-06)
+    if (cat.includes('malha') || cat.includes('tecido') || cat.includes('matéria-prima') || cat.includes('piquet') || cat.includes('brim') || cat.includes('helanca') ||
+      desc.includes('malha') || desc.includes('tecido') || desc.includes('piquet') || desc.includes('brim') || desc.includes('helanca') || desc.includes('kg de')) {
+      return 'CC-06';
+    }
+    // 4. Produção: Costura & Facções (PROD-COST / CC-03)
+    if (cat.includes('costur') || cat.includes('facç') || cat.includes('aviamen') ||
       desc.includes('costur') || desc.includes('overlock') || desc.includes('reta jack') || desc.includes('linha') || desc.includes('fio') || desc.includes('zíper') || desc.includes('botão') || desc.includes('elástico') || desc.includes('viés') || desc.includes('facção')) {
       return 'CC-03';
     }
@@ -15865,45 +16692,54 @@
       }
 
       // 2. CUSTO DE TECIDOS & MATÉRIA-PRIMA
-      let custoTecidoTotal = 0;
-      if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
-        custoTecidoTotal = p.itens.reduce((acc, it) => {
-          const precoKg = parseFloat(it.custoTecidoKg) || 48.50;
-          const consumo = parseFloat(it.consumoTecido) || 0.28;
-          const margem = 1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100);
-          return acc + (precoKg * consumo * margem * (it.grade?.total || 0));
-        }, 0);
+      const usouEstoqueFisico = (p.itens && Array.isArray(p.itens) && p.itens.some(it => it.utilizarEstoque)) || p.utilizarEstoque;
+      const idTecido = `DESP-OP-${num}-TECIDO`;
+
+      if (usouEstoqueFisico) {
+        // REGRA DE OURO FINANCEIRA: Matéria-prima retirada do estoque físico já foi paga na entrada do estoque!
+        // Não gera nova conta a pagar para fornecedor e remove qualquer despesa pendente gerada anteriormente.
+        db.despesasFixas = db.despesasFixas.filter(d => d.id !== idTecido);
       } else {
-        custoTecidoTotal = (parseFloat(p.custoTecidoPorPeca) || 14.67) * (p.grade?.total || 1);
-      }
+        // Compra sob demanda para este pedido: gera conta a pagar no Contas a Pagar
+        let custoTecidoTotal = 0;
+        if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
+          custoTecidoTotal = p.itens.reduce((acc, it) => {
+            const precoKg = parseFloat(it.custoTecidoKg) || 48.50;
+            const consumo = parseFloat(it.consumoTecido) || 0.28;
+            const margem = 1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100);
+            return acc + (precoKg * consumo * margem * (it.grade?.total || 0));
+          }, 0);
+        } else {
+          custoTecidoTotal = (parseFloat(p.custoTecidoPorPeca) || 14.67) * (p.grade?.total || 1);
+        }
 
-      if (custoTecidoTotal > 0) {
-        const idTecido = `DESP-OP-${num}-TECIDO`;
-        const despExistente = db.despesasFixas.find(d => d.id === idTecido);
-
-        if (!despExistente) {
-          db.despesasFixas.push({
-            id: idTecido,
-            pedidoNumero: p.numero,
-            pedidoId: p.id,
-            origemAutomatica: true,
-            origem: `Custo de Produção (Pedido #${p.numero})`,
-            tipoCusto: 'Operacional',
-            descricao: `Tecidos & Malhas • Pedido #${p.numero} (${cliNome})`,
-            categoria: 'Tecidos & Matéria-Prima',
-            centroCusto: 'CC-03',
-            fornecedorFavorecido: 'Fornecedor Têxtil / Malharia',
-            valor: parseFloat(custoTecidoTotal.toFixed(2)),
-            valorMensal: parseFloat(custoTecidoTotal.toFixed(2)),
-            dataVencimento: dataVenc,
-            recorrencia: 'Por Pedido',
-            formaPagamentoPrevista: 'Boleto Bancário',
-            status: 'Pendente'
-          });
-        } else if (despExistente.status !== 'Pago') {
-          despExistente.valor = parseFloat(custoTecidoTotal.toFixed(2));
-          despExistente.valorMensal = parseFloat(custoTecidoTotal.toFixed(2));
-          despExistente.dataVencimento = dataVenc;
+        if (custoTecidoTotal > 0) {
+          const despExistente = db.despesasFixas.find(d => d.id === idTecido);
+          if (!despExistente) {
+            db.despesasFixas.push({
+              id: idTecido,
+              pedidoNumero: p.numero,
+              pedidoId: p.id,
+              origemAutomatica: true,
+              origem: `Custo de Produção (Pedido #${p.numero})`,
+              tipoCusto: 'Operacional',
+              descricao: `Tecidos & Malhas • Pedido #${p.numero} (${cliNome})`,
+              categoria: 'Tecidos & Matéria-Prima',
+              centroCusto: 'CC-06',
+              fornecedorFavorecido: 'Fornecedor Têxtil / Malharia',
+              valor: parseFloat(custoTecidoTotal.toFixed(2)),
+              valorMensal: parseFloat(custoTecidoTotal.toFixed(2)),
+              dataVencimento: dataVenc,
+              recorrencia: 'Por Pedido',
+              formaPagamentoPrevista: 'Boleto Bancário',
+              status: 'Pendente'
+            });
+          } else if (despExistente.status !== 'Pago') {
+            despExistente.valor = parseFloat(custoTecidoTotal.toFixed(2));
+            despExistente.valorMensal = parseFloat(custoTecidoTotal.toFixed(2));
+            despExistente.dataVencimento = dataVenc;
+            despExistente.centroCusto = 'CC-06';
+          }
         }
       }
 
@@ -17054,7 +17890,20 @@
       }));
 
       const listaCaixaAvulso = (db.lancamentosFinanceiros || [])
-        .filter(l => (l.tipo === 'Saida' || l.tipo === 'Despesa') && l.status !== 'Cancelado' && !l.pedidoId && !l.id.startsWith('LAN-COM-') && !despesasLista.some(d => d.id === l.despesaId))
+        .filter(l => {
+          if (l.tipo !== 'Saida' && l.tipo !== 'Despesa') return false;
+          if (l.status === 'Cancelado') return false;
+          if (l.pedidoId) return false;
+          if (l.compraId || (l.id && l.id.startsWith('LAN-COM-'))) return false;
+          if (despesasLista.some(d => d.id === l.despesaId)) return false;
+          // Elimina duplicidade com db.compras (se for lançamento financeiro originado de compra de insumo)
+          const jaExisteEmCompras = (db.compras || []).some(c => 
+            c.id === l.compraId ||
+            (c.itens && l.descricao && (l.descricao.includes(c.itens) || c.itens.includes(l.descricao.replace('Compra de Insumos: ', ''))))
+          );
+          if (jaExisteEmCompras) return false;
+          return true;
+        })
         .map(l => ({
           id: l.id,
           origem: 'Livro Caixa',
@@ -17196,6 +18045,129 @@
           </table>
           </div>
         </div>
+
+        <!-- RESUMO ANALÍTICO POR PRODUTO, INSUMO & SERVIÇO MOVIMENTADO -->
+        ${(() => {
+          const mapaItens = {};
+          gastosFiltradosCC.forEach(g => {
+            let chave = (g.descricao || 'Outros Serviços').trim();
+            // Limpa sufixos de NF ou Pedido para agrupar o insumo/serviço raiz
+            chave = chave.replace(/\s*\(NF[-:\s]*[^\)]+\)/gi, '')
+                         .replace(/\s*•\s*Pedido\s*#\d+[^\(]*(\([^\)]*\))?/gi, '')
+                         .trim();
+            if (!chave) chave = g.categoria || 'Geral';
+
+            if (!mapaItens[chave]) {
+              mapaItens[chave] = {
+                nome: chave,
+                categoria: g.categoria || 'Insumos & Suprimentos',
+                centroCusto: g.centroCusto,
+                totalGasto: 0,
+                qtd: 0,
+                origens: new Set()
+              };
+            }
+            mapaItens[chave].totalGasto += (Number(g.valorReal) || 0);
+            mapaItens[chave].qtd += 1;
+            mapaItens[chave].origens.add(g.origem);
+          });
+
+          const listaAgrupada = Object.values(mapaItens).sort((a, b) => b.totalGasto - a.totalGasto);
+          const totalMovimentadoGeral = listaAgrupada.reduce((acc, it) => acc + it.totalGasto, 0);
+
+          return `
+            <div class="card" style="margin-top: 22px;">
+              <div class="table-header-bar" style="padding: 0 0 14px 0;">
+                <div>
+                  <div class="table-title" style="display: flex; align-items: center; gap: 8px;">
+                    <span>📦 Resumo Financeiro por Produto, Insumo & Serviço Movimentado</span>
+                    <span class="status-pill status-blue" style="font-size: 10px;">${listaAgrupada.length} ITENS CONSOLIDADOS</span>
+                  </div>
+                  <span style="font-size: 11px; color: var(--text-gray-500);">
+                    Consolidação analítica de todos os valores movimentados agrupados por matéria-prima, suprimentos e serviços executados
+                  </span>
+                </div>
+                <div style="text-align: right;">
+                  <span style="font-size: 11px; color: var(--text-gray-500); display: block;">Total Movimentado:</span>
+                  <span class="text-mono" style="font-size: 16px; font-weight: 800; color: #0f172a;">
+                    ${formatarMoeda(totalMovimentadoGeral)}
+                  </span>
+                </div>
+              </div>
+
+              <div class="table-wrapper" style="margin-bottom: 0;">
+                <table class="erp-table">
+                  <thead>
+                    <tr>
+                      <th style="min-width: 220px;">Produto / Insumo / Serviço</th>
+                      <th>Centro de Custo</th>
+                      <th>Categoria</th>
+                      <th style="text-align: center;">Lançamentos</th>
+                      <th style="text-align: right;">Valor Total</th>
+                      <th style="text-align: right;">Ticket Médio</th>
+                      <th style="min-width: 140px;">% do Custo</th>
+                      <th>Origens</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${listaAgrupada.length > 0 ? listaAgrupada.map(item => {
+                      const perc = totalMovimentadoGeral > 0 ? (item.totalGasto / totalMovimentadoGeral) * 100 : 0;
+                      const ticketMedio = item.qtd > 0 ? item.totalGasto / item.qtd : 0;
+                      return `
+                        <tr>
+                          <td>
+                            <strong style="color: #0f172a; font-size: 13px;">${item.nome}</strong>
+                          </td>
+                          <td>${obterBadgeCentroCusto(item.centroCusto)}</td>
+                          <td>
+                            <span style="font-size: 11.5px; font-weight: 600; color: #475569;">${item.categoria}</span>
+                          </td>
+                          <td style="text-align: center;">
+                            <span class="status-pill status-gray" style="font-size: 11px; font-weight: 700;">${item.qtd}x</span>
+                          </td>
+                          <td class="text-mono text-red" style="text-align: right; font-weight: 800; font-size: 13.5px;">
+                            ${formatarMoeda(item.totalGasto)}
+                          </td>
+                          <td class="text-mono" style="text-align: right; font-size: 12px; color: #64748b;">
+                            ${formatarMoeda(ticketMedio)}
+                          </td>
+                          <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                              <div class="prog-comparativo-bar" style="flex: 1; height: 6px; margin: 0; background: #e2e8f0;">
+                                <div class="prog-comparativo-fill" style="width: ${perc}%; background: #0284c7;"></div>
+                              </div>
+                              <span style="font-size: 11px; font-weight: 700; color: #0f172a; min-width: 38px;">${perc.toFixed(1)}%</span>
+                            </div>
+                          </td>
+                          <td>
+                            <span style="font-size: 10px; color: #64748b; font-weight: 600;">
+                              ${Array.from(item.origens).join(', ')}
+                            </span>
+                          </td>
+                        </tr>
+                      `;
+                    }).join('') : `
+                      <tr><td colspan="8" style="text-align: center; padding: 35px; color: var(--text-gray-500);">Nenhum insumo ou serviço movimentado no período.</td></tr>
+                    `}
+                  </tbody>
+                  <tfoot>
+                    <tr style="background: #f8fafc; font-weight: 800;">
+                      <td colspan="4" style="text-align: right; font-size: 12.5px; color: #0f172a; padding: 12px 16px;">
+                        TOTAL GERAL CONSOLIDADO:
+                      </td>
+                      <td class="text-mono text-red" style="text-align: right; font-size: 14px; font-weight: 900; padding: 12px 16px;">
+                        ${formatarMoeda(totalMovimentadoGeral)}
+                      </td>
+                      <td colspan="3" style="font-size: 11px; color: #64748b; padding: 12px 16px;">
+                        100.0% de todos os insumos e serviços movimentados
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          `;
+        })()}
       `;
 
     } else if (subAbaFinanceiro === 'comissoes') {
