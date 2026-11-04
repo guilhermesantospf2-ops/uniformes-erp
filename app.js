@@ -814,7 +814,7 @@
   // Estado da Aplicação
   let abaAtiva = 'abertura';
   let visualizacaoPedidos = 'tabela'; // 'tabela' ou 'kanban'
-  let ordenacaoPedidos = 'desc'; // 'desc' (mais novos primeiro) ou 'asc' (mais velhos primeiro)
+  let ordenacaoPedidos = 'desc'; // 'desc' (mais recentes primeiro) ou 'asc' (mais antigos primeiro)
   let visualizacaoEstoque = 'saldos'; // 'saldos' ou 'historico'
   let filtroBuscaEstoque = '';
   let filtroCategoriaEstoque = 'todos';
@@ -3988,9 +3988,9 @@
             <option value="Finalizado">Finalizados</option>
             <option value="Cancelado">🚫 Apenas Cancelados</option>
           </select>
-          <select id="filtroPedidoOrdem" class="form-select" style="width: 180px;" title="Ordenar pedidos por número e data">
-            <option value="desc" ${ordenacaoPedidos === 'desc' ? 'selected' : ''}>🔽 Mais novos primeiro</option>
-            <option value="asc" ${ordenacaoPedidos === 'asc' ? 'selected' : ''}>🔼 Mais velhos primeiro</option>
+          <select id="filtroPedidoOrdem" class="form-select" style="width: 205px;" title="Ordenar pedidos por número e data">
+            <option value="desc" ${ordenacaoPedidos === 'desc' ? 'selected' : ''}>🔽 Mais recentes primeiro</option>
+            <option value="asc" ${ordenacaoPedidos === 'asc' ? 'selected' : ''}>🔼 Mais antigos primeiro</option>
           </select>
         </div>
 
@@ -4142,12 +4142,12 @@
               <th>Mockup 3x4</th>
               <th onclick="window.ERP.alternarOrdenacaoPedidos()" 
                   id="thSortNumeroData" 
-                  style="cursor: pointer; user-select: none; transition: background 0.15s ease;" 
-                  title="Clique para alternar ordenação: Mais Novo ⇄ Mais Velho">
-                <div style="display: inline-flex; align-items: center; gap: 6px;">
-                  <span style="font-weight: 800;">Nº / DATA</span>
-                  <span class="badge-sort-indicador" style="font-size: 10px; padding: 1.5px 6px; border-radius: 4px; background: ${ordenacaoPedidos === 'desc' ? '#e0f2fe' : '#fef3c7'}; color: ${ordenacaoPedidos === 'desc' ? '#0369a1' : '#b45309'}; border: 1px solid ${ordenacaoPedidos === 'desc' ? '#bae6fd' : '#fde68a'}; font-weight: 800; display: inline-flex; align-items: center; gap: 3px;">
-                    ${ordenacaoPedidos === 'desc' ? '▼ Mais Novo' : '▲ Mais Velho'}
+                  style="cursor: pointer; user-select: none; white-space: nowrap; min-width: 165px; transition: background 0.15s ease;" 
+                  title="Clique para alternar ordenação: Mais Recente ⇄ Mais Antigo">
+                <div style="display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;">
+                  <span style="font-weight: 800; font-size: 12px; color: var(--text-primary); white-space: nowrap;">Nº / DATA</span>
+                  <span class="badge-sort-indicador" style="white-space: nowrap; font-size: 10.5px; padding: 2.5px 8px; border-radius: 4px; background: ${ordenacaoPedidos === 'desc' ? '#e0f2fe' : '#fef3c7'}; color: ${ordenacaoPedidos === 'desc' ? '#0369a1' : '#b45309'}; border: 1px solid ${ordenacaoPedidos === 'desc' ? '#bae6fd' : '#fde68a'}; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; letter-spacing: 0.3px;">
+                    ${ordenacaoPedidos === 'desc' ? '▼ Mais Recente' : '▲ Mais Antigo'}
                   </span>
                 </div>
               </th>
