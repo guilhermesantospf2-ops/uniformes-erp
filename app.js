@@ -84,7 +84,110 @@
    * REGRA DE OURO: NUNCA descarta pedidos, clientes ou financeiro inseridos pelo usuário!
    * Quando o código é atualizado ou uma nova função é adicionada, apenas mescla os novos campos.
    */
-  function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
+    /**
+   * ZERA E HIGIENIZA COMPLETAMENTE A ENTRADA DE TESTE DE 100 KG DE MALHA PIQUET
+   * Remove compras, lançamentos no livro caixa, movimentações no histórico e zera o saldo do estoque.
+   */
+  function limparEntradaTeste100kgEstoque(bancoAlvo) {
+    const alvo = bancoAlvo || db;
+    if (!alvo || typeof alvo !== 'object') return false;
+
+    let modificou = false;
+
+    // 1. Zera saldo do item Malha Piquet PA Azul Marinho e remove lotes criados no teste
+    if (Array.isArray(alvo.estoque)) {
+      alvo.estoque.forEach(e => {
+        const desc = (e.descricao || '').toLowerCase();
+        const cod = (e.codigo || '').toLowerCase();
+        if (cod === 'mal-piq-azul' || cod === 'ins-mal-piq-azul' || (desc.includes('piquet') && desc.includes('azul'))) {
+          if (Number(e.saldoAtual) !== 0) {
+            e.saldoAtual = 0;
+            modificou = true;
+          }
+        }
+      });
+      const antesEst = alvo.estoque.length;
+      alvo.estoque = alvo.estoque.filter(e => {
+        const desc = (e.descricao || '');
+        const nf = (e.notaFiscal || '');
+        return !desc.includes('8924') && !nf.includes('8924');
+      });
+      if (alvo.estoque.length !== antesEst) modificou = true;
+    }
+
+    // 2. Remove compra de 100kg / R$ 4.850 / Malharia Textil Sul / NF-8924
+    if (Array.isArray(alvo.compras)) {
+      const antesComp = alvo.compras.length;
+      alvo.compras = alvo.compras.filter(c => {
+        const itens = (c.itens || '').toLowerCase();
+        const forn = (c.fornecedor || '').toLowerCase();
+        const nf = (c.nfe || '').toLowerCase();
+        const val = Number(c.valorTotal) || 0;
+        const ehTeste = nf.includes('8924') ||
+          itens.includes('8924') ||
+          forn.includes('textil sul') ||
+          forn.includes('têxtil sul') ||
+          (val === 4850 && itens.includes('piquet'));
+        return !ehTeste;
+      });
+      if (alvo.compras.length !== antesComp) modificou = true;
+    }
+
+    // 3. Remove saída do livro caixa de R$ 4.850 / Textil Sul / NF-8924
+    if (Array.isArray(alvo.lancamentosFinanceiros)) {
+      const antesLanc = alvo.lancamentosFinanceiros.length;
+      alvo.lancamentosFinanceiros = alvo.lancamentosFinanceiros.filter(l => {
+        const desc = (l.descricao || '').toLowerCase();
+        const cli = (l.cliente || l.favorecido || '').toLowerCase();
+        const val = Number(l.valor) || 0;
+        const ehTeste = desc.includes('8924') ||
+          cli.includes('textil sul') ||
+          cli.includes('têxtil sul') ||
+          (val === 4850 && desc.includes('piquet'));
+        return !ehTeste;
+      });
+      if (alvo.lancamentosFinanceiros.length !== antesLanc) modificou = true;
+    }
+
+    // 4. Remove movimentação do histórico de estoque
+    if (Array.isArray(alvo.historicoEstoque)) {
+      const antesHist = alvo.historicoEstoque.length;
+      alvo.historicoEstoque = alvo.historicoEstoque.filter(h => {
+        const mot = (h.motivo || '').toLowerCase();
+        const obs = (h.observacoes || '').toLowerCase();
+        const forn = (h.fornecedor || '').toLowerCase();
+        const desc = (h.itemDescricao || '').toLowerCase();
+        const qtd = Number(h.quantidade) || 0;
+        const ehTeste = mot.includes('8924') ||
+          obs.includes('8924') ||
+          forn.includes('textil sul') ||
+          forn.includes('têxtil sul') ||
+          (qtd === 100 && desc.includes('piquet'));
+        return !ehTeste;
+      });
+      if (alvo.historicoEstoque.length !== antesHist) modificou = true;
+    }
+
+    // 5. Remove do Contas a Pagar se houver registro da Textil Sul / 4850 / 8924
+    if (Array.isArray(alvo.despesasFixas)) {
+      const antesDesp = alvo.despesasFixas.length;
+      alvo.despesasFixas = alvo.despesasFixas.filter(d => {
+        const desc = (d.descricao || '').toLowerCase();
+        const forn = (d.fornecedorFavorecido || '').toLowerCase();
+        const val = Number(d.valor || d.valorReal) || 0;
+        const ehTeste = desc.includes('8924') ||
+          forn.includes('textil sul') ||
+          forn.includes('têxtil sul') ||
+          (val === 4850 && desc.includes('piquet'));
+        return !ehTeste;
+      });
+      if (alvo.despesasFixas.length !== antesDesp) modificou = true;
+    }
+
+    return modificou;
+  }
+
+function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
     if (!bancoExistente || typeof bancoExistente !== 'object') {
       const novo = JSON.parse(JSON.stringify(templatePadrao || {}));
       novo.versao = ERP_VERSION;
@@ -109,14 +212,8 @@
       }
     });
 
-    // Expurgar qualquer custo de pedido inserido no Contas a Pagar (despesasFixas)
-    if (Array.isArray(banco.despesasFixas)) {
-      banco.despesasFixas = banco.despesasFixas.filter(d => 
-        !d.origemAutomatica && 
-        !d.pedidoNumero && 
-        !(d.id && String(d.id).startsWith('DESP-OP-'))
-      );
-    }
+    // Higieniza exclusivamente a entrada de teste de 100kg de estoque, preservando 100% dos pedidos do cliente
+    limparEntradaTeste100kgEstoque(banco);
 
     // 2. Catálogos e Tabelas Base (Não sobrescreve se o cliente já possui)
     if (!Array.isArray(banco.produtosBase) || banco.produtosBase.length === 0) {
@@ -335,40 +432,14 @@
     // Aplica a migração não-destrutiva garantindo 100% de integridade
     db = migrarOuPreservarBanco(db, window.ERP_INITIAL_DATA);
 
-    // Higienização cirúrgica da entrada de teste feita no login do Prime Uniformes (NF-8924 / 100 kg Malha Piquet PA)
-    if (db) {
-      let limpouTestePrime = false;
-      if (Array.isArray(db.compras)) {
-        const antes = db.compras.length;
-        db.compras = db.compras.filter(c => !(c.itens && c.itens.includes('NF-8924')));
-        if (db.compras.length !== antes) limpouTestePrime = true;
-      }
-      if (Array.isArray(db.lancamentosFinanceiros)) {
-        const antes = db.lancamentosFinanceiros.length;
-        db.lancamentosFinanceiros = db.lancamentosFinanceiros.filter(l => !(l.descricao && l.descricao.includes('NF-8924')));
-        if (db.lancamentosFinanceiros.length !== antes) limpouTestePrime = true;
-      }
-      if (Array.isArray(db.historicoEstoque)) {
-        const antes = db.historicoEstoque.length;
-        db.historicoEstoque = db.historicoEstoque.filter(h => !((h.motivo && h.motivo.includes('NF-8924')) || (h.observacoes && h.observacoes.includes('NF-8924'))));
-        if (db.historicoEstoque.length !== antes) limpouTestePrime = true;
-      }
-      if (Array.isArray(db.estoque) && limpouTestePrime) {
-        const itemPiquet = db.estoque.find(e => e.codigo === 'INS-MAL-PIQ-AZUL' || (e.descricao && e.descricao.toLowerCase().includes('piquet') && e.descricao.toLowerCase().includes('azul')));
-        if (itemPiquet) {
-          itemPiquet.saldoAtual = Math.max(0, parseFloat(((Number(itemPiquet.saldoAtual) || 0) - 100).toFixed(2)));
-          itemPiquet.custoMedioUnitario = 48.50;
-        }
-      }
-      if (limpouTestePrime) {
-        try {
-          const k = obterChaveStorageTenant();
-          localStorage.setItem(k, JSON.stringify(compactarBancoParaStorage(db)));
-        } catch(e) {}
-      }
+        // Higienização completa dos 100kg de teste de estoque
+    if (db && limparEntradaTeste100kgEstoque(db)) {
+      try {
+        const k = obterChaveStorageTenant();
+        localStorage.setItem(k, JSON.stringify(compactarBancoParaStorage(db)));
+      } catch(e) {}
     }
 
-    // Higienização de notas de teste locais sem comunicação SEFAZ / revertidas
     if (db && Array.isArray(db.notasFiscais)) {
       const notaTesteSemSefaz = db.notasFiscais.find(n => n.numero === 33 && !n.tecnospeedId && (!n.protocolo || String(n.protocolo).startsWith('135260')));
       if (notaTesteSemSefaz) {
@@ -15452,6 +15523,9 @@
      MÓDULO 5: ESTOQUE TÊXTIL (ENTRADAS + BAIXAS + CUSTO MÉDIO + HISTÓRICO)
      ========================================================================== */
   function renderizarEstoque() {
+    if (limparEntradaTeste100kgEstoque(db)) {
+      salvarBancoDados();
+    }
     pageTitleElem.textContent = 'Estoque de Malhas, Tecidos & Insumos';
     pageBreadcrumbElem.textContent = 'SISTEMA > ESTOQUE';
 
@@ -16122,7 +16196,7 @@
 
               <div class="form-group" style="margin: 0;">
                 <label class="form-label">Nota Fiscal (NF-e)</label>
-                <input type="text" id="entNfe" class="form-input" value="NF-8924" placeholder="Ex: NF-1290">
+                <input type="text" id="entNfe" class="form-input" placeholder="Ex: NF-1290">
               </div>
             </div>
 
@@ -16933,20 +17007,239 @@
    */
   function sincronizarCustosOperacionaisDosPedidos() {
     if (!Array.isArray(db.despesasFixas)) db.despesasFixas = [];
-    // Expurgar qualquer custo operacional de pedido do Contas a Pagar.
-    // Custos diretos de pedidos pertencem exclusivamente à formação de preço / CMV (CPV).
-    const qtdAntes = db.despesasFixas.length;
-    db.despesasFixas = db.despesasFixas.filter(d => 
-      !d.origemAutomatica && 
-      !d.pedidoNumero && 
-      !(d.id && String(d.id).startsWith('DESP-OP-'))
-    );
-    if (db.despesasFixas.length !== qtdAntes) {
-      salvarBancoDados();
-    }
+    if (!Array.isArray(db.pedidos)) return;
+
+    const hojeIso = new Date().toISOString().split('T')[0];
+
+    db.pedidos.forEach(p => {
+      // Ignora orçamentos e pedidos cancelados
+      if (p.status === 'Cancelado' || p.tipoRegistro === 'Orcamento') {
+        db.despesasFixas = db.despesasFixas.filter(d => !(d.pedidoNumero === p.numero && d.origemAutomatica && d.status !== 'Pago'));
+        return;
+      }
+
+      const num = p.numero || p.id;
+      const dataVenc = p.dataPrevisaoEntrega || p.dataMetaInterna || p.dataCriacao || hojeIso;
+      const cliNome = p.clienteNome || 'Cliente';
+
+      // 1. CUSTO DE MÃO DE OBRA / COSTURA (FACÇÃO)
+      let custoCosturaTotal = 0;
+      if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
+        custoCosturaTotal = p.itens.reduce((acc, it) => {
+          const v = (it.custoCostura != null && !isNaN(it.custoCostura) && parseFloat(it.custoCostura) > 0)
+            ? parseFloat(it.custoCostura)
+            : 7.50;
+          return acc + (v * (it.grade?.total || 0));
+        }, 0);
+      } else {
+        custoCosturaTotal = (parseFloat(p.custoCostura) || 7.50) * (p.grade?.total || 1);
+      }
+
+      if (custoCosturaTotal > 0) {
+        const idCostura = `DESP-OP-${num}-COSTURA`;
+        const despExistente = db.despesasFixas.find(d => d.id === idCostura);
+        const costureiraNome = p.costureiraNome || 'Oficina de Costura / Facção';
+
+        if (!despExistente) {
+          db.despesasFixas.push({
+            id: idCostura,
+            pedidoNumero: p.numero,
+            pedidoId: p.id,
+            origemAutomatica: true,
+            origem: `Custo de Produção (Pedido #${p.numero})`,
+            tipoCusto: 'Operacional',
+            descricao: `Costura & Facção • Pedido #${p.numero} (${cliNome})`,
+            categoria: 'Mão de Obra / Facção',
+            centroCusto: 'CC-03',
+            fornecedorFavorecido: costureiraNome,
+            valor: parseFloat(custoCosturaTotal.toFixed(2)),
+            valorMensal: parseFloat(custoCosturaTotal.toFixed(2)),
+            dataVencimento: dataVenc,
+            recorrencia: 'Por Pedido',
+            formaPagamentoPrevista: 'PIX',
+            status: 'Pendente'
+          });
+        } else if (despExistente.status !== 'Pago') {
+          despExistente.valor = parseFloat(custoCosturaTotal.toFixed(2));
+          despExistente.valorMensal = parseFloat(custoCosturaTotal.toFixed(2));
+          despExistente.fornecedorFavorecido = costureiraNome;
+          despExistente.dataVencimento = dataVenc;
+        }
+      }
+
+      // 2. CUSTO DE TECIDOS & MATÉRIA-PRIMA
+      const usouEstoqueFisico = (p.itens && Array.isArray(p.itens) && p.itens.some(it => it.utilizarEstoque)) || p.utilizarEstoque;
+      const idTecido = `DESP-OP-${num}-TECIDO`;
+
+      if (usouEstoqueFisico) {
+        // REGRA DE OURO FINANCEIRA: Matéria-prima retirada do estoque físico já foi paga na entrada do estoque!
+        // Não gera nova conta a pagar para fornecedor e remove qualquer despesa pendente gerada anteriormente.
+        db.despesasFixas = db.despesasFixas.filter(d => d.id !== idTecido);
+      } else {
+        // Compra sob demanda para este pedido: gera conta a pagar no Contas a Pagar
+        let custoTecidoTotal = 0;
+        if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
+          custoTecidoTotal = p.itens.reduce((acc, it) => {
+            const precoKg = parseFloat(it.custoTecidoKg) || 48.50;
+            const consumo = parseFloat(it.consumoTecido) || 0.28;
+            const margem = 1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100);
+            return acc + (precoKg * consumo * margem * (it.grade?.total || 0));
+          }, 0);
+        } else {
+          custoTecidoTotal = (parseFloat(p.custoTecidoPorPeca) || 14.67) * (p.grade?.total || 1);
+        }
+
+        if (custoTecidoTotal > 0) {
+          const despExistente = db.despesasFixas.find(d => d.id === idTecido);
+          if (!despExistente) {
+            db.despesasFixas.push({
+              id: idTecido,
+              pedidoNumero: p.numero,
+              pedidoId: p.id,
+              origemAutomatica: true,
+              origem: `Custo de Produção (Pedido #${p.numero})`,
+              tipoCusto: 'Operacional',
+              descricao: `Tecidos & Malhas • Pedido #${p.numero} (${cliNome})`,
+              categoria: 'Tecidos & Matéria-Prima',
+              centroCusto: 'CC-06',
+              fornecedorFavorecido: 'Fornecedor Têxtil / Malharia',
+              valor: parseFloat(custoTecidoTotal.toFixed(2)),
+              valorMensal: parseFloat(custoTecidoTotal.toFixed(2)),
+              dataVencimento: dataVenc,
+              recorrencia: 'Por Pedido',
+              formaPagamentoPrevista: 'Boleto Bancário',
+              status: 'Pendente'
+            });
+          } else if (despExistente.status !== 'Pago') {
+            despExistente.valor = parseFloat(custoTecidoTotal.toFixed(2));
+            despExistente.valorMensal = parseFloat(custoTecidoTotal.toFixed(2));
+            despExistente.dataVencimento = dataVenc;
+            despExistente.centroCusto = 'CC-06';
+          }
+        }
+      }
+
+      // 3. CUSTO DE AVIAMENTOS & SUPRIMENTOS
+      let custoAviamentoTotal = 0;
+      if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
+        custoAviamentoTotal = p.itens.reduce((acc, it) => {
+          const v = parseFloat(it.custoAviamento) || 4.80;
+          return acc + (v * (it.grade?.total || 0));
+        }, 0);
+      } else {
+        custoAviamentoTotal = 4.80 * (p.grade?.total || 1);
+      }
+
+      if (custoAviamentoTotal > 0) {
+        const idAviamento = `DESP-OP-${num}-AVIAMENTO`;
+        const despExistente = db.despesasFixas.find(d => d.id === idAviamento);
+
+        if (!despExistente) {
+          db.despesasFixas.push({
+            id: idAviamento,
+            pedidoNumero: p.numero,
+            pedidoId: p.id,
+            origemAutomatica: true,
+            origem: `Custo de Produção (Pedido #${p.numero})`,
+            tipoCusto: 'Operacional',
+            descricao: `Aviamentos & Linhas • Pedido #${p.numero} (${cliNome})`,
+            categoria: 'Aviamentos & Suprimentos',
+            centroCusto: 'CC-03',
+            fornecedorFavorecido: 'Fornecedor de Aviamentos',
+            valor: parseFloat(custoAviamentoTotal.toFixed(2)),
+            valorMensal: parseFloat(custoAviamentoTotal.toFixed(2)),
+            dataVencimento: dataVenc,
+            recorrencia: 'Por Pedido',
+            formaPagamentoPrevista: 'Boleto Bancário',
+            status: 'Pendente'
+          });
+        } else if (despExistente.status !== 'Pago') {
+          despExistente.valor = parseFloat(custoAviamentoTotal.toFixed(2));
+          despExistente.valorMensal = parseFloat(custoAviamentoTotal.toFixed(2));
+          despExistente.dataVencimento = dataVenc;
+        }
+      }
+
+      // 4. CUSTO DE ESTAMPARIA / DTF / SUBLIMAÇÃO (SE HOUVER)
+      let custoEstampaTotal = 0;
+      if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
+        custoEstampaTotal = p.itens.reduce((acc, it) => {
+          const v = parseFloat(it.custoEstampaTotal) || 0;
+          return acc + (v * (it.grade?.total || 0));
+        }, 0);
+      }
+
+      if (custoEstampaTotal > 0) {
+        const idEstampa = `DESP-OP-${num}-ESTAMPA`;
+        const despExistente = db.despesasFixas.find(d => d.id === idEstampa);
+
+        if (!despExistente) {
+          db.despesasFixas.push({
+            id: idEstampa,
+            pedidoNumero: p.numero,
+            pedidoId: p.id,
+            origemAutomatica: true,
+            origem: `Custo de Produção (Pedido #${p.numero})`,
+            tipoCusto: 'Operacional',
+            descricao: `Estamparia / DTF Digital • Pedido #${p.numero} (${cliNome})`,
+            categoria: 'Estamparia & DTF',
+            centroCusto: 'CC-02',
+            fornecedorFavorecido: 'Estamparia / DTF Digital',
+            valor: parseFloat(custoEstampaTotal.toFixed(2)),
+            valorMensal: parseFloat(custoEstampaTotal.toFixed(2)),
+            dataVencimento: dataVenc,
+            recorrencia: 'Por Pedido',
+            formaPagamentoPrevista: 'PIX',
+            status: 'Pendente'
+          });
+        } else if (despExistente.status !== 'Pago') {
+          despExistente.valor = parseFloat(custoEstampaTotal.toFixed(2));
+          despExistente.valorMensal = parseFloat(custoEstampaTotal.toFixed(2));
+          despExistente.dataVencimento = dataVenc;
+        }
+      }
+
+      // 5. CUSTO DE TAXAS DE OPERADORA / MEIOS DE PAGAMENTO (HOMOLOGAÇÃO FINANCEIRA)
+      const taxaOperadora = parseFloat(p.taxaTotalOperadoraValor || p.pagamentoDetalhes?.taxaTotalOperadoraValor || 0);
+      if (taxaOperadora > 0) {
+        const idTaxa = `DESP-OP-${num}-TAXA-PAG`;
+        const despExistente = db.despesasFixas.find(d => d.id === idTaxa);
+        const resumoMeios = p.pagamentoDetalhes
+          ? `${p.pagamentoDetalhes.formaEntrada || 'Entrada'} + ${p.pagamentoDetalhes.formaSaldo || 'Saldo'}`
+          : 'Cartão / Gateway';
+
+        if (!despExistente) {
+          db.despesasFixas.push({
+            id: idTaxa,
+            pedidoNumero: p.numero,
+            pedidoId: p.id,
+            origemAutomatica: true,
+            origem: `Taxas Financeiras (Pedido #${p.numero})`,
+            tipoCusto: 'Operacional',
+            descricao: `Taxas de Meios de Pagamento • Pedido #${p.numero} (${resumoMeios})`,
+            categoria: 'Taxas & Encargos Financeiros',
+            centroCusto: 'CC-04',
+            fornecedorFavorecido: 'Operadora de Cartão / Gateway Bancário',
+            valor: parseFloat(taxaOperadora.toFixed(2)),
+            valorMensal: parseFloat(taxaOperadora.toFixed(2)),
+            dataVencimento: dataVenc,
+            recorrencia: 'Por Pedido',
+            formaPagamentoPrevista: 'Retenção na Fonte / Débito',
+            status: (p.pagamentoDetalhes?.sinalCompensado && (!p.pagamentoDetalhes?.taxaSaldoValor || p.pagamentoDetalhes?.taxaSaldoValor === 0)) ? 'Pago' : 'Pendente'
+          });
+        } else if (despExistente.status !== 'Pago') {
+          despExistente.valor = parseFloat(taxaOperadora.toFixed(2));
+          despExistente.valorMensal = parseFloat(taxaOperadora.toFixed(2));
+          despExistente.dataVencimento = dataVenc;
+        }
+      }
+    });
   }
 
   function renderizarFinanceiro() {
+    if (limparEntradaTeste100kgEstoque(db)) {
+      salvarBancoDados();
+    }
     // Sincronização contábil: garante que custos de pedidos permaneçam apenas no Custo do Produto
     sincronizarCustosOperacionaisDosPedidos();
 
@@ -17006,7 +17299,6 @@
 
     // 2. Mapeamento Completo de Despesas da Fábrica (Contas reais a pagar, filtradas pelo período)
     const despesasLista = (db.despesasFixas || [])
-      .filter(d => !d.origemAutomatica && !d.pedidoNumero && !(d.id && d.id.startsWith('DESP-OP-')))
       .filter(d => dataEstaNoIntervaloFinanceiro(d.dataVencimento || d.dataPagamento || d.data, finDtInicio, finDtFim))
       .map(d => {
       const statusInfo = calcularStatusDespesa(d);
@@ -17426,6 +17718,8 @@
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
               <div class="filter-pills">
                 <button class="filter-btn-pill ${filtroDespesas === 'todas' ? 'active' : ''}" data-filtro="todas">Todas (${despesasLista.length})</button>
+                <button class="filter-btn-pill ${filtroDespesas === 'pedidos' ? 'active' : ''}" data-filtro="pedidos" title="Custos operacionais de ordens (Costureiras, Tecidos, Aviamentos)">🏷️ Custos de Pedidos (${despesasLista.filter(d => d.pedidoNumero != null).length})</button>
+                <button class="filter-btn-pill ${filtroDespesas === 'fixas' ? 'active' : ''}" data-filtro="fixas" title="Despesas fixas da fábrica (Aluguel, Luz, Internet...)">🏭 Fixas da Fábrica (${despesasLista.filter(d => !d.pedidoNumero).length})</button>
                 <button class="filter-btn-pill ${filtroDespesas === 'pendentes' ? 'active' : ''}" data-filtro="pendentes">Pendentes (${despesasPendentes.length})</button>
                 <button class="filter-btn-pill ${filtroDespesas === 'atrasadas' ? 'active' : ''}" data-filtro="atrasadas">Em Atraso (${despesasAtrasadas.length})</button>
                 <button class="filter-btn-pill ${filtroDespesas === 'pagas' ? 'active' : ''}" data-filtro="pagas">Pagas (${despesasPagas.length})</button>
@@ -19972,6 +20266,9 @@
      MÓDULO 8: COMPRAS & LANÇAMENTOS AVULSOS
      ========================================================================== */
   function renderizarCompras() {
+    if (limparEntradaTeste100kgEstoque(db)) {
+      salvarBancoDados();
+    }
     pageTitleElem.textContent = 'Gestão de Compras & Suprimentos Têxteis';
     pageBreadcrumbElem.textContent = 'SISTEMA > COMPRAS';
 
