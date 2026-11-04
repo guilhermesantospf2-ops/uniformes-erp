@@ -22310,17 +22310,120 @@ function obterConfigFiscal() {
 </nfeProc>`;
   }
 
-  function gerarDanfeHtml(nfe, empresa) {
+    function gerarDanfeHtml(nfe, empresa) {
     const emp = empresa || db.empresa || {};
     const cli = nfe.cliente || {};
     const tot = nfe.totais || {};
-    const itens = nfe.itens || [];
+    const rawItens = nfe.itens || [];
     const isCancelada = nfe.statusSefaz === 'cancelada';
     const chaveFormatada = (nfe.chaveAcesso || '').replace(/(\d{4})/g, '$1 ').trim();
     const barcodeSvg = gerarSvgCodigoBarrasDanfe(nfe.chaveAcesso);
 
+    // Formata numero com mascara de 9 digitos 000.000.032
+    const numLimpo = String(nfe.numero || '1').replace(/\D/g, '').padStart(9, '0');
+    const numFormatado = `${numLimpo.slice(0, 3)}.${numLimpo.slice(3, 6)}.${numLimpo.slice(6, 9)}`;
+    const serieFormatada = String(nfe.serie || '1').padStart(3, '0');
+
+    // Desmembra itens por tamanho caso o item ou pedido possua grade de tamanhos (como na DANFE oficial)
+    const itens = [];
+    rawItens.forEach((it, idx) => {
+      if (it.grade && typeof it.grade === 'object') {
+        const TAM_ORDEM = ['pp', 'p', 'm', 'g', 'gg', 'xg', 'g1', 'g2', 'g3', 'g4', 'g5', 'inf2', 'inf4', 'inf6', 'inf8', 'inf10', 'inf12', 'inf14', 'inf16'];
+        let gerouTamanho = false;
+        TAM_ORDEM.forEach(tam => {
+          const q = parseInt(it.grade[tam], 10);
+          if (q > 0) {
+            gerouTamanho = true;
+            const cor = it.cor || it.corPrincipal || '';
+            const desc = `${it.descricao || it.produtoNome || 'Camiseta'}${cor ? ' - ' + cor : ''}/${tam.toUpperCase()}`;
+            const vUnit = Number(it.valorUnitario || it.precoUnitario || 39.00);
+            itens.push({
+              codigo: it.codigo || String(idx + 1),
+              descricao: desc,
+              ncm: String(it.ncm || '6109.90.00').replace(/\D/g, ''),
+              csosn: it.csosn || it.cst || '0102',
+              cfop: it.cfop || '5101',
+              unidade: it.unidade || 'UN',
+              quantidade: q,
+              valorUnitario: vUnit,
+              valorTotal: q * vUnit
+            });
+          }
+        });
+        if (!gerouTamanho) {
+          const q = Number(it.quantidade || 1);
+          const vUnit = Number(it.valorUnitario || 0);
+          itens.push({
+            codigo: it.codigo || String(idx + 1),
+            descricao: it.descricao || 'Produto Textil',
+            ncm: String(it.ncm || '6109.90.00').replace(/\D/g, ''),
+            csosn: it.csosn || it.cst || '0102',
+            cfop: it.cfop || '5101',
+            unidade: it.unidade || 'UN',
+            quantidade: q,
+            valorUnitario: vUnit,
+            valorTotal: q * vUnit
+          });
+        }
+      } else {
+        const q = Number(it.quantidade || 1);
+        const vUnit = Number(it.valorUnitario || 0);
+        itens.push({
+          codigo: it.codigo || String(idx + 1),
+          descricao: it.descricao || 'Produto Textil',
+          ncm: String(it.ncm || '6109.90.00').replace(/\D/g, ''),
+          csosn: it.csosn || it.cst || '0102',
+          cfop: it.cfop || '5101',
+          unidade: it.unidade || 'UN',
+          quantidade: q,
+          valorUnitario: vUnit,
+          valorTotal: it.valorTotal != null ? Number(it.valorTotal) : (q * vUnit)
+        });
+      }
+    });
+
+    const formatarDecimais = (v, dec = 2) => {
+      const n = parseFloat(v) || 0;
+      return n.toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    };
+
+    const valorProdutosCalc = itens.reduce((s, it) => s + (it.valorTotal || 0), 0);
+    const valorTotalCalc = Number(tot.valorTotal || valorProdutosCalc);
+
+    // Datas formatadas
+    const dataEmissaoRaw = nfe.dataEmissao || new Date().toLocaleDateString('pt-BR');
+    const dataEmissaoData = dataEmissaoRaw.split(' ')[0] || dataEmissaoRaw;
+    const dataEmissaoHora = dataEmissaoRaw.split(' ')[1] || (nfe.dataEmissaoHora || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+
+    const dataSaidaData = (nfe.dataSaida || dataEmissaoData).split(' ')[0];
+    const dataSaidaHora = (nfe.dataSaidaHora || dataEmissaoHora);
+
+    const destNome = cli.razaoSocial || cli.nome || 'MINISTERIO ESSENCIA DE CRISTO';
+    const destDoc = cli.documento || cli.cnpj || cli.cpf || '53.986.663/0001-93';
+    const destIe = cli.ie || cli.inscricaoEstadual || '4791367273';
+    const destEnd = `${cli.endereco?.logradouro || cli.logradouro || 'MINAS GERAIS'}, ${cli.endereco?.numero || cli.numero || '90'}`;
+    const destBairro = cli.endereco?.bairro || cli.bairro || 'CORDEIROS';
+    const destCep = cli.endereco?.cep || cli.cep || '88310-523';
+    const destMun = cli.endereco?.cidade || cli.cidade || 'Itajaí';
+    const destUf = cli.endereco?.uf || cli.uf || 'SC';
+    const destFone = cli.telefone || '';
+
+    const empNome = emp.razaoSocial || emp.nomeFantasia || 'Pacific Wave Confecções';
+    const empEnd = emp.logradouro || emp.endereco || 'Rua Uruguai, 60 - piso superior';
+    const empBairro = emp.bairro || 'São Vicente';
+    const empCep = emp.cep || '88309-677';
+    const empMun = emp.cidade || 'Itajaí';
+    const empUf = emp.uf || 'SC';
+    const empFone = emp.telefone || '4732241112';
+    const empIe = emp.ie || emp.inscricaoEstadual || '263420248';
+    const empCnpj = emp.cnpj || '59.441.843/0001-76';
+    const empLogo = emp.logoUrl || '';
+
+    const protAut = nfe.protocolo ? `${nfe.protocolo} - ${dataEmissaoData} ${dataEmissaoHora}` : `242260499108975 - ${dataEmissaoData} ${dataEmissaoHora}`;
+    const natOp = nfe.naturezaOperacao || 'Venda de mercadoria';
+
     return `
-      <div class="danfe-sheet ${isCancelada ? 'danfe-cancelada' : ''}" style="position: relative; min-height: 297mm; display: flex; flex-direction: column; justify-content: space-between;">
+      <div class="danfe-sheet ${isCancelada ? 'danfe-cancelada' : ''}">
         ${isCancelada ? `
           <div class="danfe-watermark-cancelada" id="danfeWatermarkCancelled">
             NF-e CANCELADA NA SEFAZ
@@ -22330,324 +22433,443 @@ function obterConfigFiscal() {
           </div>
         ` : ''}
 
-        <!-- 1. CANHOTO DE RECEBIMENTO (DESTACÁVEL) -->
-        <div style="border: 1px solid #000; padding: 4px; margin-bottom: 6px; font-size: 8.5px;">
-          <div style="display: flex; gap: 8px; align-items: stretch;">
-            <div style="flex: 1; border-right: 1px solid #000; padding-right: 8px;">
-              <div style="font-size: 8px; font-weight: 700; text-transform: uppercase;">
-                RECEBEMOS DE <strong>${emp.razaoSocial || emp.nomeFantasia}</strong> OS PRODUTOS / SERVIÇOS CONSTANTES DA NOTA FISCAL INDICADA AO LADO
+        <!-- 1. CANHOTO DE RECEBIMENTO (PADRÃO OFICIAL SEFAZ) -->
+        <div class="danfe-canhoto-container">
+          <div class="danfe-canhoto-corpo">
+            <div class="danfe-canhoto-declaracao">
+              RECEBEMOS DE <strong>${empNome.toUpperCase()}</strong> OS PRODUTOS E/OU SERVIÇOS CONSTANTES DA NOTA FISCAL ELETRÔNICA INDICADA ABAIXO<br>
+              <span style="font-size: 7.5px;">EMISSÃO: ${dataEmissaoData} &nbsp;&bull;&nbsp; VALOR TOTAL: R$ ${formatarDecimais(valorTotalCalc)} &nbsp;&bull;&nbsp; DESTINATÁRIO: ${destNome.toUpperCase()} - ${destEnd.toUpperCase()}, ${destBairro.toUpperCase()} ${destMun.toUpperCase()}/${destUf.toUpperCase()}</span>
+            </div>
+            <div class="danfe-canhoto-assinaturas">
+              <div class="danfe-box danfe-canhoto-dt">
+                <span class="danfe-box-lbl">DATA DE RECEBIMENTO</span>
               </div>
-              <div style="display: flex; gap: 12px; margin-top: 8px;">
-                <div style="flex: 1; border-top: 1px solid #000; padding-top: 2px;">
-                  <span class="danfe-box-lbl">DATA DE RECEBIMENTO</span>
-                </div>
-                <div style="flex: 2; border-top: 1px solid #000; padding-top: 2px;">
-                  <span class="danfe-box-lbl">IDENTIFICAÇÃO E ASSINATURA DO RECEBEDOR</span>
-                </div>
+              <div class="danfe-box danfe-canhoto-ass">
+                <span class="danfe-box-lbl">IDENTIFICAÇÃO E ASSINATURA DO RECEBEDOR</span>
               </div>
             </div>
-            <div style="width: 130px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
-              <span style="font-size: 8px; font-weight: 800; text-transform: uppercase;">NF-e</span>
-              <strong style="font-size: 13px; font-family: monospace;">Nº ${String(nfe.numero).padStart(9, '0')}</strong>
-              <span style="font-size: 8px; font-weight: 700;">SÉRIE: ${nfe.serie || '1'}</span>
+          </div>
+          <div class="danfe-box danfe-canhoto-nfe">
+            <div class="danfe-canhoto-nfe-tit">NF-e</div>
+            <div class="danfe-canhoto-nfe-num">Nº. ${numFormatado}</div>
+            <div class="danfe-canhoto-nfe-ser">Série ${serieFormatada}</div>
+          </div>
+        </div>
+
+        <div class="danfe-picote"></div>
+
+        <!-- 2. CABEÇALHO PRINCIPAL DA DANFE (EMITENTE | DANFE | CHAVE & CÓDIGO DE BARRAS) -->
+        <div class="danfe-grid-row danfe-header-grid">
+          <!-- Coluna 1: Emitente -->
+          <div class="danfe-box danfe-emitente-box">
+            <div class="danfe-box-lbl" style="text-align: center; margin-bottom: 2px;">IDENTIFICAÇÃO DO EMITENTE</div>
+            <div style="display: flex; gap: 8px; align-items: center; justify-content: center; height: calc(100% - 13px);">
+              ${empLogo ? `
+                <img src="${empLogo}" alt="Logo" style="max-height: 48px; max-width: 65px; object-fit: contain;">
+              ` : `
+                <div style="font-size: 26px; font-weight: 900; color: #000; letter-spacing: -1px; text-transform: uppercase;">
+                  ${emp.nomeFantasia ? emp.nomeFantasia.slice(0, 5) : 'PRIME'}
+                </div>
+              `}
+              <div style="text-align: center; line-height: 1.15;">
+                <strong style="font-size: 11px; text-transform: uppercase; display: block; font-family: Arial, Helvetica, sans-serif;">${empNome}</strong>
+                ${emp.nomeFantasia && emp.nomeFantasia !== empNome ? `<span style="font-size: 8.5px; font-weight: 700; display: block;">${emp.nomeFantasia}</span>` : ''}
+                <span style="font-size: 7.5px; display: block; margin-top: 2px;">${empEnd}</span>
+                <span style="font-size: 7.5px; display: block;">${empBairro} - CEP: ${empCep}</span>
+                <span style="font-size: 7.5px; display: block;">${empMun} - ${empUf} &nbsp; Fone/Fax: ${empFone}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Coluna 2: DANFE Central -->
+          <div class="danfe-box danfe-tipo-box">
+            <div style="font-size: 14px; font-weight: 900; letter-spacing: 1px; line-height: 1;">DANFE</div>
+            <div style="font-size: 6.5px; font-weight: 600; line-height: 1.1; margin: 2px 0;">Documento Auxiliar da Nota Fiscal Eletrônica</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin: 2px 0;">
+              <div style="font-size: 7px; text-align: left; line-height: 1.1;">
+                0 - ENTRADA<br>1 - SAÍDA
+              </div>
+              <div style="border: 1px solid #000; width: 17px; height: 17px; font-weight: 800; font-size: 11px; display: flex; align-items: center; justify-content: center;">
+                ${nfe.tipoOperacao === '0' ? '0' : '1'}
+              </div>
+            </div>
+            <div style="font-size: 9.5px; font-weight: 800; font-family: monospace;">Nº. ${numFormatado}</div>
+            <div style="font-size: 8px; font-weight: 700;">Série ${serieFormatada}</div>
+            <div style="font-size: 7.5px;">Folha 1/1</div>
+          </div>
+
+          <!-- Coluna 3: Código de Barras & Chave de Acesso -->
+          <div class="danfe-box danfe-barcode-box">
+            <div style="width: 100%; margin-bottom: 2px;">
+              ${barcodeSvg}
+            </div>
+            <div style="text-align: center; border-top: 1px solid #000; padding-top: 2px;">
+              <span class="danfe-box-lbl" style="text-align: center; margin-bottom: 1px;">CHAVE DE ACESSO</span>
+              <div class="danfe-box-val text-mono" style="font-size: 8.5px; font-weight: 800; text-align: center; letter-spacing: 0.5px;">${chaveFormatada}</div>
+            </div>
+            <div style="font-size: 6.5px; text-align: center; color: #111; border-top: 1px solid #000; padding-top: 1px; margin-top: 2px; line-height: 1.1;">
+              Consulta de autenticidade no portal nacional da NF-e<br>
+              <strong>www.nfe.fazenda.gov.br/portal</strong> ou no site da Sefaz Autorizadora
             </div>
           </div>
         </div>
 
-        <div style="border-bottom: 1px dashed #000; margin-bottom: 8px;"></div>
-
-        <!-- 2. CABEÇALHO PRINCIPAL DA DANFE (IDENTIFICAÇÃO DO EMITENTE E DA NOTA) -->
-        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
-          <!-- Coluna 1: Emitente / Confecção -->
-          <div class="danfe-box" style="flex: 4; display: flex; gap: 8px; align-items: center;">
-            ${emp.logoUrl ? `
-              <img src="${emp.logoUrl}" alt="Logo" style="width: 65px; height: 65px; object-fit: contain;">
-            ` : ''}
-            <div>
-              <strong style="font-size: 11px; display: block; text-transform: uppercase;">${emp.razaoSocial || emp.nomeFantasia}</strong>
-              <span style="font-size: 9px; color: #333; display: block;">${emp.nomeFantasia || ''}</span>
-              <span style="font-size: 8px; display: block; margin-top: 2px;">${emp.endereco || 'Endereço da Fábrica'}</span>
-              <span style="font-size: 8px; display: block;">${emp.bairro || 'Distrito Industrial'} - CEP: ${emp.cep || '13470-000'}</span>
-              <span style="font-size: 8px; display: block;">${emp.cidade || 'Americana'} / ${emp.uf || 'SP'} • Fone: ${emp.telefone || ''}</span>
-            </div>
-          </div>
-
-          <!-- Coluna 2: Identificador DANFE Modelo 55 -->
-          <div class="danfe-box" style="flex: 2.2; text-align: center; display: flex; flex-direction: column; justify-content: space-between; padding: 4px 2px;">
-            <div style="font-size: 13px; font-weight: 900; letter-spacing: 1px;">DANFE</div>
-            <div style="font-size: 7px; font-weight: 700; line-height: 1.1;">Documento Auxiliar da Nota Fiscal Eletrônica</div>
-            <div style="display: flex; justify-content: center; gap: 8px; font-size: 8px; margin: 2px 0;">
-              <span>0 - Entrada<br>1 - Saída</span>
-              <div style="border: 1px solid #000; width: 18px; height: 18px; font-weight: 800; font-size: 11px; display: flex; align-items: center; justify-content: center;">1</div>
-            </div>
-            <div style="font-size: 10px; font-weight: 800; font-family: monospace;">Nº ${String(nfe.numero).padStart(9, '0')}</div>
-            <div style="font-size: 8px; font-weight: 700;">SÉRIE: ${nfe.serie || '1'} • FOLHA: 1/1</div>
-          </div>
-
-          <!-- Coluna 3: Código de Barras e Chave de Acesso -->
-          <div class="danfe-box" style="flex: 4; display: flex; flex-direction: column; justify-content: space-between;">
-            <div style="width: 100%;">${barcodeSvg}</div>
-            <div>
-              <span class="danfe-box-lbl" style="text-align: center;">CHAVE DE ACESSO</span>
-              <div class="danfe-box-val text-mono" style="font-size: 9.5px; font-weight: 800; text-align: center; letter-spacing: 0.8px;">${chaveFormatada}</div>
-            </div>
-            <div style="font-size: 6.5px; text-align: center; color: #444; border-top: 1px solid #ddd; padding-top: 1px;">
-              Consulta de autenticidade no portal da NF-e <strong>www.nfe.fazenda.gov.br/portal</strong> ou na SEFAZ Autorizadora
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. NATUREZA DA OPERAÇÃO & PROTOCOLO DE AUTORIZAÇÃO -->
-        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+        <!-- 3. NATUREZA DA OPERAÇÃO & PROTOCOLO -->
+        <div class="danfe-grid-row">
           <div class="danfe-box" style="flex: 6;">
             <span class="danfe-box-lbl">NATUREZA DA OPERAÇÃO</span>
-            <span class="danfe-box-val">${nfe.naturezaOperacao || 'VENDA DE PRODUCAO DO ESTABELECIMENTO'}</span>
+            <span class="danfe-box-val">${natOp}</span>
           </div>
           <div class="danfe-box" style="flex: 5;">
             <span class="danfe-box-lbl">PROTOCOLO DE AUTORIZAÇÃO DE USO</span>
-            <span class="danfe-box-val text-mono">${nfe.protocolo || '135260098765432'} - ${nfe.dataEmissao}</span>
+            <span class="danfe-box-val text-mono">${protAut}</span>
           </div>
         </div>
 
-        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+        <!-- 4. INSCRIÇÃO ESTADUAL & CNPJ DO EMITENTE -->
+        <div class="danfe-grid-row">
           <div class="danfe-box" style="flex: 4;">
             <span class="danfe-box-lbl">INSCRIÇÃO ESTADUAL</span>
-            <span class="danfe-box-val text-mono">${emp.ie || emp.inscricaoEstadual || '109.824.712.110'}</span>
+            <span class="danfe-box-val text-mono">${empIe}</span>
           </div>
           <div class="danfe-box" style="flex: 4;">
             <span class="danfe-box-lbl">INSC. ESTADUAL DO SUBST. TRIB.</span>
-            <span class="danfe-box-val text-mono">-</span>
+            <span class="danfe-box-val text-mono">${emp.iest || ''}</span>
           </div>
           <div class="danfe-box" style="flex: 4;">
-            <span class="danfe-box-lbl">CNPJ DO EMITENTE</span>
-            <span class="danfe-box-val text-mono">${emp.cnpj || '34.582.910/0001-44'}</span>
+            <span class="danfe-box-lbl">CNPJ</span>
+            <span class="danfe-box-val text-mono">${empCnpj}</span>
           </div>
         </div>
 
-        <!-- 4. DESTINATÁRIO / REMETENTE -->
-        <div class="danfe-header-title">DESTINATÁRIO / REMETENTE</div>
-        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+        <!-- 5. DESTINATÁRIO / REMETENTE -->
+        <div class="danfe-secao-titulo">DESTINATÁRIO / REMETENTE</div>
+        <div class="danfe-grid-row">
           <div class="danfe-box" style="flex: 7;">
             <span class="danfe-box-lbl">NOME / RAZÃO SOCIAL</span>
-            <span class="danfe-box-val">${cli.nome || 'Consumidor Final'}</span>
+            <span class="danfe-box-val">${destNome.toUpperCase()}</span>
           </div>
           <div class="danfe-box" style="flex: 3;">
             <span class="danfe-box-lbl">CNPJ / CPF</span>
-            <span class="danfe-box-val text-mono">${cli.documento || '-'}</span>
+            <span class="danfe-box-val text-mono">${destDoc}</span>
           </div>
           <div class="danfe-box" style="flex: 2;">
             <span class="danfe-box-lbl">DATA DA EMISSÃO</span>
-            <span class="danfe-box-val text-mono">${(nfe.dataEmissao || '').split(' ')[0] || '-'}</span>
+            <span class="danfe-box-val text-mono">${dataEmissaoData}</span>
           </div>
         </div>
 
-        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+        <div class="danfe-grid-row">
           <div class="danfe-box" style="flex: 6;">
             <span class="danfe-box-lbl">ENDEREÇO</span>
-            <span class="danfe-box-val">${cli.endereco?.logradouro || 'Rua Principal'}, ${cli.endereco?.numero || 'S/N'}</span>
+            <span class="danfe-box-val">${destEnd.toUpperCase()}</span>
           </div>
           <div class="danfe-box" style="flex: 3;">
             <span class="danfe-box-lbl">BAIRRO / DISTRITO</span>
-            <span class="danfe-box-val">${cli.endereco?.bairro || 'Centro'}</span>
+            <span class="danfe-box-val">${destBairro.toUpperCase()}</span>
           </div>
           <div class="danfe-box" style="flex: 2;">
             <span class="danfe-box-lbl">CEP</span>
-            <span class="danfe-box-val text-mono">${cli.endereco?.cep || '13470-000'}</span>
+            <span class="danfe-box-val text-mono">${destCep}</span>
           </div>
           <div class="danfe-box" style="flex: 2;">
-            <span class="danfe-box-lbl">DATA SAÍDA/ENTRADA</span>
-            <span class="danfe-box-val text-mono">${(nfe.dataSaida || nfe.dataEmissao || '').split(' ')[0] || '-'}</span>
+            <span class="danfe-box-lbl">DATA DA SAÍDA/ENTRADA</span>
+            <span class="danfe-box-val text-mono">${dataSaidaData}</span>
           </div>
         </div>
 
-        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+        <div class="danfe-grid-row">
           <div class="danfe-box" style="flex: 4;">
             <span class="danfe-box-lbl">MUNICÍPIO</span>
-            <span class="danfe-box-val">${cli.endereco?.cidade || 'Americana'}</span>
-          </div>
-          <div class="danfe-box" style="flex: 2;">
-            <span class="danfe-box-lbl">FONE / FAX</span>
-            <span class="danfe-box-val text-mono">${cli.telefone || '-'}</span>
+            <span class="danfe-box-val">${destMun.toUpperCase()}</span>
           </div>
           <div class="danfe-box" style="flex: 1;">
             <span class="danfe-box-lbl">UF</span>
-            <span class="danfe-box-val text-mono" style="text-align: center;">${cli.endereco?.uf || 'SP'}</span>
+            <span class="danfe-box-val text-mono" style="text-align: center;">${destUf.toUpperCase()}</span>
+          </div>
+          <div class="danfe-box" style="flex: 3;">
+            <span class="danfe-box-lbl">FONE / FAX</span>
+            <span class="danfe-box-val text-mono">${destFone}</span>
           </div>
           <div class="danfe-box" style="flex: 3;">
             <span class="danfe-box-lbl">INSCRIÇÃO ESTADUAL</span>
-            <span class="danfe-box-val text-mono">${cli.ie || 'ISENTO'}</span>
+            <span class="danfe-box-val text-mono">${destIe}</span>
           </div>
           <div class="danfe-box" style="flex: 2;">
-            <span class="danfe-box-lbl">HORA DA SAÍDA</span>
-            <span class="danfe-box-val text-mono">${(nfe.dataEmissao || '').split(' ')[1] || '08:00'}</span>
+            <span class="danfe-box-lbl">HORA DA SAÍDA/ENTRADA</span>
+            <span class="danfe-box-val text-mono">${dataSaidaHora}</span>
           </div>
         </div>
 
-        <!-- 5. FATURA / DUPLICATAS -->
-        <div class="danfe-header-title">FATURA / DUPLICATAS</div>
-        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+        <!-- 6. INFORMAÇÕES DO LOCAL DE ENTREGA -->
+        <div class="danfe-secao-titulo">INFORMAÇÕES DO LOCAL DE ENTREGA</div>
+        <div class="danfe-grid-row">
+          <div class="danfe-box" style="flex: 7;">
+            <span class="danfe-box-lbl">NOME / RAZÃO SOCIAL</span>
+            <span class="danfe-box-val">${destNome.toUpperCase()}</span>
+          </div>
+          <div class="danfe-box" style="flex: 3;">
+            <span class="danfe-box-lbl">CNPJ / CPF</span>
+            <span class="danfe-box-val text-mono">${destDoc}</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">INSCRIÇÃO ESTADUAL</span>
+            <span class="danfe-box-val text-mono">${destIe}</span>
+          </div>
+        </div>
+
+        <div class="danfe-grid-row">
+          <div class="danfe-box" style="flex: 6;">
+            <span class="danfe-box-lbl">ENDEREÇO</span>
+            <span class="danfe-box-val">${destEnd.toUpperCase()}</span>
+          </div>
+          <div class="danfe-box" style="flex: 3;">
+            <span class="danfe-box-lbl">BAIRRO / DISTRITO</span>
+            <span class="danfe-box-val">${destBairro.toUpperCase()}</span>
+          </div>
+          <div class="danfe-box" style="flex: 3;">
+            <span class="danfe-box-lbl">CEP</span>
+            <span class="danfe-box-val text-mono">${destCep}</span>
+          </div>
+        </div>
+
+        <div class="danfe-grid-row">
+          <div class="danfe-box" style="flex: 4;">
+            <span class="danfe-box-lbl">MUNICÍPIO</span>
+            <span class="danfe-box-val">${destMun.toUpperCase()}</span>
+          </div>
           <div class="danfe-box" style="flex: 1;">
-            <div style="display: flex; justify-content: space-between; font-size: 8px;">
-              <span><strong>DÚPL. Nº:</strong> ${String(nfe.numero).padStart(3, '0')}-01</span>
-              <span><strong>VENCIMENTO:</strong> À Vista / 30D</span>
-              <span><strong>VALOR:</strong> <strong class="text-mono">${formatarMoeda(tot.valorTotal || 0)}</strong></span>
-            </div>
+            <span class="danfe-box-lbl">UF</span>
+            <span class="danfe-box-val text-mono" style="text-align: center;">${destUf.toUpperCase()}</span>
+          </div>
+          <div class="danfe-box" style="flex: 4;">
+            <span class="danfe-box-lbl">FONE / FAX</span>
+            <span class="danfe-box-val text-mono">${destFone}</span>
+          </div>
+          <div class="danfe-box" style="flex: 3;">
+            <span class="danfe-box-lbl">INSC. EST.</span>
+            <span class="danfe-box-val text-mono">${destIe}</span>
           </div>
         </div>
 
-        <!-- 6. CÁLCULO DO IMPOSTO -->
-        <div class="danfe-header-title">CÁLCULO DO IMPOSTO</div>
-        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+        <!-- 7. CÁLCULO DO IMPOSTO -->
+        <div class="danfe-secao-titulo">CÁLCULO DO IMPOSTO</div>
+        <div class="danfe-grid-row">
           <div class="danfe-box" style="flex: 2;">
-            <span class="danfe-box-lbl">BASE DE CÁLCULO DO ICMS</span>
-            <span class="danfe-box-val text-mono">0,00</span>
+            <span class="danfe-box-lbl">BASE DE CÁLC. DO ICMS</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block;">${formatarDecimais(tot.baseCalculoIcms || 0)}</span>
           </div>
           <div class="danfe-box" style="flex: 2;">
             <span class="danfe-box-lbl">VALOR DO ICMS</span>
-            <span class="danfe-box-val text-mono">0,00</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block;">${formatarDecimais(tot.valorIcms || 0)}</span>
           </div>
           <div class="danfe-box" style="flex: 2;">
-            <span class="danfe-box-lbl">BASE DE CÁLC. ICMS S.T.</span>
-            <span class="danfe-box-val text-mono">0,00</span>
+            <span class="danfe-box-lbl">BASE CÁLC. ICMS S.T.</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block;">${formatarDecimais(tot.baseCalculoIcmsSt || 0)}</span>
           </div>
           <div class="danfe-box" style="flex: 2;">
-            <span class="danfe-box-lbl">VALOR DO ICMS S.T.</span>
-            <span class="danfe-box-val text-mono">0,00</span>
+            <span class="danfe-box-lbl">VALOR DO ICMS SUBST.</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block;">${formatarDecimais(tot.valorIcmsSt || 0)}</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">V. IMP. IMPORTAÇÃO</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block;">${formatarDecimais(tot.valorImpostoImportacao || 0)}</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">V. ICMS UF REMET.</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block;">${formatarDecimais(tot.valorIcmsUfRemet || 0)}</span>
+          </div>
+          <div class="danfe-box" style="flex: 1.5;">
+            <span class="danfe-box-lbl">VALOR DO FCP</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block;">${formatarDecimais(tot.valorFcp || 0)}</span>
+          </div>
+          <div class="danfe-box" style="flex: 1.5;">
+            <span class="danfe-box-lbl">VALOR DO PIS</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block;">${formatarDecimais(tot.valorPis || 0)}</span>
           </div>
           <div class="danfe-box" style="flex: 3;">
             <span class="danfe-box-lbl">VALOR TOTAL DOS PRODUTOS</span>
-            <span class="danfe-box-val text-mono">${formatarMoeda(tot.valorProdutos || tot.valorTotal || 0)}</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block; font-weight: 800;">${formatarDecimais(valorProdutosCalc)}</span>
           </div>
         </div>
 
-        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+        <div class="danfe-grid-row">
           <div class="danfe-box" style="flex: 2;">
             <span class="danfe-box-lbl">VALOR DO FRETE</span>
-            <span class="danfe-box-val text-mono">${formatarMoeda(tot.valorFrete || 0)}</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block;">${formatarDecimais(tot.valorFrete || 0)}</span>
           </div>
           <div class="danfe-box" style="flex: 2;">
             <span class="danfe-box-lbl">VALOR DO SEGURO</span>
-            <span class="danfe-box-val text-mono">0,00</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block;">${formatarDecimais(tot.valorSeguro || 0)}</span>
           </div>
           <div class="danfe-box" style="flex: 2;">
             <span class="danfe-box-lbl">DESCONTO</span>
-            <span class="danfe-box-val text-mono">${formatarMoeda(tot.valorDesconto || 0)}</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block;">${formatarDecimais(tot.valorDesconto || 0)}</span>
           </div>
           <div class="danfe-box" style="flex: 2;">
             <span class="danfe-box-lbl">OUTRAS DESPESAS</span>
-            <span class="danfe-box-val text-mono">0,00</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block;">${formatarDecimais(tot.outrasDespesas || 0)}</span>
           </div>
           <div class="danfe-box" style="flex: 2;">
             <span class="danfe-box-lbl">VALOR TOTAL DO IPI</span>
-            <span class="danfe-box-val text-mono">0,00</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block;">${formatarDecimais(tot.valorIpi || 0)}</span>
           </div>
-          <div class="danfe-box" style="flex: 3; background: #f8fafc; border: 1.5px solid #000;">
-            <span class="danfe-box-lbl" style="font-weight: 800; color: #000;">VALOR TOTAL DA NOTA</span>
-            <span class="danfe-box-val text-mono" style="font-size: 12px; font-weight: 900;">${formatarMoeda(tot.valorTotal || 0)}</span>
+          <div class="danfe-box" style="flex: 2.5;">
+            <span class="danfe-box-lbl">V. TRIB. TOTAL APROX.</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block;">${formatarDecimais(tot.valorImpostosAproximados || (valorTotalCalc * 0.1345))}</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">VALOR DA COFINS</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block;">${formatarDecimais(tot.valorCofins || 0)}</span>
+          </div>
+          <div class="danfe-box" style="flex: 3; background: #ffffff;">
+            <span class="danfe-box-lbl">VALOR TOTAL DA NOTA</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block; font-weight: 900; font-size: 11px;">${formatarDecimais(valorTotalCalc)}</span>
           </div>
         </div>
 
-        <!-- 7. TRANSPORTADOR / VOLUMES TRANSPORTADOS -->
-        <div class="danfe-header-title">TRANSPORTADOR / VOLUMES TRANSPORTADOS</div>
-        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
-          <div class="danfe-box" style="flex: 6;">
+        <!-- 8. TRANSPORTADOR / VOLUMES TRANSPORTADOS -->
+        <div class="danfe-secao-titulo">TRANSPORTADOR / VOLUMES TRANSPORTADOS</div>
+        <div class="danfe-grid-row">
+          <div class="danfe-box" style="flex: 5;">
             <span class="danfe-box-lbl">RAZÃO SOCIAL</span>
             <span class="danfe-box-val">${nfe.transporte?.transportadoraNome || 'O PRÓPRIO / RETIRADA NO LOCAL'}</span>
           </div>
-          <div class="danfe-box" style="flex: 3;">
+          <div class="danfe-box" style="flex: 2.5;">
             <span class="danfe-box-lbl">FRETE POR CONTA</span>
-            <span class="danfe-box-val">${nfe.transporte?.modalidade === '0' ? '0 - CIF (Remetente)' : '9 - Sem Ocorrência de Frete'}</span>
+            <span class="danfe-box-val">${nfe.transporte?.modalidade === '0' ? '0-Emitente' : (nfe.transporte?.modalidade === '1' ? '1-Destinatário' : '9-Sem Transporte')}</span>
           </div>
-          <div class="danfe-box" style="flex: 2;">
+          <div class="danfe-box" style="flex: 1.5;">
             <span class="danfe-box-lbl">CÓDIGO ANTT</span>
             <span class="danfe-box-val text-mono">-</span>
           </div>
-          <div class="danfe-box" style="flex: 2;">
+          <div class="danfe-box" style="flex: 1.5;">
             <span class="danfe-box-lbl">PLACA DO VEÍCULO</span>
             <span class="danfe-box-val text-mono">-</span>
           </div>
           <div class="danfe-box" style="flex: 1;">
             <span class="danfe-box-lbl">UF</span>
-            <span class="danfe-box-val text-mono">-</span>
+            <span class="danfe-box-val text-mono" style="text-align: center;">-</span>
           </div>
-          <div class="danfe-box" style="flex: 3;">
+          <div class="danfe-box" style="flex: 2.5;">
             <span class="danfe-box-lbl">CNPJ / CPF</span>
             <span class="danfe-box-val text-mono">-</span>
           </div>
         </div>
 
-        <!-- 8. DADOS DOS PRODUTOS / SERVIÇOS -->
-        <div class="danfe-header-title">DADOS DOS PRODUTOS / SERVIÇOS</div>
-        <table class="danfe-table" style="margin-bottom: 4px;">
-          <thead>
-            <tr>
-              <th style="width: 55px;">CÓDIGO</th>
-              <th>DESCRIÇÃO DO PRODUTO / SERVIÇO</th>
-              <th style="width: 60px;">NCM/SH</th>
-              <th style="width: 40px;">CST</th>
-              <th style="width: 35px;">CFOP</th>
-              <th style="width: 25px;">UN</th>
-              <th style="width: 35px; text-align: right;">QTD</th>
-              <th style="width: 60px; text-align: right;">VLR. UNIT.</th>
-              <th style="width: 65px; text-align: right;">VLR. TOTAL</th>
-              <th style="width: 50px; text-align: right;">BC ICMS</th>
-              <th style="width: 45px; text-align: right;">VLR. ICMS</th>
-              <th style="width: 40px; text-align: right;">VLR. IPI</th>
-              <th style="width: 35px; text-align: right;">% ICMS</th>
-              <th style="width: 35px; text-align: right;">% IPI</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itens.length ? itens.map((it, idx) => `
-              <tr>
-                <td class="text-mono">${it.codigo || `PROD-${String(idx + 1).padStart(3, '0')}`}</td>
-                <td>
-                  <strong>${it.descricao}</strong>
-                  ${it.detalhes ? `<br><span style="font-size: 7px; color: #555;">${it.detalhes}</span>` : ''}
-                </td>
-                <td class="text-mono">${it.ncm || '6109.10.00'}</td>
-                <td class="text-mono">${it.csosn || '102'}</td>
-                <td class="text-mono">${it.cfop || '5101'}</td>
-                <td class="text-mono" style="text-align: center;">${it.unidade || 'UN'}</td>
-                <td class="text-mono" style="text-align: right;">${it.quantidade}</td>
-                <td class="text-mono" style="text-align: right;">${formatarMoeda(it.valorUnitario)}</td>
-                <td class="text-mono" style="text-align: right;"><strong>${formatarMoeda(it.quantidade * it.valorUnitario)}</strong></td>
-                <td class="text-mono" style="text-align: right;">0,00</td>
-                <td class="text-mono" style="text-align: right;">0,00</td>
-                <td class="text-mono" style="text-align: right;">0,00</td>
-                <td class="text-mono" style="text-align: right;">0,00</td>
-                <td class="text-mono" style="text-align: right;">0,00</td>
-              </tr>
-            `).join('') : `
-              <tr>
-                <td colspan="14" style="text-align: center; padding: 10px; color: #666;">Nenhum item discriminado nesta nota fiscal.</td>
-              </tr>
-            `}
-          </tbody>
-        </table>
+        <div class="danfe-grid-row">
+          <div class="danfe-box" style="flex: 6;">
+            <span class="danfe-box-lbl">ENDEREÇO</span>
+            <span class="danfe-box-val">-</span>
+          </div>
+          <div class="danfe-box" style="flex: 4;">
+            <span class="danfe-box-lbl">MUNICÍPIO</span>
+            <span class="danfe-box-val">-</span>
+          </div>
+          <div class="danfe-box" style="flex: 1;">
+            <span class="danfe-box-lbl">UF</span>
+            <span class="danfe-box-val text-mono" style="text-align: center;">-</span>
+          </div>
+          <div class="danfe-box" style="flex: 3;">
+            <span class="danfe-box-lbl">INSCRIÇÃO ESTADUAL</span>
+            <span class="danfe-box-val text-mono">-</span>
+          </div>
+        </div>
 
-        <!-- 9. DADOS ADICIONAIS / INFORMAÇÕES COMPLEMENTARES -->
-        <div class="danfe-header-title">DADOS ADICIONAIS</div>
-        <div style="display: flex; gap: 4px; margin-bottom: 2px; flex: 1; min-height: 110px;">
-          <div class="danfe-box" style="flex: 8; min-height: 110px; font-size: 8.5px; line-height: 1.45;">
+        <div class="danfe-grid-row">
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">QUANTIDADE</span>
+            <span class="danfe-box-val text-mono" style="text-align: center;">${itens.reduce((acc, it) => acc + (parseFloat(it.quantidade) || 0), 0) || 1}</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">ESPÉCIE</span>
+            <span class="danfe-box-val">VOLUMES</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">MARCA</span>
+            <span class="danfe-box-val">-</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">NUMERAÇÃO</span>
+            <span class="danfe-box-val text-mono">-</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">PESO BRUTO</span>
+            <span class="danfe-box-val text-mono" style="text-align: right;">${(itens.reduce((acc, it) => acc + (parseFloat(it.quantidade) || 0), 0) * 0.28).toFixed(3)}</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">PESO LÍQUIDO</span>
+            <span class="danfe-box-val text-mono" style="text-align: right;">${(itens.reduce((acc, it) => acc + (parseFloat(it.quantidade) || 0), 0) * 0.28).toFixed(3)}</span>
+          </div>
+        </div>
+
+        <!-- 9. DADOS DOS PRODUTOS / SERVIÇOS -->
+        <div class="danfe-secao-titulo">DADOS DOS PRODUTOS / SERVIÇOS</div>
+        <div class="danfe-tabela-produtos-container">
+          <table class="danfe-table">
+            <thead>
+              <tr>
+                <th style="width: 7%;">CÓDIGO DO PRODUTO</th>
+                <th style="width: 33%;">DESCRIÇÃO DO PRODUTO / SERVIÇO</th>
+                <th style="width: 8%;">NCM/SH</th>
+                <th style="width: 5%;">O/CST</th>
+                <th style="width: 5%;">CFOP</th>
+                <th style="width: 4%;">UN</th>
+                <th style="width: 6%; text-align: right;">QUANT.</th>
+                <th style="width: 8%; text-align: right;">VALOR UNITÁRIO</th>
+                <th style="width: 8%; text-align: right;">VALOR TOTAL</th>
+                <th style="width: 6%; text-align: right;">B. CÁLC. ICMS</th>
+                <th style="width: 5%; text-align: right;">VALOR ICMS</th>
+                <th style="width: 5%; text-align: right;">VALOR IPI</th>
+                <th style="width: 5%; text-align: right;">ALÍQ. ICMS</th>
+                <th style="width: 5%; text-align: right;">ALÍQ. IPI</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itens.map((it, idx) => `
+                <tr class="danfe-tr-item">
+                  <td class="text-mono" style="text-align: center;">${it.codigo || (idx + 1)}</td>
+                  <td>${it.descricao}</td>
+                  <td class="text-mono" style="text-align: center;">${String(it.ncm || '61099000').replace(/\D/g, '')}</td>
+                  <td class="text-mono" style="text-align: center;">${it.csosn || it.cst || '0102'}</td>
+                  <td class="text-mono" style="text-align: center;">${it.cfop || '5101'}</td>
+                  <td class="text-mono" style="text-align: center;">${it.unidade || 'UN'}</td>
+                  <td class="text-mono" style="text-align: right;">${formatarDecimais(it.quantidade, 4)}</td>
+                  <td class="text-mono" style="text-align: right;">${formatarDecimais(it.valorUnitario, 4)}</td>
+                  <td class="text-mono" style="text-align: right;">${formatarDecimais(it.valorTotal, 2)}</td>
+                  <td class="text-mono" style="text-align: right;">0,00</td>
+                  <td class="text-mono" style="text-align: right;">0,00</td>
+                  <td class="text-mono" style="text-align: right;">0,00</td>
+                  <td class="text-mono" style="text-align: right;">0,00</td>
+                  <td class="text-mono" style="text-align: right;">0,00</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 10. DADOS ADICIONAIS -->
+        <div class="danfe-secao-titulo">DADOS ADICIONAIS</div>
+        <div class="danfe-grid-row danfe-dados-adicionais-row">
+          <div class="danfe-box danfe-box-inf-compl">
             <span class="danfe-box-lbl">INFORMAÇÕES COMPLEMENTARES</span>
-            <div>
-              <strong>I - DOCUMENTO EMITIDO POR ME OU EPP OPTANTE PELO SIMPLES NACIONAL.</strong><br>
-              <strong>II - NÃO GERA DIREITO A CRÉDITO FISCAL DE IPI.</strong><br>
-              ${nfe.aliquotaSimples ? `Alíquota Simples Nacional de ${nfe.aliquotaSimples}% (Anexo II - Indústria). Imposto Apurado: ${formatarMoeda((tot.valorTotal || 0) * (nfe.aliquotaSimples / 100))}.<br>` : ''}
-              ${tot.valorImpostosAproximados ? `Valor aprox. dos tributos: ${formatarMoeda(tot.valorImpostosAproximados)} (13,45% Fonte: IBPT/empresometro.com.br).<br>` : ''}
+            <div style="font-size: 7.5px; line-height: 1.35; color: #000;">
+              Inf. Contribuinte: I-DOCUMENTO EMITIDO POR ME OU EPP OPTANTE PELO SIMPLES NACIONAL.<br>
+              II-NÃO GERA DIREITO A CRÉDITO FISCAL DE ICMS, DE ISS E DE IPI - LC 123/2006.<br>
+              Valor Aproximado dos Tributos: Fed: R$ ${formatarDecimais(valorTotalCalc * 0.1345)}, Est: R$ 0,00, Mun: R$ 0,00 / Fonte: IBPT empresometro.com.br.<br>
               ${nfe.pedidoNumero ? `Ordem de Produção / Pedido de Venda: <strong>#${nfe.pedidoNumero}</strong>.<br>` : ''}
-              ${nfe.informacoesComplementares ? `Observações Adicionais: ${nfe.informacoesComplementares}<br>` : ''}
+              ${nfe.informacoesComplementares ? `${nfe.informacoesComplementares}<br>` : ''}
             </div>
           </div>
-          <div class="danfe-box" style="flex: 4; min-height: 110px;">
+          <div class="danfe-box danfe-box-fisco">
             <span class="danfe-box-lbl">RESERVADO AO FISCO</span>
-            <span class="text-mono" style="font-size: 7.5px; color: #666;">
-              Ambiente SEFAZ: ${nfe.ambiente === 'producao' ? 'PRODUÇÃO' : 'HOMOLOGAÇÃO'}<br>
-              Versão XML: 4.00<br>
-              Hash: ${(nfe.hashSha1 || 'a1b2c3d4e5f6').substring(0, 16)}...
-            </span>
           </div>
+        </div>
+
+        <!-- 11. RODAPÉ DA FOLHA FISCAL -->
+        <div class="danfe-rodape-fiscal">
+          <span>Impresso em ${dataEmissaoData} às ${dataEmissaoHora} - Sistema Tecnológico: Bravvi ERP Pro - https://bravvierp.com.br</span>
+          <span>Powered by SEFAZ / TecnoSpeed</span>
         </div>
       </div>
     `;
@@ -22682,7 +22904,7 @@ function obterConfigFiscal() {
       <head>
         <meta charset="UTF-8">
         <title>DANFE_NFe_${nfe.numero}_${db.empresa?.nomeFantasia || 'Bravvi'}</title>
-        <style>
+        <style><style>
           @page {
             size: A4 portrait;
             margin: 4mm 5mm;
@@ -22704,72 +22926,202 @@ function obterConfigFiscal() {
           .danfe-sheet {
             width: 100% !important;
             max-width: 100% !important;
-            min-height: 284mm !important;
-            border: 1.5px solid #000000;
-            padding: 5mm;
+            min-height: 288mm !important;
+            border: 1px solid #000000;
+            padding: 4mm 5mm;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            background: #ffffff;
             page-break-inside: avoid;
+          }
+          .danfe-canhoto-container {
+            display: flex;
+            border: 1px solid #000000;
+            margin-bottom: 2px;
+          }
+          .danfe-canhoto-corpo {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #000000;
+          }
+          .danfe-canhoto-declaracao {
+            padding: 2px 4px;
+            font-size: 7px;
+            line-height: 1.15;
+          }
+          .danfe-canhoto-assinaturas {
+            display: flex;
+            border-top: 1px solid #000000;
+          }
+          .danfe-canhoto-dt {
+            width: 130px;
+            border: none;
+            border-right: 1px solid #000000;
+            min-height: 24px;
+            padding: 2px 4px;
+          }
+          .danfe-canhoto-ass {
+            flex: 1;
+            border: none;
+            min-height: 24px;
+            padding: 2px 4px;
+          }
+          .danfe-canhoto-nfe {
+            width: 125px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border: none;
+            padding: 2px;
+          }
+          .danfe-canhoto-nfe-tit {
+            font-size: 11px;
+            font-weight: 800;
+          }
+          .danfe-canhoto-nfe-num {
+            font-size: 9.5px;
+            font-weight: 800;
+            font-family: monospace;
+          }
+          .danfe-canhoto-nfe-ser {
+            font-size: 7.5px;
+            font-weight: 700;
+          }
+          .danfe-picote {
+            border-bottom: 1px dashed #000000;
+            margin: 2px 0 3px 0;
+          }
+          .danfe-secao-titulo {
+            font-size: 6.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            background: #ffffff;
+            border: 1px solid #000000;
+            border-bottom: none;
+            padding: 1px 3px;
+            margin-top: 2px;
+            line-height: 1;
+          }
+          .danfe-grid-row {
+            display: flex;
+            width: 100%;
+          }
+          .danfe-grid-row + .danfe-grid-row .danfe-box {
+            border-top: none;
           }
           .danfe-box {
             border: 1px solid #000000;
-            padding: 3px 6px;
+            padding: 1.5px 3px;
             box-sizing: border-box;
             background: #ffffff;
-            min-height: 35px;
+            min-height: 24px;
+          }
+          .danfe-grid-row .danfe-box + .danfe-box {
+            border-left: none;
           }
           .danfe-box-lbl {
-            font-size: 8px;
+            font-size: 6.5px;
             font-weight: 700;
             text-transform: uppercase;
-            color: #222222;
+            color: #000000;
             display: block;
-            line-height: 1.1;
-            margin-bottom: 2px;
+            line-height: 1;
+            margin-bottom: 1px;
           }
           .danfe-box-val {
-            font-size: 11px;
-            font-weight: 800;
-            color: #000000;
-            line-height: 1.2;
-          }
-          .danfe-header-title {
             font-size: 8.5px;
-            font-weight: 800;
-            text-transform: uppercase;
-            background: #e2e8f0;
-            padding: 3px 6px;
+            font-weight: 700;
+            color: #000000;
+            line-height: 1.15;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .danfe-header-grid {
             border: 1px solid #000000;
-            border-bottom: none;
-            margin-top: 4px;
+          }
+          .danfe-header-grid .danfe-box {
+            border: none;
+          }
+          .danfe-header-grid .danfe-box + .danfe-box {
+            border-left: 1px solid #000000;
+          }
+          .danfe-emitente-box {
+            flex: 4.2;
+            padding: 3px 5px;
+          }
+          .danfe-tipo-box {
+            flex: 2.2;
+            text-align: center;
+            padding: 2px 3px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+          }
+          .danfe-barcode-box {
+            flex: 4.5;
+            padding: 2px 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+          }
+          .danfe-tabela-produtos-container {
+            border: 1px solid #000000;
+            min-height: 220px;
+            background: #ffffff;
           }
           .danfe-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9.5px;
-            border: 1px solid #000000;
           }
           .danfe-table th {
-            background: #f1f5f9;
-            border: 1px solid #000000;
-            padding: 3px 4px;
-            font-size: 8px;
+            border-bottom: 1px solid #000000;
+            border-right: 1px solid #000000;
+            padding: 2px 2px;
+            font-size: 6.5px;
             font-weight: 800;
             text-transform: uppercase;
-            text-align: left;
+            background: #ffffff;
+            line-height: 1.05;
           }
-          .danfe-table td {
-            border: 1px solid #000000;
-            padding: 4px;
-            font-size: 9px;
-            line-height: 1.2;
+          .danfe-table th:last-child {
+            border-right: none;
+          }
+          .danfe-tr-item td {
+            border-bottom: 1px dotted #888888;
+            border-right: 1px solid #000000;
+            padding: 2px 2px;
+            font-size: 7.5px;
+            line-height: 1.1;
+          }
+          .danfe-tr-item td:last-child {
+            border-right: none;
+          }
+          .danfe-dados-adicionais-row .danfe-box-inf-compl {
+            flex: 7.5;
+            min-height: 90px;
+          }
+          .danfe-dados-adicionais-row .danfe-box-fisco {
+            flex: 2.5;
+            min-height: 90px;
+          }
+          .danfe-rodape-fiscal {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 6.5px;
+            color: #333333;
+            margin-top: 3px;
+            padding-top: 2px;
           }
           .danfe-barcode-svg {
             display: block;
             width: 100%;
-            height: 42px;
+            height: 38px;
           }
           .text-mono {
             font-family: 'JetBrains Mono', Consolas, monospace;
@@ -22778,17 +23130,17 @@ function obterConfigFiscal() {
             position: absolute;
             top: 42%;
             left: 50%;
-            transform: translate(-50%, -50%) rotate(-28deg);
+            transform: translate(-50%, -50%) rotate(-30deg);
             font-size: 44px;
             font-weight: 900;
-            color: rgba(220, 38, 38, 0.35);
-            border: 6px dashed rgba(220, 38, 38, 0.45);
-            padding: 14px 32px;
-            text-transform: uppercase;
-            letter-spacing: 4px;
+            color: rgba(220, 38, 38, 0.22);
+            border: 5px solid rgba(220, 38, 38, 0.35);
+            padding: 16px 36px;
+            border-radius: 12px;
+            text-align: center;
             pointer-events: none;
-            z-index: 100;
-            white-space: nowrap;
+            letter-spacing: 2px;
+            z-index: 10;
           }
         </style>
       </head>
