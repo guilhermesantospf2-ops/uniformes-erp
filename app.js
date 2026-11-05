@@ -84,10 +84,10 @@
    * REGRA DE OURO: NUNCA descarta pedidos, clientes ou financeiro inseridos pelo usuário!
    * Quando o código é atualizado ou uma nova função é adicionada, apenas mescla os novos campos.
    */
-    /**
-   * ZERA E HIGIENIZA COMPLETAMENTE A ENTRADA DE TESTE DE 100 KG DE MALHA PIQUET
-   * Remove compras, lançamentos no livro caixa, movimentações no histórico e zera o saldo do estoque.
-   */
+  /**
+ * ZERA E HIGIENIZA COMPLETAMENTE A ENTRADA DE TESTE DE 100 KG DE MALHA PIQUET
+ * Remove compras, lançamentos no livro caixa, movimentações no histórico e zera o saldo do estoque.
+ */
   function limparEntradaTeste100kgEstoque(bancoAlvo) {
     const alvo = bancoAlvo || db;
     if (!alvo || typeof alvo !== 'object') return false;
@@ -187,7 +187,7 @@
     return modificou;
   }
 
-function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
+  function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
     if (!bancoExistente || typeof bancoExistente !== 'object') {
       const novo = JSON.parse(JSON.stringify(templatePadrao || {}));
       novo.versao = ERP_VERSION;
@@ -433,7 +433,7 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
     db = migrarOuPreservarBanco(db, window.ERP_INITIAL_DATA);
 
     // Inicialização Limpa e Zerada para Operação Real (Prime Uniformes)
-    if (db && !db.primeProducaoLimpaV2) {
+    if (db && !db.primeResetProducaoDefinitivo) {
       db.pedidos = [];
       db.clientes = [];
       db.notasFiscais = [];
@@ -482,11 +482,11 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
         senha: 'nino230601',
         dataUpload: new Date().toISOString()
       };
-      db.primeProducaoLimpaV2 = true;
+      db.primeResetProducaoDefinitivo = true;
       try {
         const k = obterChaveStorageTenant();
         localStorage.setItem(k, JSON.stringify(compactarBancoParaStorage(db)));
-      } catch(e) {}
+      } catch (e) { }
     }
   }
 
@@ -1058,6 +1058,21 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
     if (window.ERP_CLOUD && typeof window.ERP_CLOUD.carregarBancoTenant === 'function') {
       await window.ERP_CLOUD.carregarBancoTenant((novoDb) => {
         if (novoDb) {
+          if (db && db.primeResetProducaoDefinitivo) {
+            novoDb.primeResetProducaoDefinitivo = true;
+            novoDb.pedidos = [];
+            novoDb.clientes = [];
+            novoDb.ordensServico = [];
+            novoDb.lancamentosFinanceiros = [];
+            novoDb.quarentena = [];
+            novoDb.despesasFixas = [];
+            novoDb.compras = [];
+            novoDb.notasFiscais = [];
+            novoDb.nestingFila = [];
+            if (!novoDb.configFiscal) novoDb.configFiscal = {};
+            novoDb.configFiscal.proximoNumero = 1;
+            novoDb.configFiscal.aliquotaSimplesNacional = 4.5;
+          }
           // BLINDAGEM MESTRE: Mesclagem não-destrutiva garantindo preservação de pedidos e clientes
           if (window.ERP_CLOUD && typeof window.ERP_CLOUD.fundirBancosCompletos === 'function') {
             db = window.ERP_CLOUD.fundirBancosCompletos(db, novoDb);
@@ -1065,6 +1080,23 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
             db = migrarOuPreservarBanco(novoDb, window.ERP_INITIAL_DATA);
           }
           descompactarBancoEmMemoria(db);
+          if (db && db.primeResetProducaoDefinitivo) {
+            db.pedidos = [];
+            db.clientes = [];
+            db.ordensServico = [];
+            db.lancamentosFinanceiros = [];
+            db.quarentena = [];
+            db.despesasFixas = [];
+            db.compras = [];
+            db.notasFiscais = [];
+            db.nestingFila = [];
+            if (!db.configFiscal) db.configFiscal = {};
+            db.configFiscal.proximoNumero = 1;
+            db.configFiscal.aliquotaSimplesNacional = 4.5;
+            if (window.ERP_CLOUD && typeof window.ERP_CLOUD.sincronizarImediatoComNuvem === 'function') {
+              window.ERP_CLOUD.sincronizarImediatoComNuvem(db);
+            }
+          }
           // Auto-reparo imediato: se houver pedidos que não tinham lançamento financeiro, gera agora!
           sincronizarPedidosComFinanceiro(db);
           salvarEstado(true);
@@ -1889,6 +1921,21 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
     if (window.ERP_CLOUD && typeof window.ERP_CLOUD.iniciarEscutaRealtime === 'function') {
       window.ERP_CLOUD.iniciarEscutaRealtime((novoDb) => {
         if (novoDb) {
+          if (db && db.primeResetProducaoDefinitivo) {
+            novoDb.primeResetProducaoDefinitivo = true;
+            novoDb.pedidos = [];
+            novoDb.clientes = [];
+            novoDb.ordensServico = [];
+            novoDb.lancamentosFinanceiros = [];
+            novoDb.quarentena = [];
+            novoDb.despesasFixas = [];
+            novoDb.compras = [];
+            novoDb.notasFiscais = [];
+            novoDb.nestingFila = [];
+            if (!novoDb.configFiscal) novoDb.configFiscal = {};
+            novoDb.configFiscal.proximoNumero = 1;
+            novoDb.configFiscal.aliquotaSimplesNacional = 4.5;
+          }
           if (window.ERP_CLOUD && typeof window.ERP_CLOUD.fundirBancosCompletos === 'function') {
             db = window.ERP_CLOUD.fundirBancosCompletos(db, novoDb);
           } else {
@@ -3581,6 +3628,22 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
     });
 
     contentArea.innerHTML = `
+      <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 12px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 16px;">🏢</span>
+            <strong style="color: #0f172a; font-size: 13.5px;">Prime Uniformes (PACIFIC WAVE COMPANY LTDA)</strong>
+            <span class="status-pill status-green" style="font-size: 10px; padding: 2px 7px;">Pronto para Emissão NF-e</span>
+          </div>
+          <div style="color: #64748b; font-size: 11.5px; margin-top: 3px;">
+            CNPJ: 59.441.843/0001-76 • IE: 263.420.248 (SC) • Certificado A1 Conectado
+          </div>
+        </div>
+        <button type="button" id="btnZerarParaProducaoReal" class="btn btn-sm" style="background: #dc2626; color: #ffffff; border: 1px solid #b91c1c; font-weight: 800; font-size: 12px; padding: 7px 14px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+          <span>🗑️</span>
+          <span>Zerar Pedidos de Teste (Limpar Sistema)</span>
+        </button>
+      </div>
       <div class="grid-cards-4">
         <div class="card">
           <div class="kpi-title">
@@ -3852,6 +3915,11 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
     `;
 
     document.getElementById('btnIrParaPedidos')?.addEventListener('click', () => navegarPara('pedidos'));
+    document.getElementById('btnZerarParaProducaoReal')?.addEventListener('click', () => {
+      if (window.ERP && typeof window.ERP.zerarParaOperacaoRealPrime === 'function') {
+        window.ERP.zerarParaOperacaoRealPrime(false);
+      }
+    });
   }
 
   // ==========================================================================
@@ -9471,7 +9539,7 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
         valorTotal: faturamentoTotalGeral,
         custoTotal: custoTotalGeral,
         custoUnitario: totalPecasGeral > 0 ? (custoTotalGeral / totalPecasGeral) : 24.50,
-        custoTecidoPorPeca: totalPecasGeral > 0 
+        custoTecidoPorPeca: totalPecasGeral > 0
           ? (itensOrcamento.reduce((s, it) => s + ((it.custoTecidoKg || 0) * (it.consumoTecido || 0.28) * (1 + ((it.margemErroTecido || 8) / 100)) * (it.grade?.total || 0)), 0) / totalPecasGeral)
           : (itensOrcamento[0]?.custoTecidoKg || 0) * (itensOrcamento[0]?.consumoTecido || 0.28) * 1.08,
         consumoRealComPerda: totalPecasGeral > 0
@@ -10804,7 +10872,7 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
         // Parcelas do Saldo 100% Editáveis (Datas e Valores personalizados)
         const qtdParc = parseInt(selParcSaldo?.value || 1, 10);
         const formaSaldoTxt = selFormaSaldo?.value || 'Boleto Bancário Faturado';
-        
+
         sincronizarParcelasSaldoEditaveis(remanescente, qtdParc, formaSaldoTxt, origem);
       } else {
         boxSaldoContainer.style.display = 'none';
@@ -10858,7 +10926,7 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
 
       // Recalcula parcelas padrão se mudou a quantidade de parcelas, mudou o saldo ou foi solicitado
       const precisaRecriar = (motivoOrigem === 'parcSaldo' || motivoOrigem === 'formaSaldo' || parcelasSaldoEditaveis.length !== qtdParc || motivoOrigem === 'perc' || motivoOrigem === 'valor');
-      
+
       if (precisaRecriar || parcelasSaldoEditaveis.length === 0) {
         parcelasSaldoEditaveis = [];
         const valBase = parseFloat((remanescente / qtdParc).toFixed(2));
@@ -12223,11 +12291,11 @@ function migrarOuPreservarBanco(bancoExistente, templatePadrao) {
       </div>
     `;
 
-        document.getElementById('btnEmitirNovaOSTopo')?.addEventListener('click', () => {
+    document.getElementById('btnEmitirNovaOSTopo')?.addEventListener('click', () => {
       abrirModalSelecionarPedidoParaOS();
     });
 
-document.querySelectorAll('.btn-imprimir-os').forEach(btn => {
+    document.querySelectorAll('.btn-imprimir-os').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
         abrirFichaTecnica(id);
@@ -12238,7 +12306,7 @@ document.querySelectorAll('.btn-imprimir-os').forEach(btn => {
   /**
    * FORMATAÇÃO DE TAMANHO DE ARQUIVOS (BYTES -> KB / MB)
    */
-  
+
   /**
    * MODAL SELETOR DE EMISSÃO RÁPIDA DE ORDEM DE SERVIÇO (OS INDUSTRIAL)
    */
@@ -12275,9 +12343,9 @@ document.querySelectorAll('.btn-imprimir-os').forEach(btn => {
                 </thead>
                 <tbody>
                   ${pedidosLista.length > 0 ? pedidosLista.map(p => {
-                    const osExist = (db.ordensServico || []).find(o => (o.pedidoNumero != null && p.numero != null && String(o.pedidoNumero) === String(p.numero)) || o.pedidoId === p.id);
-                    const qtdTotal = p.grade?.total || (Array.isArray(p.itens) ? p.itens.reduce((acc, it) => acc + (it.grade?.total || 0), 0) : 0);
-                    return `
+      const osExist = (db.ordensServico || []).find(o => (o.pedidoNumero != null && p.numero != null && String(o.pedidoNumero) === String(p.numero)) || o.pedidoId === p.id);
+      const qtdTotal = p.grade?.total || (Array.isArray(p.itens) ? p.itens.reduce((acc, it) => acc + (it.grade?.total || 0), 0) : 0);
+      return `
                       <tr>
                         <td><strong class="text-mono">#${p.numero || p.id}</strong></td>
                         <td><strong>${p.clienteNome || 'Cliente'}</strong></td>
@@ -12291,7 +12359,7 @@ document.querySelectorAll('.btn-imprimir-os').forEach(btn => {
                         </td>
                       </tr>
                     `;
-                  }).join('') : `
+    }).join('') : `
                     <tr>
                       <td colspan="6" style="text-align: center; padding: 30px; color: #64748b;">
                         Nenhum pedido ativo encontrado. Crie um novo pedido ou aprove um orçamento para emitir a OS.
@@ -12319,7 +12387,7 @@ document.querySelectorAll('.btn-imprimir-os').forEach(btn => {
     });
   }
 
-function formatarTamanhoBytes(bytes) {
+  function formatarTamanhoBytes(bytes) {
     if (!bytes || isNaN(bytes)) return 'Arquivo pronto';
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -12343,14 +12411,14 @@ function formatarTamanhoBytes(bytes) {
     }
   }
 
-    function abrirModalMockup3x4(pedidoIdOuNumero, modeloIdx = null) {
+  function abrirModalMockup3x4(pedidoIdOuNumero, modeloIdx = null) {
     if (modeloIdx !== null) {
       return abrirModalVisualizarMockup({ pedidoId: pedidoIdOuNumero, itemIdx: modeloIdx });
     }
     return abrirModalVisualizarMockup(pedidoIdOuNumero);
   }
 
-function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
+  function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
     abrirModalMockup3x4(pedidoIdOuNumero);
   }
 
@@ -12384,8 +12452,8 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
     const modNome = itAtivo
       ? itAtivo.produtoNome
       : (temMultiplosModelos
-          ? `${itensLista.length} Modelos Unificados`
-          : (os.produto || (itensLista[0] && itensLista[0].produtoNome) || 'Uniforme'));
+        ? `${itensLista.length} Modelos Unificados`
+        : (os.produto || (itensLista[0] && itensLista[0].produtoNome) || 'Uniforme'));
 
     const qtdTotal = itAtivo ? (itAtivo.grade?.total || 0) : os.quantidadeTotal;
 
@@ -12393,8 +12461,8 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
     const corTec = itAtivo
       ? (itAtivo.corPrincipal || itAtivo.corTecido || os.corTecido || 'A Definir')
       : (temMultiplosModelos
-          ? Array.from(new Set(itensLista.map(it => it.corPrincipal || it.corTecido || os.corTecido).filter(Boolean))).join(' / ') || os.corTecido || 'A Definir'
-          : (os.corTecido || 'A Definir'));
+        ? Array.from(new Set(itensLista.map(it => it.corPrincipal || it.corTecido || os.corTecido).filter(Boolean))).join(' / ') || os.corTecido || 'A Definir'
+        : (os.corTecido || 'A Definir'));
 
     const obsCores = itAtivo
       ? (itAtivo.observacoesCoresDetalhes || os.observacoesCoresDetalhes || '')
@@ -12470,14 +12538,14 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
           </div>
           <div style="margin-top: 5px; font-size: 10.5px; display: flex; gap: 8px; flex-wrap: wrap;">
             ${itensLista.map((it, idx) => {
-              const v = (it.custoCostura != null && !isNaN(it.custoCostura) && parseFloat(it.custoCostura) > 0) ? parseFloat(it.custoCostura) : 7.50;
-              const q = it.grade?.total || 0;
-              return `
+          const v = (it.custoCostura != null && !isNaN(it.custoCostura) && parseFloat(it.custoCostura) > 0) ? parseFloat(it.custoCostura) : 7.50;
+          const q = it.grade?.total || 0;
+          return `
                 <span style="background: #ffffff; border: 1.5px solid #86efac; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); color: #14532d;">
                   <strong>Mod ${idx + 1} (${q} pçs):</strong> ${formatarMoeda(v)}/pç = <strong style="color: #15803d;">${formatarMoeda(v * q)}</strong>
                 </span>
               `;
-            }).join('')}
+        }).join('')}
           </div>
         `;
       }
@@ -17492,13 +17560,13 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
     const despesasLista = (db.despesasFixas || [])
       .filter(d => dataEstaNoIntervaloFinanceiro(d.dataVencimento || d.dataPagamento || d.data, finDtInicio, finDtFim))
       .map(d => {
-      const statusInfo = calcularStatusDespesa(d);
-      return {
-        ...d,
-        valorReal: Number(d.valor !== undefined ? d.valor : d.valorMensal) || 0,
-        statusInfo
-      };
-    });
+        const statusInfo = calcularStatusDespesa(d);
+        return {
+          ...d,
+          valorReal: Number(d.valor !== undefined ? d.valor : d.valorMensal) || 0,
+          statusInfo
+        };
+      });
 
     const despesasPagas = despesasLista.filter(d => d.status === 'Pago');
     const totalDespesasPagas = despesasPagas.reduce((acc, d) => acc + (Number(d.valorPago || d.valorReal) || 0), 0);
@@ -17615,9 +17683,9 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
 
     // 6. DRE: Separação Contábil Estrita: Despesas Genuinamente Fixas (Aluguel, Luz, Água, Internet, etc.)
     // Custos variáveis operacionais de pedidos pertencem estritamente ao CMV (item 2 da DRE) e NÃO podem entrar aqui.
-    const despesasGenuinamenteFixas = despesasLista.filter(d => 
-      !d.pedidoNumero && 
-      !d.origemAutomatica && 
+    const despesasGenuinamenteFixas = despesasLista.filter(d =>
+      !d.pedidoNumero &&
+      !d.origemAutomatica &&
       !(d.id && (d.id.startsWith('DESP-OP-') || d.id.startsWith('DESP-PREJ-'))) &&
       d.tipoCusto !== 'Operacional'
     );
@@ -18091,91 +18159,91 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
                 <td class="text-mono" style="text-align: right;">6.5%</td>
               </tr>
               ${(() => {
-                const totalTaxasOperadorasDRE = pedidosOficiais.reduce((acc, p) => acc + (Number(p.taxaTotalOperadoraValor || p.pagamentoDetalhes?.taxaTotalOperadoraValor) || 0), 0);
-                if (totalTaxasOperadorasDRE > 0) {
-                  return `
+          const totalTaxasOperadorasDRE = pedidosOficiais.reduce((acc, p) => acc + (Number(p.taxaTotalOperadoraValor || p.pagamentoDetalhes?.taxaTotalOperadoraValor) || 0), 0);
+          if (totalTaxasOperadorasDRE > 0) {
+            return `
                     <tr class="dre-row-sub">
                       <td>(-) Despesas Financeiras & Taxas de Meios de Pagamento (Cartão, Gateway & Boletos)</td>
                       <td class="text-mono text-red" style="text-align: right;">- ${formatarMoeda(totalTaxasOperadorasDRE)}</td>
                       <td class="text-mono" style="text-align: right;">${receitaBruta > 0 ? ((totalTaxasOperadorasDRE / receitaBruta) * 100).toFixed(1) : 0}%</td>
                     </tr>
                   `;
-                }
-                return '';
-              })()}
+          }
+          return '';
+        })()}
               <tr class="dre-row-total">
                 <td>(=) RECEITA OPERACIONAL LÍQUIDA</td>
                 <td class="text-mono" style="text-align: right;">${formatarMoeda(receitaLiquida)}</td>
                 <td class="text-mono" style="text-align: right;">${receitaBruta > 0 ? ((receitaLiquida / receitaBruta) * 100).toFixed(1) : 0}%</td>
               </tr>
               ${(() => {
-                // CONSOLIDAÇÃO DO CUSTO DAS MERCADORIAS VENDIDAS (CMV) POR CATEGORIAS CONTÁBEIS
-                let somaRealTec = 0;
-                let somaRealCost = 0;
-                let somaRealAviam = 0;
-                let somaRealEst = 0;
-                let somaRealTaxas = 0;
-                let somaRealDesvios = 0;
+          // CONSOLIDAÇÃO DO CUSTO DAS MERCADORIAS VENDIDAS (CMV) POR CATEGORIAS CONTÁBEIS
+          let somaRealTec = 0;
+          let somaRealCost = 0;
+          let somaRealAviam = 0;
+          let somaRealEst = 0;
+          let somaRealTaxas = 0;
+          let somaRealDesvios = 0;
 
-                pedidosOficiais.forEach(p => {
-                  if (p.fechamentoReal && p.fechamentoReal.realizado) {
-                    const r = p.fechamentoReal.realizado;
-                    somaRealTec += (Number(r.tecido) || 0);
-                    somaRealCost += (Number(r.costura) || 0);
-                    somaRealAviam += (Number(r.aviamento) || 0);
-                    somaRealEst += (Number(r.estampa) || 0);
-                    somaRealTaxas += (Number(r.taxas) || 0);
-                    if (p.fechamentoReal.prejuizo > 0) {
-                      somaRealDesvios += Number(p.fechamentoReal.prejuizo);
-                    }
-                  } else if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
-                    p.itens.forEach(it => {
-                      const q = it.grade?.total || 0;
-                      const precoKg = parseFloat(it.custoTecidoKg) || 48.50;
-                      const consumo = parseFloat(it.consumoTecido) || 0.28;
-                      const margem = 1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100);
-                      somaRealTec += (precoKg * consumo * margem * q);
-                      somaRealCost += ((parseFloat(it.custoCostura) || 7.50) * q);
-                      somaRealAviam += ((parseFloat(it.custoAviamento) || 4.80) * q);
+          pedidosOficiais.forEach(p => {
+            if (p.fechamentoReal && p.fechamentoReal.realizado) {
+              const r = p.fechamentoReal.realizado;
+              somaRealTec += (Number(r.tecido) || 0);
+              somaRealCost += (Number(r.costura) || 0);
+              somaRealAviam += (Number(r.aviamento) || 0);
+              somaRealEst += (Number(r.estampa) || 0);
+              somaRealTaxas += (Number(r.taxas) || 0);
+              if (p.fechamentoReal.prejuizo > 0) {
+                somaRealDesvios += Number(p.fechamentoReal.prejuizo);
+              }
+            } else if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
+              p.itens.forEach(it => {
+                const q = it.grade?.total || 0;
+                const precoKg = parseFloat(it.custoTecidoKg) || 48.50;
+                const consumo = parseFloat(it.consumoTecido) || 0.28;
+                const margem = 1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100);
+                somaRealTec += (precoKg * consumo * margem * q);
+                somaRealCost += ((parseFloat(it.custoCostura) || 7.50) * q);
+                somaRealAviam += ((parseFloat(it.custoAviamento) || 4.80) * q);
 
-                      if (Array.isArray(it.aplicacoes)) {
-                        it.aplicacoes.forEach(ap => {
-                          const vApp = parseFloat(ap.custoEstimadoUnitario || ap.custoUnitario) || (ap.tipo === 'Bordado' ? 6.50 : 4.50);
-                          somaRealEst += vApp * q;
-                        });
-                      } else {
-                        somaRealEst += ((parseFloat(it.custoEstampaTotal) || 0) * q);
-                      }
-                    });
-                    somaRealTaxas += parseFloat(p.taxaTotalOperadoraValor || p.pagamentoDetalhes?.taxaTotalOperadoraValor || 0);
-                  } else {
-                    const qTot = p.grade?.total || 1;
-                    somaRealTec += ((parseFloat(p.custoTecidoPorPeca) || 14.67) * qTot);
-                    somaRealCost += ((parseFloat(p.custoCostura) || 7.50) * qTot);
-                    somaRealAviam += (4.80 * qTot);
-                    somaRealEst += (parseFloat(p.custoEstampaTotal) || 0);
-                    somaRealTaxas += parseFloat(p.taxaTotalOperadoraValor || 0);
-                  }
-                });
+                if (Array.isArray(it.aplicacoes)) {
+                  it.aplicacoes.forEach(ap => {
+                    const vApp = parseFloat(ap.custoEstimadoUnitario || ap.custoUnitario) || (ap.tipo === 'Bordado' ? 6.50 : 4.50);
+                    somaRealEst += vApp * q;
+                  });
+                } else {
+                  somaRealEst += ((parseFloat(it.custoEstampaTotal) || 0) * q);
+                }
+              });
+              somaRealTaxas += parseFloat(p.taxaTotalOperadoraValor || p.pagamentoDetalhes?.taxaTotalOperadoraValor || 0);
+            } else {
+              const qTot = p.grade?.total || 1;
+              somaRealTec += ((parseFloat(p.custoTecidoPorPeca) || 14.67) * qTot);
+              somaRealCost += ((parseFloat(p.custoCostura) || 7.50) * qTot);
+              somaRealAviam += (4.80 * qTot);
+              somaRealEst += (parseFloat(p.custoEstampaTotal) || 0);
+              somaRealTaxas += parseFloat(p.taxaTotalOperadoraValor || 0);
+            }
+          });
 
-                // Incorpora eventuais despesas operacionais avulsas de produção cadastradas em db.despesasFixas
-                const despOperacionaisAvulsas = despesasLista.filter(d => 
-                  d.tipoCusto === 'Operacional' || 
-                  (d.id && d.id.startsWith('DESP-PREJ-'))
-                );
-                despOperacionaisAvulsas.forEach(d => {
-                  if (d.id && d.id.startsWith('DESP-PREJ-')) {
-                    if (!pedidosOficiais.some(p => p.numero === d.pedidoNumero && p.fechamentoReal)) {
-                      somaRealDesvios += d.valorReal;
-                    }
-                  }
-                });
+          // Incorpora eventuais despesas operacionais avulsas de produção cadastradas em db.despesasFixas
+          const despOperacionaisAvulsas = despesasLista.filter(d =>
+            d.tipoCusto === 'Operacional' ||
+            (d.id && d.id.startsWith('DESP-PREJ-'))
+          );
+          despOperacionaisAvulsas.forEach(d => {
+            if (d.id && d.id.startsWith('DESP-PREJ-')) {
+              if (!pedidosOficiais.some(p => p.numero === d.pedidoNumero && p.fechamentoReal)) {
+                somaRealDesvios += d.valorReal;
+              }
+            }
+          });
 
-                const cmvExibicao = (somaRealTec + somaRealCost + somaRealAviam + somaRealEst + somaRealTaxas + somaRealDesvios) > 0 
-                  ? (somaRealTec + somaRealCost + somaRealAviam + somaRealEst + somaRealTaxas + somaRealDesvios) 
-                  : cmvTotal;
+          const cmvExibicao = (somaRealTec + somaRealCost + somaRealAviam + somaRealEst + somaRealTaxas + somaRealDesvios) > 0
+            ? (somaRealTec + somaRealCost + somaRealAviam + somaRealEst + somaRealTaxas + somaRealDesvios)
+            : cmvTotal;
 
-                return `
+          return `
                   <tr class="dre-row-header">
                     <td>2. (-) CUSTO DAS MERCADORIAS VENDIDAS (CMV DIRETO DA PRODUÇÃO)</td>
                     <td class="text-mono text-red" style="text-align: right;">- ${formatarMoeda(cmvExibicao)}</td>
@@ -18218,7 +18286,7 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
                     </tr>
                   ` : ''}
                 `;
-              })()}
+        })()}
               <tr class="dre-row-total">
                 <td>(=) MARGEM DE CONTRIBUIÇÃO / LUCRO BRUTO</td>
                 <td class="text-mono text-green" style="text-align: right;">${formatarMoeda(margemContribuicao)}</td>
@@ -18438,48 +18506,48 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
                 </td>
               </tr>
               ${(() => {
-                // Cálculos Discriminados dos Custos de Produção Previstos nos Pedidos do Mês
-                const prevCostura = pedidosMes.reduce((acc, p) => {
-                  if (p.itens && p.itens.length > 0) {
-                    return acc + p.itens.reduce((s, it) => s + ((parseFloat(it.custoCostura) || 7.50) * (it.grade?.total || 0)), 0);
-                  }
-                  return acc + ((parseFloat(p.custoCostura) || 7.50) * (p.grade?.total || 1));
-                }, 0);
+          // Cálculos Discriminados dos Custos de Produção Previstos nos Pedidos do Mês
+          const prevCostura = pedidosMes.reduce((acc, p) => {
+            if (p.itens && p.itens.length > 0) {
+              return acc + p.itens.reduce((s, it) => s + ((parseFloat(it.custoCostura) || 7.50) * (it.grade?.total || 0)), 0);
+            }
+            return acc + ((parseFloat(p.custoCostura) || 7.50) * (p.grade?.total || 1));
+          }, 0);
 
-                const prevTecido = pedidosMes.reduce((acc, p) => {
-                  if (p.itens && p.itens.length > 0) {
-                    return acc + p.itens.reduce((s, it) => s + ((parseFloat(it.custoTecidoKg) || 48.50) * (parseFloat(it.consumoTecido) || 0.28) * (1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100)) * (it.grade?.total || 0)), 0);
-                  }
-                  return acc + ((parseFloat(p.custoTecidoPorPeca) || 14.67) * (p.grade?.total || 1));
-                }, 0);
+          const prevTecido = pedidosMes.reduce((acc, p) => {
+            if (p.itens && p.itens.length > 0) {
+              return acc + p.itens.reduce((s, it) => s + ((parseFloat(it.custoTecidoKg) || 48.50) * (parseFloat(it.consumoTecido) || 0.28) * (1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100)) * (it.grade?.total || 0)), 0);
+            }
+            return acc + ((parseFloat(p.custoTecidoPorPeca) || 14.67) * (p.grade?.total || 1));
+          }, 0);
 
-                const prevAviamento = pedidosMes.reduce((acc, p) => {
-                  if (p.itens && p.itens.length > 0) {
-                    return acc + p.itens.reduce((s, it) => s + ((parseFloat(it.custoAviamento) || 4.80) * (it.grade?.total || 0)), 0);
-                  }
-                  return acc + (4.80 * (p.grade?.total || 1));
-                }, 0);
+          const prevAviamento = pedidosMes.reduce((acc, p) => {
+            if (p.itens && p.itens.length > 0) {
+              return acc + p.itens.reduce((s, it) => s + ((parseFloat(it.custoAviamento) || 4.80) * (it.grade?.total || 0)), 0);
+            }
+            return acc + (4.80 * (p.grade?.total || 1));
+          }, 0);
 
-                const prevEstampa = pedidosMes.reduce((acc, p) => {
-                  if (p.itens && p.itens.length > 0) {
-                    return acc + p.itens.reduce((s, it) => s + ((parseFloat(it.custoEstampaTotal) || 0) * (it.grade?.total || 0)), 0);
-                  }
-                  return acc + 0;
-                }, 0);
+          const prevEstampa = pedidosMes.reduce((acc, p) => {
+            if (p.itens && p.itens.length > 0) {
+              return acc + p.itens.reduce((s, it) => s + ((parseFloat(it.custoEstampaTotal) || 0) * (it.grade?.total || 0)), 0);
+            }
+            return acc + 0;
+          }, 0);
 
-                const prevTaxasOperadora = pedidosMes.reduce((acc, p) => acc + (Number(p.taxaTotalOperadoraValor || p.pagamentoDetalhes?.taxaTotalOperadoraValor) || 0), 0);
+          const prevTaxasOperadora = pedidosMes.reduce((acc, p) => acc + (Number(p.taxaTotalOperadoraValor || p.pagamentoDetalhes?.taxaTotalOperadoraValor) || 0), 0);
 
-                // Custos Efetivamente Pagos no Caixa / Contas a Pagar
-                const realCostura = despesasPagas.filter(d => d.categoria === 'Mão de Obra / Facção' || d.id.includes('-COSTURA')).reduce((acc, d) => acc + d.valorReal, 0);
-                const realTecido = despesasPagas.filter(d => d.categoria === 'Tecidos & Matéria-Prima' || d.id.includes('-TECIDO')).reduce((acc, d) => acc + d.valorReal, 0);
-                const realAviamento = despesasPagas.filter(d => d.categoria === 'Aviamentos & Suprimentos' || d.id.includes('-AVIAMENTO')).reduce((acc, d) => acc + d.valorReal, 0);
-                const realEstampa = despesasPagas.filter(d => d.categoria === 'Estamparia & DTF' || d.id.includes('-ESTAMPA')).reduce((acc, d) => acc + d.valorReal, 0);
-                const realTaxasOperadora = despesasPagas.filter(d => d.categoria === 'Taxas & Encargos Financeiros' || d.id.includes('-TAXA-PAG')).reduce((acc, d) => acc + d.valorReal, 0);
+          // Custos Efetivamente Pagos no Caixa / Contas a Pagar
+          const realCostura = despesasPagas.filter(d => d.categoria === 'Mão de Obra / Facção' || d.id.includes('-COSTURA')).reduce((acc, d) => acc + d.valorReal, 0);
+          const realTecido = despesasPagas.filter(d => d.categoria === 'Tecidos & Matéria-Prima' || d.id.includes('-TECIDO')).reduce((acc, d) => acc + d.valorReal, 0);
+          const realAviamento = despesasPagas.filter(d => d.categoria === 'Aviamentos & Suprimentos' || d.id.includes('-AVIAMENTO')).reduce((acc, d) => acc + d.valorReal, 0);
+          const realEstampa = despesasPagas.filter(d => d.categoria === 'Estamparia & DTF' || d.id.includes('-ESTAMPA')).reduce((acc, d) => acc + d.valorReal, 0);
+          const realTaxasOperadora = despesasPagas.filter(d => d.categoria === 'Taxas & Encargos Financeiros' || d.id.includes('-TAXA-PAG')).reduce((acc, d) => acc + d.valorReal, 0);
 
-                function gerarLinhaItem(titulo, prev, real, corBarra) {
-                  const perc = prev > 0 ? Math.min(100, (real / prev) * 100) : (real > 0 ? 100 : 0);
-                  const varVal = prev - real;
-                  return `
+          function gerarLinhaItem(titulo, prev, real, corBarra) {
+            const perc = prev > 0 ? Math.min(100, (real / prev) * 100) : (real > 0 ? 100 : 0);
+            const varVal = prev - real;
+            return `
                     <tr>
                       <td><div style="padding-left: 12px;">${titulo}</div></td>
                       <td class="text-mono" style="text-align: right;">${formatarMoeda(prev)}</td>
@@ -18496,9 +18564,9 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
                       </td>
                     </tr>
                   `;
-                }
+          }
 
-                return `
+          return `
                   <!-- Linha Consolidada de Produção (Totalizador) -->
                   <tr style="background: rgba(13, 148, 136, 0.05); font-weight: 800;">
                     <td><strong>🧵 Custos Diretos de Produção (Total Consolidado da Fábrica)</strong></td>
@@ -18520,7 +18588,7 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
                   ${prevEstampa > 0 || realEstampa > 0 ? gerarLinhaItem('🎨 Estamparia, DTF & Personalizações', prevEstampa, realEstampa, '#8b5cf6') : ''}
                   ${prevTaxasOperadora > 0 || realTaxasOperadora > 0 ? gerarLinhaItem('💳 Taxas de Meios de Pagamento (Cartão / Gateway)', prevTaxasOperadora, realTaxasOperadora, '#ef4444') : ''}
                 `;
-              })()}
+        })()}
               <tr>
                 <td><strong>🏢 Despesas Fixas, Aluguel & Instalações</strong></td>
                 <td class="text-mono" style="text-align: right;">${formatarMoeda(prevDespesasFixas)}</td>
@@ -18601,7 +18669,7 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
           if (despesasLista.some(d => d.id === l.despesaId)) return false;
           if (!dataEstaNoIntervaloFinanceiro(l.data, finDtInicio, finDtFim)) return false;
           // Elimina duplicidade com db.compras (se for lançamento financeiro originado de compra de insumo)
-          const jaExisteEmCompras = (db.compras || []).some(c => 
+          const jaExisteEmCompras = (db.compras || []).some(c =>
             c.id === l.compraId ||
             (c.itens && l.descricao && (l.descricao.includes(c.itens) || c.itens.includes(l.descricao.replace('Compra de Insumos: ', ''))))
           );
@@ -18757,8 +18825,8 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
             let chave = (g.descricao || 'Outros Serviços').trim();
             // Limpa sufixos de NF ou Pedido para agrupar o insumo/serviço raiz
             chave = chave.replace(/\s*\(NF[-:\s]*[^\)]+\)/gi, '')
-                         .replace(/\s*•\s*Pedido\s*#\d+[^\(]*(\([^\)]*\))?/gi, '')
-                         .trim();
+              .replace(/\s*•\s*Pedido\s*#\d+[^\(]*(\([^\)]*\))?/gi, '')
+              .trim();
             if (!chave) chave = g.categoria || 'Geral';
 
             if (!mapaItens[chave]) {
@@ -18815,9 +18883,9 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
                   </thead>
                   <tbody>
                     ${listaAgrupada.length > 0 ? listaAgrupada.map(item => {
-                      const perc = totalMovimentadoGeral > 0 ? (item.totalGasto / totalMovimentadoGeral) * 100 : 0;
-                      const ticketMedio = item.qtd > 0 ? item.totalGasto / item.qtd : 0;
-                      return `
+            const perc = totalMovimentadoGeral > 0 ? (item.totalGasto / totalMovimentadoGeral) * 100 : 0;
+            const ticketMedio = item.qtd > 0 ? item.totalGasto / item.qtd : 0;
+            return `
                         <tr>
                           <td>
                             <strong style="color: #0f172a; font-size: 13px;">${item.nome}</strong>
@@ -18850,7 +18918,7 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
                           </td>
                         </tr>
                       `;
-                    }).join('') : `
+          }).join('') : `
                       <tr><td colspan="8" style="text-align: center; padding: 35px; color: var(--text-gray-500);">Nenhum insumo ou serviço movimentado no período.</td></tr>
                     `}
                   </tbody>
@@ -20334,16 +20402,16 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
   function pagarTodasComissoesVendedor(vendedorAlvo) {
     let pendentes = [];
     if (vendedorAlvo && vendedorAlvo !== 'todos') {
-      pendentes = (db.pedidos || []).filter(p => 
-        p.status !== 'Cancelado' && 
-        p.tipoRegistro !== 'Orcamento' && 
-        p.comissaoStatus !== 'Paga' && 
+      pendentes = (db.pedidos || []).filter(p =>
+        p.status !== 'Cancelado' &&
+        p.tipoRegistro !== 'Orcamento' &&
+        p.comissaoStatus !== 'Paga' &&
         (p.vendedorId === vendedorAlvo || p.vendedorNome === vendedorAlvo)
       );
     } else {
-      pendentes = (db.pedidos || []).filter(p => 
-        p.status !== 'Cancelado' && 
-        p.tipoRegistro !== 'Orcamento' && 
+      pendentes = (db.pedidos || []).filter(p =>
+        p.status !== 'Cancelado' &&
+        p.tipoRegistro !== 'Orcamento' &&
         p.comissaoStatus !== 'Paga'
       );
     }
@@ -22025,7 +22093,7 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
     "114131", "311141", "411131", "211412", "211214", "211232", "2331112"
   ];
 
-    // Obtenção Blindada da Empresa Ativa (Multi-Tenant Nuvem)
+  // Obtenção Blindada da Empresa Ativa (Multi-Tenant Nuvem)
   function obterEmpresaAtiva() {
     const empPadraoPrime = {
       razaoSocial: "PACIFIC WAVE COMPANY LTDA",
@@ -22048,7 +22116,7 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
       if (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function') {
         empCloud = window.ERP_CLOUD.obterEmpresaConfig();
       }
-    } catch (e) {}
+    } catch (e) { }
 
     if (empCloud && empCloud.cnpj && empCloud.cnpj !== '34.582.910/0001-44') {
       if (db) db.empresa = Object.assign({}, empPadraoPrime, db.empresa || {}, empCloud);
@@ -22063,7 +22131,7 @@ function baixarTodasArtesDoPedido(pedidoIdOuNumero) {
     return empPadraoPrime;
   }
 
-function obterConfigFiscal() {
+  function obterConfigFiscal() {
     if (!db.configFiscal || !db.configFiscal.nfeioCompanyId || db.configFiscal.nfeioCompanyId === 'd71ac805e1324f43a6ed2800e9a82f47') {
       db.configFiscal = Object.assign({}, db.configFiscal || {}, {
         ambiente: 'homologacao', // 'homologacao' ou 'producao'
@@ -22357,7 +22425,7 @@ function obterConfigFiscal() {
 </nfeProc>`;
   }
 
-    function gerarDanfeHtml(nfe, empresa) {
+  function gerarDanfeHtml(nfe, empresa) {
     const emp = empresa || db.empresa || {};
     const cli = nfe.cliente || {};
     const tot = nfe.totais || {};
@@ -24277,8 +24345,8 @@ function obterConfigFiscal() {
 
       const selNatOp = modalEl.querySelector('#emitNfeNatOp');
       if (selNatOp) {
-        selNatOp.value = isInter 
-          ? 'Venda de Produção Própria (Interestadual)' 
+        selNatOp.value = isInter
+          ? 'Venda de Produção Própria (Interestadual)'
           : 'Venda de Produção Própria do Estabelecimento';
       }
 
@@ -24298,7 +24366,7 @@ function obterConfigFiscal() {
 
       const badgeOp = modalEl.querySelector('#badgeTipoOperacaoFiscal');
       if (badgeOp) {
-        badgeOp.innerHTML = isInter 
+        badgeOp.innerHTML = isInter
           ? `<span style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 2px 8px; border-radius: 4px; font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">✈️ Operação Interestadual (${empUf} ➔ ${cliUf}) • CFOP 6.101 Automático</span>`
           : `<span style="background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 2px 8px; border-radius: 4px; font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">🏭 Operação Interna (${empUf}) • CFOP 5.101 Automático</span>`;
       }
@@ -24323,7 +24391,7 @@ function obterConfigFiscal() {
       if (p) {
         modalEl.querySelector('#emitNfeCliNome').value = p.clienteNome || '';
         modalEl.querySelector('#emitNfeCliTel').value = p.clienteTelefone || '';
-        
+
         // Busca cadastro completo do cliente
         const cliCad = (db.clientes || []).find(c => c.nome === p.clienteNome || c.id === p.clienteId);
         if (cliCad) {
@@ -24499,7 +24567,7 @@ function obterConfigFiscal() {
       if (window.JSZip) {
         const zip = new window.JSZip();
         const pastaXml = zip.folder("xml_notas_fiscais");
-        
+
         let csvContent = "Numero_NFe;Serie;Chave_Acesso;Data_Emissao;Destinatario;CNPJ_CPF;Valor_Total_Produtos;Simples_Nacional_Estimado;Status_SEFAZ\n";
 
         notas.forEach(n => {
@@ -27310,14 +27378,14 @@ function obterConfigFiscal() {
             <!-- Listagem dos Modelos a Repartir -->
             <div style="display: flex; flex-direction: column; gap: 14px;" id="boxCardsModelosRepartir">
               ${itensLista.map((it, idx) => {
-                const letra = String.fromCharCode(65 + idx);
-                const modNome = it.produtoNome || `Modelo ${idx + 1}`;
-                const mockSrc = it.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(modNome, '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6)) : '');
-                const corTec = it.corPrincipal || it.corTecido || os.corTecido || 'A Definir';
-                const totalMod = it.grade?.total || 0;
-                const valorPadrao = it.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50;
+      const letra = String.fromCharCode(65 + idx);
+      const modNome = it.produtoNome || `Modelo ${idx + 1}`;
+      const mockSrc = it.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(modNome, '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6)) : '');
+      const corTec = it.corPrincipal || it.corTecido || os.corTecido || 'A Definir';
+      const totalMod = it.grade?.total || 0;
+      const valorPadrao = it.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50;
 
-                return `
+      return `
                   <div class="card-repartir-modelo" data-mod-idx="${idx}" style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap;">
                     
                     <!-- Coluna Mockup 3x4 com botão de upload/troca -->
@@ -27384,7 +27452,7 @@ function obterConfigFiscal() {
 
                   </div>
                 `;
-              }).join('')}
+    }).join('')}
             </div>
           </div>
 
@@ -27465,7 +27533,7 @@ function obterConfigFiscal() {
         const letra = String.fromCharCode(65 + idx);
         const selCost = document.querySelector(`.sel-costureira-repartir[data-mod-idx="${idx}"]`);
         const inpVal = document.querySelector(`.inp-valor-repartir[data-mod-idx="${idx}"]`);
-        
+
         const costId = selCost ? selCost.value : '';
         const costObj = costureirasDisponiveis.find(c => c.id === costId) || costureirasDisponiveis[0] || { nome: os.costureiraDesignada };
         const valPeca = parseFloat(inpVal ? inpVal.value : (it.custoCostura || os.valorCosturaPeca || 7.50)) || 7.50;
@@ -27528,7 +27596,7 @@ function obterConfigFiscal() {
       // Remove sub-OSs antigas se já existiam e adiciona as novas
       const idsSubNovas = new Set(subOrdens.map(s => s.id));
       db.ordensServico = db.ordensServico.filter(o => !idsSubNovas.has(o.id));
-      
+
       // Insere as sub-OSs logo após a OS original
       const idxOrig = db.ordensServico.findIndex(o => o.id === os.id);
       if (idxOrig >= 0) {
@@ -27540,7 +27608,7 @@ function obterConfigFiscal() {
       salvarEstado(true);
       fecharModalRepartir();
       mostrarToast(`✂️ OS ${os.id} repartida com sucesso em ${subOrdens.length} Fichas Técnicas confidenciais!`, 'green');
-      
+
       if (typeof renderizarOrdensServico === 'function') {
         renderizarOrdensServico();
       }
@@ -27553,6 +27621,7 @@ function obterConfigFiscal() {
   }
 
   window.ERP = Object.assign(window.ERP || {}, {
+    zerarSistema: function() { return window.ERP.zerarParaOperacaoRealPrime(false); },
     db,
     obterDb: () => db,
     abaAtiva: () => abaAtiva || 'abertura',
@@ -27648,6 +27717,70 @@ function obterConfigFiscal() {
       } else if (window.BRAVVI_PWA && typeof window.BRAVVI_PWA.solicitarInstalacaoApp === 'function') {
         window.BRAVVI_PWA.solicitarInstalacaoApp();
       }
+    },
+    zerarParaOperacaoRealPrime: function(silencioso = false) {
+      if (!silencioso) {
+        if (!confirm('Confirma zerar todos os pedidos, clientes, OS e financeiro de teste para iniciar a operação real da Prime Uniformes?')) {
+          return;
+        }
+      }
+      db.pedidos = [];
+      db.clientes = [];
+      db.ordensServico = [];
+      db.lancamentosFinanceiros = [];
+      db.quarentena = [];
+      db.despesasFixas = [];
+      db.compras = [];
+      db.notasFiscais = [];
+      db.nestingFila = [];
+      if (Array.isArray(db.estoque)) {
+        db.estoque.forEach(i => i.saldoAtual = 0);
+      }
+      db.empresa = {
+        razaoSocial: "PACIFIC WAVE COMPANY LTDA",
+        nomeFantasia: "Prime Uniformes",
+        cnpj: "59.441.843/0001-76",
+        inscricaoEstadual: "263.420.248",
+        telefone: "(47) 3224-1112",
+        email: "comercial@pacificwave.com.br",
+        chavePix: "59.441.843/0001-76",
+        tipoChavePix: "CNPJ",
+        endereco: "Rua Cingapura, 60",
+        complemento: "Lote 171",
+        bairro: "São Vicente",
+        cidade: "Itajaí",
+        uf: "SC",
+        cep: "88309-677",
+        nfeioCompanyId: "b8ac27d9851944a8baa5ad0c134d08f9"
+      };
+      if (!db.configFiscal) db.configFiscal = {};
+      db.configFiscal.proximoNumero = 1;
+      db.configFiscal.serie = '1';
+      db.configFiscal.ambiente = 'homologacao';
+      db.configFiscal.regimeTributario = 'Simples Nacional';
+      db.configFiscal.aliquotaSimplesNacional = 4.5;
+      db.configFiscal.cfopEstadualPadrao = '5101';
+      db.configFiscal.cfopInterestadualPadrao = '6101';
+      db.configFiscal.csosnPadrao = '102';
+      db.configFiscal.emailContador = 'comercial@pacificwave.com.br';
+      db.configFiscal.nfeioCompanyId = 'b8ac27d9851944a8baa5ad0c134d08f9';
+      db.primeResetProducaoDefinitivo = true;
+
+      try {
+        const chaveTenant = obterChaveStorageTenant();
+        localStorage.setItem(chaveTenant, JSON.stringify(compactarBancoParaStorage(db)));
+        localStorage.setItem('bravvi_erp_prod_v8', JSON.stringify(compactarBancoParaStorage(db)));
+        localStorage.setItem('BRAVVI_ERP_EMPRESA_CONFIG', JSON.stringify(db.empresa));
+      } catch (e) { }
+
+      salvarEstado(true);
+      if (window.ERP_CLOUD && typeof window.ERP_CLOUD.sincronizarImediatoComNuvem === 'function') {
+        window.ERP_CLOUD.sincronizarImediatoComNuvem(db);
+      }
+
+      atualizarBadges();
+      navegarPara(abaAtiva || 'abertura');
+      mostrarToast('✓ Sistema Prime Uniformes zerado com sucesso! Pronto para operação real.', 'green');
     },
     forcarResetarBanco: function () {
       const conf1 = confirm('ATENÇÃO: Deseja realmente zerar o banco de dados? Todos os dados serão perdidos!');

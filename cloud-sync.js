@@ -1970,6 +1970,41 @@ with check (true);
     if (!remoto) return local;
     if (!local) return remoto;
 
+    // Reset limpo definitivo para operacao real Prime Uniformes
+    const resetAtivo = (local && local.primeResetProducaoDefinitivo) || (remoto && remoto.primeResetProducaoDefinitivo);
+    if (resetAtivo) {
+      const base = Object.assign({}, remoto, local);
+      base.pedidos = [];
+      base.clientes = [];
+      base.ordensServico = [];
+      base.lancamentosFinanceiros = [];
+      base.quarentena = [];
+      base.despesasFixas = [];
+      base.compras = [];
+      base.notasFiscais = [];
+      base.nestingFila = [];
+      if (!base.configFiscal) base.configFiscal = {};
+      base.configFiscal.proximoNumero = 1;
+      base.configFiscal.aliquotaSimplesNacional = 4.5;
+      base.primeResetProducaoDefinitivo = true;
+      if (local) {
+        local.pedidos = [];
+        local.clientes = [];
+        local.ordensServico = [];
+        local.lancamentosFinanceiros = [];
+        local.quarentena = [];
+        local.despesasFixas = [];
+        local.compras = [];
+        local.notasFiscais = [];
+        local.nestingFila = [];
+        if (!local.configFiscal) local.configFiscal = {};
+        local.configFiscal.proximoNumero = 1;
+        local.configFiscal.aliquotaSimplesNacional = 4.5;
+        local.primeResetProducaoDefinitivo = true;
+      }
+      return base;
+    }
+
     const base = Object.assign({}, remoto, local);
 
     // Fusão blindada de todas as coleções operacionais
