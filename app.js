@@ -6386,6 +6386,15 @@
      E SUPORTE A MÚLTIPLOS MODELOS POR PEDIDO COM LOCALIZAÇÃO & CÁLCULOS
      ========================================================================== */
 
+  function parseNumInput(val, padrao = 0) {
+    if (val === undefined || val === null) return padrao;
+    if (typeof val === 'number') return isNaN(val) ? padrao : val;
+    const str = String(val).trim().replace(',', '.');
+    if (str === '') return padrao;
+    const n = parseFloat(str);
+    return isNaN(n) ? padrao : n;
+  }
+
   const LOCAIS_PERSONALIZACAO = [
     { id: 'peito_esq', rotulo: 'Peito Frente (Logo Esquerdo)', padraoW: 10, padraoH: 8, padraoPontos: 6000, padraoValorBordado: 4.50 },
     { id: 'peito_centro', rotulo: 'Peito Central (Grande)', padraoW: 24, padraoH: 14, padraoPontos: 16000, padraoValorBordado: 9.00 },
@@ -6401,11 +6410,11 @@
     const qtd = Math.max(1, totalPecas);
 
     if (app.tecnica === 'DTF') {
-      const larguraRolo = parseFloat(app.dtfLarguraRolo) || 58.0;
-      const w = Math.max(1, parseFloat(app.dtfLarguraArte) || 10.0);
-      const h = Math.max(1, parseFloat(app.dtfAlturaArte) || 8.0);
-      const metroCusto = parseFloat(app.dtfMetroLinear) || (larguraRolo === 28 ? 38.0 : 60.0);
-      const prensa = parseFloat(app.dtfPrensagem !== undefined ? app.dtfPrensagem : 1.50);
+      const larguraRolo = parseNumInput(app.dtfLarguraRolo, 58.0);
+      const w = Math.max(0.1, parseNumInput(app.dtfLarguraArte, 10.0));
+      const h = Math.max(0.1, parseNumInput(app.dtfAlturaArte, 8.0));
+      const metroCusto = parseNumInput(app.dtfMetroLinear, larguraRolo === 28 ? 38.0 : 60.0);
+      const prensa = parseNumInput(app.dtfPrensagem, 1.50);
 
       // 5mm de margem entre artes no nesting
       const cabemNaLinha = Math.max(1, Math.floor(larguraRolo / (w + 0.5)));
@@ -6416,35 +6425,39 @@
     }
 
     if (app.tecnica === 'Bordado') {
-      let valorBordado = parseFloat(app.borValorUnitario);
-      if (isNaN(valorBordado) || valorBordado < 0) {
+      let valorBordado = parseNumInput(app.borValorUnitario, -1);
+      if (valorBordado < 0) {
         if (app.borPontos) {
-          valorBordado = (parseFloat(app.borPontos) / 1000) * (parseFloat(app.borMilPontos) || 0.45);
+          valorBordado = (parseNumInput(app.borPontos, 0) / 1000) * parseNumInput(app.borMilPontos, 0.45);
         } else {
           valorBordado = 4.50;
         }
       }
-      const taxaMatriz = parseFloat(app.borMatriz) || 0;
-      const entretela = parseFloat(app.borEntretela) || 0;
+      const taxaMatriz = Math.max(0, parseNumInput(app.borMatriz, 0));
+      const entretela = Math.max(0, parseNumInput(app.borEntretela, 0));
 
       const amortizacaoMatriz = (qtd > 0 && taxaMatriz > 0) ? (taxaMatriz / qtd) : 0;
       return valorBordado + amortizacaoMatriz + entretela;
     }
 
     if (app.tecnica === 'Silk') {
-      const cores = Math.max(1, parseFloat(app.silkCores) || 2);
-      const taxaTela = parseFloat(app.silkTaxaTela !== undefined ? app.silkTaxaTela : 35.00);
-      const batida = parseFloat(app.silkBatida !== undefined ? app.silkBatida : 1.80);
-      const tinta = parseFloat(app.silkTinta !== undefined ? app.silkTinta : 0.90);
+      const cores = Math.max(0, parseNumInput(app.silkCores, 2));
+      const taxaTela = Math.max(0, parseNumInput(app.silkTaxaTela, 35.00));
+      const batida = Math.max(0, parseNumInput(app.silkBatida, 1.80));
+      const tinta = Math.max(0, parseNumInput(app.silkTinta, 0.90));
 
-      const amortizacaoTelas = (cores * taxaTela) / qtd;
+      if (cores === 0) {
+        // Se 0 cores, sem custo de tela ou batidas, restando apenas tinta se informada
+        return tinta;
+      }
+      const amortizacaoTelas = qtd > 0 ? (cores * taxaTela) / qtd : 0;
       return amortizacaoTelas + (cores * batida) + tinta;
     }
 
     if (app.tecnica === 'Sublimacao') {
-      const area = parseFloat(app.subArea) || 0.25;
-      const custoM2 = parseFloat(app.subCustoM2 !== undefined ? app.subCustoM2 : 9.50);
-      const calandra = parseFloat(app.subCalandra !== undefined ? app.subCalandra : 2.00);
+      const area = Math.max(0, parseNumInput(app.subArea, 0.25));
+      const custoM2 = Math.max(0, parseNumInput(app.subCustoM2, 9.50));
+      const calandra = Math.max(0, parseNumInput(app.subCalandra, 2.00));
       return (area * custoM2) + calandra;
     }
 
@@ -6623,20 +6636,24 @@
             <div class="form-row" style="margin-bottom: 2px;">
               <div class="form-group" style="flex: 1;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Nº Cores / Telas</label>
-                <input type="number" class="form-input inp-silk-cores" value="${app.silkCores || 2}" min="1" max="8" style="font-size: 11px; padding: 3px 6px;">
+                <input type="number" class="form-input inp-silk-cores" value="${app.silkCores !== undefined ? app.silkCores : 2}" min="0" max="8" style="font-size: 11px; padding: 3px 6px;">
               </div>
               <div class="form-group" style="flex: 1.1;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Gravação Tela (R$)</label>
-                <input type="number" class="form-input inp-silk-tela" value="${(app.silkTaxaTela !== undefined ? app.silkTaxaTela : 35.00).toFixed(2)}" step="5" style="font-size: 11px; padding: 3px 6px;">
+                <input type="number" class="form-input inp-silk-tela" value="${(app.silkTaxaTela !== undefined ? app.silkTaxaTela : 35.00).toFixed(2)}" step="5" min="0" style="font-size: 11px; padding: 3px 6px;">
               </div>
               <div class="form-group" style="flex: 1.1;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Puxada / Batida (R$)</label>
-                <input type="number" class="form-input inp-silk-batida" value="${(app.silkBatida !== undefined ? app.silkBatida : 1.80).toFixed(2)}" step="0.20" style="font-size: 11px; padding: 3px 6px;">
+                <input type="number" class="form-input inp-silk-batida" value="${(app.silkBatida !== undefined ? app.silkBatida : 1.80).toFixed(2)}" step="0.20" min="0" style="font-size: 11px; padding: 3px 6px;">
               </div>
               <div class="form-group" style="flex: 0.9;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Tinta (R$)</label>
-                <input type="number" class="form-input inp-silk-tinta" value="${(app.silkTinta !== undefined ? app.silkTinta : 0.90).toFixed(2)}" step="0.10" style="font-size: 11px; padding: 3px 6px;">
+                <input type="number" class="form-input inp-silk-tinta" value="${(app.silkTinta !== undefined ? app.silkTinta : 0.90).toFixed(2)}" step="0.10" min="0" style="font-size: 11px; padding: 3px 6px;">
               </div>
+            </div>
+            <div style="font-size: 10px; color: var(--text-gray-500); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+              <span>🎨 <strong>Silk Screen:</strong> ${(app.silkCores !== undefined ? app.silkCores : 2)} cor(es)${((app.silkCores || 0) > 0 && (app.silkTaxaTela || 0) > 0) ? ` • Telas: ${formatarMoeda((app.silkCores || 0) * (app.silkTaxaTela || 0))} (${formatarMoeda(((app.silkCores || 0) * (app.silkTaxaTela || 0)) / Math.max(1, totalPecasGrade))}/pç)` : ''}${((app.silkCores || 0) > 0 && (app.silkBatida || 0) > 0) ? ` + Batidas: ${formatarMoeda((app.silkCores || 0) * (app.silkBatida || 0))}` : ''}${((app.silkTinta || 0) > 0) ? ` + Tinta: ${formatarMoeda(app.silkTinta || 0)}` : ''}</span>
+              <span style="font-size: 9.5px; color: #166534; font-weight: 600;">✓ Rateio por ${totalPecasGrade} pçs</span>
             </div>
           ` : tec === 'Sublimacao' ? `
             <div class="form-row" style="margin-bottom: 2px;">
@@ -7700,8 +7717,8 @@
           it.estoqueLote = itemEst.lote || null;
         }
       }
-      it.custoTecidoKg = parseFloat(document.getElementById('inputCustoTecido')?.value || padroes.custoTecidoKg || 48.50);
-      let consumoLido = parseFloat(document.getElementById('inputConsumoTecido')?.value || 0.28);
+      it.custoTecidoKg = parseNumInput(document.getElementById('inputCustoTecido')?.value, padroes.custoTecidoKg || 48.50);
+      let consumoLido = parseNumInput(document.getElementById('inputConsumoTecido')?.value, 0.28);
       // Se digitou em gramas (> 10, ex: 280), converte automaticamente para kg (0.28)
       if (it.unidadeTecido !== 'metro' && consumoLido > 10) {
         consumoLido = parseFloat((consumoLido / 1000).toFixed(3));
@@ -7752,38 +7769,38 @@
 
         if (app.tecnica === 'DTF') {
           const selRolo = card.querySelector('.inp-dtf-rolo');
-          if (selRolo) app.dtfLarguraRolo = parseFloat(selRolo.value) || 58;
+          if (selRolo) app.dtfLarguraRolo = parseNumInput(selRolo.value, 58);
           const inpW = card.querySelector('.inp-dtf-w');
-          if (inpW) app.dtfLarguraArte = parseFloat(inpW.value) || 10;
+          if (inpW) app.dtfLarguraArte = parseNumInput(inpW.value, 10);
           const inpH = card.querySelector('.inp-dtf-h');
-          if (inpH) app.dtfAlturaArte = parseFloat(inpH.value) || 8;
+          if (inpH) app.dtfAlturaArte = parseNumInput(inpH.value, 8);
           const inpMetro = card.querySelector('.inp-dtf-metro');
-          if (inpMetro) app.dtfMetroLinear = parseFloat(inpMetro.value) || 60;
+          if (inpMetro) app.dtfMetroLinear = parseNumInput(inpMetro.value, 60);
           const inpPrensa = card.querySelector('.inp-dtf-prensa');
-          if (inpPrensa) app.dtfPrensagem = parseFloat(inpPrensa.value) || 1.50;
+          if (inpPrensa) app.dtfPrensagem = parseNumInput(inpPrensa.value, 1.50);
         } else if (app.tecnica === 'Bordado') {
           const inpVal = card.querySelector('.inp-bor-valor');
-          if (inpVal) app.borValorUnitario = parseFloat(inpVal.value) || 0;
+          if (inpVal) app.borValorUnitario = parseNumInput(inpVal.value, 0);
           const inpMatriz = card.querySelector('.inp-bor-matriz');
-          if (inpMatriz) app.borMatriz = parseFloat(inpMatriz.value) || 0;
+          if (inpMatriz) app.borMatriz = parseNumInput(inpMatriz.value, 0);
           const inpEnt = card.querySelector('.inp-bor-entretela');
-          if (inpEnt) app.borEntretela = parseFloat(inpEnt.value) || 0;
+          if (inpEnt) app.borEntretela = parseNumInput(inpEnt.value, 0);
         } else if (app.tecnica === 'Silk') {
           const inpCores = card.querySelector('.inp-silk-cores');
-          if (inpCores) app.silkCores = parseFloat(inpCores.value) || 2;
+          if (inpCores) app.silkCores = parseNumInput(inpCores.value, 2);
           const inpTela = card.querySelector('.inp-silk-tela');
-          if (inpTela) app.silkTaxaTela = parseFloat(inpTela.value) || 35;
+          if (inpTela) app.silkTaxaTela = parseNumInput(inpTela.value, 35.00);
           const inpBatida = card.querySelector('.inp-silk-batida');
-          if (inpBatida) app.silkBatida = parseFloat(inpBatida.value) || 1.80;
+          if (inpBatida) app.silkBatida = parseNumInput(inpBatida.value, 1.80);
           const inpTinta = card.querySelector('.inp-silk-tinta');
-          if (inpTinta) app.silkTinta = parseFloat(inpTinta.value) || 0.90;
+          if (inpTinta) app.silkTinta = parseNumInput(inpTinta.value, 0.90);
         } else if (app.tecnica === 'Sublimacao') {
           const inpArea = card.querySelector('.inp-sub-area');
-          if (inpArea) app.subArea = parseFloat(inpArea.value) || 0.25;
+          if (inpArea) app.subArea = parseNumInput(inpArea.value, 0.25);
           const inpCusto = card.querySelector('.inp-sub-custo');
-          if (inpCusto) app.subCustoM2 = parseFloat(inpCusto.value) || 9.50;
+          if (inpCusto) app.subCustoM2 = parseNumInput(inpCusto.value, 9.50);
           const inpCal = card.querySelector('.inp-sub-calandra');
-          if (inpCal) app.subCalandra = parseFloat(inpCal.value) || 2.00;
+          if (inpCal) app.subCalandra = parseNumInput(inpCal.value, 2.00);
         }
 
         app.custoUnitario = calcularCustoUnitarioAplicacao(app, it.grade?.total || 1);
@@ -8699,7 +8716,10 @@
       const consumoBaseM = parseFloat(document.getElementById('inputConsumoTecido')?.value) || it.consumoTecido || 0.28;
       const margemErro = parseFloat(document.getElementById('inputMargemErroTecido')?.value) || it.margemErroTecido || 8.0;
       const custoAviamento = parseFloat(document.getElementById('inputCustoAviamento')?.value) || it.custoAviamento || 4.80;
-      const custoEstampa = parseFloat(document.getElementById('inputCustoEstampa')?.value) || it.custoEstampaTotal || 0.00;
+      const valInpEst = document.getElementById('inputCustoEstampa')?.value;
+      const custoEstampa = (valInpEst !== undefined && valInpEst !== null && valInpEst.trim() !== '' && !isNaN(valInpEst.replace(',', '.')))
+        ? parseFloat(valInpEst.replace(',', '.'))
+        : (it.custoEstampaTotal !== undefined ? it.custoEstampaTotal : 0.00);
       const custoCostura = parseFloat(document.getElementById('inputCustoCostura')?.value) || it.custoCostura || 7.50;
       const custoEmbalagem = 1.50;
       const fatorPerda = (1 + (margemErro / 100));
