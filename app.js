@@ -485,7 +485,13 @@
       db.primeResetProducaoDefinitivo = true;
       try {
         const k = obterChaveStorageTenant();
-        localStorage.setItem(k, JSON.stringify(compactarBancoParaStorage(db)));
+        const limpoCompactado = JSON.stringify(compactarBancoParaStorage(db));
+        localStorage.setItem(k, limpoCompactado);
+        localStorage.setItem('bravvi_erp_prod_v8', limpoCompactado);
+        localStorage.setItem('texpro_erp_prod_v8', limpoCompactado);
+        if (typeof window !== 'undefined' && window.ERP_CLOUD && typeof window.ERP_CLOUD.sincronizarImediatoComNuvem === 'function') {
+          window.ERP_CLOUD.sincronizarImediatoComNuvem(db);
+        }
       } catch (e) { }
     }
   }
@@ -3628,22 +3634,6 @@
     });
 
     contentArea.innerHTML = `
-      <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 12px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-        <div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 16px;">🏢</span>
-            <strong style="color: #0f172a; font-size: 13.5px;">Prime Uniformes (PACIFIC WAVE COMPANY LTDA)</strong>
-            <span class="status-pill status-green" style="font-size: 10px; padding: 2px 7px;">Pronto para Emissão NF-e</span>
-          </div>
-          <div style="color: #64748b; font-size: 11.5px; margin-top: 3px;">
-            CNPJ: 59.441.843/0001-76 • IE: 263.420.248 (SC) • Certificado A1 Conectado
-          </div>
-        </div>
-        <button type="button" id="btnZerarParaProducaoReal" class="btn btn-sm" style="background: #dc2626; color: #ffffff; border: 1px solid #b91c1c; font-weight: 800; font-size: 12px; padding: 7px 14px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-          <span>🗑️</span>
-          <span>Zerar Pedidos de Teste (Limpar Sistema)</span>
-        </button>
-      </div>
       <div class="grid-cards-4">
         <div class="card">
           <div class="kpi-title">
@@ -3915,11 +3905,7 @@
     `;
 
     document.getElementById('btnIrParaPedidos')?.addEventListener('click', () => navegarPara('pedidos'));
-    document.getElementById('btnZerarParaProducaoReal')?.addEventListener('click', () => {
-      if (window.ERP && typeof window.ERP.zerarParaOperacaoRealPrime === 'function') {
-        window.ERP.zerarParaOperacaoRealPrime(false);
-      }
-    });
+
   }
 
   // ==========================================================================
