@@ -4646,6 +4646,10 @@
                           Cancelar
                         </button>
                       ` : `
+                        <button class="btn btn-secondary btn-sm btn-editar-orcamento" data-id="${p.id}" style="font-weight: 700; color: #b45309; border-color: #fde68a; background: #fffbeb;" title="Editar Pedido (alterar grade, tamanhos, cores ou custos — reenvia para Quarentena)">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                          Editar
+                        </button>
                         <button class="btn btn-secondary btn-sm btn-ver-os" data-id="${p.id}">OS</button>
                         <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalRepartirOS('${p.numero || p.id}')" style="font-weight: 800; font-size: 11px; color: #854d0e; background: #fef9c3; border-color: #fde047; padding: 3px 6px;" title="Repartir pedido entre costureiras">✂️ Repartir</button>
                         ${nfExistente ? `
@@ -4791,6 +4795,9 @@
                             ✕
                           </button>
                         ` : `
+                          <button class="btn btn-secondary btn-sm btn-editar-orcamento" data-id="${p.id}" style="padding: 3px 7px; font-weight: 700; color: #b45309; border-color: #fde68a; background: #fffbeb;" title="Editar Pedido (alterar grade, tamanhos, cores ou custos — reenvia para Quarentena)">
+                            ✏️ Editar
+                          </button>
                           <button class="btn btn-primary btn-sm btn-ver-os" data-id="${p.id}" style="flex: 1;">
                             Ficha OS
                           </button>
@@ -7048,10 +7055,10 @@
           <div class="modal-header">
             <div>
               <div class="modal-title">
-                ${isEdicao ? `Editar Orçamento #${orcamentoExistente.numero} • Multimodelo & Renegociação` : 'Novo Orçamento • Múltiplos Modelos & Estampas (DTF / Bordado)'}
+                ${isEdicao ? (orcamentoExistente.status !== 'Orcamento' ? `Editar Pedido #${orcamentoExistente.numero} (Retornará à Quarentena)` : `Editar Orçamento #${orcamentoExistente.numero} • Multimodelo & Renegociação`) : 'Novo Orçamento • Múltiplos Modelos & Estampas (DTF / Bordado)'}
               </div>
               <span style="font-size: 11px; color: var(--text-gray-500);">
-                ${isEdicao ? `Cliente: <strong>${orcamentoExistente.clienteNome}</strong> • Ajuste modelos, grade, bordado, DTF e preços negociados` : 'Adicione múltiplos modelos (ex: Polo + Camiseta UV) e calcule várias estampas (Peito, Costas, Mangas) no mesmo pedido'}
+                ${isEdicao ? (orcamentoExistente.status !== 'Orcamento' ? `<strong style="color: #b45309;">⚠️ Atenção:</strong> Ao salvar a edição do Pedido #${orcamentoExistente.numero}, ele retornará <strong>obrigatoriamente para a Quarentena de Segurança</strong> para nova conferência técnica dos 5 pontos antes do corte.` : `Cliente: <strong>${orcamentoExistente.clienteNome}</strong> • Ajuste modelos, grade, bordado, DTF e preços negociados`) : 'Adicione múltiplos modelos (ex: Polo + Camiseta UV) e calcule várias estampas (Peito, Costas, Mangas) no mesmo pedido'}
               </span>
             </div>
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
@@ -7633,7 +7640,7 @@
               ${isEdicao ? `
                 <button type="button" class="btn btn-secondary" id="btnSalvarEdicaoOrcamento" style="font-weight: 700; background: #fffbeb; border-color: #fde68a; color: #b45309;">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                  Salvar Alterações do Orçamento
+                  ${orcamentoExistente.status !== 'Orcamento' ? 'Salvar Edição e Reenviar p/ Quarentena' : 'Salvar Alterações do Orçamento'}
                 </button>
                 <button type="button" class="btn btn-primary" id="btnSalvarEAvancarPedido" style="font-weight: 800; background: var(--color-green); border-color: var(--color-green);">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
@@ -10342,12 +10349,41 @@
         orcamentoExistente.saldoPendente = Math.max(0, dadosOrcamento.valorTotal - jaPago);
         orcamentoExistente.dataAtualizacao = new Date().toISOString().split('T')[0];
 
-        salvarEstado();
+        const eraPedidoOficial = (orcamentoExistente.status !== 'Orcamento');
+        if (eraPedidoOficial) {
+          orcamentoExistente.status = 'Quarentena';
+          orcamentoExistente.etapaProducao = 'Quarentena';
+          orcamentoExistente.etapaAtual = 'Quarentena';
+          orcamentoExistente.quarentenaAprovada = false;
+          orcamentoExistente.dataQuarentenaReentrada = new Date().toISOString();
+          orcamentoExistente.motivoQuarentena = 'Pedido reeditado após emissão. Requer nova conferência técnica e aprovação dos 5 pontos na Quarentena.';
+
+          // Atualiza a OS correspondente se existir
+          const os = (db.ordensServico || []).find(o => o.pedidoId === orcamentoExistente.id || (o.pedidoNumero != null && o.pedidoNumero.toString() === orcamentoExistente.numero.toString()));
+          if (os) {
+            os.status = 'Quarentena';
+            os.etapaAtual = 'Quarentena';
+            os.grade = orcamentoExistente.grade;
+            os.quantidadeTotal = orcamentoExistente.grade?.total || orcamentoExistente.quantidadeTotal;
+            os.itens = orcamentoExistente.itens;
+            os.desmembrada = false;
+          }
+        }
+
+        salvarEstado(true);
         atualizarBadges();
         fecharModal();
         renderizarPedidos();
-        mostrarToast(`Orçamento #${orcamentoExistente.numero} atualizado com sucesso com todos os modelos e estampas!`, 'green');
-        abrirModalPropostaComercial(orcamentoExistente.id);
+
+        if (eraPedidoOficial) {
+          mostrarToast(`🔒 Pedido #${orcamentoExistente.numero} atualizado e reenviado para a Quarentena de Segurança para nova conferência!`, 'orange');
+          if (typeof abrirModalInspecaoQuarentena === 'function') {
+            abrirModalInspecaoQuarentena(orcamentoExistente.id);
+          }
+        } else {
+          mostrarToast(`Orçamento #${orcamentoExistente.numero} atualizado com sucesso!`, 'green');
+          abrirModalPropostaComercial(orcamentoExistente.id);
+        }
       });
 
       document.getElementById('btnSalvarEAvancarPedido')?.addEventListener('click', () => {
@@ -27575,24 +27611,71 @@
       ? os.itens
       : (pedido.itens && Array.isArray(pedido.itens) && pedido.itens.length > 0 ? pedido.itens : []);
 
-    // Se houver apenas 1 modelo cadastrado, desdobra automaticamente em 2 lotes de produção (Lote A e Lote B) para divisão entre facções
-    if (itensLista.length <= 1) {
-      const itOrig = itensLista[0] || { produtoNome: os.produto, grade: os.grade || {} };
-      const totGeral = itOrig.grade?.total || os.quantidadeTotal || 2;
-      const metade1 = Math.ceil(totGeral / 2);
-      const metade2 = totGeral - metade1;
+    const isModeloUnico = (itensLista.length <= 1);
+    const itemOrig = itensLista[0] || { produtoNome: os.produto, grade: os.grade || {} };
+    const gradeOriginal = JSON.parse(JSON.stringify(itemOrig.grade || os.grade || {}));
+    delete gradeOriginal.total;
+    const totalOriginalOS = os.quantidadeTotal || Object.values(gradeOriginal).reduce((a, b) => a + (parseInt(b, 10) || 0), 0);
 
-      itensLista.length = 0;
-      itensLista.push(
-        Object.assign({}, itOrig, {
-          produtoNome: `${itOrig.produtoNome || os.produto} (Lote A)`,
-          grade: { total: metade1, m: metade1 }
-        }),
-        Object.assign({}, itOrig, {
-          produtoNome: `${itOrig.produtoNome || os.produto} (Lote B)`,
-          grade: { total: metade2, g: metade2 }
-        })
-      );
+    // Lista de tamanhos presentes na grade original deste pedido
+    const tamanhosAtivos = Object.keys(gradeOriginal).filter(t => (parseInt(gradeOriginal[t], 10) || 0) > 0);
+    tamanhosAtivos.sort((a, b) => {
+      const idxA = (typeof CATALOGO_TAMANHOS_MESTRE !== 'undefined') ? CATALOGO_TAMANHOS_MESTRE.findIndex(x => x.chave === a) : -1;
+      const idxB = (typeof CATALOGO_TAMANHOS_MESTRE !== 'undefined') ? CATALOGO_TAMANHOS_MESTRE.findIndex(x => x.chave === b) : -1;
+      return (idxA !== -1 ? idxA : 999) - (idxB !== -1 ? idxB : 999);
+    });
+
+    let lotesTrabalho = [];
+    if (isModeloUnico) {
+      const gradeA = {};
+      const gradeB = {};
+      let totA = 0;
+      let totB = 0;
+
+      tamanhosAtivos.forEach(tam => {
+        const q = parseInt(gradeOriginal[tam], 10) || 0;
+        const qA = Math.ceil(q / 2);
+        const qB = q - qA;
+        gradeA[tam] = qA;
+        gradeB[tam] = qB;
+        totA += qA;
+        totB += qB;
+      });
+      gradeA.total = totA;
+      gradeB.total = totB;
+
+      lotesTrabalho.push({
+        idNum: 1,
+        letra: 'A',
+        produtoNome: `${itemOrig.produtoNome || os.produto} (Lote A)`,
+        grade: gradeA,
+        costureiraId: '',
+        costureiraNome: os.costureiraDesignada || '',
+        valorCosturaPeca: itemOrig.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50,
+        mockupUrl: itemOrig.mockupUrl || os.mockupUrl || ''
+      });
+
+      lotesTrabalho.push({
+        idNum: 2,
+        letra: 'B',
+        produtoNome: `${itemOrig.produtoNome || os.produto} (Lote B)`,
+        grade: gradeB,
+        costureiraId: '',
+        costureiraNome: os.costureiraDesignada || '',
+        valorCosturaPeca: itemOrig.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50,
+        mockupUrl: itemOrig.mockupUrl || os.mockupUrl || ''
+      });
+    } else {
+      lotesTrabalho = itensLista.map((it, idx) => ({
+        idNum: idx + 1,
+        letra: String.fromCharCode(65 + idx),
+        produtoNome: it.produtoNome || `Modelo ${idx + 1}`,
+        grade: it.grade || {},
+        costureiraId: '',
+        costureiraNome: os.costureiraDesignada || '',
+        valorCosturaPeca: it.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50,
+        mockupUrl: it.mockupUrl || os.mockupUrl || ''
+      }));
     }
 
     fecharModalRepartir();
@@ -27631,84 +27714,36 @@
               </div>
             </div>
 
-            <!-- Listagem dos Modelos a Repartir -->
+            <!-- Painel de Saldo da Grade Original -->
+            <div id="painelSaldoGradeRepartir" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 12px 14px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                <span style="font-size: 12px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
+                  📊 Grade Consolidada da OS (Total: ${totalOriginalOS} peças)
+                </span>
+                <span id="badgeStatusDistribuicao" style="font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: #dcfce7; color: #166534; border: 1px solid #86efac;">
+                  ✓ Grade 100% Distribuída
+                </span>
+              </div>
+              <div id="boxSaldosTamanhosRepartir" style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                <!-- Preenchido dinamicamente via recalcularTotaisLotes() -->
+              </div>
+            </div>
+
+            <!-- Botão Adicionar Costureira / Facção se for modelo único -->
+            ${isModeloUnico ? `
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 12px; font-weight: 700; color: #475569;">
+                  🧵 Costureiras / Facções Designadas:
+                </span>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnAdicionarLoteRepartir" style="font-size: 11px; font-weight: 800; color: #1d4ed8; background: #eff6ff; border-color: #93c5fd; padding: 4px 10px;">
+                  + Adicionar Outra Costureira / Lote
+                </button>
+              </div>
+            ` : ''}
+
+            <!-- Listagem dos Modelos / Lotes a Repartir -->
             <div style="display: flex; flex-direction: column; gap: 14px;" id="boxCardsModelosRepartir">
-              ${itensLista.map((it, idx) => {
-      const letra = String.fromCharCode(65 + idx);
-      const modNome = it.produtoNome || `Modelo ${idx + 1}`;
-      const mockSrc = it.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(modNome, '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6)) : '');
-      const corTec = it.corPrincipal || it.corTecido || os.corTecido || 'A Definir';
-      const totalMod = it.grade?.total || 0;
-      const valorPadrao = it.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50;
-
-      return `
-                  <div class="card-repartir-modelo" data-mod-idx="${idx}" style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap;">
-                    
-                    <!-- Coluna Mockup 3x4 com botão de upload/troca -->
-                    <div style="text-align: center; flex-shrink: 0;">
-                      <img id="imgMockupRepartir_${idx}" src="${mockSrc}" style="width: 68px; height: 90px; aspect-ratio: 3/4; object-fit: contain; border: 1.5px solid #94a3b8; border-radius: 4px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: block; margin: 0 auto 6px;">
-                      <label class="btn btn-secondary btn-xs" style="font-size: 10px; padding: 2px 6px; cursor: pointer; color: #0284c7; background: #f0f9ff; border-color: #bae6fd; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;">
-                        📷 Trocar
-                        <input type="file" accept="image/*" class="input-upload-mockup-repartir" data-mod-idx="${idx}" style="display: none;">
-                      </label>
-                    </div>
-
-                    <!-- Informações do Modelo & Grade -->
-                    <div style="flex: 1.2; min-width: 220px;">
-                      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                        <span style="background: #0f172a; color: #ffffff; font-weight: 800; font-size: 11px; padding: 2px 7px; border-radius: 4px;">
-                          Sub-OS ${os.id}-${letra}
-                        </span>
-                        <strong style="font-size: 13.5px; color: #0f172a;">${idx + 1}. ${modNome}</strong>
-                      </div>
-                      <div style="font-size: 11.5px; color: #475569; margin-bottom: 6px;">
-                        Cor: <strong style="color: #1e3a8a;">${corTec}</strong> &bull; Total: <strong style="color: #047857;">${totalMod} peças</strong>
-                        ${it.observacoesCoresDetalhes ? `<br><span style="color: #b45309; font-size: 10.5px;">⚠️ ${it.observacoesCoresDetalhes}</span>` : ''}
-                      </div>
-                      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 6px 8px; font-size: 11px;">
-                        <span style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 3px;">Grade Selecionada:</span>
-                        ${formatarGradeSelecionadaHtml(it.grade, 'badge')}
-                      </div>
-                    </div>
-
-                    <!-- Designação de Costureira e Valor a Pagar (Confidencial) -->
-                    <div style="flex: 1.1; min-width: 220px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 10px 12px;">
-                      <span style="font-size: 10px; font-weight: 800; color: #166534; text-transform: uppercase; display: block; margin-bottom: 6px;">
-                        🧵 Destino & Remuneração desta Peça:
-                      </span>
-                      
-                      <div style="margin-bottom: 8px;">
-                        <label style="font-size: 11px; font-weight: 700; color: #0f172a; display: block; margin-bottom: 2px;">
-                          Costureira / Facção:
-                        </label>
-                        <select class="form-select sel-costureira-repartir" data-mod-idx="${idx}" style="font-size: 11.5px; padding: 5px 8px; height: auto;">
-                          ${costureirasDisponiveis.map(c => `
-                            <option value="${c.id}" ${c.nome === os.costureiraDesignada ? 'selected' : ''}>
-                              ${c.nome} (${c.especialidade || 'Costura'})
-                            </option>
-                          `).join('')}
-                        </select>
-                      </div>
-
-                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center;">
-                        <div>
-                          <label style="font-size: 10.5px; font-weight: 700; color: #0f172a; display: block; margin-bottom: 2px;">
-                            Valor / Peça (R$):
-                          </label>
-                          <input type="number" step="0.50" min="0" class="form-input inp-valor-repartir" data-mod-idx="${idx}" data-qtd="${totalMod}" value="${valorPadrao.toFixed(2)}" style="font-size: 12px; font-weight: 800; padding: 4px 8px; text-align: right; height: auto;">
-                        </div>
-                        <div style="text-align: right;">
-                          <span style="font-size: 10px; color: #64748b; font-weight: 700; display: block;">Subtotal a Pagar:</span>
-                          <strong class="lbl-subtotal-repartir" data-mod-idx="${idx}" style="font-size: 13.5px; color: #15803d; font-family: monospace;">
-                            ${formatarMoeda(totalMod * valorPadrao)}
-                          </strong>
-                        </div>
-                      </div>
-                    </div>
-
-                  </div>
-                `;
-    }).join('')}
+              <!-- Renderizado dinamicamente via renderizarCardsLotesRepartir() -->
             </div>
           </div>
 
@@ -27737,72 +27772,307 @@
 
     document.body.insertAdjacentHTML('beforeend', htmlModal);
 
-    // Eventos de recálculo dos valores por peça
-    const inputsValor = document.querySelectorAll('.inp-valor-repartir');
-    function recalcularTotaisRepartir() {
-      let totalGeral = 0;
-      inputsValor.forEach(inp => {
-        const idx = inp.getAttribute('data-mod-idx');
-        const qtd = parseFloat(inp.getAttribute('data-qtd') || 0);
-        const val = parseFloat(inp.value || 0);
-        const sub = qtd * val;
-        totalGeral += sub;
-        const lblSub = document.querySelector(`.lbl-subtotal-repartir[data-mod-idx="${idx}"]`);
-        if (lblSub) lblSub.textContent = formatarMoeda(sub);
-      });
-      const lblTot = document.getElementById('lblTotalGeralFaccaoRepartir');
-      if (lblTot) lblTot.textContent = formatarMoeda(totalGeral);
-    }
-    inputsValor.forEach(inp => {
-      inp.addEventListener('input', recalcularTotaisRepartir);
-      inp.addEventListener('change', recalcularTotaisRepartir);
-    });
+    // =========================================================================
+    // RENDERIZADOR DINÂMICO DE LOTES & SALDOS DE GRADE PARA FACÇÃO
+    // =========================================================================
 
-    // Upload / Troca rápida de mockup por modelo diretamente no modal
-    document.querySelectorAll('.input-upload-mockup-repartir').forEach(input => {
-      input.addEventListener('change', async (e) => {
-        const file = e.target.files && e.target.files[0];
-        const idx = parseInt(e.target.getAttribute('data-mod-idx'), 10);
-        if (file && itensLista[idx]) {
-          try {
-            const b64 = await comprimirImagemDataUrl(file, 1200, 1600, 0.82);
-            if (b64) {
-              itensLista[idx].mockupUrl = b64;
-              if (idx === 0) os.mockupUrl = b64;
-              const img = document.getElementById(`imgMockupRepartir_${idx}`);
-              if (img) img.src = b64;
-              mostrarToast(`✓ Mockup do Modelo #${idx + 1} atualizado!`, 'green');
-            }
-          } catch (err) {
-            console.error(err);
-            mostrarToast('Erro ao atualizar mockup.', 'red');
-          }
+    function recalcularTotaisLotes() {
+      const somasPorTamanho = {};
+      tamanhosAtivos.forEach(t => somasPorTamanho[t] = 0);
+      let totalGeralAtribuido = 0;
+      let totalValorGeral = 0;
+
+      lotesTrabalho.forEach((lote, lIdx) => {
+        let totLote = 0;
+        if (isModeloUnico) {
+          tamanhosAtivos.forEach(t => {
+            const inp = document.querySelector(`.inp-grade-lote[data-lote="${lIdx}"][data-tam="${t}"]`);
+            const q = inp ? (parseInt(inp.value, 10) || 0) : (lote.grade[t] || 0);
+            lote.grade[t] = q;
+            somasPorTamanho[t] += q;
+            totLote += q;
+          });
+          lote.grade.total = totLote;
+        } else {
+          totLote = lote.grade?.total || 0;
         }
+        totalGeralAtribuido += totLote;
+
+        const lblTot = document.querySelector(`.lbl-total-pecas-lote[data-lote="${lIdx}"]`);
+        if (lblTot) lblTot.textContent = `${totLote} peças`;
+
+        const inpVal = document.querySelector(`.inp-valor-repartir[data-lote="${lIdx}"]`);
+        const valPeca = inpVal ? (parseFloat(inpVal.value) || 0) : (lote.valorCosturaPeca || 7.50);
+        lote.valorCosturaPeca = valPeca;
+
+        const subTot = totLote * valPeca;
+        totalValorGeral += subTot;
+        const lblSub = document.querySelector(`.lbl-subtotal-repartir[data-lote="${lIdx}"]`);
+        if (lblSub) lblSub.textContent = formatarMoeda(subTot);
       });
+
+      let haPendencias = false;
+      const boxSaldos = document.getElementById('boxSaldosTamanhosRepartir');
+      if (boxSaldos && isModeloUnico) {
+        boxSaldos.innerHTML = tamanhosAtivos.map(t => {
+          const totalOriginal = parseInt(gradeOriginal[t], 10) || 0;
+          const alocado = somasPorTamanho[t] || 0;
+          const diff = totalOriginal - alocado;
+          if (diff !== 0) haPendencias = true;
+
+          const corBg = diff === 0 ? '#ecfdf5' : diff > 0 ? '#fffbeb' : '#fef2f2';
+          const corBorda = diff === 0 ? '#86efac' : diff > 0 ? '#fde68a' : '#fca5a5';
+          const corTexto = diff === 0 ? '#15803d' : diff > 0 ? '#b45309' : '#b91c1c';
+
+          return `
+            <div style="background: ${corBg}; border: 1.5px solid ${corBorda}; border-radius: 4px; padding: 4px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 5px;">
+              <strong style="color: ${corTexto}; text-transform: uppercase;">${t}: ${alocado}/${totalOriginal}</strong>
+              <span style="font-size: 10px; color: ${corTexto}; font-weight: 600;">
+                ${diff === 0 ? '✓ Ok' : diff > 0 ? `falta ${diff}` : `sobra ${Math.abs(diff)}`}
+              </span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      const badgeStatus = document.getElementById('badgeStatusDistribuicao');
+      if (badgeStatus) {
+        if (totalGeralAtribuido === totalOriginalOS && !haPendencias) {
+          badgeStatus.textContent = `✓ Grade 100% Distribuída (${totalGeralAtribuido}/${totalOriginalOS})`;
+          badgeStatus.style.background = '#dcfce7';
+          badgeStatus.style.color = '#166534';
+          badgeStatus.style.borderColor = '#86efac';
+        } else if (totalGeralAtribuido < totalOriginalOS) {
+          badgeStatus.textContent = `⚠️ Faltam distribuir ${totalOriginalOS - totalGeralAtribuido} peças`;
+          badgeStatus.style.background = '#fef3c7';
+          badgeStatus.style.color = '#92400e';
+          badgeStatus.style.borderColor = '#fde68a';
+        } else {
+          badgeStatus.textContent = `⛔ Excesso de ${totalGeralAtribuido - totalOriginalOS} peças distribuídas`;
+          badgeStatus.style.background = '#fee2e2';
+          badgeStatus.style.color = '#991b1b';
+          badgeStatus.style.borderColor = '#fca5a5';
+        }
+      }
+
+      const lblTotGeral = document.getElementById('lblTotalGeralFaccaoRepartir');
+      if (lblTotGeral) lblTotGeral.textContent = formatarMoeda(totalValorGeral);
+
+      const btnConf = document.getElementById('btnConfirmarRepartirOS');
+      if (btnConf) btnConf.innerHTML = `✂️ Confirmar e Gerar ${lotesTrabalho.length} Fichas Individuais`;
+    }
+
+    function renderizarCardsLotesRepartir() {
+      const container = document.getElementById('boxCardsModelosRepartir');
+      if (!container) return;
+
+      container.innerHTML = lotesTrabalho.map((lote, lIdx) => {
+        const letra = lote.letra || String.fromCharCode(65 + lIdx);
+        const corTec = itemOrig.corPrincipal || itemOrig.corTecido || os.corTecido || 'A Definir';
+        const mockSrc = lote.mockupUrl || itemOrig.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(lote.produtoNome, '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6)) : '');
+        const totPecas = lote.grade?.total || 0;
+
+        return `
+          <div class="card-repartir-modelo" data-lote="${lIdx}" style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap;">
+            
+            <div style="text-align: center; flex-shrink: 0;">
+              <img id="imgMockupRepartir_${lIdx}" src="${mockSrc}" style="width: 68px; height: 90px; aspect-ratio: 3/4; object-fit: contain; border: 1.5px solid #94a3b8; border-radius: 4px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: block; margin: 0 auto 6px;">
+              <label class="btn btn-secondary btn-xs" style="font-size: 10px; padding: 2px 6px; cursor: pointer; color: #0284c7; background: #f0f9ff; border-color: #bae6fd; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;">
+                📷 Trocar
+                <input type="file" accept="image/*" class="input-upload-mockup-repartir" data-lote="${lIdx}" style="display: none;">
+              </label>
+            </div>
+
+            <div style="flex: 1.3; min-width: 250px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 6px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="background: #0f172a; color: #ffffff; font-weight: 800; font-size: 11px; padding: 2px 7px; border-radius: 4px;">
+                    Sub-OS ${os.id}-${letra}
+                  </span>
+                  <strong style="font-size: 13.5px; color: #0f172a;">${lote.produtoNome}</strong>
+                </div>
+                ${(isModeloUnico && lotesTrabalho.length > 2) ? `
+                  <button type="button" class="btn btn-secondary btn-xs btn-remover-lote-repartir" data-lote="${lIdx}" style="color: #dc2626; border-color: #fca5a5; font-size: 10px; padding: 1px 6px;" title="Remover esta costureira / lote">&times; Excluir</button>
+                ` : ''}
+              </div>
+
+              <div style="font-size: 11.5px; color: #475569; margin-bottom: 6px;">
+                Cor: <strong style="color: #1e3a8a;">${corTec}</strong> &bull; Total: <strong style="color: #047857;" class="lbl-total-pecas-lote" data-lote="${lIdx}">${totPecas} peças</strong>
+              </div>
+
+              ${isModeloUnico ? `
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; margin-top: 4px;">
+                  <span style="font-size: 10.5px; color: #334155; font-weight: 800; display: block; margin-bottom: 6px;">
+                    📐 Quantidades por Tamanho para esta Costureira:
+                  </span>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    ${tamanhosAtivos.map(t => {
+                      const qOrig = parseInt(gradeOriginal[t], 10) || 0;
+                      const qLote = lote.grade[t] || 0;
+                      return `
+                        <div style="display: flex; flex-direction: column; align-items: center; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 6px; min-width: 50px;">
+                          <label style="font-size: 10px; font-weight: 800; color: #1e40af; text-transform: uppercase; margin-bottom: 2px;">
+                            ${t} <span style="font-size: 9px; color: #64748b;">(max ${qOrig})</span>
+                          </label>
+                          <input type="number" min="0" max="${qOrig}" class="form-input inp-grade-lote" data-lote="${lIdx}" data-tam="${t}" value="${qLote}" style="font-size: 12px; font-weight: 800; text-align: center; padding: 2px 4px; width: 44px; height: auto;">
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              ` : `
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 6px 8px; font-size: 11px;">
+                  <span style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 3px;">Grade Selecionada:</span>
+                  ${formatarGradeSelecionadaHtml(lote.grade, 'badge')}
+                </div>
+              `}
+            </div>
+
+            <div style="flex: 1.1; min-width: 220px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 10px 12px;">
+              <span style="font-size: 10px; font-weight: 800; color: #166534; text-transform: uppercase; display: block; margin-bottom: 6px;">
+                🧵 Destino & Remuneração desta Peça:
+              </span>
+              
+              <div style="margin-bottom: 8px;">
+                <label style="font-size: 11px; font-weight: 700; color: #0f172a; display: block; margin-bottom: 2px;">
+                  Costureira / Facção:
+                </label>
+                <select class="form-select sel-costureira-repartir" data-lote="${lIdx}" style="font-size: 11.5px; padding: 5px 8px; height: auto;">
+                  ${costureirasDisponiveis.map(c => `
+                    <option value="${c.id}" ${c.nome === lote.costureiraNome ? 'selected' : ''}>
+                      ${c.nome} (${c.especialidade || 'Costura'})
+                    </option>
+                  `).join('')}
+                </select>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center;">
+                <div>
+                  <label style="font-size: 10.5px; font-weight: 700; color: #0f172a; display: block; margin-bottom: 2px;">
+                    Valor / Peça (R$):
+                  </label>
+                  <input type="number" step="0.50" min="0" class="form-input inp-valor-repartir" data-lote="${lIdx}" value="${(lote.valorCosturaPeca || 7.50).toFixed(2)}" style="font-size: 12px; font-weight: 800; padding: 4px 8px; text-align: right; height: auto;">
+                </div>
+                <div style="text-align: right;">
+                  <span style="font-size: 10px; color: #64748b; font-weight: 700; display: block;">Subtotal a Pagar:</span>
+                  <strong class="lbl-subtotal-repartir" data-lote="${lIdx}" style="font-size: 13.5px; color: #15803d; font-family: monospace;">
+                    ${formatarMoeda((totPecas) * (lote.valorCosturaPeca || 7.50))}
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+
+      container.querySelectorAll('.inp-grade-lote, .inp-valor-repartir').forEach(inp => {
+        inp.addEventListener('input', recalcularTotaisLotes);
+        inp.addEventListener('change', recalcularTotaisLotes);
+      });
+
+      container.querySelectorAll('.sel-costureira-repartir').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+          const lIdx = parseInt(e.target.getAttribute('data-lote'), 10);
+          const cId = e.target.value;
+          const costObj = costureirasDisponiveis.find(c => c.id === cId);
+          if (lotesTrabalho[lIdx] && costObj) {
+            lotesTrabalho[lIdx].costureiraId = costObj.id;
+            lotesTrabalho[lIdx].costureiraNome = costObj.nome;
+          }
+        });
+      });
+
+      container.querySelectorAll('.btn-remover-lote-repartir').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const lIdx = parseInt(e.currentTarget.getAttribute('data-lote'), 10);
+          if (lotesTrabalho.length > 2) {
+            lotesTrabalho.splice(lIdx, 1);
+            lotesTrabalho.forEach((l, i) => {
+              l.letra = String.fromCharCode(65 + i);
+              l.produtoNome = `${itemOrig.produtoNome || os.produto} (Lote ${l.letra})`;
+            });
+            renderizarCardsLotesRepartir();
+            recalcularTotaisLotes();
+          }
+        });
+      });
+
+      container.querySelectorAll('.input-upload-mockup-repartir').forEach(input => {
+        input.addEventListener('change', async (e) => {
+          const file = e.target.files && e.target.files[0];
+          const lIdx = parseInt(e.target.getAttribute('data-lote'), 10);
+          if (file && lotesTrabalho[lIdx]) {
+            try {
+              const b64 = await comprimirImagemDataUrl(file, 1200, 1600, 0.82);
+              if (b64) {
+                lotesTrabalho[lIdx].mockupUrl = b64;
+                const img = document.getElementById(`imgMockupRepartir_${lIdx}`);
+                if (img) img.src = b64;
+                mostrarToast(`✓ Mockup do Lote ${lotesTrabalho[lIdx].letra} atualizado!`, 'green');
+              }
+            } catch (err) {
+              console.error(err);
+              mostrarToast('Erro ao atualizar mockup.', 'red');
+            }
+          }
+        });
+      });
+
+      recalcularTotaisLotes();
+    }
+
+    document.getElementById('btnAdicionarLoteRepartir')?.addEventListener('click', () => {
+      const proximaLetra = String.fromCharCode(65 + lotesTrabalho.length);
+      const gradeVazia = {};
+      tamanhosAtivos.forEach(t => gradeVazia[t] = 0);
+      gradeVazia.total = 0;
+
+      lotesTrabalho.push({
+        idNum: lotesTrabalho.length + 1,
+        letra: proximaLetra,
+        produtoNome: `${itemOrig.produtoNome || os.produto} (Lote ${proximaLetra})`,
+        grade: gradeVazia,
+        costureiraId: '',
+        costureiraNome: os.costureiraDesignada || '',
+        valorCosturaPeca: itemOrig.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50,
+        mockupUrl: itemOrig.mockupUrl || os.mockupUrl || ''
+      });
+
+      renderizarCardsLotesRepartir();
+      recalcularTotaisLotes();
+      mostrarToast(`Nova facção / Lote ${proximaLetra} adicionado! Selecione os tamanhos para esta costureira.`, 'blue');
     });
 
-    // Ação de confirmação da divisão
+    renderizarCardsLotesRepartir();
+    recalcularTotaisLotes();
+
     document.getElementById('btnConfirmarRepartirOS')?.addEventListener('click', () => {
+      recalcularTotaisLotes();
+
+      if (isModeloUnico) {
+        let somaGeral = lotesTrabalho.reduce((acc, l) => acc + (l.grade?.total || 0), 0);
+        if (somaGeral !== totalOriginalOS) {
+          const confirmarMesmoAssim = confirm(`Atenção: A soma dos lotes (${somaGeral} peças) está diferente do total original da ordem (${totalOriginalOS} peças).\n\nDeseja confirmar a divisão mesmo assim?`);
+          if (!confirmarMesmoAssim) return;
+        }
+      }
+
       const subOrdens = [];
 
-      itensLista.forEach((it, idx) => {
-        const letra = String.fromCharCode(65 + idx);
-        const selCost = document.querySelector(`.sel-costureira-repartir[data-mod-idx="${idx}"]`);
-        const inpVal = document.querySelector(`.inp-valor-repartir[data-mod-idx="${idx}"]`);
+      lotesTrabalho.forEach((lote, idx) => {
+        const letra = lote.letra || String.fromCharCode(65 + idx);
+        const selCost = document.querySelector(`.sel-costureira-repartir[data-lote="${idx}"]`);
+        const inpVal = document.querySelector(`.inp-valor-repartir[data-lote="${idx}"]`);
 
-        const costId = selCost ? selCost.value : '';
+        const costId = selCost ? selCost.value : (lote.costureiraId || '');
         const costObj = costureirasDisponiveis.find(c => c.id === costId) || costureirasDisponiveis[0] || { nome: os.costureiraDesignada };
-        const valPeca = parseFloat(inpVal ? inpVal.value : (it.custoCostura || os.valorCosturaPeca || 7.50)) || 7.50;
-        const totalPecasMod = it.grade?.total || 0;
-        const modNome = it.produtoNome || `Modelo ${idx + 1}`;
-        const corTec = it.corPrincipal || it.corTecido || os.corTecido || 'A Definir';
-        const obsCores = it.observacoesCoresDetalhes || os.observacoesCoresDetalhes || '';
-        const itMockup = it.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(modNome, '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6)) : '');
-
-        // Filtra aplicações deste modelo específico
-        const artesDoModelo = (os.artesAplicacao && Array.isArray(os.artesAplicacao))
-          ? os.artesAplicacao.filter(a => !a.modeloNome || a.modeloNome === modNome || (it.aplicacoes && it.aplicacoes.some(app => app.local === a.local)))
-          : [];
+        const valPeca = parseFloat(inpVal ? inpVal.value : lote.valorCosturaPeca) || 7.50;
+        const totalPecasMod = lote.grade?.total || 0;
+        const modNome = lote.produtoNome;
+        const corTec = itemOrig.corPrincipal || itemOrig.corTecido || os.corTecido || 'A Definir';
+        const obsCores = itemOrig.observacoesCoresDetalhes || os.observacoesCoresDetalhes || '';
+        const itMockup = lote.mockupUrl || itemOrig.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(modNome, '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6)) : '');
 
         const subOS = {
           id: `${os.id}-${letra}`,
@@ -27813,8 +28083,8 @@
           pedidoNumero: os.pedidoNumero,
           cliente: os.cliente,
           produto: modNome,
-          itens: [it],
-          grade: it.grade || {},
+          itens: [Object.assign({}, itemOrig, { produtoNome: modNome, grade: lote.grade })],
+          grade: lote.grade || {},
           quantidadeTotal: totalPecasMod,
           corTecido: corTec,
           observacoesCoresDetalhes: obsCores,
@@ -27832,9 +28102,9 @@
           dataPrevisaoEntrega: os.dataPrevisaoEntrega,
           dataMetaInterna: os.dataMetaInterna,
           dtfLarguraRolo: os.dtfLarguraRolo || 58,
-          tecidoConsumidoKg: ((it.consumoTecido || 0.28) * totalPecasMod).toFixed(1),
-          artesAplicacao: artesDoModelo.length > 0 ? artesDoModelo : (os.artesAplicacao || []),
-          instrucoesCorte: `Corte isolado para ${totalPecasMod} peças de ${modNome} (Sub-OS ${letra} de ${itensLista.length}). Cor: ${corTec}.${obsCores ? ' ATENÇÃO: ' + obsCores : ''}`,
+          tecidoConsumidoKg: ((itemOrig.consumoTecido || 0.28) * totalPecasMod).toFixed(1),
+          artesAplicacao: (os.artesAplicacao || []),
+          instrucoesCorte: `Corte para ${totalPecasMod} peças de ${modNome} (Sub-OS ${letra} de ${lotesTrabalho.length}). Cor: ${corTec}.${obsCores ? ' ATENÇÃO: ' + obsCores : ''}`,
           instrucoesCostura: `Costureira responsável: ${costObj.nome}. Fechamento para ${totalPecasMod} peças de ${modNome}. Remuneração acordada: ${formatarMoeda(valPeca)}/un (Total a Pagar: ${formatarMoeda(valPeca * totalPecasMod)}). Fechamento confidencial.`,
           statusBordado: os.statusBordado || "Pendente",
           statusCostura: os.statusCostura || "Pendente",

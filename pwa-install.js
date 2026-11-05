@@ -12,7 +12,7 @@
   // 1. Registra o Service Worker com auto-update forçado e limpeza de caches legados
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      const swPath = './sw.js?v=9.18.2';
+      const swPath = './sw.js?v=9.18.3';
       navigator.serviceWorker.register(swPath)
         .then(reg => {
           console.log('[PWA] Service Worker registrado. Escopo:', reg.scope);
@@ -40,7 +40,7 @@
       if ('caches' in window) {
         caches.keys().then(keys => {
           keys.forEach(key => {
-            if (key !== 'bravvi-erp-desktop-v9.18.2') {
+            if (key !== 'bravvi-erp-desktop-v9.18.3') {
               console.log('[PWA] Purgando cache antigo de versão anterior:', key);
               caches.delete(key);
             }
