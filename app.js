@@ -7073,6 +7073,10 @@
                     + Novo Cliente
                   </button>
                 </div>
+                <div id="indicadorPadraoCliente" style="display: none; margin-top: 5px; font-size: 11px; font-weight: 600; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px; padding: 4px 10px; align-items: center; justify-content: space-between;">
+                  <span class="txt-indicador-padrao">⭐ <strong>Cliente Recorrente com Padrão Salvo</strong>: custos, consumos e estampas pré-configurados</span>
+                  <button type="button" id="btnRecarregarPadraoCliente" style="font-size: 10.5px; padding: 0 4px; color: #1d4ed8; font-weight: 700; text-decoration: underline; background: none; border: none; cursor: pointer;">Recarregar</button>
+                </div>
               </div>
 
               <!-- Vendedor Comercial & Comissão -->
@@ -7490,12 +7494,21 @@
                       </button>
                     </div>
 
-                    <button type="button" class="btn btn-secondary btn-sm" id="btnSalvarCustosPadrao" style="font-size: 10.5px; padding: 3px 8px; font-weight: 700; background: #f0fdf4; color: #166534; border-color: #bbf7d0;" title="Salva os custos atuais como padrões">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnSalvarCustosPadrao" style="font-size: 10.5px; padding: 3px 8px; font-weight: 700; background: #f0fdf4; color: #166534; border-color: #bbf7d0;" title="Salva os custos atuais como padrões gerais da fábrica">
                       ⭐ Salvar como Meus Padrões
                     </button>
-                    <button type="button" class="btn btn-secondary btn-sm" id="btnRestaurarCustosPadrao" style="font-size: 10.5px; padding: 3px 8px;" title="Restaura os valores padrões salvos">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnSalvarPadraoCliente" style="font-size: 10.5px; padding: 3px 9px; font-weight: 800; background: #eff6ff; color: #1d4ed8; border-color: #93c5fd;" title="Salva estes custos, tecidos, consumos e personalizações como padrão recorrente para o cliente selecionado">
+                      👤 Salvar Padrão deste Cliente
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnRestaurarPadraoCliente" style="font-size: 10.5px; padding: 3px 8px; font-weight: 700; background: #fdf4ff; color: #7e22ce; border-color: #e9d5ff; display: none;" title="Restaura os valores padrões salvos deste cliente">
+                      ⚡ Padrão do Cliente
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnRestaurarCustosPadrao" style="font-size: 10.5px; padding: 3px 8px;" title="Restaura os valores padrões gerais da fábrica">
                       🔄 Restaurar Padrões
                     </button>
+                    <span id="badgePadraoClienteAtivo" style="display: none; align-items: center; gap: 4px; font-size: 10px; font-weight: 800; background: #dbeafe; color: #1e40af; padding: 2px 7px; border-radius: 4px; border: 1px solid #93c5fd;">
+                      ⭐ Padrão do Cliente Ativo
+                    </span>
                   </div>
                 </div>
                 
@@ -8256,12 +8269,28 @@
         }
       });
 
+      // Unidade Têxtil (Quilos vs Metros)
+      const isMet = (it.unidadeTecido === 'metro');
+      const btnKg = document.getElementById('btnToggleUnidadeKg');
+      const btnMet = document.getElementById('btnToggleUnidadeMetro');
+      if (btnKg) {
+        btnKg.style.background = isMet ? 'transparent' : '#0284c7';
+        btnKg.style.color = isMet ? '#475569' : '#ffffff';
+      }
+      if (btnMet) {
+        btnMet.style.background = isMet ? '#0284c7' : 'transparent';
+        btnMet.style.color = isMet ? '#ffffff' : '#475569';
+      }
+      const lblCusto = document.getElementById('labelInputCustoTecido');
+      if (lblCusto) lblCusto.textContent = isMet ? 'Custo Tecido (R$/metro)' : 'Custo Tecido (R$/kg)';
+      const lblCons = document.getElementById('labelInputConsumoTecido');
+      if (lblCons) lblCons.textContent = isMet ? 'Consumo Base M (m/un)' : 'Consumo Base M (kg/un)';
+
       // Custos
       const inpTec = document.getElementById('inputCustoTecido');
       if (inpTec) inpTec.value = (it.custoTecidoKg || padroes.custoTecidoKg || 48.50).toFixed(2);
       const inpCons = document.getElementById('inputConsumoTecido');
       if (inpCons) inpCons.value = (it.consumoTecido || 0.28).toFixed(2);
-      const isMet = (it.unidadeTecido === 'metro');
       const badgeGramas = document.getElementById('badgeConsumoEquivGramas');
       if (badgeGramas) {
         badgeGramas.textContent = isMet ? `${(it.consumoTecido || 0.75).toFixed(2)}m` : `${Math.round((it.consumoTecido || 0.28) * 1000)}g`;
@@ -8555,6 +8584,15 @@
           const prev = document.getElementById('previewMockup3x4Orc');
           if (prev) prev.src = it.mockupUrl;
         }
+
+        // Se o cliente selecionado tiver padrão específico para este produto, aplica automaticamente
+        const cliIdAtivo = document.getElementById('orcClienteSelect')?.value;
+        if (cliIdAtivo) {
+          const res = obterPadraoCliente(cliIdAtivo, prod.id);
+          if (res) {
+            aplicarPadraoClienteNoItem(it, res, true);
+          }
+        }
       }
       renderizarAbasModelos();
       recalcularBenchmarkModal();
@@ -8627,7 +8665,240 @@
       mostrarToast(`⭐ Prazos padrão atualizados: ${diasCli} dias (Cliente) / ${diasInt} dias (Fábrica).`, 'green');
     });
 
-    // Salvar custos do modelo ativo como padrão
+    // =========================================================================
+    // SISTEMA DE PADRÕES RECORRENTES POR CLIENTE (CUSTOS, CONSUMOS & ESTAMPAS)
+    // =========================================================================
+
+    function obterPadraoCliente(clienteId, produtoId = null) {
+      if (!clienteId || !db.clientes) return null;
+      const cli = db.clientes.find(c => c.id === clienteId || c.nomeFantasia === clienteId || c.nome === clienteId);
+      if (!cli) return null;
+
+      // 1. Prioridade: Padrão salvo explicitamente para este produto no cadastro do cliente
+      if (cli.padroesModelos && produtoId && cli.padroesModelos[produtoId]) {
+        return { padrao: cli.padroesModelos[produtoId], origem: 'especifico_produto', cliente: cli };
+      }
+
+      // 2. Segunda prioridade: Padrão último modelo salvo para este cliente
+      if (cli.padraoUltimoModelo) {
+        return { padrao: cli.padraoUltimoModelo, origem: 'ultimo_modelo_cliente', cliente: cli };
+      }
+
+      // 3. Terceira prioridade: Se o cliente já fez pedidos anteriores, buscar custos do pedido mais recente dele
+      if (Array.isArray(db.pedidos) && db.pedidos.length > 0) {
+        const pedidosCli = db.pedidos.filter(p => p.clienteId === cli.id || p.clienteNome === cli.nomeFantasia || p.clienteNome === cli.nome);
+        if (pedidosCli.length > 0) {
+          const sorted = pedidosCli.slice().sort((a, b) => new Date(b.dataCriacao || 0) - new Date(a.dataCriacao || 0));
+          for (const ped of sorted) {
+            if (Array.isArray(ped.itens) && ped.itens.length > 0) {
+              const itemCorrespondente = produtoId ? (ped.itens.find(x => x.produtoId === produtoId) || ped.itens[0]) : ped.itens[0];
+              if (itemCorrespondente) {
+                return {
+                  padrao: {
+                    produtoId: itemCorrespondente.produtoId,
+                    produtoNome: itemCorrespondente.produtoNome,
+                    unidadeTecido: itemCorrespondente.unidadeTecido || 'kg',
+                    custoTecidoKg: itemCorrespondente.custoTecidoKg,
+                    consumoTecido: itemCorrespondente.consumoTecido,
+                    margemErroTecido: itemCorrespondente.margemErroTecido,
+                    custoAviamento: itemCorrespondente.custoAviamento,
+                    custoCostura: itemCorrespondente.custoCostura,
+                    precoVendaUnitario: itemCorrespondente.precoVendaUnitario,
+                    margemDesejada: itemCorrespondente.margemDesejada,
+                    aliquotaImposto: itemCorrespondente.aliquotaImposto,
+                    corTecido: itemCorrespondente.corTecido,
+                    observacoesCoresDetalhes: itemCorrespondente.observacoesCoresDetalhes,
+                    consumosCustomizadosPorTamanho: itemCorrespondente.consumosCustomizadosPorTamanho,
+                    custosCustomizadosPorTamanho: itemCorrespondente.custosCustomizadosPorTamanho,
+                    aplicacoes: itemCorrespondente.aplicacoes
+                  },
+                  origem: 'historico_pedidos',
+                  cliente: cli,
+                  numeroPedido: ped.numero
+                };
+              }
+            }
+          }
+        }
+      }
+
+      return null;
+    }
+
+    function aplicarPadraoClienteNoItem(it, resPadrao, exibirToast = true) {
+      if (!it || !resPadrao || !resPadrao.padrao) return false;
+      const p = resPadrao.padrao;
+      const cli = resPadrao.cliente;
+
+      if (p.unidadeTecido) it.unidadeTecido = p.unidadeTecido;
+      if (p.custoTecidoKg !== undefined) it.custoTecidoKg = p.custoTecidoKg;
+      if (p.consumoTecido !== undefined) it.consumoTecido = p.consumoTecido;
+      if (p.margemErroTecido !== undefined) it.margemErroTecido = p.margemErroTecido;
+      if (p.custoAviamento !== undefined) it.custoAviamento = p.custoAviamento;
+      if (p.custoCostura !== undefined) it.custoCostura = p.custoCostura;
+      if (p.precoVendaUnitario !== undefined) it.precoVendaUnitario = p.precoVendaUnitario;
+      if (p.margemDesejada !== undefined) it.margemDesejada = p.margemDesejada;
+      if (p.aliquotaImposto !== undefined) it.aliquotaImposto = p.aliquotaImposto;
+      if (p.corTecido) it.corTecido = p.corTecido;
+      if (p.observacoesCoresDetalhes !== undefined) it.observacoesCoresDetalhes = p.observacoesCoresDetalhes;
+
+      if (p.consumosCustomizadosPorTamanho) {
+        it.consumosCustomizadosPorTamanho = JSON.parse(JSON.stringify(p.consumosCustomizadosPorTamanho));
+      }
+      if (p.custosCustomizadosPorTamanho) {
+        it.custosCustomizadosPorTamanho = JSON.parse(JSON.stringify(p.custosCustomizadosPorTamanho));
+      }
+      if (Array.isArray(p.aplicacoes) && p.aplicacoes.length > 0) {
+        it.aplicacoes = JSON.parse(JSON.stringify(p.aplicacoes));
+      }
+
+      carregarItemAtivoNoDOM();
+      renderizarAplicacoes();
+      recalcularBenchmarkModal();
+
+      const badge = document.getElementById('badgePadraoClienteAtivo');
+      if (badge) {
+        badge.style.display = 'inline-flex';
+        badge.title = `Padrão do cliente "${cli.nomeFantasia || cli.nome}" ativo`;
+      }
+      const btnRestaurar = document.getElementById('btnRestaurarPadraoCliente');
+      if (btnRestaurar) btnRestaurar.style.display = 'inline-block';
+
+      const ind = document.getElementById('indicadorPadraoCliente');
+      if (ind) {
+        ind.style.display = 'flex';
+        const txt = ind.querySelector('.txt-indicador-padrao');
+        if (txt) {
+          txt.textContent = resPadrao.origem === 'historico_pedidos'
+            ? `⭐ Cliente Recorrente: custos e estampas carregados do último Pedido #${resPadrao.numeroPedido}`
+            : `⭐ Cliente Recorrente: padrão exclusivo de produção carregado`;
+        }
+      }
+
+      if (exibirToast) {
+        const origTxt = resPadrao.origem === 'historico_pedidos'
+          ? `do Pedido #${resPadrao.numeroPedido}`
+          : `com sucesso`;
+        mostrarToast(`⭐ Padrão do cliente "${cli.nomeFantasia || cli.nome}" carregado ${origTxt}!`, 'green');
+      }
+
+      return true;
+    }
+
+    function salvarPadraoClienteAtivo() {
+      const cliId = document.getElementById('orcClienteSelect')?.value;
+      if (!cliId || !db.clientes) {
+        mostrarToast('Selecione um cliente para salvar o padrão.', 'orange');
+        return;
+      }
+      const cli = db.clientes.find(c => c.id === cliId);
+      if (!cli) {
+        mostrarToast('Cliente não encontrado.', 'red');
+        return;
+      }
+
+      sincronizarItemAtivoDoDOM();
+      const it = itensOrcamento[itemAtivoIndex];
+      if (!it) return;
+
+      if (!cli.padroesModelos) cli.padroesModelos = {};
+
+      const dadosPadrao = {
+        produtoId: it.produtoId,
+        produtoNome: it.produtoNome,
+        unidadeTecido: it.unidadeTecido || 'kg',
+        custoTecidoKg: it.custoTecidoKg,
+        consumoTecido: it.consumoTecido,
+        margemErroTecido: it.margemErroTecido,
+        custoAviamento: it.custoAviamento,
+        custoCostura: it.custoCostura,
+        precoVendaUnitario: it.precoVendaUnitario,
+        margemDesejada: it.margemDesejada,
+        aliquotaImposto: it.aliquotaImposto,
+        corTecido: it.corTecido,
+        observacoesCoresDetalhes: it.observacoesCoresDetalhes,
+        consumosCustomizadosPorTamanho: it.consumosCustomizadosPorTamanho ? JSON.parse(JSON.stringify(it.consumosCustomizadosPorTamanho)) : null,
+        custosCustomizadosPorTamanho: it.custosCustomizadosPorTamanho ? JSON.parse(JSON.stringify(it.custosCustomizadosPorTamanho)) : null,
+        aplicacoes: (it.aplicacoes && it.aplicacoes.length > 0) ? JSON.parse(JSON.stringify(it.aplicacoes)) : null,
+        atualizadoEm: new Date().toISOString()
+      };
+
+      cli.padroesModelos[it.produtoId] = dadosPadrao;
+      cli.padraoUltimoModelo = JSON.parse(JSON.stringify(dadosPadrao));
+
+      salvarEstado(true);
+
+      const badge = document.getElementById('badgePadraoClienteAtivo');
+      if (badge) badge.style.display = 'inline-flex';
+      const btnRestaurar = document.getElementById('btnRestaurarPadraoCliente');
+      if (btnRestaurar) btnRestaurar.style.display = 'inline-block';
+      const ind = document.getElementById('indicadorPadraoCliente');
+      if (ind) {
+        ind.style.display = 'flex';
+        const txt = ind.querySelector('.txt-indicador-padrao');
+        if (txt) txt.textContent = `⭐ Padrão salvo para "${cli.nomeFantasia || cli.nome}"`;
+      }
+
+      mostrarToast(`⭐ Padrão salvo com sucesso para "${cli.nomeFantasia || cli.nome}"! Sempre que selecionar este cliente, esses custos, unidade, consumos e estampas serão preenchidos automaticamente.`, 'green');
+    }
+
+    // Botão Salvar Padrão do Cliente
+    document.getElementById('btnSalvarPadraoCliente')?.addEventListener('click', () => {
+      salvarPadraoClienteAtivo();
+    });
+
+    // Botão Restaurar Padrão do Cliente
+    document.getElementById('btnRestaurarPadraoCliente')?.addEventListener('click', () => {
+      const cliId = document.getElementById('orcClienteSelect')?.value;
+      const it = itensOrcamento[itemAtivoIndex];
+      if (cliId && it) {
+        const res = obterPadraoCliente(cliId, it.produtoId);
+        if (res) {
+          aplicarPadraoClienteNoItem(it, res, true);
+        } else {
+          mostrarToast('Nenhum padrão salvo encontrado para este cliente.', 'orange');
+        }
+      }
+    });
+
+    // Botão Recarregar Padrão no topo (indicador)
+    document.getElementById('btnRecarregarPadraoCliente')?.addEventListener('click', () => {
+      const cliId = document.getElementById('orcClienteSelect')?.value;
+      const it = itensOrcamento[itemAtivoIndex];
+      if (cliId && it) {
+        const res = obterPadraoCliente(cliId, it.produtoId);
+        if (res) aplicarPadraoClienteNoItem(it, res, true);
+      }
+    });
+
+    // Evento de troca de Cliente no Select: carrega automaticamente o padrão do cliente!
+    document.getElementById('orcClienteSelect')?.addEventListener('change', () => {
+      const novoCliId = document.getElementById('orcClienteSelect')?.value;
+      const it = itensOrcamento[itemAtivoIndex];
+      if (!it) return;
+
+      if (!it.mockupUploadPersonalizado) {
+        const cli = (db.clientes || []).find(c => c.id === novoCliId);
+        const sigla = (cli ? (cli.nomeFantasia || cli.nome || "BRAVVI") : "BRAVVI").toString().substring(0, 6);
+        it.mockupUrl = window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, "#1e3a8a", "#ffffff", sigla);
+        const prev = document.getElementById('previewMockup3x4Orc');
+        if (prev) prev.src = it.mockupUrl;
+      }
+
+      const res = obterPadraoCliente(novoCliId, it.produtoId);
+      if (res) {
+        aplicarPadraoClienteNoItem(it, res, true);
+      } else {
+        const badge = document.getElementById('badgePadraoClienteAtivo');
+        if (badge) badge.style.display = 'none';
+        const btnRestaurar = document.getElementById('btnRestaurarPadraoCliente');
+        if (btnRestaurar) btnRestaurar.style.display = 'none';
+        const ind = document.getElementById('indicadorPadraoCliente');
+        if (ind) ind.style.display = 'none';
+      }
+    });
+
+    // Salvar custos do modelo ativo como padrão geral da fábrica
     document.getElementById('btnSalvarCustosPadrao')?.addEventListener('click', () => {
       const it = itensOrcamento[itemAtivoIndex];
       if (!it) return;
@@ -10148,6 +10419,17 @@
       renderizarTabelaJogadoresModal();
     }
     recalcularBenchmarkModal();
+
+    // Se for novo orçamento, carrega automaticamente o padrão do cliente inicial se existir
+    if (!isEdicao) {
+      const cliInicialId = document.getElementById('orcClienteSelect')?.value;
+      if (cliInicialId) {
+        const resInicial = obterPadraoCliente(cliInicialId, itensOrcamento[0]?.produtoId);
+        if (resInicial) {
+          aplicarPadraoClienteNoItem(itensOrcamento[0], resInicial, false);
+        }
+      }
+    }
   }
 
   // Salvar Orçamento Apenas
