@@ -21076,7 +21076,10 @@
                   </span>
                 </td>
                 <td>
-                  <button class="btn btn-secondary btn-sm btn-ver-historico-cliente" data-id="${cli.id}">Histórico</button>
+                  <div style="display: flex; gap: 6px; align-items: center;">
+                    <button class="btn btn-secondary btn-sm btn-editar-cliente" data-id="${cli.id}" title="Editar dados do cliente e preferências de DANFE">✏️ Editar</button>
+                    <button class="btn btn-secondary btn-sm btn-ver-historico-cliente" data-id="${cli.id}">Histórico</button>
+                  </div>
                 </td>
               </tr>
             `).join('') : `
@@ -21110,12 +21113,22 @@
         abrirModalHistoricoCliente(id);
       });
     });
+
+    document.querySelectorAll('.btn-editar-cliente').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const cli = (db.clientes || []).find(c => c.id === id);
+        if (cli) {
+          abrirModalNovoClienteInline(() => renderizarClientes(), cli);
+        }
+      });
+    });
   }
 
-  function abrirModalNovoClienteInline(callback) {
+  function abrirModalNovoClienteInline(callback, clienteParaEditar = null) {
     if (!modalContainer) return;
 
-    let tipoCadastro = 'PJ'; // 'PJ' ou 'PF'
+    let tipoCadastro = (clienteParaEditar && clienteParaEditar.tipoPessoa) ? clienteParaEditar.tipoPessoa : 'PJ';
     let buscandoCnpj = false;
 
     const modalEl = criarModalCamada(`
@@ -21127,7 +21140,7 @@
                 🏢
               </div>
               <div>
-                <div class="modal-title" style="color: #ffffff; font-size: 16px; font-weight: 800;">Cadastrar Novo Cliente (CRM Têxtil)</div>
+                <div class="modal-title" style="color: #ffffff; font-size: 16px; font-weight: 800;">${clienteParaEditar ? 'Editar Cliente (CRM Têxtil)' : 'Cadastrar Novo Cliente (CRM Têxtil)'}</div>
                 <div style="font-size: 11.5px; color: #2dd4bf; margin-top: 2px;">Preenchimento automático via Cartão CNPJ e integração completa com Pedidos e NF-e</div>
               </div>
             </div>
@@ -21187,6 +21200,19 @@
                 <label class="form-label" id="lblNomeFantasia" style="font-weight: 700;">Nome Fantasia *</label>
                 <input type="text" id="cadCliFantasia" class="form-input" placeholder="Ex: TexBrasil">
               </div>
+            </div>
+
+            <!-- Opção de Sigilo / Marca Branca Fiscal para este Cliente -->
+            <div style="background: rgba(3, 105, 161, 0.08); border: 1px solid rgba(2, 132, 199, 0.25); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;">
+              <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; margin: 0;">
+                <input type="checkbox" id="cadCliOcultarFantasiaDanfe" style="accent-color: #0284c7; width: 17px; height: 17px; margin-top: 2px;">
+                <div>
+                  <span style="font-size: 12.5px; font-weight: 800; color: #0369a1; display: block;">🏷️ Ocultar Nome Fantasia na DANFE / NF-e (Marca Branca)</span>
+                  <span style="font-size: 11px; color: #475569; display: block; margin-top: 2px; line-height: 1.3;">
+                    Quando marcado, as notas fiscais emitidas para este cliente mostrarão apenas a Razão Social Oficial (<strong>${db.empresa?.razaoSocial || 'PACIFIC WAVE COMPANY LTDA'}</strong>) no cabeçalho, ocultando o nome fantasia <strong>${db.empresa?.nomeFantasia || 'Prime Uniformes'}</strong> sem afetar os outros clientes ou a identidade do sistema.
+                  </span>
+                </div>
+              </label>
             </div>
 
             <!-- Linha 2: CNPJ/CPF, Inscrição Estadual e Ramo -->
@@ -21298,6 +21324,29 @@
     const lblRazao = modalEl.querySelector('#lblRazaoSocial');
     const lblFantasia = modalEl.querySelector('#lblNomeFantasia');
     const lblCnpj = modalEl.querySelector('#lblCnpjCpf');
+    const chkOcultarFantasia = modalEl.querySelector('#cadCliOcultarFantasiaDanfe');
+
+    // Se estiver em modo de edição, pré-carregar dados existentes
+    if (clienteParaEditar) {
+      if (inpRazao) inpRazao.value = clienteParaEditar.razaoSocial || '';
+      if (inpFantasia) inpFantasia.value = clienteParaEditar.nomeFantasia || '';
+      if (inpCnpj) inpCnpj.value = clienteParaEditar.cnpj || '';
+      if (inpIe) inpIe.value = clienteParaEditar.ie || '';
+      if (inpRamo) inpRamo.value = clienteParaEditar.ramoAtividade || 'Comércio & Serviços';
+      if (inpContato) inpContato.value = clienteParaEditar.contatoNome || '';
+      if (inpTel) inpTel.value = clienteParaEditar.telefone || '';
+      if (inpEmail) inpEmail.value = clienteParaEditar.email || '';
+      if (inpCep) inpCep.value = clienteParaEditar.cep || '';
+      if (inpEndereco) inpEndereco.value = clienteParaEditar.endereco || '';
+      if (inpBairro) inpBairro.value = clienteParaEditar.bairro || '';
+      if (inpCidade) inpCidade.value = clienteParaEditar.cidade || '';
+      if (inpUf) inpUf.value = clienteParaEditar.uf || 'SC';
+      if (chkOcultarFantasia) chkOcultarFantasia.checked = Boolean(clienteParaEditar.ocultarFantasiaDanfe);
+      if (clienteParaEditar.tipoPessoa === 'PF') {
+        if (radioPf) radioPf.checked = true;
+        atualizarModoCadastro('PF');
+      }
+    }
 
     // Alternar entre Pessoa Jurídica (CNPJ) e Pessoa Física (CPF)
     function atualizarModoCadastro(modo) {
@@ -21514,37 +21563,63 @@
       const cepFinal = cep || (db.empresa?.cep || '88309-677');
       const cnpjFinal = cnpj || (tipoCadastro === 'PF' ? '000.000.000-00' : '00.000.000/0001-00');
 
-      const novoCli = {
-        id: `CLI-${Math.floor(100 + (db.clientes || []).length + 1)}`,
-        razaoSocial: razao,
-        nomeFantasia: fantasia || razao,
-        cnpj: cnpjFinal,
-        ie: inpIe?.value.trim() || 'Isento',
-        contatoNome: contatoFinal,
-        cargoContato: "Responsável",
-        telefone: tel,
-        email: emailFinal,
-        endereco: enderecoFinal,
-        bairro: bairroFinal,
-        cidade: cidadeFinal,
-        uf: ufFinal,
-        cep: cepFinal,
-        ramoAtividade: ramo,
-        tipoPessoa: tipoCadastro,
-        totalPedidosFeitos: 0,
-        faturamentoAcumulado: 0,
-        dataUltimaCompra: new Date().toISOString().split('T')[0],
-        intervaloRecompraMeses: 6,
-        precisaRecompraAlerta: false
-      };
+      const ocultarDanfeVal = Boolean(chkOcultarFantasia?.checked);
 
-      if (!Array.isArray(db.clientes)) db.clientes = [];
-      db.clientes.unshift(novoCli);
-      salvarEstado(true);
-      fecharModal(modalEl);
-      mostrarToast(`Cliente "${novoCli.nomeFantasia}" cadastrado com sucesso!`, 'green');
+      if (clienteParaEditar) {
+        clienteParaEditar.razaoSocial = razao;
+        clienteParaEditar.nomeFantasia = fantasia || razao;
+        clienteParaEditar.cnpj = cnpjFinal;
+        clienteParaEditar.ie = inpIe?.value.trim() || 'Isento';
+        clienteParaEditar.contatoNome = contatoFinal;
+        clienteParaEditar.telefone = tel;
+        clienteParaEditar.email = emailFinal;
+        clienteParaEditar.endereco = enderecoFinal;
+        clienteParaEditar.bairro = bairroFinal;
+        clienteParaEditar.cidade = cidadeFinal;
+        clienteParaEditar.uf = ufFinal;
+        clienteParaEditar.cep = cepFinal;
+        clienteParaEditar.ramoAtividade = ramo;
+        clienteParaEditar.tipoPessoa = tipoCadastro;
+        clienteParaEditar.ocultarFantasiaDanfe = ocultarDanfeVal;
 
-      if (typeof callback === 'function') callback(novoCli);
+        salvarEstado(true);
+        fecharModal(modalEl);
+        mostrarToast(`Cliente "${clienteParaEditar.nomeFantasia}" atualizado com sucesso!`, 'green');
+        if (typeof callback === 'function') callback(clienteParaEditar);
+      } else {
+        const novoCli = {
+          id: `CLI-${Math.floor(100 + (db.clientes || []).length + 1)}`,
+          razaoSocial: razao,
+          nomeFantasia: fantasia || razao,
+          cnpj: cnpjFinal,
+          ie: inpIe?.value.trim() || 'Isento',
+          contatoNome: contatoFinal,
+          cargoContato: "Responsável",
+          telefone: tel,
+          email: emailFinal,
+          endereco: enderecoFinal,
+          bairro: bairroFinal,
+          cidade: cidadeFinal,
+          uf: ufFinal,
+          cep: cepFinal,
+          ramoAtividade: ramo,
+          tipoPessoa: tipoCadastro,
+          totalPedidosFeitos: 0,
+          faturamentoAcumulado: 0,
+          dataUltimaCompra: new Date().toISOString().split('T')[0],
+          intervaloRecompraMeses: 6,
+          precisaRecompraAlerta: false,
+          ocultarFantasiaDanfe: ocultarDanfeVal
+        };
+
+        if (!Array.isArray(db.clientes)) db.clientes = [];
+        db.clientes.unshift(novoCli);
+        salvarEstado(true);
+        fecharModal(modalEl);
+        mostrarToast(`Cliente "${novoCli.nomeFantasia}" cadastrado com sucesso!`, 'green');
+
+        if (typeof callback === 'function') callback(novoCli);
+      }
     });
   }
 
@@ -22717,6 +22792,8 @@
   function gerarDanfeHtml(nfe, empresa) {
     const emp = empresa || db.empresa || {};
     const cli = nfe.cliente || {};
+    const clienteDb = (db.clientes || []).find(c => (c.id && c.id === cli.id) || (c.cnpj && cli.cnpj && String(c.cnpj).replace(/\D/g, '') === String(cli.cnpj).replace(/\D/g, ''))) || {};
+    const ocultarFantasia = Boolean(nfe.ocultarFantasiaDanfe ?? cli.ocultarFantasiaDanfe ?? clienteDb.ocultarFantasiaDanfe);
     const tot = nfe.totais || {};
     const rawItens = nfe.itens || [];
     const isCancelada = nfe.statusSefaz === 'cancelada';
@@ -22877,7 +22954,7 @@
               `}
               <div style="text-align: center; line-height: 1.15;">
                 <strong style="font-size: 11px; text-transform: uppercase; display: block; font-family: Arial, Helvetica, sans-serif;">${empNome}</strong>
-                ${emp.nomeFantasia && emp.nomeFantasia !== empNome ? `<span style="font-size: 8.5px; font-weight: 700; display: block;">${emp.nomeFantasia}</span>` : ''}
+                ${!ocultarFantasia && emp.nomeFantasia && emp.nomeFantasia !== empNome ? `<span style="font-size: 8.5px; font-weight: 700; display: block;">${emp.nomeFantasia}</span>` : ''}
                 <span style="font-size: 7.5px; display: block; margin-top: 2px;">${empEnd}</span>
                 <span style="font-size: 7.5px; display: block;">${empBairro} - CEP: ${empCep}</span>
                 <span style="font-size: 7.5px; display: block;">${empMun} - ${empUf} &nbsp; Fone/Fax: ${empFone}</span>
@@ -23599,6 +23676,9 @@
     if (!nfe || !modalContainer) return;
 
     const isCancelada = nfe.statusSefaz === 'cancelada';
+    const cli = nfe.cliente || {};
+    const clienteDb = (db.clientes || []).find(c => (c.id && c.id === cli.id) || (c.cnpj && cli.cnpj && String(c.cnpj).replace(/\D/g, '') === String(cli.cnpj).replace(/\D/g, ''))) || {};
+    let ocultarFantasiaAtual = Boolean(nfe.ocultarFantasiaDanfe ?? cli.ocultarFantasiaDanfe ?? clienteDb.ocultarFantasiaDanfe);
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
@@ -23631,6 +23711,10 @@
                 Enviar WhatsApp
               </button>
 
+              <button class="btn btn-sm btn-secondary" id="btnToggleFantasiaDanfeModal" style="background: ${ocultarFantasiaAtual ? 'rgba(56, 189, 248, 0.25)' : 'rgba(255, 255, 255, 0.08)'}; color: ${ocultarFantasiaAtual ? '#38bdf8' : '#e2e8f0'}; border-color: ${ocultarFantasiaAtual ? '#0284c7' : 'rgba(255,255,255,0.2)'}; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;" title="Clique para ocultar ou exibir o Nome Fantasia na DANFE deste cliente mantendo apenas a Razão Social">
+                <span id="btnToggleFantasiaDanfeTexto">${ocultarFantasiaAtual ? '👁️ Reexibir Nome Fantasia' : '🏷️ Ocultar Nome Fantasia (Apenas Razão Social)'}</span>
+              </button>
+
               ${!isCancelada ? `
                 <button class="btn btn-sm btn-secondary" id="btnEmitirCceDanfeModal" style="background: #1e293b; color: #38bdf8; border-color: #0284c7; display: inline-flex; align-items: center; gap: 5px; font-weight: 700;" title="Emitir Carta de Correção Eletrônica (CC-e) na SEFAZ">
                   ✏️ CC-e
@@ -23659,6 +23743,36 @@
 
     modalEl.querySelector('#btnImprimirDanfeModal')?.addEventListener('click', () => imprimirDanfeIsolada(nfe.id));
     modalEl.querySelector('#btnBaixarXmlModal')?.addEventListener('click', () => baixarArquivoXmlNfe(nfe.id));
+
+    modalEl.querySelector('#btnToggleFantasiaDanfeModal')?.addEventListener('click', () => {
+      ocultarFantasiaAtual = !ocultarFantasiaAtual;
+      nfe.ocultarFantasiaDanfe = ocultarFantasiaAtual;
+      if (cli) cli.ocultarFantasiaDanfe = ocultarFantasiaAtual;
+      if (clienteDb) clienteDb.ocultarFantasiaDanfe = ocultarFantasiaAtual;
+
+      // Re-renderiza folha DANFE dinamicamente no visualizador
+      const sheetBox = modalEl.querySelector('.danfe-sheet-shadow');
+      if (sheetBox) {
+        sheetBox.innerHTML = gerarDanfeHtml(nfe, db.empresa);
+      }
+
+      // Atualiza visual do botão de alternância
+      const btn = modalEl.querySelector('#btnToggleFantasiaDanfeModal');
+      const txt = modalEl.querySelector('#btnToggleFantasiaDanfeTexto');
+      if (btn && txt) {
+        btn.style.background = ocultarFantasiaAtual ? 'rgba(56, 189, 248, 0.25)' : 'rgba(255, 255, 255, 0.08)';
+        btn.style.color = ocultarFantasiaAtual ? '#38bdf8' : '#e2e8f0';
+        btn.style.borderColor = ocultarFantasiaAtual ? '#0284c7' : 'rgba(255,255,255,0.2)';
+        txt.textContent = ocultarFantasiaAtual ? '👁️ Reexibir Nome Fantasia' : '🏷️ Ocultar Nome Fantasia (Apenas Razão Social)';
+      }
+
+      salvarEstado(true);
+      if (ocultarFantasiaAtual) {
+        mostrarToast('Nome Fantasia ocultado na DANFE deste cliente! Exibindo apenas a Razão Social PACIFIC WAVE COMPANY LTDA.', 'blue');
+      } else {
+        mostrarToast('Nome Fantasia reexibido na DANFE deste cliente.', 'green');
+      }
+    });
     modalEl.querySelector('#btnWppDanfeModal')?.addEventListener('click', () => enviarNfeWhatsApp(nfe.id));
     modalEl.querySelector('#btnEmitirCceDanfeModal')?.addEventListener('click', () => {
       fecharModal(modalEl);
