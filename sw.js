@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bravvi-erp-desktop-v9.17.4';
+const CACHE_NAME = 'bravvi-erp-desktop-v9.18.0';
 
 const CORE_ASSETS = [
   '/',

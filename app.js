@@ -432,36 +432,35 @@
     // Aplica a migração não-destrutiva garantindo 100% de integridade
     db = migrarOuPreservarBanco(db, window.ERP_INITIAL_DATA);
 
-    // Inicialização Limpa e Zerada para Operação Real (Prime Uniformes)
-    if (db && !db.primeResetProducaoDefinitivo) {
-      db.pedidos = [];
-      db.clientes = [];
-      db.notasFiscais = [];
-      db.ordensServico = [];
-      db.despesasFixas = [];
-      db.lancamentosFinanceiros = [];
-      db.nestingFila = [];
-      db.compras = [];
-      if (Array.isArray(db.estoque)) {
-        db.estoque.forEach(i => i.saldoAtual = 0);
+    // BLINDAGEM OPERACIONAL REAL: Preservação estrita e definitiva de todos os pedidos e clientes reais
+    if (db) {
+      delete db.primeResetProducaoDefinitivo;
+      if (!Array.isArray(db.pedidos)) db.pedidos = [];
+      if (!Array.isArray(db.clientes)) db.clientes = [];
+      if (!Array.isArray(db.ordensServico)) db.ordensServico = [];
+      if (!Array.isArray(db.lancamentosFinanceiros)) db.lancamentosFinanceiros = [];
+      if (!Array.isArray(db.notasFiscais)) db.notasFiscais = [];
+
+      // Dados cadastrais oficiais da Prime Uniformes (Pacific Wave Company Ltda)
+      if (!db.empresa || !db.empresa.cnpj) {
+        db.empresa = {
+          razaoSocial: "PACIFIC WAVE COMPANY LTDA",
+          nomeFantasia: "Prime Uniformes",
+          cnpj: "59.441.843/0001-76",
+          inscricaoEstadual: "263.420.248",
+          telefone: "(47) 3224-1112",
+          email: "comercial@pacificwave.com.br",
+          chavePix: "59.441.843/0001-76",
+          tipoChavePix: "CNPJ",
+          endereco: "Rua Cingapura, 60",
+          complemento: "Lote 171",
+          bairro: "São Vicente",
+          cidade: "Itajaí",
+          uf: "SC",
+          cep: "88309-677",
+          nfeioCompanyId: "b8ac27d9851944a8baa5ad0c134d08f9"
+        };
       }
-      db.empresa = {
-        razaoSocial: "PACIFIC WAVE COMPANY LTDA",
-        nomeFantasia: "Prime Uniformes",
-        cnpj: "59.441.843/0001-76",
-        inscricaoEstadual: "263.420.248",
-        telefone: "(47) 3224-1112",
-        email: "comercial@pacificwave.com.br",
-        chavePix: "59.441.843/0001-76",
-        tipoChavePix: "CNPJ",
-        endereco: "Rua Cingapura, 60",
-        complemento: "Lote 171",
-        bairro: "São Vicente",
-        cidade: "Itajaí",
-        uf: "SC",
-        cep: "88309-677",
-        nfeioCompanyId: "b8ac27d9851944a8baa5ad0c134d08f9"
-      };
       if (!db.configFiscal) db.configFiscal = {};
       if (typeof db.configFiscal.proximoNumero === 'undefined' || db.configFiscal.proximoNumero === null) db.configFiscal.proximoNumero = 1;
       if (typeof db.configFiscal.serie === 'undefined') db.configFiscal.serie = '1';
@@ -487,17 +486,6 @@
         db.configFiscal.certificadoA1.senha = 'nino230601';
         db.configFiscal.certificadoA1.senhaSalva = true;
       }
-      db.primeResetProducaoDefinitivo = true;
-      try {
-        const k = obterChaveStorageTenant();
-        const limpoCompactado = JSON.stringify(compactarBancoParaStorage(db));
-        localStorage.setItem(k, limpoCompactado);
-        localStorage.setItem('bravvi_erp_prod_v8', limpoCompactado);
-        localStorage.setItem('texpro_erp_prod_v8', limpoCompactado);
-        if (typeof window !== 'undefined' && window.ERP_CLOUD && typeof window.ERP_CLOUD.sincronizarImediatoComNuvem === 'function') {
-          window.ERP_CLOUD.sincronizarImediatoComNuvem(db);
-        }
-      } catch (e) { }
     }
   }
 
@@ -1069,19 +1057,8 @@
     if (window.ERP_CLOUD && typeof window.ERP_CLOUD.carregarBancoTenant === 'function') {
       await window.ERP_CLOUD.carregarBancoTenant((novoDb) => {
         if (novoDb) {
-          if (db && db.primeResetProducaoDefinitivo) {
-            novoDb.primeResetProducaoDefinitivo = true;
-            novoDb.pedidos = [];
-            novoDb.clientes = [];
-            novoDb.ordensServico = [];
-            novoDb.lancamentosFinanceiros = [];
-            novoDb.quarentena = [];
-            novoDb.despesasFixas = [];
-            novoDb.compras = [];
-            novoDb.notasFiscais = [];
-            novoDb.nestingFila = [];
-            if (!novoDb.configFiscal) novoDb.configFiscal = {};
-          }
+          if (novoDb) delete novoDb.primeResetProducaoDefinitivo;
+          if (db) delete db.primeResetProducaoDefinitivo;
           // BLINDAGEM MESTRE: Mesclagem não-destrutiva garantindo preservação de pedidos e clientes
           if (window.ERP_CLOUD && typeof window.ERP_CLOUD.fundirBancosCompletos === 'function') {
             db = window.ERP_CLOUD.fundirBancosCompletos(db, novoDb);
@@ -1089,21 +1066,7 @@
             db = migrarOuPreservarBanco(novoDb, window.ERP_INITIAL_DATA);
           }
           descompactarBancoEmMemoria(db);
-          if (db && db.primeResetProducaoDefinitivo) {
-            db.pedidos = [];
-            db.clientes = [];
-            db.ordensServico = [];
-            db.lancamentosFinanceiros = [];
-            db.quarentena = [];
-            db.despesasFixas = [];
-            db.compras = [];
-            db.notasFiscais = [];
-            db.nestingFila = [];
-            if (!db.configFiscal) db.configFiscal = {};
-            if (window.ERP_CLOUD && typeof window.ERP_CLOUD.sincronizarImediatoComNuvem === 'function') {
-              window.ERP_CLOUD.sincronizarImediatoComNuvem(db);
-            }
-          }
+          if (db) delete db.primeResetProducaoDefinitivo;
           // Auto-reparo imediato: se houver pedidos que não tinham lançamento financeiro, gera agora!
           sincronizarPedidosComFinanceiro(db);
           salvarEstado(true);
@@ -1928,21 +1891,8 @@
     if (window.ERP_CLOUD && typeof window.ERP_CLOUD.iniciarEscutaRealtime === 'function') {
       window.ERP_CLOUD.iniciarEscutaRealtime((novoDb) => {
         if (novoDb) {
-          if (db && db.primeResetProducaoDefinitivo) {
-            novoDb.primeResetProducaoDefinitivo = true;
-            novoDb.pedidos = [];
-            novoDb.clientes = [];
-            novoDb.ordensServico = [];
-            novoDb.lancamentosFinanceiros = [];
-            novoDb.quarentena = [];
-            novoDb.despesasFixas = [];
-            novoDb.compras = [];
-            novoDb.notasFiscais = [];
-            novoDb.nestingFila = [];
-            if (!novoDb.configFiscal) novoDb.configFiscal = {};
-            novoDb.configFiscal.proximoNumero = 1;
-            novoDb.configFiscal.aliquotaSimplesNacional = 4.5;
-          }
+          if (novoDb) delete novoDb.primeResetProducaoDefinitivo;
+          if (db) delete db.primeResetProducaoDefinitivo;
           if (window.ERP_CLOUD && typeof window.ERP_CLOUD.fundirBancosCompletos === 'function') {
             db = window.ERP_CLOUD.fundirBancosCompletos(db, novoDb);
           } else {
@@ -10252,7 +10202,7 @@
     };
 
     db.pedidos.unshift(novoRegistro);
-    salvarEstado();
+    salvarEstado(true);
     atualizarBadges();
     fecharModal();
     renderizarPedidos();
@@ -21203,33 +21153,44 @@
       const cep = inpCep?.value.trim();
       const ramo = inpRamo?.value || 'Comércio & Serviços';
 
-      // Validação de todos os campos obrigatórios
-      if (!razao || !cnpj || !contato || !tel || !email || !endereco || !bairro || !cidade || !uf) {
-        mostrarToast('Por favor, preencha todos os campos obrigatórios marcados com (*).', 'red');
+      // Validação rápida e inteligente: apenas Razão/Nome e WhatsApp são prioritários
+      if (!razao) {
+        mostrarToast('Por favor, informe a Razão Social ou Nome do Cliente.', 'red');
+        inpRazao?.focus();
         return;
       }
 
-      if (tel.length < 10) {
-        mostrarToast('Informe um número de WhatsApp com DDD válido (ex: 11987654321).', 'red');
+      if (!tel || tel.length < 10) {
+        mostrarToast('Informe um número de WhatsApp com DDD válido (ex: 47988887777).', 'red');
         inpTel?.focus();
         return;
       }
 
+      // Preenchimentos inteligentes com fallbacks seguros para agilizar o atendimento
+      const contatoFinal = contato || (tipoCadastro === 'PF' ? razao : (fantasia || razao));
+      const emailFinal = email || `contato@${(fantasia || razao || 'cliente').toLowerCase().replace(/[^a-z0-9]/g, '')}.com.br`;
+      const enderecoFinal = endereco || 'Balcão / A Combinar';
+      const bairroFinal = bairro || 'Centro';
+      const cidadeFinal = cidade || (db.empresa?.cidade || 'Itajaí');
+      const ufFinal = (uf || db.empresa?.uf || 'SC').toUpperCase();
+      const cepFinal = cep || (db.empresa?.cep || '88309-677');
+      const cnpjFinal = cnpj || (tipoCadastro === 'PF' ? '000.000.000-00' : '00.000.000/0001-00');
+
       const novoCli = {
         id: `CLI-${Math.floor(100 + (db.clientes || []).length + 1)}`,
         razaoSocial: razao,
-        nomeFantasia: fantasia,
-        cnpj: cnpj,
+        nomeFantasia: fantasia || razao,
+        cnpj: cnpjFinal,
         ie: inpIe?.value.trim() || 'Isento',
-        contatoNome: contato,
+        contatoNome: contatoFinal,
         cargoContato: "Responsável",
         telefone: tel,
-        email: email,
-        endereco: endereco,
-        bairro: bairro,
-        cidade: cidade,
-        uf: uf,
-        cep: cep || "00000-000",
+        email: emailFinal,
+        endereco: enderecoFinal,
+        bairro: bairroFinal,
+        cidade: cidadeFinal,
+        uf: ufFinal,
+        cep: cepFinal,
         ramoAtividade: ramo,
         tipoPessoa: tipoCadastro,
         totalPedidosFeitos: 0,
@@ -21241,7 +21202,7 @@
 
       if (!Array.isArray(db.clientes)) db.clientes = [];
       db.clientes.unshift(novoCli);
-      salvarEstado();
+      salvarEstado(true);
       fecharModal(modalEl);
       mostrarToast(`Cliente "${novoCli.nomeFantasia}" cadastrado com sucesso!`, 'green');
 
@@ -27757,7 +27718,7 @@
       db.configFiscal.csosnPadrao = '102';
       db.configFiscal.emailContador = 'comercial@pacificwave.com.br';
       db.configFiscal.nfeioCompanyId = 'b8ac27d9851944a8baa5ad0c134d08f9';
-      db.primeResetProducaoDefinitivo = true;
+      delete db.primeResetProducaoDefinitivo;
 
       try {
         const chaveTenant = obterChaveStorageTenant();

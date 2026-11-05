@@ -1966,42 +1966,14 @@ with check (true);
   }
 
   function fundirBancosCompletos(local, remoto) {
-    if (!local && !remoto) return { pedidos: [] };
+    if (!local && !remoto) return { pedidos: [], clientes: [] };
+    if (local) delete local.primeResetProducaoDefinitivo;
+    if (remoto) delete remoto.primeResetProducaoDefinitivo;
     if (!remoto) return local;
     if (!local) return remoto;
 
-    // Reset limpo definitivo para operacao real Prime Uniformes
-    const resetAtivo = (local && local.primeResetProducaoDefinitivo) || (remoto && remoto.primeResetProducaoDefinitivo);
-    if (resetAtivo) {
-      const base = Object.assign({}, remoto, local);
-      base.pedidos = [];
-      base.clientes = [];
-      base.ordensServico = [];
-      base.lancamentosFinanceiros = [];
-      base.quarentena = [];
-      base.despesasFixas = [];
-      base.compras = [];
-      base.notasFiscais = [];
-      base.nestingFila = [];
-      if (!base.configFiscal) base.configFiscal = {};
-      base.primeResetProducaoDefinitivo = true;
-      if (local) {
-        local.pedidos = [];
-        local.clientes = [];
-        local.ordensServico = [];
-        local.lancamentosFinanceiros = [];
-        local.quarentena = [];
-        local.despesasFixas = [];
-        local.compras = [];
-        local.notasFiscais = [];
-        local.nestingFila = [];
-        if (!local.configFiscal) local.configFiscal = {};
-        local.primeResetProducaoDefinitivo = true;
-      }
-      return base;
-    }
-
     const base = Object.assign({}, remoto, local);
+    delete base.primeResetProducaoDefinitivo;
 
     // Fusão blindada de todas as coleções operacionais
     base.pedidos = fundirColecaoPorId(local.pedidos, remoto.pedidos, 'id');
@@ -2034,12 +2006,13 @@ with check (true);
       base.estoque = remoto.estoque || local.estoque || [];
     }
 
-    // Se o banco local estava com menos registros do que a fusão, hidrata o local em memória
-    if (local && Array.isArray(local.pedidos) && base.pedidos.length > local.pedidos.length) {
-      local.pedidos = base.pedidos;
+    // Mantém o banco local sempre sincronizado com as coleções completas fundidas
+    if (local) {
+      if (Array.isArray(base.pedidos)) local.pedidos = base.pedidos;
       if (Array.isArray(base.clientes)) local.clientes = base.clientes;
       if (Array.isArray(base.lancamentosFinanceiros)) local.lancamentosFinanceiros = base.lancamentosFinanceiros;
       if (Array.isArray(base.ordensServico)) local.ordensServico = base.ordensServico;
+      if (Array.isArray(base.notasFiscais)) local.notasFiscais = base.notasFiscais;
     }
 
     return base;
