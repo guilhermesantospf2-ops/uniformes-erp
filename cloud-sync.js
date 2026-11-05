@@ -1984,8 +1984,6 @@ with check (true);
       base.notasFiscais = [];
       base.nestingFila = [];
       if (!base.configFiscal) base.configFiscal = {};
-      base.configFiscal.proximoNumero = 1;
-      base.configFiscal.aliquotaSimplesNacional = 4.5;
       base.primeResetProducaoDefinitivo = true;
       if (local) {
         local.pedidos = [];
@@ -1998,8 +1996,6 @@ with check (true);
         local.notasFiscais = [];
         local.nestingFila = [];
         if (!local.configFiscal) local.configFiscal = {};
-        local.configFiscal.proximoNumero = 1;
-        local.configFiscal.aliquotaSimplesNacional = 4.5;
         local.primeResetProducaoDefinitivo = true;
       }
       return base;
@@ -2023,10 +2019,11 @@ with check (true);
       base.notasFiscais = fundirColecaoPorId(local.notasFiscais, remoto.notasFiscais, 'id');
     }
 
-    if (remoto.configFiscal && remoto.configFiscal.proximoNumero) {
-      if (!base.configFiscal) base.configFiscal = {};
+    if (!base.configFiscal) base.configFiscal = {};
+    if (local && local.configFiscal && local.configFiscal.proximoNumero) {
+      base.configFiscal.proximoNumero = local.configFiscal.proximoNumero;
+    } else if (remoto && remoto.configFiscal && remoto.configFiscal.proximoNumero) {
       base.configFiscal.proximoNumero = remoto.configFiscal.proximoNumero;
-      if (local && local.configFiscal) local.configFiscal.proximoNumero = remoto.configFiscal.proximoNumero;
     }
 
     // Catálogos e estoques

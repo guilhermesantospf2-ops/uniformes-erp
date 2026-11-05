@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bravvi-erp-desktop-v9.17.3';
+const CACHE_NAME = 'bravvi-erp-desktop-v9.17.4';
 
 const CORE_ASSETS = [
   '/',
@@ -10,18 +10,18 @@ const CORE_ASSETS = [
   '/time.html',
   '/coleta',
   '/coleta.html',
-  '/style.css?v=9.17.3',
-  '/app.js?v=9.17.3',
-  '/cloud-sync.js?v=9.17.3',
+  '/style.css?v=9.17.4',
+  '/app.js?v=9.17.4',
+  '/cloud-sync.js?v=9.17.4',
   '/nesting-engine.js?v=8.9.5',
   '/market-benchmark.js?v=8.9.5',
   '/mock-data.js?v=8.9.5',
-  '/pwa-install.js?v=9.17.3',
+  '/pwa-install.js?v=9.17.4',
   '/pix-engine.js?v=8.9.0',
   '/pix-qrcode.min.js',
   '/infinitepay-engine.js?v=8.9.0',
   '/jszip.min.js',
-  '/tecnospeed-engine.js?v=9.17.3',
+  '/tecnospeed-engine.js?v=9.17.4',
   '/manifest.json',
   '/favicon.ico',
   '/assets/favicon.png',

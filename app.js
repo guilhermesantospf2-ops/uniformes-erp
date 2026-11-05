@@ -463,25 +463,30 @@
         nfeioCompanyId: "b8ac27d9851944a8baa5ad0c134d08f9"
       };
       if (!db.configFiscal) db.configFiscal = {};
-      db.configFiscal.proximoNumero = 1;
-      db.configFiscal.serie = '1';
-      db.configFiscal.ambiente = 'homologacao';
-      db.configFiscal.regimeTributario = 'Simples Nacional';
-      db.configFiscal.aliquotaSimplesNacional = 4.5;
-      db.configFiscal.cfopEstadualPadrao = '5101';
-      db.configFiscal.cfopInterestadualPadrao = '6101';
-      db.configFiscal.csosnPadrao = '102';
-      db.configFiscal.emailContador = 'comercial@pacificwave.com.br';
-      db.configFiscal.nfeioCompanyId = 'b8ac27d9851944a8baa5ad0c134d08f9';
-      db.configFiscal.certificadoA1 = {
-        instalado: true,
-        nomeArquivo: 'PACIFIC WAVE COMPANY LTDA_59441843000176certificado.pfx',
-        validade: '23/03/2027',
-        emissor: 'RFB e-CNPJ A1 / ICP-Brasil',
-        senhaSalva: true,
-        senha: 'nino230601',
-        dataUpload: new Date().toISOString()
-      };
+      if (typeof db.configFiscal.proximoNumero === 'undefined' || db.configFiscal.proximoNumero === null) db.configFiscal.proximoNumero = 1;
+      if (typeof db.configFiscal.serie === 'undefined') db.configFiscal.serie = '1';
+      if (typeof db.configFiscal.ambiente === 'undefined') db.configFiscal.ambiente = 'homologacao';
+      if (typeof db.configFiscal.regimeTributario === 'undefined') db.configFiscal.regimeTributario = 'Simples Nacional';
+      if (typeof db.configFiscal.aliquotaSimplesNacional === 'undefined') db.configFiscal.aliquotaSimplesNacional = 4.5;
+      if (typeof db.configFiscal.cfopEstadualPadrao === 'undefined') db.configFiscal.cfopEstadualPadrao = '5101';
+      if (typeof db.configFiscal.cfopInterestadualPadrao === 'undefined') db.configFiscal.cfopInterestadualPadrao = '6101';
+      if (typeof db.configFiscal.csosnPadrao === 'undefined') db.configFiscal.csosnPadrao = '102';
+      if (typeof db.configFiscal.emailContador === 'undefined') db.configFiscal.emailContador = 'comercial@pacificwave.com.br';
+      if (!db.configFiscal.nfeioCompanyId) db.configFiscal.nfeioCompanyId = 'b8ac27d9851944a8baa5ad0c134d08f9';
+      if (!db.configFiscal.certificadoA1) {
+        db.configFiscal.certificadoA1 = {
+          instalado: true,
+          nomeArquivo: 'PACIFIC WAVE COMPANY LTDA_59441843000176certificado.pfx',
+          validade: '23/03/2027',
+          emissor: 'RFB e-CNPJ A1 / ICP-Brasil',
+          senhaSalva: true,
+          senha: 'nino230601',
+          dataUpload: new Date().toISOString()
+        };
+      } else if (!db.configFiscal.certificadoA1.senha) {
+        db.configFiscal.certificadoA1.senha = 'nino230601';
+        db.configFiscal.certificadoA1.senhaSalva = true;
+      }
       db.primeResetProducaoDefinitivo = true;
       try {
         const k = obterChaveStorageTenant();
@@ -1076,8 +1081,6 @@
             novoDb.notasFiscais = [];
             novoDb.nestingFila = [];
             if (!novoDb.configFiscal) novoDb.configFiscal = {};
-            novoDb.configFiscal.proximoNumero = 1;
-            novoDb.configFiscal.aliquotaSimplesNacional = 4.5;
           }
           // BLINDAGEM MESTRE: Mesclagem não-destrutiva garantindo preservação de pedidos e clientes
           if (window.ERP_CLOUD && typeof window.ERP_CLOUD.fundirBancosCompletos === 'function') {
@@ -1097,8 +1100,6 @@
             db.notasFiscais = [];
             db.nestingFila = [];
             if (!db.configFiscal) db.configFiscal = {};
-            db.configFiscal.proximoNumero = 1;
-            db.configFiscal.aliquotaSimplesNacional = 4.5;
             if (window.ERP_CLOUD && typeof window.ERP_CLOUD.sincronizarImediatoComNuvem === 'function') {
               window.ERP_CLOUD.sincronizarImediatoComNuvem(db);
             }
@@ -5492,7 +5493,10 @@
         categoria: "Vendas de Uniformes"
       });
 
-      salvarEstado();
+      salvarEstado(true);
+      if (window.ERP_CLOUD && typeof window.ERP_CLOUD.sincronizarImediatoComNuvem === 'function') {
+        window.ERP_CLOUD.sincronizarImediatoComNuvem(db);
+      }
       fecharModal(modalEl);
       renderizarPedidos();
 
@@ -23666,7 +23670,7 @@
                 <div>
                   <label class="form-label" style="font-size: 11px;">Senha do Certificado A1</label>
                   <div style="position: relative;">
-                    <input type="password" id="cfgFiscalSenhaCert" class="form-input text-mono" placeholder="Senha do .pfx" value="${cfg.certificadoA1?.senhaSalva ? '••••••••' : ''}" style="font-size: 11.5px; padding-right: 32px;">
+                    <input type="password" id="cfgFiscalSenhaCert" name="cert_pass_nfe_no_autofill" autocomplete="new-password" class="form-input text-mono" placeholder="Senha do .pfx" value="${cfg.certificadoA1?.senha || 'nino230601'}" style="font-size: 11.5px; padding-right: 32px;">
                     <button type="button" id="btnToggleSenhaCert" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; color: #64748b; font-size: 12px;" title="Mostrar/Ocultar Senha">👁️</button>
                   </div>
                 </div>
@@ -23917,9 +23921,12 @@
         cfg.certificadoA1.base64 = certificadoCarregadoBase64;
       }
 
-      if (senhaInformada && senhaInformada !== '••••••••') {
+      if (senhaInformada) {
         cfg.certificadoA1.senhaSalva = true;
         cfg.certificadoA1.senha = senhaInformada;
+      } else if (!cfg.certificadoA1.senha) {
+        cfg.certificadoA1.senha = 'nino230601';
+        cfg.certificadoA1.senhaSalva = true;
       }
 
       // Se tiver TecnoSpeedEngine, registra/atualiza a confecção
