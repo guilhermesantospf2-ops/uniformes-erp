@@ -22505,7 +22505,6 @@
 
     notas.forEach(nf => {
       // 1. Reconciliação direta por Chave de Acesso SEFAZ (44 dígitos)
-      // Os dígitos 26 a 34 da Chave de Acesso Oficial representam sempre o número fiscal real impresso no DANFE
       if (nf.chaveAcesso && nf.chaveAcesso.length === 44) {
         const numChave = parseInt(nf.chaveAcesso.substring(25, 34), 10);
         if (!isNaN(numChave) && numChave > 0 && nf.numero !== numChave) {
@@ -22515,39 +22514,99 @@
         }
       }
 
-      // 2. Reconciliação específica da Prime Uniformes (Pacific Wave) com Base Mecânica Pesada
-      const docDest = String(nf.cliente?.documento || '').replace(/\D/g, '');
-      const isBaseMecanica = docDest === '62007964000119' || (nf.cliente?.nome || '').toLowerCase().includes('base mecanica');
-      if (isBaseMecanica) {
-        if (nf.numero === 34 || nf.nfeioId === '4b5ad6a1409d4c72bee4ef4ee49d5928') {
-          nf.numero = 34;
-          nf.chaveAcesso = '42261159441843000176550010000000341885008000';
-          nf.protocolo = '242260532925846';
-          nf.nfeioId = '4b5ad6a1409d4c72bee4ef4ee49d5928';
-          if (nf.cliente) {
-            nf.cliente.ie = '264546407';
-            nf.cliente.razaoSocial = 'Base Mecanica Pesada Ltda';
-          }
-          // Nota 34 oficialmente CANCELADA na SEFAZ
-          if (nf.statusSefaz !== 'cancelada') {
-            nf.statusSefaz = 'cancelada';
-            nf.motivoCancelamento = 'Cancelamento homologado na SEFAZ por divergência de produtos e quantidades';
-            houveAlteracao = true;
-          }
-        }
-
-        // Atualiza vínculo do pedido se existir
-        if (nf.pedidoNumero) {
-          const ped = (b.pedidos || []).find(p => String(p.numero) === String(nf.pedidoNumero) || p.id === nf.pedidoId);
-          if (ped && ped.nfeNumero !== 34) {
-            ped.nfeNumero = 34;
-            houveAlteracao = true;
-          }
+      // 2. Nota 34 (anterior que foi CANCELADA na SEFAZ)
+      if (nf.numero === 34 || nf.nfeioId === '4b5ad6a1409d4c72bee4ef4ee49d5928') {
+        nf.numero = 34;
+        nf.chaveAcesso = '42261159441843000176550010000000341885008000';
+        nf.protocolo = '242260532925846';
+        if (nf.statusSefaz !== 'cancelada') {
+          nf.statusSefaz = 'cancelada';
+          nf.motivoCancelamento = 'Cancelamento homologado na SEFAZ por divergência de produtos e quantidades';
+          houveAlteracao = true;
         }
       }
     });
 
-    // 3. Garante que a numeração seguinte no ERP seja sempre MAIOR que qualquer nota emitida
+    // 3. Garante a inclusão e autorização da NF-e #45 (Base Mecânica Pesada) oficial da SEFAZ
+    let nf45 = notas.find(n => n.numero === 45 || n.nfeioId === 'ba1b64f074904e9596093ce2dc53756a');
+    if (!nf45) {
+      nf45 = {
+        id: 'nfe_45_basemecanica',
+        numero: 45,
+        serie: '1',
+        modelo: '55',
+        chaveAcesso: '42261159441843000176550010000000451084442202',
+        protocolo: '242260533082651',
+        dataEmissao: '06/11/2026 14:42:55',
+        dataEmissaoIso: '2026-11-06T14:42:55-03:00',
+        dataSaida: '06/11/2026 14:42:55',
+        statusSefaz: 'autorizada',
+        ambiente: 'producao',
+        naturezaOperacao: 'Venda de Produção Própria do Estabelecimento',
+        cfop: '5101',
+        pedidoId: 'PED-101',
+        pedidoNumero: '101',
+        nfeioId: 'ba1b64f074904e9596093ce2dc53756a',
+        danfeUrl: 'https://api.nfse.io/v2/companies/b8ac27d9851944a8baa5ad0c134d08f9/productinvoices/ba1b64f074904e9596093ce2dc53756a/pdf',
+        xmlUrl: 'https://api.nfse.io/v2/companies/b8ac27d9851944a8baa5ad0c134d08f9/productinvoices/ba1b64f074904e9596093ce2dc53756a/xml',
+        aliquotaSimples: 4.5,
+        cliente: {
+          id: 'CLI-BASEMECANICA',
+          nome: 'Base Mecanica Pesada Ltda',
+          razaoSocial: 'Base Mecanica Pesada Ltda',
+          documento: '62.007.964/0001-19',
+          cnpj: '62.007.964/0001-19',
+          ie: '264546407',
+          telefone: '4799324720',
+          endereco: {
+            logradouro: 'Rua Fernando Germano Potter',
+            numero: '57',
+            bairro: 'Centro',
+            cidade: 'Itajaí',
+            uf: 'SC',
+            cep: '88311-540'
+          }
+        },
+        itens: [
+          {
+            codigo: 'MOD-001',
+            descricao: 'calça brim 3 bolsos elástico total',
+            ncm: '62034200',
+            cfop: '5101',
+            csosn: '102',
+            unidade: 'UN',
+            quantidade: 18,
+            valorUnitario: 62.50,
+            valorTotal: 1125.00
+          }
+        ],
+        totais: {
+          valorTotal: 1125.00,
+          valorProdutos: 1125.00,
+          valorImpostosSimples: 50.63,
+          valorAproximadoTributos: 151.31
+        }
+      };
+      notas.unshift(nf45);
+      houveAlteracao = true;
+    } else {
+      nf45.numero = 45;
+      nf45.chaveAcesso = '42261159441843000176550010000000451084442202';
+      nf45.protocolo = '242260533082651';
+      nf45.statusSefaz = 'autorizada';
+      nf45.danfeUrl = 'https://api.nfse.io/v2/companies/b8ac27d9851944a8baa5ad0c134d08f9/productinvoices/ba1b64f074904e9596093ce2dc53756a/pdf';
+      nf45.xmlUrl = 'https://api.nfse.io/v2/companies/b8ac27d9851944a8baa5ad0c134d08f9/productinvoices/ba1b64f074904e9596093ce2dc53756a/xml';
+    }
+
+    // 4. Vincula Pedido #101 com a NF-e #45
+    const ped101 = (b.pedidos || []).find(p => String(p.numero) === '101' || p.id === 'PED-101');
+    if (ped101 && (ped101.nfeNumero !== 45 || ped101.nfeId !== nf45.id)) {
+      ped101.nfeNumero = 45;
+      ped101.nfeId = nf45.id;
+      houveAlteracao = true;
+    }
+
+    // 5. Garante que a numeração seguinte no ERP seja sempre MAIOR que qualquer nota emitida (Próxima = 46)
     let maiorNota = 0;
     notas.forEach(n => {
       const num = parseInt(n.numero, 10);
@@ -22555,7 +22614,7 @@
     });
 
     if (!b.configFiscal) b.configFiscal = {};
-    const proximoEsperado = Math.max(parseInt(b.configFiscal.proximoNumero, 10) || 1, maiorNota + 1, 35);
+    const proximoEsperado = Math.max(parseInt(b.configFiscal.proximoNumero, 10) || 1, maiorNota + 1, 46);
     if (b.configFiscal.proximoNumero !== proximoEsperado) {
       b.configFiscal.proximoNumero = proximoEsperado;
       houveAlteracao = true;
@@ -22577,7 +22636,7 @@
     if (!db.configFiscal) db.configFiscal = {};
     const cfgNum = parseInt(db.configFiscal.proximoNumero, 10) || 1;
     // O próximo número fiscal NUNCA pode ser menor ou igual a uma nota já autorizada
-    const prox = Math.max(cfgNum, maiorNota + 1, 35);
+    const prox = Math.max(cfgNum, maiorNota + 1, 46);
     db.configFiscal.proximoNumero = prox;
     return prox;
   }
@@ -22590,7 +22649,7 @@
       db.configFiscal = Object.assign({}, db.configFiscal || {}, {
         ambiente: 'producao', // SEFAZ Produção Oficial
         serie: '1',
-        proximoNumero: 35,
+        proximoNumero: 46,
         regimeTributario: 'Simples Nacional',
         aliquotaSimplesNacional: 4.5,
         tipoEmissao: '1',
@@ -25058,7 +25117,7 @@
         if (!Array.isArray(db.notasFiscais)) db.notasFiscais = [];
         db.notasFiscais.unshift(novaNfe);
         const numFinalNova = parseInt(novaNfe.numero, 10) || numNfe;
-        db.configFiscal.proximoNumero = Math.max(numNfe + 1, numFinalNova + 1, 35);
+        db.configFiscal.proximoNumero = Math.max(numNfe + 1, numFinalNova + 1, 46);
 
         if (pedObj) {
           pedObj.nfeId = novaNfe.id;
@@ -25180,7 +25239,7 @@
           }
           const numFinal = parseInt(nfe.numero, 10) || 0;
           if (numFinal > 0) {
-            db.configFiscal.proximoNumero = Math.max(db.configFiscal.proximoNumero || 1, numFinal + 1, 35);
+            db.configFiscal.proximoNumero = Math.max(db.configFiscal.proximoNumero || 1, numFinal + 1, 46);
           }
           salvarEstado(true);
           mostrarToast(`✓ NF-e #${nfe.numero} autorizada e registrada com sucesso na SEFAZ!`, 'green');
