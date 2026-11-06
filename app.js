@@ -22559,120 +22559,127 @@
       }
     });
 
-    // 3. Garante a inclusão e autorização da NF-e #45 (Base Mecânica Pesada) oficial da SEFAZ
-    let nf45 = notas.find(n => n.numero === 45 || n.nfeioId === 'ba1b64f074904e9596093ce2dc53756a');
-    if (!nf45) {
-      nf45 = {
-        id: 'nfe_45_basemecanica',
-        numero: 45,
-        serie: '1',
-        modelo: '55',
-        chaveAcesso: '42261159441843000176550010000000451084442202',
-        protocolo: '242260533082651',
-        dataEmissao: '06/11/2026 14:42:55',
-        dataEmissaoIso: '2026-11-06T14:42:55-03:00',
-        dataSaida: '06/11/2026 14:42:55',
-        statusSefaz: 'autorizada',
-        ambiente: 'producao',
-        naturezaOperacao: 'Venda de Produção Própria do Estabelecimento',
-        cfop: '5101',
-        pedidoId: 'PED-101',
-        pedidoNumero: '101',
-        nfeioId: 'ba1b64f074904e9596093ce2dc53756a',
-        danfeUrl: 'https://api.nfse.io/v2/companies/b8ac27d9851944a8baa5ad0c134d08f9/productinvoices/ba1b64f074904e9596093ce2dc53756a/pdf',
-        xmlUrl: 'https://api.nfse.io/v2/companies/b8ac27d9851944a8baa5ad0c134d08f9/productinvoices/ba1b64f074904e9596093ce2dc53756a/xml',
-        aliquotaSimples: 4.5,
-        cliente: {
-          id: 'CLI-BASEMECANICA',
-          nome: 'Base Mecanica Pesada Ltda',
-          razaoSocial: 'Base Mecanica Pesada Ltda',
-          documento: '62.007.964/0001-19',
-          cnpj: '62.007.964/0001-19',
-          ie: '264546407',
-          telefone: '4799324720',
-          endereco: {
-            logradouro: 'Rua Fernando Germano Potter',
-            numero: '57',
-            bairro: 'Centro',
-            cidade: 'Itajaí',
-            uf: 'SC',
-            cep: '88311-540'
+    const isContaPrimeUniformes = Boolean(
+      (b.pedidos || []).some(p => (p.clienteNome || '').toLowerCase().includes('base mecanica')) ||
+      notas.some(n => n.numero === 34 || n.numero === 45 || n.nfeioId === 'ba1b64f074904e9596093ce2dc53756a')
+    );
+
+    if (isContaPrimeUniformes) {
+      // 3. Garante a inclusão e autorização da NF-e #45 (Base Mecânica Pesada) oficial da SEFAZ
+      let nf45 = notas.find(n => n.numero === 45 || n.nfeioId === 'ba1b64f074904e9596093ce2dc53756a');
+      if (!nf45) {
+        nf45 = {
+          id: 'nfe_45_basemecanica',
+          numero: 45,
+          serie: '1',
+          modelo: '55',
+          chaveAcesso: '42261159441843000176550010000000451084442202',
+          protocolo: '242260533082651',
+          dataEmissao: '06/11/2026 14:42:55',
+          dataEmissaoIso: '2026-11-06T14:42:55-03:00',
+          dataSaida: '06/11/2026 14:42:55',
+          statusSefaz: 'autorizada',
+          ambiente: 'producao',
+          naturezaOperacao: 'Venda de Produção Própria do Estabelecimento',
+          cfop: '5101',
+          pedidoId: 'PED-101',
+          pedidoNumero: '101',
+          nfeioId: 'ba1b64f074904e9596093ce2dc53756a',
+          danfeUrl: 'https://api.nfse.io/v2/companies/b8ac27d9851944a8baa5ad0c134d08f9/productinvoices/ba1b64f074904e9596093ce2dc53756a/pdf',
+          xmlUrl: 'https://api.nfse.io/v2/companies/b8ac27d9851944a8baa5ad0c134d08f9/productinvoices/ba1b64f074904e9596093ce2dc53756a/xml',
+          aliquotaSimples: 4.5,
+          cliente: {
+            id: 'CLI-BASEMECANICA',
+            nome: 'Base Mecanica Pesada Ltda',
+            razaoSocial: 'Base Mecanica Pesada Ltda',
+            documento: '62.007.964/0001-19',
+            cnpj: '62.007.964/0001-19',
+            ie: '264546407',
+            telefone: '4799324720',
+            endereco: {
+              logradouro: 'Rua Fernando Germano Potter',
+              numero: '57',
+              bairro: 'Centro',
+              cidade: 'Itajaí',
+              uf: 'SC',
+              cep: '88311-540'
+            }
+          },
+          itens: [
+            {
+              codigo: 'MOD-001',
+              descricao: 'calça brim 3 bolsos elástico total',
+              ncm: '62034200',
+              cfop: '5101',
+              csosn: '102',
+              unidade: 'UN',
+              quantidade: 18,
+              valorUnitario: 62.50,
+              valorTotal: 1125.00
+            }
+          ],
+          totais: {
+            valorTotal: 1125.00,
+            valorProdutos: 1125.00,
+            valorImpostosSimples: 50.63,
+            valorAproximadoTributos: 151.31
           }
-        },
-        itens: [
-          {
-            codigo: 'MOD-001',
-            descricao: 'calça brim 3 bolsos elástico total',
-            ncm: '62034200',
-            cfop: '5101',
-            csosn: '102',
-            unidade: 'UN',
-            quantidade: 18,
-            valorUnitario: 62.50,
-            valorTotal: 1125.00
+        };
+        notas.unshift(nf45);
+        houveAlteracao = true;
+      } else {
+        nf45.numero = 45;
+        nf45.chaveAcesso = '42261159441843000176550010000000451084442202';
+        nf45.protocolo = '242260533082651';
+        nf45.statusSefaz = 'autorizada';
+        nf45.danfeUrl = 'https://api.nfse.io/v2/companies/b8ac27d9851944a8baa5ad0c134d08f9/productinvoices/ba1b64f074904e9596093ce2dc53756a/pdf';
+        nf45.xmlUrl = 'https://api.nfse.io/v2/companies/b8ac27d9851944a8baa5ad0c134d08f9/productinvoices/ba1b64f074904e9596093ce2dc53756a/xml';
+      }
+
+      // 4. Vincula Pedido #101 com a NF-e #45 (apenas se a #45 estiver ativa)
+      const ped101 = (b.pedidos || []).find(p => String(p.numero) === '101' || p.id === 'PED-101');
+      if (ped101 && nf45.statusSefaz !== 'cancelada' && (ped101.nfeNumero !== 45 || ped101.nfeId !== nf45.id)) {
+        ped101.nfeNumero = 45;
+        ped101.nfeId = nf45.id;
+        houveAlteracao = true;
+      }
+
+      // 4a. Restaura e unifica automaticamente o Pedido #101 (Base Mecânica Pesada) cujo teste de repartição o cliente pediu para desfazer
+      if (!b.configFiscal) b.configFiscal = {};
+      const os101 = (b.ordensServico || []).find(o => !o.subOs && (String(o.pedidoNumero) === '101' || o.id === 'OS-101'));
+      const temSubOs101 = (b.ordensServico || []).some(o => o.subOs && (String(o.pedidoNumero) === '101' || o.parentOsId === 'OS-101' || String(o.id).startsWith('OS-101-')));
+      const temLotes101 = (ped101 && Array.isArray(ped101.itens) && ped101.itens.length > 1 && ped101.itens.some(it => /\(Lote\s+[A-Z0-9]+\)/i.test(it.produtoNome || ''))) ||
+                          (os101 && Array.isArray(os101.itens) && os101.itens.length > 1 && os101.itens.some(it => /\(Lote\s+[A-Z0-9]+\)/i.test(it.produtoNome || '')));
+      if (!b.configFiscal._reparticaoPed101DesfeitaV1 && (temSubOs101 || temLotes101 || (os101 && os101.desmembrada))) {
+        b.ordensServico = (b.ordensServico || []).filter(o => {
+          if (o.subOs && (String(o.pedidoNumero) === '101' || (os101 && o.parentOsId === os101.id) || String(o.id).startsWith('OS-101-'))) return false;
+          return true;
+        });
+        if (os101) {
+          os101.desmembrada = false;
+          delete os101.subOrdensGeradas;
+          if (os101.etapaAtual === 'Repartida') {
+            os101.etapaAtual = os101.etapaAnteriorReparticao || (ped101 && ped101.etapaProducao && ped101.etapaProducao !== 'Repartida' ? ped101.etapaProducao : 'Corte');
           }
-        ],
-        totais: {
-          valorTotal: 1125.00,
-          valorProdutos: 1125.00,
-          valorImpostosSimples: 50.63,
-          valorAproximadoTributos: 151.31
         }
-      };
-      notas.unshift(nf45);
-      houveAlteracao = true;
-    } else {
-      nf45.numero = 45;
-      nf45.chaveAcesso = '42261159441843000176550010000000451084442202';
-      nf45.protocolo = '242260533082651';
-      nf45.statusSefaz = 'autorizada';
-      nf45.danfeUrl = 'https://api.nfse.io/v2/companies/b8ac27d9851944a8baa5ad0c134d08f9/productinvoices/ba1b64f074904e9596093ce2dc53756a/pdf';
-      nf45.xmlUrl = 'https://api.nfse.io/v2/companies/b8ac27d9851944a8baa5ad0c134d08f9/productinvoices/ba1b64f074904e9596093ce2dc53756a/xml';
-    }
-
-    // 4. Vincula Pedido #101 com a NF-e #45 (apenas se a #45 estiver ativa)
-    const ped101 = (b.pedidos || []).find(p => String(p.numero) === '101' || p.id === 'PED-101');
-    if (ped101 && nf45.statusSefaz !== 'cancelada' && (ped101.nfeNumero !== 45 || ped101.nfeId !== nf45.id)) {
-      ped101.nfeNumero = 45;
-      ped101.nfeId = nf45.id;
-      houveAlteracao = true;
-    }
-
-    // 4a. Restaura e unifica automaticamente o Pedido #101 (Base Mecânica Pesada) cujo teste de repartição o cliente pediu para desfazer
-    if (!b.configFiscal) b.configFiscal = {};
-    const os101 = (b.ordensServico || []).find(o => !o.subOs && (String(o.pedidoNumero) === '101' || o.id === 'OS-101'));
-    const temSubOs101 = (b.ordensServico || []).some(o => o.subOs && (String(o.pedidoNumero) === '101' || o.parentOsId === 'OS-101' || String(o.id).startsWith('OS-101-')));
-    const temLotes101 = (ped101 && Array.isArray(ped101.itens) && ped101.itens.length > 1 && ped101.itens.some(it => /\(Lote\s+[A-Z0-9]+\)/i.test(it.produtoNome || ''))) ||
-                        (os101 && Array.isArray(os101.itens) && os101.itens.length > 1 && os101.itens.some(it => /\(Lote\s+[A-Z0-9]+\)/i.test(it.produtoNome || '')));
-    if (!b.configFiscal._reparticaoPed101DesfeitaV1 && (temSubOs101 || temLotes101 || (os101 && os101.desmembrada))) {
-      b.ordensServico = (b.ordensServico || []).filter(o => {
-        if (o.subOs && (String(o.pedidoNumero) === '101' || (os101 && o.parentOsId === os101.id) || String(o.id).startsWith('OS-101-'))) return false;
-        return true;
-      });
-      if (os101) {
-        os101.desmembrada = false;
-        delete os101.subOrdensGeradas;
-        if (os101.etapaAtual === 'Repartida') {
-          os101.etapaAtual = os101.etapaAnteriorReparticao || (ped101 && ped101.etapaProducao && ped101.etapaProducao !== 'Repartida' ? ped101.etapaProducao : 'Corte');
+        if (typeof reunificarItensDeReparticao === 'function') {
+          reunificarItensDeReparticao(os101, ped101);
         }
+        b.configFiscal._reparticaoPed101DesfeitaV1 = true;
+        houveAlteracao = true;
       }
-      if (typeof reunificarItensDeReparticao === 'function') {
-        reunificarItensDeReparticao(os101, ped101);
+
+      // 4b. Garante que também no cadastro de clientes a Base Mecânica Pesada tenha sua IE de SC (264546407) e IBGE de Itajaí
+      const cliBase = (b.clientes || []).find(c => String(c.documento || c.cnpj || '').replace(/\D/g, '') === '62007964000119' || (c.nome || '').toLowerCase().includes('base mecanica'));
+      if (cliBase && (!cliBase.ie || cliBase.ie === 'ISENTO')) {
+        cliBase.ie = '264546407';
+        cliBase.inscricaoEstadual = '264546407';
+        cliBase.ibge = '4208203';
+        houveAlteracao = true;
       }
-      b.configFiscal._reparticaoPed101DesfeitaV1 = true;
-      houveAlteracao = true;
     }
 
-    // 4b. Garante que também no cadastro de clientes a Base Mecânica Pesada tenha sua IE de SC (264546407) e IBGE de Itajaí
-    const cliBase = (b.clientes || []).find(c => String(c.documento || c.cnpj || '').replace(/\D/g, '') === '62007964000119' || (c.nome || '').toLowerCase().includes('base mecanica'));
-    if (cliBase && (!cliBase.ie || cliBase.ie === 'ISENTO')) {
-      cliBase.ie = '264546407';
-      cliBase.inscricaoEstadual = '264546407';
-      cliBase.ibge = '4208203';
-      houveAlteracao = true;
-    }
-
-    // 5. Garante que a numeração seguinte no ERP seja sempre MAIOR que qualquer nota emitida (Próxima >= 46)
+    // 5. Garante que a numeração seguinte no ERP seja sempre MAIOR que qualquer nota emitida
     let maiorNota = 0;
     notas.forEach(n => {
       const num = parseInt(n.numero, 10);
@@ -22680,7 +22687,8 @@
     });
 
     if (!b.configFiscal) b.configFiscal = {};
-    const proximoEsperado = Math.max(parseInt(b.configFiscal.proximoNumero, 10) || 1, maiorNota + 1, 46);
+    const pisoMinimo = isContaPrimeUniformes ? 46 : 1;
+    const proximoEsperado = Math.max(parseInt(b.configFiscal.proximoNumero, 10) || 1, maiorNota + 1, pisoMinimo);
     if (b.configFiscal.proximoNumero !== proximoEsperado) {
       b.configFiscal.proximoNumero = proximoEsperado;
       houveAlteracao = true;
