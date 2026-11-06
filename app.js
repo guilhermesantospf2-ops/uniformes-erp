@@ -22519,29 +22519,22 @@
       const docDest = String(nf.cliente?.documento || '').replace(/\D/g, '');
       const isBaseMecanica = docDest === '62007964000119' || (nf.cliente?.nome || '').toLowerCase().includes('base mecanica');
       if (isBaseMecanica) {
-        if (nf.numero !== 34) {
+        if (nf.numero === 34 || nf.nfeioId === '4b5ad6a1409d4c72bee4ef4ee49d5928') {
           nf.numero = 34;
-          houveAlteracao = true;
-        }
-        if (nf.chaveAcesso !== '42261159441843000176550010000000341885008000') {
           nf.chaveAcesso = '42261159441843000176550010000000341885008000';
-          houveAlteracao = true;
-        }
-        if (nf.protocolo !== '242260532925846') {
           nf.protocolo = '242260532925846';
-          houveAlteracao = true;
-        }
-        if (!nf.nfeioId || nf.nfeioId !== '4b5ad6a1409d4c72bee4ef4ee49d5928') {
           nf.nfeioId = '4b5ad6a1409d4c72bee4ef4ee49d5928';
-          houveAlteracao = true;
+          if (nf.cliente) {
+            nf.cliente.ie = '264546407';
+            nf.cliente.razaoSocial = 'Base Mecanica Pesada Ltda';
+          }
+          // Nota 34 oficialmente CANCELADA na SEFAZ
+          if (nf.statusSefaz !== 'cancelada') {
+            nf.statusSefaz = 'cancelada';
+            nf.motivoCancelamento = 'Cancelamento homologado na SEFAZ por divergência de produtos e quantidades';
+            houveAlteracao = true;
+          }
         }
-        if (nf.cliente) {
-          nf.cliente.ie = '264546407';
-          nf.cliente.razaoSocial = 'Base Mecanica Pesada Ltda';
-        }
-        nf.danfeUrl = 'https://api.nfse.io/v2/companies/b8ac27d9851944a8baa5ad0c134d08f9/productinvoices/4b5ad6a1409d4c72bee4ef4ee49d5928/pdf?environment=producao';
-        nf.xmlUrl = 'https://api.nfse.io/v2/companies/b8ac27d9851944a8baa5ad0c134d08f9/productinvoices/4b5ad6a1409d4c72bee4ef4ee49d5928/xml?environment=producao';
-        nf.statusSefaz = 'autorizada';
 
         // Atualiza vínculo do pedido se existir
         if (nf.pedidoNumero) {
