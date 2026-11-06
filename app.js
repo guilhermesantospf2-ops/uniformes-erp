@@ -6409,8 +6409,13 @@
   function parseNumInput(val, padrao = 0) {
     if (val === undefined || val === null) return padrao;
     if (typeof val === 'number') return isNaN(val) ? padrao : val;
-    const str = String(val).trim().replace(',', '.');
+    let str = String(val).trim().replace(/^R\$\s*/i, '');
     if (str === '') return padrao;
+    if (str.includes(',') && str.includes('.')) {
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else {
+      str = str.replace(',', '.');
+    }
     const n = parseFloat(str);
     return isNaN(n) ? padrao : n;
   }
@@ -6419,14 +6424,99 @@
     return parseNumInput(val, padrao);
   }
 
+  function formatarMoedaInput(val, padrao = 0) {
+    const n = numOuPadrao(val, padrao);
+    return n.toFixed(2).replace('.', ',');
+  }
+
   // Lê um input numérico do DOM preservando 0 ou campo limpo ('') como 0!
   function lerInputNumDom(idOuEl, padraoSeInexistente = 0) {
     const el = typeof idOuEl === 'string' ? document.getElementById(idOuEl) : idOuEl;
     if (!el) return padraoSeInexistente;
-    const raw = String(el.value ?? '').trim().replace(',', '.');
+    const raw = String(el.value ?? '').trim();
     if (raw === '') return 0;
-    const n = parseFloat(raw);
-    return isNaN(n) ? 0 : n;
+    return parseNumInput(raw, 0);
+  }
+
+  // Proteção Global: impede que o scroll do mouse (wheel) altere acidentalmente valores de inputs numéricos ou monetários
+  if (!window.__bravviInputGuardsInstalled) {
+    window.__bravviInputGuardsInstalled = true;
+
+    document.addEventListener('wheel', (e) => {
+      const active = document.activeElement;
+      if (active && active.tagName === 'INPUT' && (active.type === 'number' || active.classList.contains('input-moeda-centavos'))) {
+        active.blur();
+      }
+    }, { passive: true, capture: true });
+
+    // Máscara Automática de Centavos (0,00 -> digitar 1950 vira 19,50 automaticamente sem precisar de vírgula)
+    document.addEventListener('focusin', (e) => {
+      const el = e.target;
+      if (el && el.tagName === 'INPUT' && el.classList.contains('input-moeda-centavos')) {
+        el.dataset.novoCiclo = '1';
+        setTimeout(() => {
+          try { el.select(); } catch (_) {}
+        }, 10);
+      }
+    }, true);
+
+    document.addEventListener('mouseup', (e) => {
+      const el = e.target;
+      if (el && el.tagName === 'INPUT' && el.classList.contains('input-moeda-centavos')) {
+        if (el.dataset.novoCiclo === '1') {
+          try { el.select(); } catch (_) {}
+        }
+      }
+    }, true);
+
+    document.addEventListener('keydown', (e) => {
+      const el = e.target;
+      if (!el || el.tagName !== 'INPUT' || !el.classList.contains('input-moeda-centavos')) return;
+
+      // Bloqueia setas para cima/baixo de alterarem valor acidentalmente
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        return;
+      }
+
+      // Ignora vírgula ou ponto digitados manualmente pois a máscara já posiciona a vírgula nos centavos
+      if (e.key === ',' || e.key === '.') {
+        e.preventDefault();
+        return;
+      }
+
+      const isDigit = /^[0-9]$/.test(e.key);
+      const isClearKey = (e.key === 'Backspace' || e.key === 'Delete');
+
+      if (el.dataset.novoCiclo === '1' && (isDigit || isClearKey)) {
+        el.dataset.novoCiclo = '0';
+        if (isClearKey) {
+          e.preventDefault();
+          el.value = '0,00';
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+          return;
+        }
+        // Limpa o valor anterior para iniciar a digitação fresca (ex: 1950 -> 0,01 -> 0,19 -> 1,95 -> 19,50)
+        el.value = '';
+      }
+    }, true);
+
+    document.addEventListener('input', (e) => {
+      const el = e.target;
+      if (!el || el.tagName !== 'INPUT' || !el.classList.contains('input-moeda-centavos')) return;
+      el.dataset.novoCiclo = '0';
+      const digitos = (el.value || '').replace(/\D/g, '');
+      const centavos = digitos === '' ? 0 : (parseInt(digitos, 10) || 0);
+      const formatado = (centavos / 100).toFixed(2).replace('.', ',');
+      if (el.value !== formatado) {
+        el.value = formatado;
+      }
+      try {
+        const len = el.value.length;
+        el.setSelectionRange(len, len);
+      } catch (_) {}
+    }, true);
   }
 
   const LOCAIS_PERSONALIZACAO = [
@@ -6641,11 +6731,11 @@
               </div>
               <div class="form-group" style="flex: 1;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Metro Linear (R$)</label>
-                <input type="number" class="form-input inp-dtf-metro" value="${numOuPadrao(app.dtfMetroLinear, larguraRolo == 28 ? 38 : 60).toFixed(2)}" step="1" style="font-size: 11px; padding: 3px 6px;">
+                <input type="text" inputmode="decimal" class="form-input input-moeda-centavos inp-dtf-metro" value="${formatarMoedaInput(numOuPadrao(app.dtfMetroLinear, larguraRolo == 28 ? 38 : 60))}" style="font-size: 11px; padding: 3px 6px;">
               </div>
               <div class="form-group" style="flex: 0.9;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Prensa (R$)</label>
-                <input type="number" class="form-input inp-dtf-prensa" value="${numOuPadrao(app.dtfPrensagem, 1.50).toFixed(2)}" step="0.20" style="font-size: 11px; padding: 3px 6px;">
+                <input type="text" inputmode="decimal" class="form-input input-moeda-centavos inp-dtf-prensa" value="${formatarMoedaInput(numOuPadrao(app.dtfPrensagem, 1.50))}" style="font-size: 11px; padding: 3px 6px;">
               </div>
             </div>
             <div style="font-size: 10px; color: var(--text-gray-500); line-height: 1.3;">
@@ -6655,15 +6745,15 @@
             <div class="form-row" style="margin-bottom: 2px;">
               <div class="form-group" style="flex: 1.5;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px; font-weight: 700; color: #1e3a8a;">Valor por Bordado (R$/un)</label>
-                <input type="number" class="form-input inp-bor-valor" value="${(app.borValorUnitario !== undefined ? app.borValorUnitario : (app.borPontos ? ((app.borPontos / 1000) * (app.borMilPontos || 0.45)) : 4.50)).toFixed(2)}" step="0.50" min="0" style="font-size: 11.5px; font-weight: 700; padding: 3px 6px; border-color: #93c5fd; background: #f0f7ff;">
+                <input type="text" inputmode="decimal" class="form-input input-moeda-centavos inp-bor-valor" value="${formatarMoedaInput(app.borValorUnitario !== undefined ? app.borValorUnitario : (app.borPontos ? ((app.borPontos / 1000) * (app.borMilPontos || 0.45)) : 4.50))}" style="font-size: 11.5px; font-weight: 700; padding: 3px 6px; border-color: #93c5fd; background: #f0f7ff;">
               </div>
               <div class="form-group" style="flex: 1.1;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;" title="Taxa única da matriz (rateada entre as peças). Deixe 0 se o cliente já tiver matriz ou for grátis">Taxa Matriz (R$)</label>
-                <input type="number" class="form-input inp-bor-matriz" value="${(app.borMatriz !== undefined ? app.borMatriz : 0.00).toFixed(2)}" step="5" min="0" style="font-size: 11px; padding: 3px 6px;">
+                <input type="text" inputmode="decimal" class="form-input input-moeda-centavos inp-bor-matriz" value="${formatarMoedaInput(app.borMatriz !== undefined ? app.borMatriz : 0.00)}" style="font-size: 11px; padding: 3px 6px;">
               </div>
               <div class="form-group" style="flex: 0.9;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;" title="Custo de entretela ou acabamento especial se houver">Entretela (R$)</label>
-                <input type="number" class="form-input inp-bor-entretela" value="${(app.borEntretela !== undefined ? app.borEntretela : 0.00).toFixed(2)}" step="0.20" min="0" style="font-size: 11px; padding: 3px 6px;">
+                <input type="text" inputmode="decimal" class="form-input input-moeda-centavos inp-bor-entretela" value="${formatarMoedaInput(app.borEntretela !== undefined ? app.borEntretela : 0.00)}" style="font-size: 11px; padding: 3px 6px;">
               </div>
             </div>
             <div style="font-size: 10px; color: var(--text-gray-500); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
@@ -6678,15 +6768,15 @@
               </div>
               <div class="form-group" style="flex: 1.1;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Gravação Tela (R$)</label>
-                <input type="number" class="form-input inp-silk-tela" value="${(app.silkTaxaTela !== undefined ? app.silkTaxaTela : 35.00).toFixed(2)}" step="5" min="0" style="font-size: 11px; padding: 3px 6px;">
+                <input type="text" inputmode="decimal" class="form-input input-moeda-centavos inp-silk-tela" value="${formatarMoedaInput(app.silkTaxaTela !== undefined ? app.silkTaxaTela : 35.00)}" style="font-size: 11px; padding: 3px 6px;">
               </div>
               <div class="form-group" style="flex: 1.1;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Puxada / Batida (R$)</label>
-                <input type="number" class="form-input inp-silk-batida" value="${(app.silkBatida !== undefined ? app.silkBatida : 1.80).toFixed(2)}" step="0.20" min="0" style="font-size: 11px; padding: 3px 6px;">
+                <input type="text" inputmode="decimal" class="form-input input-moeda-centavos inp-silk-batida" value="${formatarMoedaInput(app.silkBatida !== undefined ? app.silkBatida : 1.80)}" style="font-size: 11px; padding: 3px 6px;">
               </div>
               <div class="form-group" style="flex: 0.9;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Tinta (R$)</label>
-                <input type="number" class="form-input inp-silk-tinta" value="${(app.silkTinta !== undefined ? app.silkTinta : 0.90).toFixed(2)}" step="0.10" min="0" style="font-size: 11px; padding: 3px 6px;">
+                <input type="text" inputmode="decimal" class="form-input input-moeda-centavos inp-silk-tinta" value="${formatarMoedaInput(app.silkTinta !== undefined ? app.silkTinta : 0.90)}" style="font-size: 11px; padding: 3px 6px;">
               </div>
             </div>
             <div style="font-size: 10px; color: var(--text-gray-500); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
@@ -6701,11 +6791,11 @@
               </div>
               <div class="form-group" style="flex: 1.2;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Papel + Tinta (R$/m²)</label>
-                <input type="number" class="form-input inp-sub-custo" value="${(app.subCustoM2 !== undefined ? app.subCustoM2 : 9.50).toFixed(2)}" step="0.5" style="font-size: 11px; padding: 3px 6px;">
+                <input type="text" inputmode="decimal" class="form-input input-moeda-centavos inp-sub-custo" value="${formatarMoedaInput(app.subCustoM2 !== undefined ? app.subCustoM2 : 9.50)}" style="font-size: 11px; padding: 3px 6px;">
               </div>
               <div class="form-group" style="flex: 1;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Calandra / Prensa (R$)</label>
-                <input type="number" class="form-input inp-sub-calandra" value="${(app.subCalandra !== undefined ? app.subCalandra : 2.00).toFixed(2)}" step="0.5" style="font-size: 11px; padding: 3px 6px;">
+                <input type="text" inputmode="decimal" class="form-input input-moeda-centavos inp-sub-calandra" value="${formatarMoedaInput(app.subCalandra !== undefined ? app.subCalandra : 2.00)}" style="font-size: 11px; padding: 3px 6px;">
               </div>
             </div>
           ` : `
@@ -6999,6 +7089,10 @@
     let itensOrcamento = [];
     if (isEdicao && orcamentoExistente.itens && Array.isArray(orcamentoExistente.itens) && orcamentoExistente.itens.length > 0) {
       itensOrcamento = JSON.parse(JSON.stringify(orcamentoExistente.itens));
+      itensOrcamento.forEach(itemClone => {
+        delete itemClone.custosCustomizadosPorTamanho;
+        delete itemClone.custoUnitarioCustomizadoPonderado;
+      });
     } else if (isEdicao) {
       // Migração de orçamento legado para modelo estruturado
       const prodLegado = ((db.produtosBase || []).find(pr => pr.id === orcamentoExistente.produtoId || pr.nome === orcamentoExistente.produtoNome) || db.produtosBase[0]) || {
@@ -7582,7 +7676,7 @@
                 <div class="form-row">
                   <div class="form-group" style="flex: 1.2;">
                     <label class="form-label" id="labelInputCustoTecido">Custo Tecido (R$/kg)</label>
-                    <input type="number" id="inputCustoTecido" class="form-input" value="${padroes.custoTecidoKg.toFixed(2)}" step="0.50">
+                    <input type="text" inputmode="decimal" id="inputCustoTecido" class="form-input input-moeda-centavos" value="${formatarMoedaInput(padroes.custoTecidoKg)}">
                   </div>
 
                   <div class="form-group" style="flex: 1.35; min-width: 175px;">
@@ -7614,17 +7708,17 @@
 
                   <div class="form-group" style="flex: 1;">
                     <label class="form-label">Aviamentos p/ Peça (R$)</label>
-                    <input type="number" id="inputCustoAviamento" class="form-input" value="${numOuPadrao(padroes.custoAviamento, 4.80).toFixed(2)}" step="0.20" min="0">
+                    <input type="text" inputmode="decimal" id="inputCustoAviamento" class="form-input input-moeda-centavos" value="${formatarMoedaInput(numOuPadrao(padroes.custoAviamento, 4.80))}">
                   </div>
 
                   <div class="form-group" style="flex: 1;">
                     <label class="form-label">Estampa Calculada (R$)</label>
-                    <input type="number" id="inputCustoEstampa" class="form-input" value="0.00" step="0.10" min="0">
+                    <input type="text" inputmode="decimal" id="inputCustoEstampa" class="form-input input-moeda-centavos" value="0,00">
                   </div>
 
                   <div class="form-group" style="flex: 1;">
                     <label class="form-label">Costura & MDO (R$)</label>
-                    <input type="number" id="inputCustoCostura" class="form-input" value="${numOuPadrao(padroes.custoCostura, 7.50).toFixed(2)}" step="0.50" min="0">
+                    <input type="text" inputmode="decimal" id="inputCustoCostura" class="form-input input-moeda-centavos" value="${formatarMoedaInput(numOuPadrao(padroes.custoCostura, 7.50))}">
                   </div>
                 </div>
 
@@ -7636,7 +7730,7 @@
                 <div class="form-row">
                   <div class="form-group">
                     <label class="form-label">Preço que Pretende Cobrar (R$ un)</label>
-                    <input type="number" id="inputPrecoPretendido" class="form-input" style="font-weight: 800; font-size: 14px;" value="58.00" step="1.00" min="0">
+                    <input type="text" inputmode="decimal" id="inputPrecoPretendido" class="form-input input-moeda-centavos" style="font-weight: 800; font-size: 14px;" value="58,00">
                   </div>
 
                   <div class="form-group">
@@ -7869,7 +7963,7 @@
       } else {
         it.custoEstampaTotal = somaEstampas;
         if (inpCustoEstampa && document.activeElement !== inpCustoEstampa) {
-          inpCustoEstampa.value = somaEstampas.toFixed(2);
+          inpCustoEstampa.value = formatarMoedaInput(somaEstampas);
         }
       }
       const lblTotal = document.getElementById('lblTotalEstampaModelo');
@@ -8338,7 +8432,7 @@
       const custoTecVal = numOuPadrao(it.custoTecidoKg, numOuPadrao(padroes.custoTecidoKg, 48.50));
       const consumoVal = numOuPadrao(it.consumoTecido, isMet ? 0.75 : 0.28);
       const inpTec = document.getElementById('inputCustoTecido');
-      if (inpTec) inpTec.value = custoTecVal.toFixed(2);
+      if (inpTec) inpTec.value = formatarMoedaInput(custoTecVal);
       const inpCons = document.getElementById('inputConsumoTecido');
       if (inpCons) inpCons.value = consumoVal.toFixed(2);
       const badgeGramas = document.getElementById('badgeConsumoEquivGramas');
@@ -8361,13 +8455,13 @@
       const inpMarg = document.getElementById('inputMargemErroTecido');
       if (inpMarg) inpMarg.value = numOuPadrao(it.margemErroTecido, 8.0).toFixed(1);
       const inpAv = document.getElementById('inputCustoAviamento');
-      if (inpAv) inpAv.value = numOuPadrao(it.custoAviamento, 4.80).toFixed(2);
+      if (inpAv) inpAv.value = formatarMoedaInput(numOuPadrao(it.custoAviamento, 4.80));
       const inpCost = document.getElementById('inputCustoCostura');
-      if (inpCost) inpCost.value = numOuPadrao(it.custoCostura, 7.50).toFixed(2);
+      if (inpCost) inpCost.value = formatarMoedaInput(numOuPadrao(it.custoCostura, 7.50));
 
       // Preço e Margem
       const inpPrec = document.getElementById('inputPrecoPretendido');
-      if (inpPrec) inpPrec.value = numOuPadrao(it.precoVendaUnitario, 58.00).toFixed(2);
+      if (inpPrec) inpPrec.value = formatarMoedaInput(numOuPadrao(it.precoVendaUnitario, 58.00));
       const inpMD = document.getElementById('inputMargemDesejada');
       if (inpMD) inpMD.value = numOuPadrao(it.margemDesejada, 30.0).toFixed(0);
       const inpImp = document.getElementById('inputAliquotaImposto');
@@ -8495,7 +8589,7 @@
       const lbl = document.getElementById('lblTotalEstampaModelo');
       if (lbl) lbl.textContent = `${formatarMoeda(estampaFinal)} / peça`;
       const inpEstampa = document.getElementById('inputCustoEstampa');
-      if (inpEstampa) inpEstampa.value = estampaFinal.toFixed(2);
+      if (inpEstampa && document.activeElement !== inpEstampa) inpEstampa.value = formatarMoedaInput(estampaFinal);
     }
 
     // Botões de Presets Rápidos de Estampa
@@ -8633,7 +8727,7 @@
         const inpConsumo = document.getElementById('inputConsumoTecido');
         if (inpConsumo) inpConsumo.value = it.consumoTecido.toFixed(2);
         const inpCostura = document.getElementById('inputCustoCostura');
-        if (inpCostura) inpCostura.value = it.custoCostura.toFixed(2);
+        if (inpCostura) inpCostura.value = formatarMoedaInput(it.custoCostura);
 
         if (!it.mockupUploadPersonalizado) {
           const cliId = document.getElementById('orcClienteSelect')?.value;
@@ -8804,9 +8898,9 @@
       if (p.consumosCustomizadosPorTamanho) {
         it.consumosCustomizadosPorTamanho = JSON.parse(JSON.stringify(p.consumosCustomizadosPorTamanho));
       }
-      if (p.custosCustomizadosPorTamanho) {
-        it.custosCustomizadosPorTamanho = JSON.parse(JSON.stringify(p.custosCustomizadosPorTamanho));
-      }
+      // Recalcula sempre o custo unitário a partir dos insumos e consumos reais (evita custo antigo congelado quando um insumo é 0)
+      delete it.custosCustomizadosPorTamanho;
+      delete it.custoUnitarioCustomizadoPonderado;
       if (Array.isArray(p.aplicacoes) && p.aplicacoes.length > 0) {
         it.aplicacoes = JSON.parse(JSON.stringify(p.aplicacoes));
       }
@@ -9882,7 +9976,7 @@
         const preco = parseFloat(opt.getAttribute('data-preco')) || 0;
         const inpCusto = document.getElementById('inputCustoTecido');
         if (inpCusto && preco > 0) {
-          inpCusto.value = preco.toFixed(2);
+          inpCusto.value = formatarMoedaInput(preco);
         }
       }
       sincronizarItemAtivoDoDOM();

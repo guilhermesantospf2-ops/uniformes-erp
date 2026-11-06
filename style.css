@@ -3344,3 +3344,16 @@ body.sidebar-open-mobile .mobile-sidebar-backdrop {
     display: none !important; /* No celular usamos o botão padrão da navbar */
   }
 }
+
+/* Remove setinhas (spin buttons) de todos os inputs numéricos para evitar cliques acidentais e bloqueios de centavos */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+
