@@ -325,6 +325,12 @@
     if (isModoDemo()) return; // Modo demonstração não possui bloqueio
 
     const dadosEmp = empresa || obterEmpresaConfig();
+
+    // Bloqueio manual imediato do painel diretor
+    if (dadosEmp && (dadosEmp.statusAssinatura === 'bloqueada' || dadosEmp.statusAssinatura === 'suspensa' || dadosEmp.statusAssinatura === 'cancelada' || dadosEmp.bloqueadoManual === true)) {
+      exibirModalBloqueioInadimplencia(dadosEmp, 999);
+      return;
+    }
     const vencimentoStr = dadosEmp.dataVencimento || 
                           localStorage.getItem('BRAVVI_ERP_ASSINATURA_VENCIMENTO') || 
                           dadosEmp.vencimento;

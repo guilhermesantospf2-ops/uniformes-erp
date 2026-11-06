@@ -823,6 +823,327 @@
             .config-card { flex-direction: column; align-items: stretch; }
             .config-input { width: 100%; }
         }
+    
+        /* CRM Kanban Styles */
+        .crm-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 20px;
+            padding: 16px 20px;
+            background: #0d1424;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+        }
+
+        .crm-stats-pills {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .crm-stat-pill {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 99px;
+            font-size: 12px;
+            color: var(--text-muted);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .crm-stat-pill strong {
+            color: var(--text-main);
+        }
+
+        .crm-board {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(240px, 1fr));
+            gap: 14px;
+            align-items: start;
+            margin-bottom: 30px;
+            overflow-x: auto;
+            padding-bottom: 16px;
+        }
+
+        .crm-col {
+            background: #0b1120;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            min-height: 480px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .crm-col-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .crm-col-title {
+            font-size: 11.5px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .crm-badge-count {
+            background: rgba(255, 255, 255, 0.08);
+            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 99px;
+        }
+
+        .crm-card-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .crm-card {
+            background: var(--surface);
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            padding: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .crm-card:hover {
+            border-color: #38bdf8;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .crm-card-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        .crm-card-sub {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .crm-card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .crm-tag {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .crm-tag-access-ok {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .crm-tag-access-lock {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .crm-tag-access-none {
+            background: rgba(148, 163, 184, 0.12);
+            color: #cbd5e1;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .crm-card-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .crm-action-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .crm-btn-chat {
+            flex: 1;
+            background: #128c7e;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11.5px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+
+        .crm-btn-chat:hover {
+            background: #25d366;
+            color: #000;
+        }
+
+        .crm-btn-lock {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 6px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s;
+        }
+
+        .crm-btn-lock:hover {
+            background: #ef4444;
+            color: #ffffff;
+        }
+
+        .crm-btn-unlock {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 6px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s;
+        }
+
+        .crm-btn-unlock:hover {
+            background: #10b981;
+            color: #ffffff;
+        }
+
+        .crm-stage-select {
+            width: 100%;
+            padding: 5px 8px;
+            background: #080d1a;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .crm-stage-select:focus {
+            border-color: var(--primary);
+            color: var(--text-main);
+        }
+
+        /* Modal Sub Tabs */
+        .modal-tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+
+        .modal-tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 700;
+            padding: 8px 14px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .modal-tab-btn.active {
+            color: #34d399;
+            border-bottom-color: #34d399;
+        }
+
+        .quick-msg-chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 11px;
+            padding: 5px 10px;
+            border-radius: 99px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-msg-chip:hover {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border-color: rgba(16, 185, 129, 0.4);
+        }
+
+        .recorder-box {
+            background: #080d1a;
+            border: 1.5px dashed var(--border-light);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .record-pulse {
+            animation: pulse-mic 1.2s infinite;
+        }
+
+        @keyframes pulse-mic {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+            70% { transform: scale(1.06); box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
     </style>
 </head>
 <body>
@@ -877,8 +1198,98 @@
         </button>
     </div>
 
+    
+    <!-- TAB CRM: Funil de Vendas & Atendimento por Etapas -->
+    <div id="tabCRM" class="tab-content active">
+        <!-- Top CRM Toolbar -->
+        <div class="crm-header-bar">
+            <div>
+                <div style="font-size: 15px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-filter" style="color: #10b981;"></i> Funil de Atendimento Comercial
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                    Separe seus clientes por etapa, envie áudios/mensagens pelo WhatsApp e gerencie o acesso ao ERP.
+                </div>
+            </div>
+
+            <div class="crm-stats-pills">
+                <span class="crm-stat-pill">📥 Novos: <strong id="crmStatNovos">0</strong></span>
+                <span class="crm-stat-pill">💬 Em Atendimento: <strong id="crmStatAtendimento">0</strong></span>
+                <span class="crm-stat-pill">🧪 Testes: <strong id="crmStatTeste">0</strong></span>
+                <span class="crm-stat-pill">📝 Proposta: <strong id="crmStatProposta">0</strong></span>
+                <span class="crm-stat-pill" style="border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.1);">👑 Assinantes: <strong id="crmStatAtivos" style="color: #34d399;">0</strong></span>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary" onclick="syncClientsWithSupabase()" title="Atualizar clientes em tempo real do banco de dados" style="padding: 8px 12px; font-size: 12px;">
+                    <i class="fa-solid fa-arrows-rotate"></i> Sincronizar Nuvem
+                </button>
+                <button class="btn btn-primary" onclick="openModal(-1, 'novo')" style="padding: 8px 14px; font-size: 12px;">
+                    <i class="fa-solid fa-user-plus"></i> Novo Lead
+                </button>
+            </div>
+        </div>
+
+        <!-- Kanban Board: 6 Colunas de Etapas -->
+        <div class="crm-board">
+            <!-- Coluna 1: Novos Leads -->
+            <div class="crm-col">
+                <div class="crm-col-head">
+                    <span class="crm-col-title" style="color: #60a5fa;"><i class="fa-solid fa-inbox"></i> 1. Novos Leads</span>
+                    <span class="crm-badge-count" id="count_novo">0</span>
+                </div>
+                <div class="crm-card-list" id="col_novo"></div>
+            </div>
+
+            <!-- Coluna 2: Em Atendimento -->
+            <div class="crm-col">
+                <div class="crm-col-head">
+                    <span class="crm-col-title" style="color: #fbbf24;"><i class="fa-solid fa-comments"></i> 2. Em Atendimento</span>
+                    <span class="crm-badge-count" id="count_atendimento">0</span>
+                </div>
+                <div class="crm-card-list" id="col_atendimento"></div>
+            </div>
+
+            <!-- Coluna 3: Teste Grátis / Demo -->
+            <div class="crm-col">
+                <div class="crm-col-head">
+                    <span class="crm-col-title" style="color: #c084fc;"><i class="fa-solid fa-flask"></i> 3. Teste Grátis (7d)</span>
+                    <span class="crm-badge-count" id="count_teste">0</span>
+                </div>
+                <div class="crm-card-list" id="col_teste"></div>
+            </div>
+
+            <!-- Coluna 4: Proposta & Negociação -->
+            <div class="crm-col">
+                <div class="crm-col-head">
+                    <span class="crm-col-title" style="color: #f97316;"><i class="fa-solid fa-handshake"></i> 4. Negociação</span>
+                    <span class="crm-badge-count" id="count_proposta">0</span>
+                </div>
+                <div class="crm-card-list" id="col_proposta"></div>
+            </div>
+
+            <!-- Coluna 5: Assinantes Ativos -->
+            <div class="crm-col" style="border-color: rgba(16, 185, 129, 0.4); background: #07151e;">
+                <div class="crm-col-head" style="border-bottom-color: rgba(16, 185, 129, 0.3);">
+                    <span class="crm-col-title" style="color: #34d399;"><i class="fa-solid fa-crown"></i> 5. Assinantes Ativos</span>
+                    <span class="crm-badge-count" id="count_ativo" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">0</span>
+                </div>
+                <div class="crm-card-list" id="col_ativo"></div>
+            </div>
+
+            <!-- Coluna 6: Pausado / Sem Retorno -->
+            <div class="crm-col">
+                <div class="crm-col-head">
+                    <span class="crm-col-title" style="color: #94a3b8;"><i class="fa-solid fa-snowflake"></i> 6. Pausado / Frio</span>
+                    <span class="crm-badge-count" id="count_pausado">0</span>
+                </div>
+                <div class="crm-card-list" id="col_pausado"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- TAB 1: Meta 10K & Overview -->
-    <div id="tabMeta" class="tab-content active">
+    <div id="tabMeta" class="tab-content">
         <!-- Big Progress Thermometer -->
         <div class="card-thermometer">
             <div class="thermo-header">
@@ -1123,6 +1534,177 @@
     </div>
 </div>
 
+
+<!-- Modal: Central de Atendimento (Escrever & Mandar Áudio) -->
+<div class="modal-overlay" id="crmChatModal">
+    <div class="modal-card" style="max-width: 580px;">
+        <div class="modal-head">
+            <div>
+                <h3 style="font-size: 16px; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-brands fa-whatsapp" style="color: #25d366;"></i> Atendimento: <span id="crmChatModalClientName">Cliente</span>
+                </h3>
+                <div style="font-size: 12px; color: var(--text-muted);" id="crmChatModalClientPhone">Telefone</div>
+            </div>
+            <button onclick="closeCrmChatModal()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px;">&times;</button>
+        </div>
+
+        <!-- Sub Tabs: Escrever vs Áudio -->
+        <div class="modal-tabs">
+            <button class="modal-tab-btn active" id="btnSubTabMsg" onclick="switchChatSubTab('msg')">
+                <i class="fa-solid fa-pen"></i> ✍️ Escrever Mensagem
+            </button>
+            <button class="modal-tab-btn" id="btnSubTabAudio" onclick="switchChatSubTab('audio')">
+                <i class="fa-solid fa-microphone"></i> 🎙️ Mandar Áudio
+            </button>
+        </div>
+
+        <!-- Sub-Aba 1: Escrever Mensagem -->
+        <div id="subTabMsgContent">
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
+                Respostas & Scripts Rápidos (Clique para preencher):
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;">
+                <button type="button" class="quick-msg-chip" onclick="applyMsgTemplate('boas_vindas')">👋 1. Boas-Vindas</button>
+                <button type="button" class="quick-msg-chip" onclick="applyMsgTemplate('video_apresentacao')">🎥 2. Vídeo do ERP</button>
+                <button type="button" class="quick-msg-chip" onclick="applyMsgTemplate('teste_gratis')">🧪 3. Teste 7 Dias</button>
+                <button type="button" class="quick-msg-chip" onclick="applyMsgTemplate('proposta_pix')">💳 4. Proposta & Pix</button>
+            </div>
+
+            <div class="form-group">
+                <textarea id="crmMsgTextarea" class="form-control" rows="6" style="resize: vertical; font-size: 13.5px; line-height: 1.45;" placeholder="Digite aqui sua mensagem personalizada para o cliente..."></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 16px;">
+                <button type="button" class="btn btn-secondary" onclick="copyCrmMsgText()" style="font-size: 12px;">
+                    <i class="fa-regular fa-copy"></i> Copiar Mensagem
+                </button>
+                <button type="button" class="btn btn-primary" onclick="sendWhatsAppCrmMsg()" style="background: #128c7e;">
+                    <i class="fa-brands fa-whatsapp"></i> Abrir WhatsApp com Mensagem &rarr;
+                </button>
+            </div>
+        </div>
+
+        <!-- Sub-Aba 2: Mandar Áudio -->
+        <div id="subTabAudioContent" style="display: none;">
+            <!-- Gravador com Microfone Nativo HTML5 -->
+            <div class="recorder-box">
+                <div style="font-size: 13px; font-weight: 700; color: #f1f5f9; margin-bottom: 6px;" id="crmAudioStatusText">
+                    🎙️ Gravador de Áudio WhatsApp
+                </div>
+                <div style="font-size: 26px; font-family: 'JetBrains Mono', monospace; font-weight: 800; color: #34d399; margin: 10px 0;" id="crmAudioTimer">
+                    00:00
+                </div>
+
+                <div style="display: flex; justify-content: center; gap: 12px; margin-top: 12px;">
+                    <button type="button" id="btnRecordAudio" class="btn btn-primary" onclick="toggleAudioRecording()" style="background: #ef4444; border-radius: 99px; padding: 10px 20px;">
+                        <i class="fa-solid fa-microphone"></i> <span id="btnRecordText">Iniciar Gravação</span>
+                    </button>
+                </div>
+
+                <!-- Player de Áudio -->
+                <audio id="crmAudioPlayer" controls style="display: none; width: 100%; margin-top: 16px; border-radius: 8px;"></audio>
+                
+                <div id="crmAudioActions" style="display: none; margin-top: 14px; gap: 8px; justify-content: center;">
+                    <a id="btnDownloadAudio" class="btn btn-secondary" download="audio_bravvi.webm" style="font-size: 12px;">
+                        <i class="fa-solid fa-download"></i> Baixar Áudio
+                    </a>
+                    <button type="button" class="btn btn-primary" onclick="openWhatsAppForAudio()" style="background: #128c7e; font-size: 12px;">
+                        <i class="fa-brands fa-whatsapp"></i> Abrir WhatsApp do Cliente
+                    </button>
+                </div>
+            </div>
+
+            <!-- Roteiros Prontos de Áudio para Ler e Gravar -->
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
+                📖 Roteiro de Áudio Recomendado (Leia enquanto grava):
+            </div>
+            <div style="background: #0b1120; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 12.5px; color: #cbd5e1; line-height: 1.45;" id="crmAudioScriptBox">
+                "Fala [Nome], Guilherme aqui da Bravvi! Vi que você pediu informações sobre o sistema. Eu tive confecção durante anos e sofria exatamente com corte errado, sobra de tecido e ficha técnica confusa. Desenvolvi o Bravvi justamente pra fábrica rodar no piloto automático, sem complicação. Como tá o controle de corte de vocês aí hoje?"
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+                <button type="button" class="btn btn-secondary" onclick="copyAudioPitchText()" style="padding: 6px 12px; font-size: 11px;">
+                    <i class="fa-regular fa-copy"></i> Copiar Roteiro de Áudio
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Gerenciador de Acesso & Licença ERP (Liberar / Travar) -->
+<div class="modal-overlay" id="crmAccessModal">
+    <div class="modal-card" style="max-width: 500px;">
+        <div class="modal-head">
+            <h3 style="font-size: 16px; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-shield-halved" style="color: #38bdf8;"></i> Gestão de Acesso ao Bravvi ERP
+            </h3>
+            <button onclick="closeCrmAccessModal()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px;">&times;</button>
+        </div>
+
+        <div style="background: #0b1120; border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+            <div style="font-size: 14px; font-weight: 700; color: #ffffff;" id="crmAccName">Cliente</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;" id="crmAccDetails">email@cliente.com • WhatsApp</div>
+            <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Status do Acesso:</span>
+                <span id="crmAccStatusBadge" class="crm-tag crm-tag-access-ok">🟢 Acesso Ativo</span>
+            </div>
+        </div>
+
+        <!-- Se Acesso já existe: Ações de Bloqueio/Desbloqueio -->
+        <div id="crmAccExistingControls" style="display: block; margin-bottom: 18px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button type="button" class="btn btn-secondary" onclick="actionLockTenant()" id="btnActionLock" style="border-color: rgba(239, 68, 68, 0.4); color: #f87171;">
+                    <i class="fa-solid fa-lock"></i> Travar Acesso Agora
+                </button>
+                <button type="button" class="btn btn-primary" onclick="actionUnlockTenant()" id="btnActionUnlock">
+                    <i class="fa-solid fa-lock-open"></i> Liberar / Desbloquear
+                </button>
+            </div>
+            <p style="font-size: 11.5px; color: var(--text-muted); margin-top: 8px; text-align: center;">
+                Travar o acesso bloqueia imediatamente o login e exibe a tela de regularização ao cliente.
+            </p>
+        </div>
+
+        <!-- Formulário para Criar/Provisionar Novo Acesso Oficial -->
+        <div style="border-top: 1px solid var(--border); padding-top: 14px;">
+            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;">
+                ⚡ Provisionar ou Renovar Link de 1º Acesso
+            </div>
+
+            <div class="form-group">
+                <label>E-mail de Login do Cliente</label>
+                <input type="email" class="form-control" id="crmAccEmailInput" placeholder="cliente@exemplo.com.br" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Plano</label>
+                    <select class="form-control" id="crmAccPlanSelect">
+                        <option value="7">Teste Especial VIP (7 dias)</option>
+                        <option value="30">Plano Mensal (30 dias)</option>
+                        <option value="365" selected>Plano Anual Pro (365 dias)</option>
+                        <option value="3650">Acesso Vitalício / Parceiro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Ação</label>
+                    <button type="button" class="btn btn-primary" onclick="generateLeadOfficialAccess()" style="width: 100%; margin-top: 22px; padding: 10px 8px; font-size: 12px;">
+                        ⚡ Gerar Link Oficial
+                    </button>
+                </div>
+            </div>
+
+            <!-- Caixa com Link Gerado -->
+            <div id="crmAccLinkResultBox" style="display: none; background: #07151e; border: 1.5px dashed #10b981; border-radius: 8px; padding: 12px; margin-top: 12px;">
+                <div style="font-size: 11px; font-weight: 800; color: #34d399; text-transform: uppercase;">✓ Link de Ativação Criado:</div>
+                <div style="font-size: 12px; font-family: 'JetBrains Mono', monospace; color: #f1f5f9; word-break: break-all; margin: 6px 0;" id="crmAccGeneratedLink"></div>
+                <button type="button" class="btn btn-primary" onclick="copyGeneratedAccessMsg()" style="width: 100%; background: #128c7e; font-size: 12px; margin-top: 6px;">
+                    <i class="fa-brands fa-whatsapp"></i> Copiar Mensagem Completa para WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal: Adicionar / Editar Cliente -->
 <div class="modal-overlay" id="clientModal">
     <div class="modal-card">
@@ -1226,6 +1808,7 @@
             document.getElementById("loginGate").style.display = "none";
             document.getElementById("mainApp").style.display = "block";
             updateDashboard();
+            syncClientsWithSupabase(true);
         } else {
             err.style.display = "block";
             document.getElementById("loginPasswordInput").style.borderColor = "#ef4444";
@@ -1237,6 +1820,7 @@
             document.getElementById("loginGate").style.display = "none";
             document.getElementById("mainApp").style.display = "block";
             updateDashboard();
+            syncClientsWithSupabase(true);
         } else {
             document.getElementById("loginGate").style.display = "flex";
             document.getElementById("mainApp").style.display = "none";
@@ -1253,25 +1837,52 @@
         document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
         document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
 
-        if (tabId === "tabMeta") {
-            document.querySelectorAll(".tab-btn")[0].classList.add("active");
+        if (tabId === "tabCRM") {
+            const btn = document.getElementById("btnTabCRM");
+            if (btn) btn.classList.add("active");
+            const tab = document.getElementById("tabCRM");
+            if (tab) tab.classList.add("active");
+            renderCRMBoard();
+        } else if (tabId === "tabMeta") {
+            const btn = document.getElementById("btnTabMeta") || document.querySelectorAll(".tab-btn")[1];
+            if (btn) btn.classList.add("active");
             document.getElementById("tabMeta").classList.add("active");
+            renderTable();
         } else if (tabId === "tabCobranca") {
-            document.querySelectorAll(".tab-btn")[1].classList.add("active");
+            const btn = document.getElementById("btnTabCobranca") || document.querySelectorAll(".tab-btn")[2];
+            if (btn) btn.classList.add("active");
             document.getElementById("tabCobranca").classList.add("active");
             renderBillingTable();
         }
     }
 
-    // Initial Base
+    // Base Inicial Oficial
     const INITIAL_CLIENTS = [
+        {
+            name: "Innovaction Textil Ltda (Gilberto Alves)",
+            phone: "554499856245",
+            email: "gilbertoalveslion@gmail.com",
+            city: "—",
+            plan: "Anual Pro",
+            price: 1997,
+            status: "Ativo",
+            accessStatus: "liberado",
+            stage: "ativo",
+            dueDay: 5,
+            date: "2026-11-05",
+            lastPaidDate: "2026-11-05",
+            obs: "Cliente oficial Plano Anual Pro 365d"
+        },
         {
             name: "Prime Uniformes",
             phone: "5547984613671",
+            email: "comercial@primeuniformes.com.br",
             city: "Joinville - SC",
             plan: "Básico Mensal",
             price: 107,
             status: "Ativo",
+            accessStatus: "liberado",
+            stage: "ativo",
             dueDay: 10,
             date: "2026-10-25",
             lastPaidDate: "2026-10-25",
@@ -1280,10 +1891,13 @@
         {
             name: "Francisco Abrunhoza (Abrunhoza Gráfica)",
             phone: "5566984204194",
+            email: "francisco@abrunhoza.com.br",
             city: "Rondonópolis - MT",
             plan: "Básico Mensal",
             price: 107,
             status: "Ativo",
+            accessStatus: "liberado",
+            stage: "ativo",
             dueDay: 10,
             date: "2026-10-28",
             lastPaidDate: "2026-10-28",
@@ -1291,7 +1905,7 @@
         }
     ];
 
-    const STORAGE_KEY = "bravvi_meta_10k_clients_v4";
+    const STORAGE_KEY = "bravvi_meta_10k_clients_v5";
     const CONFIG_KEY = "bravvi_billing_config_v1";
 
     function loadClients() {
@@ -1301,7 +1915,8 @@
             return INITIAL_CLIENTS;
         }
         try {
-            return JSON.parse(data);
+            const list = JSON.parse(data);
+            return Array.isArray(list) ? list : INITIAL_CLIENTS;
         } catch (e) {
             return INITIAL_CLIENTS;
         }
@@ -1341,7 +1956,7 @@
         else if (plan === "Teste Grátis") priceInput.value = 0;
     }
 
-    function openModal(index = -1) {
+    function openModal(index = -1, defaultStage = "novo") {
         const modal = document.getElementById("clientModal");
         const form = document.getElementById("clientForm");
         document.getElementById("editIndex").value = index;
@@ -1349,24 +1964,27 @@
         if (index >= 0) {
             const clients = loadClients();
             const c = clients[index];
-            document.getElementById("modalTitle").innerText = "Editar Cliente";
-            document.getElementById("formName").value = c.name;
-            document.getElementById("formPhone").value = c.phone;
+            document.getElementById("modalTitle").innerText = "Editar Cliente / Lead";
+            document.getElementById("formName").value = c.name || "";
+            document.getElementById("formPhone").value = c.phone || "";
             document.getElementById("formCity").value = c.city || "";
-            document.getElementById("formPlan").value = c.plan;
-            document.getElementById("formPrice").value = c.price;
-            document.getElementById("formStatus").value = c.status;
+            document.getElementById("formEmail").value = c.email || "";
+            document.getElementById("formStage").value = c.stage || "novo";
+            document.getElementById("formPlan").value = c.plan || "Básico Mensal";
+            document.getElementById("formPrice").value = c.price || 107;
+            document.getElementById("formStatus").value = c.status || "Ativo";
             document.getElementById("formDueDay").value = c.dueDay || 10;
-            document.getElementById("formDate").value = c.date;
+            document.getElementById("formDate").value = c.date || new Date().toISOString().split('T')[0];
             document.getElementById("formLastPaidDate").value = c.lastPaidDate || c.date;
             document.getElementById("formObs").value = c.obs || "";
         } else {
-            document.getElementById("modalTitle").innerText = "Cadastrar Novo Assinante";
+            document.getElementById("modalTitle").innerText = "Cadastrar Novo Lead / Assinante";
             form.reset();
             const today = new Date().toISOString().split('T')[0];
             document.getElementById("formDate").value = today;
             document.getElementById("formLastPaidDate").value = today;
             document.getElementById("formDueDay").value = 10;
+            document.getElementById("formStage").value = defaultStage;
             autoFillPrice();
         }
 
@@ -1385,10 +2003,13 @@
         const newClient = {
             name: document.getElementById("formName").value.trim(),
             phone: document.getElementById("formPhone").value.replace(/\D/g, ''),
+            email: document.getElementById("formEmail").value.trim().toLowerCase(),
             city: document.getElementById("formCity").value.trim(),
+            stage: document.getElementById("formStage").value || "novo",
             plan: document.getElementById("formPlan").value,
             price: parseFloat(document.getElementById("formPrice").value) || 0,
             status: document.getElementById("formStatus").value,
+            accessStatus: (document.getElementById("formStatus").value === "Ativo") ? "liberado" : "sem_acesso",
             dueDay: parseInt(document.getElementById("formDueDay").value) || 10,
             date: document.getElementById("formDate").value,
             lastPaidDate: document.getElementById("formLastPaidDate").value || document.getElementById("formDate").value,
@@ -1396,6 +2017,9 @@
         };
 
         if (index >= 0) {
+            // Preserva status de acesso e tenant prévio
+            newClient.accessStatus = clients[index].accessStatus || newClient.accessStatus;
+            newClient.tenantId = clients[index].tenantId;
             clients[index] = newClient;
         } else {
             clients.unshift(newClient);
@@ -1406,37 +2030,23 @@
     }
 
     function deleteClient(index) {
-        if (confirm("Tem certeza que deseja remover este registro?")) {
+        if (confirm("Tem certeza que deseja remover este cliente/lead?")) {
             const clients = loadClients();
             clients.splice(index, 1);
             saveClientsList(clients);
         }
     }
 
-    // Mark as paid today and shift next cycle
-    function markAsPaid(index) {
-        const clients = loadClients();
-        const c = clients[index];
-        const todayStr = new Date().toISOString().split('T')[0];
-        
-        c.lastPaidDate = todayStr;
-        c.status = "Ativo";
-        saveClientsList(clients);
-        renderBillingTable();
-        alert(`Pagamento de ${c.name} registrado com sucesso para este mês!`);
-    }
-
     // Helper: calculate next due date
     function calculateNextDueDate(dueDay) {
         const now = new Date();
         const year = now.getFullYear();
-        const month = now.getMonth(); // 0-based
+        const month = now.getMonth();
         const day = now.getDate();
 
         let targetMonth = month;
         let targetYear = year;
 
-        // If today is past the due day, next due is next month
         if (day > dueDay) {
             targetMonth++;
             if (targetMonth > 11) {
@@ -1445,8 +2055,7 @@
             }
         }
 
-        const dueDate = new Date(targetYear, targetMonth, dueDay);
-        return dueDate;
+        return new Date(targetYear, targetMonth, dueDay);
     }
 
     function updateDashboard() {
@@ -1466,7 +2075,7 @@
                 } else {
                     currentMrr += c.price;
                 }
-            } else if (c.status === "Teste") {
+            } else if (c.status === "Teste" || c.stage === "teste") {
                 trialCount++;
             }
         });
@@ -1500,20 +2109,583 @@
         document.getElementById("m3Bar").style.width = `${m3Pct}%`;
         document.getElementById("m3Count").innerText = `${activeCount} de ~93 clientes`;
 
+        renderCRMBoard();
         renderTable();
         renderBillingTable();
     }
 
+    // =========================================================================
+    // CRM KANBAN & ETAPAS DE ATENDIMENTO
+    // =========================================================================
+    const CRM_STAGES = [
+        { id: "novo", label: "1. Novos Leads", colId: "col_novo", countId: "count_novo" },
+        { id: "atendimento", label: "2. Em Atendimento", colId: "col_atendimento", countId: "count_atendimento" },
+        { id: "teste", label: "3. Teste Grátis (7d)", colId: "col_teste", countId: "count_teste" },
+        { id: "proposta", label: "4. Negociação", colId: "col_proposta", countId: "count_proposta" },
+        { id: "ativo", label: "5. Assinantes Ativos", colId: "col_ativo", countId: "count_ativo" },
+        { id: "pausado", label: "6. Pausado / Frio", colId: "col_pausado", countId: "count_pausado" }
+    ];
+
+    function renderCRMBoard() {
+        const clients = loadClients();
+        const stageCounts = { novo: 0, atendimento: 0, teste: 0, proposta: 0, ativo: 0, pausado: 0 };
+
+        // Limpa colunas
+        CRM_STAGES.forEach(st => {
+            const el = document.getElementById(st.colId);
+            if (el) el.innerHTML = "";
+        });
+
+        clients.forEach((c, index) => {
+            let stage = c.stage || "novo";
+            // Compatibilidade retroativa
+            if (!c.stage) {
+                if (c.status === "Ativo") stage = "ativo";
+                else if (c.status === "Teste") stage = "teste";
+                else stage = "novo";
+            }
+            if (!stageCounts.hasOwnProperty(stage)) stage = "novo";
+            stageCounts[stage]++;
+
+            const col = document.getElementById("col_" + stage);
+            if (!col) return;
+
+            const cleanPhone = (c.phone || '').replace(/\D/g, '');
+            const waLink = cleanPhone ? `https://wa.me/${cleanPhone}` : '#';
+
+            // Tag de status de acesso
+            let accessTag = '<span class="crm-tag crm-tag-access-none"><i class="fa-solid fa-user"></i> Sem Login</span>';
+            let lockBtnHtml = `<button type="button" class="crm-btn-unlock" title="Liberar Acesso ERP" onclick="openCrmAccessModal(${index})"><i class="fa-solid fa-lock-open"></i> Liberar</button>`;
+
+            if (c.accessStatus === "travado" || c.status === "Bloqueado") {
+                accessTag = '<span class="crm-tag crm-tag-access-lock"><i class="fa-solid fa-lock"></i> Travado</span>';
+                lockBtnHtml = `<button type="button" class="crm-btn-unlock" title="Reativar Acesso" onclick="quickToggleAccess(${index}, 'unlock')"><i class="fa-solid fa-lock-open"></i> Liberar</button>`;
+            } else if (c.accessStatus === "liberado" || c.status === "Ativo") {
+                accessTag = '<span class="crm-tag crm-tag-access-ok"><i class="fa-solid fa-shield-halved"></i> Liberado</span>';
+                lockBtnHtml = `<button type="button" class="crm-btn-lock" title="Travar Acesso Imediatamente" onclick="quickToggleAccess(${index}, 'lock')"><i class="fa-solid fa-lock"></i> Travar</button>`;
+            }
+
+            const card = document.createElement("div");
+            card.className = "crm-card";
+            card.innerHTML = `
+                <div class="crm-card-title">
+                    <span>${escapeHtml(c.name)}</span>
+                    <button class="btn-icon" style="width:24px; height:24px; font-size:11px;" title="Editar" onclick="openModal(${index})"><i class="fa-solid fa-pen"></i></button>
+                </div>
+
+                <div class="crm-card-sub">
+                    <a href="${waLink}" target="_blank" style="color: #34d399; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fa-brands fa-whatsapp"></i> ${escapeHtml(c.phone || 'Sem Zap')}
+                    </a>
+                    ${c.city ? `<span style="color:#64748b;">• ${escapeHtml(c.city)}</span>` : ''}
+                </div>
+
+                <div class="crm-card-tags">
+                    <span class="crm-tag" style="background:rgba(255,255,255,0.06); color:#f1f5f9;">${escapeHtml(c.plan || 'Plano')}</span>
+                    ${c.price ? `<span class="crm-tag" style="background:rgba(16,185,129,0.1); color:#34d399;">R$ ${c.price}</span>` : ''}
+                    ${accessTag}
+                </div>
+
+                ${c.obs ? `<div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; font-style: italic;">"${escapeHtml(c.obs)}"</div>` : ''}
+
+                <!-- Seletor de Etapa Rápida -->
+                <div style="margin-bottom: 8px;">
+                    <select class="crm-stage-select" onchange="moveLeadStage(${index}, this.value)">
+                        <option value="novo" ${stage === 'novo' ? 'selected' : ''}>📥 1. Novo Lead</option>
+                        <option value="atendimento" ${stage === 'atendimento' ? 'selected' : ''}>💬 2. Em Atendimento</option>
+                        <option value="teste" ${stage === 'teste' ? 'selected' : ''}>🧪 3. Teste Grátis (7d)</option>
+                        <option value="proposta" ${stage === 'proposta' ? 'selected' : ''}>📝 4. Negociação</option>
+                        <option value="ativo" ${stage === 'ativo' ? 'selected' : ''}>👑 5. Assinante Ativo</option>
+                        <option value="pausado" ${stage === 'pausado' ? 'selected' : ''}>❄️ 6. Pausado / Frio</option>
+                    </select>
+                </div>
+
+                <!-- Ações do Card -->
+                <div class="crm-card-actions">
+                    <div class="crm-action-row">
+                        <button type="button" class="crm-btn-chat" onclick="openCrmChatModal(${index})">
+                            <i class="fa-brands fa-whatsapp"></i> Atender (Áudio/Msg)
+                        </button>
+                        ${lockBtnHtml}
+                    </div>
+                </div>
+            `;
+            col.appendChild(card);
+        });
+
+        // Atualiza contadores
+        CRM_STAGES.forEach(st => {
+            const countEl = document.getElementById(st.countId);
+            if (countEl) countEl.innerText = stageCounts[st.id] || 0;
+        });
+
+        if (document.getElementById("crmStatNovos")) document.getElementById("crmStatNovos").innerText = stageCounts.novo;
+        if (document.getElementById("crmStatAtendimento")) document.getElementById("crmStatAtendimento").innerText = stageCounts.atendimento;
+        if (document.getElementById("crmStatTeste")) document.getElementById("crmStatTeste").innerText = stageCounts.teste;
+        if (document.getElementById("crmStatProposta")) document.getElementById("crmStatProposta").innerText = stageCounts.proposta;
+        if (document.getElementById("crmStatAtivos")) document.getElementById("crmStatAtivos").innerText = stageCounts.ativo;
+        if (document.getElementById("tabBadgeCRM")) document.getElementById("tabBadgeCRM").innerText = clients.length;
+    }
+
+    function moveLeadStage(index, newStage) {
+        const clients = loadClients();
+        if (!clients[index]) return;
+        clients[index].stage = newStage;
+        if (newStage === "ativo") {
+            clients[index].status = "Ativo";
+        } else if (newStage === "teste") {
+            clients[index].status = "Teste";
+        }
+        saveClientsList(clients);
+        renderCRMBoard();
+    }
+
+    // =========================================================================
+    // MODAL DE ATENDIMENTO: ESCREVER E MANDAR ÁUDIO
+    // =========================================================================
+    let currentChatLeadIndex = -1;
+
+    function openCrmChatModal(index) {
+        currentChatLeadIndex = index;
+        const clients = loadClients();
+        const c = clients[index];
+        if (!c) return;
+
+        document.getElementById("crmChatModalClientName").innerText = c.name;
+        document.getElementById("crmChatModalClientPhone").innerText = c.phone ? `WhatsApp: ${c.phone}` : "Sem WhatsApp cadastrado";
+
+        switchChatSubTab("msg");
+        applyMsgTemplate("boas_vindas");
+
+        // Reseta gravador
+        resetAudioRecorder();
+
+        document.getElementById("crmChatModal").style.display = "flex";
+    }
+
+    function closeCrmChatModal() {
+        stopAudioRecordingIfActive();
+        document.getElementById("crmChatModal").style.display = "none";
+    }
+
+    function switchChatSubTab(tab) {
+        const btnMsg = document.getElementById("btnSubTabMsg");
+        const btnAudio = document.getElementById("btnSubTabAudio");
+        const contentMsg = document.getElementById("subTabMsgContent");
+        const contentAudio = document.getElementById("subTabAudioContent");
+
+        if (tab === "msg") {
+            btnMsg.classList.add("active");
+            btnAudio.classList.remove("active");
+            contentMsg.style.display = "block";
+            contentAudio.style.display = "none";
+        } else {
+            btnMsg.classList.remove("active");
+            btnAudio.classList.add("active");
+            contentMsg.style.display = "none";
+            contentAudio.style.display = "block";
+        }
+    }
+
+    function applyMsgTemplate(type) {
+        const clients = loadClients();
+        const c = clients[currentChatLeadIndex] || { name: "amigo" };
+        const firstName = c.name.split(" ")[0] || "amigo";
+        const textarea = document.getElementById("crmMsgTextarea");
+        const pixKey = document.getElementById("pixKeyInput")?.value.trim() || "[Chave Pix da Confecção]";
+
+        let msg = "";
+        if (type === "boas_vindas") {
+            msg = `Olá ${firstName}, tudo bem? Guilherme da Bravvi ERP por aqui! 🚀\n\nVi que você tem interesse em agilizar os pedidos e o corte da sua confecção de uniformes. Vocês fabricam uniformes profissionais, esportivos ou escolares aí?`;
+        } else if (type === "video_apresentacao") {
+            msg = `Fala ${firstName}! Separei esse vídeo rápido de 2 minutos mostrando como o Bravvi ERP calcula o consumo de tecido por grade, gera a ficha técnica em PDF A4 e a ordem de corte sem complicação:\n👉 https://uniformes-erp.vercel.app\n\nQuantas peças vocês costumam cortar por mês aí na fábrica?`;
+        } else if (type === "teste_gratis") {
+            msg = `${firstName}, para você testar na prática com a sua equipe sem nenhum compromisso, eu consigo liberar um login de teste VIP por 7 dias grátis para sua fábrica rodar suas ordens de serviço e orçamentos.\n\nPosso gerar o seu link de primeiro acesso agora?`;
+        } else if (type === "proposta_pix") {
+            msg = `Fala ${firstName}! Seguem as condições especiais para a sua fábrica:\n\n⭐ *Plano Básico:* R$ 107/mês (Pedidos, Ficha Técnica A4 e Ordem de Serviço)\n⭐ *Plano Pro Completo:* R$ 227/mês (Financeiro, DRE, Estoque e Relatórios)\n⭐ *Plano Anual Pro (Melhor Oferta):* R$ 1.997/ano (Economia imediata de mais de R$ 700!)\n\n📌 *Chave Pix para liberação:* ${pixKey}\n\nAssim que fizer o Pix, só me mandar o comprovante aqui que já libero seu acesso na hora!`;
+        }
+
+        textarea.value = msg;
+    }
+
+    function copyCrmMsgText() {
+        const text = document.getElementById("crmMsgTextarea").value;
+        navigator.clipboard.writeText(text).then(() => {
+            alert("✓ Mensagem copiada com sucesso! Só colar no WhatsApp.");
+        });
+    }
+
+    function sendWhatsAppCrmMsg() {
+        const clients = loadClients();
+        const c = clients[currentChatLeadIndex];
+        if (!c || !c.phone) {
+            alert("Telefone inválido para este lead.");
+            return;
+        }
+        const cleanPhone = c.phone.replace(/\D/g, '');
+        const text = document.getElementById("crmMsgTextarea").value;
+        const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
+        window.open(url, "_blank");
+    }
+
+    // =========================================================================
+    // GRAVADOR DE ÁUDIO NATIVO (HTML5 MediaRecorder)
+    // =========================================================================
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let audioTimerInterval = null;
+    let audioSeconds = 0;
+    let currentAudioBlob = null;
+
+    async function toggleAudioRecording() {
+        const btn = document.getElementById("btnRecordAudio");
+        const btnText = document.getElementById("btnRecordText");
+        const statusText = document.getElementById("crmAudioStatusText");
+
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+            // Parar gravação
+            mediaRecorder.stop();
+            clearInterval(audioTimerInterval);
+            btn.classList.remove("record-pulse");
+            btn.style.background = "#10b981";
+            btnText.innerText = "Gravar Novamente";
+            statusText.innerText = "✓ Áudio Gravado com Sucesso!";
+            statusText.style.color = "#34d399";
+        } else {
+            // Iniciar gravação
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    currentAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const audioUrl = URL.createObjectURL(currentAudioBlob);
+                    const player = document.getElementById("crmAudioPlayer");
+                    player.src = audioUrl;
+                    player.style.display = "block";
+
+                    const downloadBtn = document.getElementById("btnDownloadAudio");
+                    downloadBtn.href = audioUrl;
+                    downloadBtn.download = `audio_bravvi_${Date.now()}.webm`;
+
+                    document.getElementById("crmAudioActions").style.display = "flex";
+                };
+
+                mediaRecorder.start();
+                audioSeconds = 0;
+                document.getElementById("crmAudioTimer").innerText = "00:00";
+                audioTimerInterval = setInterval(() => {
+                    audioSeconds++;
+                    const mins = String(Math.floor(audioSeconds / 60)).padStart(2, '0');
+                    const secs = String(audioSeconds % 60).padStart(2, '0');
+                    document.getElementById("crmAudioTimer").innerText = `${mins}:${secs}`;
+                }, 1000);
+
+                btn.classList.add("record-pulse");
+                btn.style.background = "#dc2626";
+                btnText.innerText = "Parar Gravação";
+                statusText.innerText = "🔴 Gravando áudio... Fale com o microfone";
+                statusText.style.color = "#f87171";
+            } catch (err) {
+                alert("Não foi possível acessar o microfone. Verifique as permissões do seu navegador.");
+            }
+        }
+    }
+
+    function stopAudioRecordingIfActive() {
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+            clearInterval(audioTimerInterval);
+        }
+    }
+
+    function resetAudioRecorder() {
+        stopAudioRecordingIfActive();
+        mediaRecorder = null;
+        audioChunks = [];
+        audioSeconds = 0;
+        const timer = document.getElementById("crmAudioTimer");
+        if (timer) timer.innerText = "00:00";
+        const player = document.getElementById("crmAudioPlayer");
+        if (player) { player.src = ""; player.style.display = "none"; }
+        const actions = document.getElementById("crmAudioActions");
+        if (actions) actions.style.display = "none";
+        const btn = document.getElementById("btnRecordAudio");
+        if (btn) { btn.classList.remove("record-pulse"); btn.style.background = "#ef4444"; }
+        const btnText = document.getElementById("btnRecordText");
+        if (btnText) btnText.innerText = "Iniciar Gravação";
+        const statusText = document.getElementById("crmAudioStatusText");
+        if (statusText) { statusText.innerText = "🎙️ Gravador de Áudio WhatsApp"; statusText.style.color = "#f1f5f9"; }
+    }
+
+    function openWhatsAppForAudio() {
+        const clients = loadClients();
+        const c = clients[currentChatLeadIndex];
+        if (!c || !c.phone) return;
+        const cleanPhone = c.phone.replace(/\D/g, '');
+        window.open(`https://wa.me/${cleanPhone}`, "_blank");
+    }
+
+    function copyAudioPitchText() {
+        const text = document.getElementById("crmAudioScriptBox").innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            alert("✓ Roteiro de áudio copiado! Você pode ler enquanto grava.");
+        });
+    }
+
+    // =========================================================================
+    // GESTÃO DE ACESSO: LIBERAR E TRAVAR ACESSO NO SUPABASE
+    // =========================================================================
+    let activeAccessLeadIndex = -1;
+    let lastGeneratedLink = "";
+    let lastGeneratedEmail = "";
+    let lastGeneratedName = "";
+
+    function openCrmAccessModal(index) {
+        activeAccessLeadIndex = index;
+        const clients = loadClients();
+        const c = clients[index];
+        if (!c) return;
+
+        document.getElementById("crmAccName").innerText = c.name;
+        document.getElementById("crmAccDetails").innerText = `${c.email || 'Sem e-mail'} • WhatsApp: ${c.phone || 'Sem Zap'}`;
+        document.getElementById("crmAccEmailInput").value = c.email || "";
+
+        const badge = document.getElementById("crmAccStatusBadge");
+        if (c.accessStatus === "travado" || c.status === "Bloqueado") {
+            badge.className = "crm-tag crm-tag-access-lock";
+            badge.innerText = "🔴 Acesso Travado / Bloqueado";
+        } else if (c.accessStatus === "liberado" || c.status === "Ativo") {
+            badge.className = "crm-tag crm-tag-access-ok";
+            badge.innerText = "🟢 Acesso Liberado no ERP";
+        } else {
+            badge.className = "crm-tag crm-tag-access-none";
+            badge.innerText = "⚪ Sem Login Gerado";
+        }
+
+        document.getElementById("crmAccLinkResultBox").style.display = "none";
+        document.getElementById("crmAccessModal").style.display = "flex";
+    }
+
+    function closeCrmAccessModal() {
+        document.getElementById("crmAccessModal").style.display = "none";
+    }
+
+    async function quickToggleAccess(index, forceAction) {
+        const clients = loadClients();
+        const c = clients[index];
+        if (!c) return;
+
+        const isCurrentlyActive = (c.accessStatus === "liberado" || c.status === "Ativo");
+        const action = forceAction || (isCurrentlyActive ? "lock" : "unlock");
+
+        if (action === "lock") {
+            if (!confirm(`Tem certeza que deseja TRAVAR o acesso de ${c.name}? O cliente será bloqueado imediatamente ao tentar usar o sistema.`)) {
+                return;
+            }
+        }
+
+        const emailTarget = (c.email || "").toLowerCase().trim();
+        if (!emailTarget) {
+            alert("Este lead não possui e-mail cadastrado. Abra a gestão de acesso e informe o e-mail.");
+            openCrmAccessModal(index);
+            return;
+        }
+
+        try {
+            const resp = await fetch('/api/erp-security', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'admin_manage_access',
+                    masterPassword: MASTER_HASH,
+                    subAction: action,
+                    email: emailTarget,
+                    tenantId: c.tenantId || ''
+                })
+            });
+            const data = await resp.json();
+
+            if (data.sucesso) {
+                if (action === "lock") {
+                    c.accessStatus = "travado";
+                    c.status = "Bloqueado";
+                    alert(`🔒 Acesso de ${c.name} foi TRAVADO no ERP com sucesso!`);
+                } else {
+                    c.accessStatus = "liberado";
+                    c.status = "Ativo";
+                    c.stage = "ativo";
+                    alert(`🔓 Acesso de ${c.name} foi LIBERADO no ERP com sucesso!`);
+                }
+                saveClientsList(clients);
+                renderCRMBoard();
+            } else {
+                alert("Falha na operação: " + (data.erro || "Verifique a conexão."));
+            }
+        } catch (err) {
+            // Fallback local se estiver offline
+            if (action === "lock") {
+                c.accessStatus = "travado";
+                c.status = "Bloqueado";
+                alert(`🔒 Acesso de ${c.name} travado no painel local.`);
+            } else {
+                c.accessStatus = "liberado";
+                c.status = "Ativo";
+                alert(`🔓 Acesso de ${c.name} liberado no painel local.`);
+            }
+            saveClientsList(clients);
+            renderCRMBoard();
+        }
+    }
+
+    function actionLockTenant() {
+        quickToggleAccess(activeAccessLeadIndex, "lock");
+        closeCrmAccessModal();
+    }
+
+    function actionUnlockTenant() {
+        quickToggleAccess(activeAccessLeadIndex, "unlock");
+        closeCrmAccessModal();
+    }
+
+    async function generateLeadOfficialAccess() {
+        const clients = loadClients();
+        const c = clients[activeAccessLeadIndex];
+        const email = document.getElementById("crmAccEmailInput").value.trim().toLowerCase();
+        const dias = parseInt(document.getElementById("crmAccPlanSelect").value, 10) || 365;
+
+        if (!email) {
+            alert("Informe o e-mail de login do cliente.");
+            return;
+        }
+
+        const nome = c ? c.name : "Cliente Bravvi ERP";
+
+        try {
+            const resp = await fetch('/api/erp-security', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'admin_create_token',
+                    masterPassword: MASTER_HASH,
+                    nome: nome,
+                    email: email,
+                    dias: dias
+                })
+            });
+            const data = await resp.json();
+
+            if (!resp.ok || !data.sucesso) {
+                alert("❌ Erro ao gerar token: " + (data.erro || "Falha na comunicação."));
+                return;
+            }
+
+            const token = data.token;
+            const urlBase = window.location.origin || 'https://uniformes-erp.vercel.app';
+            lastGeneratedLink = `${urlBase}/ativar.html?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+            lastGeneratedEmail = email;
+            lastGeneratedName = nome;
+
+            document.getElementById("crmAccGeneratedLink").innerText = lastGeneratedLink;
+            document.getElementById("crmAccLinkResultBox").style.display = "block";
+
+            // Atualiza o cliente localmente
+            if (c) {
+                c.email = email;
+                c.accessStatus = "liberado";
+                c.status = "Ativo";
+                c.stage = "ativo";
+                c.plan = dias >= 365 ? "Anual Pro" : (dias <= 7 ? "Teste Grátis" : "Pro Mensal");
+                saveClientsList(clients);
+                renderCRMBoard();
+            }
+
+            alert("✓ Acesso gerado com sucesso no Supabase! Copie a mensagem para o WhatsApp.");
+        } catch (err) {
+            alert("Erro de comunicação com o servidor de segurança.");
+        }
+    }
+
+    function copyGeneratedAccessMsg() {
+        const msg = `Olá ${lastGeneratedName}! Seu acesso ao *Bravvi ERP Têxtil* foi liberado com sucesso! 🚀\n\nAqui está o seu link exclusivo de primeiro acesso:\n👉 ${lastGeneratedLink}\n\n🔑 *E-mail de Login:* ${lastGeneratedEmail}\n🔑 *Senha Temporária:* Bravvi@2026\n\nAo entrar pelo link, você já poderá cadastrar a sua senha pessoal definitiva e começar a emitir seus orçamentos e ordens de serviço!`;
+        navigator.clipboard.writeText(msg).then(() => {
+            alert("✓ Mensagem pronta copiada! Só colar no WhatsApp do cliente.");
+        });
+    }
+
+    // =========================================================================
+    // SINCRONIZAÇÃO EM TEMPO REAL COM O SUPABASE
+    // =========================================================================
+    async function syncClientsWithSupabase(silent = false) {
+        try {
+            const resp = await fetch('/api/erp-security', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'admin_manage_access',
+                    masterPassword: MASTER_HASH,
+                    subAction: 'list'
+                })
+            });
+            const data = await resp.json();
+
+            if (data.sucesso && Array.isArray(data.clientes)) {
+                const clients = loadClients();
+
+                data.clientes.forEach(cloudClient => {
+                    const cleanCloudEmail = (cloudClient.email || '').toLowerCase().trim();
+                    if (!cleanCloudEmail) return;
+
+                    const existing = clients.find(c => (c.email || '').toLowerCase().trim() === cleanCloudEmail);
+                    if (existing) {
+                        existing.tenantId = cloudClient.tenant_id;
+                        existing.accessStatus = cloudClient.bloqueadoManual ? 'travado' : (cloudClient.statusAssinatura === 'ativa' ? 'liberado' : 'travado');
+                        if (cloudClient.bloqueadoManual) existing.status = 'Bloqueado';
+                    } else {
+                        // Novo cliente encontrado na nuvem
+                        clients.push({
+                            name: cloudClient.nome || cloudClient.razaoSocial || 'Cliente ERP',
+                            phone: cloudClient.telefone || '',
+                            email: cleanCloudEmail,
+                            city: '—',
+                            plan: cloudClient.plano === 'anual' ? 'Anual Pro' : 'Pro Mensal',
+                            price: cloudClient.plano === 'anual' ? 1997 : 227,
+                            status: cloudClient.bloqueadoManual ? 'Bloqueado' : 'Ativo',
+                            accessStatus: cloudClient.bloqueadoManual ? 'travado' : 'liberado',
+                            stage: 'ativo',
+                            dueDay: 10,
+                            date: new Date().toISOString().split('T')[0],
+                            tenantId: cloudClient.tenant_id,
+                            obs: 'Sincronizado automaticamente da nuvem (Supabase)'
+                        });
+                    }
+                });
+
+                saveClientsList(clients);
+                if (!silent) alert(`✓ ${data.clientes.length} clientes sincronizados com a nuvem!`);
+            }
+        } catch (e) {
+            // silencioso se offline
+        }
+    }
+
+    // Tabela Legada da Meta 10K
     function renderTable() {
         const clients = loadClients();
-        const search = document.getElementById("searchInput").value.toLowerCase();
+        const search = document.getElementById("searchInput")?.value.toLowerCase() || "";
         const tbody = document.getElementById("clientsTableBody");
+        if (!tbody) return;
         tbody.innerHTML = "";
 
         let visibleCount = 0;
 
         clients.forEach((c, index) => {
-            if (search && !c.name.toLowerCase().includes(search) && !c.phone.includes(search) && !(c.city && c.city.toLowerCase().includes(search))) {
+            if (search && !c.name.toLowerCase().includes(search) && !(c.phone && c.phone.includes(search)) && !(c.city && c.city.toLowerCase().includes(search))) {
                 return;
             }
 
@@ -1522,10 +2694,10 @@
 
             let statusClass = "status-ativo";
             if (c.status === "Teste") statusClass = "status-teste";
-            if (c.status === "Cancelado") statusClass = "status-cancelado";
+            if (c.status === "Cancelado" || c.status === "Bloqueado") statusClass = "status-cancelado";
 
-            const cleanPhone = c.phone.replace(/\D/g, '');
-            const waLink = `https://wa.me/${cleanPhone}`;
+            const cleanPhone = (c.phone || '').replace(/\D/g, '');
+            const waLink = cleanPhone ? `https://wa.me/${cleanPhone}` : '#';
 
             tr.innerHTML = `
                 <td>
@@ -1534,18 +2706,18 @@
                 </td>
                 <td>
                     <a href="${waLink}" target="_blank" style="color: #34d399; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
-                        <i class="fa-brands fa-whatsapp"></i> ${escapeHtml(c.phone)}
+                        <i class="fa-brands fa-whatsapp"></i> ${escapeHtml(c.phone || '—')}
                     </a>
                 </td>
-                <td style="color: var(--text-muted);">${escapeHtml(c.city || '—')}</td>
-                <td><span class="plan-tag">${escapeHtml(c.plan)}</span></td>
-                <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #34d399;">R$ ${c.price.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                <td><span class="badge-status ${statusClass}">${escapeHtml(c.status)}</span></td>
+                <td style="color: var(--text-muted); font-size: 12px;">${escapeHtml(c.city || '—')}</td>
+                <td><span class="plan-tag">${escapeHtml(c.plan || 'Plano')}</span></td>
+                <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #34d399;">R$ ${(c.price || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                <td><span class="badge-status ${statusClass}">${escapeHtml(c.status || 'Ativo')}</span></td>
                 <td style="color: var(--text-muted); font-size: 12px;">${c.date ? c.date.split('-').reverse().join('/') : '—'}</td>
                 <td>
                     <div class="actions-cell">
                         <button class="btn-icon" title="Editar" onclick="openModal(${index})"><i class="fa-solid fa-pen-to-square"></i></button>
-                        <a href="${waLink}" target="_blank" class="btn-icon" title="Abrir WhatsApp"><i class="fa-brands fa-whatsapp" style="color: #10b981;"></i></a>
+                        <button class="btn-icon" title="Atender no Zap / Mandar Áudio" onclick="openCrmChatModal(${index})"><i class="fa-brands fa-whatsapp" style="color: #10b981;"></i></button>
                         <button class="btn-icon delete" title="Excluir" onclick="deleteClient(${index})"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </td>
@@ -1553,13 +2725,16 @@
             tbody.appendChild(tr);
         });
 
-        document.getElementById("totalRowCount").innerText = visibleCount;
+        if (document.getElementById("totalRowCount")) {
+            document.getElementById("totalRowCount").innerText = visibleCount;
+        }
     }
 
     // Render Billing & Collections Tab
     function renderBillingTable() {
         const clients = loadClients();
         const tbody = document.getElementById("billingTableBody");
+        if (!tbody) return;
         tbody.innerHTML = "";
 
         const now = new Date();
@@ -1567,8 +2742,8 @@
         const todayMonth = now.getMonth();
         const todayYear = now.getFullYear();
 
-        const pixKey = document.getElementById("pixKeyInput").value.trim() || "[Chave Pix]";
-        const asaasLink = document.getElementById("asaasLinkInput").value.trim();
+        const pixKey = document.getElementById("pixKeyInput")?.value.trim() || "[Chave Pix]";
+        const asaasLink = document.getElementById("asaasLinkInput")?.value.trim() || "";
 
         let upToDateCount = 0;
         let dueSoonCount = 0;
@@ -1581,15 +2756,7 @@
             const nextDueDate = calculateNextDueDate(dueDay);
             const dueFormatted = nextDueDate.toLocaleDateString('pt-BR');
 
-            // Calculate diff days
-            const diffTime = nextDueDate - now;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
             let statusBadge = '';
-            let isOverdue = false;
-            let isDueSoon = false;
-
-            // Check if last paid was already in current cycle
             let isPaidThisMonth = false;
             if (c.lastPaidDate) {
                 const lp = new Date(c.lastPaidDate);
@@ -1599,50 +2766,46 @@
             }
 
             if (isPaidThisMonth) {
-                statusBadge = `<span class="badge-status status-ativo"><i class="fa-solid fa-check"></i> Pago este Mês</span>`;
+                statusBadge = '<span class="badge-status status-ativo"><i class="fa-solid fa-check"></i> Pago este Mês</span>';
                 upToDateCount++;
             } else if (todayDay > dueDay) {
                 const daysLate = todayDay - dueDay;
                 statusBadge = `<span class="badge-status status-atrasado"><i class="fa-solid fa-triangle-exclamation"></i> Atrasado há ${daysLate}d</span>`;
                 overdueCount++;
-                isOverdue = true;
             } else if (todayDay === dueDay) {
-                statusBadge = `<span class="badge-status status-vence-breve"><i class="fa-solid fa-clock"></i> Vence Hoje!</span>`;
+                statusBadge = '<span class="badge-status status-vence-breve"><i class="fa-solid fa-clock"></i> Vence Hoje!</span>';
                 dueSoonCount++;
-                isDueSoon = true;
             } else if (dueDay - todayDay <= 5) {
                 const daysLeft = dueDay - todayDay;
                 statusBadge = `<span class="badge-status status-vence-breve"><i class="fa-solid fa-bell"></i> Vence em ${daysLeft}d</span>`;
                 dueSoonCount++;
-                isDueSoon = true;
             } else {
-                statusBadge = `<span class="badge-status status-ativo"><i class="fa-solid fa-circle-check"></i> Em Dia</span>`;
+                statusBadge = '<span class="badge-status status-ativo"><i class="fa-solid fa-circle-check"></i> Em Dia</span>';
                 upToDateCount++;
             }
 
-            // WhatsApp Message Generator
-            const cleanPhone = c.phone.replace(/\D/g, '');
-            const firstName = c.name.split(' ')[0];
+            const cleanPhone = (c.phone || '').replace(/\D/g, '');
+            const firstName = (c.name || 'Cliente').split(' ')[0];
             
-            let message = `Olá ${firstName}, tudo bem? Aqui é o Guilherme da Bravvi ERP.\n\nPassando para enviar o lembrete da mensalidade do seu sistema no valor de R$ ${c.price.toLocaleString('pt-BR', {minimumFractionDigits: 2})} (Vencimento: ${dueFormatted}).\n\n📌 *Chave Pix:* ${pixKey}`;
+            let message = `Olá ${firstName}, tudo bem? Aqui é o Guilherme da Bravvi ERP.\n\nPassando para enviar o lembrete da mensalidade do seu sistema no valor de R$ ${(c.price || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})} (Vencimento: ${dueFormatted}).\n\n📌 *Chave Pix:* ${pixKey}`;
             if (asaasLink) {
                 message += `\n💳 *Link de Pagamento:* ${asaasLink}`;
             }
             message += `\n\nAssim que fizer o pagamento, só me mandar o comprovante aqui. Muito obrigado pela parceria! 🚀`;
 
-            const waCollectionUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+            const waCollectionUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}` : '#';
 
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td>
                     <div style="font-weight: 700; color: var(--text-main);">${escapeHtml(c.name)}</div>
-                    <div style="font-size: 11px; color: var(--text-muted);">${escapeHtml(c.plan)}</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">${escapeHtml(c.plan || '')}</div>
                 </td>
                 <td>
-                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #94a3b8;">${escapeHtml(c.phone)}</span>
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #94a3b8;">${escapeHtml(c.phone || '—')}</span>
                 </td>
                 <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #34d399;">
-                    R$ ${c.price.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                    R$ ${(c.price || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
                 </td>
                 <td>
                     <strong style="color: #60a5fa;">Todo dia ${String(dueDay).padStart(2, '0')}</strong>
@@ -1665,32 +2828,46 @@
             tbody.appendChild(tr);
         });
 
-        document.getElementById("kpiBillingUpToDate").innerText = upToDateCount;
-        document.getElementById("kpiBillingDueSoon").innerText = dueSoonCount;
-        document.getElementById("kpiBillingOverdue").innerText = overdueCount;
+        if (document.getElementById("kpiBillingUpToDate")) document.getElementById("kpiBillingUpToDate").innerText = upToDateCount;
+        if (document.getElementById("kpiBillingDueSoon")) document.getElementById("kpiBillingDueSoon").innerText = dueSoonCount;
+        if (document.getElementById("kpiBillingOverdue")) document.getElementById("kpiBillingOverdue").innerText = overdueCount;
 
         const alertBadge = document.getElementById("tabBadgeAlert");
-        const totalAlerts = dueSoonCount + overdueCount;
-        if (totalAlerts > 0) {
-            alertBadge.style.display = "inline";
-            alertBadge.innerText = totalAlerts;
-        } else {
-            alertBadge.style.display = "none";
+        if (alertBadge) {
+            const totalAlerts = dueSoonCount + overdueCount;
+            if (totalAlerts > 0) {
+                alertBadge.style.display = "inline";
+                alertBadge.innerText = totalAlerts;
+            } else {
+                alertBadge.style.display = "none";
+            }
         }
+    }
+
+    function markAsPaid(index) {
+        const clients = loadClients();
+        const c = clients[index];
+        const todayStr = new Date().toISOString().split('T')[0];
+        
+        c.lastPaidDate = todayStr;
+        c.status = "Ativo";
+        saveClientsList(clients);
+        renderBillingTable();
+        alert(`Pagamento de ${c.name} registrado com sucesso para este mês!`);
     }
 
     function exportToCSV() {
         const clients = loadClients();
-        let csv = "Nome,Telefone,Cidade,Plano,Valor_Mensal,Dia_Vencimento,Status,Data_Inicio,Ultimo_Pagamento,Observacoes\n";
+        let csv = "Nome,Telefone,Email,Cidade,Etapa,Plano,Valor,Status,Acesso,Observacoes\n";
 
         clients.forEach(c => {
-            csv += `"${c.name}","${c.phone}","${c.city || ''}","${c.plan}",${c.price},${c.dueDay || 10},"${c.status}","${c.date}","${c.lastPaidDate || ''}","${c.obs || ''}"\n`;
+            csv += `"${c.name}","${c.phone || ''}","${c.email || ''}","${c.city || ''}","${c.stage || 'novo'}","${c.plan || ''}",${c.price || 0},"${c.status || ''}","${c.accessStatus || ''}","${c.obs || ''}"\n`;
         });
 
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `bravvi_erp_clientes_meta10k_${new Date().toISOString().split('T')[0]}.csv`;
+        link.download = `bravvi_erp_crm_clientes_${new Date().toISOString().split('T')[0]}.csv`;
         link.click();
     }
 
@@ -1703,7 +2880,7 @@
 
     function escapeHtml(text) {
         if (!text) return "";
-        return text.replace(/[&<>"']/g, function(m) {
+        return String(text).replace(/[&<>"']/g, function(m) {
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
         });
     }
@@ -1736,7 +2913,7 @@
         } else {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (isIOS) {
-                alert("📲 Como instalar no iPhone (Safari):\n\n1. Toque no botão de Compartilhar (o ícone de quadrado com seta para cima ⎋ na barra inferior do Safari)\n2. Role um pouco para baixo e toque em 'Adicionar à Tela de Início'\n3. Pronto! O ícone da Bravvi 10K vai aparecer na sua tela inicial como um App.");
+                alert("📲 Como instalar no iPhone (Safari):\n\n1. Toque no botão de Compartilhar\n2. Role para baixo e toque em 'Adicionar à Tela de Início'\n3. O ícone da Bravvi 10K vai aparecer na sua tela inicial como um App.");
             } else {
                 alert("📲 Como instalar no Android ou PC:\n\n1. No Chrome/Edge, toque nos 3 pontinhos no canto superior\n2. Selecione 'Instalar aplicativo' ou 'Adicionar à tela inicial'\n3. O App será instalado em tela cheia!");
             }
@@ -1748,6 +2925,5 @@
         checkInitialAuth();
     };
 </script>
-
 </body>
 </html>

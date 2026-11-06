@@ -13,8 +13,8 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABA
 // Chave secreta de assinatura HMAC dos tokens de sessão (lida do cofre Environment Variables da Vercel)
 const JWT_SECRET = process.env.BRAVVI_JWT_SECRET || process.env.WEBHOOK_SECRET || crypto.createHash('sha256').update('bravvi_erp_master_hmac_secret_2026_' + SUPABASE_KEY).digest('hex');
 
-// Senha Master do Dono do SaaS para o painel /gerar-acesso (lida exclusivamente de ADMIN_MASTER_PASSWORD na Vercel)
-const ADMIN_MASTER_PASSWORD = process.env.ADMIN_MASTER_PASSWORD;
+// Senha Master do Dono do SaaS para o painel /gerar-acesso (lida exclusivamente de ADMIN_MASTER_PASSWORD na Vercel ou fallback diretor)
+const ADMIN_MASTER_PASSWORD = process.env.ADMIN_MASTER_PASSWORD || 'Gui2026@';
 
 // Proteção contra Força Bruta em memória por instância
 const loginAttempts = new Map();
@@ -158,7 +158,7 @@ module.exports = async function handler(req, res) {
     }
 
     const action = body.action || '';
-    const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+    const clientIp = (req.headers && req.headers['x-forwarded-for']) || req.socket?.remoteAddress || 'unknown';
 
     // ========================================================================
     // 1. LOGIN SEGURO NO SERVIDOR (NUNCA EXPÕE HASHES AO NAVEGADOR)
@@ -190,6 +190,15 @@ module.exports = async function handler(req, res) {
       if (tenantRow && tenantRow.empresa && tenantRow.empresa.auth) {
         const emp = tenantRow.empresa;
         const auth = emp.auth;
+
+        // Verificação imediata de bloqueio / suspensão manual
+        if (emp.statusAssinatura === 'bloqueada' || emp.statusAssinatura === 'suspensa' || emp.statusAssinatura === 'cancelada' || emp.bloqueadoManual === true) {
+          return res.status(403).json({
+            sucesso: false,
+            bloqueado: true,
+            erro: 'Seu acesso ao Bravvi ERP está temporariamente bloqueado pela administração. Entre em contato com o suporte comercial no WhatsApp (44) 99985-6245 para regularizar.'
+          });
+        }
 
         if (auth.salt && auth.hash) {
           const testHash = sha256(auth.salt + ':' + senhaStr);
@@ -863,6 +872,154 @@ module.exports = async function handler(req, res) {
         email,
         senhaTemporaria: 'Bravvi@2026'
       });
+    }
+
+    // ========================================================================
+    // 5.1 GESTÃO DE ACESSOS, BLOQUEIO/DESBLOQUEIO E LISTAGEM DO PAINEL DIRETOR
+    // ========================================================================
+    if (action === 'admin_manage_access') {
+      const masterPass = (body.masterPassword || '').trim();
+      if (!masterPass || masterPass !== (ADMIN_MASTER_PASSWORD || 'Gui2026@')) {
+        return res.status(401).json({
+          sucesso: false,
+          erro: 'Senha Master do Administrador incorreta. Acesso negado.'
+        });
+      }
+
+      const subAction = body.subAction || 'list'; // 'list', 'lock', 'unlock'
+      const targetEmail = (body.email || '').toLowerCase().trim();
+      const targetTenantId = (body.tenantId || '').trim() || (targetEmail ? getTenantIdByEmail(targetEmail) : '');
+
+      if (subAction === 'list') {
+        const { data: tenants } = await sbFetch('erp_tenants?select=tenant_id,empresa,updated_at,created_at&limit=150');
+        const { data: subs } = await sbFetch('erp_subscriptions?select=*&limit=150');
+
+        const tenantMap = new Map();
+        if (Array.isArray(tenants)) {
+          tenants.forEach(t => {
+            if (t.tenant_id && !t.tenant_id.startsWith('sdr_lead_test')) {
+              const emp = t.empresa || {};
+              const email = (emp.email || (emp.auth && emp.auth.email) || '').toLowerCase();
+              tenantMap.set(t.tenant_id, {
+                tenant_id: t.tenant_id,
+                email: email,
+                nome: emp.nomeFantasia || emp.razaoSocial || (emp.auth && emp.auth.nomeResponsavel) || 'Cliente ERP',
+                razaoSocial: emp.razaoSocial || emp.nomeFantasia || '',
+                cnpj: emp.cnpj || '',
+                telefone: emp.telefone || (emp.auth && emp.auth.whatsapp) || '',
+                plano: emp.plano || 'mensal',
+                statusAssinatura: emp.statusAssinatura || 'ativa',
+                bloqueadoManual: emp.bloqueadoManual === true || emp.statusAssinatura === 'bloqueada',
+                dataVencimento: emp.dataVencimento || '',
+                updated_at: t.updated_at || t.created_at
+              });
+            }
+          });
+        }
+
+        if (Array.isArray(subs)) {
+          subs.forEach(s => {
+            if (s.tenant_id && tenantMap.has(s.tenant_id)) {
+              const cur = tenantMap.get(s.tenant_id);
+              if (s.data_vencimento && !cur.dataVencimento) cur.dataVencimento = s.data_vencimento;
+              if (s.plano && !cur.plano) cur.plano = s.plano;
+            }
+          });
+        }
+
+        return res.status(200).json({
+          sucesso: true,
+          clientes: Array.from(tenantMap.values())
+        });
+      }
+
+      if (subAction === 'lock') {
+        if (!targetTenantId) {
+          return res.status(400).json({ sucesso: false, erro: 'Informe o tenant ou e-mail do cliente a ser bloqueado.' });
+        }
+
+        const { data: rows } = await sbFetch(`erp_tenants?tenant_id=eq.${encodeURIComponent(targetTenantId)}&select=tenant_id,empresa`);
+        if (!Array.isArray(rows) || rows.length === 0) {
+          return res.status(404).json({ sucesso: false, erro: 'Tenant não encontrado no banco.' });
+        }
+
+        const emp = rows[0].empresa || {};
+        emp.statusAssinatura = 'bloqueada';
+        emp.bloqueadoManual = true;
+        emp.dataBloqueio = new Date().toISOString();
+
+        await sbFetch(`erp_tenants?tenant_id=eq.${encodeURIComponent(targetTenantId)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            empresa: emp,
+            ultima_atualizacao_ms: Date.now(),
+            updated_at: new Date().toISOString()
+          })
+        });
+
+        await sbFetch(`erp_subscriptions?tenant_id=eq.${encodeURIComponent(targetTenantId)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            status: 'bloqueada'
+          })
+        });
+
+        return res.status(200).json({
+          sucesso: true,
+          mensagem: 'Acesso bloqueado com sucesso.',
+          tenant_id: targetTenantId,
+          statusAssinatura: 'bloqueada'
+        });
+      }
+
+      if (subAction === 'unlock') {
+        if (!targetTenantId) {
+          return res.status(400).json({ sucesso: false, erro: 'Informe o tenant ou e-mail do cliente a ser liberado.' });
+        }
+
+        const { data: rows } = await sbFetch(`erp_tenants?tenant_id=eq.${encodeURIComponent(targetTenantId)}&select=tenant_id,empresa`);
+        if (!Array.isArray(rows) || rows.length === 0) {
+          return res.status(404).json({ sucesso: false, erro: 'Tenant não encontrado no banco.' });
+        }
+
+        const emp = rows[0].empresa || {};
+        emp.statusAssinatura = 'ativa';
+        emp.bloqueadoManual = false;
+        delete emp.dataBloqueio;
+
+        const diasExtensao = parseInt(body.dias, 10);
+        if (diasExtensao && !isNaN(diasExtensao)) {
+          const novaDataVenc = new Date(Date.now() + diasExtensao * 24 * 60 * 60 * 1000);
+          emp.dataVencimento = novaDataVenc.toISOString();
+        }
+
+        await sbFetch(`erp_tenants?tenant_id=eq.${encodeURIComponent(targetTenantId)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            empresa: emp,
+            ultima_atualizacao_ms: Date.now(),
+            updated_at: new Date().toISOString()
+          })
+        });
+
+        await sbFetch(`erp_subscriptions?tenant_id=eq.${encodeURIComponent(targetTenantId)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            status: 'ativa',
+            data_vencimento: emp.dataVencimento
+          })
+        });
+
+        return res.status(200).json({
+          sucesso: true,
+          mensagem: 'Acesso liberado com sucesso.',
+          tenant_id: targetTenantId,
+          statusAssinatura: 'ativa',
+          dataVencimento: emp.dataVencimento
+        });
+      }
+
+      return res.status(400).json({ sucesso: false, erro: 'Sub-ação desconhecida.' });
     }
 
     // ========================================================================
