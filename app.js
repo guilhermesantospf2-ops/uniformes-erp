@@ -4429,6 +4429,12 @@
       const isOrcamento = p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento';
       const countdown = calcularContagemRegressivaPedido(p);
       const nfExistente = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada');
+      const osVinculada = (db.ordensServico || []).find(o => !o.subOs && ((p.numero != null && String(o.pedidoNumero) === String(p.numero)) || o.pedidoId === p.id));
+      const temReparticaoAtiva = Boolean(
+        (osVinculada && osVinculada.desmembrada) ||
+        (db.ordensServico || []).some(o => o.subOs && ((p.numero != null && String(o.pedidoNumero) === String(p.numero)) || (osVinculada && o.parentOsId === osVinculada.id))) ||
+        (Array.isArray(p.itens) && p.itens.length > 1 && p.itens.some(it => /\(Lote\s+[A-Z0-9]+\)/i.test(it.produtoNome || '')))
+      );
       return `
                 <tr style="${isCancelado ? 'opacity: 0.88; background: #fff1f2;' : ''}">
                   <td>
@@ -4652,7 +4658,11 @@
                           Editar
                         </button>
                         <button class="btn btn-secondary btn-sm btn-ver-os" data-id="${p.id}">OS</button>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalRepartirOS('${p.numero || p.id}')" style="font-weight: 800; font-size: 11px; color: #854d0e; background: #fef9c3; border-color: #fde047; padding: 3px 6px;" title="Repartir pedido entre costureiras">✂️ Repartir</button>
+                        ${temReparticaoAtiva ? `
+                          <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.desfazerReparticaoOS('${p.numero || p.id}')" style="font-weight: 800; font-size: 11px; color: #b91c1c; background: #fee2e2; border-color: #fca5a5; padding: 3px 6px;" title="Desfazer a repartição, excluir sub-ordens repartidas e unificar o pedido novamente">🔄 Unificar OS</button>
+                        ` : `
+                          <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalRepartirOS('${p.numero || p.id}')" style="font-weight: 800; font-size: 11px; color: #854d0e; background: #fef9c3; border-color: #fde047; padding: 3px 6px;" title="Repartir pedido entre costureiras">✂️ Repartir</button>
+                        `}
                         ${nfExistente ? `
                           <button class="btn btn-secondary btn-sm btn-abrir-nfe-pedido" data-nfe-id="${nfExistente.id}" style="font-weight: 700; color: #047857; border-color: #a7f3d0; background: #ecfdf5;" title="Visualizar DANFE Oficial A4 / XML da NF-e #${nfExistente.numero}">
                             ✓ NF #${nfExistente.numero}
@@ -12539,8 +12549,8 @@
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                         Imprimir OS (A4)
                       </button>
-                      ${multiModelos && !os.desmembrada ? `
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="font-size: 11px; padding: 3px 6px; color: #854d0e; background: #fef9c3; border-color: #fde047; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="Repartir esta OS por Costureira mantendo sigilo de valores">
+                      ${!os.desmembrada && !os.subOs ? `
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="font-size: 11px; padding: 3px 6px; color: #854d0e; background: #fef9c3; border-color: #fde047; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 3px;" title="Repartir esta OS por Costureira mantendo sigilo de valores">
                           ✂️ Repartir OS
                         </button>
                       ` : ''}
@@ -12548,11 +12558,17 @@
                         <span style="font-size: 9.5px; color: #854d0e; font-weight: 700; background: #fef9c3; padding: 2px 4px; border-radius: 3px; border: 1px solid #fde047; text-align: center;">
                           ✂️ Repartida (${os.subOrdensGeradas ? os.subOrdensGeradas.length : 2} OSs)
                         </span>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.desfazerReparticaoOS('${os.id}')" style="font-size: 10.5px; padding: 3px 6px; color: #b91c1c; background: #fee2e2; border-color: #fca5a5; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; gap: 3px;" title="Desfazer a repartição, excluir sub-ordens e unificar novamente">
+                          🔄 Desfazer Repartição
+                        </button>
                       ` : ''}
                       ${os.subOs ? `
                         <span style="font-size: 9.5px; color: #1e40af; font-weight: 700; background: #eff6ff; padding: 2px 4px; border-radius: 3px; border: 1px solid #bfdbfe; text-align: center;">
                           ✂️ Sub-OS Confidencial
                         </span>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.desfazerReparticaoOS('${os.parentOsId || os.pedidoNumero || os.id}')" style="font-size: 10.5px; padding: 3px 6px; color: #b91c1c; background: #fee2e2; border-color: #fca5a5; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; gap: 3px;" title="Excluir sub-ordens repartidas e reunificar na OS principal">
+                          🔄 Unificar OS
+                        </button>
                       ` : ''}
                     </div>
                   </td>
@@ -12715,6 +12731,13 @@
       ? pedido.jogadores
       : ((os.jogadores && Array.isArray(os.jogadores) && os.jogadores.length > 0) ? os.jogadores : []);
     // Sincroniza e recupera lista completa de modelos entre OS e Pedido Oficial
+    if (!os.desmembrada && !os.subOs && typeof reunificarItensDeReparticao === 'function') {
+      const temLotesResiduais = (Array.isArray(os.itens) && os.itens.length > 1 && os.itens.some(it => /\(Lote\s+[A-Z0-9]+\)/i.test(it.produtoNome || ''))) ||
+                                (Array.isArray(pedido.itens) && pedido.itens.length > 1 && pedido.itens.some(it => /\(Lote\s+[A-Z0-9]+\)/i.test(it.produtoNome || '')));
+      if (temLotesResiduais) {
+        reunificarItensDeReparticao(os, pedido);
+      }
+    }
     let itensLista = (os.itens && Array.isArray(os.itens) && os.itens.length > 0) ? os.itens : [];
     if (pedido.itens && Array.isArray(pedido.itens) && pedido.itens.length > itensLista.length) {
       itensLista = pedido.itens;
@@ -12990,14 +13013,17 @@
               ${htmlRemuneracaoCostura}
             </div>
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-              ${!os.desmembrada ? `
+              ${(!os.desmembrada && !os.subOs) ? `
                 <button type="button" class="btn btn-sm" onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="background: #fef08a; color: #854d0e; border: 1.5px solid #facc15; font-weight: 800; font-size: 11.5px; padding: 4px 10px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.06);" title="Repartir esta OS para costureiras diferentes com sigilo absoluto de valores">
                   ✂️ Repartir Produção por Costureira
                 </button>
               ` : `
                 <span class="status-pill status-gray" style="font-size: 11px; font-weight: 800; color: #854d0e; background: #fef9c3; border: 1px solid #fde047;">
-                  ✂️ OS Repartida (${os.subOrdensGeradas ? os.subOrdensGeradas.length : 2} Sub-OSs)
+                  ✂️ ${os.subOs ? `Sub-OS Confidencial (${os.id})` : `OS Repartida (${os.subOrdensGeradas ? os.subOrdensGeradas.length : 2} Sub-OSs)`}
                 </span>
+                <button type="button" class="btn btn-sm" onclick="window.ERP.desfazerReparticaoOS('${os.parentOsId || os.pedidoNumero || os.id}')" style="background: #fee2e2; color: #b91c1c; border: 1.5px solid #fca5a5; font-weight: 800; font-size: 11.5px; padding: 4px 10px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.06);" title="Desfazer a repartição, excluir as sub-ordens repartidas e unificar o pedido novamente">
+                  🔄 Desfazer Repartição & Unificar
+                </button>
               `}
               <div style="text-align: right; font-size: 11px;">
                 <span style="color: #64748b;">Costureira:</span><br>
@@ -13297,11 +13323,17 @@
                 <span class="status-pill status-blue" style="font-size: 11px; font-weight: 800;">
                   ✂️ Sub-OS Confidencial (OS Orig: ${os.parentOsId || '---'})
                 </span>
+                <button type="button" class="btn btn-secondary btn-sm" style="color: #b91c1c; background: #fee2e2; border-color: #fca5a5; font-weight: 800; display: inline-flex; align-items: center; gap: 5px;" onclick="window.ERP.desfazerReparticaoOS('${os.parentOsId || os.pedidoNumero || os.id}')" title="Excluir sub-ordens repartidas e unificar o pedido novamente">
+                  🔄 Desfazer Repartição & Unificar OS
+                </button>
               ` : ''}
               ${os.desmembrada ? `
                 <span class="status-pill status-gray" style="font-size: 11px; font-weight: 800; color: #854d0e; background: #fef9c3; border: 1px solid #fde047;">
                   ✂️ OS Repartida (${os.subOrdensGeradas ? os.subOrdensGeradas.length : 2} sub-ordens geradas)
                 </span>
+                <button type="button" class="btn btn-secondary btn-sm" style="color: #b91c1c; background: #fee2e2; border-color: #fca5a5; font-weight: 800; display: inline-flex; align-items: center; gap: 5px;" onclick="window.ERP.desfazerReparticaoOS('${os.id}')" title="Desfazer a repartição, excluir sub-ordens e unificar o pedido novamente">
+                  🔄 Desfazer Repartição & Unificar OS
+                </button>
               ` : ''}
               ${os.status !== 'Cancelada' ? `
                 <button type="button" class="btn btn-secondary btn-sm" style="color: #dc2626; border-color: #fca5a5; font-weight: 700;" onclick="window.ERP.abrirModalCancelarPedido('${os.pedidoNumero || os.id}')">
@@ -22606,6 +22638,31 @@
       houveAlteracao = true;
     }
 
+    // 4a. Restaura e unifica automaticamente o Pedido #101 (Base Mecânica Pesada) cujo teste de repartição o cliente pediu para desfazer
+    if (!b.configFiscal) b.configFiscal = {};
+    const os101 = (b.ordensServico || []).find(o => !o.subOs && (String(o.pedidoNumero) === '101' || o.id === 'OS-101'));
+    const temSubOs101 = (b.ordensServico || []).some(o => o.subOs && (String(o.pedidoNumero) === '101' || o.parentOsId === 'OS-101' || String(o.id).startsWith('OS-101-')));
+    const temLotes101 = (ped101 && Array.isArray(ped101.itens) && ped101.itens.length > 1 && ped101.itens.some(it => /\(Lote\s+[A-Z0-9]+\)/i.test(it.produtoNome || ''))) ||
+                        (os101 && Array.isArray(os101.itens) && os101.itens.length > 1 && os101.itens.some(it => /\(Lote\s+[A-Z0-9]+\)/i.test(it.produtoNome || '')));
+    if (!b.configFiscal._reparticaoPed101DesfeitaV1 && (temSubOs101 || temLotes101 || (os101 && os101.desmembrada))) {
+      b.ordensServico = (b.ordensServico || []).filter(o => {
+        if (o.subOs && (String(o.pedidoNumero) === '101' || (os101 && o.parentOsId === os101.id) || String(o.id).startsWith('OS-101-'))) return false;
+        return true;
+      });
+      if (os101) {
+        os101.desmembrada = false;
+        delete os101.subOrdensGeradas;
+        if (os101.etapaAtual === 'Repartida') {
+          os101.etapaAtual = os101.etapaAnteriorReparticao || (ped101 && ped101.etapaProducao && ped101.etapaProducao !== 'Repartida' ? ped101.etapaProducao : 'Corte');
+        }
+      }
+      if (typeof reunificarItensDeReparticao === 'function') {
+        reunificarItensDeReparticao(os101, ped101);
+      }
+      b.configFiscal._reparticaoPed101DesfeitaV1 = true;
+      houveAlteracao = true;
+    }
+
     // 4b. Garante que também no cadastro de clientes a Base Mecânica Pesada tenha sua IE de SC (264546407) e IBGE de Itajaí
     const cliBase = (b.clientes || []).find(c => String(c.documento || c.cnpj || '').replace(/\D/g, '') === '62007964000119' || (c.nome || '').toLowerCase().includes('base mecanica'));
     if (cliBase && (!cliBase.ie || cliBase.ie === 'ISENTO')) {
@@ -28227,10 +28284,246 @@
 
   /* ==========================================================================
      REPARTIR ORDEM DE SERVIÇO / PEDIDO MULTI-MODELOS POR COSTUREIRA (CONFIDENCIAL)
+     E DESFAZER REPARTIÇÃO / UNIFICAR NOVAMENTE
      ========================================================================== */
   function fecharModalRepartir() {
     const el = document.getElementById('modalRepartirOS');
     if (el) el.remove();
+  }
+
+  /**
+   * Reunifica lotes repartidos (ex: "calça brim... (Lote A)", "calça brim... (Lote B)")
+   * de volta em um único modelo original consolidado na OS e no Pedido.
+   */
+  function reunificarItensDeReparticao(osAlvo, pedidoAlvo) {
+    const regexSufixoLote = /\s*\(Lote\s+[A-Z0-9]+\)\s*$/i;
+
+    // 1. Se houver backup explícito de itens originais sem sufixos de lote, restaura
+    if (osAlvo && Array.isArray(osAlvo.itensOriginaisBackup) && osAlvo.itensOriginaisBackup.length > 0 && !osAlvo.itensOriginaisBackup.some(it => regexSufixoLote.test(it.produtoNome || ''))) {
+      const restaurados = JSON.parse(JSON.stringify(osAlvo.itensOriginaisBackup));
+      osAlvo.itens = JSON.parse(JSON.stringify(restaurados));
+      if (pedidoAlvo) pedidoAlvo.itens = JSON.parse(JSON.stringify(restaurados));
+      delete osAlvo.itensOriginaisBackup;
+      return true;
+    }
+
+    const fonteItens = (osAlvo && Array.isArray(osAlvo.itens) && osAlvo.itens.length > 0)
+      ? osAlvo.itens
+      : (pedidoAlvo && Array.isArray(pedidoAlvo.itens) && pedidoAlvo.itens.length > 0 ? pedidoAlvo.itens : []);
+
+    if (!fonteItens || fonteItens.length === 0) return false;
+
+    const temLote = fonteItens.some(it => regexSufixoLote.test(it.produtoNome || ''));
+    if (!temLote) return false;
+
+    // Agrupa itens pelo nome base sem "(Lote A/B/...)"
+    const grupos = [];
+    const mapaGrupos = {};
+
+    fonteItens.forEach(it => {
+      const nomeLimpo = String(it.produtoNome || (osAlvo && osAlvo.produto) || (pedidoAlvo && pedidoAlvo.produtoNome) || 'Uniforme')
+        .replace(regexSufixoLote, '')
+        .trim();
+      const chave = nomeLimpo.toLowerCase();
+      if (!mapaGrupos[chave]) {
+        mapaGrupos[chave] = {
+          nomeLimpo,
+          itemBase: JSON.parse(JSON.stringify(it)),
+          lotes: []
+        };
+        grupos.push(mapaGrupos[chave]);
+      }
+      mapaGrupos[chave].lotes.push(it);
+    });
+
+    const itensReunificados = grupos.map(grp => {
+      const itemUnificado = Object.assign({}, grp.itemBase, {
+        produtoNome: grp.nomeLimpo
+      });
+
+      // Se havia apenas 1 modelo original no pedido/OS, prioriza a grade original consolidada do pedido/OS
+      const gradeCandidataOrig = (osAlvo && osAlvo.gradeOriginalBackup) || (pedidoAlvo && pedidoAlvo.grade) || (osAlvo && osAlvo.grade) || null;
+      const qtdTotalEsperada = (osAlvo && Number(osAlvo.quantidadeTotal)) || (pedidoAlvo && pedidoAlvo.grade && Number(pedidoAlvo.grade.total)) || 0;
+
+      if (grupos.length === 1 && gradeCandidataOrig && typeof gradeCandidataOrig === 'object') {
+        const chavesTamOrig = Object.keys(gradeCandidataOrig).filter(k => k !== 'total' && (parseInt(gradeCandidataOrig[k], 10) || 0) > 0);
+        const somaTamOrig = chavesTamOrig.reduce((acc, k) => acc + (parseInt(gradeCandidataOrig[k], 10) || 0), 0);
+        if (chavesTamOrig.length > 0 && (somaTamOrig === qtdTotalEsperada || qtdTotalEsperada === 0)) {
+          const gradeRestaurada = JSON.parse(JSON.stringify(gradeCandidataOrig));
+          gradeRestaurada.total = somaTamOrig || qtdTotalEsperada;
+          itemUnificado.grade = gradeRestaurada;
+          return itemUnificado;
+        }
+      }
+
+      // Caso contrário, soma as quantidades de cada tamanho de todos os lotes daquele modelo
+      const gradeSomada = {};
+      let somaTotal = 0;
+      grp.lotes.forEach(l => {
+        const g = l.grade || {};
+        Object.keys(g).forEach(k => {
+          if (k === 'total') return;
+          const q = parseInt(g[k], 10) || 0;
+          if (q > 0) {
+            gradeSomada[k] = (gradeSomada[k] || 0) + q;
+            somaTotal += q;
+          }
+        });
+      });
+
+      if (somaTotal === 0 && qtdTotalEsperada > 0) {
+        somaTotal = qtdTotalEsperada;
+      }
+      gradeSomada.total = somaTotal;
+      itemUnificado.grade = gradeSomada;
+      return itemUnificado;
+    });
+
+    if (osAlvo) {
+      osAlvo.itens = JSON.parse(JSON.stringify(itensReunificados));
+      if (osAlvo.produto) {
+        osAlvo.produto = String(osAlvo.produto).replace(regexSufixoLote, '').trim();
+      }
+      if (itensReunificados.length === 1 && itensReunificados[0].grade) {
+        osAlvo.grade = JSON.parse(JSON.stringify(itensReunificados[0].grade));
+        if (itensReunificados[0].grade.total > 0) {
+          osAlvo.quantidadeTotal = itensReunificados[0].grade.total;
+        }
+      }
+      delete osAlvo.itensOriginaisBackup;
+    }
+
+    if (pedidoAlvo) {
+      pedidoAlvo.itens = JSON.parse(JSON.stringify(itensReunificados));
+      if (pedidoAlvo.produtoNome) {
+        pedidoAlvo.produtoNome = String(pedidoAlvo.produtoNome).replace(regexSufixoLote, '').trim();
+      }
+      if (itensReunificados.length === 1 && itensReunificados[0].grade) {
+        pedidoAlvo.grade = JSON.parse(JSON.stringify(itensReunificados[0].grade));
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Desfaz a repartição de uma Ordem de Serviço / Pedido, excluindo todas as sub-ordens
+   * geradas (ex: OS-101-A, OS-101-B) e unificando os lotes novamente na OS principal.
+   */
+  function desfazerReparticaoOS(osIdOuNum, silencioso = false) {
+    const chave = String(osIdOuNum || '').trim();
+    if (!chave) return false;
+
+    const numLimpo = chave.replace(/^OS-|^PED-/i, '').replace(/-[A-Z]$/i, '').trim();
+
+    // Localiza a OS (pode ter sido chamada a partir de uma Sub-OS como OS-101-A ou pelo número do pedido 101)
+    let osEncontrada = (db.ordensServico || []).find(o =>
+      o.id === chave ||
+      (o.pedidoNumero != null && String(o.pedidoNumero) === chave) ||
+      (o.pedidoNumero != null && String(o.pedidoNumero) === numLimpo)
+    );
+
+    let osPrincipal = osEncontrada;
+    if (osEncontrada && osEncontrada.subOs) {
+      osPrincipal = (db.ordensServico || []).find(o =>
+        !o.subOs && (
+          o.id === osEncontrada.parentOsId ||
+          (o.pedidoNumero != null && osEncontrada.pedidoNumero != null && String(o.pedidoNumero) === String(osEncontrada.pedidoNumero))
+        )
+      ) || osEncontrada;
+    }
+
+    const pedido = (db.pedidos || []).find(p =>
+      p.id === chave ||
+      (p.numero != null && String(p.numero) === chave) ||
+      (p.numero != null && String(p.numero) === numLimpo) ||
+      (osPrincipal && p.numero != null && osPrincipal.pedidoNumero != null && String(p.numero) === String(osPrincipal.pedidoNumero)) ||
+      (osPrincipal && p.id === osPrincipal.pedidoId)
+    );
+
+    if (!osPrincipal && !pedido) {
+      if (!silencioso) mostrarToast('Ordem de Serviço ou Pedido não encontrado para unificação.', 'red');
+      return false;
+    }
+
+    const idBaseOS = osPrincipal ? osPrincipal.id.replace(/-[A-Z]$/i, '') : `OS-${pedido.numero}`;
+    const numPedidoRef = (osPrincipal && osPrincipal.pedidoNumero) || (pedido && pedido.numero) || numLimpo;
+
+    // Lista todas as sub-ordens vinculadas que serão excluídas
+    const subOrdensParaExcluir = (db.ordensServico || []).filter(o => {
+      if (!o) return false;
+      if (osPrincipal && o.id === osPrincipal.id && !o.subOs) return false;
+      if (osPrincipal && Array.isArray(osPrincipal.subOrdensGeradas) && osPrincipal.subOrdensGeradas.includes(o.id)) return true;
+      if (o.subOs && (o.parentOsId === idBaseOS || (numPedidoRef && String(o.pedidoNumero) === String(numPedidoRef)))) return true;
+      if (String(o.id).startsWith(idBaseOS + '-')) return true;
+      return false;
+    });
+
+    if (!silencioso) {
+      const nomesSub = subOrdensParaExcluir.length > 0
+        ? subOrdensParaExcluir.map(s => s.id).join(', ')
+        : `${idBaseOS}-A, ${idBaseOS}-B`;
+      const confirmar = confirm(
+        `Deseja desfazer a repartição do Pedido #${numPedidoRef} (${idBaseOS})?\n\n` +
+        `• As ordens repartidas (${nomesSub}) serão excluídas permanentemente.\n` +
+        `• Os lotes serão unificados novamente em uma única Ordem de Produção original.`
+      );
+      if (!confirmar) return false;
+    }
+
+    // 1. Exclui todas as Sub-OSs repartidas de db.ordensServico
+    const idsExcluir = new Set(subOrdensParaExcluir.map(s => s.id));
+    db.ordensServico = (db.ordensServico || []).filter(o => {
+      if (!o) return false;
+      if (idsExcluir.has(o.id)) return false;
+      if (o.subOs && (o.parentOsId === idBaseOS || (numPedidoRef && String(o.pedidoNumero) === String(numPedidoRef)))) return false;
+      return true;
+    });
+
+    // 2. Reunifica os itens (remove "(Lote A)", "(Lote B)" e restaura grade única consolidada)
+    reunificarItensDeReparticao(osPrincipal, pedido);
+
+    // 3. Restaura status e flags da OS Principal
+    if (osPrincipal) {
+      osPrincipal.desmembrada = false;
+      osPrincipal.subOs = false;
+      delete osPrincipal.subOrdensGeradas;
+      delete osPrincipal.parentOsId;
+      if (osPrincipal.etapaAtual === 'Repartida') {
+        osPrincipal.etapaAtual = osPrincipal.etapaAnteriorReparticao || (pedido && pedido.etapaProducao && pedido.etapaProducao !== 'Repartida' ? pedido.etapaProducao : 'Corte');
+      }
+      delete osPrincipal.etapaAnteriorReparticao;
+    }
+
+    if (pedido && pedido.etapaProducao === 'Repartida') {
+      pedido.etapaProducao = 'Corte';
+    }
+
+    salvarEstado(true);
+
+    if (!silencioso) {
+      fecharModalRepartir();
+      if (typeof fecharModal === 'function') fecharModal();
+      mostrarToast(`✓ Repartição desfeita! As sub-ordens foram excluídas e a OS ${idBaseOS} foi unificada novamente.`, 'green');
+
+      if (typeof renderizarOrdensServico === 'function' && abaAtiva === 'ordens') {
+        renderizarOrdensServico();
+      }
+      if (typeof renderizarPedidos === 'function' && abaAtiva === 'pedidos') {
+        renderizarPedidos();
+      }
+      if (typeof atualizarBadges === 'function') {
+        atualizarBadges();
+      }
+
+      if (osPrincipal && typeof abrirFichaTecnica === 'function') {
+        setTimeout(() => {
+          abrirFichaTecnica(osPrincipal.id);
+        }, 200);
+      }
+    }
+
+    return true;
   }
 
   function abrirModalRepartirOS(osIdOuNum) {
@@ -28242,6 +28535,12 @@
     }
 
     const pedido = (db.pedidos || []).find(p => (p.numero != null && os.pedidoNumero != null && p.numero.toString() === os.pedidoNumero.toString()) || p.id === os.pedidoId) || {};
+
+    // Se os itens ficaram com "(Lote A)" / "(Lote B)" de um teste anterior, reunifica antes de montar a tela de repartição
+    if (!os.desmembrada) {
+      reunificarItensDeReparticao(os, pedido);
+    }
+
     const itensLista = (os.itens && Array.isArray(os.itens) && os.itens.length > 0)
       ? os.itens
       : (pedido.itens && Array.isArray(pedido.itens) && pedido.itens.length > 0 ? pedido.itens : []);
@@ -28391,7 +28690,12 @@
               </strong>
             </div>
 
-            <div style="display: flex; gap: 10px;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              ${os.desmembrada ? `
+                <button type="button" class="btn btn-secondary" onclick="window.ERP.desfazerReparticaoOS('${os.id}')" style="font-weight: 800; color: #b91c1c; background: #fee2e2; border-color: #fca5a5;">
+                  🔄 Desfazer Repartição & Unificar
+                </button>
+              ` : ''}
               <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModalRepartir()" style="font-weight: 700;">
                 Cancelar
               </button>
@@ -28749,14 +29053,25 @@
         subOrdens.push(subOS);
       });
 
+      // Salva backup da estrutura original antes de repartir para permitir desfazer/unificar com 100% de fidelidade
+      if (!os.itensOriginaisBackup && Array.isArray(itensLista) && itensLista.length > 0) {
+        os.itensOriginaisBackup = JSON.parse(JSON.stringify(itensLista));
+      }
+      if (!os.gradeOriginalBackup) {
+        os.gradeOriginalBackup = JSON.parse(JSON.stringify(os.grade || pedido.grade || {}));
+      }
+      if (!os.etapaAnteriorReparticao && os.etapaAtual && os.etapaAtual !== 'Repartida') {
+        os.etapaAnteriorReparticao = os.etapaAtual;
+      }
+
       // Marca a OS original como desmembrada
       os.desmembrada = true;
       os.subOrdensGeradas = subOrdens.map(s => s.id);
       os.etapaAtual = 'Repartida';
 
-      // Remove sub-OSs antigas se já existiam e adiciona as novas
+      // Remove todas as sub-OSs antigas desta OS antes de inserir as novas
       const idsSubNovas = new Set(subOrdens.map(s => s.id));
-      db.ordensServico = db.ordensServico.filter(o => !idsSubNovas.has(o.id));
+      db.ordensServico = db.ordensServico.filter(o => !idsSubNovas.has(o.id) && !(o.subOs && o.parentOsId === os.id));
 
       // Insere as sub-OSs logo após a OS original
       const idxOrig = db.ordensServico.findIndex(o => o.id === os.id);
@@ -28817,6 +29132,8 @@
     alternarOrdenacaoPedidos: () => { if (typeof alternarOrdenacaoPedidos === 'function') return alternarOrdenacaoPedidos(); },
     imprimirFichaTecnicaIsolada,
     abrirModalRepartirOS,
+    desfazerReparticaoOS,
+    reunificarItensDeReparticao,
     fecharModalRepartir,
     imprimirFolhaMockupGrande,
     gerarHtmlFolhaMockupGrande,
