@@ -5565,33 +5565,35 @@
     if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
       p.itens.forEach(it => {
         const qtd = it.grade?.total || 0;
-        const vCost = (it.custoCostura != null && !isNaN(it.custoCostura) && parseFloat(it.custoCostura) > 0) ? parseFloat(it.custoCostura) : 7.50;
+        const vCost = parseNumInput(it.custoCostura, 7.50);
         custoCostura += vCost * qtd;
 
-        const precoKg = parseFloat(it.custoTecidoKg) || 48.50;
-        const consumo = parseFloat(it.consumoTecido) || 0.28;
-        const margem = 1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100);
+        const precoKg = parseNumInput(it.custoTecidoKg, 48.50);
+        const consumo = parseNumInput(it.consumoTecido, 0.28);
+        const margem = 1 + (parseNumInput(it.margemErroTecido, 8.0) / 100);
         custoTecido += precoKg * consumo * margem * qtd;
 
-        const vAv = parseFloat(it.custoAviamento) || 4.80;
+        const vAv = parseNumInput(it.custoAviamento, 4.80);
         custoAviamento += vAv * qtd;
 
-        if (Array.isArray(it.aplicacoes)) {
+        if (it.custoEstampaTotal !== undefined && it.custoEstampaTotal !== null && it.custoEstampaTotal !== '') {
+          custoEstampa += parseNumInput(it.custoEstampaTotal, 0) * qtd;
+        } else if (Array.isArray(it.aplicacoes)) {
           it.aplicacoes.forEach(ap => {
-            const vApp = parseFloat(ap.custoEstimadoUnitario || ap.custoUnitario) || (ap.tipo === 'Bordado' ? 6.50 : 4.50);
+            const vApp = parseNumInput(ap.custoEstimadoUnitario ?? ap.custoUnitario, ap.tecnica === 'Lisa' ? 0 : (ap.tipo === 'Bordado' ? 6.50 : 4.50));
             custoEstampa += vApp * qtd;
           });
         }
       });
     } else {
-      custoCostura = (parseFloat(p.custoCostura) || 7.50) * totalGrade;
-      custoTecido = (parseFloat(p.custoTecidoPorPeca) || 14.67) * totalGrade;
-      custoAviamento = 4.80 * totalGrade;
-      custoEstampa = (parseFloat(p.custoEstampaTotal) || 0);
+      custoCostura = parseNumInput(p.custoCostura, 7.50) * totalGrade;
+      custoTecido = parseNumInput(p.custoTecidoPorPeca, 14.67) * totalGrade;
+      custoAviamento = parseNumInput(p.custoAviamento, 4.80) * totalGrade;
+      custoEstampa = parseNumInput(p.custoEstampaTotal, 0);
     }
 
-    // Taxas financeiras estimadas (ex: 2.5% a 3.5% ou de acordo com taxa definida)
-    const taxaPerc = (parseFloat(p.taxaPagamentoPercentual) || 2.5) / 100;
+    // Taxas financeiras estimadas (respeita 0 se zerado)
+    const taxaPerc = parseNumInput(p.taxaPagamentoPercentual, 0) / 100;
     const custoTaxas = parseFloat(((Number(p.valorTotal) || 0) * taxaPerc).toFixed(2));
 
     const total = parseFloat((custoCostura + custoTecido + custoAviamento + custoEstampa + custoTaxas).toFixed(2));
@@ -6413,6 +6415,20 @@
     return isNaN(n) ? padrao : n;
   }
 
+  function numOuPadrao(val, padrao = 0) {
+    return parseNumInput(val, padrao);
+  }
+
+  // Lê um input numérico do DOM preservando 0 ou campo limpo ('') como 0!
+  function lerInputNumDom(idOuEl, padraoSeInexistente = 0) {
+    const el = typeof idOuEl === 'string' ? document.getElementById(idOuEl) : idOuEl;
+    if (!el) return padraoSeInexistente;
+    const raw = String(el.value ?? '').trim().replace(',', '.');
+    if (raw === '') return 0;
+    const n = parseFloat(raw);
+    return isNaN(n) ? 0 : n;
+  }
+
   const LOCAIS_PERSONALIZACAO = [
     { id: 'peito_esq', rotulo: 'Peito Frente (Logo Esquerdo)', padraoW: 10, padraoH: 8, padraoPontos: 6000, padraoValorBordado: 4.50 },
     { id: 'peito_centro', rotulo: 'Peito Central (Grande)', padraoW: 24, padraoH: 14, padraoPontos: 16000, padraoValorBordado: 9.00 },
@@ -6429,10 +6445,14 @@
 
     if (app.tecnica === 'DTF') {
       const larguraRolo = parseNumInput(app.dtfLarguraRolo, 58.0);
-      const w = Math.max(0.1, parseNumInput(app.dtfLarguraArte, 10.0));
-      const h = Math.max(0.1, parseNumInput(app.dtfAlturaArte, 8.0));
-      const metroCusto = parseNumInput(app.dtfMetroLinear, larguraRolo === 28 ? 38.0 : 60.0);
-      const prensa = parseNumInput(app.dtfPrensagem, 1.50);
+      const w = Math.max(0, parseNumInput(app.dtfLarguraArte, 10.0));
+      const h = Math.max(0, parseNumInput(app.dtfAlturaArte, 8.0));
+      const metroCusto = Math.max(0, parseNumInput(app.dtfMetroLinear, larguraRolo === 28 ? 38.0 : 60.0));
+      const prensa = Math.max(0, parseNumInput(app.dtfPrensagem, 1.50));
+
+      if (metroCusto === 0 || w === 0 || h === 0) {
+        return prensa;
+      }
 
       // 5mm de margem entre artes no nesting
       const cabemNaLinha = Math.max(1, Math.floor(larguraRolo / (w + 0.5)));
@@ -6445,7 +6465,7 @@
     if (app.tecnica === 'Bordado') {
       let valorBordado = parseNumInput(app.borValorUnitario, -1);
       if (valorBordado < 0) {
-        if (app.borPontos) {
+        if (app.borPontos !== undefined && app.borPontos !== null && app.borPontos !== '') {
           valorBordado = (parseNumInput(app.borPontos, 0) / 1000) * parseNumInput(app.borMilPontos, 0.45);
         } else {
           valorBordado = 4.50;
@@ -6492,7 +6512,7 @@
       custoMaoDeObraBase: 7.50
     };
 
-    const dtfMetro = (pdr.dtfLarguraRolo || 58) == 28 ? (pdr.dtfMetroLinear28 || 38.00) : (pdr.dtfMetroLinear58 || 60.00);
+    const dtfMetro = (pdr.dtfLarguraRolo || 58) == 28 ? numOuPadrao(pdr.dtfMetroLinear28, 38.00) : numOuPadrao(pdr.dtfMetroLinear58, 60.00);
 
     const appInicial = {
       id: 'APP-' + Date.now() + '-' + idNum + '-1',
@@ -6502,7 +6522,7 @@
       dtfLarguraArte: 10,
       dtfAlturaArte: 8,
       dtfMetroLinear: dtfMetro,
-      dtfPrensagem: pdr.dtfPrensagem !== undefined ? pdr.dtfPrensagem : 1.50,
+      dtfPrensagem: numOuPadrao(pdr.dtfPrensagem, 1.50),
       borValorUnitario: 4.50,
       borMatriz: 0.00,
       borEntretela: 0.00,
@@ -6523,7 +6543,7 @@
       ? window.ERP_MOCKUPS.gerarMockupSvg(prod.nome, "#1e3a8a", "#ffffff", sigla)
       : '';
 
-    const mapaCons = garantirConsumosPorTamanhoProduto(prod);
+    const consumoInicial = numOuPadrao(prod.consumoMalhaKgPorPeca, numOuPadrao(pdr.consumoTecido, 0.28));
 
     return {
       id: 'ITEM-' + Date.now() + '-' + idNum,
@@ -6535,18 +6555,18 @@
       grade: { pp: 0, p: 0, m: 0, g: 0, gg: 0, xg: 0, total: 0 },
       aplicacoes: [appInicial],
       unidadeTecido: prod.unidadeTecido || 'kg', // 'kg' (Quilos) ou 'metro' (Metros)
-      consumosCustomizadosPorTamanho: mapaCons ? JSON.parse(JSON.stringify(mapaCons)) : null,
+      consumosCustomizadosPorTamanho: null,
       consumoTotalTecido: 0,
-      consumoUnitarioPonderado: prod.consumoMalhaKgPorPeca || 0.28,
-      custoTecidoKg: pdr.custoTecidoKg || 48.50,
-      consumoTecido: prod.consumoMalhaKgPorPeca || 0.28,
-      margemErroTecido: pdr.margemErroTecido || 8.0,
-      custoAviamento: pdr.custoAviamento || 4.80,
+      consumoUnitarioPonderado: consumoInicial,
+      custoTecidoKg: numOuPadrao(pdr.custoTecidoKg, 48.50),
+      consumoTecido: consumoInicial,
+      margemErroTecido: numOuPadrao(pdr.margemErroTecido, 8.0),
+      custoAviamento: numOuPadrao(pdr.custoAviamento, 4.80),
       custoEstampaTotal: appInicial.custoUnitario,
-      custoCostura: prod.custoMaoDeObraBase || pdr.custoCostura || 7.50,
+      custoCostura: numOuPadrao(prod.custoMaoDeObraBase, numOuPadrao(pdr.custoCostura, 7.50)),
       precoVendaUnitario: 58.00,
-      margemDesejada: pdr.margemDesejada || 30.0,
-      aliquotaImposto: pdr.aliquotaImposto || 6.5,
+      margemDesejada: numOuPadrao(pdr.margemDesejada, 30.0),
+      aliquotaImposto: numOuPadrao(pdr.aliquotaImposto, 6.5),
       mockupUrl: mockSvg,
       mockupUploadPersonalizado: false,
       custoUnitarioProducao: 24.50,
@@ -6613,19 +6633,19 @@
               </div>
               <div class="form-group" style="flex: 0.9;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Largura (cm)</label>
-                <input type="number" class="form-input inp-dtf-w" value="${app.dtfLarguraArte || 10}" step="0.5" style="font-size: 11px; padding: 3px 6px;">
+                <input type="number" class="form-input inp-dtf-w" value="${numOuPadrao(app.dtfLarguraArte, 10)}" step="0.5" style="font-size: 11px; padding: 3px 6px;">
               </div>
               <div class="form-group" style="flex: 0.9;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Altura (cm)</label>
-                <input type="number" class="form-input inp-dtf-h" value="${app.dtfAlturaArte || 8}" step="0.5" style="font-size: 11px; padding: 3px 6px;">
+                <input type="number" class="form-input inp-dtf-h" value="${numOuPadrao(app.dtfAlturaArte, 8)}" step="0.5" style="font-size: 11px; padding: 3px 6px;">
               </div>
               <div class="form-group" style="flex: 1;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Metro Linear (R$)</label>
-                <input type="number" class="form-input inp-dtf-metro" value="${(app.dtfMetroLinear || (larguraRolo == 28 ? 38 : 60)).toFixed(2)}" step="1" style="font-size: 11px; padding: 3px 6px;">
+                <input type="number" class="form-input inp-dtf-metro" value="${numOuPadrao(app.dtfMetroLinear, larguraRolo == 28 ? 38 : 60).toFixed(2)}" step="1" style="font-size: 11px; padding: 3px 6px;">
               </div>
               <div class="form-group" style="flex: 0.9;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Prensa (R$)</label>
-                <input type="number" class="form-input inp-dtf-prensa" value="${(app.dtfPrensagem !== undefined ? app.dtfPrensagem : 1.50).toFixed(2)}" step="0.20" style="font-size: 11px; padding: 3px 6px;">
+                <input type="number" class="form-input inp-dtf-prensa" value="${numOuPadrao(app.dtfPrensagem, 1.50).toFixed(2)}" step="0.20" style="font-size: 11px; padding: 3px 6px;">
               </div>
             </div>
             <div style="font-size: 10px; color: var(--text-gray-500); line-height: 1.3;">
@@ -6677,7 +6697,7 @@
             <div class="form-row" style="margin-bottom: 2px;">
               <div class="form-group" style="flex: 1.2;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Área Estampada (m²/pç)</label>
-                <input type="number" class="form-input inp-sub-area" value="${app.subArea || 0.25}" step="0.05" style="font-size: 11px; padding: 3px 6px;">
+                <input type="number" class="form-input inp-sub-area" value="${numOuPadrao(app.subArea, 0.25)}" step="0.05" style="font-size: 11px; padding: 3px 6px;">
               </div>
               <div class="form-group" style="flex: 1.2;">
                 <label class="form-label" style="font-size: 10px; margin-bottom: 2px;">Papel + Tinta (R$/m²)</label>
@@ -7027,14 +7047,14 @@
         observacoesCoresDetalhes: orcamentoExistente.observacoesCoresDetalhes || '',
         grade: orcamentoExistente.grade || { pp: 0, p: 0, m: 0, g: 0, gg: 0, xg: 0, total: 0 },
         aplicacoes: appsLegadas,
-        custoTecidoKg: padroes.custoTecidoKg || 48.50,
-        consumoTecido: orcamentoExistente.consumoRealComPerda ? (orcamentoExistente.consumoRealComPerda / 1.08) : 0.28,
-        margemErroTecido: orcamentoExistente.margemErroTecido || 8.0,
-        custoAviamento: padroes.custoAviamento || 4.80,
+        custoTecidoKg: numOuPadrao(padroes.custoTecidoKg, 48.50),
+        consumoTecido: orcamentoExistente.consumoRealComPerda !== undefined ? (numOuPadrao(orcamentoExistente.consumoRealComPerda, 0.28) / 1.08) : 0.28,
+        margemErroTecido: numOuPadrao(orcamentoExistente.margemErroTecido, 8.0),
+        custoAviamento: numOuPadrao(padroes.custoAviamento, 4.80),
         custoEstampaTotal: 5.50,
-        custoCostura: padroes.custoCostura || 7.50,
-        precoVendaUnitario: orcamentoExistente.precoUnitarioVenda || 54.00,
-        margemDesejada: orcamentoExistente.margemLucroPercentual || 30.0,
+        custoCostura: numOuPadrao(padroes.custoCostura, 7.50),
+        precoVendaUnitario: numOuPadrao(orcamentoExistente.precoUnitarioVenda, 54.00),
+        margemDesejada: numOuPadrao(orcamentoExistente.margemLucroPercentual, 30.0),
         aliquotaImposto: 6.5,
         mockupUrl: orcamentoExistente.mockupUrl || '',
         mockupUploadPersonalizado: !!orcamentoExistente.mockupUrl,
@@ -7589,22 +7609,22 @@
 
                   <div class="form-group" style="flex: 1;">
                     <label class="form-label" title="Tolerância percentual sobre o consumo de tecido para cobrir perdas no enfesto, ourela e corte">Perda Tecido / Margem (%)</label>
-                    <input type="number" id="inputMargemErroTecido" class="form-input" value="${(padroes.margemErroTecido || 8.0).toFixed(1)}" step="0.5" min="0" max="30">
+                    <input type="number" id="inputMargemErroTecido" class="form-input" value="${numOuPadrao(padroes.margemErroTecido, 8.0).toFixed(1)}" step="0.5" min="0" max="30">
                   </div>
 
                   <div class="form-group" style="flex: 1;">
                     <label class="form-label">Aviamentos p/ Peça (R$)</label>
-                    <input type="number" id="inputCustoAviamento" class="form-input" value="${(padroes.custoAviamento || 4.80).toFixed(2)}" step="0.20">
+                    <input type="number" id="inputCustoAviamento" class="form-input" value="${numOuPadrao(padroes.custoAviamento, 4.80).toFixed(2)}" step="0.20" min="0">
                   </div>
 
                   <div class="form-group" style="flex: 1;">
                     <label class="form-label">Estampa Calculada (R$)</label>
-                    <input type="number" id="inputCustoEstampa" class="form-input" value="0.00" step="0.10">
+                    <input type="number" id="inputCustoEstampa" class="form-input" value="0.00" step="0.10" min="0">
                   </div>
 
                   <div class="form-group" style="flex: 1;">
                     <label class="form-label">Costura & MDO (R$)</label>
-                    <input type="number" id="inputCustoCostura" class="form-input" value="${(padroes.custoCostura || 7.50).toFixed(2)}" step="0.50">
+                    <input type="number" id="inputCustoCostura" class="form-input" value="${numOuPadrao(padroes.custoCostura, 7.50).toFixed(2)}" step="0.50" min="0">
                   </div>
                 </div>
 
@@ -7616,17 +7636,17 @@
                 <div class="form-row">
                   <div class="form-group">
                     <label class="form-label">Preço que Pretende Cobrar (R$ un)</label>
-                    <input type="number" id="inputPrecoPretendido" class="form-input" style="font-weight: 800; font-size: 14px;" value="58.00" step="1.00">
+                    <input type="number" id="inputPrecoPretendido" class="form-input" style="font-weight: 800; font-size: 14px;" value="58.00" step="1.00" min="0">
                   </div>
 
                   <div class="form-group">
                     <label class="form-label">Margem Líquida Alvo (%)</label>
-                    <input type="number" id="inputMargemDesejada" class="form-input" value="${padroes.margemDesejada || 30}" step="1">
+                    <input type="number" id="inputMargemDesejada" class="form-input" value="${numOuPadrao(padroes.margemDesejada, 30)}" step="1" min="0">
                   </div>
 
                   <div class="form-group">
                     <label class="form-label">Imposto / Simples (%)</label>
-                    <input type="number" id="inputAliquotaImposto" class="form-input" value="${padroes.aliquotaImposto || 6.5}" step="0.1">
+                    <input type="number" id="inputAliquotaImposto" class="form-input" value="${numOuPadrao(padroes.aliquotaImposto, 6.5)}" step="0.1" min="0">
                   </div>
                 </div>
               </div>
@@ -7748,8 +7768,8 @@
           it.estoqueLote = itemEst.lote || null;
         }
       }
-      it.custoTecidoKg = parseNumInput(document.getElementById('inputCustoTecido')?.value, padroes.custoTecidoKg || 48.50);
-      let consumoLido = parseNumInput(document.getElementById('inputConsumoTecido')?.value, 0.28);
+      it.custoTecidoKg = lerInputNumDom('inputCustoTecido', numOuPadrao(padroes.custoTecidoKg, 48.50));
+      let consumoLido = lerInputNumDom('inputConsumoTecido', 0.28);
       // Se digitou em gramas (> 10, ex: 280), converte automaticamente para kg (0.28)
       if (it.unidadeTecido !== 'metro' && consumoLido > 10) {
         consumoLido = parseFloat((consumoLido / 1000).toFixed(3));
@@ -7757,27 +7777,31 @@
         if (inpCons) inpCons.value = consumoLido.toFixed(2);
       }
 
-      const anteriorConsumo = it.consumoTecido || 0.28;
+      const anteriorConsumo = numOuPadrao(it.consumoTecido, 0.28);
       if (Math.abs(consumoLido - anteriorConsumo) > 0.0001) {
         it.consumoTecido = consumoLido;
-        // Se já possui consumos customizados por tamanho, escala proporcionalmente
-        if (it.consumosCustomizadosPorTamanho && anteriorConsumo > 0) {
-          const escala = consumoLido / anteriorConsumo;
-          if (escala > 0 && Math.abs(escala - 1.0) > 0.001) {
-            Object.keys(it.consumosCustomizadosPorTamanho).forEach(tam => {
-              it.consumosCustomizadosPorTamanho[tam] = parseFloat((it.consumosCustomizadosPorTamanho[tam] * escala).toFixed(3));
-            });
+        // Se já possui consumos customizados por tamanho, escala proporcionalmente ou zera se consumoLido === 0
+        if (it.consumosCustomizadosPorTamanho) {
+          if (consumoLido === 0) {
+            delete it.consumosCustomizadosPorTamanho;
+          } else if (anteriorConsumo > 0) {
+            const escala = consumoLido / anteriorConsumo;
+            if (escala > 0 && Math.abs(escala - 1.0) > 0.001) {
+              Object.keys(it.consumosCustomizadosPorTamanho).forEach(tam => {
+                it.consumosCustomizadosPorTamanho[tam] = parseFloat((it.consumosCustomizadosPorTamanho[tam] * escala).toFixed(3));
+              });
+            }
           }
         }
       } else {
         it.consumoTecido = consumoLido;
       }
-      it.margemErroTecido = parseFloat(document.getElementById('inputMargemErroTecido')?.value || 8.0);
-      it.custoAviamento = parseFloat(document.getElementById('inputCustoAviamento')?.value || 4.80);
-      it.custoCostura = parseFloat(document.getElementById('inputCustoCostura')?.value || 7.50);
-      it.precoVendaUnitario = parseFloat(document.getElementById('inputPrecoPretendido')?.value || 58.00);
-      it.margemDesejada = parseFloat(document.getElementById('inputMargemDesejada')?.value || 30.0);
-      it.aliquotaImposto = parseFloat(document.getElementById('inputAliquotaImposto')?.value || 6.5);
+      it.margemErroTecido = lerInputNumDom('inputMargemErroTecido', 8.0);
+      it.custoAviamento = lerInputNumDom('inputCustoAviamento', 4.80);
+      it.custoCostura = lerInputNumDom('inputCustoCostura', 7.50);
+      it.precoVendaUnitario = lerInputNumDom('inputPrecoPretendido', 58.00);
+      it.margemDesejada = lerInputNumDom('inputMargemDesejada', 30.0);
+      it.aliquotaImposto = lerInputNumDom('inputAliquotaImposto', 6.5);
 
       // Ler dados específicos das aplicações de personalização
       lerDadosAplicacoesDoDOM();
@@ -7802,48 +7826,54 @@
           const selRolo = card.querySelector('.inp-dtf-rolo');
           if (selRolo) app.dtfLarguraRolo = parseNumInput(selRolo.value, 58);
           const inpW = card.querySelector('.inp-dtf-w');
-          if (inpW) app.dtfLarguraArte = parseNumInput(inpW.value, 10);
+          if (inpW) app.dtfLarguraArte = lerInputNumDom(inpW, 10);
           const inpH = card.querySelector('.inp-dtf-h');
-          if (inpH) app.dtfAlturaArte = parseNumInput(inpH.value, 8);
+          if (inpH) app.dtfAlturaArte = lerInputNumDom(inpH, 8);
           const inpMetro = card.querySelector('.inp-dtf-metro');
-          if (inpMetro) app.dtfMetroLinear = parseNumInput(inpMetro.value, 60);
+          if (inpMetro) app.dtfMetroLinear = lerInputNumDom(inpMetro, 60);
           const inpPrensa = card.querySelector('.inp-dtf-prensa');
-          if (inpPrensa) app.dtfPrensagem = parseNumInput(inpPrensa.value, 1.50);
+          if (inpPrensa) app.dtfPrensagem = lerInputNumDom(inpPrensa, 1.50);
         } else if (app.tecnica === 'Bordado') {
           const inpVal = card.querySelector('.inp-bor-valor');
-          if (inpVal) app.borValorUnitario = parseNumInput(inpVal.value, 0);
+          if (inpVal) app.borValorUnitario = lerInputNumDom(inpVal, 0);
           const inpMatriz = card.querySelector('.inp-bor-matriz');
-          if (inpMatriz) app.borMatriz = parseNumInput(inpMatriz.value, 0);
+          if (inpMatriz) app.borMatriz = lerInputNumDom(inpMatriz, 0);
           const inpEnt = card.querySelector('.inp-bor-entretela');
-          if (inpEnt) app.borEntretela = parseNumInput(inpEnt.value, 0);
+          if (inpEnt) app.borEntretela = lerInputNumDom(inpEnt, 0);
         } else if (app.tecnica === 'Silk') {
           const inpCores = card.querySelector('.inp-silk-cores');
-          if (inpCores) app.silkCores = parseNumInput(inpCores.value, 2);
+          if (inpCores) app.silkCores = lerInputNumDom(inpCores, 2);
           const inpTela = card.querySelector('.inp-silk-tela');
-          if (inpTela) app.silkTaxaTela = parseNumInput(inpTela.value, 35.00);
+          if (inpTela) app.silkTaxaTela = lerInputNumDom(inpTela, 35.00);
           const inpBatida = card.querySelector('.inp-silk-batida');
-          if (inpBatida) app.silkBatida = parseNumInput(inpBatida.value, 1.80);
+          if (inpBatida) app.silkBatida = lerInputNumDom(inpBatida, 1.80);
           const inpTinta = card.querySelector('.inp-silk-tinta');
-          if (inpTinta) app.silkTinta = parseNumInput(inpTinta.value, 0.90);
+          if (inpTinta) app.silkTinta = lerInputNumDom(inpTinta, 0.90);
         } else if (app.tecnica === 'Sublimacao') {
           const inpArea = card.querySelector('.inp-sub-area');
-          if (inpArea) app.subArea = parseNumInput(inpArea.value, 0.25);
+          if (inpArea) app.subArea = lerInputNumDom(inpArea, 0.25);
           const inpCusto = card.querySelector('.inp-sub-custo');
-          if (inpCusto) app.subCustoM2 = parseNumInput(inpCusto.value, 9.50);
+          if (inpCusto) app.subCustoM2 = lerInputNumDom(inpCusto, 9.50);
           const inpCal = card.querySelector('.inp-sub-calandra');
-          if (inpCal) app.subCalandra = parseNumInput(inpCal.value, 2.00);
+          if (inpCal) app.subCalandra = lerInputNumDom(inpCal, 2.00);
         }
 
         app.custoUnitario = calcularCustoUnitarioAplicacao(app, it.grade?.total || 1);
       });
 
-      // Total de estampa deste modelo
+      // Total de estampa deste modelo (respeita edição manual ou zeramento direto no inputCustoEstampa)
       const somaEstampas = it.aplicacoes.reduce((acc, a) => acc + (a.custoUnitario || 0), 0);
-      it.custoEstampaTotal = somaEstampas;
       const inpCustoEstampa = document.getElementById('inputCustoEstampa');
-      if (inpCustoEstampa) inpCustoEstampa.value = somaEstampas.toFixed(2);
+      if (it.custoEstampaManual !== undefined && it.custoEstampaManual !== null) {
+        it.custoEstampaTotal = numOuPadrao(it.custoEstampaManual, 0);
+      } else {
+        it.custoEstampaTotal = somaEstampas;
+        if (inpCustoEstampa && document.activeElement !== inpCustoEstampa) {
+          inpCustoEstampa.value = somaEstampas.toFixed(2);
+        }
+      }
       const lblTotal = document.getElementById('lblTotalEstampaModelo');
-      if (lblTotal) lblTotal.textContent = `${formatarMoeda(somaEstampas)} / peça`;
+      if (lblTotal) lblTotal.textContent = `${formatarMoeda(it.custoEstampaTotal)} / peça`;
     }
 
     // Renderiza as abas dos modelos no topo
@@ -8305,17 +8335,19 @@
       if (lblCons) lblCons.textContent = isMet ? 'Consumo Base M (m/un)' : 'Consumo Base M (kg/un)';
 
       // Custos
+      const custoTecVal = numOuPadrao(it.custoTecidoKg, numOuPadrao(padroes.custoTecidoKg, 48.50));
+      const consumoVal = numOuPadrao(it.consumoTecido, isMet ? 0.75 : 0.28);
       const inpTec = document.getElementById('inputCustoTecido');
-      if (inpTec) inpTec.value = (it.custoTecidoKg || padroes.custoTecidoKg || 48.50).toFixed(2);
+      if (inpTec) inpTec.value = custoTecVal.toFixed(2);
       const inpCons = document.getElementById('inputConsumoTecido');
-      if (inpCons) inpCons.value = (it.consumoTecido || 0.28).toFixed(2);
+      if (inpCons) inpCons.value = consumoVal.toFixed(2);
       const badgeGramas = document.getElementById('badgeConsumoEquivGramas');
       if (badgeGramas) {
-        badgeGramas.textContent = isMet ? `${(it.consumoTecido || 0.75).toFixed(2)}m` : `${Math.round((it.consumoTecido || 0.28) * 1000)}g`;
+        badgeGramas.textContent = isMet ? `${consumoVal.toFixed(2)}m` : `${Math.round(consumoVal * 1000)}g`;
       }
       const spanDica = document.getElementById('spanConsumoGramasDica');
       if (spanDica) {
-        spanDica.textContent = isMet ? 'Metros lineares tam M' : `${Math.round((it.consumoTecido || 0.28) * 1000)}g = ${(it.consumoTecido || 0.28).toFixed(2)} kg`;
+        spanDica.textContent = isMet ? 'Metros lineares tam M' : `${Math.round(consumoVal * 1000)}g = ${consumoVal.toFixed(2)} kg`;
       }
       const lblUnidadeBase = document.getElementById('labelUnidadeConsumoBase');
       if (lblUnidadeBase) {
@@ -8327,19 +8359,19 @@
         badgePonderado.style.display = totalGrade > 0 ? 'inline-block' : 'none';
       }
       const inpMarg = document.getElementById('inputMargemErroTecido');
-      if (inpMarg) inpMarg.value = (it.margemErroTecido || 8.0).toFixed(1);
+      if (inpMarg) inpMarg.value = numOuPadrao(it.margemErroTecido, 8.0).toFixed(1);
       const inpAv = document.getElementById('inputCustoAviamento');
-      if (inpAv) inpAv.value = (it.custoAviamento || 4.80).toFixed(2);
+      if (inpAv) inpAv.value = numOuPadrao(it.custoAviamento, 4.80).toFixed(2);
       const inpCost = document.getElementById('inputCustoCostura');
-      if (inpCost) inpCost.value = (it.custoCostura || 7.50).toFixed(2);
+      if (inpCost) inpCost.value = numOuPadrao(it.custoCostura, 7.50).toFixed(2);
 
       // Preço e Margem
       const inpPrec = document.getElementById('inputPrecoPretendido');
-      if (inpPrec) inpPrec.value = (it.precoVendaUnitario || 58.00).toFixed(2);
+      if (inpPrec) inpPrec.value = numOuPadrao(it.precoVendaUnitario, 58.00).toFixed(2);
       const inpMD = document.getElementById('inputMargemDesejada');
-      if (inpMD) inpMD.value = (it.margemDesejada || 30.0).toFixed(0);
+      if (inpMD) inpMD.value = numOuPadrao(it.margemDesejada, 30.0).toFixed(0);
       const inpImp = document.getElementById('inputAliquotaImposto');
-      if (inpImp) inpImp.value = (it.aliquotaImposto || 6.5).toFixed(1);
+      if (inpImp) inpImp.value = numOuPadrao(it.aliquotaImposto, 6.5).toFixed(1);
 
       // Origem de Estoque Físico
       const chkEst = document.getElementById('chkUtilizarEstoqueFisico');
@@ -8387,6 +8419,7 @@
         // Troca de técnica via pills
         card.querySelectorAll('.btn-app-tec').forEach(btn => {
           btn.addEventListener('click', () => {
+            delete it.custoEstampaManual;
             const novaTec = btn.getAttribute('data-tec');
             app.tecnica = novaTec;
             // Adapta dimensões padrão se for DTF ou Bordado
@@ -8407,6 +8440,7 @@
         // Troca de local
         const selLocal = card.querySelector('.sel-app-local');
         selLocal?.addEventListener('change', (e) => {
+          delete it.custoEstampaManual;
           app.local = e.target.value;
           const locConfig = LOCAIS_PERSONALIZACAO.find(l => l.rotulo === app.local);
           if (locConfig) {
@@ -8426,6 +8460,7 @@
         // Remoção da aplicação
         const btnRemover = card.querySelector('.btn-remover-app');
         btnRemover?.addEventListener('click', () => {
+          delete it.custoEstampaManual;
           it.aplicacoes.splice(idx, 1);
           renderizarAplicacoes();
           recalcularBenchmarkModal();
@@ -8435,6 +8470,7 @@
         card.querySelectorAll('input, select').forEach(inp => {
           if (!inp.classList.contains('sel-app-local')) {
             inp.addEventListener('input', () => {
+              delete it.custoEstampaManual;
               lerDadosAplicacoesDoDOM();
               const cUnit = calcularCustoUnitarioAplicacao(app, it.grade?.total || 1);
               const badge = card.querySelector('.aplicacao-cost-badge strong');
@@ -8452,11 +8488,14 @@
 
       // Atualiza badge de total de estampa deste modelo
       const totalEstampa = (it.aplicacoes || []).reduce((acc, a) => acc + (a.custoUnitario || 0), 0);
-      it.custoEstampaTotal = totalEstampa;
+      const estampaFinal = (it.custoEstampaManual !== undefined && it.custoEstampaManual !== null)
+        ? numOuPadrao(it.custoEstampaManual, 0)
+        : totalEstampa;
+      it.custoEstampaTotal = estampaFinal;
       const lbl = document.getElementById('lblTotalEstampaModelo');
-      if (lbl) lbl.textContent = `${formatarMoeda(totalEstampa)} / peça`;
+      if (lbl) lbl.textContent = `${formatarMoeda(estampaFinal)} / peça`;
       const inpEstampa = document.getElementById('inputCustoEstampa');
-      if (inpEstampa) inpEstampa.value = totalEstampa.toFixed(2);
+      if (inpEstampa) inpEstampa.value = estampaFinal.toFixed(2);
     }
 
     // Botões de Presets Rápidos de Estampa
@@ -8464,11 +8503,12 @@
       btn.addEventListener('click', () => {
         const it = itensOrcamento[itemAtivoIndex];
         if (!it) return;
+        delete it.custoEstampaManual;
         if (!Array.isArray(it.aplicacoes)) it.aplicacoes = [];
 
         const tipo = btn.getAttribute('data-tipo');
         const pdr = carregarPadroesSistema();
-        const dtfMetro = (pdr.dtfLarguraRolo || 58) == 28 ? (pdr.dtfMetroLinear28 || 38.00) : (pdr.dtfMetroLinear58 || 60.00);
+        const dtfMetro = (pdr.dtfLarguraRolo || 58) == 28 ? numOuPadrao(pdr.dtfMetroLinear28, 38.00) : numOuPadrao(pdr.dtfMetroLinear58, 60.00);
 
         if (tipo === 'bor-peito') {
           it.aplicacoes.push({
@@ -8488,7 +8528,7 @@
             dtfLarguraArte: 26,
             dtfAlturaArte: 9,
             dtfMetroLinear: dtfMetro,
-            dtfPrensagem: pdr.dtfPrensagem || 1.50
+            dtfPrensagem: numOuPadrao(pdr.dtfPrensagem, 1.50)
           });
         } else if (tipo === 'dtf-peito') {
           it.aplicacoes.push({
@@ -8499,7 +8539,7 @@
             dtfLarguraArte: 10,
             dtfAlturaArte: 8,
             dtfMetroLinear: dtfMetro,
-            dtfPrensagem: pdr.dtfPrensagem || 1.50
+            dtfPrensagem: numOuPadrao(pdr.dtfPrensagem, 1.50)
           });
         } else if (tipo === 'silk-costas') {
           it.aplicacoes.push({
@@ -8523,6 +8563,7 @@
     document.getElementById('btnAdicionarAplicacaoVazia')?.addEventListener('click', () => {
       const it = itensOrcamento[itemAtivoIndex];
       if (!it) return;
+      delete it.custoEstampaManual;
       if (!Array.isArray(it.aplicacoes)) it.aplicacoes = [];
 
       const pdr = carregarPadroesSistema();
@@ -8533,8 +8574,8 @@
         dtfLarguraRolo: pdr.dtfLarguraRolo || 58,
         dtfLarguraArte: 12,
         dtfAlturaArte: 8,
-        dtfMetroLinear: pdr.dtfMetroLinear58 || 60,
-        dtfPrensagem: 1.50
+        dtfMetroLinear: numOuPadrao(pdr.dtfMetroLinear58, 60),
+        dtfPrensagem: numOuPadrao(pdr.dtfPrensagem, 1.50)
       });
 
       renderizarAplicacoes();
@@ -8545,6 +8586,7 @@
     document.getElementById('btnLimparEstampasLisa')?.addEventListener('click', () => {
       const it = itensOrcamento[itemAtivoIndex];
       if (!it) return;
+      delete it.custoEstampaManual;
       it.aplicacoes = [{
         id: 'APP-' + Date.now(),
         local: 'Peça Lisa',
@@ -8582,12 +8624,11 @@
         it.produtoNome = prod.nome;
         it.tipoMalhaPadrao = prod.tipoMalhaPadrao;
         it.unidadeTecido = prod.unidadeTecido || 'kg';
-        it.consumoTecido = prod.consumoMalhaKgPorPeca || 0.28;
-        it.custoCostura = prod.custoMaoDeObraBase || 7.50;
-        const mapaCons = garantirConsumosPorTamanhoProduto(prod);
-        if (mapaCons) {
-          it.consumosCustomizadosPorTamanho = JSON.parse(JSON.stringify(mapaCons));
-        }
+        it.consumoTecido = numOuPadrao(prod.consumoMalhaKgPorPeca, 0.28);
+        it.custoCostura = numOuPadrao(prod.custoMaoDeObraBase, 7.50);
+        delete it.consumosCustomizadosPorTamanho;
+        delete it.custosCustomizadosPorTamanho;
+        delete it.custoUnitarioCustomizadoPonderado;
 
         const inpConsumo = document.getElementById('inputConsumoTecido');
         if (inpConsumo) inpConsumo.value = it.consumoTecido.toFixed(2);
@@ -9001,22 +9042,19 @@
       const it = itensOrcamento[itemAtivoIndex];
       if (!it) return;
 
-      const custoTecKg = parseFloat(document.getElementById('inputCustoTecido')?.value) || it.custoTecidoKg || 48.50;
-      const consumoBaseM = parseFloat(document.getElementById('inputConsumoTecido')?.value) || it.consumoTecido || 0.28;
-      const margemErro = parseFloat(document.getElementById('inputMargemErroTecido')?.value) || it.margemErroTecido || 8.0;
-      const custoAviamento = parseFloat(document.getElementById('inputCustoAviamento')?.value) || it.custoAviamento || 4.80;
-      const valInpEst = document.getElementById('inputCustoEstampa')?.value;
-      const custoEstampa = (valInpEst !== undefined && valInpEst !== null && valInpEst.trim() !== '' && !isNaN(valInpEst.replace(',', '.')))
-        ? parseFloat(valInpEst.replace(',', '.'))
-        : (it.custoEstampaTotal !== undefined ? it.custoEstampaTotal : 0.00);
-      const custoCostura = parseFloat(document.getElementById('inputCustoCostura')?.value) || it.custoCostura || 7.50;
-      const custoEmbalagem = 1.50;
+      const custoTecKg = lerInputNumDom('inputCustoTecido', numOuPadrao(it.custoTecidoKg, 0));
+      const consumoBaseM = lerInputNumDom('inputConsumoTecido', numOuPadrao(it.consumoTecido, 0));
+      const margemErro = lerInputNumDom('inputMargemErroTecido', numOuPadrao(it.margemErroTecido, 0));
+      const custoAviamento = lerInputNumDom('inputCustoAviamento', numOuPadrao(it.custoAviamento, 0));
+      const custoEstampa = lerInputNumDom('inputCustoEstampa', numOuPadrao(it.custoEstampaTotal, 0));
+      const custoCostura = lerInputNumDom('inputCustoCostura', numOuPadrao(it.custoCostura, 0));
+      const custoEmbalagem = 0;
       const fatorPerda = (1 + (margemErro / 100));
       const basePadraoM = consumoBaseM * fatorPerda;
       const custoOutros = custoCostura + custoEstampa + custoAviamento + custoEmbalagem;
 
-      const aliquotaImp = typeof it.aliquotaImposto === 'number' ? it.aliquotaImposto : 6.5;
-      const margemDes = typeof it.margemDesejada === 'number' ? it.margemDesejada : 30.0;
+      const aliquotaImp = numOuPadrao(it.aliquotaImposto, 6.5);
+      const margemDes = numOuPadrao(it.margemDesejada, 30.0);
       const taxaDeducoes = (aliquotaImp + margemDes) / 100;
       const divisorMarkup = Math.max(0.1, 1 - taxaDeducoes);
 
@@ -9072,7 +9110,7 @@
                         <th style="padding: 7px 8px; width: 12%; text-align: right;">Tecido (R$)</th>
                         <th style="padding: 7px 8px; width: 10%; text-align: right;">Costura (R$)</th>
                         <th style="padding: 7px 8px; width: 10%; text-align: right;">Estampa (R$)</th>
-                        <th style="padding: 7px 8px; width: 10%; text-align: right;">Aviam./Emb.</th>
+                        <th style="padding: 7px 8px; width: 10%; text-align: right;">Aviamentos (R$)</th>
                         <th style="padding: 7px 8px; width: 19%; text-align: right; background: #1e3a8a; color: #ffffff;">Custo Unitário Final (R$) ✏️</th>
                       </tr>
                     </thead>
@@ -9332,16 +9370,18 @@
       });
 
       document.getElementById('btnSalvarCustosDetalhamento')?.addEventListener('click', () => {
-        it.custosCustomizadosPorTamanho = it.custosCustomizadosPorTamanho || {};
-        it.consumosCustomizadosPorTamanho = it.consumosCustomizadosPorTamanho || {};
+        it.custosCustomizadosPorTamanho = {};
+        it.consumosCustomizadosPorTamanho = {};
+        delete it.custoUnitarioCustomizadoPonderado;
         let somaCustos = 0;
         let totalPecasGrade = 0;
+        let temOverrideManualCusto = false;
 
         modalEl.querySelectorAll('.inp-consumo-tam-manual').forEach(inp => {
           const ch = inp.getAttribute('data-chave');
           let cVal = parseFloat(inp.value);
           if (unidadeTec !== 'metro' && cVal > 10) cVal = cVal / 1000;
-          if (ch && !isNaN(cVal) && cVal > 0) {
+          if (ch && !isNaN(cVal) && cVal >= 0) {
             it.consumosCustomizadosPorTamanho[ch] = parseFloat(cVal.toFixed(3));
           }
         });
@@ -9349,8 +9389,13 @@
         modalEl.querySelectorAll('.inp-custo-tam-manual').forEach(inp => {
           const ch = inp.getAttribute('data-chave');
           const val = parseFloat(inp.value);
-          if (ch && !isNaN(val) && val > 0) {
-            it.custosCustomizadosPorTamanho[ch] = val;
+          if (ch && !isNaN(val) && val >= 0) {
+            const consTam = it.consumosCustomizadosPorTamanho[ch] !== undefined ? it.consumosCustomizadosPorTamanho[ch] : 0;
+            const custoEsperadoPeloConsumo = (consTam * custoTecKg) + custoOutros;
+            if (Math.abs(val - custoEsperadoPeloConsumo) > 0.02) {
+              it.custosCustomizadosPorTamanho[ch] = val;
+              temOverrideManualCusto = true;
+            }
             const q = parseInt(it.grade?.[ch], 10) || 0;
             if (q > 0) {
               somaCustos += (q * val);
@@ -9359,7 +9404,9 @@
           }
         });
 
-        if (totalPecasGrade > 0) {
+        if (!temOverrideManualCusto) {
+          delete it.custosCustomizadosPorTamanho;
+        } else if (totalPecasGrade > 0) {
           it.custoUnitarioCustomizadoPonderado = somaCustos / totalPecasGrade;
         }
 
@@ -9386,8 +9433,9 @@
       const siglaUn = isMetros ? 'm' : 'kg';
       const nomeUn = isMetros ? 'metros' : 'kg';
 
-      const consumoBaseM = itAtivo.consumoTecido || (isMetros ? 0.75 : 0.28);
-      const margemErro = itAtivo.margemErroTecido || 8.0;
+      const consumoBaseM = numOuPadrao(itAtivo.consumoTecido, isMetros ? 0.75 : 0.28);
+      const margemErro = numOuPadrao(itAtivo.margemErroTecido, 8.0);
+      const precoKgAtivo = numOuPadrao(itAtivo.custoTecidoKg, 48.50);
       const fatorPerda = (1 + (margemErro / 100));
 
       let consumoTotalTecidoModelo = 0;
@@ -9405,29 +9453,29 @@
             if (['g1', 'g2', 'g3', 'g4', 'g5'].includes(chave)) {
               qtdEspeciaisPlusSize += qtd;
             }
-            // Prioriza o consumo customizado se o usuário alterou na tabela
+            // Prioriza o consumo customizado se o usuário alterou na tabela (e o consumo base não foi zerado)
             const consumoCustomizado = itAtivo.consumosCustomizadosPorTamanho?.[chave];
-            const consumoUnitarioTamanho = (consumoCustomizado != null && !isNaN(consumoCustomizado) && consumoCustomizado > 0)
+            const consumoUnitarioTamanho = (consumoBaseM > 0 && consumoCustomizado != null && !isNaN(consumoCustomizado) && consumoCustomizado >= 0)
               ? parseFloat(consumoCustomizado)
               : ((consumoBaseM * fator) * fatorPerda);
 
             consumoTotalTecidoModelo += (qtd * consumoUnitarioTamanho);
-            custoTotalTecidoModelo += (qtd * consumoUnitarioTamanho * (itAtivo.custoTecidoKg || 48.50));
+            custoTotalTecidoModelo += (qtd * consumoUnitarioTamanho * precoKgAtivo);
           }
         });
       }
 
       if (totalPecasGrade === 0) {
         const consumoCustomizadoM = itAtivo.consumosCustomizadosPorTamanho?.['m'];
-        const consumoUnitarioM = (consumoCustomizadoM != null && !isNaN(consumoCustomizadoM) && consumoCustomizadoM > 0)
+        const consumoUnitarioM = (consumoBaseM > 0 && consumoCustomizadoM != null && !isNaN(consumoCustomizadoM) && consumoCustomizadoM >= 0)
           ? parseFloat(consumoCustomizadoM)
           : (consumoBaseM * fatorPerda);
         consumoTotalTecidoModelo = Math.max(1, totalPecasItem) * consumoUnitarioM;
-        custoTotalTecidoModelo = consumoTotalTecidoModelo * (itAtivo.custoTecidoKg || 48.50);
+        custoTotalTecidoModelo = consumoTotalTecidoModelo * precoKgAtivo;
       }
 
       const consumoRealComPerdaMedio = totalPecasGrade > 0 ? (consumoTotalTecidoModelo / totalPecasGrade) : (consumoBaseM * fatorPerda);
-      const custoTecidoUnitario = totalPecasGrade > 0 ? (custoTotalTecidoModelo / totalPecasGrade) : (consumoRealComPerdaMedio * (itAtivo.custoTecidoKg || 48.50));
+      const custoTecidoUnitario = totalPecasGrade > 0 ? (custoTotalTecidoModelo / totalPecasGrade) : (consumoRealComPerdaMedio * precoKgAtivo);
       const rendimentoPecasPorKg = consumoRealComPerdaMedio > 0 ? (1 / consumoRealComPerdaMedio) : 0;
       const totalKgTecido = consumoTotalTecidoModelo;
 
@@ -9533,25 +9581,25 @@
       const viabilidade = window.MarketBenchmark ? window.MarketBenchmark.calcularViabilidadeOrcamento({
         produtoId: itAtivo.produtoId,
         quantidade: qtdCalculo,
-        custoTecidoKgOuMetro: itAtivo.custoTecidoKg,
+        custoTecidoKgOuMetro: numOuPadrao(itAtivo.custoTecidoKg, 0),
         custoTecidoUnitarioCalculado: custoTecidoUnitario,
-        consumoPorPeca: itAtivo.consumoTecido,
-        margemErroTecidoPercentual: itAtivo.margemErroTecido,
-        custoAviamentosTotal: itAtivo.custoAviamento,
-        custoPersonalizacaoUnitario: itAtivo.custoEstampaTotal,
-        custoMaoDeObraCostura: itAtivo.custoCostura,
-        custoEmbalagemEtiqueta: 1.50,
-        aliquotaImpostoPercentual: itAtivo.aliquotaImposto,
-        margemDesejadaPercentual: itAtivo.margemDesejada,
-        precoVendaPretendido: itAtivo.precoVendaUnitario
+        consumoPorPeca: numOuPadrao(itAtivo.consumoTecido, 0),
+        margemErroTecidoPercentual: numOuPadrao(itAtivo.margemErroTecido, 0),
+        custoAviamentosTotal: numOuPadrao(itAtivo.custoAviamento, 0),
+        custoPersonalizacaoUnitario: numOuPadrao(itAtivo.custoEstampaTotal, 0),
+        custoMaoDeObraCostura: numOuPadrao(itAtivo.custoCostura, 0),
+        custoEmbalagemEtiqueta: 0,
+        aliquotaImpostoPercentual: numOuPadrao(itAtivo.aliquotaImposto, 0),
+        margemDesejadaPercentual: numOuPadrao(itAtivo.margemDesejada, 0),
+        precoVendaPretendido: numOuPadrao(itAtivo.precoVendaUnitario, 0)
       }) : {
-        custoProducaoUnitario: custoTecidoUnitario + itAtivo.custoAviamento + itAtivo.custoEstampaTotal + itAtivo.custoCostura + 1.50,
-        precoSugeridoCalculado: itAtivo.precoVendaUnitario,
+        custoProducaoUnitario: custoTecidoUnitario + numOuPadrao(itAtivo.custoAviamento, 0) + numOuPadrao(itAtivo.custoEstampaTotal, 0) + numOuPadrao(itAtivo.custoCostura, 0),
+        precoSugeridoCalculado: numOuPadrao(itAtivo.precoVendaUnitario, 0),
         margemLiquidaReal: 25.0,
-        lucroLiquidoUnitario: itAtivo.precoVendaUnitario * 0.25,
+        lucroLiquidoUnitario: numOuPadrao(itAtivo.precoVendaUnitario, 0) * 0.25,
         statusTexto: 'VIÁVEL (Padrão)',
         classeCor: 'status-green',
-        mercado: { min: 10, max: 100, precoMedioBrasil: itAtivo.precoVendaUnitario },
+        mercado: { min: 10, max: 100, precoMedioBrasil: numOuPadrao(itAtivo.precoVendaUnitario, 0) },
         recomendacao: 'Valores calculados conforme custo direto de insumos e mão de obra.'
       };
 
@@ -9565,7 +9613,7 @@
           const q = parseInt(itAtivo.grade[k], 10) || 0;
           if (q > 0) {
             const cManual = parseFloat(itAtivo.custosCustomizadosPorTamanho[k]);
-            if (!isNaN(cManual) && cManual > 0) {
+            if (!isNaN(cManual) && cManual >= 0) {
               somaCustosManuais += (q * cManual);
               pecasComCusto += q;
             }
@@ -9575,10 +9623,12 @@
           custoProducaoCalculado = somaCustosManuais / pecasComCusto;
           itAtivo.custoUnitarioCustomizadoPonderado = custoProducaoCalculado;
           viabilidade.custoProducaoUnitario = custoProducaoCalculado;
-          const taxaDeducoes = ((itAtivo.aliquotaImposto || 6.5) + (itAtivo.margemDesejada || 30.0)) / 100;
+          const aliqImp = numOuPadrao(itAtivo.aliquotaImposto, 6.5);
+          const margDes = numOuPadrao(itAtivo.margemDesejada, 30.0);
+          const taxaDeducoes = (aliqImp + margDes) / 100;
           const divisor = Math.max(0.1, 1 - taxaDeducoes);
           viabilidade.precoSugeridoCalculado = custoProducaoCalculado / divisor;
-          viabilidade.lucroLiquidoUnitario = itAtivo.precoVendaUnitario - custoProducaoCalculado - (itAtivo.precoVendaUnitario * ((itAtivo.aliquotaImposto || 6.5) / 100));
+          viabilidade.lucroLiquidoUnitario = itAtivo.precoVendaUnitario - custoProducaoCalculado - (itAtivo.precoVendaUnitario * (aliqImp / 100));
           viabilidade.margemLiquidaReal = (viabilidade.lucroLiquidoUnitario / Math.max(1, itAtivo.precoVendaUnitario)) * 100;
         }
       }
@@ -9787,15 +9837,15 @@
         precoVendaUnitario: totalPecasGeral > 0 ? (faturamentoTotalGeral / totalPecasGeral) : 58.00,
         valorTotal: faturamentoTotalGeral,
         custoTotal: custoTotalGeral,
-        custoUnitario: totalPecasGeral > 0 ? (custoTotalGeral / totalPecasGeral) : 24.50,
+        custoUnitario: totalPecasGeral > 0 ? (custoTotalGeral / totalPecasGeral) : 0,
         custoTecidoPorPeca: totalPecasGeral > 0
-          ? (itensOrcamento.reduce((s, it) => s + ((it.custoTecidoKg || 0) * (it.consumoTecido || 0.28) * (1 + ((it.margemErroTecido || 8) / 100)) * (it.grade?.total || 0)), 0) / totalPecasGeral)
-          : (itensOrcamento[0]?.custoTecidoKg || 0) * (itensOrcamento[0]?.consumoTecido || 0.28) * 1.08,
+          ? (itensOrcamento.reduce((s, it) => s + (numOuPadrao(it.custoTecidoKg, 0) * numOuPadrao(it.consumoTecido, 0.28) * (1 + (numOuPadrao(it.margemErroTecido, 8) / 100)) * (it.grade?.total || 0)), 0) / totalPecasGeral)
+          : numOuPadrao(itensOrcamento[0]?.custoTecidoKg, 0) * numOuPadrao(itensOrcamento[0]?.consumoTecido, 0.28) * (1 + (numOuPadrao(itensOrcamento[0]?.margemErroTecido, 8) / 100)),
         consumoRealComPerda: totalPecasGeral > 0
-          ? (itensOrcamento.reduce((s, it) => s + ((it.consumoTecido || 0.28) * (1 + ((it.margemErroTecido || 8) / 100)) * (it.grade?.total || 0)), 0) / totalPecasGeral)
-          : (itensOrcamento[0]?.consumoTecido || 0.28) * 1.08,
-        consumoTotalTecido: itensOrcamento.reduce((s, it) => s + ((it.consumoTecido || 0.28) * (1 + ((it.margemErroTecido || 8) / 100)) * (it.grade?.total || 0)), 0),
-        margemErroTecido: itensOrcamento[0].margemErroTecido || 8.0,
+          ? (itensOrcamento.reduce((s, it) => s + (numOuPadrao(it.consumoTecido, 0.28) * (1 + (numOuPadrao(it.margemErroTecido, 8) / 100)) * (it.grade?.total || 0)), 0) / totalPecasGeral)
+          : numOuPadrao(itensOrcamento[0]?.consumoTecido, 0.28) * (1 + (numOuPadrao(itensOrcamento[0]?.margemErroTecido, 8) / 100)),
+        consumoTotalTecido: itensOrcamento.reduce((s, it) => s + (numOuPadrao(it.consumoTecido, 0.28) * (1 + (numOuPadrao(it.margemErroTecido, 8) / 100)) * (it.grade?.total || 0)), 0),
+        margemErroTecido: numOuPadrao(itensOrcamento[0].margemErroTecido, 8.0),
         lucroLiquido: lucroTotalGeral,
         lucroBruto: lucroTotalGeral,
         margem: margemMediaGeral,
@@ -9840,16 +9890,33 @@
     });
 
     // Inputs que disparam recálculo do item ativo (tamanhos regulares + especiais + custos)
+    const idsCustosPrincipais = [
+      'inputCustoTecido', 'inputConsumoTecido', 'inputMargemErroTecido',
+      'inputCustoAviamento', 'inputCustoEstampa', 'inputCustoCostura'
+    ];
     const inputsRecalculo = [
       ...TODOS_CAMPOS_GRADE.map(c => c.id),
-      'inputCustoTecido', 'inputConsumoTecido', 'inputMargemErroTecido',
-      'inputCustoAviamento', 'inputCustoEstampa', 'inputCustoCostura',
+      ...idsCustosPrincipais,
       'inputPrecoPretendido', 'inputMargemDesejada', 'inputAliquotaImposto'
     ];
 
     inputsRecalculo.forEach(id => {
-      document.getElementById(id)?.addEventListener('input', recalcularBenchmarkModal);
-      document.getElementById(id)?.addEventListener('change', recalcularBenchmarkModal);
+      const handler = () => {
+        const it = itensOrcamento[itemAtivoIndex];
+        if (it && idsCustosPrincipais.includes(id)) {
+          delete it.custosCustomizadosPorTamanho;
+          delete it.custoUnitarioCustomizadoPonderado;
+          if (id === 'inputMargemErroTecido') {
+            delete it.consumosCustomizadosPorTamanho;
+          }
+          if (id === 'inputCustoEstampa') {
+            it.custoEstampaManual = lerInputNumDom('inputCustoEstampa', 0);
+          }
+        }
+        recalcularBenchmarkModal();
+      };
+      document.getElementById(id)?.addEventListener('input', handler);
+      document.getElementById(id)?.addEventListener('change', handler);
     });
 
     // Atalho direto para abrir a engenharia de consumo por tamanho em gramas
@@ -11693,23 +11760,23 @@
         valorTotalVenda: totalVendaFinal,
         custoTotalEstimado: custoTotalFinal,
         custoTecidoTotal: (dadosBase.itens && dadosBase.itens.length > 0)
-          ? dadosBase.itens.reduce((acc, it) => acc + ((parseFloat(it.custoTecidoKg) || 48.50) * (parseFloat(it.consumoTecido) || 0.28) * (1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100)) * (it.grade?.total || 0)), 0)
-          : (parseFloat(dadosBase.custoTecidoPorPeca) || 14.67) * (gradeFinal.total || 1),
+          ? dadosBase.itens.reduce((acc, it) => acc + (numOuPadrao(it.custoTecidoKg, 48.50) * numOuPadrao(it.consumoTecido, 0.28) * (1 + (numOuPadrao(it.margemErroTecido, 8.0) / 100)) * (it.grade?.total || 0)), 0)
+          : numOuPadrao(dadosBase.custoTecidoPorPeca, 14.67) * (gradeFinal.total || 1),
         custoCosturaTotal: (dadosBase.itens && dadosBase.itens.length > 0)
-          ? dadosBase.itens.reduce((acc, it) => acc + ((parseFloat(it.custoCostura) || 7.50) * (it.grade?.total || 0)), 0)
-          : (parseFloat(dadosBase.custoCostura) || 7.50) * (gradeFinal.total || 1),
+          ? dadosBase.itens.reduce((acc, it) => acc + (numOuPadrao(it.custoCostura, 7.50) * (it.grade?.total || 0)), 0)
+          : numOuPadrao(dadosBase.custoCostura, 7.50) * (gradeFinal.total || 1),
         custoAviamentoTotal: (dadosBase.itens && dadosBase.itens.length > 0)
-          ? dadosBase.itens.reduce((acc, it) => acc + ((parseFloat(it.custoAviamento) || 4.80) * (it.grade?.total || 0)), 0)
-          : 4.80 * (gradeFinal.total || 1),
+          ? dadosBase.itens.reduce((acc, it) => acc + (numOuPadrao(it.custoAviamento, 4.80) * (it.grade?.total || 0)), 0)
+          : numOuPadrao(dadosBase.custoAviamento, 4.80) * (gradeFinal.total || 1),
         custoEstampaTotal: (dadosBase.itens && dadosBase.itens.length > 0)
-          ? dadosBase.itens.reduce((acc, it) => acc + ((parseFloat(it.custoEstampaTotal) || 0) * (it.grade?.total || 0)), 0)
+          ? dadosBase.itens.reduce((acc, it) => acc + (numOuPadrao(it.custoEstampaTotal, 0) * (it.grade?.total || 0)), 0)
           : 0,
         custoCostura: (dadosBase.itens && dadosBase.itens.length > 0)
-          ? (dadosBase.itens.reduce((acc, it) => acc + ((parseFloat(it.custoCostura) || 7.50) * (it.grade?.total || 0)), 0) / Math.max(1, gradeFinal.total))
-          : (parseFloat(dadosBase.custoCostura) || 7.50),
+          ? (dadosBase.itens.reduce((acc, it) => acc + (numOuPadrao(it.custoCostura, 7.50) * (it.grade?.total || 0)), 0) / Math.max(1, gradeFinal.total))
+          : numOuPadrao(dadosBase.custoCostura, 7.50),
         consumoTecido: (dadosBase.itens && dadosBase.itens.length > 0)
-          ? (dadosBase.itens.reduce((acc, it) => acc + ((parseFloat(it.consumoTecido) || 0.28) * (it.grade?.total || 0)), 0) / Math.max(1, gradeFinal.total))
-          : (parseFloat(dadosBase.consumoRealComPerda) || 0.28),
+          ? (dadosBase.itens.reduce((acc, it) => acc + (numOuPadrao(it.consumoTecido, 0.28) * (it.grade?.total || 0)), 0) / Math.max(1, gradeFinal.total))
+          : numOuPadrao(dadosBase.consumoRealComPerda, 0.28),
         lucroLiquidoEstimado: lucroFinal,
         margemLucroPercentual: margemFinal,
         condicaoPagamento: condicaoComercialTexto,
@@ -11766,7 +11833,7 @@
           if (it.utilizarEstoque && it.estoqueItemId) {
             const itemEst = (db.estoque || []).find(e => e.id === it.estoqueItemId);
             if (itemEst) {
-              const consumoUnid = (parseFloat(it.consumoTecido) || 0.28) * (1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100));
+              const consumoUnid = numOuPadrao(it.consumoTecido, 0.28) * (1 + (numOuPadrao(it.margemErroTecido, 8.0) / 100));
               const consumoTotal = parseFloat((consumoUnid * (it.grade?.total || 0)).toFixed(2));
               if (consumoTotal > 0) {
                 const saldoAnt = Number(itemEst.saldoAtual) || 0;
@@ -17450,7 +17517,7 @@
         unidadeTecido: isM ? 'metro' : 'kg',
         consumoMalhaKgPorPeca: consumoM,
         consumosPorTamanho: consumosValidados,
-        custoMaoDeObraBase: parseFloat(document.getElementById('cadModCostura')?.value || 8.00),
+        custoMaoDeObraBase: lerInputNumDom('cadModCostura', 8.00),
         aviamentosPadrao: [{ nome: "Aviamentos Básicos", qtd: 1, custoUnitario: 2.00 }]
       };
 
@@ -17596,17 +17663,15 @@
       let custoCosturaTotal = 0;
       if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
         custoCosturaTotal = p.itens.reduce((acc, it) => {
-          const v = (it.custoCostura != null && !isNaN(it.custoCostura) && parseFloat(it.custoCostura) > 0)
-            ? parseFloat(it.custoCostura)
-            : 7.50;
+          const v = numOuPadrao(it.custoCostura, 7.50);
           return acc + (v * (it.grade?.total || 0));
         }, 0);
       } else {
-        custoCosturaTotal = (parseFloat(p.custoCostura) || 7.50) * (p.grade?.total || 1);
+        custoCosturaTotal = numOuPadrao(p.custoCostura, 7.50) * (p.grade?.total || 1);
       }
 
+      const idCostura = `DESP-OP-${num}-COSTURA`;
       if (custoCosturaTotal > 0) {
-        const idCostura = `DESP-OP-${num}-COSTURA`;
         const despExistente = db.despesasFixas.find(d => d.id === idCostura);
         const costureiraNome = p.costureiraNome || 'Oficina de Costura / Facção';
 
@@ -17635,6 +17700,8 @@
           despExistente.fornecedorFavorecido = costureiraNome;
           despExistente.dataVencimento = dataVenc;
         }
+      } else {
+        db.despesasFixas = db.despesasFixas.filter(d => !(d.id === idCostura && d.status !== 'Pago'));
       }
 
       // 2. CUSTO DE TECIDOS & MATÉRIA-PRIMA
@@ -17650,13 +17717,13 @@
         let custoTecidoTotal = 0;
         if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
           custoTecidoTotal = p.itens.reduce((acc, it) => {
-            const precoKg = parseFloat(it.custoTecidoKg) || 48.50;
-            const consumo = parseFloat(it.consumoTecido) || 0.28;
-            const margem = 1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100);
+            const precoKg = numOuPadrao(it.custoTecidoKg, 48.50);
+            const consumo = numOuPadrao(it.consumoTecido, 0.28);
+            const margem = 1 + (numOuPadrao(it.margemErroTecido, 8.0) / 100);
             return acc + (precoKg * consumo * margem * (it.grade?.total || 0));
           }, 0);
         } else {
-          custoTecidoTotal = (parseFloat(p.custoTecidoPorPeca) || 14.67) * (p.grade?.total || 1);
+          custoTecidoTotal = numOuPadrao(p.custoTecidoPorPeca, 14.67) * (p.grade?.total || 1);
         }
 
         if (custoTecidoTotal > 0) {
@@ -17686,6 +17753,8 @@
             despExistente.dataVencimento = dataVenc;
             despExistente.centroCusto = 'CC-06';
           }
+        } else {
+          db.despesasFixas = db.despesasFixas.filter(d => !(d.id === idTecido && d.status !== 'Pago'));
         }
       }
 
@@ -17693,15 +17762,15 @@
       let custoAviamentoTotal = 0;
       if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
         custoAviamentoTotal = p.itens.reduce((acc, it) => {
-          const v = parseFloat(it.custoAviamento) || 4.80;
+          const v = numOuPadrao(it.custoAviamento, 4.80);
           return acc + (v * (it.grade?.total || 0));
         }, 0);
       } else {
-        custoAviamentoTotal = 4.80 * (p.grade?.total || 1);
+        custoAviamentoTotal = numOuPadrao(p.custoAviamento, 4.80) * (p.grade?.total || 1);
       }
 
+      const idAviamento = `DESP-OP-${num}-AVIAMENTO`;
       if (custoAviamentoTotal > 0) {
-        const idAviamento = `DESP-OP-${num}-AVIAMENTO`;
         const despExistente = db.despesasFixas.find(d => d.id === idAviamento);
 
         if (!despExistente) {
@@ -17728,19 +17797,21 @@
           despExistente.valorMensal = parseFloat(custoAviamentoTotal.toFixed(2));
           despExistente.dataVencimento = dataVenc;
         }
+      } else {
+        db.despesasFixas = db.despesasFixas.filter(d => !(d.id === idAviamento && d.status !== 'Pago'));
       }
 
       // 4. CUSTO DE ESTAMPARIA / DTF / SUBLIMAÇÃO (SE HOUVER)
       let custoEstampaTotal = 0;
       if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
         custoEstampaTotal = p.itens.reduce((acc, it) => {
-          const v = parseFloat(it.custoEstampaTotal) || 0;
+          const v = numOuPadrao(it.custoEstampaTotal, 0);
           return acc + (v * (it.grade?.total || 0));
         }, 0);
       }
 
+      const idEstampa = `DESP-OP-${num}-ESTAMPA`;
       if (custoEstampaTotal > 0) {
-        const idEstampa = `DESP-OP-${num}-ESTAMPA`;
         const despExistente = db.despesasFixas.find(d => d.id === idEstampa);
 
         if (!despExistente) {
@@ -17767,6 +17838,8 @@
           despExistente.valorMensal = parseFloat(custoEstampaTotal.toFixed(2));
           despExistente.dataVencimento = dataVenc;
         }
+      } else {
+        db.despesasFixas = db.despesasFixas.filter(d => !(d.id === idEstampa && d.status !== 'Pago'));
       }
 
       // 5. CUSTO DE TAXAS DE OPERADORA / MEIOS DE PAGAMENTO (HOMOLOGAÇÃO FINANCEIRA)
@@ -17834,29 +17907,29 @@
       } else if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
         p.itens.forEach(it => {
           const q = it.grade?.total || 0;
-          const precoKg = parseFloat(it.custoTecidoKg) || 48.50;
-          const consumo = parseFloat(it.consumoTecido) || 0.28;
-          const margem = 1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100);
+          const precoKg = numOuPadrao(it.custoTecidoKg, 48.50);
+          const consumo = numOuPadrao(it.consumoTecido, 0.28);
+          const margem = 1 + (numOuPadrao(it.margemErroTecido, 8.0) / 100);
           const cTec = precoKg * consumo * margem * q;
-          const cCost = (parseFloat(it.custoCostura) || 7.50) * q;
-          const cAv = (parseFloat(it.custoAviamento) || 4.80) * q;
+          const cCost = numOuPadrao(it.custoCostura, 7.50) * q;
+          const cAv = numOuPadrao(it.custoAviamento, 4.80) * q;
           let cEst = 0;
-          if (Array.isArray(it.aplicacoes)) {
+          if (it.custoEstampaTotal !== undefined && it.custoEstampaTotal !== null && it.custoEstampaTotal !== '') {
+            cEst = numOuPadrao(it.custoEstampaTotal, 0) * q;
+          } else if (Array.isArray(it.aplicacoes)) {
             it.aplicacoes.forEach(ap => {
-              const vApp = parseFloat(ap.custoEstimadoUnitario || ap.custoUnitario) || (ap.tipo === 'Bordado' ? 6.50 : 4.50);
+              const vApp = numOuPadrao(ap.custoEstimadoUnitario ?? ap.custoUnitario, ap.tecnica === 'Lisa' ? 0 : (ap.tipo === 'Bordado' ? 6.50 : 4.50));
               cEst += vApp * q;
             });
-          } else {
-            cEst = (parseFloat(it.custoEstampaTotal) || 0) * q;
           }
           cmvTotalCalculado += (cTec + cCost + cAv + cEst);
         });
         cmvTotalCalculado += parseFloat(p.taxaTotalOperadoraValor || p.pagamentoDetalhes?.taxaTotalOperadoraValor || 0);
       } else {
         const qTot = p.grade?.total || 1;
-        const cTec = (parseFloat(p.custoTecidoPorPeca) || 14.67) * qTot;
-        const cCost = (parseFloat(p.custoCostura) || 7.50) * qTot;
-        const cAv = 4.80 * qTot;
+        const cTec = numOuPadrao(p.custoTecidoPorPeca, 14.67) * qTot;
+        const cCost = numOuPadrao(p.custoCostura, 7.50) * qTot;
+        const cAv = numOuPadrao(p.custoAviamento, 4.80) * qTot;
         const cEst = (parseFloat(p.custoEstampaTotal) || 0);
         const cTax = parseFloat(p.taxaTotalOperadoraValor || 0);
         cmvTotalCalculado += (cTec + cCost + cAv + cEst + cTax);
@@ -18510,29 +18583,29 @@
             } else if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
               p.itens.forEach(it => {
                 const q = it.grade?.total || 0;
-                const precoKg = parseFloat(it.custoTecidoKg) || 48.50;
-                const consumo = parseFloat(it.consumoTecido) || 0.28;
-                const margem = 1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100);
+                const precoKg = numOuPadrao(it.custoTecidoKg, 48.50);
+                const consumo = numOuPadrao(it.consumoTecido, 0.28);
+                const margem = 1 + (numOuPadrao(it.margemErroTecido, 8.0) / 100);
                 somaRealTec += (precoKg * consumo * margem * q);
-                somaRealCost += ((parseFloat(it.custoCostura) || 7.50) * q);
-                somaRealAviam += ((parseFloat(it.custoAviamento) || 4.80) * q);
+                somaRealCost += (numOuPadrao(it.custoCostura, 7.50) * q);
+                somaRealAviam += (numOuPadrao(it.custoAviamento, 4.80) * q);
 
-                if (Array.isArray(it.aplicacoes)) {
+                if (it.custoEstampaTotal !== undefined && it.custoEstampaTotal !== null && it.custoEstampaTotal !== '') {
+                  somaRealEst += (numOuPadrao(it.custoEstampaTotal, 0) * q);
+                } else if (Array.isArray(it.aplicacoes)) {
                   it.aplicacoes.forEach(ap => {
-                    const vApp = parseFloat(ap.custoEstimadoUnitario || ap.custoUnitario) || (ap.tipo === 'Bordado' ? 6.50 : 4.50);
+                    const vApp = numOuPadrao(ap.custoEstimadoUnitario ?? ap.custoUnitario, ap.tecnica === 'Lisa' ? 0 : (ap.tipo === 'Bordado' ? 6.50 : 4.50));
                     somaRealEst += vApp * q;
                   });
-                } else {
-                  somaRealEst += ((parseFloat(it.custoEstampaTotal) || 0) * q);
                 }
               });
               somaRealTaxas += parseFloat(p.taxaTotalOperadoraValor || p.pagamentoDetalhes?.taxaTotalOperadoraValor || 0);
             } else {
               const qTot = p.grade?.total || 1;
-              somaRealTec += ((parseFloat(p.custoTecidoPorPeca) || 14.67) * qTot);
-              somaRealCost += ((parseFloat(p.custoCostura) || 7.50) * qTot);
-              somaRealAviam += (4.80 * qTot);
-              somaRealEst += (parseFloat(p.custoEstampaTotal) || 0);
+              somaRealTec += (numOuPadrao(p.custoTecidoPorPeca, 14.67) * qTot);
+              somaRealCost += (numOuPadrao(p.custoCostura, 7.50) * qTot);
+              somaRealAviam += (numOuPadrao(p.custoAviamento, 4.80) * qTot);
+              somaRealEst += numOuPadrao(p.custoEstampaTotal, 0);
               somaRealTaxas += parseFloat(p.taxaTotalOperadoraValor || 0);
             }
           });
@@ -18820,23 +18893,23 @@
           // Cálculos Discriminados dos Custos de Produção Previstos nos Pedidos do Mês
           const prevCostura = pedidosMes.reduce((acc, p) => {
             if (p.itens && p.itens.length > 0) {
-              return acc + p.itens.reduce((s, it) => s + ((parseFloat(it.custoCostura) || 7.50) * (it.grade?.total || 0)), 0);
+              return acc + p.itens.reduce((s, it) => s + (numOuPadrao(it.custoCostura, 7.50) * (it.grade?.total || 0)), 0);
             }
-            return acc + ((parseFloat(p.custoCostura) || 7.50) * (p.grade?.total || 1));
+            return acc + (numOuPadrao(p.custoCostura, 7.50) * (p.grade?.total || 1));
           }, 0);
 
           const prevTecido = pedidosMes.reduce((acc, p) => {
             if (p.itens && p.itens.length > 0) {
-              return acc + p.itens.reduce((s, it) => s + ((parseFloat(it.custoTecidoKg) || 48.50) * (parseFloat(it.consumoTecido) || 0.28) * (1 + ((parseFloat(it.margemErroTecido) || 8.0) / 100)) * (it.grade?.total || 0)), 0);
+              return acc + p.itens.reduce((s, it) => s + (numOuPadrao(it.custoTecidoKg, 48.50) * numOuPadrao(it.consumoTecido, 0.28) * (1 + (numOuPadrao(it.margemErroTecido, 8.0) / 100)) * (it.grade?.total || 0)), 0);
             }
-            return acc + ((parseFloat(p.custoTecidoPorPeca) || 14.67) * (p.grade?.total || 1));
+            return acc + (numOuPadrao(p.custoTecidoPorPeca, 14.67) * (p.grade?.total || 1));
           }, 0);
 
           const prevAviamento = pedidosMes.reduce((acc, p) => {
             if (p.itens && p.itens.length > 0) {
-              return acc + p.itens.reduce((s, it) => s + ((parseFloat(it.custoAviamento) || 4.80) * (it.grade?.total || 0)), 0);
+              return acc + p.itens.reduce((s, it) => s + (numOuPadrao(it.custoAviamento, 4.80) * (it.grade?.total || 0)), 0);
             }
-            return acc + (4.80 * (p.grade?.total || 1));
+            return acc + (numOuPadrao(p.custoAviamento, 4.80) * (p.grade?.total || 1));
           }, 0);
 
           const prevEstampa = pedidosMes.reduce((acc, p) => {
@@ -27843,55 +27916,55 @@
           <div class="grid-cards-3" style="gap: 14px; margin-bottom: 14px;">
             <div class="form-group">
               <label class="form-label" style="font-weight: 700; font-size: 12px;">Custo Costura MDO (R$/un):</label>
-              <input type="number" step="0.50" id="inpPadraoCostura" class="form-control" value="${(carregarPadroesSistema().custoCostura || 7.50).toFixed(2)}">
+              <input type="number" step="0.50" id="inpPadraoCostura" class="form-control" value="${numOuPadrao(carregarPadroesSistema().custoCostura, 7.50).toFixed(2)}">
               <span style="font-size: 10.5px; color: #64748b;">Valor padrão pago à facção / costureira</span>
             </div>
 
             <div class="form-group">
               <label class="form-label" style="font-weight: 700; font-size: 12px;">Custo Tecido Base (R$/kg):</label>
-              <input type="number" step="0.50" id="inpPadraoTecidoKg" class="form-control" value="${(carregarPadroesSistema().custoTecidoKg || 48.50).toFixed(2)}">
+              <input type="number" step="0.50" id="inpPadraoTecidoKg" class="form-control" value="${numOuPadrao(carregarPadroesSistema().custoTecidoKg, 48.50).toFixed(2)}">
               <span style="font-size: 10.5px; color: #64748b;">Preço médio do kg da malha/tecido</span>
             </div>
 
             <div class="form-group">
               <label class="form-label" style="font-weight: 700; font-size: 12px;">Consumo Padrão (kg/peça M):</label>
-              <input type="number" step="0.01" id="inpPadraoConsumo" class="form-control" value="${(carregarPadroesSistema().consumoTecido || 0.28).toFixed(2)}">
+              <input type="number" step="0.01" id="inpPadraoConsumo" class="form-control" value="${numOuPadrao(carregarPadroesSistema().consumoTecido, 0.28).toFixed(2)}">
               <span style="font-size: 10.5px; color: #64748b;">Ex: 0.28 kg para camiseta regular</span>
             </div>
 
             <div class="form-group">
               <label class="form-label" style="font-weight: 700; font-size: 12px;">Margem Perda Tecido / Refugo (%):</label>
-              <input type="number" step="0.5" id="inpPadraoMargemErro" class="form-control" value="${(carregarPadroesSistema().margemErroTecido || 8.0).toFixed(1)}">
+              <input type="number" step="0.5" id="inpPadraoMargemErro" class="form-control" value="${numOuPadrao(carregarPadroesSistema().margemErroTecido, 8.0).toFixed(1)}">
               <span style="font-size: 10.5px; color: #64748b;">Perda de corte, enfesto e ourela</span>
             </div>
 
             <div class="form-group">
               <label class="form-label" style="font-weight: 700; font-size: 12px;">Aviamentos por Peça (R$):</label>
-              <input type="number" step="0.10" id="inpPadraoAviamento" class="form-control" value="${(carregarPadroesSistema().custoAviamento || 4.80).toFixed(2)}">
+              <input type="number" step="0.10" id="inpPadraoAviamento" class="form-control" value="${numOuPadrao(carregarPadroesSistema().custoAviamento, 4.80).toFixed(2)}">
               <span style="font-size: 10.5px; color: #64748b;">Linhas, etiquetas, saquinho, gola</span>
             </div>
 
             <div class="form-group">
               <label class="form-label" style="font-weight: 700; font-size: 12px;">Alíquota Imposto Simples (%):</label>
-              <input type="number" step="0.1" id="inpPadraoImposto" class="form-control" value="${(carregarPadroesSistema().aliquotaImposto || 6.5).toFixed(1)}">
+              <input type="number" step="0.1" id="inpPadraoImposto" class="form-control" value="${numOuPadrao(carregarPadroesSistema().aliquotaImposto, 6.5).toFixed(1)}">
               <span style="font-size: 10.5px; color: #64748b;">Simples Nacional / DAS médio</span>
             </div>
 
             <div class="form-group">
               <label class="form-label" style="font-weight: 700; font-size: 12px;">Margem Lucro Pretendida (%):</label>
-              <input type="number" step="1.0" id="inpPadraoMargemLucro" class="form-control" value="${(carregarPadroesSistema().margemDesejada || 30.0).toFixed(0)}">
+              <input type="number" step="1.0" id="inpPadraoMargemLucro" class="form-control" value="${numOuPadrao(carregarPadroesSistema().margemDesejada, 30.0).toFixed(0)}">
               <span style="font-size: 10.5px; color: #64748b;">Margem líquida desejada da confecção</span>
             </div>
 
             <div class="form-group">
               <label class="form-label" style="font-weight: 700; font-size: 12px;">DTF Metro Linear 58cm (R$):</label>
-              <input type="number" step="1.0" id="inpPadraoDtf58" class="form-control" value="${(carregarPadroesSistema().dtfMetroLinear58 || 60.00).toFixed(2)}">
+              <input type="number" step="1.0" id="inpPadraoDtf58" class="form-control" value="${numOuPadrao(carregarPadroesSistema().dtfMetroLinear58, 60.00).toFixed(2)}">
               <span style="font-size: 10.5px; color: #64748b;">Custo por metro do transfer DTF 60cm</span>
             </div>
 
             <div class="form-group">
               <label class="form-label" style="font-weight: 700; font-size: 12px;">Prensagem DTF (R$/un):</label>
-              <input type="number" step="0.10" id="inpPadraoPrensagem" class="form-control" value="${(carregarPadroesSistema().dtfPrensagem || 1.50).toFixed(2)}">
+              <input type="number" step="0.10" id="inpPadraoPrensagem" class="form-control" value="${numOuPadrao(carregarPadroesSistema().dtfPrensagem, 1.50).toFixed(2)}">
               <span style="font-size: 10.5px; color: #64748b;">Mão de obra da prensa térmica</span>
             </div>
           </div>
@@ -27957,15 +28030,15 @@
 
     document.getElementById('btnSalvarPadroesEmpresa')?.addEventListener('click', () => {
       const novos = {
-        custoCostura: parseFloat(document.getElementById('inpPadraoCostura')?.value || 7.50),
-        custoTecidoKg: parseFloat(document.getElementById('inpPadraoTecidoKg')?.value || 48.50),
-        consumoTecido: parseFloat(document.getElementById('inpPadraoConsumo')?.value || 0.28),
-        margemErroTecido: parseFloat(document.getElementById('inpPadraoMargemErro')?.value || 8.0),
-        custoAviamento: parseFloat(document.getElementById('inpPadraoAviamento')?.value || 4.80),
-        aliquotaImposto: parseFloat(document.getElementById('inpPadraoImposto')?.value || 6.5),
-        margemDesejada: parseFloat(document.getElementById('inpPadraoMargemLucro')?.value || 30.0),
-        dtfMetroLinear58: parseFloat(document.getElementById('inpPadraoDtf58')?.value || 60.00),
-        dtfPrensagem: parseFloat(document.getElementById('inpPadraoPrensagem')?.value || 1.50)
+        custoCostura: lerInputNumDom('inpPadraoCostura', 7.50),
+        custoTecidoKg: lerInputNumDom('inpPadraoTecidoKg', 48.50),
+        consumoTecido: lerInputNumDom('inpPadraoConsumo', 0.28),
+        margemErroTecido: lerInputNumDom('inpPadraoMargemErro', 8.0),
+        custoAviamento: lerInputNumDom('inpPadraoAviamento', 4.80),
+        aliquotaImposto: lerInputNumDom('inpPadraoImposto', 6.5),
+        margemDesejada: lerInputNumDom('inpPadraoMargemLucro', 30.0),
+        dtfMetroLinear58: lerInputNumDom('inpPadraoDtf58', 60.00),
+        dtfPrensagem: lerInputNumDom('inpPadraoPrensagem', 1.50)
       };
       salvarPadroesSistema(novos);
       mostrarToast('⭐ Padrões da confecção salvos com sucesso! Novos orçamentos e fichas usarão estes valores.', 'green');

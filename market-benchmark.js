@@ -266,6 +266,12 @@ window.MarketBenchmark = {
    * Calcula a viabilidade matemática de um orçamento têxtil
    */
   calcularViabilidadeOrcamento: function(dados) {
+    const numVal = (v, padrao = 0) => {
+      if (v === undefined || v === null || v === '') return padrao;
+      const n = typeof v === 'number' ? v : parseFloat(String(v).replace(',', '.'));
+      return isNaN(n) ? padrao : n;
+    };
+
     const {
       produtoId,
       quantidade,
@@ -281,28 +287,31 @@ window.MarketBenchmark = {
       precoVendaPretendido
     } = dados;
 
-    const margemErro = typeof margemErroTecidoPercentual === 'number' ? margemErroTecidoPercentual : 8.0;
-    const consumoBase = consumoPorPeca || 0.28;
+    const margemErro = numVal(margemErroTecidoPercentual, 8.0);
+    const consumoBase = numVal(consumoPorPeca, 0.28);
     const consumoRealComPerda = consumoBase * (1 + (margemErro / 100));
     const custoTecidoUnitario = dados.custoTecidoUnitarioCalculado !== undefined 
-      ? dados.custoTecidoUnitarioCalculado 
-      : (custoTecidoKgOuMetro || 0) * consumoRealComPerda;
+      ? numVal(dados.custoTecidoUnitarioCalculado, 0)
+      : numVal(custoTecidoKgOuMetro, 0) * consumoRealComPerda;
 
-    const custoDiretoInsumos = custoTecidoUnitario + (custoAviamentosTotal || 0) + (custoPersonalizacaoUnitario || 0) + (custoEmbalagemEtiqueta || 1.50);
-    const custoProducaoUnitario = custoDiretoInsumos + (custoMaoDeObraCostura || 7.50);
+    const custoDiretoInsumos = custoTecidoUnitario + numVal(custoAviamentosTotal, 0) + numVal(custoPersonalizacaoUnitario, 0) + numVal(custoEmbalagemEtiqueta, 0);
+    const custoProducaoUnitario = custoDiretoInsumos + numVal(custoMaoDeObraCostura, 0);
 
-    const taxaDeducoes = ((aliquotaImpostoPercentual || 6.5) + (margemDesejadaPercentual || 30.0)) / 100;
+    const aliqImposto = numVal(aliquotaImpostoPercentual, 6.5);
+    const margDesejada = numVal(margemDesejadaPercentual, 30.0);
+    const taxaDeducoes = (aliqImposto + margDesejada) / 100;
     const divisor = Math.max(0.1, 1 - taxaDeducoes);
     const precoSugeridoCalculado = custoProducaoUnitario / divisor;
 
     const mercado = this.obterReferenciaMercado(produtoId, quantidade);
-    const precoFinalVenda = precoVendaPretendido > 0 ? precoVendaPretendido : precoSugeridoCalculado;
+    const precoPretendidoNum = numVal(precoVendaPretendido, 0);
+    const precoFinalVenda = precoPretendidoNum > 0 ? precoPretendidoNum : precoSugeridoCalculado;
 
-    const valorImpostoUnitario = precoFinalVenda * ((aliquotaImpostoPercentual || 6.5) / 100);
+    const valorImpostoUnitario = precoFinalVenda * (aliqImposto / 100);
     const lucroLiquidoUnitario = precoFinalVenda - custoProducaoUnitario - valorImpostoUnitario;
     const margemLiquidaReal = precoFinalVenda > 0 ? (lucroLiquidoUnitario / precoFinalVenda) * 100 : 0;
 
-    const impostoMedioDecimal = (aliquotaImpostoPercentual || 6.5) / 100;
+    const impostoMedioDecimal = aliqImposto / 100;
     const custoTetoParaMediaBrasil = mercado.precoMedioBrasil * (1 - impostoMedioDecimal - 0.30);
 
     let statusViabilidade = "VIAVEL_EXCELENTE";
