@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bravvi ERP • Operação Rota 10K & Gestão de Assinaturas</title>
+    <title>Bravvi 10K • Painel Comercial - Bravvi ERP • Operação Rota 10K & Gestão de Assinaturas</title>
     
     <!-- PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,8 +16,9 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         :root {
             --bg: #090d16;
@@ -51,7 +52,7 @@
         }
 
         .container {
-            max-width: 1240px;
+            max-width: 1280px;
             margin: 0 auto;
         }
 
@@ -211,6 +212,7 @@
             cursor: pointer;
             transition: all 0.2s;
             border: 1px solid transparent;
+            text-decoration: none;
         }
 
         .btn-primary {
@@ -256,36 +258,61 @@
             color: #000;
         }
 
-        /* Tabs Nav */
+        /* TABS NAVIGATION OFICIAL — RISCO VERDE BRILHANTE NA ABA ATIVA */
         .tabs-nav {
             display: flex;
-            gap: 10px;
-            border-bottom: 1px solid var(--border);
+            gap: 8px;
+            border-bottom: 2px solid #1f2a3e;
             margin-bottom: 24px;
+            overflow-x: auto;
+            position: relative;
         }
 
         .tab-btn {
             background: transparent;
             border: none;
+            outline: none !important;
             color: var(--text-muted);
             font-size: 14px;
             font-weight: 700;
-            padding: 12px 18px;
+            padding: 14px 20px;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 8px;
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s;
+            border-bottom: 3.5px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            position: relative;
         }
 
         .tab-btn:hover {
             color: var(--text-main);
+            background: rgba(255, 255, 255, 0.03);
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
         }
 
         .tab-btn.active {
-            color: #34d399;
-            border-bottom-color: #34d399;
+            color: #34d399 !important;
+            border-bottom: 3.5px solid #10b981 !important;
+            background: rgba(16, 185, 129, 0.08);
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            font-weight: 800;
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3.5px;
+            background: #10b981;
+            box-shadow: 0 0 12px #10b981, 0 0 20px #34d399;
+            border-radius: 99px;
         }
 
         .tab-content {
@@ -349,47 +376,45 @@
         }
 
         .progress-bar-bg {
-            background: #1e293b;
+            background: #0b1120;
+            border: 1px solid var(--border);
             height: 22px;
             border-radius: 99px;
             overflow: hidden;
-            position: relative;
             padding: 3px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 10px;
         }
 
         .progress-bar-fill {
+            background: linear-gradient(90deg, #10b981, #34d399);
             height: 100%;
             border-radius: 99px;
-            background: linear-gradient(90deg, #059669, #10b981, #34d399);
-            box-shadow: 0 0 16px rgba(16, 185, 129, 0.6);
-            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: width 0.8s ease-in-out;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
             width: 4%;
-            min-width: 14px;
         }
 
         .thermo-footer {
             display: flex;
             justify-content: space-between;
-            margin-top: 10px;
-            font-size: 12px;
+            font-size: 13px;
             color: var(--text-muted);
         }
 
-        /* KPI Cards Grid */
+        /* KPIs Grid */
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 16px;
-            margin-bottom: 28px;
+            margin-bottom: 24px;
         }
 
         .kpi-card {
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
-            padding: 18px;
-            transition: transform 0.2s, border-color 0.2s;
+            padding: 18px 20px;
+            transition: all 0.2s;
         }
 
         .kpi-card:hover {
@@ -401,15 +426,15 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
         .kpi-title {
             font-size: 12px;
-            font-weight: 600;
+            font-weight: 700;
+            color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: var(--text-muted);
         }
 
         .kpi-icon {
@@ -423,33 +448,34 @@
         }
 
         .kpi-value {
-            font-size: 26px;
-            font-weight: 800;
             font-family: 'JetBrains Mono', monospace;
-            letter-spacing: -0.5px;
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text-main);
         }
 
         .kpi-sub {
-            font-size: 12px;
+            font-size: 11.5px;
             color: var(--text-muted);
             margin-top: 4px;
         }
 
-        /* Milestones Section */
+        /* Milestones */
         .section-title {
-            font-size: 16px;
-            font-weight: 700;
+            font-size: 15px;
+            font-weight: 800;
             margin-bottom: 14px;
             display: flex;
             align-items: center;
             gap: 8px;
+            color: var(--text-main);
         }
 
         .milestones-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 16px;
-            margin-bottom: 32px;
+            margin-bottom: 28px;
         }
 
         .milestone-card {
@@ -462,64 +488,54 @@
 
         .milestone-card.current {
             border-color: rgba(16, 185, 129, 0.4);
-            background: linear-gradient(180deg, rgba(16, 185, 129, 0.05) 0%, var(--surface) 100%);
+            background: linear-gradient(135deg, #111827 0%, #0d1e2b 100%);
         }
 
         .milestone-badge {
-            font-size: 11px;
-            font-weight: 700;
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            font-size: 10px;
+            font-weight: 800;
             padding: 3px 8px;
-            border-radius: 6px;
-            display: inline-block;
-            margin-bottom: 10px;
+            border-radius: 99px;
+            text-transform: uppercase;
         }
 
-        .badge-active {
-            background: rgba(16, 185, 129, 0.2);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-
-        .badge-locked {
-            background: rgba(148, 163, 184, 0.1);
-            color: var(--text-muted);
-        }
+        .badge-active { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .badge-locked { background: rgba(148, 163, 184, 0.1); color: var(--text-muted); }
 
         .milestone-title {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .milestone-date {
-            font-size: 12px;
+            font-size: 11.5px;
             color: var(--text-muted);
             margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
 
         .milestone-prog-track {
+            background: #080d1a;
             height: 8px;
-            background: #1e293b;
             border-radius: 99px;
             overflow: hidden;
             margin-bottom: 8px;
         }
 
         .milestone-prog-bar {
-            height: 100%;
             background: #10b981;
+            height: 100%;
             border-radius: 99px;
-            width: 40%;
         }
 
         .milestone-target-text {
-            font-size: 12px;
-            color: var(--text-muted);
             display: flex;
             justify-content: space-between;
+            font-size: 11.5px;
+            color: var(--text-muted);
         }
 
         /* Tables & Lists */
@@ -546,21 +562,6 @@
             min-width: 260px;
         }
 
-        .search-box input {
-            width: 100%;
-            padding: 9px 12px 9px 36px;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border);
-            background: #0b1120;
-            color: var(--text-main);
-            font-size: 13px;
-            outline: none;
-        }
-
-        .search-box input:focus {
-            border-color: var(--primary);
-        }
-
         .search-box i {
             position: absolute;
             left: 12px;
@@ -568,6 +569,21 @@
             transform: translateY(-50%);
             color: var(--text-muted);
             font-size: 13px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 9px 12px 9px 34px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background: #080d1a;
+            color: var(--text-main);
+            font-size: 13px;
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
         }
 
         table {
@@ -630,19 +646,12 @@
             background: rgba(239, 68, 68, 0.2);
             color: #fca5a5;
             border: 1px solid rgba(239, 68, 68, 0.4);
-            animation: pulse-red 2s infinite;
         }
 
         .status-vence-breve {
             background: rgba(245, 158, 11, 0.2);
             color: #fde047;
             border: 1px solid rgba(245, 158, 11, 0.4);
-        }
-
-        @keyframes pulse-red {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-            70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
 
         .plan-tag {
@@ -725,7 +734,7 @@
             border-color: var(--primary);
         }
 
-        /* Modal */
+        /* Modals */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -733,9 +742,9 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(4px);
-            z-index: 999;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
+            z-index: 9999;
             align-items: center;
             justify-content: center;
             padding: 20px;
@@ -748,7 +757,9 @@
             width: 100%;
             max-width: 520px;
             padding: 24px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .modal-head {
@@ -816,15 +827,7 @@
             color: #34d399;
         }
 
-        @media (max-width: 768px) {
-            .thermo-values { font-size: 22px; }
-            .kpi-grid { grid-template-columns: 1fr 1fr; }
-            .table-container { overflow-x: auto; }
-            .config-card { flex-direction: column; align-items: stretch; }
-            .config-input { width: 100%; }
-        }
-    
-        /* CRM Kanban Styles */
+        /* CRM KANBAN & ETAPAS STYLES */
         .crm-header-bar {
             display: flex;
             justify-content: space-between;
@@ -1144,6 +1147,13 @@
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
 
+        @media (max-width: 768px) {
+            .thermo-values { font-size: 22px; }
+            .kpi-grid { grid-template-columns: 1fr 1fr; }
+            .table-container { overflow-x: auto; }
+            .config-card { flex-direction: column; align-items: stretch; }
+            .config-input { width: 100%; }
+        }
     </style>
 </head>
 <body>
@@ -1167,8 +1177,8 @@
         <div class="brand-title">
             <div class="brand-badge">🚀</div>
             <div>
-                <h1>Operação Rota 10K <span class="tag-10k">Bravvi ERP</span></h1>
-                <div class="subtitle">Painel Diretor Comercial & Controle Financeiro de Assinantes</div>
+                <h1><span id="headerMainTitle">Operação Rota</span> <span class="tag-10k" id="headerMetaTag">Meta 10K</span></h1>
+                <div class="subtitle">Painel Diretor Comercial & Gestão Financeira de Assinantes</div>
             </div>
         </div>
         <div class="header-actions">
@@ -1187,129 +1197,47 @@
         </div>
     </header>
 
-    <!-- Navigation Tabs -->
+    <!-- Navigation Tabs com Linha Verde Marcada na Aba Ativa -->
     <div class="tabs-nav">
-        <button class="tab-btn active" onclick="switchTab('tabMeta')">
-            <i class="fa-solid fa-chart-line"></i> 🎯 Meta 10K & Clientes
+        <button class="tab-btn active" id="btnTabMeta" onclick="switchTab('tabMeta')">
+            <i class="fa-solid fa-chart-line"></i> 🎯 Meta Recorrência & Clientes
         </button>
-        <button class="tab-btn" onclick="switchTab('tabCobranca')">
+        <button class="tab-btn" id="btnTabCRM" onclick="switchTab('tabCRM')">
+            <i class="fa-solid fa-comments"></i> 🔥 Funil CRM WhatsApp
+            <span id="tabBadgeCRM" style="background: #10b981; color: white; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 99px;">6</span>
+        </button>
+        <button class="tab-btn" id="btnTabDespesas" onclick="switchTab('tabDespesas')">
+            <i class="fa-solid fa-money-bill-wave"></i> 💸 Despesas & DRE
+            <span id="tabBadgeDespesas" style="display:none; background:#ef4444; color:white; font-size:10px; font-weight:800; padding:2px 6px; border-radius:99px;">0</span>
+        </button>
+        <button class="tab-btn" id="btnTabCobranca" onclick="switchTab('tabCobranca')">
             <i class="fa-solid fa-credit-card"></i> 💳 Cobranças & Vencimentos
             <span id="tabBadgeAlert" style="display:none; background:#ef4444; color:white; font-size:10px; font-weight:800; padding:2px 6px; border-radius:99px;">0</span>
         </button>
     </div>
 
-    
-    <!-- TAB CRM: Funil de Vendas & Atendimento por Etapas -->
-    <div id="tabCRM" class="tab-content active">
-        <!-- Top CRM Toolbar -->
-        <div class="crm-header-bar">
-            <div>
-                <div style="font-size: 15px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-filter" style="color: #10b981;"></i> Funil de Atendimento Comercial
-                </div>
-                <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-                    Separe seus clientes por etapa, envie áudios/mensagens pelo WhatsApp e gerencie o acesso ao ERP.
-                </div>
-            </div>
-
-            <div class="crm-stats-pills">
-                <span class="crm-stat-pill">📥 Novos: <strong id="crmStatNovos">0</strong></span>
-                <span class="crm-stat-pill">💬 Em Atendimento: <strong id="crmStatAtendimento">0</strong></span>
-                <span class="crm-stat-pill">🧪 Testes: <strong id="crmStatTeste">0</strong></span>
-                <span class="crm-stat-pill">📝 Proposta: <strong id="crmStatProposta">0</strong></span>
-                <span class="crm-stat-pill" style="border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.1);">👑 Assinantes: <strong id="crmStatAtivos" style="color: #34d399;">0</strong></span>
-            </div>
-
-            <div style="display: flex; gap: 8px;">
-                <button class="btn btn-secondary" onclick="syncClientsWithSupabase()" title="Atualizar clientes em tempo real do banco de dados" style="padding: 8px 12px; font-size: 12px;">
-                    <i class="fa-solid fa-arrows-rotate"></i> Sincronizar Nuvem
-                </button>
-                <button class="btn btn-primary" onclick="openModal(-1, 'novo')" style="padding: 8px 14px; font-size: 12px;">
-                    <i class="fa-solid fa-user-plus"></i> Novo Lead
-                </button>
-            </div>
-        </div>
-
-        <!-- Kanban Board: 6 Colunas de Etapas -->
-        <div class="crm-board">
-            <!-- Coluna 1: Novos Leads -->
-            <div class="crm-col">
-                <div class="crm-col-head">
-                    <span class="crm-col-title" style="color: #60a5fa;"><i class="fa-solid fa-inbox"></i> 1. Novos Leads</span>
-                    <span class="crm-badge-count" id="count_novo">0</span>
-                </div>
-                <div class="crm-card-list" id="col_novo"></div>
-            </div>
-
-            <!-- Coluna 2: Em Atendimento -->
-            <div class="crm-col">
-                <div class="crm-col-head">
-                    <span class="crm-col-title" style="color: #fbbf24;"><i class="fa-solid fa-comments"></i> 2. Em Atendimento</span>
-                    <span class="crm-badge-count" id="count_atendimento">0</span>
-                </div>
-                <div class="crm-card-list" id="col_atendimento"></div>
-            </div>
-
-            <!-- Coluna 3: Teste Grátis / Demo -->
-            <div class="crm-col">
-                <div class="crm-col-head">
-                    <span class="crm-col-title" style="color: #c084fc;"><i class="fa-solid fa-flask"></i> 3. Teste Grátis (7d)</span>
-                    <span class="crm-badge-count" id="count_teste">0</span>
-                </div>
-                <div class="crm-card-list" id="col_teste"></div>
-            </div>
-
-            <!-- Coluna 4: Proposta & Negociação -->
-            <div class="crm-col">
-                <div class="crm-col-head">
-                    <span class="crm-col-title" style="color: #f97316;"><i class="fa-solid fa-handshake"></i> 4. Negociação</span>
-                    <span class="crm-badge-count" id="count_proposta">0</span>
-                </div>
-                <div class="crm-card-list" id="col_proposta"></div>
-            </div>
-
-            <!-- Coluna 5: Assinantes Ativos -->
-            <div class="crm-col" style="border-color: rgba(16, 185, 129, 0.4); background: #07151e;">
-                <div class="crm-col-head" style="border-bottom-color: rgba(16, 185, 129, 0.3);">
-                    <span class="crm-col-title" style="color: #34d399;"><i class="fa-solid fa-crown"></i> 5. Assinantes Ativos</span>
-                    <span class="crm-badge-count" id="count_ativo" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">0</span>
-                </div>
-                <div class="crm-card-list" id="col_ativo"></div>
-            </div>
-
-            <!-- Coluna 6: Pausado / Sem Retorno -->
-            <div class="crm-col">
-                <div class="crm-col-head">
-                    <span class="crm-col-title" style="color: #94a3b8;"><i class="fa-solid fa-snowflake"></i> 6. Pausado / Frio</span>
-                    <span class="crm-badge-count" id="count_pausado">0</span>
-                </div>
-                <div class="crm-card-list" id="col_pausado"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- TAB 1: Meta 10K & Overview -->
-    <div id="tabMeta" class="tab-content">
-        <!-- Big Progress Thermometer -->
+    <!-- TAB 1 (PADRÃO): Meta Recorrência & Clientes -->
+    <div id="tabMeta" class="tab-content active">
+        <!-- Big Progress Thermometer Dinâmico (Muda sozinho pra 20K, 30K, 40K...) -->
         <div class="card-thermometer">
             <div class="thermo-header">
                 <div>
-                    <div class="thermo-label">Termômetro da Recorrência Mensal (MRR)</div>
-                    <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">
+                    <div class="thermo-label" id="thermoMainLabel">Termômetro da Recorrência Mensal (MRR)</div>
+                    <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;" id="thermoSubtitle">
                         Progresso rumo aos R$ 10.000,00 recorrentes por mês
                     </div>
                 </div>
                 <div>
-                    <span class="thermo-values" id="mrrDisplay">R$ 214,00</span>
-                    <span class="thermo-target">/ R$ 10.000,00</span>
+                    <span class="thermo-values" id="mrrDisplay">R$ 895,00</span>
+                    <span class="thermo-target" id="mrrTargetDisplay">/ R$ 10.000,00</span>
                 </div>
             </div>
             <div class="progress-bar-bg">
                 <div class="progress-bar-fill" id="mrrProgressBar"></div>
             </div>
             <div class="thermo-footer">
-                <span id="mrrPercent">2.1% concluído</span>
-                <span id="mrrRemaining">Faltam R$ 9.786,00 para os 10K</span>
+                <span id="mrrPercent">8.9% concluído</span>
+                <span id="mrrRemaining">Faltam R$ 9.105,00 para os 10K</span>
             </div>
         </div>
 
@@ -1322,7 +1250,7 @@
                         <i class="fa-solid fa-users"></i>
                     </div>
                 </div>
-                <div class="kpi-value" id="kpiActiveClients">2</div>
+                <div class="kpi-value" id="kpiActiveClients">6</div>
                 <div class="kpi-sub">Assinantes pagando</div>
             </div>
 
@@ -1333,8 +1261,8 @@
                         <i class="fa-solid fa-arrows-rotate"></i>
                     </div>
                 </div>
-                <div class="kpi-value" id="kpiMrr">R$ 214</div>
-                <div class="kpi-sub">Caindo todo mês no Asaas</div>
+                <div class="kpi-value" id="kpiMrr">R$ 895,00</div>
+                <div class="kpi-sub">Caindo todo mês no caixa</div>
             </div>
 
             <div class="kpi-card">
@@ -1355,61 +1283,58 @@
                         <i class="fa-solid fa-stopwatch"></i>
                     </div>
                 </div>
-                <div class="kpi-value" id="kpiTrial">0</div>
+                <div class="kpi-value" id="kpiTrial">1</div>
                 <div class="kpi-sub">Próximos a fechar</div>
             </div>
         </div>
 
         <!-- The 3 Milestones Grid -->
         <div class="section-title">
-            <i class="fa-solid fa-flag-checkered" style="color: #34d399;"></i> Cronograma dos 3 Marcos de Guerra
+            <i class="fa-solid fa-flag-checkered" style="color: #34d399;"></i> Cronograma dos Marcos de Guerra
         </div>
 
         <div class="milestones-grid">
-            <!-- Milestone 1 -->
             <div class="milestone-card current">
-                <span class="milestone-badge badge-active">EM ANDAMENTO</span>
-                <div class="milestone-title">🎯 Marco 1: Sobrevivência (5 Clientes)</div>
+                <span class="milestone-badge badge-active" id="m1Badge">EM ANDAMENTO</span>
+                <div class="milestone-title" id="m1Title">🎯 Marco 1: Sobrevivência (5 Clientes)</div>
                 <div class="milestone-date"><i class="fa-regular fa-calendar"></i> Prazo: até 15 de Novembro de 2026</div>
                 <div class="milestone-prog-track">
-                    <div class="milestone-prog-bar" id="m1Bar" style="width: 40%;"></div>
+                    <div class="milestone-prog-bar" id="m1Bar" style="width: 100%;"></div>
                 </div>
                 <div class="milestone-target-text">
-                    <span id="m1Count">2 de 5 clientes fechados</span>
-                    <span>Meta: R$ 2.500 no caixa</span>
+                    <span id="m1Count">6 de 5 clientes fechados</span>
+                    <span>Meta Inicial Batida! 🚀</span>
                 </div>
             </div>
 
-            <!-- Milestone 2 -->
             <div class="milestone-card">
-                <span class="milestone-badge badge-locked">PRÓXIMO</span>
-                <div class="milestone-title">🚀 Marco 2: Fôlego (25 Clientes)</div>
+                <span class="milestone-badge badge-locked" id="m2Badge">PRÓXIMO</span>
+                <div class="milestone-title" id="m2Title">🚀 Marco 2: Fôlego (25 Clientes)</div>
                 <div class="milestone-date"><i class="fa-regular fa-calendar"></i> Prazo: até 15 de Dezembro de 2026</div>
                 <div class="milestone-prog-track">
-                    <div class="milestone-prog-bar" id="m2Bar" style="width: 8%; background: #3b82f6;"></div>
+                    <div class="milestone-prog-bar" id="m2Bar" style="width: 24%; background: #3b82f6;"></div>
                 </div>
                 <div class="milestone-target-text">
-                    <span id="m2Count">2 de 25 clientes</span>
+                    <span id="m2Count">6 de 25 clientes</span>
                     <span>Meta: R$ 3.500 a R$ 4.500/mês</span>
                 </div>
             </div>
 
-            <!-- Milestone 3 -->
             <div class="milestone-card">
-                <span class="milestone-badge badge-locked">META FINAL</span>
-                <div class="milestone-title">👑 Marco 3: Independência (Meta 10K)</div>
+                <span class="milestone-badge badge-locked" id="m3Badge">META FINAL</span>
+                <div class="milestone-title" id="m3Title">👑 Marco 3: Independência (Meta 10K+)</div>
                 <div class="milestone-date"><i class="fa-regular fa-calendar"></i> Prazo: até 31 de Janeiro de 2027</div>
                 <div class="milestone-prog-track">
-                    <div class="milestone-prog-bar" id="m3Bar" style="width: 3%; background: #f59e0b;"></div>
+                    <div class="milestone-prog-bar" id="m3Bar" style="width: 8%; background: #f59e0b;"></div>
                 </div>
                 <div class="milestone-target-text">
-                    <span id="m3Count">2 de ~93 clientes</span>
+                    <span id="m3Count">6 de ~93 clientes</span>
                     <span style="color: #34d399; font-weight: 700;">R$ 10.000+/mês</span>
                 </div>
             </div>
         </div>
 
-        <!-- Customers Table Section -->
+        <!-- Tabela de Clientes com Soma dos Valores em Destaque -->
         <div class="table-container">
             <div class="table-toolbar">
                 <div class="search-box">
@@ -1417,10 +1342,10 @@
                     <input type="text" id="searchInput" placeholder="Buscar confecção ou telefone..." onkeyup="renderTable()">
                 </div>
                 <div style="font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-                    <div>Total na lista: <strong id="totalRowCount" style="color: var(--text-main);">0</strong></div>
-                    <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); padding: 5px 14px; border-radius: 99px; display: inline-flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 12px; color: #cbd5e1; text-transform: uppercase; font-weight: 700;">Soma dos Valores:</span>
-                        <strong id="toolbarTotalValueSum" style="color: #34d399; font-family: 'JetBrains Mono', monospace; font-size: 14.5px;">R$ 0,00</strong>
+                    <div>Total na lista: <strong id="totalRowCount" style="color: var(--text-main);">6</strong></div>
+                    <div style="background: rgba(16, 185, 129, 0.15); border: 1.5px solid rgba(16, 185, 129, 0.4); padding: 5px 14px; border-radius: 99px; display: inline-flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 12px; color: #cbd5e1; text-transform: uppercase; font-weight: 800;">Soma dos Valores:</span>
+                        <strong id="toolbarTotalValueSum" style="color: #34d399; font-family: 'JetBrains Mono', monospace; font-size: 15px;">R$ 895,00</strong>
                     </div>
                 </div>
             </div>
@@ -1439,18 +1364,19 @@
                     </tr>
                 </thead>
                 <tbody id="clientsTableBody">
-                    <!-- Dynamically Rendered -->
+                    <!-- Renderizado dinamicamente -->
                 </tbody>
+                <!-- Rodapé Oficial com Soma dos Valores da Coluna VALOR -->
                 <tfoot id="clientsTableFoot" style="background: #0a1122; font-weight: 700; border-top: 2px solid var(--border-light);">
                     <tr>
                         <td colspan="4" style="text-align: right; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; color: var(--text-muted); padding: 14px 18px;">
                             SOMA TOTAL DAS ASSINATURAS:
                         </td>
-                        <td style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 900; color: #34d399; padding: 14px 18px;" id="footTableTotalValue">
-                            R$ 0,00
+                        <td style="font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 900; color: #34d399; padding: 14px 18px;" id="footTableTotalValue">
+                            R$ 895,00
                         </td>
                         <td colspan="3" style="color: var(--text-muted); font-size: 12px; padding: 14px 18px;" id="footTableTotalSummary">
-                            0 clientes
+                            6 clientes listados
                         </td>
                     </tr>
                 </tfoot>
@@ -1469,7 +1395,88 @@
         </div>
     </div>
 
-    
+    <!-- TAB 2: CRM & Funil de Atendimento WhatsApp Oficial -->
+    <div id="tabCRM" class="tab-content">
+        <div class="crm-header-bar">
+            <div>
+                <div style="font-size: 15px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-brands fa-whatsapp" style="color: #25d366;"></i> Funil CRM WhatsApp & Atendimento
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                    Envie mensagens diretas no WhatsApp, mova os clientes entre as etapas e controle o acesso ao ERP.
+                </div>
+            </div>
+
+            <div class="crm-stats-pills">
+                <span class="crm-stat-pill">📥 Novos: <strong id="crmStatNovos">0</strong></span>
+                <span class="crm-stat-pill">💬 Em Atendimento: <strong id="crmStatAtendimento">0</strong></span>
+                <span class="crm-stat-pill">🧪 Testes: <strong id="crmStatTeste">1</strong></span>
+                <span class="crm-stat-pill">📝 Proposta: <strong id="crmStatProposta">0</strong></span>
+                <span class="crm-stat-pill" style="border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.1);">👑 Assinantes: <strong id="crmStatAtivos" style="color: #34d399;">5</strong></span>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary" onclick="syncClientsWithSupabase()" title="Atualizar dados da nuvem" style="padding: 8px 12px; font-size: 12px;">
+                    <i class="fa-solid fa-arrows-rotate"></i> Sincronizar Nuvem
+                </button>
+                <button class="btn btn-primary" onclick="openModal(-1, 'novo')" style="padding: 8px 14px; font-size: 12px;">
+                    <i class="fa-solid fa-user-plus"></i> Novo Lead
+                </button>
+            </div>
+        </div>
+
+        <!-- Kanban Board: 6 Colunas de Etapas -->
+        <div class="crm-board">
+            <div class="crm-col">
+                <div class="crm-col-head">
+                    <span class="crm-col-title" style="color: #60a5fa;"><i class="fa-solid fa-inbox"></i> 1. Novos Leads</span>
+                    <span class="crm-badge-count" id="count_novo">0</span>
+                </div>
+                <div class="crm-card-list" id="col_novo"></div>
+            </div>
+
+            <div class="crm-col">
+                <div class="crm-col-head">
+                    <span class="crm-col-title" style="color: #fbbf24;"><i class="fa-solid fa-comments"></i> 2. Em Atendimento</span>
+                    <span class="crm-badge-count" id="count_atendimento">0</span>
+                </div>
+                <div class="crm-card-list" id="col_atendimento"></div>
+            </div>
+
+            <div class="crm-col">
+                <div class="crm-col-head">
+                    <span class="crm-col-title" style="color: #c084fc;"><i class="fa-solid fa-flask"></i> 3. Teste Grátis (7d)</span>
+                    <span class="crm-badge-count" id="count_teste">0</span>
+                </div>
+                <div class="crm-card-list" id="col_teste"></div>
+            </div>
+
+            <div class="crm-col">
+                <div class="crm-col-head">
+                    <span class="crm-col-title" style="color: #f97316;"><i class="fa-solid fa-handshake"></i> 4. Negociação</span>
+                    <span class="crm-badge-count" id="count_proposta">0</span>
+                </div>
+                <div class="crm-card-list" id="col_proposta"></div>
+            </div>
+
+            <div class="crm-col" style="border-color: rgba(16, 185, 129, 0.4); background: #07151e;">
+                <div class="crm-col-head" style="border-bottom-color: rgba(16, 185, 129, 0.3);">
+                    <span class="crm-col-title" style="color: #34d399;"><i class="fa-solid fa-crown"></i> 5. Assinantes Ativos</span>
+                    <span class="crm-badge-count" id="count_ativo" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">0</span>
+                </div>
+                <div class="crm-card-list" id="col_ativo"></div>
+            </div>
+
+            <div class="crm-col">
+                <div class="crm-col-head">
+                    <span class="crm-col-title" style="color: #94a3b8;"><i class="fa-solid fa-snowflake"></i> 6. Pausado / Frio</span>
+                    <span class="crm-badge-count" id="count_pausado">0</span>
+                </div>
+                <div class="crm-card-list" id="col_pausado"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- TAB 3: Lançamento de Despesas & DRE da Operação -->
     <div id="tabDespesas" class="tab-content">
         <!-- DRE Resumo Financeiro da Operação -->
@@ -1479,8 +1486,8 @@
                     <span class="kpi-title">Receita de Mensalidades</span>
                     <i class="fa-solid fa-arrow-trend-up" style="color: #10b981;"></i>
                 </div>
-                <div class="kpi-value" id="kpiExpReceita" style="color: #34d399;">R$ 0,00</div>
-                <div class="kpi-sub">Entradas brutas do SaaS</div>
+                <div class="kpi-value" id="kpiExpReceita" style="color: #34d399;">R$ 895,00</div>
+                <div class="kpi-sub">Entradas recorrentes do SaaS</div>
             </div>
 
             <div class="kpi-card" style="border-left: 4px solid #ef4444;">
@@ -1489,7 +1496,7 @@
                     <i class="fa-solid fa-arrow-trend-down" style="color: #ef4444;"></i>
                 </div>
                 <div class="kpi-value" id="kpiExpTotal" style="color: #f87171;">R$ 0,00</div>
-                <div class="kpi-sub" id="kpiExpTotalSub">0 despesas lançadas</div>
+                <div class="kpi-sub" id="kpiExpTotalSub">Custos operacionais</div>
             </div>
 
             <div class="kpi-card" style="border-left: 4px solid #3b82f6;">
@@ -1497,8 +1504,8 @@
                     <span class="kpi-title">Lucro Líquido Real</span>
                     <i class="fa-solid fa-scale-balanced" style="color: #3b82f6;"></i>
                 </div>
-                <div class="kpi-value" id="kpiExpLucro" style="color: #60a5fa;">R$ 0,00</div>
-                <div class="kpi-sub" id="kpiExpMargem">Margem: 100%</div>
+                <div class="kpi-value" id="kpiExpLucro" style="color: #60a5fa;">R$ 895,00</div>
+                <div class="kpi-sub" id="kpiExpMargem">Margem Líquida: 100%</div>
             </div>
 
             <div class="kpi-card" style="border-left: 4px solid #f59e0b;">
@@ -1552,7 +1559,7 @@
                     </tr>
                 </thead>
                 <tbody id="expensesTableBody">
-                    <!-- Dynamically Rendered -->
+                    <!-- Renderizado dinamicamente -->
                 </tbody>
                 <tfoot style="background: #0a1122; font-weight: 700; border-top: 2px solid var(--border-light);">
                     <tr>
@@ -1571,9 +1578,8 @@
         </div>
     </div>
 
-    <!-- TAB 2: Cobranças & Vencimentos -->
+    <!-- TAB 4: Cobranças & Vencimentos -->
     <div id="tabCobranca" class="tab-content">
-        <!-- Pix & Payment Links Config -->
         <div class="config-card">
             <div class="config-item">
                 <i class="fa-brands fa-pix" style="color: #34d399; font-size: 20px;"></i>
@@ -1592,14 +1598,13 @@
             </div>
         </div>
 
-        <!-- Billing Summary Cards -->
         <div class="kpi-grid">
             <div class="kpi-card" style="border-left: 4px solid #10b981;">
                 <div class="kpi-head">
                     <span class="kpi-title">Em Dia</span>
                     <i class="fa-solid fa-circle-check" style="color: #10b981;"></i>
                 </div>
-                <div class="kpi-value" id="kpiBillingUpToDate">2</div>
+                <div class="kpi-value" id="kpiBillingUpToDate">6</div>
                 <div class="kpi-sub">Mensalidades quitadas</div>
             </div>
 
@@ -1622,7 +1627,6 @@
             </div>
         </div>
 
-        <!-- Billing Table -->
         <div class="table-container">
             <div class="table-toolbar">
                 <div style="font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px;">
@@ -1646,41 +1650,39 @@
                     </tr>
                 </thead>
                 <tbody id="billingTableBody">
-                    <!-- Dynamically Rendered -->
+                    <!-- Renderizado dinamicamente -->
                 </tbody>
             </table>
         </div>
     </div>
 </div>
 
-
-<!-- Modal: Central de Atendimento (Escrever & Mandar Áudio) -->
+<!-- Modal: Central de Atendimento (Escrever & Mandar Áudio com Conexão Real ao WhatsApp) -->
 <div class="modal-overlay" id="crmChatModal">
     <div class="modal-card" style="max-width: 580px;">
         <div class="modal-head">
             <div>
                 <h3 style="font-size: 16px; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-brands fa-whatsapp" style="color: #25d366;"></i> Atendimento: <span id="crmChatModalClientName">Cliente</span>
+                    <i class="fa-brands fa-whatsapp" style="color: #25d366;"></i> Atendimento WhatsApp: <span id="crmChatModalClientName">Cliente</span>
                 </h3>
                 <div style="font-size: 12px; color: var(--text-muted);" id="crmChatModalClientPhone">Telefone</div>
             </div>
             <button onclick="closeCrmChatModal()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px;">&times;</button>
         </div>
 
-        <!-- Sub Tabs: Escrever vs Áudio -->
         <div class="modal-tabs">
             <button class="modal-tab-btn active" id="btnSubTabMsg" onclick="switchChatSubTab('msg')">
                 <i class="fa-solid fa-pen"></i> ✍️ Escrever Mensagem
             </button>
             <button class="modal-tab-btn" id="btnSubTabAudio" onclick="switchChatSubTab('audio')">
-                <i class="fa-solid fa-microphone"></i> 🎙️ Mandar Áudio
+                <i class="fa-solid fa-microphone"></i> 🎙️ Gravar / Roteiro de Áudio
             </button>
         </div>
 
         <!-- Sub-Aba 1: Escrever Mensagem -->
         <div id="subTabMsgContent">
             <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
-                Respostas & Scripts Rápidos (Clique para preencher):
+                Modelos de Mensagem Rápida:
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;">
                 <button type="button" class="quick-msg-chip" onclick="applyMsgTemplate('boas_vindas')">👋 1. Boas-Vindas</button>
@@ -1690,22 +1692,35 @@
             </div>
 
             <div class="form-group">
-                <textarea id="crmMsgTextarea" class="form-control" rows="6" style="resize: vertical; font-size: 13.5px; line-height: 1.45;" placeholder="Digite aqui sua mensagem personalizada para o cliente..."></textarea>
+                <label>Mensagem a ser enviada</label>
+                <textarea id="crmMsgTextarea" class="form-control" rows="6" style="resize: vertical; font-size: 13.5px; line-height: 1.45;" placeholder="Digite aqui sua mensagem personalizada..."></textarea>
             </div>
 
-            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 16px;">
-                <button type="button" class="btn btn-secondary" onclick="copyCrmMsgText()" style="font-size: 12px;">
-                    <i class="fa-regular fa-copy"></i> Copiar Mensagem
+            <div class="form-group" style="background: #080d1a; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);">
+                <label style="margin-bottom: 4px;">Avançar cliente para etapa após o envio:</label>
+                <select id="crmAfterSendStage" class="form-control" style="padding: 6px 10px; font-size: 12px;">
+                    <option value="manter">Manter etapa atual</option>
+                    <option value="atendimento" selected>💬 2. Em Atendimento (Conversando)</option>
+                    <option value="teste">🧪 3. Teste Grátis (7d Liberado)</option>
+                    <option value="proposta">📝 4. Proposta & Negociação</option>
+                    <option value="ativo">👑 5. Assinante Ativo</option>
+                </select>
+            </div>
+
+            <!-- Botões de Envio Reais -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px;">
+                <button type="button" class="btn btn-primary" onclick="sendViaWhatsAppWeb()" style="background: #128c7e; justify-content: center; font-size: 12.5px;">
+                    <i class="fa-brands fa-whatsapp"></i> Abrir no WhatsApp Web &rarr;
                 </button>
-                <button type="button" class="btn btn-primary" onclick="sendWhatsAppCrmMsg()" style="background: #128c7e;">
-                    <i class="fa-brands fa-whatsapp"></i> Abrir WhatsApp com Mensagem &rarr;
+                <button type="button" class="btn btn-primary" onclick="sendViaMetaCloudApi()" id="btnSendMetaApi" style="background: linear-gradient(135deg, #0284c7, #0369a1); justify-content: center; font-size: 12.5px;">
+                    <i class="fa-solid fa-paper-plane"></i> Disparar via API Meta
                 </button>
             </div>
+            <div id="metaSendStatus" style="font-size: 11.5px; color: #34d399; margin-top: 8px; text-align: center; display: none;"></div>
         </div>
 
-        <!-- Sub-Aba 2: Mandar Áudio -->
+        <!-- Sub-Aba 2: Gravar / Roteiro de Áudio -->
         <div id="subTabAudioContent" style="display: none;">
-            <!-- Gravador com Microfone Nativo HTML5 -->
             <div class="recorder-box">
                 <div style="font-size: 13px; font-weight: 700; color: #f1f5f9; margin-bottom: 6px;" id="crmAudioStatusText">
                     🎙️ Gravador de Áudio WhatsApp
@@ -1720,7 +1735,6 @@
                     </button>
                 </div>
 
-                <!-- Player de Áudio -->
                 <audio id="crmAudioPlayer" controls style="display: none; width: 100%; margin-top: 16px; border-radius: 8px;"></audio>
                 
                 <div id="crmAudioActions" style="display: none; margin-top: 14px; gap: 8px; justify-content: center;">
@@ -1733,9 +1747,8 @@
                 </div>
             </div>
 
-            <!-- Roteiros Prontos de Áudio para Ler e Gravar -->
             <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
-                📖 Roteiro de Áudio Recomendado (Leia enquanto grava):
+                📖 Roteiro de Áudio Testado (Leia enquanto grava):
             </div>
             <div style="background: #0b1120; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 12.5px; color: #cbd5e1; line-height: 1.45;" id="crmAudioScriptBox">
                 "Fala [Nome], Guilherme aqui da Bravvi! Vi que você pediu informações sobre o sistema. Eu tive confecção durante anos e sofria exatamente com corte errado, sobra de tecido e ficha técnica confusa. Desenvolvi o Bravvi justamente pra fábrica rodar no piloto automático, sem complicação. Como tá o controle de corte de vocês aí hoje?"
@@ -1812,7 +1825,6 @@
                 </div>
             </div>
 
-            <!-- Caixa com Link Gerado -->
             <div id="crmAccLinkResultBox" style="display: none; background: #07151e; border: 1.5px dashed #10b981; border-radius: 8px; padding: 12px; margin-top: 12px;">
                 <div style="font-size: 11px; font-weight: 800; color: #34d399; text-transform: uppercase;">✓ Link de Ativação Criado:</div>
                 <div style="font-size: 12px; font-family: 'JetBrains Mono', monospace; color: #f1f5f9; word-break: break-all; margin: 6px 0;" id="crmAccGeneratedLink"></div>
@@ -1821,66 +1833,6 @@
                 </button>
             </div>
         </div>
-    </div>
-</div>
-
-
-<!-- Modal: Adicionar / Editar Despesa -->
-<div class="modal-overlay" id="expenseModal">
-    <div class="modal-card" style="max-width: 500px;">
-        <div class="modal-head">
-            <h3 style="font-size: 16px; font-weight: 700; color: #ffffff;" id="modalExpenseTitle">Lançar Nova Despesa</h3>
-            <button onclick="closeExpenseModal()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px;">&times;</button>
-        </div>
-        <form id="expenseForm" onsubmit="saveExpense(event)">
-            <input type="hidden" id="editExpenseIndex" value="-1">
-
-            <div class="form-group">
-                <label>Descrição da Despesa / Fornecedor *</label>
-                <input type="text" class="form-control" id="expDesc" required placeholder="Ex: Meta Ads — Anúncios WhatsApp ou Supabase">
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Categoria</label>
-                    <select class="form-control" id="expCategory">
-                        <option value="trafego">📢 Tráfego Pago & Anúncios</option>
-                        <option value="servidor">🖥️ Servidores & Banco de Dados</option>
-                        <option value="ferramentas">⚡ Ferramentas & APIs</option>
-                        <option value="administrativo">📑 Administrativo & Taxas</option>
-                        <option value="outros" selected>📦 Outras Despesas</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Valor da Despesa (R$) *</label>
-                    <input type="number" step="0.01" class="form-control" id="expValue" required placeholder="0.00">
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Data de Vencimento / Pagamento *</label>
-                    <input type="date" class="form-control" id="expDueDate" required>
-                </div>
-                <div class="form-group">
-                    <label>Status do Pagamento</label>
-                    <select class="form-control" id="expStatus">
-                        <option value="Pendente">Pendente (A Pagar)</option>
-                        <option value="Paga" selected>Paga (Já Quitado)</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Observações / Recorrência</label>
-                <input type="text" class="form-control" id="expObs" placeholder="Ex: Gasto mensal recorrente de tráfego">
-            </div>
-
-            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-                <button type="button" class="btn btn-secondary" onclick="closeExpenseModal()">Cancelar</button>
-                <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c);">Salvar Despesa</button>
-            </div>
-        </form>
     </div>
 </div>
 
@@ -1907,6 +1859,24 @@
                 <div class="form-group">
                     <label>Cidade / UF</label>
                     <input type="text" class="form-control" id="formCity" placeholder="Ex: Brusque - SC">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>E-mail de Login (Acesso ao ERP)</label>
+                    <input type="email" class="form-control" id="formEmail" placeholder="contato@empresa.com.br">
+                </div>
+                <div class="form-group">
+                    <label>Etapa no CRM / Funil</label>
+                    <select class="form-control" id="formStage">
+                        <option value="novo">📥 1. Novo Lead (WhatsApp / Tráfego)</option>
+                        <option value="atendimento">💬 2. Em Atendimento (Qualificação)</option>
+                        <option value="teste">🧪 3. Teste Grátis (7 Dias)</option>
+                        <option value="proposta">📝 4. Proposta & Negociação</option>
+                        <option value="ativo" selected>👑 5. Assinante Ativo (ERP Liberado)</option>
+                        <option value="pausado">❄️ 6. Pausado / Sem Retorno</option>
+                    </select>
                 </div>
             </div>
 
@@ -1973,6 +1943,65 @@
     </div>
 </div>
 
+<!-- Modal: Adicionar / Editar Despesa -->
+<div class="modal-overlay" id="expenseModal">
+    <div class="modal-card" style="max-width: 500px;">
+        <div class="modal-head">
+            <h3 style="font-size: 16px; font-weight: 700; color: #ffffff;" id="modalExpenseTitle">Lançar Nova Despesa</h3>
+            <button onclick="closeExpenseModal()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px;">&times;</button>
+        </div>
+        <form id="expenseForm" onsubmit="saveExpense(event)">
+            <input type="hidden" id="editExpenseIndex" value="-1">
+
+            <div class="form-group">
+                <label>Descrição da Despesa / Fornecedor *</label>
+                <input type="text" class="form-control" id="expDesc" required placeholder="Ex: Meta Ads — Anúncios WhatsApp ou Supabase">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select class="form-control" id="expCategory">
+                        <option value="trafego">📢 Tráfego Pago & Anúncios</option>
+                        <option value="servidor">🖥️ Servidores & Banco de Dados</option>
+                        <option value="ferramentas">⚡ Ferramentas & APIs</option>
+                        <option value="administrativo">📑 Administrativo & Taxas</option>
+                        <option value="outros" selected>📦 Outras Despesas</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Valor da Despesa (R$) *</label>
+                    <input type="number" step="0.01" class="form-control" id="expValue" required placeholder="0.00">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Data de Vencimento / Pagamento *</label>
+                    <input type="date" class="form-control" id="expDueDate" required>
+                </div>
+                <div class="form-group">
+                    <label>Status do Pagamento</label>
+                    <select class="form-control" id="expStatus">
+                        <option value="Pendente">Pendente (A Pagar)</option>
+                        <option value="Paga" selected>Paga (Já Quitado)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Observações / Recorrência</label>
+                <input type="text" class="form-control" id="expObs" placeholder="Ex: Gasto mensal recorrente de tráfego">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeExpenseModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c);">Salvar Despesa</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     // Password Gate Key
     const MASTER_HASH = "Gui2026@";
@@ -2011,27 +2040,25 @@
         location.reload();
     }
 
-    // Tabs Switcher
+    // Tabs Switcher — Mantém a linha verde brilhante na aba ativa
     function switchTab(tabId) {
         document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
         document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
 
-        if (tabId === "tabCRM") {
-            const btn = document.getElementById("btnTabCRM");
-            if (btn) btn.classList.add("active");
-            const tab = document.getElementById("tabCRM");
-            if (tab) tab.classList.add("active");
-            renderCRMBoard();
-        } else if (tabId === "tabMeta") {
+        if (tabId === "tabMeta") {
             const btn = document.getElementById("btnTabMeta");
             if (btn) btn.classList.add("active");
             document.getElementById("tabMeta").classList.add("active");
             renderTable();
+        } else if (tabId === "tabCRM") {
+            const btn = document.getElementById("btnTabCRM");
+            if (btn) btn.classList.add("active");
+            document.getElementById("tabCRM").classList.add("active");
+            renderCRMBoard();
         } else if (tabId === "tabDespesas") {
             const btn = document.getElementById("btnTabDespesas");
             if (btn) btn.classList.add("active");
-            const tab = document.getElementById("tabDespesas");
-            if (tab) tab.classList.add("active");
+            document.getElementById("tabDespesas").classList.add("active");
             renderExpensesTable();
         } else if (tabId === "tabCobranca") {
             const btn = document.getElementById("btnTabCobranca");
@@ -2041,30 +2068,75 @@
         }
     }
 
-    // Base Inicial Oficial
+    // BASE OFICIAL DE CLIENTES (PRESERVADA 100% PARA NUNCA SUMIR)
     const INITIAL_CLIENTS = [
         {
-            name: "Innovaction Textil Ltda (Gilberto Alves)",
-            phone: "554499856245",
-            email: "gilbertoalveslion@gmail.com",
+            name: "Juan, Ozark Uniformes",
+            phone: "44984223992",
+            email: "juanvluz23@gmail.com",
             city: "—",
-            plan: "Anual Pro",
-            price: 1997,
+            plan: "Básico Mensal",
+            price: 107,
             status: "Ativo",
             accessStatus: "liberado",
             stage: "ativo",
-            dueDay: 5,
-            date: "2026-11-05",
-            lastPaidDate: "2026-11-05",
-            obs: "Cliente oficial Plano Anual Pro 365d"
+            dueDay: 10,
+            date: "2026-11-06",
+            lastPaidDate: "2026-11-06",
+            obs: "Cliente ativo da base oficial"
+        },
+        {
+            name: "Carlinhos Sublimação",
+            phone: "87996105177",
+            email: "carlinhoserigrafia14@gmail.com",
+            city: "—",
+            plan: "Básico Mensal",
+            price: 107,
+            status: "Ativo",
+            accessStatus: "liberado",
+            stage: "ativo",
+            dueDay: 10,
+            date: "2026-11-06",
+            lastPaidDate: "2026-11-06",
+            obs: "Cliente ativo da base oficial"
+        },
+        {
+            name: "Celio Miranda",
+            phone: "35991192188",
+            email: "celio@miranda.com.br",
+            city: "—",
+            plan: "Pro Mensal",
+            price: 227,
+            status: "Ativo",
+            accessStatus: "liberado",
+            stage: "ativo",
+            dueDay: 10,
+            date: "2026-11-06",
+            lastPaidDate: "2026-11-06",
+            obs: "Cliente ativo da base oficial"
+        },
+        {
+            name: "Lion uniformes",
+            phone: "11975058301",
+            email: "gilbertoalveslion@gmail.com",
+            city: "—",
+            plan: "Pro Mensal",
+            price: 227,
+            status: "Ativo",
+            accessStatus: "liberado",
+            stage: "ativo",
+            dueDay: 10,
+            date: "2026-11-06",
+            lastPaidDate: "2026-11-06",
+            obs: "Innovaction Textil Ltda (Gilberto Alves)"
         },
         {
             name: "Prime Uniformes",
             phone: "5547984613671",
             email: "comercial@primeuniformes.com.br",
             city: "Joinville - SC",
-            plan: "Básico Mensal",
-            price: 107,
+            plan: "Pro Mensal",
+            price: 227,
             status: "Ativo",
             accessStatus: "liberado",
             stage: "ativo",
@@ -2079,32 +2151,63 @@
             email: "francisco@abrunhoza.com.br",
             city: "Rondonópolis - MT",
             plan: "Básico Mensal",
-            price: 107,
+            price: 0,
             status: "Ativo",
             accessStatus: "liberado",
-            stage: "ativo",
+            stage: "teste",
             dueDay: 10,
             date: "2026-10-28",
             lastPaidDate: "2026-10-28",
-            obs: "Cliente ativo da base oficial"
+            obs: "Cliente teste grátis"
         }
     ];
 
-    const STORAGE_KEY = "bravvi_meta_10k_clients_v5";
+    const STORAGE_KEY = "bravvi_meta_10k_clients_v6";
     const CONFIG_KEY = "bravvi_billing_config_v1";
 
     function loadClients() {
-        const data = localStorage.getItem(STORAGE_KEY);
-        if (!data) {
+        // Busca em todas as chaves anteriores para migrar e NUNCA perder os dados que o Guilherme cadastrou
+        const possibleKeys = [
+            "bravvi_meta_10k_clients_v6",
+            "bravvi_meta_10k_clients_v5",
+            "bravvi_meta_10k_clients_v4",
+            "bravvi_meta_10k_clients_v3"
+        ];
+
+        let saved = null;
+        for (const k of possibleKeys) {
+            const raw = localStorage.getItem(k);
+            if (raw) {
+                try {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        saved = parsed;
+                        break;
+                    }
+                } catch (e) {}
+            }
+        }
+
+        if (!saved) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_CLIENTS));
-            return INITIAL_CLIENTS;
+            return JSON.parse(JSON.stringify(INITIAL_CLIENTS));
         }
-        try {
-            const list = JSON.parse(data);
-            return Array.isArray(list) ? list : INITIAL_CLIENTS;
-        } catch (e) {
-            return INITIAL_CLIENTS;
-        }
+
+        // Garante que todos os 6 clientes oficiais estejam presentes na lista
+        INITIAL_CLIENTS.forEach(initCli => {
+            const cleanInitPhone = (initCli.phone || '').replace(/\D/g, '');
+            const exists = saved.some(s => {
+                const cleanSPhone = (s.phone || '').replace(/\D/g, '');
+                return (cleanInitPhone && cleanSPhone && cleanInitPhone === cleanSPhone) ||
+                       (s.name && initCli.name && s.name.toLowerCase().trim() === initCli.name.toLowerCase().trim());
+            });
+            if (!exists) {
+                saved.push(initCli);
+            }
+        });
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+        return saved;
     }
 
     function saveClientsList(clients) {
@@ -2156,7 +2259,7 @@
             document.getElementById("formEmail").value = c.email || "";
             document.getElementById("formStage").value = c.stage || "novo";
             document.getElementById("formPlan").value = c.plan || "Básico Mensal";
-            document.getElementById("formPrice").value = c.price || 107;
+            document.getElementById("formPrice").value = (c.price !== undefined) ? c.price : 107;
             document.getElementById("formStatus").value = c.status || "Ativo";
             document.getElementById("formDueDay").value = c.dueDay || 10;
             document.getElementById("formDate").value = c.date || new Date().toISOString().split('T')[0];
@@ -2202,7 +2305,6 @@
         };
 
         if (index >= 0) {
-            // Preserva status de acesso e tenant prévio
             newClient.accessStatus = clients[index].accessStatus || newClient.accessStatus;
             newClient.tenantId = clients[index].tenantId;
             clients[index] = newClient;
@@ -2222,7 +2324,6 @@
         }
     }
 
-    // Helper: calculate next due date
     function calculateNextDueDate(dueDay) {
         const now = new Date();
         const year = now.getFullYear();
@@ -2243,6 +2344,7 @@
         return new Date(targetYear, targetMonth, dueDay);
     }
 
+    // ATUALIZAÇÃO DO DASHBOARD E CÁLCULO DINÂMICO DA META (10K -> 20K -> 30K...)
     function updateDashboard() {
         const clients = loadClients();
 
@@ -2255,29 +2357,39 @@
             if (c.status === "Ativo") {
                 activeCount++;
                 if (c.plan && c.plan.includes("Anual")) {
-                    annualCash += c.price;
-                    currentMrr += Math.round(c.price / 12);
+                    annualCash += (c.price || 0);
+                    currentMrr += Math.round((c.price || 0) / 12);
                 } else {
-                    currentMrr += c.price;
+                    currentMrr += (c.price || 0);
                 }
             } else if (c.status === "Teste" || c.stage === "teste") {
                 trialCount++;
             }
         });
 
-        // Top Thermometer
-        const targetMrr = 10000;
+        // CÁLCULO DINÂMICO DA META AUTOMÁTICA (10K -> 20K -> 30K -> 40K...)
+        let targetMrr = 10000;
+        if (currentMrr >= 10000) {
+            targetMrr = Math.floor(currentMrr / 10000) * 10000 + 10000;
+        }
+        const targetK = Math.round(targetMrr / 1000);
         const pct = Math.min(100, (currentMrr / targetMrr) * 100);
+
+        // Atualiza textos do termômetro
         document.getElementById("mrrDisplay").innerText = `R$ ${currentMrr.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        document.getElementById("mrrTargetDisplay").innerText = `/ R$ ${targetMrr.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        document.getElementById("thermoSubtitle").innerText = `Progresso rumo aos R$ ${targetMrr.toLocaleString('pt-BR', {minimumFractionDigits: 2})} recorrentes por mês`;
+        document.getElementById("headerMetaTag").innerText = `Meta ${targetK}K`;
+
         document.getElementById("mrrProgressBar").style.width = `${Math.max(4, pct)}%`;
-        document.getElementById("mrrPercent").innerText = `${pct.toFixed(1)}% da meta de 10K batida`;
+        document.getElementById("mrrPercent").innerText = `${pct.toFixed(1)}% da meta de ${targetK}K batida`;
         
         const remaining = Math.max(0, targetMrr - currentMrr);
-        document.getElementById("mrrRemaining").innerText = `Faltam R$ ${remaining.toLocaleString('pt-BR', {minimumFractionDigits: 2})} para os 10K`;
+        document.getElementById("mrrRemaining").innerText = `Faltam R$ ${remaining.toLocaleString('pt-BR', {minimumFractionDigits: 2})} para os ${targetK}K`;
 
         // KPIs
         document.getElementById("kpiActiveClients").innerText = activeCount;
-        document.getElementById("kpiMrr").innerText = `R$ ${currentMrr.toLocaleString('pt-BR')}`;
+        document.getElementById("kpiMrr").innerText = `R$ ${currentMrr.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
         document.getElementById("kpiAnnualCash").innerText = `R$ ${annualCash.toLocaleString('pt-BR')}`;
         document.getElementById("kpiTrial").innerText = trialCount;
 
@@ -2294,13 +2406,89 @@
         document.getElementById("m3Bar").style.width = `${m3Pct}%`;
         document.getElementById("m3Count").innerText = `${activeCount} de ~93 clientes`;
 
-        renderCRMBoard();
         renderTable();
+        renderCRMBoard();
+        renderExpensesTable();
         renderBillingTable();
     }
 
     // =========================================================================
-    // CRM KANBAN & ETAPAS DE ATENDIMENTO
+    // TABELA DE CLIENTES COM SOMA DOS VALORES (NO CABEÇALHO E RODAPÉ)
+    // =========================================================================
+    function renderTable() {
+        const clients = loadClients();
+        const search = document.getElementById("searchInput")?.value.toLowerCase() || "";
+        const tbody = document.getElementById("clientsTableBody");
+        if (!tbody) return;
+        tbody.innerHTML = "";
+
+        let visibleCount = 0;
+        let totalVisibleSum = 0;
+
+        clients.forEach((c, index) => {
+            if (search && !c.name.toLowerCase().includes(search) && !(c.phone && c.phone.includes(search)) && !(c.city && c.city.toLowerCase().includes(search))) {
+                return;
+            }
+
+            visibleCount++;
+            totalVisibleSum += (parseFloat(c.price) || 0);
+
+            const tr = document.createElement("tr");
+
+            let statusClass = "status-ativo";
+            if (c.status === "Teste" || c.stage === "teste") statusClass = "status-teste";
+            if (c.status === "Cancelado" || c.status === "Bloqueado") statusClass = "status-cancelado";
+
+            const cleanPhone = (c.phone || '').replace(/\D/g, '');
+            const waLink = cleanPhone ? `https://wa.me/${cleanPhone}` : '#';
+
+            tr.innerHTML = `
+                <td>
+                    <div style="font-weight: 700; color: var(--text-main);">${escapeHtml(c.name)}</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">${escapeHtml(c.obs || '')}</div>
+                </td>
+                <td>
+                    <a href="${waLink}" target="_blank" style="color: #34d399; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fa-brands fa-whatsapp"></i> ${escapeHtml(c.phone || '—')}
+                    </a>
+                </td>
+                <td style="color: var(--text-muted); font-size: 12px;">${escapeHtml(c.city || '—')}</td>
+                <td><span class="plan-tag">${escapeHtml(c.plan || 'Plano')}</span></td>
+                <td style="font-family: 'JetBrains Mono', monospace; font-weight: 800; color: #34d399; font-size: 13.5px;">
+                    R$ ${(parseFloat(c.price) || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                </td>
+                <td><span class="badge-status ${statusClass}">${escapeHtml(c.status || 'Ativo')}</span></td>
+                <td style="color: var(--text-muted); font-size: 12px;">${c.date ? c.date.split('-').reverse().join('/') : '—'}</td>
+                <td>
+                    <div class="actions-cell">
+                        <button class="btn-icon" title="Editar" onclick="openModal(${index})"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button class="btn-icon" title="Atender no Zap / Mandar Mensagem" onclick="openCrmChatModal(${index})"><i class="fa-brands fa-whatsapp" style="color: #10b981;"></i></button>
+                        <button class="btn-icon delete" title="Excluir" onclick="deleteClient(${index})"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Atualiza contadores e a SOMA DOS VALORES oficial
+        if (document.getElementById("totalRowCount")) {
+            document.getElementById("totalRowCount").innerText = visibleCount;
+        }
+
+        const formattedSum = "R$ " + totalVisibleSum.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        if (document.getElementById("toolbarTotalValueSum")) {
+            document.getElementById("toolbarTotalValueSum").innerText = formattedSum;
+        }
+        if (document.getElementById("footTableTotalValue")) {
+            document.getElementById("footTableTotalValue").innerText = formattedSum;
+        }
+        if (document.getElementById("footTableTotalSummary")) {
+            document.getElementById("footTableTotalSummary").innerText = `${visibleCount} cliente(s) listados`;
+        }
+    }
+
+    // =========================================================================
+    // CRM KANBAN & ETAPAS DE ATENDIMENTO COM CONEXÃO WHATSAPP
     // =========================================================================
     const CRM_STAGES = [
         { id: "novo", label: "1. Novos Leads", colId: "col_novo", countId: "count_novo" },
@@ -2315,7 +2503,6 @@
         const clients = loadClients();
         const stageCounts = { novo: 0, atendimento: 0, teste: 0, proposta: 0, ativo: 0, pausado: 0 };
 
-        // Limpa colunas
         CRM_STAGES.forEach(st => {
             const el = document.getElementById(st.colId);
             if (el) el.innerHTML = "";
@@ -2323,7 +2510,6 @@
 
         clients.forEach((c, index) => {
             let stage = c.stage || "novo";
-            // Compatibilidade retroativa
             if (!c.stage) {
                 if (c.status === "Ativo") stage = "ativo";
                 else if (c.status === "Teste") stage = "teste";
@@ -2338,7 +2524,6 @@
             const cleanPhone = (c.phone || '').replace(/\D/g, '');
             const waLink = cleanPhone ? `https://wa.me/${cleanPhone}` : '#';
 
-            // Tag de status de acesso
             let accessTag = '<span class="crm-tag crm-tag-access-none"><i class="fa-solid fa-user"></i> Sem Login</span>';
             let lockBtnHtml = `<button type="button" class="crm-btn-unlock" title="Liberar Acesso ERP" onclick="openCrmAccessModal(${index})"><i class="fa-solid fa-lock-open"></i> Liberar</button>`;
 
@@ -2389,7 +2574,7 @@
                 <div class="crm-card-actions">
                     <div class="crm-action-row">
                         <button type="button" class="crm-btn-chat" onclick="openCrmChatModal(${index})">
-                            <i class="fa-brands fa-whatsapp"></i> Atender (Áudio/Msg)
+                            <i class="fa-brands fa-whatsapp"></i> Atender (Zap/Áudio)
                         </button>
                         ${lockBtnHtml}
                     </div>
@@ -2398,7 +2583,6 @@
             col.appendChild(card);
         });
 
-        // Atualiza contadores
         CRM_STAGES.forEach(st => {
             const countEl = document.getElementById(st.countId);
             if (countEl) countEl.innerText = stageCounts[st.id] || 0;
@@ -2426,7 +2610,7 @@
     }
 
     // =========================================================================
-    // MODAL DE ATENDIMENTO: ESCREVER E MANDAR ÁUDIO
+    // MODAL DE ATENDIMENTO: CONEXÃO COM WHATSAPP REAL (WEB & META CLOUD API)
     // =========================================================================
     let currentChatLeadIndex = -1;
 
@@ -2441,9 +2625,10 @@
 
         switchChatSubTab("msg");
         applyMsgTemplate("boas_vindas");
-
-        // Reseta gravador
         resetAudioRecorder();
+
+        const metaStatus = document.getElementById("metaSendStatus");
+        if (metaStatus) metaStatus.style.display = "none";
 
         document.getElementById("crmChatModal").style.display = "flex";
     }
@@ -2493,29 +2678,89 @@
         textarea.value = msg;
     }
 
-    function copyCrmMsgText() {
-        const text = document.getElementById("crmMsgTextarea").value;
-        navigator.clipboard.writeText(text).then(() => {
-            alert("✓ Mensagem copiada com sucesso! Só colar no WhatsApp.");
-        });
+    function executeAfterSendStageChange() {
+        const newStage = document.getElementById("crmAfterSendStage")?.value;
+        if (newStage && newStage !== "manter" && currentChatLeadIndex >= 0) {
+            moveLeadStage(currentChatLeadIndex, newStage);
+        }
     }
 
-    function sendWhatsAppCrmMsg() {
+    // 1. Envio Nativo via WhatsApp Web / App
+    function sendViaWhatsAppWeb() {
         const clients = loadClients();
         const c = clients[currentChatLeadIndex];
         if (!c || !c.phone) {
             alert("Telefone inválido para este lead.");
             return;
         }
-        const cleanPhone = c.phone.replace(/\D/g, '');
+        let cleanPhone = c.phone.replace(/\D/g, '');
+        if (!cleanPhone.startsWith('55') && cleanPhone.length <= 11) {
+            cleanPhone = '55' + cleanPhone;
+        }
         const text = document.getElementById("crmMsgTextarea").value;
         const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
+        
+        executeAfterSendStageChange();
         window.open(url, "_blank");
     }
 
-    // =========================================================================
-    // GRAVADOR DE ÁUDIO NATIVO (HTML5 MediaRecorder)
-    // =========================================================================
+    // 2. Envio Real Automático via Meta Cloud API Oficial
+    async function sendViaMetaCloudApi() {
+        const clients = loadClients();
+        const c = clients[currentChatLeadIndex];
+        if (!c || !c.phone) {
+            alert("Telefone inválido para este lead.");
+            return;
+        }
+        const text = document.getElementById("crmMsgTextarea").value.trim();
+        if (!text) {
+            alert("Digite uma mensagem antes de disparar.");
+            return;
+        }
+
+        const btn = document.getElementById("btnSendMetaApi");
+        const statusEl = document.getElementById("metaSendStatus");
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Disparando...';
+
+        try {
+            const resp = await fetch('/api/erp-security', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'send_whatsapp_message',
+                    masterPassword: MASTER_HASH,
+                    to: c.phone,
+                    text: text
+                })
+            });
+            const data = await resp.json();
+
+            if (data.sucesso) {
+                statusEl.style.display = "block";
+                statusEl.style.color = "#34d399";
+                statusEl.innerText = "✓ Mensagem enviada com sucesso via WhatsApp Cloud API Oficial!";
+                executeAfterSendStageChange();
+            } else {
+                statusEl.style.display = "block";
+                statusEl.style.color = "#fbbf24";
+                statusEl.innerText = "⚠️ Janela da Meta expirada. Abrindo pelo WhatsApp Web...";
+                setTimeout(() => {
+                    sendViaWhatsAppWeb();
+                }, 1000);
+            }
+        } catch (err) {
+            statusEl.style.display = "block";
+            statusEl.style.color = "#fbbf24";
+            statusEl.innerText = "Abrindo pelo WhatsApp Web...";
+            sendViaWhatsAppWeb();
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Disparar via API Meta';
+        }
+    }
+
+    // Gravador de Áudio com HTML5
     let mediaRecorder = null;
     let audioChunks = [];
     let audioTimerInterval = null;
@@ -2528,7 +2773,6 @@
         const statusText = document.getElementById("crmAudioStatusText");
 
         if (mediaRecorder && mediaRecorder.state === "recording") {
-            // Parar gravação
             mediaRecorder.stop();
             clearInterval(audioTimerInterval);
             btn.classList.remove("record-pulse");
@@ -2537,7 +2781,6 @@
             statusText.innerText = "✓ Áudio Gravado com Sucesso!";
             statusText.style.color = "#34d399";
         } else {
-            // Iniciar gravação
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream);
@@ -2624,7 +2867,7 @@
     }
 
     // =========================================================================
-    // GESTÃO DE ACESSO: LIBERAR E TRAVAR ACESSO NO SUPABASE
+    // GESTÃO DE ACESSO: LIBERAR E TRAVAR NO SUPABASE
     // =========================================================================
     let activeAccessLeadIndex = -1;
     let lastGeneratedLink = "";
@@ -2677,7 +2920,7 @@
 
         const emailTarget = (c.email || "").toLowerCase().trim();
         if (!emailTarget) {
-            alert("Este lead não possui e-mail cadastrado. Abra a gestão de acesso e informe o e-mail.");
+            alert("Este cliente não possui e-mail cadastrado. Abra a gestão de acesso e informe o e-mail.");
             openCrmAccessModal(index);
             return;
         }
@@ -2708,12 +2951,10 @@
                     alert(`🔓 Acesso de ${c.name} foi LIBERADO no ERP com sucesso!`);
                 }
                 saveClientsList(clients);
-                renderCRMBoard();
             } else {
                 alert("Falha na operação: " + (data.erro || "Verifique a conexão."));
             }
         } catch (err) {
-            // Fallback local se estiver offline
             if (action === "lock") {
                 c.accessStatus = "travado";
                 c.status = "Bloqueado";
@@ -2724,7 +2965,6 @@
                 alert(`🔓 Acesso de ${c.name} liberado no painel local.`);
             }
             saveClientsList(clients);
-            renderCRMBoard();
         }
     }
 
@@ -2779,7 +3019,6 @@
             document.getElementById("crmAccGeneratedLink").innerText = lastGeneratedLink;
             document.getElementById("crmAccLinkResultBox").style.display = "block";
 
-            // Atualiza o cliente localmente
             if (c) {
                 c.email = email;
                 c.accessStatus = "liberado";
@@ -2787,7 +3026,6 @@
                 c.stage = "ativo";
                 c.plan = dias >= 365 ? "Anual Pro" : (dias <= 7 ? "Teste Grátis" : "Pro Mensal");
                 saveClientsList(clients);
-                renderCRMBoard();
             }
 
             alert("✓ Acesso gerado com sucesso no Supabase! Copie a mensagem para o WhatsApp.");
@@ -2803,9 +3041,7 @@
         });
     }
 
-    // =========================================================================
-    // SINCRONIZAÇÃO EM TEMPO REAL COM O SUPABASE
-    // =========================================================================
+    // Sincronização em segundo plano com o Supabase
     async function syncClientsWithSupabase(silent = false) {
         try {
             const resp = await fetch('/api/erp-security', {
@@ -2831,104 +3067,263 @@
                         existing.tenantId = cloudClient.tenant_id;
                         existing.accessStatus = cloudClient.bloqueadoManual ? 'travado' : (cloudClient.statusAssinatura === 'ativa' ? 'liberado' : 'travado');
                         if (cloudClient.bloqueadoManual) existing.status = 'Bloqueado';
-                    } else {
-                        // Novo cliente encontrado na nuvem
-                        clients.push({
-                            name: cloudClient.nome || cloudClient.razaoSocial || 'Cliente ERP',
-                            phone: cloudClient.telefone || '',
-                            email: cleanCloudEmail,
-                            city: '—',
-                            plan: cloudClient.plano === 'anual' ? 'Anual Pro' : 'Pro Mensal',
-                            price: cloudClient.plano === 'anual' ? 1997 : 227,
-                            status: cloudClient.bloqueadoManual ? 'Bloqueado' : 'Ativo',
-                            accessStatus: cloudClient.bloqueadoManual ? 'travado' : 'liberado',
-                            stage: 'ativo',
-                            dueDay: 10,
-                            date: new Date().toISOString().split('T')[0],
-                            tenantId: cloudClient.tenant_id,
-                            obs: 'Sincronizado automaticamente da nuvem (Supabase)'
-                        });
                     }
                 });
 
                 saveClientsList(clients);
-                if (!silent) alert(`✓ ${data.clientes.length} clientes sincronizados com a nuvem!`);
+                if (!silent) alert(`✓ Clientes sincronizados com a nuvem!`);
             }
+        } catch (e) {}
+    }
+
+    // =========================================================================
+    // GESTÃO DE DESPESAS & DRE DA OPERAÇÃO
+    // =========================================================================
+    const EXPENSES_STORAGE_KEY = "bravvi_meta_10k_expenses_v1";
+
+    const INITIAL_EXPENSES = [
+        {
+            id: "exp_1",
+            desc: "Meta Ads — Tráfego Pago WhatsApp Rota 10K",
+            category: "trafego",
+            value: 350.00,
+            dueDate: "2026-11-10",
+            status: "Paga",
+            obs: "Campanha de conversão direta WhatsApp"
+        },
+        {
+            id: "exp_2",
+            desc: "Infraestrutura Cloud & Backend (Vercel & Supabase)",
+            category: "servidor",
+            value: 130.00,
+            dueDate: "2026-11-15",
+            status: "Paga",
+            obs: "Servidor oficial de banco de dados e APIs"
+        }
+    ];
+
+    function loadExpenses() {
+        const data = localStorage.getItem(EXPENSES_STORAGE_KEY);
+        if (!data) {
+            localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(INITIAL_EXPENSES));
+            return INITIAL_EXPENSES;
+        }
+        try {
+            const list = JSON.parse(data);
+            return Array.isArray(list) ? list : INITIAL_EXPENSES;
         } catch (e) {
-            // silencioso se offline
+            return INITIAL_EXPENSES;
         }
     }
 
-    // Tabela Legada da Meta 10K
-    function renderTable() {
+    function saveExpensesList(expenses) {
+        localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(expenses));
+        renderExpensesTable();
+    }
+
+    function openExpenseModal(index = -1) {
+        const modal = document.getElementById("expenseModal");
+        const form = document.getElementById("expenseForm");
+        document.getElementById("editExpenseIndex").value = index;
+
+        if (index >= 0) {
+            const list = loadExpenses();
+            const exp = list[index];
+            document.getElementById("modalExpenseTitle").innerText = "Editar Despesa";
+            document.getElementById("expDesc").value = exp.desc || "";
+            document.getElementById("expCategory").value = exp.category || "outros";
+            document.getElementById("expValue").value = exp.value || "";
+            document.getElementById("expDueDate").value = exp.dueDate || new Date().toISOString().split('T')[0];
+            document.getElementById("expStatus").value = exp.status || "Paga";
+            document.getElementById("expObs").value = exp.obs || "";
+        } else {
+            document.getElementById("modalExpenseTitle").innerText = "Lançar Nova Despesa";
+            form.reset();
+            document.getElementById("expDueDate").value = new Date().toISOString().split('T')[0];
+            document.getElementById("expStatus").value = "Pendente";
+        }
+        modal.style.display = "flex";
+    }
+
+    function closeExpenseModal() {
+        document.getElementById("expenseModal").style.display = "none";
+    }
+
+    function saveExpense(e) {
+        e.preventDefault();
+        const list = loadExpenses();
+        const index = parseInt(document.getElementById("editExpenseIndex").value);
+
+        const newExp = {
+            id: "exp_" + Date.now(),
+            desc: document.getElementById("expDesc").value.trim(),
+            category: document.getElementById("expCategory").value,
+            value: parseFloat(document.getElementById("expValue").value) || 0,
+            dueDate: document.getElementById("expDueDate").value,
+            status: document.getElementById("expStatus").value,
+            obs: document.getElementById("expObs").value.trim()
+        };
+
+        if (index >= 0) {
+            list[index] = newExp;
+        } else {
+            list.unshift(newExp);
+        }
+
+        saveExpensesList(list);
+        closeExpenseModal();
+    }
+
+    function deleteExpense(index) {
+        if (confirm("Deseja realmente excluir este lançamento de despesa?")) {
+            const list = loadExpenses();
+            list.splice(index, 1);
+            saveExpensesList(list);
+        }
+    }
+
+    function toggleExpensePaid(index) {
+        const list = loadExpenses();
+        if (!list[index]) return;
+        list[index].status = list[index].status === "Paga" ? "Pendente" : "Paga";
+        saveExpensesList(list);
+    }
+
+    function renderExpensesTable() {
+        const expenses = loadExpenses();
         const clients = loadClients();
-        const search = document.getElementById("searchInput")?.value.toLowerCase() || "";
-        const tbody = document.getElementById("clientsTableBody");
+        const filterCat = document.getElementById("filterExpenseCategory")?.value || "todas";
+        const tbody = document.getElementById("expensesTableBody");
         if (!tbody) return;
         tbody.innerHTML = "";
 
-        let visibleCount = 0;
-        let totalVisibleSum = 0;
+        let totalReceita = 0;
+        clients.forEach(c => {
+            if (c.status === "Ativo") {
+                if (c.plan && c.plan.includes("Anual")) {
+                    totalReceita += Math.round((c.price || 0) / 12);
+                } else {
+                    totalReceita += (c.price || 0);
+                }
+            }
+        });
 
-        clients.forEach((c, index) => {
-            if (search && !c.name.toLowerCase().includes(search) && !(c.phone && c.phone.includes(search)) && !(c.city && c.city.toLowerCase().includes(search))) {
+        let totalDespesas = 0;
+        let totalPendente = 0;
+        let visibleCount = 0;
+        let visibleTotalSum = 0;
+
+        expenses.forEach((exp, index) => {
+            totalDespesas += (exp.value || 0);
+            if (exp.status === "Pendente") {
+                totalPendente += (exp.value || 0);
+            }
+
+            if (filterCat !== "todas" && exp.category !== filterCat) {
                 return;
             }
 
             visibleCount++;
-            totalVisibleSum += (parseFloat(c.price) || 0);
+            visibleTotalSum += (exp.value || 0);
+
+            let catLabel = "📦 Outros";
+            let catColor = "#94a3b8";
+            if (exp.category === "trafego") { catLabel = "📢 Tráfego Pago"; catColor = "#60a5fa"; }
+            else if (exp.category === "servidor") { catLabel = "🖥️ Servidores"; catColor = "#34d399"; }
+            else if (exp.category === "ferramentas") { catLabel = "⚡ Ferramentas & APIs"; catColor = "#fbbf24"; }
+            else if (exp.category === "administrativo") { catLabel = "📑 Administrativo"; catColor = "#c084fc"; }
+
+            const isPaga = (exp.status === "Paga");
+            const statusBadge = isPaga 
+                ? '<span class="badge-status status-ativo"><i class="fa-solid fa-check"></i> Paga</span>'
+                : '<span class="badge-status status-atrasado"><i class="fa-solid fa-clock"></i> Pendente</span>';
+
+            const toggleBtnText = isPaga ? '<i class="fa-solid fa-rotate-left"></i> Desfazer' : '<i class="fa-solid fa-check"></i> Pagar';
+            const toggleBtnStyle = isPaga ? 'color:#94a3b8;' : 'color:#34d399; font-weight:700;';
+
             const tr = document.createElement("tr");
-
-            let statusClass = "status-ativo";
-            if (c.status === "Teste") statusClass = "status-teste";
-            if (c.status === "Cancelado" || c.status === "Bloqueado") statusClass = "status-cancelado";
-
-            const cleanPhone = (c.phone || '').replace(/\D/g, '');
-            const waLink = cleanPhone ? `https://wa.me/${cleanPhone}` : '#';
-
             tr.innerHTML = `
                 <td>
-                    <div style="font-weight: 700; color: var(--text-main);">${escapeHtml(c.name)}</div>
-                    <div style="font-size: 11px; color: var(--text-muted);">${escapeHtml(c.obs || '')}</div>
+                    <div style="font-weight: 700; color: #ffffff;">${escapeHtml(exp.desc)}</div>
                 </td>
                 <td>
-                    <a href="${waLink}" target="_blank" style="color: #34d399; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
-                        <i class="fa-brands fa-whatsapp"></i> ${escapeHtml(c.phone || '—')}
-                    </a>
+                    <span class="crm-tag" style="background: rgba(255,255,255,0.05); color: ${catColor}; border: 1px solid ${catColor}44;">
+                        ${catLabel}
+                    </span>
                 </td>
-                <td style="color: var(--text-muted); font-size: 12px;">${escapeHtml(c.city || '—')}</td>
-                <td><span class="plan-tag">${escapeHtml(c.plan || 'Plano')}</span></td>
-                <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #34d399;">R$ ${(c.price || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                <td><span class="badge-status ${statusClass}">${escapeHtml(c.status || 'Ativo')}</span></td>
-                <td style="color: var(--text-muted); font-size: 12px;">${c.date ? c.date.split('-').reverse().join('/') : '—'}</td>
+                <td style="color: var(--text-muted); font-size: 12.5px;">
+                    ${exp.dueDate ? exp.dueDate.split('-').reverse().join('/') : '—'}
+                </td>
+                <td style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 800; color: #f87171;">
+                    - R$ ${(exp.value || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                </td>
+                <td>${statusBadge}</td>
+                <td style="color: var(--text-muted); font-size: 11.5px;">
+                    ${escapeHtml(exp.obs || '—')}
+                </td>
                 <td>
                     <div class="actions-cell">
-                        <button class="btn-icon" title="Editar" onclick="openModal(${index})"><i class="fa-solid fa-pen-to-square"></i></button>
-                        <button class="btn-icon" title="Atender no Zap / Mandar Áudio" onclick="openCrmChatModal(${index})"><i class="fa-brands fa-whatsapp" style="color: #10b981;"></i></button>
-                        <button class="btn-icon delete" title="Excluir" onclick="deleteClient(${index})"><i class="fa-solid fa-trash"></i></button>
+                        <button class="btn-icon check" style="${toggleBtnStyle}" title="Alternar Pago/Pendente" onclick="toggleExpensePaid(${index})">
+                            ${toggleBtnText}
+                        </button>
+                        <button class="btn-icon" title="Editar" onclick="openExpenseModal(${index})">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button class="btn-icon delete" title="Excluir" onclick="deleteExpense(${index})">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             `;
             tbody.appendChild(tr);
         });
 
-        if (document.getElementById("totalRowCount")) {
-            document.getElementById("totalRowCount").innerText = visibleCount;
+        const lucroLiquido = totalReceita - totalDespesas;
+        const margemPct = totalReceita > 0 ? ((lucroLiquido / totalReceita) * 100).toFixed(1) : 0;
+
+        if (document.getElementById("kpiExpReceita")) {
+            document.getElementById("kpiExpReceita").innerText = `R$ ${totalReceita.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        }
+        if (document.getElementById("kpiExpTotal")) {
+            document.getElementById("kpiExpTotal").innerText = `R$ ${totalDespesas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById("kpiExpTotalSub").innerText = `${expenses.length} despesa(s) cadastradas`;
+        }
+        if (document.getElementById("kpiExpLucro")) {
+            const lucroEl = document.getElementById("kpiExpLucro");
+            lucroEl.innerText = `R$ ${lucroLiquido.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            lucroEl.style.color = lucroLiquido >= 0 ? "#34d399" : "#f87171";
+            document.getElementById("kpiExpMargem").innerText = `Margem Líquida: ${margemPct}%`;
+        }
+        if (document.getElementById("kpiExpPendente")) {
+            document.getElementById("kpiExpPendente").innerText = `R$ ${totalPendente.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
         }
 
-        const formattedSum = "R$ " + totalVisibleSum.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-        if (document.getElementById("toolbarTotalValueSum")) {
-            document.getElementById("toolbarTotalValueSum").innerText = formattedSum;
+        const formattedExpSum = "R$ " + visibleTotalSum.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        if (document.getElementById("toolbarExpenseTotalSum")) {
+            document.getElementById("toolbarExpenseTotalSum").innerText = formattedExpSum;
         }
-        if (document.getElementById("footTableTotalValue")) {
-            document.getElementById("footTableTotalValue").innerText = formattedSum;
+        if (document.getElementById("footExpenseTotalValue")) {
+            document.getElementById("footExpenseTotalValue").innerText = "- " + formattedExpSum;
         }
-        if (document.getElementById("footTableTotalSummary")) {
-            document.getElementById("footTableTotalSummary").innerText = `${visibleCount} cliente(s) na listagem`;
+        if (document.getElementById("footExpenseCountSummary")) {
+            document.getElementById("footExpenseCountSummary").innerText = `${visibleCount} despesa(s) listadas`;
+        }
+
+        const badgeExp = document.getElementById("tabBadgeDespesas");
+        if (badgeExp) {
+            const pendentesCount = expenses.filter(x => x.status === "Pendente").length;
+            if (pendentesCount > 0) {
+                badgeExp.style.display = "inline";
+                badgeExp.innerText = pendentesCount;
+            } else {
+                badgeExp.style.display = "none";
+            }
         }
     }
 
-    // Render Billing & Collections Tab
+    // =========================================================================
+    // COBRANÇAS & VENCIMENTOS
+    // =========================================================================
     function renderBillingTable() {
         const clients = loadClients();
         const tbody = document.getElementById("billingTableBody");
@@ -3052,256 +3447,6 @@
         saveClientsList(clients);
         renderBillingTable();
         alert(`Pagamento de ${c.name} registrado com sucesso para este mês!`);
-    }
-
-    
-    // =========================================================================
-    // GESTÃO DE DESPESAS & DRE DA OPERAÇÃO DO SAAS
-    // =========================================================================
-    const EXPENSES_STORAGE_KEY = "bravvi_meta_10k_expenses_v1";
-
-    const INITIAL_EXPENSES = [
-        {
-            id: "exp_1",
-            desc: "Meta Ads — Tráfego Pago WhatsApp Rota 10K",
-            category: "trafego",
-            value: 350.00,
-            dueDate: "2026-11-10",
-            status: "Paga",
-            obs: "Campanha de conversão direta WhatsApp"
-        },
-        {
-            id: "exp_2",
-            desc: "Infraestrutura Cloud & Backend (Vercel & Supabase)",
-            category: "servidor",
-            value: 130.00,
-            dueDate: "2026-11-15",
-            status: "Paga",
-            obs: "Servidor oficial de banco de dados e APIs"
-        }
-    ];
-
-    function loadExpenses() {
-        const data = localStorage.getItem(EXPENSES_STORAGE_KEY);
-        if (!data) {
-            localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(INITIAL_EXPENSES));
-            return INITIAL_EXPENSES;
-        }
-        try {
-            const list = JSON.parse(data);
-            return Array.isArray(list) ? list : INITIAL_EXPENSES;
-        } catch (e) {
-            return INITIAL_EXPENSES;
-        }
-    }
-
-    function saveExpensesList(expenses) {
-        localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(expenses));
-        renderExpensesTable();
-    }
-
-    function openExpenseModal(index = -1) {
-        const modal = document.getElementById("expenseModal");
-        const form = document.getElementById("expenseForm");
-        document.getElementById("editExpenseIndex").value = index;
-
-        if (index >= 0) {
-            const list = loadExpenses();
-            const exp = list[index];
-            document.getElementById("modalExpenseTitle").innerText = "Editar Despesa";
-            document.getElementById("expDesc").value = exp.desc || "";
-            document.getElementById("expCategory").value = exp.category || "outros";
-            document.getElementById("expValue").value = exp.value || "";
-            document.getElementById("expDueDate").value = exp.dueDate || new Date().toISOString().split('T')[0];
-            document.getElementById("expStatus").value = exp.status || "Paga";
-            document.getElementById("expObs").value = exp.obs || "";
-        } else {
-            document.getElementById("modalExpenseTitle").innerText = "Lançar Nova Despesa";
-            form.reset();
-            document.getElementById("expDueDate").value = new Date().toISOString().split('T')[0];
-            document.getElementById("expStatus").value = "Pendente";
-        }
-        modal.style.display = "flex";
-    }
-
-    function closeExpenseModal() {
-        document.getElementById("expenseModal").style.display = "none";
-    }
-
-    function saveExpense(e) {
-        e.preventDefault();
-        const list = loadExpenses();
-        const index = parseInt(document.getElementById("editExpenseIndex").value);
-
-        const newExp = {
-            id: "exp_" + Date.now(),
-            desc: document.getElementById("expDesc").value.trim(),
-            category: document.getElementById("expCategory").value,
-            value: parseFloat(document.getElementById("expValue").value) || 0,
-            dueDate: document.getElementById("expDueDate").value,
-            status: document.getElementById("expStatus").value,
-            obs: document.getElementById("expObs").value.trim()
-        };
-
-        if (index >= 0) {
-            list[index] = newExp;
-        } else {
-            list.unshift(newExp);
-        }
-
-        saveExpensesList(list);
-        closeExpenseModal();
-    }
-
-    function deleteExpense(index) {
-        if (confirm("Deseja realmente excluir este lançamento de despesa?")) {
-            const list = loadExpenses();
-            list.splice(index, 1);
-            saveExpensesList(list);
-        }
-    }
-
-    function toggleExpensePaid(index) {
-        const list = loadExpenses();
-        if (!list[index]) return;
-        list[index].status = list[index].status === "Paga" ? "Pendente" : "Paga";
-        saveExpensesList(list);
-    }
-
-    function renderExpensesTable() {
-        const expenses = loadExpenses();
-        const clients = loadClients();
-        const filterCat = document.getElementById("filterExpenseCategory")?.value || "todas";
-        const tbody = document.getElementById("expensesTableBody");
-        if (!tbody) return;
-        tbody.innerHTML = "";
-
-        // Calcula total de receitas ativas
-        let totalReceita = 0;
-        clients.forEach(c => {
-            if (c.status === "Ativo") {
-                if (c.plan && c.plan.includes("Anual")) {
-                    totalReceita += Math.round((c.price || 0) / 12);
-                } else {
-                    totalReceita += (c.price || 0);
-                }
-            }
-        });
-
-        let totalDespesas = 0;
-        let totalPendente = 0;
-        let visibleCount = 0;
-        let visibleTotalSum = 0;
-
-        expenses.forEach((exp, index) => {
-            totalDespesas += (exp.value || 0);
-            if (exp.status === "Pendente") {
-                totalPendente += (exp.value || 0);
-            }
-
-            if (filterCat !== "todas" && exp.category !== filterCat) {
-                return;
-            }
-
-            visibleCount++;
-            visibleTotalSum += (exp.value || 0);
-
-            let catLabel = "📦 Outros";
-            let catColor = "#94a3b8";
-            if (exp.category === "trafego") { catLabel = "📢 Tráfego Pago"; catColor = "#60a5fa"; }
-            else if (exp.category === "servidor") { catLabel = "🖥️ Servidores"; catColor = "#34d399"; }
-            else if (exp.category === "ferramentas") { catLabel = "⚡ Ferramentas & APIs"; catColor = "#fbbf24"; }
-            else if (exp.category === "administrativo") { catLabel = "📑 Administrativo"; catColor = "#c084fc"; }
-
-            const isPaga = (exp.status === "Paga");
-            const statusBadge = isPaga 
-                ? '<span class="badge-status status-ativo"><i class="fa-solid fa-check"></i> Paga</span>'
-                : '<span class="badge-status status-atrasado"><i class="fa-solid fa-clock"></i> Pendente</span>';
-
-            const toggleBtnText = isPaga ? '<i class="fa-solid fa-rotate-left"></i> Desfazer' : '<i class="fa-solid fa-check"></i> Pagar';
-            const toggleBtnStyle = isPaga ? 'color:#94a3b8;' : 'color:#34d399; font-weight:700;';
-
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>
-                    <div style="font-weight: 700; color: #ffffff;">${escapeHtml(exp.desc)}</div>
-                </td>
-                <td>
-                    <span class="crm-tag" style="background: rgba(255,255,255,0.05); color: ${catColor}; border: 1px solid ${catColor}44;">
-                        ${catLabel}
-                    </span>
-                </td>
-                <td style="color: var(--text-muted); font-size: 12.5px;">
-                    ${exp.dueDate ? exp.dueDate.split('-').reverse().join('/') : '—'}
-                </td>
-                <td style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 800; color: #f87171;">
-                    - R$ ${(exp.value || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
-                </td>
-                <td>${statusBadge}</td>
-                <td style="color: var(--text-muted); font-size: 11.5px;">
-                    ${escapeHtml(exp.obs || '—')}
-                </td>
-                <td>
-                    <div class="actions-cell">
-                        <button class="btn-icon check" style="${toggleBtnStyle}" title="Alternar Pago/Pendente" onclick="toggleExpensePaid(${index})">
-                            ${toggleBtnText}
-                        </button>
-                        <button class="btn-icon" title="Editar" onclick="openExpenseModal(${index})">
-                            <i class="fa-solid fa-pen"></i>
-                        </button>
-                        <button class="btn-icon delete" title="Excluir" onclick="deleteExpense(${index})">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-        // Atualiza KPIs da Aba de Despesas
-        const lucroLiquido = totalReceita - totalDespesas;
-        const margemPct = totalReceita > 0 ? ((lucroLiquido / totalReceita) * 100).toFixed(1) : 0;
-
-        if (document.getElementById("kpiExpReceita")) {
-            document.getElementById("kpiExpReceita").innerText = `R$ ${totalReceita.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-        }
-        if (document.getElementById("kpiExpTotal")) {
-            document.getElementById("kpiExpTotal").innerText = `R$ ${totalDespesas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById("kpiExpTotalSub").innerText = `${expenses.length} despesa(s) cadastradas`;
-        }
-        if (document.getElementById("kpiExpLucro")) {
-            const lucroEl = document.getElementById("kpiExpLucro");
-            lucroEl.innerText = `R$ ${lucroLiquido.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            lucroEl.style.color = lucroLiquido >= 0 ? "#34d399" : "#f87171";
-            document.getElementById("kpiExpMargem").innerText = `Margem Líquida: ${margemPct}%`;
-        }
-        if (document.getElementById("kpiExpPendente")) {
-            document.getElementById("kpiExpPendente").innerText = `R$ ${totalPendente.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-        }
-
-        // Atualiza Totalizadores da Tabela de Despesas
-        const formattedExpSum = "R$ " + visibleTotalSum.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-        if (document.getElementById("toolbarExpenseTotalSum")) {
-            document.getElementById("toolbarExpenseTotalSum").innerText = formattedExpSum;
-        }
-        if (document.getElementById("footExpenseTotalValue")) {
-            document.getElementById("footExpenseTotalValue").innerText = "- " + formattedExpSum;
-        }
-        if (document.getElementById("footExpenseCountSummary")) {
-            document.getElementById("footExpenseCountSummary").innerText = `${visibleCount} despesa(s) listadas`;
-        }
-
-        // Badge de alerta na aba
-        const badgeExp = document.getElementById("tabBadgeDespesas");
-        if (badgeExp) {
-            const pendentesCount = expenses.filter(x => x.status === "Pendente").length;
-            if (pendentesCount > 0) {
-                badgeExp.style.display = "inline";
-                badgeExp.innerText = pendentesCount;
-            } else {
-                badgeExp.style.display = "none";
-            }
-        }
     }
 
     function exportToCSV() {

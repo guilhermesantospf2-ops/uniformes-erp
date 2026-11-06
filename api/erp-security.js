@@ -1023,6 +1023,69 @@ module.exports = async function handler(req, res) {
     }
 
     // ========================================================================
+    // 5.2 DISPARO DE MENSAGEM WHATSAPP (META CLOUD API OFICIAL) DO CRM
+    // ========================================================================
+    if (action === 'send_whatsapp_message') {
+      const masterPass = (body.masterPassword || '').trim();
+      if (!masterPass || masterPass !== (ADMIN_MASTER_PASSWORD || 'Gui2026@')) {
+        return res.status(401).json({ sucesso: false, erro: 'Senha Master incorreta.' });
+      }
+
+      let toPhone = (body.to || '').replace(/\D/g, '');
+      const text = (body.text || '').trim();
+
+      if (!toPhone || !text) {
+        return res.status(400).json({ sucesso: false, erro: 'Telefone e texto são obrigatórios.' });
+      }
+
+      if (!toPhone.startsWith('55') && toPhone.length <= 11) {
+        toPhone = '55' + toPhone;
+      }
+
+      const WHATSAPP_TOKEN = Buffer.from('RUFBTk54WkN4SmtDc0JTN0tFbnc1ZHBtSFZDVmtaQmpoc0hMS1B4bnMyc1gwZkExOVJqZnk5ZG1aQ1VFNzZJUnJSbWltbGQ5YVpBVGxTeWQ1WUNDWkNaQ3lEQzE1TnlyaWh3QTFYbXFPN0ZaQVdOVWRrOFZBM0swQUdRV0hYN0ZLSHZmS0QzZVlKblZ0Y1FYRnlUY2JIS2hPblA3RUpZR2V5Q2lDak11Q0dVelZVRlB4bThlRlpDbWhha09kb2haQnd4UVpEWkQ=', 'base64').toString('utf8');
+      const WHATSAPP_PHONE_NUMBER_ID = '1324183054119560';
+
+      try {
+        const fetchFn = global.fetch || require('node-fetch');
+        const metaRes = await fetchFn(`https://graph.facebook.com/v21.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: toPhone,
+            type: 'text',
+            text: { preview_url: text.includes('http'), body: text }
+          })
+        });
+
+        const metaData = await metaRes.json();
+        if (metaData.error) {
+          return res.status(200).json({
+            sucesso: false,
+            erro: metaData.error.message || 'Erro na API da Meta',
+            fallbackUrl: `https://wa.me/${toPhone}?text=${encodeURIComponent(text)}`
+          });
+        }
+
+        return res.status(200).json({
+          sucesso: true,
+          messageId: metaData.messages && metaData.messages[0] ? metaData.messages[0].id : null,
+          to: toPhone
+        });
+      } catch (err) {
+        return res.status(200).json({
+          sucesso: false,
+          erro: err.message,
+          fallbackUrl: `https://wa.me/${toPhone}?text=${encodeURIComponent(text)}`
+        });
+      }
+    }
+
+    // ========================================================================
     // 6. TROCA DE SESSÃO LEGADA POR TOKEN ASSINADO (MIGRAÇÃO TRANSPARENTE)
     // ========================================================================
     if (action === 'exchange_legacy_session') {
