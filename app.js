@@ -23376,7 +23376,7 @@
         <!-- 11. RODAPÉ DA FOLHA FISCAL -->
         <div class="danfe-rodape-fiscal">
           <span>Impresso em ${dataEmissaoData} às ${dataEmissaoHora} - Sistema Tecnológico: Bravvi ERP Pro - https://bravvierp.com.br</span>
-          <span>Powered by SEFAZ / TecnoSpeed</span>
+          <span>Emissor Oficial SEFAZ</span>
         </div>
       </div>
     `;
@@ -23829,7 +23829,7 @@
               <span style="font-size: 20px;">✏️</span>
               <div>
                 <div class="modal-title" style="color: #0369a1;">Carta de Correção Eletrônica (CC-e)</div>
-                <span style="font-size: 11px; color: var(--text-gray-500);">NF-e #${nfe.numero} &bull; Transmissão de Evento Oficial SEFAZ via TecnoSpeed</span>
+                <span style="font-size: 11px; color: var(--text-gray-500);">NF-e #${nfe.numero} &bull; Transmissão de Evento Oficial SEFAZ</span>
               </div>
             </div>
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
@@ -24050,10 +24050,10 @@
           <div class="modal-header" style="background: #0f172a; color: #ffffff; padding: 14px 20px;">
             <div>
               <div class="modal-title" style="color: #ffffff; display: flex; align-items: center; gap: 8px;">
-                <span>⚙️</span> Configurações Fiscais & Certificado Digital A1 (TecnoSpeed)
+                <span>⚙️</span> Configurações Fiscais & Certificado Digital A1
               </div>
               <span style="font-size: 11px; color: #94a3b8;">
-                Emissor Oficial NF-e Modelo 55 da Confecção • Integração TecnoSpeed PlugNotas Multi-Empresa
+                Emissor Oficial NF-e Modelo 55 da Confecção • Emissor Oficial NF-e Modelo 55
               </span>
             </div>
             <button class="modal-close" onclick="window.ERP.fecharModal()" style="color: #ffffff;">&times;</button>
@@ -24290,9 +24290,9 @@
       btnPing.disabled = true;
       btnPing.innerHTML = `
         <svg class="icon-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
-        Testando NFE.io...
+        Testando Bravvi Fiscal...
       `;
-      resPing.innerHTML = '<span style="color: #0284c7;">Conectando à API NFE.io Cloud e verificando status da SEFAZ...</span>';
+      resPing.innerHTML = '<span style="color: #0284c7;">Conectando à API Bravvi Fiscal Cloud e verificando status da SEFAZ...</span>';
 
       const tokenInformado = modalEl.querySelector('#cfgFiscalToken').value.trim();
       const amb = modalEl.querySelector('#cfgFiscalAmbiente').value;
@@ -24305,7 +24305,7 @@
         if (resultado.sucesso) {
           resPing.innerHTML = `
             <div style="color: #15803d; font-weight: 800; margin-bottom: 2px;">
-              🟢 NFE.io Cloud Fiscal Online & Conectada!
+              🟢 Bravvi Fiscal Cloud Fiscal Online & Conectada!
             </div>
             <div style="font-size: 11px; color: #166534;">
               &bull; <strong>Ambiente:</strong> ${amb.toUpperCase()}<br>
@@ -24316,11 +24316,11 @@
         } else {
           resPing.innerHTML = `
             <div style="color: #0369a1; font-weight: 800; margin-bottom: 2px;">
-              🟡 Motor Fiscal NFE.io (Modo Teste / Sandbox Ativo)
+              🟡 Motor Fiscal Bravvi Fiscal (Modo Teste / Sandbox Ativo)
             </div>
             <div style="font-size: 11px; color: #334155;">
               &bull; Emissão de NF-e, DANFE A4, XML 4.00 e CC-e 100% funcionais no ERP.<br>
-              &bull; Para transmissão real com autorização oficial da Receita Estadual, conecte as credenciais NFE.io.
+              &bull; Para transmissão real com autorização oficial da Receita Estadual, conecte as credenciais Bravvi Fiscal.
             </div>
           `;
         }
@@ -24873,7 +24873,7 @@
       btnTransmitir.disabled = true;
       btnTransmitir.innerHTML = `
         <svg class="icon-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
-        Transmitindo NFE.io & SEFAZ Produção...
+        Transmitindo para a SEFAZ...
       `;
 
       try {
@@ -24950,7 +24950,7 @@
 
         novaNfe.xmlGerado = gerarXmlNfePadrao400(novaNfe, emp);
 
-        // Disparo e Autorização Oficial via Motor Fiscal NFE.io
+        // Disparo e Autorização Oficial via Motor Fiscal Bravvi Fiscal
         if (window.TecnoSpeedEngine) {
           const resTS = await window.TecnoSpeedEngine.emitirNfeTecnoSpeed(novaNfe, emp, cfg);
           if (resTS && !resTS.sucesso && !resTS.simulado) {
@@ -24959,7 +24959,7 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
               Emitir & Transmitir NF-e (SEFAZ)
             `;
-            return alert('Erro retornado pela SEFAZ / NFE.io:\n\n' + (resTS.erro || resTS.mensagem));
+            return alert('Erro retornado pela SEFAZ:\n\n' + (resTS.erro || resTS.mensagem));
           }
           if (resTS) {
             if (resTS.protocolo) novaNfe.protocolo = resTS.protocolo;
@@ -24982,7 +24982,7 @@
 
         salvarEstado(true);
         fecharModal(modalEl);
-        mostrarToast(`✓ NF-e #${novaNfe.numero} autorizada pela SEFAZ via NFE.io!`, 'green');
+        mostrarToast(`✓ NF-e #${novaNfe.numero} autorizada pela SEFAZ pela SEFAZ!`, 'green');
 
         // Abre imediatamente o DANFE Oficial na tela
         abrirVisualizadorDanfe(novaNfe.id);
@@ -25065,7 +25065,7 @@
     const emp = (typeof obterEmpresaAtiva === 'function') ? obterEmpresaAtiva() : (db.empresa || {});
     const cfg = obterConfigFiscal();
 
-    mostrarToast(`📡 Transmitindo NF-e #${nfe.numero} para o NFE.io (SEFAZ Produção)... `, 'blue');
+    mostrarToast(`📡 Transmitindo NF-e #${nfe.numero} para a SEFAZ (SEFAZ Produção)... `, 'blue');
 
     if (window.TecnoSpeedEngine) {
       try {
@@ -25078,13 +25078,13 @@
           if (res.xmlUrl) nfe.xmlUrl = res.xmlUrl;
           nfe.statusSefaz = 'autorizada';
           salvarEstado(true);
-          mostrarToast(`✓ NF-e #${nfe.numero} autorizada e registrada com sucesso no NFE.io!`, 'green');
+          mostrarToast(`✓ NF-e #${nfe.numero} autorizada e registrada com sucesso na SEFAZ!`, 'green');
           if (abaAtiva === 'nfe') renderizarNotasFiscais();
         } else {
-          alert('Erro ao transmitir para NFE.io:\n\n' + (res?.erro || res?.mensagem || 'Verifique o status da empresa no painel NFE.io.'));
+          alert('Erro ao transmitir para a SEFAZ:\n\n' + (res?.erro || res?.mensagem || 'Verifique o status da empresa no painel fiscal.'));
         }
       } catch (err) {
-        alert('Erro de conexão ao enviar para NFE.io: ' + err.message);
+        alert('Erro de conexão ao enviar para a SEFAZ: ' + err.message);
       }
     }
   }
@@ -25222,12 +25222,10 @@
                   <td>
                     <div style="display: flex; gap: 4px; justify-content: center; align-items: center;">
                       ${!nf.nfeioId ? `
-                        <button class="btn btn-primary btn-sm btn-sincronizar-nfeio" data-id="${nf.id}" title="Transmitir esta NF-e pendente para o NFE.io Oficial" style="background: #0284c7; border-color: #0284c7; font-weight: 700; font-size: 11px; padding: 4px 7px;">
-                          📡 Enviar NFE.io
+                        <button class="btn btn-primary btn-sm btn-sincronizar-nfeio" data-id="${nf.id}" title="Transmitir nota para a SEFAZ" style="background: #10b981; border-color: #10b981; font-weight: 700; font-size: 11px; padding: 4px 8px;">
+                          ⚡ Transmitir SEFAZ
                         </button>
-                      ` : `
-                        <span class="status-pill status-green" style="font-size: 9px; font-weight: 800;" title="Sincronizada no NFE.io ID: ${nf.nfeioId}">✓ NFE.io</span>
-                      `}
+                      ` : ''}
                       <button class="btn btn-secondary btn-sm btn-ver-danfe" data-id="${nf.id}" title="Visualizar e Imprimir DANFE Oficial A4">
                         📄 DANFE
                       </button>
@@ -27237,7 +27235,7 @@
             <span>🏛️</span> Emissor Fiscal NF-e Modelo 55 & Certificado Digital A1
           </div>
           <span class="status-pill status-green" style="font-size: 10px; font-weight: 800;">
-            TECNOSPEED PLUGNOTAS
+            EMISSOR FISCAL SEFAZ
           </span>
         </div>
         <div class="card-body" style="background: #ffffff;">

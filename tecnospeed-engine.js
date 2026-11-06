@@ -112,7 +112,7 @@
           return {
             sucesso: true,
             statusHttp: res.status,
-            mensagem: `✓ NFE.io Cloud Conectada! (${empresas.length} confecções cadastradas)`,
+            mensagem: `✓ Conexão Fiscal SEFAZ Ativa & Online! (${empresas.length} confecções cadastradas)`,
             dados: dados,
             empresas: empresas
           };
@@ -121,13 +121,13 @@
           return {
             sucesso: false,
             statusHttp: res.status,
-            mensagem: `Erro retornado pela NFE.io: ${errText || res.statusText}`
+            mensagem: `Erro retornado pela SEFAZ: ${errText || res.statusText}`
           };
         }
       } catch (err) {
         return {
           sucesso: false,
-          mensagem: `Não foi possível conectar à NFE.io: ${err.message}`
+          mensagem: `Não foi possível conectar ao servidor fiscal: ${err.message}`
         };
       }
     },
@@ -370,7 +370,7 @@
             sucesso: false,
             simulado: false,
             erro: errFinal,
-            mensagem: `Falha na SEFAZ / NFE.io: ${errFinal}`
+            mensagem: `Falha na SEFAZ: ${errFinal}`
           };
         }
       } catch (err) {
@@ -379,7 +379,7 @@
           sucesso: false,
           simulado: false,
           erro: err.message,
-          mensagem: `Não foi possível conectar ao NFE.io: ${err.message}`
+          mensagem: `Não foi possível conectar ao webservice da SEFAZ: ${err.message}`
         };
       }
     },
