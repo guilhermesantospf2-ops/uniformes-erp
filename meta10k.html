@@ -1416,8 +1416,12 @@
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="text" id="searchInput" placeholder="Buscar confecção ou telefone..." onkeyup="renderTable()">
                 </div>
-                <div style="font-size: 13px; color: var(--text-muted);">
-                    Total na lista: <strong id="totalRowCount" style="color: var(--text-main);">2</strong>
+                <div style="font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                    <div>Total na lista: <strong id="totalRowCount" style="color: var(--text-main);">0</strong></div>
+                    <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); padding: 5px 14px; border-radius: 99px; display: inline-flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 12px; color: #cbd5e1; text-transform: uppercase; font-weight: 700;">Soma dos Valores:</span>
+                        <strong id="toolbarTotalValueSum" style="color: #34d399; font-family: 'JetBrains Mono', monospace; font-size: 14.5px;">R$ 0,00</strong>
+                    </div>
                 </div>
             </div>
 
@@ -1437,6 +1441,19 @@
                 <tbody id="clientsTableBody">
                     <!-- Dynamically Rendered -->
                 </tbody>
+                <tfoot id="clientsTableFoot" style="background: #0a1122; font-weight: 700; border-top: 2px solid var(--border-light);">
+                    <tr>
+                        <td colspan="4" style="text-align: right; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; color: var(--text-muted); padding: 14px 18px;">
+                            SOMA TOTAL DAS ASSINATURAS:
+                        </td>
+                        <td style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 900; color: #34d399; padding: 14px 18px;" id="footTableTotalValue">
+                            R$ 0,00
+                        </td>
+                        <td colspan="3" style="color: var(--text-muted); font-size: 12px; padding: 14px 18px;" id="footTableTotalSummary">
+                            0 clientes
+                        </td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
 
@@ -1449,6 +1466,108 @@
             <button class="btn btn-secondary" onclick="copyPitchScript()">
                 <i class="fa-regular fa-copy"></i> Copiar Script
             </button>
+        </div>
+    </div>
+
+    
+    <!-- TAB 3: Lançamento de Despesas & DRE da Operação -->
+    <div id="tabDespesas" class="tab-content">
+        <!-- DRE Resumo Financeiro da Operação -->
+        <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 24px;">
+            <div class="kpi-card" style="border-left: 4px solid #10b981;">
+                <div class="kpi-head">
+                    <span class="kpi-title">Receita de Mensalidades</span>
+                    <i class="fa-solid fa-arrow-trend-up" style="color: #10b981;"></i>
+                </div>
+                <div class="kpi-value" id="kpiExpReceita" style="color: #34d399;">R$ 0,00</div>
+                <div class="kpi-sub">Entradas brutas do SaaS</div>
+            </div>
+
+            <div class="kpi-card" style="border-left: 4px solid #ef4444;">
+                <div class="kpi-head">
+                    <span class="kpi-title">Total de Despesas</span>
+                    <i class="fa-solid fa-arrow-trend-down" style="color: #ef4444;"></i>
+                </div>
+                <div class="kpi-value" id="kpiExpTotal" style="color: #f87171;">R$ 0,00</div>
+                <div class="kpi-sub" id="kpiExpTotalSub">0 despesas lançadas</div>
+            </div>
+
+            <div class="kpi-card" style="border-left: 4px solid #3b82f6;">
+                <div class="kpi-head">
+                    <span class="kpi-title">Lucro Líquido Real</span>
+                    <i class="fa-solid fa-scale-balanced" style="color: #3b82f6;"></i>
+                </div>
+                <div class="kpi-value" id="kpiExpLucro" style="color: #60a5fa;">R$ 0,00</div>
+                <div class="kpi-sub" id="kpiExpMargem">Margem: 100%</div>
+            </div>
+
+            <div class="kpi-card" style="border-left: 4px solid #f59e0b;">
+                <div class="kpi-head">
+                    <span class="kpi-title">Despesas Pendentes</span>
+                    <i class="fa-solid fa-clock" style="color: #f59e0b;"></i>
+                </div>
+                <div class="kpi-value" id="kpiExpPendente" style="color: #fbbf24;">R$ 0,00</div>
+                <div class="kpi-sub">A pagar neste mês</div>
+            </div>
+        </div>
+
+        <!-- Tabela de Lançamento de Despesas -->
+        <div class="table-container">
+            <div class="table-toolbar">
+                <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                    <div style="font-weight: 700; font-size: 15px; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-receipt" style="color: #f87171;"></i> Controle de Gastos & Despesas Operacionais
+                    </div>
+                    <select id="filterExpenseCategory" class="form-control" style="width: auto; padding: 6px 12px; font-size: 12px;" onchange="renderExpensesTable()">
+                        <option value="todas">Todas as Categorias</option>
+                        <option value="trafego">📢 Tráfego Pago / Anúncios</option>
+                        <option value="servidor">🖥️ Servidores & Banco</option>
+                        <option value="ferramentas">⚡ Ferramentas & APIs</option>
+                        <option value="administrativo">📑 Administrativo & Taxas</option>
+                        <option value="outros">📦 Outras Despesas</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); padding: 5px 12px; border-radius: 99px;">
+                        <span style="font-size: 12px; color: #cbd5e1; text-transform: uppercase; font-weight: 700;">Total Despesas:</span>
+                        <strong id="toolbarExpenseTotalSum" style="color: #f87171; font-family: 'JetBrains Mono', monospace; font-size: 14px;">R$ 0,00</strong>
+                    </div>
+                    <button class="btn btn-primary" onclick="openExpenseModal()" style="background: linear-gradient(135deg, #ef4444, #b91c1c); box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);">
+                        <i class="fa-solid fa-plus"></i> Nova Despesa
+                    </button>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Descrição da Despesa</th>
+                        <th>Categoria</th>
+                        <th>Vencimento / Data</th>
+                        <th>Valor (R$)</th>
+                        <th>Status</th>
+                        <th>Observações</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="expensesTableBody">
+                    <!-- Dynamically Rendered -->
+                </tbody>
+                <tfoot style="background: #0a1122; font-weight: 700; border-top: 2px solid var(--border-light);">
+                    <tr>
+                        <td colspan="3" style="text-align: right; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; color: var(--text-muted); padding: 14px 18px;">
+                            SOMA TOTAL DAS DESPESAS:
+                        </td>
+                        <td style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 900; color: #f87171; padding: 14px 18px;" id="footExpenseTotalValue">
+                            R$ 0,00
+                        </td>
+                        <td colspan="3" style="color: var(--text-muted); font-size: 12px; padding: 14px 18px;" id="footExpenseCountSummary">
+                            0 despesas
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
         </div>
     </div>
 
@@ -1705,6 +1824,66 @@
     </div>
 </div>
 
+
+<!-- Modal: Adicionar / Editar Despesa -->
+<div class="modal-overlay" id="expenseModal">
+    <div class="modal-card" style="max-width: 500px;">
+        <div class="modal-head">
+            <h3 style="font-size: 16px; font-weight: 700; color: #ffffff;" id="modalExpenseTitle">Lançar Nova Despesa</h3>
+            <button onclick="closeExpenseModal()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px;">&times;</button>
+        </div>
+        <form id="expenseForm" onsubmit="saveExpense(event)">
+            <input type="hidden" id="editExpenseIndex" value="-1">
+
+            <div class="form-group">
+                <label>Descrição da Despesa / Fornecedor *</label>
+                <input type="text" class="form-control" id="expDesc" required placeholder="Ex: Meta Ads — Anúncios WhatsApp ou Supabase">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select class="form-control" id="expCategory">
+                        <option value="trafego">📢 Tráfego Pago & Anúncios</option>
+                        <option value="servidor">🖥️ Servidores & Banco de Dados</option>
+                        <option value="ferramentas">⚡ Ferramentas & APIs</option>
+                        <option value="administrativo">📑 Administrativo & Taxas</option>
+                        <option value="outros" selected>📦 Outras Despesas</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Valor da Despesa (R$) *</label>
+                    <input type="number" step="0.01" class="form-control" id="expValue" required placeholder="0.00">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Data de Vencimento / Pagamento *</label>
+                    <input type="date" class="form-control" id="expDueDate" required>
+                </div>
+                <div class="form-group">
+                    <label>Status do Pagamento</label>
+                    <select class="form-control" id="expStatus">
+                        <option value="Pendente">Pendente (A Pagar)</option>
+                        <option value="Paga" selected>Paga (Já Quitado)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Observações / Recorrência</label>
+                <input type="text" class="form-control" id="expObs" placeholder="Ex: Gasto mensal recorrente de tráfego">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeExpenseModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c);">Salvar Despesa</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Modal: Adicionar / Editar Cliente -->
 <div class="modal-overlay" id="clientModal">
     <div class="modal-card">
@@ -1844,12 +2023,18 @@
             if (tab) tab.classList.add("active");
             renderCRMBoard();
         } else if (tabId === "tabMeta") {
-            const btn = document.getElementById("btnTabMeta") || document.querySelectorAll(".tab-btn")[1];
+            const btn = document.getElementById("btnTabMeta");
             if (btn) btn.classList.add("active");
             document.getElementById("tabMeta").classList.add("active");
             renderTable();
+        } else if (tabId === "tabDespesas") {
+            const btn = document.getElementById("btnTabDespesas");
+            if (btn) btn.classList.add("active");
+            const tab = document.getElementById("tabDespesas");
+            if (tab) tab.classList.add("active");
+            renderExpensesTable();
         } else if (tabId === "tabCobranca") {
-            const btn = document.getElementById("btnTabCobranca") || document.querySelectorAll(".tab-btn")[2];
+            const btn = document.getElementById("btnTabCobranca");
             if (btn) btn.classList.add("active");
             document.getElementById("tabCobranca").classList.add("active");
             renderBillingTable();
@@ -2683,6 +2868,7 @@
         tbody.innerHTML = "";
 
         let visibleCount = 0;
+        let totalVisibleSum = 0;
 
         clients.forEach((c, index) => {
             if (search && !c.name.toLowerCase().includes(search) && !(c.phone && c.phone.includes(search)) && !(c.city && c.city.toLowerCase().includes(search))) {
@@ -2690,6 +2876,7 @@
             }
 
             visibleCount++;
+            totalVisibleSum += (parseFloat(c.price) || 0);
             const tr = document.createElement("tr");
 
             let statusClass = "status-ativo";
@@ -2727,6 +2914,17 @@
 
         if (document.getElementById("totalRowCount")) {
             document.getElementById("totalRowCount").innerText = visibleCount;
+        }
+
+        const formattedSum = "R$ " + totalVisibleSum.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        if (document.getElementById("toolbarTotalValueSum")) {
+            document.getElementById("toolbarTotalValueSum").innerText = formattedSum;
+        }
+        if (document.getElementById("footTableTotalValue")) {
+            document.getElementById("footTableTotalValue").innerText = formattedSum;
+        }
+        if (document.getElementById("footTableTotalSummary")) {
+            document.getElementById("footTableTotalSummary").innerText = `${visibleCount} cliente(s) na listagem`;
         }
     }
 
@@ -2854,6 +3052,256 @@
         saveClientsList(clients);
         renderBillingTable();
         alert(`Pagamento de ${c.name} registrado com sucesso para este mês!`);
+    }
+
+    
+    // =========================================================================
+    // GESTÃO DE DESPESAS & DRE DA OPERAÇÃO DO SAAS
+    // =========================================================================
+    const EXPENSES_STORAGE_KEY = "bravvi_meta_10k_expenses_v1";
+
+    const INITIAL_EXPENSES = [
+        {
+            id: "exp_1",
+            desc: "Meta Ads — Tráfego Pago WhatsApp Rota 10K",
+            category: "trafego",
+            value: 350.00,
+            dueDate: "2026-11-10",
+            status: "Paga",
+            obs: "Campanha de conversão direta WhatsApp"
+        },
+        {
+            id: "exp_2",
+            desc: "Infraestrutura Cloud & Backend (Vercel & Supabase)",
+            category: "servidor",
+            value: 130.00,
+            dueDate: "2026-11-15",
+            status: "Paga",
+            obs: "Servidor oficial de banco de dados e APIs"
+        }
+    ];
+
+    function loadExpenses() {
+        const data = localStorage.getItem(EXPENSES_STORAGE_KEY);
+        if (!data) {
+            localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(INITIAL_EXPENSES));
+            return INITIAL_EXPENSES;
+        }
+        try {
+            const list = JSON.parse(data);
+            return Array.isArray(list) ? list : INITIAL_EXPENSES;
+        } catch (e) {
+            return INITIAL_EXPENSES;
+        }
+    }
+
+    function saveExpensesList(expenses) {
+        localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(expenses));
+        renderExpensesTable();
+    }
+
+    function openExpenseModal(index = -1) {
+        const modal = document.getElementById("expenseModal");
+        const form = document.getElementById("expenseForm");
+        document.getElementById("editExpenseIndex").value = index;
+
+        if (index >= 0) {
+            const list = loadExpenses();
+            const exp = list[index];
+            document.getElementById("modalExpenseTitle").innerText = "Editar Despesa";
+            document.getElementById("expDesc").value = exp.desc || "";
+            document.getElementById("expCategory").value = exp.category || "outros";
+            document.getElementById("expValue").value = exp.value || "";
+            document.getElementById("expDueDate").value = exp.dueDate || new Date().toISOString().split('T')[0];
+            document.getElementById("expStatus").value = exp.status || "Paga";
+            document.getElementById("expObs").value = exp.obs || "";
+        } else {
+            document.getElementById("modalExpenseTitle").innerText = "Lançar Nova Despesa";
+            form.reset();
+            document.getElementById("expDueDate").value = new Date().toISOString().split('T')[0];
+            document.getElementById("expStatus").value = "Pendente";
+        }
+        modal.style.display = "flex";
+    }
+
+    function closeExpenseModal() {
+        document.getElementById("expenseModal").style.display = "none";
+    }
+
+    function saveExpense(e) {
+        e.preventDefault();
+        const list = loadExpenses();
+        const index = parseInt(document.getElementById("editExpenseIndex").value);
+
+        const newExp = {
+            id: "exp_" + Date.now(),
+            desc: document.getElementById("expDesc").value.trim(),
+            category: document.getElementById("expCategory").value,
+            value: parseFloat(document.getElementById("expValue").value) || 0,
+            dueDate: document.getElementById("expDueDate").value,
+            status: document.getElementById("expStatus").value,
+            obs: document.getElementById("expObs").value.trim()
+        };
+
+        if (index >= 0) {
+            list[index] = newExp;
+        } else {
+            list.unshift(newExp);
+        }
+
+        saveExpensesList(list);
+        closeExpenseModal();
+    }
+
+    function deleteExpense(index) {
+        if (confirm("Deseja realmente excluir este lançamento de despesa?")) {
+            const list = loadExpenses();
+            list.splice(index, 1);
+            saveExpensesList(list);
+        }
+    }
+
+    function toggleExpensePaid(index) {
+        const list = loadExpenses();
+        if (!list[index]) return;
+        list[index].status = list[index].status === "Paga" ? "Pendente" : "Paga";
+        saveExpensesList(list);
+    }
+
+    function renderExpensesTable() {
+        const expenses = loadExpenses();
+        const clients = loadClients();
+        const filterCat = document.getElementById("filterExpenseCategory")?.value || "todas";
+        const tbody = document.getElementById("expensesTableBody");
+        if (!tbody) return;
+        tbody.innerHTML = "";
+
+        // Calcula total de receitas ativas
+        let totalReceita = 0;
+        clients.forEach(c => {
+            if (c.status === "Ativo") {
+                if (c.plan && c.plan.includes("Anual")) {
+                    totalReceita += Math.round((c.price || 0) / 12);
+                } else {
+                    totalReceita += (c.price || 0);
+                }
+            }
+        });
+
+        let totalDespesas = 0;
+        let totalPendente = 0;
+        let visibleCount = 0;
+        let visibleTotalSum = 0;
+
+        expenses.forEach((exp, index) => {
+            totalDespesas += (exp.value || 0);
+            if (exp.status === "Pendente") {
+                totalPendente += (exp.value || 0);
+            }
+
+            if (filterCat !== "todas" && exp.category !== filterCat) {
+                return;
+            }
+
+            visibleCount++;
+            visibleTotalSum += (exp.value || 0);
+
+            let catLabel = "📦 Outros";
+            let catColor = "#94a3b8";
+            if (exp.category === "trafego") { catLabel = "📢 Tráfego Pago"; catColor = "#60a5fa"; }
+            else if (exp.category === "servidor") { catLabel = "🖥️ Servidores"; catColor = "#34d399"; }
+            else if (exp.category === "ferramentas") { catLabel = "⚡ Ferramentas & APIs"; catColor = "#fbbf24"; }
+            else if (exp.category === "administrativo") { catLabel = "📑 Administrativo"; catColor = "#c084fc"; }
+
+            const isPaga = (exp.status === "Paga");
+            const statusBadge = isPaga 
+                ? '<span class="badge-status status-ativo"><i class="fa-solid fa-check"></i> Paga</span>'
+                : '<span class="badge-status status-atrasado"><i class="fa-solid fa-clock"></i> Pendente</span>';
+
+            const toggleBtnText = isPaga ? '<i class="fa-solid fa-rotate-left"></i> Desfazer' : '<i class="fa-solid fa-check"></i> Pagar';
+            const toggleBtnStyle = isPaga ? 'color:#94a3b8;' : 'color:#34d399; font-weight:700;';
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>
+                    <div style="font-weight: 700; color: #ffffff;">${escapeHtml(exp.desc)}</div>
+                </td>
+                <td>
+                    <span class="crm-tag" style="background: rgba(255,255,255,0.05); color: ${catColor}; border: 1px solid ${catColor}44;">
+                        ${catLabel}
+                    </span>
+                </td>
+                <td style="color: var(--text-muted); font-size: 12.5px;">
+                    ${exp.dueDate ? exp.dueDate.split('-').reverse().join('/') : '—'}
+                </td>
+                <td style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 800; color: #f87171;">
+                    - R$ ${(exp.value || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                </td>
+                <td>${statusBadge}</td>
+                <td style="color: var(--text-muted); font-size: 11.5px;">
+                    ${escapeHtml(exp.obs || '—')}
+                </td>
+                <td>
+                    <div class="actions-cell">
+                        <button class="btn-icon check" style="${toggleBtnStyle}" title="Alternar Pago/Pendente" onclick="toggleExpensePaid(${index})">
+                            ${toggleBtnText}
+                        </button>
+                        <button class="btn-icon" title="Editar" onclick="openExpenseModal(${index})">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button class="btn-icon delete" title="Excluir" onclick="deleteExpense(${index})">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Atualiza KPIs da Aba de Despesas
+        const lucroLiquido = totalReceita - totalDespesas;
+        const margemPct = totalReceita > 0 ? ((lucroLiquido / totalReceita) * 100).toFixed(1) : 0;
+
+        if (document.getElementById("kpiExpReceita")) {
+            document.getElementById("kpiExpReceita").innerText = `R$ ${totalReceita.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        }
+        if (document.getElementById("kpiExpTotal")) {
+            document.getElementById("kpiExpTotal").innerText = `R$ ${totalDespesas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById("kpiExpTotalSub").innerText = `${expenses.length} despesa(s) cadastradas`;
+        }
+        if (document.getElementById("kpiExpLucro")) {
+            const lucroEl = document.getElementById("kpiExpLucro");
+            lucroEl.innerText = `R$ ${lucroLiquido.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            lucroEl.style.color = lucroLiquido >= 0 ? "#34d399" : "#f87171";
+            document.getElementById("kpiExpMargem").innerText = `Margem Líquida: ${margemPct}%`;
+        }
+        if (document.getElementById("kpiExpPendente")) {
+            document.getElementById("kpiExpPendente").innerText = `R$ ${totalPendente.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        }
+
+        // Atualiza Totalizadores da Tabela de Despesas
+        const formattedExpSum = "R$ " + visibleTotalSum.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        if (document.getElementById("toolbarExpenseTotalSum")) {
+            document.getElementById("toolbarExpenseTotalSum").innerText = formattedExpSum;
+        }
+        if (document.getElementById("footExpenseTotalValue")) {
+            document.getElementById("footExpenseTotalValue").innerText = "- " + formattedExpSum;
+        }
+        if (document.getElementById("footExpenseCountSummary")) {
+            document.getElementById("footExpenseCountSummary").innerText = `${visibleCount} despesa(s) listadas`;
+        }
+
+        // Badge de alerta na aba
+        const badgeExp = document.getElementById("tabBadgeDespesas");
+        if (badgeExp) {
+            const pendentesCount = expenses.filter(x => x.status === "Pendente").length;
+            if (pendentesCount > 0) {
+                badgeExp.style.display = "inline";
+                badgeExp.innerText = pendentesCount;
+            } else {
+                badgeExp.style.display = "none";
+            }
+        }
     }
 
     function exportToCSV() {
