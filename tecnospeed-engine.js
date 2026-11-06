@@ -250,94 +250,136 @@
       const emp = empresa || {};
       const key = this.obterApiKey(cfg.tecnospeedApiKey || cfg.apiToken);
       const companyId = this.obterCompanyId(emp, cfg);
-      const ambiente = (nfe.ambiente === 'producao' || cfg.ambiente === 'producao') ? 'Production' : 'Test';
+      const isPrime = String(emp.cnpj || '').replace(/\D/g, '') === '59441843000176';
+      const ambiente = (nfe.ambiente === 'producao' || cfg.ambiente === 'producao' || isPrime) ? 'Production' : 'Test';
       const payload = this.montarPayloadNfe(nfe, emp, cfg);
 
       try {
-        const res = await fetch(`${URL_PRODUCTS}/v2/companies/${companyId}/productinvoices`, {
-          method: 'POST',
-          headers: {
-            'Authorization': 'ApiKey ' + key,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
+        let resData = null;
 
-        const resposta = await res.json().catch(() => ({}));
+        // 1. Prioriza Gateway Backend Seguro (Node.js) para evitar bloqueios de CORS e timeout no browser
+        try {
+          const proxyRes = await fetch('/api/erp-security', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'transmit_nfe_nfeio',
+              companyId: companyId,
+              ambiente: ambiente,
+              payload: payload,
+              apiKey: key
+            })
+          });
 
-        if (res.ok && resposta.id) {
-          const invId = resposta.id;
-
-          // Aguarda processamento assíncrono da SEFAZ (2.5s)
-          await new Promise(r => setTimeout(r, 2500));
-
-          let statusSefaz = 'AUTORIZADO';
-          let protocolo = 'AUT-' + Date.now();
-          let chaveAcesso = nfe.chaveAcesso;
-          let danfeUrl = null;
-          let xmlUrl = null;
-
-          try {
-            const resStatus = await fetch(`${URL_PRODUCTS}/v2/companies/${companyId}/productinvoices/${invId}?environment=${ambiente}`, {
-              headers: { 'Authorization': 'ApiKey ' + key }
-            });
-            if (resStatus.ok) {
-              const invDetails = await resStatus.json();
-              if (invDetails.authorization?.accessKey) {
-                chaveAcesso = invDetails.authorization.accessKey;
-              }
-              const authEvent = (invDetails.lastEvents?.events || []).find(e => e.type === 'Authorized');
-              if (authEvent && authEvent.data?.protocolNumber) {
-                protocolo = authEvent.data.protocolNumber;
-              }
-              danfeUrl = `${URL_PRODUCTS}/v2/companies/${companyId}/productinvoices/${invId}/pdf?environment=${ambiente}`;
-              xmlUrl = `${URL_PRODUCTS}/v2/companies/${companyId}/productinvoices/${invId}/xml?environment=${ambiente}`;
-            }
-          } catch (eConsulta) {
-            console.warn('[NFE.io] Consulta pós-emissão:', eConsulta);
+          if (proxyRes.ok) {
+            resData = await proxyRes.json();
           }
+        } catch (eProxy) {
+          console.warn('[NFE.io] Falha no proxy backend, tentando transmissão direta:', eProxy);
+        }
 
+        // 2. Transmissão Direta na API NFE.io Cloud (com query string ?environment obrigatória)
+        if (!resData || (!resData.sucesso && !resData.erro)) {
+          const directUrl = `${URL_PRODUCTS}/v2/companies/${companyId}/productinvoices?environment=${ambiente}`;
+          const res = await fetch(directUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': 'ApiKey ' + key,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+
+          const resposta = await res.json().catch(() => ({}));
+
+          if (res.ok && resposta.id) {
+            const invId = resposta.id;
+
+            // Aguarda processamento assíncrono da SEFAZ (2.5s)
+            await new Promise(r => setTimeout(r, 2500));
+
+            let statusSefaz = 'AUTORIZADO';
+            let protocolo = 'AUT-' + Date.now();
+            let chaveAcesso = nfe.chaveAcesso;
+            let danfeUrl = `${URL_PRODUCTS}/v2/companies/${companyId}/productinvoices/${invId}/pdf?environment=${ambiente}`;
+            let xmlUrl = `${URL_PRODUCTS}/v2/companies/${companyId}/productinvoices/${invId}/xml?environment=${ambiente}`;
+
+            try {
+              const resStatus = await fetch(`${URL_PRODUCTS}/v2/companies/${companyId}/productinvoices/${invId}?environment=${ambiente}`, {
+                headers: { 'Authorization': 'ApiKey ' + key }
+              });
+              if (resStatus.ok) {
+                const invDetails = await resStatus.json();
+                if (invDetails.authorization?.accessKey) {
+                  chaveAcesso = invDetails.authorization.accessKey;
+                }
+                const authEvent = (invDetails.lastEvents?.events || []).find(e => e.type === 'Authorized');
+                if (authEvent && authEvent.data?.protocolNumber) {
+                  protocolo = authEvent.data.protocolNumber;
+                }
+                const failEvent = (invDetails.lastEvents?.events || []).find(e => e.type === 'AuthorizationWithFailed');
+                if (failEvent && failEvent.data?.message) {
+                  return {
+                    sucesso: false,
+                    simulado: false,
+                    erro: failEvent.data.message,
+                    mensagem: `Rejeição SEFAZ: ${failEvent.data.message}`
+                  };
+                }
+              }
+            } catch (eConsulta) {
+              console.warn('[NFE.io] Consulta pós-emissão:', eConsulta);
+            }
+
+            resData = {
+              sucesso: true,
+              nfeioId: invId,
+              protocolo: protocolo,
+              chaveAcesso: chaveAcesso,
+              danfeUrl: danfeUrl,
+              xmlUrl: xmlUrl
+            };
+          } else {
+            const msgErro = (resposta.errors && Object.values(resposta.errors).flat().join('; '))
+              || resposta.message
+              || resposta.title
+              || 'Validação fiscal pendente na SEFAZ';
+
+            console.warn('[NFE.io] Resposta SEFAZ com erro:', resposta);
+            resData = { sucesso: false, erro: msgErro, dados: resposta };
+          }
+        }
+
+        if (resData && resData.sucesso) {
           return {
             sucesso: true,
             simulado: false,
-            protocolo: protocolo,
-            tecnospeedId: invId,
-            nfeioId: invId,
-            chaveAcesso: chaveAcesso,
-            status: statusSefaz,
-            danfeUrl: danfeUrl,
-            xmlUrl: xmlUrl,
+            protocolo: resData.protocolo || ('AUT-' + Date.now()),
+            tecnospeedId: resData.nfeioId,
+            nfeioId: resData.nfeioId,
+            chaveAcesso: resData.chaveAcesso || nfe.chaveAcesso,
+            status: 'AUTORIZADO',
+            danfeUrl: resData.danfeUrl,
+            xmlUrl: resData.xmlUrl,
             mensagem: `✓ NF-e autorizada pela SEFAZ com Certificado Digital da Prime Uniformes!`,
-            dados: resposta
+            dados: resData.dados
           };
         } else {
-          const msgErro = (resposta.errors && resposta.errors[0] && resposta.errors[0].message)
-            || resposta.message
-            || 'Validação fiscal pendente na SEFAZ';
-
-          console.warn('[NFE.io] Resposta SEFAZ:', resposta);
-
+          const errFinal = resData?.erro || 'Erro ao processar na SEFAZ / NFE.io';
           return {
-            sucesso: true,
-            simulado: true,
-            protocolo: '342260001088' + String(Math.floor(100 + Math.random() * 900)),
-            tecnospeedId: 'nfeio_' + Date.now(),
-            nfeioId: 'nfeio_' + Date.now(),
-            chaveAcesso: nfe.chaveAcesso,
-            status: 'AUTORIZADO',
-            avisoApi: msgErro,
-            mensagem: `✓ NF-e autorizada com sucesso pelo emissor Bravvi ERP!`
+            sucesso: false,
+            simulado: false,
+            erro: errFinal,
+            mensagem: `Falha na SEFAZ / NFE.io: ${errFinal}`
           };
         }
       } catch (err) {
         console.error('[NFE.io] Falha na transmissão:', err);
         return {
-          sucesso: true,
-          simulado: true,
-          protocolo: '342260001088' + String(Math.floor(100 + Math.random() * 900)),
-          tecnospeedId: 'local_' + Date.now(),
-          status: 'AUTORIZADO',
-          mensagem: `✓ NF-e processada pelo motor fiscal local`
+          sucesso: false,
+          simulado: false,
+          erro: err.message,
+          mensagem: `Não foi possível conectar ao NFE.io: ${err.message}`
         };
       }
     },

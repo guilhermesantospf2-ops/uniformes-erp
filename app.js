@@ -22495,14 +22495,32 @@
     return empPadraoPrime;
   }
 
+  function obterProximoNumeroNfe() {
+    const notas = db.notasFiscais || [];
+    let maiorNota = 0;
+    notas.forEach(n => {
+      const num = parseInt(n.numero, 10);
+      if (!isNaN(num) && num > maiorNota) maiorNota = num;
+    });
+    if (!db.configFiscal) db.configFiscal = {};
+    const cfgNum = parseInt(db.configFiscal.proximoNumero, 10) || 1;
+    // O próximo número fiscal NUNCA pode ser menor ou igual a uma nota já autorizada
+    const prox = Math.max(cfgNum, maiorNota + 1);
+    db.configFiscal.proximoNumero = prox;
+    return prox;
+  }
+
   function obterConfigFiscal() {
+    const emp = (typeof obterEmpresaAtiva === 'function') ? obterEmpresaAtiva() : (db.empresa || {});
+    const isPrime = String(emp.cnpj || '').replace(/\D/g, '') === '59441843000176';
+
     if (!db.configFiscal || !db.configFiscal.nfeioCompanyId || db.configFiscal.nfeioCompanyId === 'd71ac805e1324f43a6ed2800e9a82f47') {
       db.configFiscal = Object.assign({}, db.configFiscal || {}, {
-        ambiente: 'homologacao', // 'homologacao' ou 'producao'
+        ambiente: 'producao', // SEFAZ Produção Oficial
         serie: '1',
-        proximoNumero: 104,
+        proximoNumero: 34,
         regimeTributario: 'Simples Nacional',
-        aliquotaSimplesNacional: 6.5,
+        aliquotaSimplesNacional: 4.5,
         tipoEmissao: '1',
         naturezaOperacaoPadrao: 'Venda de Produção Própria do Estabelecimento',
         cfopEstadualPadrao: '5101',
@@ -22513,7 +22531,7 @@
         tecnospeedApiKey: 'xZmurLgFPBsPRao5stS31ZlpWIinXUDmNIQMXdzbau6WgNdviSEGyv5c1sAd8JTXsGA',
         nfeioApiKey: 'xZmurLgFPBsPRao5stS31ZlpWIinXUDmNIQMXdzbau6WgNdviSEGyv5c1sAd8JTXsGA',
         nfeioCompanyId: 'b8ac27d9851944a8baa5ad0c134d08f9', // Prime Uniformes (PACIFIC WAVE)
-        tecnospeedAmbiente: 'sandbox',
+        tecnospeedAmbiente: 'producao',
         certificadoA1: {
           instalado: true,
           nomeArquivo: 'PACIFIC WAVE COMPANY LTDA_59441843000176certificado.pfx',
@@ -22526,6 +22544,14 @@
       });
       salvarEstado();
     }
+
+    if (isPrime) {
+      db.configFiscal.ambiente = 'producao';
+      db.configFiscal.tecnospeedAmbiente = 'producao';
+      if (!db.configFiscal.aliquotaSimplesNacional) db.configFiscal.aliquotaSimplesNacional = 4.5;
+    }
+
+    obterProximoNumeroNfe();
     return db.configFiscal;
   }
 
@@ -24836,7 +24862,7 @@
 
     // Transmissão Oficial para a SEFAZ
     const btnTransmitir = modalEl.querySelector('#btnTransmitirNfeSefaz');
-    btnTransmitir.addEventListener('click', () => {
+    btnTransmitir.addEventListener('click', async () => {
       const cliNome = modalEl.querySelector('#emitNfeCliNome').value.trim();
       const cliDoc = modalEl.querySelector('#emitNfeCliDoc').value.trim();
 
@@ -24847,11 +24873,11 @@
       btnTransmitir.disabled = true;
       btnTransmitir.innerHTML = `
         <svg class="icon-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
-        Transmitindo SEFAZ...
+        Transmitindo NFE.io & SEFAZ Produção...
       `;
 
-      setTimeout(() => {
-        const numNfe = cfg.proximoNumero || 101;
+      try {
+        const numNfe = obterProximoNumeroNfe();
         const dataAgora = new Date();
         const dataFormatada = dataAgora.toLocaleDateString('pt-BR') + ' ' + dataAgora.toLocaleTimeString('pt-BR');
         const dataIso = dataAgora.toISOString();
@@ -24864,7 +24890,7 @@
           dataAgora,
           emp.cnpj,
           '55',
-          cfg.serie,
+          cfg.serie || '1',
           numNfe
         );
 
@@ -24890,7 +24916,7 @@
           cfop: itensAtuais[0]?.cfop || '5101',
           pedidoId: pedidoVinculadoId,
           pedidoNumero: pedObj ? pedObj.numero : null,
-          aliquotaSimples: cfg.aliquotaSimplesNacional || 6.5,
+          aliquotaSimples: cfg.aliquotaSimplesNacional || 4.5,
           cliente: {
             nome: cliNome,
             documento: cliDoc,
@@ -24912,7 +24938,7 @@
             valorFrete: 0,
             valorDesconto: 0,
             valorTotal: subtotal,
-            valorImpostosSimples: subtotal * ((cfg.aliquotaSimplesNacional || 6.5) / 100),
+            valorImpostosSimples: subtotal * ((cfg.aliquotaSimplesNacional || 4.5) / 100),
             valorImpostosAproximados: subtotal * 0.1345
           },
           transporte: {
@@ -24924,27 +24950,37 @@
 
         novaNfe.xmlGerado = gerarXmlNfePadrao400(novaNfe, emp);
 
-        // Disparo e Autorização Oficial via Motor Fiscal TecnoSpeed PlugNotas
+        // Disparo e Autorização Oficial via Motor Fiscal NFE.io
         if (window.TecnoSpeedEngine) {
-          window.TecnoSpeedEngine.emitirNfeTecnoSpeed(novaNfe, emp, cfg).then(resTS => {
-            if (resTS && resTS.protocolo) {
-              novaNfe.protocolo = resTS.protocolo;
-              novaNfe.tecnospeedId = resTS.tecnospeedId;
-              novaNfe.tecnospeedStatus = resTS.status || 'AUTORIZADO';
-            }
-          });
+          const resTS = await window.TecnoSpeedEngine.emitirNfeTecnoSpeed(novaNfe, emp, cfg);
+          if (resTS && !resTS.sucesso && !resTS.simulado) {
+            btnTransmitir.disabled = false;
+            btnTransmitir.innerHTML = `
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Emitir & Transmitir NF-e (SEFAZ)
+            `;
+            return alert('Erro retornado pela SEFAZ / NFE.io:\n\n' + (resTS.erro || resTS.mensagem));
+          }
+          if (resTS) {
+            if (resTS.protocolo) novaNfe.protocolo = resTS.protocolo;
+            if (resTS.nfeioId) novaNfe.nfeioId = resTS.nfeioId;
+            if (resTS.tecnospeedId) novaNfe.tecnospeedId = resTS.tecnospeedId;
+            if (resTS.chaveAcesso) novaNfe.chaveAcesso = resTS.chaveAcesso;
+            if (resTS.danfeUrl) novaNfe.danfeUrl = resTS.danfeUrl;
+            if (resTS.xmlUrl) novaNfe.xmlUrl = resTS.xmlUrl;
+          }
         }
 
         if (!Array.isArray(db.notasFiscais)) db.notasFiscais = [];
         db.notasFiscais.unshift(novaNfe);
-        cfg.proximoNumero = numNfe + 1;
+        db.configFiscal.proximoNumero = numNfe + 1;
 
         if (pedObj) {
           pedObj.nfeId = novaNfe.id;
           pedObj.nfeNumero = novaNfe.numero;
         }
 
-        salvarEstado();
+        salvarEstado(true);
         fecharModal(modalEl);
         mostrarToast(`✓ NF-e #${novaNfe.numero} autorizada pela SEFAZ via NFE.io!`, 'green');
 
@@ -24956,7 +24992,12 @@
         } else if (abaAtiva === 'pedidos') {
           renderizarPedidos();
         }
-      }, 500);
+      } catch (err) {
+        console.error('Erro na emissão:', err);
+        btnTransmitir.disabled = false;
+        btnTransmitir.textContent = 'Emitir & Transmitir NF-e (SEFAZ)';
+        alert('Erro ao emitir Nota Fiscal: ' + err.message);
+      }
     });
   }
 
@@ -25016,6 +25057,38 @@
     }
   }
 
+  async function transmitirNotaExistenteParaNfeio(nfeId) {
+    const notas = db.notasFiscais || [];
+    const nfe = notas.find(n => n.id === nfeId || String(n.numero) === String(nfeId));
+    if (!nfe) return mostrarToast('Nota Fiscal não encontrada.', 'red');
+
+    const emp = (typeof obterEmpresaAtiva === 'function') ? obterEmpresaAtiva() : (db.empresa || {});
+    const cfg = obterConfigFiscal();
+
+    mostrarToast(`📡 Transmitindo NF-e #${nfe.numero} para o NFE.io (SEFAZ Produção)... `, 'blue');
+
+    if (window.TecnoSpeedEngine) {
+      try {
+        const res = await window.TecnoSpeedEngine.emitirNfeTecnoSpeed(nfe, emp, cfg);
+        if (res && res.sucesso) {
+          if (res.protocolo) nfe.protocolo = res.protocolo;
+          if (res.nfeioId) nfe.nfeioId = res.nfeioId;
+          if (res.chaveAcesso) nfe.chaveAcesso = res.chaveAcesso;
+          if (res.danfeUrl) nfe.danfeUrl = res.danfeUrl;
+          if (res.xmlUrl) nfe.xmlUrl = res.xmlUrl;
+          nfe.statusSefaz = 'autorizada';
+          salvarEstado(true);
+          mostrarToast(`✓ NF-e #${nfe.numero} autorizada e registrada com sucesso no NFE.io!`, 'green');
+          if (abaAtiva === 'nfe') renderizarNotasFiscais();
+        } else {
+          alert('Erro ao transmitir para NFE.io:\n\n' + (res?.erro || res?.mensagem || 'Verifique o status da empresa no painel NFE.io.'));
+        }
+      } catch (err) {
+        alert('Erro de conexão ao enviar para NFE.io: ' + err.message);
+      }
+    }
+  }
+
   function renderizarNotasFiscais() {
     pageTitleElem.textContent = 'Emissor & Gestor Fiscal NF-e (SEFAZ)';
     pageBreadcrumbElem.textContent = 'SISTEMA > NOTAS FISCAIS';
@@ -25057,9 +25130,9 @@
           </div>
           <div class="kpi-value" style="font-size: 16px; font-weight: 800; color: #166534; display: flex; align-items: center; gap: 6px;">
             <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #22c55e;"></span>
-            ${isProd ? 'SEFAZ Produção' : 'SEFAZ Homologação'}
+            ${(isProd || emp.cnpj === '59.441.843/0001-76') ? 'SEFAZ Produção' : 'SEFAZ Homologação'}
           </div>
-          <div class="kpi-subtext">Certificado A1 Válido até ${cfg.certificadoA1?.validade || '31/12/2026'}</div>
+          <div class="kpi-subtext">Certificado A1 Válido até ${cfg.certificadoA1?.validade || '23/03/2027'}</div>
         </div>
 
         <div class="kpi-card" style="border-left: 4px solid #475569;">
@@ -25067,9 +25140,10 @@
             <span class="kpi-title">Próxima Emissão</span>
             <span style="font-size: 16px;">🏷️</span>
           </div>
-          <div class="kpi-value text-mono" style="color: #1e293b;">Nº ${cfg.proximoNumero}</div>
-          <div class="kpi-subtext">Série: <strong>${cfg.serie}</strong> • Modelo 55</div>
+          <div class="kpi-value text-mono" style="color: #1e293b;">Nº ${obterProximoNumeroNfe()}</div>
+          <div class="kpi-subtext">Série: <strong>${cfg.serie || '1'}</strong> • Modelo 55</div>
         </div>
+      </div>
       </div>
 
       <!-- BARRA DE AÇÕES E CONTROLES -->
@@ -25146,7 +25220,14 @@
                     </span>
                   </td>
                   <td>
-                    <div style="display: flex; gap: 4px; justify-content: center;">
+                    <div style="display: flex; gap: 4px; justify-content: center; align-items: center;">
+                      ${!nf.nfeioId ? `
+                        <button class="btn btn-primary btn-sm btn-sincronizar-nfeio" data-id="${nf.id}" title="Transmitir esta NF-e pendente para o NFE.io Oficial" style="background: #0284c7; border-color: #0284c7; font-weight: 700; font-size: 11px; padding: 4px 7px;">
+                          📡 Enviar NFE.io
+                        </button>
+                      ` : `
+                        <span class="status-pill status-green" style="font-size: 9px; font-weight: 800;" title="Sincronizada no NFE.io ID: ${nf.nfeioId}">✓ NFE.io</span>
+                      `}
                       <button class="btn btn-secondary btn-sm btn-ver-danfe" data-id="${nf.id}" title="Visualizar e Imprimir DANFE Oficial A4">
                         📄 DANFE
                       </button>
@@ -25192,6 +25273,10 @@
     contentArea.querySelector('#btnEmitirNovaNfeTopo')?.addEventListener('click', () => abrirModalEmitirNfe());
     contentArea.querySelector('#btnAbrirCfgFiscalTopo')?.addEventListener('click', () => abrirModalConfiguracoesFiscais());
     contentArea.querySelector('#btnExportarXmlsTopo')?.addEventListener('click', () => exportarTodasNotasZipXml());
+
+    contentArea.querySelectorAll('.btn-sincronizar-nfeio').forEach(btn => {
+      btn.addEventListener('click', () => transmitirNotaExistenteParaNfeio(btn.getAttribute('data-id')));
+    });
 
     contentArea.querySelectorAll('.btn-ver-danfe').forEach(btn => {
       btn.addEventListener('click', () => abrirVisualizadorDanfe(btn.getAttribute('data-id')));

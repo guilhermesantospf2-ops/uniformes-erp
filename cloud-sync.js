@@ -2003,6 +2003,11 @@ with check (true);
     } else if (remoto && remoto.configFiscal && remoto.configFiscal.proximoNumero) {
       base.configFiscal.proximoNumero = remoto.configFiscal.proximoNumero;
     }
+    // BLINDAGEM FISCAL: O próximo número de emissão NUNCA pode ser menor ou igual a uma nota já autorizada
+    const maxNfEmitida = (base.notasFiscais || []).reduce((max, n) => Math.max(max, parseInt(n.numero, 10) || 0), 0);
+    if (maxNfEmitida > 0) {
+      base.configFiscal.proximoNumero = Math.max(parseInt(base.configFiscal.proximoNumero, 10) || 1, maxNfEmitida + 1);
+    }
 
     // Catálogos e estoques
     if (!Array.isArray(base.produtosBase) || base.produtosBase.length === 0) {
