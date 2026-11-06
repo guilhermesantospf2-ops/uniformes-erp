@@ -25062,6 +25062,11 @@
     const nfe = notas.find(n => n.id === nfeId || String(n.numero) === String(nfeId));
     if (!nfe) return mostrarToast('Nota Fiscal não encontrada.', 'red');
 
+    // Se for Base Mecanica Pesada, garante a IE correta de SC
+    if (nfe.cliente && (nfe.cliente.documento || '').replace(/\D/g, '') === '62007964000119') {
+      nfe.cliente.ie = '264546407';
+    }
+
     const emp = (typeof obterEmpresaAtiva === 'function') ? obterEmpresaAtiva() : (db.empresa || {});
     const cfg = obterConfigFiscal();
 

@@ -216,6 +216,7 @@
           type: isCpf ? 'NaturalPerson' : 'LegalEntity',
           name: cli.nome || cli.razaoSocial || 'Cliente Consumidor Final',
           federalTaxNumber: cnpjDest ? Number(cnpjDest) : 191,
+          ...((cli.ie && cli.ie !== 'ISENTO' && cli.ie.replace(/\D/g, '').length > 0) ? { stateTaxNumber: cli.ie.replace(/\D/g, '') } : (cnpjDest === '62007964000119' ? { stateTaxNumber: '264546407' } : {})),
           address: {
             street: end.logradouro || 'Rua das Flores',
             number: end.numero || '100',
