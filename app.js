@@ -4428,7 +4428,7 @@
       const isQuarentena = p.status === 'Quarentena';
       const isOrcamento = p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento';
       const countdown = calcularContagemRegressivaPedido(p);
-      const nfExistente = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || n.pedidoNumero === p.numero) && n.statusSefaz !== 'cancelada');
+      const nfExistente = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada');
       return `
                 <tr style="${isCancelado ? 'opacity: 0.88; background: #fff1f2;' : ''}">
                   <td>
@@ -4709,7 +4709,7 @@
         const isQuarentena = p.status === 'Quarentena';
         const isOrcamento = p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento';
         const countdown = calcularContagemRegressivaPedido(p);
-        const nfExistente = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || n.pedidoNumero === p.numero) && n.statusSefaz !== 'cancelada');
+        const nfExistente = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada');
         return `
                     <div class="kanban-card" draggable="true" data-id="${p.id}" title="Segure e arraste para mudar a etapa do pedido">
                       <div style="display: flex; gap: 8px; margin-bottom: 8px;">
@@ -22598,15 +22598,24 @@
       nf45.xmlUrl = 'https://api.nfse.io/v2/companies/b8ac27d9851944a8baa5ad0c134d08f9/productinvoices/ba1b64f074904e9596093ce2dc53756a/xml';
     }
 
-    // 4. Vincula Pedido #101 com a NF-e #45
+    // 4. Vincula Pedido #101 com a NF-e #45 (apenas se a #45 estiver ativa)
     const ped101 = (b.pedidos || []).find(p => String(p.numero) === '101' || p.id === 'PED-101');
-    if (ped101 && (ped101.nfeNumero !== 45 || ped101.nfeId !== nf45.id)) {
+    if (ped101 && nf45.statusSefaz !== 'cancelada' && (ped101.nfeNumero !== 45 || ped101.nfeId !== nf45.id)) {
       ped101.nfeNumero = 45;
       ped101.nfeId = nf45.id;
       houveAlteracao = true;
     }
 
-    // 5. Garante que a numeração seguinte no ERP seja sempre MAIOR que qualquer nota emitida (Próxima = 46)
+    // 4b. Garante que também no cadastro de clientes a Base Mecânica Pesada tenha sua IE de SC (264546407) e IBGE de Itajaí
+    const cliBase = (b.clientes || []).find(c => String(c.documento || c.cnpj || '').replace(/\D/g, '') === '62007964000119' || (c.nome || '').toLowerCase().includes('base mecanica'));
+    if (cliBase && (!cliBase.ie || cliBase.ie === 'ISENTO')) {
+      cliBase.ie = '264546407';
+      cliBase.inscricaoEstadual = '264546407';
+      cliBase.ibge = '4208203';
+      houveAlteracao = true;
+    }
+
+    // 5. Garante que a numeração seguinte no ERP seja sempre MAIOR que qualquer nota emitida (Próxima >= 46)
     let maiorNota = 0;
     notas.forEach(n => {
       const num = parseInt(n.numero, 10);
@@ -22622,6 +22631,59 @@
 
     if (houveAlteracao && typeof salvarEstado === 'function') {
       salvarEstado(true);
+    }
+  }
+
+  let _syncSefazEmAndamento = false;
+  async function sincronizarNumeracaoAoVivoComSefaz() {
+    if (_syncSefazEmAndamento || !window.TecnoSpeedEngine?.sincronizarEstadoSefaz) return;
+    _syncSefazEmAndamento = true;
+    try {
+      const emp = (typeof obterEmpresaAtiva === 'function') ? obterEmpresaAtiva() : (db.empresa || {});
+      const res = await window.TecnoSpeedEngine.sincronizarEstadoSefaz(emp, db.configFiscal);
+      if (res && res.sucesso) {
+        let mudou = false;
+        if (!db.configFiscal) db.configFiscal = {};
+        const proxReal = Math.max(db.configFiscal.proximoNumero || 46, res.proximoNumeroSefaz || 46, 46);
+        if (db.configFiscal.proximoNumero !== proxReal) {
+          db.configFiscal.proximoNumero = proxReal;
+          mudou = true;
+        }
+
+        // Reconcilia status das notas retornadas pela SEFAZ
+        if (Array.isArray(res.notasSefaz) && Array.isArray(db.notasFiscais)) {
+          res.notasSefaz.forEach(inv => {
+            const nfLocal = db.notasFiscais.find(n => n.nfeioId === inv.id || (inv.number && Number(n.numero) === Number(inv.number)));
+            if (nfLocal) {
+              if (inv.status === 'Cancelled' && nfLocal.statusSefaz !== 'cancelada') {
+                nfLocal.statusSefaz = 'cancelada';
+                mudou = true;
+              } else if ((inv.status === 'Issued' || inv.status === 'Authorized') && nfLocal.statusSefaz !== 'cancelada') {
+                if (inv.number && nfLocal.numero !== Number(inv.number)) {
+                  nfLocal.numero = Number(inv.number);
+                  mudou = true;
+                }
+                if (inv.authorization?.accessKey && nfLocal.chaveAcesso !== inv.authorization.accessKey) {
+                  nfLocal.chaveAcesso = inv.authorization.accessKey;
+                  mudou = true;
+                }
+              }
+            }
+          });
+        }
+
+        const kpiProx = document.getElementById('kpiProximaEmissaoNfe');
+        if (kpiProx) kpiProx.textContent = `Nº ${obterProximoNumeroNfe()}`;
+        const inpSerieNum = document.getElementById('emitNfeInputSerieNumero');
+        if (inpSerieNum) inpSerieNum.value = `${db.configFiscal.serie || '1'} / #${obterProximoNumeroNfe()}`;
+
+        if (mudou) {
+          salvarEstado(true);
+        }
+      }
+    } catch (e) {
+    } finally {
+      _syncSefazEmAndamento = false;
     }
   }
 
@@ -23799,16 +23861,71 @@
     }, 350);
   }
 
-  function baixarArquivoXmlNfe(nfeId) {
+  function copiarChave44Digitos(nfeId) {
+    const nfe = (db.notasFiscais || []).find(n => n.id === nfeId || String(n.numero) === String(nfeId));
+    if (!nfe) return;
+    const chaveLimpa = String(nfe.chaveAcesso || '').replace(/\D/g, '');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(chaveLimpa).then(() => {
+        mostrarToast(`✓ Chave de Acesso (${chaveLimpa.length} dígitos contínuos sem espaços) copiada!`, 'green');
+      }).catch(() => {
+        prompt('Copie os 44 dígitos da Chave de Acesso SEFAZ:', chaveLimpa);
+      });
+    } else {
+      prompt('Copie os 44 dígitos da Chave de Acesso SEFAZ:', chaveLimpa);
+    }
+  }
+
+  async function abrirPdfOficialSefaz(nfeId) {
+    const nfe = (db.notasFiscais || []).find(n => n.id === nfeId || String(n.numero) === String(nfeId));
+    if (!nfe) return;
+
+    if (nfe.danfeUrl && nfe.danfeUrl.includes('blob.core.windows.net')) {
+      window.open(nfe.danfeUrl, '_blank');
+      return;
+    }
+
+    if (window.TecnoSpeedEngine?.obterLinkOficialNfe && (nfe.nfeioId || nfe.tecnospeedId)) {
+      mostrarToast('📄 Obtendo PDF Oficial assinado pela SEFAZ...', 'blue');
+      const res = await window.TecnoSpeedEngine.obterLinkOficialNfe(nfe, 'pdf', obterConfigFiscal(), obterEmpresaAtiva());
+      if (res && res.uri) {
+        nfe.danfeUrl = res.uri;
+        window.open(res.uri, '_blank');
+        return;
+      }
+    }
+
+    imprimirDanfeIsolada(nfe.id);
+  }
+
+  async function baixarArquivoXmlNfe(nfeId) {
     const nfe = (db.notasFiscais || []).find(n => n.id === nfeId);
     if (!nfe) return mostrarToast('Nota Fiscal não localizada.', 'red');
 
-    const xmlConteudo = nfe.xmlGerado || gerarXmlNfePadrao400(nfe, db.empresa);
+    let xmlConteudo = null;
+    if (window.TecnoSpeedEngine?.obterLinkOficialNfe && (nfe.nfeioId || nfe.tecnospeedId)) {
+      try {
+        const resXml = await window.TecnoSpeedEngine.obterLinkOficialNfe(nfe, 'xml', obterConfigFiscal(), obterEmpresaAtiva());
+        if (resXml && resXml.xmlContent) {
+          xmlConteudo = resXml.xmlContent;
+          nfe.xmlGerado = xmlConteudo;
+        } else if (resXml && resXml.uri) {
+          window.open(resXml.uri, '_blank');
+          mostrarToast(`✓ Arquivo XML Oficial SEFAZ da NF-e #${nfe.numero} baixado!`, 'green');
+          return;
+        }
+      } catch (e) {}
+    }
+
+    if (!xmlConteudo) {
+      xmlConteudo = nfe.xmlGerado || gerarXmlNfePadrao400(nfe, db.empresa);
+    }
+    const chaveLimpa = String(nfe.chaveAcesso || nfe.numero).replace(/\D/g, '');
     const blob = new Blob([xmlConteudo], { type: 'application/xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `NFe_${nfe.chaveAcesso}.xml`;
+    a.download = `NFe_${chaveLimpa}.xml`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -23820,9 +23937,10 @@
     const nfe = (db.notasFiscais || []).find(n => n.id === nfeId);
     if (!nfe) return;
 
-    const empNome = db.empresa?.nomeFantasia || 'Bravvi Indústria Têxtil';
+    const empNome = db.empresa?.nomeFantasia || 'Prime Uniformes';
     const telNumeros = (nfe.cliente?.telefone || '').toString().replace(/\D/g, '');
-    const mensagem = `Olá, *${nfe.cliente?.nome || 'Cliente'}*!\n\nAqui é da equipe da *${empNome}*.\n\nSua *Nota Fiscal Eletrônica (NF-e Modelo 55)* foi emitida e autorizada com sucesso pela SEFAZ!\n\n📄 *NF-e Nº:* #${nfe.numero} (Série ${nfe.serie})\n💰 *Valor Total:* ${formatarMoeda(nfe.totais?.valorTotal || 0)}\n📅 *Data de Emissão:* ${nfe.dataEmissao}\n\n🔑 *Chave de Acesso Oficial (44 dígitos):*\n\`${nfe.chaveAcesso}\`\n\n🌐 *Consulta SEFAZ:* Você pode consultar a autenticidade e baixar o DANFE/XML no portal oficial:\nhttps://www.nfe.fazenda.gov.br/portal/consultaRecaptcha.aspx?tipoConsulta=completa\n\nQualquer dúvida estamos à disposição!`;
+    const chave44 = String(nfe.chaveAcesso || '').replace(/\D/g, '');
+    const mensagem = `Olá, *${nfe.cliente?.nome || 'Cliente'}*!\n\nAqui é da equipe da *${empNome}*.\n\nSua *Nota Fiscal Eletrônica (NF-e Modelo 55)* foi emitida e autorizada com sucesso pela SEFAZ!\n\n📄 *NF-e Nº:* #${nfe.numero} (Série ${nfe.serie})\n💰 *Valor Total:* ${formatarMoeda(nfe.totais?.valorTotal || 0)}\n📅 *Data de Emissão:* ${nfe.dataEmissao}\n\n🔑 *Chave de Acesso Oficial (44 dígitos):*\n\`${chave44}\`\n\n🌐 *Consulta SEFAZ:* Você pode consultar a autenticidade e baixar o DANFE/XML no portal oficial:\nhttps://www.nfe.fazenda.gov.br/portal/consultaRecaptcha.aspx?tipoConsulta=completa\n\nQualquer dúvida estamos à disposição!`;
 
     const linkWpp = `https://api.whatsapp.com/send?phone=55${telNumeros}&text=${encodeURIComponent(mensagem)}`;
     window.open(linkWpp, '_blank');
@@ -23858,10 +23976,14 @@
                 Imprimir DANFE
               </button>
 
-              ${nfe.danfeUrl ? `
-                <a href="${nfe.danfeUrl}" target="_blank" class="btn btn-sm btn-secondary" id="btnBaixarDanfeOficialSefaz" style="background: #0284c7; color: #ffffff; border-color: #0369a1; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;" title="Abrir PDF Oficial emitido e assinado pela SEFAZ">
+              <button class="btn btn-sm btn-secondary" id="btnCopiarChave44Modal" style="background: #1e293b; color: #fde047; border-color: #ca8a04; font-weight: 700;" title="Copiar os 44 dígitos contínuos da Chave de Acesso para consulta no Portal da SEFAZ">
+                📋 Copiar Chave (44 dígitos)
+              </button>
+
+              ${(nfe.danfeUrl || nfe.nfeioId) ? `
+                <button type="button" class="btn btn-sm btn-secondary" id="btnBaixarDanfeOficialSefaz" style="background: #0284c7; color: #ffffff; border-color: #0369a1; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;" title="Abrir PDF Oficial emitido e assinado pela SEFAZ">
                   📥 PDF Oficial SEFAZ
-                </a>
+                </button>
               ` : ''}
               <button class="btn btn-sm btn-secondary" id="btnBaixarXmlModal" style="background: #1e293b; color: #38bdf8; border-color: #0284c7; font-weight: 700;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -23904,6 +24026,8 @@
     if (!modalEl) return;
 
     modalEl.querySelector('#btnImprimirDanfeModal')?.addEventListener('click', () => imprimirDanfeIsolada(nfe.id));
+    modalEl.querySelector('#btnCopiarChave44Modal')?.addEventListener('click', () => copiarChave44Digitos(nfe.id));
+    modalEl.querySelector('#btnBaixarDanfeOficialSefaz')?.addEventListener('click', () => abrirPdfOficialSefaz(nfe.id));
     modalEl.querySelector('#btnBaixarXmlModal')?.addEventListener('click', () => baixarArquivoXmlNfe(nfe.id));
 
     modalEl.querySelector('#btnToggleFantasiaDanfeModal')?.addEventListener('click', () => {
@@ -24033,7 +24157,7 @@
 
       let res = { sucesso: true, protocoloEvento: '135260' + String(Math.floor(10000000 + Math.random() * 90000000)) };
       if (window.TecnoSpeedEngine) {
-        res = await window.TecnoSpeedEngine.emitirCceTecnoSpeed(nfe.tecnospeedId || nfe.id, texto, cfg);
+        res = await window.TecnoSpeedEngine.emitirCceTecnoSpeed(nfe, texto, cfg, obterEmpresaAtiva());
       }
 
       if (res && res.sucesso) {
@@ -24046,7 +24170,7 @@
           dataEvento: agora.toLocaleDateString('pt-BR') + ' ' + agora.toLocaleTimeString('pt-BR')
         });
 
-        salvarEstado();
+        salvarEstado(true);
         fecharModal(modalEl);
         mostrarToast('✓ Carta de Correção Eletrônica (CC-e) registrada com sucesso na SEFAZ!', 'green');
         abrirVisualizadorDanfe(nfe.id);
@@ -24081,7 +24205,7 @@
 
           <div class="modal-body" style="padding: 16px 20px;">
             <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; font-size: 11.5px; color: #9f1239; line-height: 1.4;">
-              ⚠️ <strong>Atenção:</strong> O cancelamento de NF-e na SEFAZ é irreversível e exige justificativa regulamentar com no mínimo <strong>15 caracteres</strong>.
+              ⚠️ <strong>Atenção:</strong> O cancelamento de NF-e na SEFAZ é irreversível e exige justificativa regulamentar com no mínimo <strong>15 caracteres</strong>. O pedido vinculado será liberado automaticamente para emissão de uma nova nota.
             </div>
 
             <div style="margin-bottom: 12px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; font-size: 11.5px; border: 1px solid var(--border-medium);">
@@ -24119,18 +24243,41 @@
       lblCharCount.style.color = len >= 15 ? '#059669' : '#dc2626';
     });
 
-    btnConfirmar.addEventListener('click', () => {
+    btnConfirmar.addEventListener('click', async () => {
       const motivo = txtMotivo.value.trim();
       if (motivo.length < 15) {
         return alert('A justificativa de cancelamento da SEFAZ precisa ter no mínimo 15 caracteres.');
       }
 
+      btnConfirmar.disabled = true;
+      btnConfirmar.textContent = 'Cancelando na SEFAZ...';
+
+      if (window.TecnoSpeedEngine?.cancelarNfeTecnoSpeed && (nfe.nfeioId || nfe.tecnospeedId)) {
+        const resCanc = await window.TecnoSpeedEngine.cancelarNfeTecnoSpeed(nfe, motivo, obterConfigFiscal(), obterEmpresaAtiva());
+        if (resCanc && !resCanc.sucesso) {
+          btnConfirmar.disabled = false;
+          btnConfirmar.textContent = 'Confirmar Cancelamento SEFAZ';
+          return alert('Erro ao cancelar na SEFAZ:\n\n' + (resCanc.erro || resCanc.mensagem));
+        }
+      }
+
       nfe.statusSefaz = 'cancelada';
       nfe.motivoCancelamento = motivo;
       nfe.dataCancelamento = new Date().toLocaleString('pt-BR');
-      salvarEstado();
+
+      // Desvincula do pedido para permitir emissão de nova nota substituta
+      if (Array.isArray(db.pedidos)) {
+        db.pedidos.forEach(p => {
+          if (p.nfeId === nfe.id || String(p.nfeNumero) === String(nfe.numero)) {
+            p.nfeId = null;
+            p.nfeNumero = null;
+          }
+        });
+      }
+
+      salvarEstado(true);
       fecharModal(modalEl);
-      mostrarToast(`✓ NF-e #${nfe.numero} cancelada com sucesso na SEFAZ.`, 'green');
+      mostrarToast(`✓ NF-e #${nfe.numero} cancelada oficialmente na SEFAZ e pedido liberado!`, 'green');
 
       if (abaAtiva === 'nfe') {
         renderizarNotasFiscais();
@@ -24145,7 +24292,13 @@
     const nfe = db.notasFiscais.find(n => n.id === nfeId || String(n.numero) === String(nfeId));
     if (!nfe) return;
 
-    if (!confirm(`Deseja realmente reverter e excluir a NF-e #${nfe.numero}?\n\n• O registro será removido permanentemente.\n• O pedido vinculado #${nfe.pedidoNumero || ''} será liberado para nova emissão.\n• O próximo número fiscal voltará para #${nfe.numero}.`)) {
+    // Se a nota foi autorizada oficialmente na SEFAZ (tem nfeioId), direciona para o Cancelamento Oficial SEFAZ
+    if (nfe.nfeioId && nfe.statusSefaz !== 'cancelada') {
+      abrirModalCancelarNfe(nfe.id);
+      return;
+    }
+
+    if (!confirm(`Deseja ocultar o registro local da NF-e #${nfe.numero}?\n\n• O pedido vinculado #${nfe.pedidoNumero || ''} será liberado.\n• A numeração oficial da SEFAZ continuará sincronizada em #${obterProximoNumeroNfe()}.`)) {
       return;
     }
 
@@ -24160,12 +24313,10 @@
       });
     }
 
-    if (!db.configFiscal) db.configFiscal = {};
-    db.configFiscal.proximoNumero = nfe.numero;
-
+    obterProximoNumeroNfe();
     salvarEstado(true);
 
-    mostrarToast(`✓ NF-e #${nfe.numero} revertida e excluída com sucesso! Próximo número restaurado para #${nfe.numero}.`, 'green');
+    mostrarToast(`✓ Registro da NF-e #${nfe.numero} removido e numeração SEFAZ preservada (#${obterProximoNumeroNfe()}).`, 'green');
 
     if (abaAtiva === 'nfe') {
       renderizarNotasFiscais();
@@ -24534,7 +24685,7 @@
 
     // Se o pedido já possui NF-e ativa emitida, abre direto a DANFE
     if (pedidoSelecionado) {
-      const nfExistente = (db.notasFiscais || []).find(n => (n.pedidoId === pedidoSelecionado.id || n.pedidoNumero === pedidoSelecionado.numero) && n.statusSefaz !== 'cancelada');
+      const nfExistente = (db.notasFiscais || []).find(n => (n.pedidoId === pedidoSelecionado.id || (pedidoSelecionado.numero != null && String(n.pedidoNumero) === String(pedidoSelecionado.numero))) && n.statusSefaz !== 'cancelada');
       if (nfExistente) {
         mostrarToast(`Este pedido já possui a NF-e #${nfExistente.numero} emitida. Abrindo DANFE...`, 'green');
         abrirVisualizadorDanfe(nfExistente.id);
@@ -24582,23 +24733,30 @@
     // Dados do cliente a partir do pedido ou cliente do banco (Vazio se não houver pedido)
     let clienteNome = pedidoSelecionado?.clienteNome || '';
     let clienteDoc = '';
+    let clienteIe = 'ISENTO';
     let clienteTel = pedidoSelecionado?.clienteTelefone || '';
     let clienteEmail = '';
-    let clienteEndereco = { logradouro: '', numero: '', bairro: '', cidade: '', uf: (emp.uf || 'SC'), cep: '' };
+    let clienteIbge = '';
+    let clienteEndereco = { logradouro: '', numero: 'S/N', bairro: 'Centro', cidade: '', uf: (emp.uf || 'SC'), cep: '' };
 
     if (pedidoSelecionado && clienteNome) {
       const cliDb = (db.clientes || []).find(c => c.nome === clienteNome || c.id === pedidoSelecionado?.clienteId);
       if (cliDb) {
         clienteDoc = cliDb.documento || cliDb.cnpj || cliDb.cpf || '';
+        clienteIe = cliDb.ie || cliDb.inscricaoEstadual || (String(clienteDoc).replace(/\D/g, '') === '62007964000119' ? '264546407' : 'ISENTO');
         clienteTel = cliDb.telefone || clienteTel;
         clienteEmail = cliDb.email || '';
+        clienteIbge = cliDb.ibge || '';
         if (cliDb.cidade) clienteEndereco.cidade = cliDb.cidade;
         if (cliDb.uf) clienteEndereco.uf = cliDb.uf;
         if (cliDb.endereco) clienteEndereco.logradouro = cliDb.endereco;
+        if (cliDb.numero) clienteEndereco.numero = cliDb.numero;
+        if (cliDb.bairro) clienteEndereco.bairro = cliDb.bairro;
         if (cliDb.cep) clienteEndereco.cep = cliDb.cep;
       }
     }
 
+    sincronizarNumeracaoAoVivoComSefaz();
     let itensAtuais = extrairItensDoPedido(pedidoSelecionado, clienteEndereco.uf);
 
     const modalEl = criarModalCamada(`
@@ -24648,7 +24806,7 @@
 
                 <div class="form-group" style="margin-bottom: 0;">
                   <label class="form-label">Série / Número</label>
-                  <input type="text" class="form-input text-mono font-bold" value="${cfg.serie} / #${cfg.proximoNumero}" readonly style="background: #e2e8f0;">
+                  <input type="text" id="emitNfeInputSerieNumero" class="form-input text-mono font-bold" value="${cfg.serie} / #${obterProximoNumeroNfe()}" readonly style="background: #e2e8f0;">
                 </div>
               </div>
             </div>
@@ -24669,7 +24827,7 @@
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
                   <label class="form-label">Inscrição Estadual</label>
-                  <input type="text" id="emitNfeCliIe" class="form-input text-mono" value="ISENTO" placeholder="ISENTO ou Número">
+                  <input type="text" id="emitNfeCliIe" class="form-input text-mono" value="${clienteIe}" placeholder="ISENTO ou Número">
                 </div>
               </div>
 
@@ -24691,11 +24849,11 @@
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
                   <label class="form-label">Número</label>
-                  <input type="text" id="emitNfeCliNum" class="form-input" value="S/N" placeholder="100">
+                  <input type="text" id="emitNfeCliNum" class="form-input" value="${clienteEndereco.numero || 'S/N'}" placeholder="100">
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
                   <label class="form-label">Bairro</label>
-                  <input type="text" id="emitNfeCliBairro" class="form-input" value="Centro" placeholder="Bairro">
+                  <input type="text" id="emitNfeCliBairro" class="form-input" value="${clienteEndereco.bairro || 'Centro'}" placeholder="Bairro">
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
                   <label class="form-label">Cidade</label>
@@ -24848,24 +25006,30 @@
 
     function configurarEventosTabelaItens() {
       tbodyItens.querySelectorAll('.item-desc').forEach(input => {
-        input.addEventListener('change', (e) => {
+        const syncDesc = (e) => {
           const idx = parseInt(e.target.closest('tr').getAttribute('data-index'), 10);
-          itensAtuais[idx].descricao = e.target.value.trim();
-        });
+          if (itensAtuais[idx]) itensAtuais[idx].descricao = e.target.value.trim();
+        };
+        input.addEventListener('input', syncDesc);
+        input.addEventListener('change', syncDesc);
       });
 
       tbodyItens.querySelectorAll('.item-ncm').forEach(input => {
-        input.addEventListener('change', (e) => {
+        const syncNcm = (e) => {
           const idx = parseInt(e.target.closest('tr').getAttribute('data-index'), 10);
-          itensAtuais[idx].ncm = e.target.value.trim();
-        });
+          if (itensAtuais[idx]) itensAtuais[idx].ncm = e.target.value.trim();
+        };
+        input.addEventListener('input', syncNcm);
+        input.addEventListener('change', syncNcm);
       });
 
       tbodyItens.querySelectorAll('.item-cfop').forEach(input => {
-        input.addEventListener('change', (e) => {
+        const syncCfop = (e) => {
           const idx = parseInt(e.target.closest('tr').getAttribute('data-index'), 10);
-          itensAtuais[idx].cfop = e.target.value.trim();
-        });
+          if (itensAtuais[idx]) itensAtuais[idx].cfop = e.target.value.trim();
+        };
+        input.addEventListener('input', syncCfop);
+        input.addEventListener('change', syncCfop);
       });
 
       tbodyItens.querySelectorAll('.item-qtd').forEach(input => {
@@ -24952,6 +25116,96 @@
       });
     }
 
+    // Enriquecimento automático de Inscrição Estadual (IE), Endereço e Código IBGE via CNPJ.ws
+    async function enriquecerDestinatarioPorCnpj(docRaw, forcar = false) {
+      const cnpjLimpo = String(docRaw || '').replace(/\D/g, '');
+      if (cnpjLimpo.length !== 14) return;
+
+      if (cnpjLimpo === '62007964000119') {
+        const ieEl = modalEl.querySelector('#emitNfeCliIe');
+        if (ieEl && (!ieEl.value || ieEl.value === 'ISENTO')) ieEl.value = '264546407';
+        clienteIbge = '4208203';
+      }
+
+      try {
+        const res = await fetch(`https://publica.cnpj.ws/cnpj/${cnpjLimpo}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const est = data.estabelecimento || {};
+        const ufSigla = (est.estado?.sigla || modalEl.querySelector('#emitNfeCliUf')?.value || 'SC').toUpperCase();
+
+        const inpNome = modalEl.querySelector('#emitNfeCliNome');
+        if (inpNome && (!inpNome.value.trim() || forcar) && data.razao_social) {
+          inpNome.value = data.razao_social;
+        }
+
+        const inpIe = modalEl.querySelector('#emitNfeCliIe');
+        if (inpIe && (!inpIe.value.trim() || inpIe.value.trim().toUpperCase() === 'ISENTO' || forcar)) {
+          if (Array.isArray(est.inscricoes_estaduais) && est.inscricoes_estaduais.length > 0) {
+            const ieAtiva = est.inscricoes_estaduais.find(i => i.ativo && i.estado?.sigla?.toUpperCase() === ufSigla)
+                         || est.inscricoes_estaduais.find(i => i.ativo)
+                         || est.inscricoes_estaduais[0];
+            if (ieAtiva && ieAtiva.inscricao_estadual) {
+              inpIe.value = String(ieAtiva.inscricao_estadual).replace(/\D/g, '');
+            }
+          }
+        }
+
+        const inpLgr = modalEl.querySelector('#emitNfeCliLgr');
+        if (inpLgr && (!inpLgr.value.trim() || forcar) && est.logradouro) {
+          inpLgr.value = `${est.tipo_logradouro ? est.tipo_logradouro + ' ' : ''}${est.logradouro}`.trim();
+        }
+        const inpNum = modalEl.querySelector('#emitNfeCliNum');
+        if (inpNum && (!inpNum.value.trim() || inpNum.value === 'S/N' || forcar) && est.numero) {
+          inpNum.value = est.numero;
+        }
+        const inpBairro = modalEl.querySelector('#emitNfeCliBairro');
+        if (inpBairro && (!inpBairro.value.trim() || inpBairro.value === 'Centro' || forcar) && est.bairro) {
+          inpBairro.value = est.bairro;
+        }
+        const inpCid = modalEl.querySelector('#emitNfeCliCidade');
+        if (inpCid && (!inpCid.value.trim() || forcar) && est.cidade?.nome) {
+          inpCid.value = est.cidade.nome;
+        }
+        const inpUf = modalEl.querySelector('#emitNfeCliUf');
+        if (inpUf && est.estado?.sigla) {
+          inpUf.value = est.estado.sigla.toUpperCase();
+          atualizarCfopConformeUf();
+        }
+        const inpCep = modalEl.querySelector('#emitNfeCliCep');
+        if (inpCep && (!inpCep.value.trim() || forcar) && est.cep) {
+          inpCep.value = est.cep;
+        }
+        if (est.cidade?.ibge_id) {
+          clienteIbge = String(est.cidade.ibge_id);
+        }
+
+        // Atualiza também o cadastro do cliente no banco para manter 100% sincronizado
+        const cliCad = (db.clientes || []).find(c => String(c.documento || c.cnpj || '').replace(/\D/g, '') === cnpjLimpo);
+        if (cliCad) {
+          if (inpIe?.value && inpIe.value !== 'ISENTO') {
+            cliCad.ie = inpIe.value;
+            cliCad.inscricaoEstadual = inpIe.value;
+          }
+          if (clienteIbge) cliCad.ibge = clienteIbge;
+        }
+      } catch (e) {}
+    }
+
+    const inpDocCli = modalEl.querySelector('#emitNfeCliDoc');
+    if (inpDocCli) {
+      inpDocCli.addEventListener('blur', () => enriquecerDestinatarioPorCnpj(inpDocCli.value, false));
+      inpDocCli.addEventListener('input', () => {
+        if (String(inpDocCli.value).replace(/\D/g, '').length === 14) {
+          enriquecerDestinatarioPorCnpj(inpDocCli.value, false);
+        }
+      });
+    }
+
+    if (clienteDoc && String(clienteDoc).replace(/\D/g, '').length === 14) {
+      enriquecerDestinatarioPorCnpj(clienteDoc, false);
+    }
+
     // Evento ao trocar pedido no select
     selectPedido.addEventListener('change', () => {
       const pId = selectPedido.value;
@@ -24963,12 +25217,20 @@
         // Busca cadastro completo do cliente
         const cliCad = (db.clientes || []).find(c => c.nome === p.clienteNome || c.id === p.clienteId);
         if (cliCad) {
-          modalEl.querySelector('#emitNfeCliDoc').value = cliCad.documento || cliCad.cnpj || cliCad.cpf || '';
+          const docCad = cliCad.documento || cliCad.cnpj || cliCad.cpf || '';
+          modalEl.querySelector('#emitNfeCliDoc').value = docCad;
+          modalEl.querySelector('#emitNfeCliIe').value = cliCad.ie || cliCad.inscricaoEstadual || (String(docCad).replace(/\D/g, '') === '62007964000119' ? '264546407' : 'ISENTO');
           modalEl.querySelector('#emitNfeCliEmail').value = cliCad.email || '';
           if (cliCad.endereco) modalEl.querySelector('#emitNfeCliLgr').value = cliCad.endereco;
+          if (cliCad.numero) modalEl.querySelector('#emitNfeCliNum').value = cliCad.numero;
+          if (cliCad.bairro) modalEl.querySelector('#emitNfeCliBairro').value = cliCad.bairro;
           if (cliCad.cidade) modalEl.querySelector('#emitNfeCliCidade').value = cliCad.cidade;
           if (cliCad.uf) modalEl.querySelector('#emitNfeCliUf').value = cliCad.uf.toUpperCase();
           if (cliCad.cep) modalEl.querySelector('#emitNfeCliCep').value = cliCad.cep;
+          if (cliCad.ibge) clienteIbge = cliCad.ibge;
+          if (String(docCad).replace(/\D/g, '').length === 14) {
+            enriquecerDestinatarioPorCnpj(docCad, false);
+          }
         }
 
         const ufAtualizada = modalEl.querySelector('#emitNfeCliUf')?.value || 'SP';
@@ -25057,6 +25319,7 @@
             nome: cliNome,
             documento: cliDoc,
             ie: modalEl.querySelector('#emitNfeCliIe').value.trim() || 'ISENTO',
+            ibge: clienteIbge || '',
             telefone: modalEl.querySelector('#emitNfeCliTel').value.trim(),
             email: modalEl.querySelector('#emitNfeCliEmail').value.trim(),
             endereco: {
@@ -25065,7 +25328,8 @@
               bairro: modalEl.querySelector('#emitNfeCliBairro').value.trim(),
               cidade: modalEl.querySelector('#emitNfeCliCidade').value.trim(),
               uf: (modalEl.querySelector('#emitNfeCliUf').value.trim() || 'SP').toUpperCase(),
-              cep: modalEl.querySelector('#emitNfeCliCep').value.trim()
+              cep: modalEl.querySelector('#emitNfeCliCep').value.trim(),
+              ibge: clienteIbge || ''
             }
           },
           itens: JSON.parse(JSON.stringify(itensAtuais)),
@@ -25126,7 +25390,7 @@
 
         salvarEstado(true);
         fecharModal(modalEl);
-        mostrarToast(`✓ NF-e #${novaNfe.numero} autorizada pela SEFAZ pela SEFAZ!`, 'green');
+        mostrarToast(`✓ NF-e #${novaNfe.numero} autorizada pela SEFAZ!`, 'green');
 
         // Abre imediatamente o DANFE Oficial na tela
         abrirVisualizadorDanfe(novaNfe.id);
@@ -25255,10 +25519,12 @@
 
   function renderizarNotasFiscais() {
     reconciliarNotasFiscaisComSefaz(db);
+    sincronizarNumeracaoAoVivoComSefaz();
     pageTitleElem.textContent = 'Emissor & Gestor Fiscal NF-e (SEFAZ)';
     pageBreadcrumbElem.textContent = 'SISTEMA > NOTAS FISCAIS';
 
     const cfg = obterConfigFiscal();
+    const emp = (typeof obterEmpresaAtiva === 'function') ? obterEmpresaAtiva() : (db.empresa || {});
     const notas = db.notasFiscais || [];
 
     // Cálculos de KPI
@@ -25305,7 +25571,7 @@
             <span class="kpi-title">Próxima Emissão</span>
             <span style="font-size: 16px;">🏷️</span>
           </div>
-          <div class="kpi-value text-mono" style="color: #1e293b;">Nº ${obterProximoNumeroNfe()}</div>
+          <div class="kpi-value text-mono" id="kpiProximaEmissaoNfe" style="color: #1e293b;">Nº ${obterProximoNumeroNfe()}</div>
           <div class="kpi-subtext">Série: <strong>${cfg.serie || '1'}</strong> • Modelo 55</div>
         </div>
       </div>
@@ -25351,7 +25617,7 @@
               <th style="text-align: right;">Valor Total</th>
               <th style="text-align: right;">Simples Nac.</th>
               <th style="text-align: center; width: 120px;">Status SEFAZ</th>
-              <th style="text-align: center; width: 170px;">Ações</th>
+              <th style="text-align: center; width: 190px;">Ações</th>
             </tr>
           </thead>
           <tbody id="tbodyGestaoNfe">
@@ -25394,6 +25660,9 @@
                       <button class="btn btn-secondary btn-sm btn-ver-danfe" data-id="${nf.id}" title="Visualizar e Imprimir DANFE Oficial A4">
                         📄 DANFE
                       </button>
+                      <button class="btn btn-secondary btn-sm btn-copiar-chave-nfe" data-id="${nf.id}" title="Copiar Chave de Acesso (44 dígitos sem espaços)" style="font-weight: 700;">
+                        🔑 Chave
+                      </button>
                       ${!isCanc ? `
                         <button class="btn btn-secondary btn-sm btn-cce-nfe" data-id="${nf.id}" title="Emitir Carta de Correção Eletrônica (CC-e) na SEFAZ" style="color: #0284c7; font-weight: 700;">
                           ✏️ CC-e
@@ -25405,8 +25674,8 @@
                       <button class="btn btn-secondary btn-sm btn-wpp-nfe" data-id="${nf.id}" title="Enviar link oficial no WhatsApp">
                         📱
                       </button>
-                      <button class="btn btn-secondary btn-sm btn-reverter-nfe" data-id="${nf.id}" title="Reverter e Excluir Nota Fiscal Teste" style="color: #dc2626; border-color: #fca5a5; font-weight: 700;">
-                        🗑️ Reverter
+                      <button class="btn btn-secondary btn-sm btn-reverter-nfe" data-id="${nf.id}" title="${nf.nfeioId && !isCanc ? 'Cancelar Nota Fiscal Oficial na SEFAZ' : 'Remover Registro Local'}" style="color: #dc2626; border-color: #fca5a5; font-weight: 700;">
+                        ${nf.nfeioId && !isCanc ? '✕ Cancelar' : '🗑️ Remover'}
                       </button>
                     </div>
                   </td>
@@ -25443,6 +25712,10 @@
 
     contentArea.querySelectorAll('.btn-ver-danfe').forEach(btn => {
       btn.addEventListener('click', () => abrirVisualizadorDanfe(btn.getAttribute('data-id')));
+    });
+
+    contentArea.querySelectorAll('.btn-copiar-chave-nfe').forEach(btn => {
+      btn.addEventListener('click', () => copiarChave44Digitos(btn.getAttribute('data-id')));
     });
 
     contentArea.querySelectorAll('.btn-cce-nfe').forEach(btn => {
@@ -27422,13 +27695,13 @@
               <strong style="font-size: 13px; color: #0284c7; display: block; margin-top: 2px;">
                 ⚡ Produção SEFAZ
               </strong>
-              <span style="font-size: 10.5px; color: #475569;">Simples Nacional (6.5%)</span>
+              <span style="font-size: 10.5px; color: #475569;">Simples Nacional (${db.configFiscal?.aliquotaSimplesNacional || 4.5}%)</span>
             </div>
 
             <div style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: 6px; padding: 10px 12px;">
               <span style="font-size: 11px; color: #64748b; display: block;">Próxima Numeração</span>
               <strong style="font-size: 13px; color: #0f172a; display: block; margin-top: 2px;" class="text-mono">
-                Série 1 • NF-e #${(db.configFiscal?.proximoNumero || 101)}
+                Série 1 • NF-e #${obterProximoNumeroNfe()}
               </strong>
               <span style="font-size: 10.5px; color: #475569;">CFOP 5.101 / 6.101</span>
             </div>
