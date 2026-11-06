@@ -305,6 +305,9 @@
             let danfeUrl = `${URL_PRODUCTS}/v2/companies/${companyId}/productinvoices/${invId}/pdf?environment=${ambiente}`;
             let xmlUrl = `${URL_PRODUCTS}/v2/companies/${companyId}/productinvoices/${invId}/xml?environment=${ambiente}`;
 
+            let numeroAutorizado = null;
+            let serieAutorizada = 1;
+
             try {
               const resStatus = await fetch(`${URL_PRODUCTS}/v2/companies/${companyId}/productinvoices/${invId}?environment=${ambiente}`, {
                 headers: { 'Authorization': 'ApiKey ' + key }
@@ -317,6 +320,12 @@
                 const authEvent = (invDetails.lastEvents?.events || []).find(e => e.type === 'Authorized');
                 if (authEvent && authEvent.data?.protocolNumber) {
                   protocolo = authEvent.data.protocolNumber;
+                }
+                if (invDetails.number) {
+                  numeroAutorizado = parseInt(invDetails.number, 10);
+                }
+                if (invDetails.serie) {
+                  serieAutorizada = invDetails.serie;
                 }
                 const failEvent = (invDetails.lastEvents?.events || []).find(e => e.type === 'AuthorizationWithFailed');
                 if (failEvent && failEvent.data?.message) {
@@ -332,9 +341,15 @@
               console.warn('[NFE.io] Consulta pós-emissão:', eConsulta);
             }
 
+            if (!numeroAutorizado && chaveAcesso && chaveAcesso.length === 44) {
+              numeroAutorizado = parseInt(chaveAcesso.substring(25, 34), 10);
+            }
+
             resData = {
               sucesso: true,
               nfeioId: invId,
+              numero: numeroAutorizado || nfe.numero,
+              serie: serieAutorizada || nfe.serie || 1,
               protocolo: protocolo,
               chaveAcesso: chaveAcesso,
               danfeUrl: danfeUrl,
@@ -352,9 +367,15 @@
         }
 
         if (resData && resData.sucesso) {
+          let numeroReal = resData.numero;
+          if (!numeroReal && resData.chaveAcesso && resData.chaveAcesso.length === 44) {
+            numeroReal = parseInt(resData.chaveAcesso.substring(25, 34), 10);
+          }
           return {
             sucesso: true,
             simulado: false,
+            numero: numeroReal || nfe.numero,
+            serie: resData.serie || nfe.serie || 1,
             protocolo: resData.protocolo || ('AUT-' + Date.now()),
             tecnospeedId: resData.nfeioId,
             nfeioId: resData.nfeioId,

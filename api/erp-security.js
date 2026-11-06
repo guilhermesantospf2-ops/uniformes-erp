@@ -1152,10 +1152,18 @@ module.exports = async function handler(req, res) {
           });
         }
 
+        let numeroAutorizado = details.number || null;
+        if (!numeroAutorizado && chaveAcesso && chaveAcesso.length === 44) {
+          numeroAutorizado = parseInt(chaveAcesso.substring(25, 34), 10);
+        }
+        if (!numeroAutorizado && payload.number) {
+          numeroAutorizado = parseInt(payload.number, 10);
+        }
+
         return res.status(200).json({
           sucesso: true,
           nfeioId: invId,
-          numero: details.number || payload.number || null,
+          numero: numeroAutorizado,
           serie: details.serie || 1,
           chaveAcesso: chaveAcesso,
           protocolo: protocolo || ('AUT-' + Date.now()),
@@ -1163,6 +1171,25 @@ module.exports = async function handler(req, res) {
           xmlUrl: `https://api.nfse.io/v2/companies/${companyId}/productinvoices/${invId}/xml?environment=${ambiente}`,
           dados: details
         });
+      } catch (err) {
+        return res.status(200).json({ sucesso: false, erro: err.message });
+      }
+    }
+
+    if (action === 'get_nfe_statetax_info') {
+      const companyId = (body.companyId || '').trim() || 'b8ac27d9851944a8baa5ad0c134d08f9';
+      const taxId = (body.taxId || '').trim() || 'f4527a4c17cc4eb485869b8db1559f41';
+      const apiKey = (body.apiKey && body.apiKey.length > 20) ? body.apiKey : 'xZmurLgFPBsPRao5stS31ZlpWIinXUDmNIQMXdzbau6WgNdviSEGyv5c1sAd8JTXsGA';
+      const fetchFn = global.fetch || require('node-fetch');
+      try {
+        const getRes = await fetchFn(`https://api.nfse.io/v2/companies/${companyId}/statetaxes/${taxId}`, {
+          headers: { 'Authorization': 'ApiKey ' + apiKey }
+        });
+        if (getRes.ok) {
+          const stData = await getRes.json();
+          return res.status(200).json({ sucesso: true, dados: stData });
+        }
+        return res.status(200).json({ sucesso: false, erro: 'Falha ao consultar Inscrição Estadual.' });
       } catch (err) {
         return res.status(200).json({ sucesso: false, erro: err.message });
       }

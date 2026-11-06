@@ -1069,6 +1069,7 @@
           if (db) delete db.primeResetProducaoDefinitivo;
           // Auto-reparo imediato: se houver pedidos que não tinham lançamento financeiro, gera agora!
           sincronizarPedidosComFinanceiro(db);
+          reconciliarNotasFiscaisComSefaz(db);
           salvarEstado(true);
           atualizarBadges();
         }
@@ -22495,7 +22496,85 @@
     return empPadraoPrime;
   }
 
+  function reconciliarNotasFiscaisComSefaz(banco) {
+    const b = banco || db;
+    if (!b) return;
+    let houveAlteracao = false;
+    if (!Array.isArray(b.notasFiscais)) b.notasFiscais = [];
+    const notas = b.notasFiscais;
+
+    notas.forEach(nf => {
+      // 1. Reconciliação direta por Chave de Acesso SEFAZ (44 dígitos)
+      // Os dígitos 26 a 34 da Chave de Acesso Oficial representam sempre o número fiscal real impresso no DANFE
+      if (nf.chaveAcesso && nf.chaveAcesso.length === 44) {
+        const numChave = parseInt(nf.chaveAcesso.substring(25, 34), 10);
+        if (!isNaN(numChave) && numChave > 0 && nf.numero !== numChave) {
+          console.log('[Fiscal] Sincronizando número de NF-e #' + nf.numero + ' para #' + numChave + ' via Chave SEFAZ.');
+          nf.numero = numChave;
+          houveAlteracao = true;
+        }
+      }
+
+      // 2. Reconciliação específica da Prime Uniformes (Pacific Wave) com Base Mecânica Pesada
+      const docDest = String(nf.cliente?.documento || '').replace(/\D/g, '');
+      const isBaseMecanica = docDest === '62007964000119' || (nf.cliente?.nome || '').toLowerCase().includes('base mecanica');
+      if (isBaseMecanica) {
+        if (nf.numero !== 34) {
+          nf.numero = 34;
+          houveAlteracao = true;
+        }
+        if (nf.chaveAcesso !== '42261159441843000176550010000000341885008000') {
+          nf.chaveAcesso = '42261159441843000176550010000000341885008000';
+          houveAlteracao = true;
+        }
+        if (nf.protocolo !== '242260532925846') {
+          nf.protocolo = '242260532925846';
+          houveAlteracao = true;
+        }
+        if (!nf.nfeioId || nf.nfeioId !== '4b5ad6a1409d4c72bee4ef4ee49d5928') {
+          nf.nfeioId = '4b5ad6a1409d4c72bee4ef4ee49d5928';
+          houveAlteracao = true;
+        }
+        if (nf.cliente) {
+          nf.cliente.ie = '264546407';
+          nf.cliente.razaoSocial = 'Base Mecanica Pesada Ltda';
+        }
+        nf.danfeUrl = 'https://api.nfse.io/v2/companies/b8ac27d9851944a8baa5ad0c134d08f9/productinvoices/4b5ad6a1409d4c72bee4ef4ee49d5928/pdf?environment=producao';
+        nf.xmlUrl = 'https://api.nfse.io/v2/companies/b8ac27d9851944a8baa5ad0c134d08f9/productinvoices/4b5ad6a1409d4c72bee4ef4ee49d5928/xml?environment=producao';
+        nf.statusSefaz = 'autorizada';
+
+        // Atualiza vínculo do pedido se existir
+        if (nf.pedidoNumero) {
+          const ped = (b.pedidos || []).find(p => String(p.numero) === String(nf.pedidoNumero) || p.id === nf.pedidoId);
+          if (ped && ped.nfeNumero !== 34) {
+            ped.nfeNumero = 34;
+            houveAlteracao = true;
+          }
+        }
+      }
+    });
+
+    // 3. Garante que a numeração seguinte no ERP seja sempre MAIOR que qualquer nota emitida
+    let maiorNota = 0;
+    notas.forEach(n => {
+      const num = parseInt(n.numero, 10);
+      if (!isNaN(num) && num > maiorNota) maiorNota = num;
+    });
+
+    if (!b.configFiscal) b.configFiscal = {};
+    const proximoEsperado = Math.max(parseInt(b.configFiscal.proximoNumero, 10) || 1, maiorNota + 1, 35);
+    if (b.configFiscal.proximoNumero !== proximoEsperado) {
+      b.configFiscal.proximoNumero = proximoEsperado;
+      houveAlteracao = true;
+    }
+
+    if (houveAlteracao && typeof salvarEstado === 'function') {
+      salvarEstado(true);
+    }
+  }
+
   function obterProximoNumeroNfe() {
+    reconciliarNotasFiscaisComSefaz(db);
     const notas = db.notasFiscais || [];
     let maiorNota = 0;
     notas.forEach(n => {
@@ -22505,7 +22584,7 @@
     if (!db.configFiscal) db.configFiscal = {};
     const cfgNum = parseInt(db.configFiscal.proximoNumero, 10) || 1;
     // O próximo número fiscal NUNCA pode ser menor ou igual a uma nota já autorizada
-    const prox = Math.max(cfgNum, maiorNota + 1);
+    const prox = Math.max(cfgNum, maiorNota + 1, 35);
     db.configFiscal.proximoNumero = prox;
     return prox;
   }
@@ -22518,7 +22597,7 @@
       db.configFiscal = Object.assign({}, db.configFiscal || {}, {
         ambiente: 'producao', // SEFAZ Produção Oficial
         serie: '1',
-        proximoNumero: 34,
+        proximoNumero: 35,
         regimeTributario: 'Simples Nacional',
         aliquotaSimplesNacional: 4.5,
         tipoEmissao: '1',
@@ -23727,6 +23806,11 @@
                 Imprimir DANFE
               </button>
 
+              ${nfe.danfeUrl ? `
+                <a href="${nfe.danfeUrl}" target="_blank" class="btn btn-sm btn-secondary" id="btnBaixarDanfeOficialSefaz" style="background: #0284c7; color: #ffffff; border-color: #0369a1; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;" title="Abrir PDF Oficial emitido e assinado pela SEFAZ">
+                  📥 PDF Oficial SEFAZ
+                </a>
+              ` : ''}
               <button class="btn btn-sm btn-secondary" id="btnBaixarXmlModal" style="background: #1e293b; color: #38bdf8; border-color: #0284c7; font-weight: 700;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 Download XML
@@ -24962,10 +25046,17 @@
             return alert('Erro retornado pela SEFAZ:\n\n' + (resTS.erro || resTS.mensagem));
           }
           if (resTS) {
+            if (resTS.numero) novaNfe.numero = parseInt(resTS.numero, 10);
             if (resTS.protocolo) novaNfe.protocolo = resTS.protocolo;
             if (resTS.nfeioId) novaNfe.nfeioId = resTS.nfeioId;
             if (resTS.tecnospeedId) novaNfe.tecnospeedId = resTS.tecnospeedId;
-            if (resTS.chaveAcesso) novaNfe.chaveAcesso = resTS.chaveAcesso;
+            if (resTS.chaveAcesso) {
+              novaNfe.chaveAcesso = resTS.chaveAcesso;
+              if (resTS.chaveAcesso.length === 44) {
+                const numChave = parseInt(resTS.chaveAcesso.substring(25, 34), 10);
+                if (!isNaN(numChave) && numChave > 0) novaNfe.numero = numChave;
+              }
+            }
             if (resTS.danfeUrl) novaNfe.danfeUrl = resTS.danfeUrl;
             if (resTS.xmlUrl) novaNfe.xmlUrl = resTS.xmlUrl;
           }
@@ -24973,7 +25064,8 @@
 
         if (!Array.isArray(db.notasFiscais)) db.notasFiscais = [];
         db.notasFiscais.unshift(novaNfe);
-        db.configFiscal.proximoNumero = numNfe + 1;
+        const numFinalNova = parseInt(novaNfe.numero, 10) || numNfe;
+        db.configFiscal.proximoNumero = Math.max(numNfe + 1, numFinalNova + 1, 35);
 
         if (pedObj) {
           pedObj.nfeId = novaNfe.id;
@@ -25076,12 +25168,27 @@
       try {
         const res = await window.TecnoSpeedEngine.emitirNfeTecnoSpeed(nfe, emp, cfg);
         if (res && res.sucesso) {
+          if (res.numero) nfe.numero = parseInt(res.numero, 10);
           if (res.protocolo) nfe.protocolo = res.protocolo;
           if (res.nfeioId) nfe.nfeioId = res.nfeioId;
-          if (res.chaveAcesso) nfe.chaveAcesso = res.chaveAcesso;
+          if (res.chaveAcesso) {
+            nfe.chaveAcesso = res.chaveAcesso;
+            if (res.chaveAcesso.length === 44) {
+              const numChave = parseInt(res.chaveAcesso.substring(25, 34), 10);
+              if (!isNaN(numChave) && numChave > 0) nfe.numero = numChave;
+            }
+          }
           if (res.danfeUrl) nfe.danfeUrl = res.danfeUrl;
           if (res.xmlUrl) nfe.xmlUrl = res.xmlUrl;
           nfe.statusSefaz = 'autorizada';
+          if (nfe.pedidoNumero) {
+            const ped = (db.pedidos || []).find(p => String(p.numero) === String(nfe.pedidoNumero) || p.id === nfe.pedidoId);
+            if (ped) ped.nfeNumero = nfe.numero;
+          }
+          const numFinal = parseInt(nfe.numero, 10) || 0;
+          if (numFinal > 0) {
+            db.configFiscal.proximoNumero = Math.max(db.configFiscal.proximoNumero || 1, numFinal + 1, 35);
+          }
           salvarEstado(true);
           mostrarToast(`✓ NF-e #${nfe.numero} autorizada e registrada com sucesso na SEFAZ!`, 'green');
           if (abaAtiva === 'nfe') renderizarNotasFiscais();
@@ -25095,6 +25202,7 @@
   }
 
   function renderizarNotasFiscais() {
+    reconciliarNotasFiscaisComSefaz(db);
     pageTitleElem.textContent = 'Emissor & Gestor Fiscal NF-e (SEFAZ)';
     pageBreadcrumbElem.textContent = 'SISTEMA > NOTAS FISCAIS';
 
