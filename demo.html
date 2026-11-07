@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bravvi ERP Têxtil — Demonstração Interativa ao Vivo (Test Drive)</title>
+  <title>Texfy ERP Têxtil — Demonstração Interativa ao Vivo (Test Drive)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,9 +15,9 @@
   <link rel="stylesheet" href="style.css?v=8.8.8">
   <script>
     // Ativa explicitamente o Modo Demonstração Sandbox com TODAS as funcionalidades PRO liberadas
-    window.BRAVVI_IS_DEMO = true;
+    window.TEXFY_IS_DEMO = true;
     window.TEXPRO_IS_DEMO = true;
-    window.BRAVVI_FORCAR_PRO = true;
+    window.TEXFY_FORCAR_PRO = true;
   </script>
   <style>
     .erp-sidebar {
@@ -32,13 +32,13 @@
   <div id="demoTopBanner" style="background: #0f172a; color: #ffffff; padding: 0 18px; height: 46px; font-size: 12.5px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #059669; z-index: 10000; gap: 10px; font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; flex-shrink: 0;">
     <div style="display: flex; align-items: center; gap: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
       <span style="background: #059669; color: #ffffff; font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 4px; letter-spacing: 0.5px; flex-shrink: 0;">SHOWROOM AO VIVO</span>
-      <span style="color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Ambiente oficial de demonstração da confecção <strong>Bravvi ERP Têxtil</strong>. Todos os módulos e nesting 100% interativos.</span>
+      <span style="color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Ambiente oficial de demonstração da confecção <strong>Texfy ERP Têxtil</strong>. Todos os módulos e nesting 100% interativos.</span>
     </div>
     <div style="display: flex; gap: 10px; align-items: center; flex-shrink: 0;">
       <button onclick="window.ERP.carregarDemonstracaoShowroom()" class="btn btn-secondary btn-sm" style="font-size: 11.5px; padding: 4px 10px; background: #1e293b; color: #f8fafc; border: 1px solid #334155; font-weight: 600; cursor: pointer; border-radius: 4px;">
         🔄 Restaurar Dados de Demonstração
       </button>
-      <a href="https://wa.me/554499856245?text=Ol%C3%A1!%20Fiz%20o%20test%20drive%20do%20Bravvi%20ERP%20T%C3%AAxtil%20e%20quero%20contratar%20para%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-primary btn-sm" style="font-size: 11.5px; padding: 4px 12px; background: #059669; color: #ffffff; text-decoration: none; font-weight: 700; border-radius: 4px; display: inline-flex; align-items: center; gap: 6px;">
+      <a href="https://wa.me/554499856245?text=Ol%C3%A1!%20Fiz%20o%20test%20drive%20do%20Texfy%20ERP%20T%C3%AAxtil%20e%20quero%20contratar%20para%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="btn btn-primary btn-sm" style="font-size: 11.5px; padding: 4px 12px; background: #059669; color: #ffffff; text-decoration: none; font-weight: 700; border-radius: 4px; display: inline-flex; align-items: center; gap: 6px;">
         💬 Contratar no WhatsApp &rarr;
       </a>
     </div>
@@ -53,10 +53,10 @@
       <div class="sidebar-header" style="display: flex; align-items: center; justify-content: space-between;">
         <div class="brand-wrapper" id="sidebarBrandWrapper" style="cursor: pointer;" onclick="window.ERP.navegarPara('empresa')" title="Configurar Dados e Logotipo da sua Confecção">
           <div class="brand-icon" id="sidebarBrandIcon" style="background: transparent; border: none; padding: 0; display: flex; align-items: center; justify-content: center;">
-            <img src="assets/bravvi-icon.png" alt="Bravvi" style="width: 40px; height: 40px; object-fit: contain;">
+            <img src="assets/texfy-icon.png" alt="Texfy" style="width: 40px; height: 40px; object-fit: contain;">
           </div>
           <div>
-            <div class="brand-title" id="sidebarBrandTitle">BRAVVI</div>
+            <div class="brand-title" id="sidebarBrandTitle">TEXFY</div>
             <div class="brand-subtitle" id="sidebarBrandSubtitle">ERP TÊXTIL</div>
           </div>
         </div>
@@ -268,7 +268,7 @@
         <div class="navbar-actions" style="display: flex; align-items: center; gap: 14px;">
           <!-- Informações da Empresa (Nome Fantasia & CNPJ) -->
           <div style="font-size: 11.5px; text-align: right;" id="headerEmpresaInfo">
-            <strong style="display: block; color: var(--text-primary); font-weight: 800; font-size: 13px;" id="headerEmpresaNome">Bravvi Indústria Têxtil</strong>
+            <strong style="display: block; color: var(--text-primary); font-weight: 800; font-size: 13px;" id="headerEmpresaNome">Texfy Indústria Têxtil</strong>
             <span class="text-mono" style="color: var(--text-gray-500); font-size: 11px;" id="headerEmpresaCnpj">CNPJ: 34.582.910/0001-44</span>
           </div>
 
@@ -321,7 +321,7 @@
   <script src="pix-qrcode.min.js"></script>
   <script src="pix-engine.js?v=8.9.0"></script>
   <script src="infinitepay-engine.js?v=8.9.0"></script>
-  <script src="bravvi-locales.js?v=9.11.0"></script>
+  <script src="texfy-locales.js?v=9.11.0"></script>
   <script src="app.js?v=9.11.0"></script>
 
   <!-- BOTÃO FLUTUANTE DE CONTRATAÇÃO NA DEMO -->
@@ -366,7 +366,7 @@
     }
   </style>
   <div class="demo-floating-cta">
-    <a href="https://wa.me/554499856245?text=Ol%C3%A1%20Guilherme!%20Fiz%20o%20teste%20no%20sistema%20e%20quero%20conectar%20o%20Bravvi%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="demo-floating-btn">
+    <a href="https://wa.me/554499856245?text=Ol%C3%A1%20Guilherme!%20Fiz%20o%20teste%20no%20sistema%20e%20quero%20conectar%20o%20Texfy%20na%20minha%20confec%C3%A7%C3%A3o." target="_blank" class="demo-floating-btn">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="#ffffff"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z"/></svg>
       <span>💬 Quero Usar na Minha Fábrica (WhatsApp) &rarr;</span>
     </a>

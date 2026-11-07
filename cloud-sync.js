@@ -1,5 +1,5 @@
 /**
- * BRAVVI ERP TÊXTIL - MOTOR DE NUVEM, BACKUP & IDENTIDADE EMPRESARIAL
+ * TEXFY ERP TÊXTIL - MOTOR DE NUVEM, BACKUP & IDENTIDADE EMPRESARIAL
  * Gerenciamento de Multi-tenant (Empresas), Sincronização e Backup Seguro
  */
 
@@ -32,7 +32,7 @@
     cidade: "Itajaí",
     uf: "SC",
     cep: "88309-677",
-    logoUrl: "assets/bravvi-logo.png",
+    logoUrl: "assets/texfy-logo.png",
     rodapeProposta: "Proposta válida por 15 dias corridos. Condições padrão de fornecimento Prime Uniformes.",
     rodapeFicha: "Ordem de Produção Oficial Prime Uniformes. Conferir grade e aviamentos antes do corte."
   };
@@ -77,14 +77,14 @@
   function obterEmpresaConfig() {
     if (isModoDemo()) {
       return Object.assign({}, EMPRESA_PADRAO, {
-        razaoSocial: "Bravvi Confecções e Uniformes Industriais Ltda",
-        nomeFantasia: "Bravvi Indústria Têxtil",
+        razaoSocial: "Texfy Confecções e Uniformes Industriais Ltda",
+        nomeFantasia: "Texfy Indústria Têxtil",
         cnpj: "34.582.910/0001-44",
         telefone: "11987654321",
-        email: "contato@bravvi.com.br",
+        email: "contato@texfy.com.br",
         cidade: "Americana",
         uf: "SP",
-        logoUrl: "assets/bravvi-logo.png"
+        logoUrl: "assets/texfy-logo.png"
       });
     }
     try {
@@ -282,7 +282,7 @@
       if (empresa.nomeFantasia && !empresa.nomeFantasia.toLowerCase().includes('bravvi')) {
         title.textContent = empresa.nomeFantasia.toUpperCase();
       } else {
-        title.textContent = 'BRAVVI';
+        title.textContent = 'TEXFY';
       }
     }
 
@@ -296,7 +296,7 @@
         icon.style.background = 'transparent';
         icon.style.padding = '0';
       } else if (!empresa.nomeFantasia || empresa.nomeFantasia.toLowerCase().includes('bravvi')) {
-        icon.innerHTML = `<img src="assets/bravvi-icon.png" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;" alt="Bravvi">`;
+        icon.innerHTML = `<img src="assets/texfy-icon.png" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;" alt="Bravvi">`;
         icon.style.background = 'transparent';
         icon.style.padding = '0';
       } else {
@@ -307,7 +307,7 @@
 
     // Top navbar (Identificação da Fábrica/Empresa operando no momento)
     const headerNome = document.getElementById('headerEmpresaNome');
-    if (headerNome) headerNome.textContent = empresa.nomeFantasia || empresa.razaoSocial || 'Bravvi Indústria Têxtil';
+    if (headerNome) headerNome.textContent = empresa.nomeFantasia || empresa.razaoSocial || 'Texfy Indústria Têxtil';
 
     const headerCnpj = document.getElementById('headerEmpresaCnpj');
     if (headerCnpj) headerCnpj.textContent = `CNPJ: ${empresa.cnpj || 'Não Informado'}`;
@@ -426,7 +426,7 @@
 
     overlay.innerHTML = `
       <div style="background: #ffffff; color: #0f172a; border-radius: 20px; max-width: 520px; width: 100%; padding: 40px 32px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4); border: 2px solid #cbd5e1;">
-        <img src="assets/bravvi-logo.png" style="height: 48px; width: auto; object-fit: contain; margin-bottom: 20px;" alt="Bravvi ERP">
+        <img src="assets/texfy-logo.png" style="height: 48px; width: auto; object-fit: contain; margin-bottom: 20px;" alt="Texfy ERP">
         
         <div style="display: inline-flex; align-items: center; gap: 6px; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 4px 12px; border-radius: 9999px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 16px;">
           ACESSO OPERACIONAL SUSPENSO
@@ -523,7 +523,7 @@
 
   // Script SQL Oficial para o Banco de Dados Supabase
   const SQL_SCHEMA_SUPABASE = `-- ==============================================================
--- BRAVVI ERP TÊXTIL - SCHEMA DO SUPABASE (POSTGRESQL REALTIME)
+-- TEXFY ERP TÊXTIL - SCHEMA DO SUPABASE (POSTGRESQL REALTIME)
 -- Cole e execute este script no "SQL Editor" do seu Supabase
 -- ==============================================================
 
@@ -928,7 +928,7 @@ with check (true);
             definirUsuarioLogado(userObj, auth);
 
             return { sucesso: true, user: userObj, precisaTrocarSenha: false };
-          } else if (senhaStr === 'Bravvi@2026' && auth.precisaTrocarSenha !== true) {
+          } else if (senhaStr === 'Texfy@2026' && auth.precisaTrocarSenha !== true) {
             return {
               sucesso: false,
               erro: 'Sua conta já possui uma senha pessoal definitiva cadastrada. Por favor, acesse com a sua senha pessoal ou clique em "Esqueceu a senha".'
@@ -936,7 +936,7 @@ with check (true);
           } else {
             return { sucesso: false, erro: 'E-mail ou senha incorretos. Verifique suas credenciais.' };
           }
-        } else if (auth && auth.precisaTrocarSenha === true && senhaStr === 'Bravvi@2026') {
+        } else if (auth && auth.precisaTrocarSenha === true && senhaStr === 'Texfy@2026') {
           tenantAuthAtivo = auth;
           const userObj = {
             id: tenantId,
@@ -971,7 +971,7 @@ with check (true);
     }
 
     // Camada 1.2: Primeiro Acesso com Senha Temporária Oficial (Pós-compra Cakto / Asaas)
-    if (senhaStr === 'Bravvi@2026') {
+    if (senhaStr === 'Texfy@2026') {
       try {
         let aprovado = null;
 
@@ -1101,7 +1101,7 @@ with check (true);
             senhaCorreta = true;
           } else if (!colab.auth && !colab.senha) {
             // Conta legada ou cadastrada sem senha inicial: permite primeiro acesso com senha padrão
-            if (senhaStr === 'Bravvi@2026' || senhaStr === 'Temp@2026') {
+            if (senhaStr === 'Texfy@2026' || senhaStr === 'Temp@2026') {
               senhaCorreta = true;
               colab.precisaTrocarSenha = true;
             } else {
@@ -1169,7 +1169,7 @@ with check (true);
               if (testHash === colab.auth.hash) senhaCorreta = true;
             } else if (colab.senha && colab.senha === senhaStr) {
               senhaCorreta = true;
-            } else if (!colab.auth && !colab.senha && (senhaStr === 'Bravvi@2026' || senhaStr === 'Temp@2026')) {
+            } else if (!colab.auth && !colab.senha && (senhaStr === 'Texfy@2026' || senhaStr === 'Temp@2026')) {
               senhaCorreta = true;
               colab.precisaTrocarSenha = true;
             }
@@ -1532,7 +1532,7 @@ with check (true);
     if (!aprovado) {
       return {
         sucesso: false,
-        erro: 'Este e-mail ainda não possui assinatura ou pagamento aprovado na Cakto. Realize a adesão na página de planos ou use a senha temporária Bravvi@2026 caso tenha acabado de comprar.'
+        erro: 'Este e-mail ainda não possui assinatura ou pagamento aprovado na Cakto. Realize a adesão na página de planos ou use a senha temporária Texfy@2026 caso tenha acabado de comprar.'
       };
     }
 

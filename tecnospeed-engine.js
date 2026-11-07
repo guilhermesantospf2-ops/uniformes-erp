@@ -1,5 +1,5 @@
 // ============================================================================
-// BRAVVI ERP TÊXTIL — MOTOR FISCAL NFE.IO (SAAS MULTI-EMPRESA CLOUD)
+// TEXFY ERP TÊXTIL — MOTOR FISCAL NFE.IO (SAAS MULTI-EMPRESA CLOUD)
 // Emissão Oficial de NF-e Modelo 55 (Produto) para Confecções e Facções
 // Documentação Oficial: https://nfe.io/docs/ | https://api.nfse.io
 // ============================================================================
@@ -7,7 +7,7 @@
 (function (window) {
   'use strict';
 
-  // Chave Mestre da Software House (Bravvi ERP)
+  // Chave Mestre da Software House (Texfy ERP)
   const MASTER_API_KEY = 'xZmurLgFPBsPRao5stS31ZlpWIinXUDmNIQMXdzbau6WgNdviSEGyv5c1sAd8JTXsGA';
   
   // Empresa Padrão / Cliente Oficial Prime Uniformes (PACIFIC WAVE COMPANY LTDA)
@@ -150,7 +150,7 @@
       return {
         sucesso: true,
         companyId: this.obterCompanyId(empresa),
-        mensagem: '✓ Confecção sincronizada com sucesso no Bravvi Fiscal Hub!'
+        mensagem: '✓ Confecção sincronizada com sucesso no Texfy Fiscal Hub!'
       };
     },
 
@@ -234,7 +234,7 @@
 
       // Dados Adicionais / Informações Complementares oficiais (Simples Nacional + IBPT + Pedido)
       const pedRef = nfe.pedidoNumero || '101';
-      const infCplPadrao = `Inf. Contribuinte: I-DOCUMENTO EMITIDO POR ME OU EPP OPTANTE PELO SIMPLES NACIONAL. II-NAO GERA DIREITO A CREDITO FISCAL DE ICMS, DE ISS E DE IPI - LC 123/2006. Valor Aproximado dos Tributos: Fed: R$ ${valorTotalTribAprox.toFixed(2).replace('.', ',')}, Est: R$ 0,00, Mun: R$ 0,00 / Fonte: IBPT empresometro.com.br. Ordem de Producao / Pedido de Venda: #${pedRef}. NF-e emitida e autorizada pelo emissor Bravvi ERP Textil. Ref. Pedido #${pedRef}`;
+      const infCplPadrao = `Inf. Contribuinte: I-DOCUMENTO EMITIDO POR ME OU EPP OPTANTE PELO SIMPLES NACIONAL. II-NAO GERA DIREITO A CREDITO FISCAL DE ICMS, DE ISS E DE IPI - LC 123/2006. Valor Aproximado dos Tributos: Fed: R$ ${valorTotalTribAprox.toFixed(2).replace('.', ',')}, Est: R$ 0,00, Mun: R$ 0,00 / Fonte: IBPT empresometro.com.br. Ordem de Producao / Pedido de Venda: #${pedRef}. NF-e emitida e autorizada pelo emissor Texfy ERP Textil. Ref. Pedido #${pedRef}`;
 
       return {
         environment: ambiente,
@@ -641,6 +641,6 @@
   // Exportações com compatibilidade retroativa total para o ERP
   window.TecnoSpeedEngine = NfeEngine;
   window.NfeIoEngine = NfeEngine;
-  window.BravviFiscalEngine = NfeEngine;
+  window.TexfyFiscalEngine = NfeEngine;
 
 })(window);

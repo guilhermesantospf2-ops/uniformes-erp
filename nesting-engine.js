@@ -1696,7 +1696,7 @@ window.DtfNestingEngine = {
       <html lang="pt-BR">
       <head>
         <meta charset="UTF-8">
-        <title>Ficha de Produção DTF - Bravvi Uniformes</title>
+        <title>Ficha de Produção DTF - Texfy Uniformes</title>
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 20px; color: #0f172a; font-size: 12px; }
           .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 16px; }
@@ -1718,7 +1718,7 @@ window.DtfNestingEngine = {
       <body>
         <div class="header">
           <div>
-            <div class="title">BRAVVI UNIFORMES • ORDEM TÉCNICA DE IMPRESSÃO DTF</div>
+            <div class="title">TEXFY UNIFORMES • ORDEM TÉCNICA DE IMPRESSÃO DTF</div>
             <div>Emitido em: ${agora} • Sistema Industrial de Nesting</div>
           </div>
           <div class="no-print">
@@ -1776,7 +1776,7 @@ window.DtfNestingEngine = {
         <div class="footer">
           <div>Operador da Impressora: ___________________________</div>
           <div>Conferência PCP: ___________________________</div>
-          <div>Bravvi Uniformes - ERP Industrial</div>
+          <div>Texfy Uniformes - ERP Industrial</div>
         </div>
       </body>
       </html>

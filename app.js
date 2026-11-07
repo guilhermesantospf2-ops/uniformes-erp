@@ -1,5 +1,5 @@
 /**
- * UNIFORMES ERP - BRAVVI ERP TÊXTIL
+ * UNIFORMES ERP - TEXFY ERP TÊXTIL
  * Controlador Principal da Aplicação Integrada
  * Sistema de Gestão Industrial e Comercial para Fábricas de Uniformes
  */
@@ -19,11 +19,11 @@
   let sincronizacaoNuvemHabilitada = false;
 
   function obterChaveStorageTenant() {
-    if (isDemo) return 'bravvi_erp_demo_temp';
+    if (isDemo) return 'texfy_erp_demo_temp';
     const tenantId = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterTenantId === 'function')
       ? window.ERP_CLOUD.obterTenantId()
       : null;
-    return tenantId ? `bravvi_erp_tenant_${tenantId}` : 'bravvi_erp_prod_v8';
+    return tenantId ? `bravvi_erp_tenant_${tenantId}` : (localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : (localStorage.getItem('bravvi_erp_prod_v8') ? 'bravvi_erp_prod_v8' : 'texfy_erp_prod_v8'));
   }
 
   /**
@@ -420,7 +420,7 @@
     try {
       const chaveTenant = obterChaveStorageTenant();
       const salvo = localStorage.getItem(chaveTenant) ||
-        localStorage.getItem('bravvi_erp_prod_v8') ||
+        localStorage.getItem((localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : (localStorage.getItem('bravvi_erp_prod_v8') ? 'bravvi_erp_prod_v8' : 'texfy_erp_prod_v8'))) ||
         localStorage.getItem('texpro_erp_prod_v8');
       if (salvo) {
         db = JSON.parse(salvo);
@@ -686,7 +686,7 @@
     descompactarBancoEmMemoria(db);
     if (isDemo) {
       try {
-        sessionStorage.setItem('bravvi_erp_demo_temp', JSON.stringify(compactarBancoParaStorage(db)));
+        sessionStorage.setItem('texfy_erp_demo_temp', JSON.stringify(compactarBancoParaStorage(db)));
       } catch (e) { }
       return;
     }
@@ -695,7 +695,7 @@
     const dbCompacto = compactarBancoParaStorage(db);
     try {
       // Remove cópias legadas pesadas que estouravam os 5MB do navegador
-      localStorage.removeItem('bravvi_erp_prod_v8');
+      localStorage.removeItem((localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : (localStorage.getItem('bravvi_erp_prod_v8') ? 'bravvi_erp_prod_v8' : 'texfy_erp_prod_v8')));
       localStorage.removeItem('texpro_erp_prod_v8');
       const tId = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterTenantId === 'function') ? window.ERP_CLOUD.obterTenantId() : 'master';
       localStorage.removeItem('bravvi_snapshots_' + (tId || 'master'));
@@ -1262,7 +1262,7 @@
     const modoAtivacao = urlParams.get('ativar') === '1' || urlParams.get('adesao') === '1' || urlParams.get('novo_cliente') === '1';
 
     // Opção de lembrar e-mail (a senha NUNCA é salva, deve ser digitada a cada entrada)
-    const emailSalvo = localStorage.getItem('BRAVVI_REMEMBERED_EMAIL') || '';
+    const emailSalvo = localStorage.getItem('TEXFY_REMEMBERED_EMAIL') || '';
     const emailInicial = emailUrl || emailSalvo;
 
     gatekeeper.innerHTML = `
@@ -1270,9 +1270,9 @@
         <!-- Cabeçalho Oficial Bravvi -->
         <div class="auth-header">
           <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px;">
-            <img src="assets/bravvi-icon.png" alt="Bravvi" style="width: 40px; height: 40px; object-fit: contain;">
+            <img src="assets/texfy-icon.png" alt="Bravvi" style="width: 40px; height: 40px; object-fit: contain;">
             <div style="text-align: left;">
-              <div style="font-family: var(--font-heading, sans-serif); font-size: 20px; font-weight: 900; letter-spacing: 0.5px; color: #ffffff;">BRAVVI ERP TÊXTIL</div>
+              <div style="font-family: var(--font-heading, sans-serif); font-size: 20px; font-weight: 900; letter-spacing: 0.5px; color: #ffffff;">TEXFY ERP TÊXTIL</div>
               <div style="font-size: 10.5px; color: #2dd4bf; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Sistema Oficial de Gestão Industrial</div>
             </div>
           </div>
@@ -1465,12 +1465,12 @@
 
     linkIrAtivacao?.addEventListener('click', () => {
       if (inpSenhaLogin) {
-        inpSenhaLogin.value = 'Bravvi@2026';
+        inpSenhaLogin.value = 'Texfy@2026';
         inpSenhaLogin.type = 'text';
         if (btnToggleL) btnToggleL.textContent = '🔒';
       }
       mostrarAlertaGate(
-        '🔑 <strong>Primeiro Acesso:</strong> Informe o mesmo e-mail cadastrado na compra e utilize a senha temporária <strong>Bravvi@2026</strong>. Ao clicar em Acessar, você definirá o nome da sua confecção e sua senha pessoal definitiva.',
+        '🔑 <strong>Primeiro Acesso:</strong> Informe o mesmo e-mail cadastrado na compra e utilize a senha temporária <strong>Texfy@2026</strong>. Ao clicar em Acessar, você definirá o nome da sua confecção e sua senha pessoal definitiva.',
         'info'
       );
       const emailVal = gatekeeper.querySelector('#gateLoginEmail')?.value.trim();
@@ -1492,12 +1492,12 @@
     if (modoAtivacao) {
       setTimeout(() => {
         if (inpSenhaLogin && !inpSenhaLogin.value) {
-          inpSenhaLogin.value = 'Bravvi@2026';
+          inpSenhaLogin.value = 'Texfy@2026';
           inpSenhaLogin.type = 'text';
           if (btnToggleL) btnToggleL.textContent = '🔒';
         }
         mostrarAlertaGate(
-          '🎉 <strong>Adesão Confirmada!</strong> Entre com seu e-mail cadastrado e a senha temporária <strong>Bravvi@2026</strong> para liberar o ambiente exclusivo da sua fábrica.',
+          '🎉 <strong>Adesão Confirmada!</strong> Entre com seu e-mail cadastrado e a senha temporária <strong>Texfy@2026</strong> para liberar o ambiente exclusivo da sua fábrica.',
           'info'
         );
         const emailVal = gatekeeper.querySelector('#gateLoginEmail')?.value.trim();
@@ -1640,9 +1640,9 @@
         if (res.sucesso) {
           // Opção "Lembrar meu e-mail"
           if (chkLembrarEmail?.checked) {
-            localStorage.setItem('BRAVVI_REMEMBERED_EMAIL', email);
+            localStorage.setItem('TEXFY_REMEMBERED_EMAIL', email);
           } else {
-            localStorage.removeItem('BRAVVI_REMEMBERED_EMAIL');
+            localStorage.removeItem('TEXFY_REMEMBERED_EMAIL');
           }
 
           if (res.precisaTrocarSenha) {
@@ -1826,9 +1826,9 @@
         <div class="modal-box modal-auth-box">
           <div class="auth-header">
             <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px;">
-              <img src="assets/bravvi-icon.png" alt="Bravvi" style="width: 38px; height: 38px; object-fit: contain;">
+              <img src="assets/texfy-icon.png" alt="Bravvi" style="width: 38px; height: 38px; object-fit: contain;">
               <div style="text-align: left;">
-                <div style="font-family: var(--font-heading, sans-serif); font-size: 19px; font-weight: 900; letter-spacing: 0.5px; color: #ffffff;">BRAVVI ERP TÊXTIL</div>
+                <div style="font-family: var(--font-heading, sans-serif); font-size: 19px; font-weight: 900; letter-spacing: 0.5px; color: #ffffff;">TEXFY ERP TÊXTIL</div>
                 <div style="font-size: 10px; color: #2dd4bf; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Sistema Oficial de Gestão Industrial</div>
               </div>
             </div>
@@ -3360,7 +3360,7 @@
   // Modal de Upsell e Apresentação do Plano Pro Industrial
   function abrirModalUpgradePlanoPro(modulo = 'geral') {
     let tituloModulo = 'Recurso Exclusivo do Plano Pro Industrial';
-    let descricaoModulo = 'Esta funcionalidade avançada faz parte do Plano Pro Industrial do Bravvi ERP Têxtil.';
+    let descricaoModulo = 'Esta funcionalidade avançada faz parte do Plano Pro Industrial do Texfy ERP Têxtil.';
     let iconeModulo = '🚀';
 
     if (modulo === 'nesting') {
@@ -3382,7 +3382,7 @@
       : (db && db.empresa);
     const nomeEmpresa = emp?.nomeFantasia || emp?.razaoSocial || 'Minha Confecção';
 
-    const textoWhatsApp = encodeURIComponent(`Olá! Sou da ${nomeEmpresa} e gostaria de fazer o upgrade do Plano Básico para o Plano Pro Industrial no Bravvi ERP Têxtil.`);
+    const textoWhatsApp = encodeURIComponent(`Olá! Sou da ${nomeEmpresa} e gostaria de fazer o upgrade do Plano Básico para o Plano Pro Industrial no Texfy ERP Têxtil.`);
     const linkWhatsApp = `https://wa.me/554499856245?text=${textoWhatsApp}`;
 
     const modalEl = criarModalCamada(`
@@ -6627,8 +6627,8 @@
     appInicial.custoUnitario = calcularCustoUnitarioAplicacao(appInicial, 1);
 
     const corTec = 'Azul Marinho';
-    const cliDef = (db.clientes && db.clientes[0]) || { nomeFantasia: "BRAVVI", nome: "BRAVVI" };
-    const sigla = (cliDef.nomeFantasia || cliDef.nome || "BRAVVI").toString().substring(0, 6);
+    const cliDef = (db.clientes && db.clientes[0]) || { nomeFantasia: "TEXFY", nome: "TEXFY" };
+    const sigla = (cliDef.nomeFantasia || cliDef.nome || "TEXFY").toString().substring(0, 6);
     const mockSvg = (window.ERP_MOCKUPS && typeof window.ERP_MOCKUPS.gerarMockupSvg === 'function')
       ? window.ERP_MOCKUPS.gerarMockupSvg(prod.nome, "#1e3a8a", "#ffffff", sigla)
       : '';
@@ -7030,7 +7030,7 @@
       // Monta texto formatado do WhatsApp
       const saudacao = (new Date().getHours() < 12) ? 'Bom dia' : (new Date().getHours() < 18) ? 'Boa tarde' : 'Boa noite';
       let msgZap = `${saudacao}, ${nomeFinal}!\n\n`;
-      msgZap += `Aqui é da *${emp.nomeFantasia || emp.razaoSocial || 'Bravvi Indústria Têxtil'}*.\n\n`;
+      msgZap += `Aqui é da *${emp.nomeFantasia || emp.razaoSocial || 'Texfy Indústria Têxtil'}*.\n\n`;
       msgZap += `Criamos o seu Pedido *#${proxNum}* no sistema. Segue o seu link exclusivo para preencher a relação de uniformes, nomes e tamanhos:\n\n`;
       msgZap += `🔗 ${linkFinal}\n\n`;
       msgZap += `_Basta abrir pelo celular, adicionar os tamanhos/nomes e confirmar. A lista cai direto na nossa fábrica para agilizar sua confecção!_`;
@@ -8369,7 +8369,7 @@
           if (!it.mockupUploadPersonalizado) {
             const cliId = document.getElementById('orcClienteSelect')?.value;
             const cli = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
-            const sigla = (cli ? (cli.nomeFantasia || cli.nome || "BRAVVI") : "BRAVVI").toString().substring(0, 6);
+            const sigla = (cli ? (cli.nomeFantasia || cli.nome || "TEXFY") : "TEXFY").toString().substring(0, 6);
             it.mockupUrl = window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, corHex, "#ffffff", sigla);
             const prev = document.getElementById('previewMockup3x4Orc');
             if (prev) prev.src = it.mockupUrl;
@@ -8380,7 +8380,7 @@
       // Mockup
       const prevMock = document.getElementById('previewMockup3x4Orc');
       if (prevMock) {
-        prevMock.src = it.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, "#1e3a8a", "#ffffff", "BRAVVI") : '');
+        prevMock.src = it.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, "#1e3a8a", "#ffffff", "TEXFY") : '');
       }
 
       // Grade Completa (Regular + Especiais + Infantis + Baby Look + Slim)
@@ -8732,7 +8732,7 @@
         if (!it.mockupUploadPersonalizado) {
           const cliId = document.getElementById('orcClienteSelect')?.value;
           const cli = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
-          const sigla = (cli ? (cli.nomeFantasia || cli.nome || "BRAVVI") : "BRAVVI").toString().substring(0, 6);
+          const sigla = (cli ? (cli.nomeFantasia || cli.nome || "TEXFY") : "TEXFY").toString().substring(0, 6);
           it.mockupUrl = window.ERP_MOCKUPS.gerarMockupSvg(prod.nome, "#1e3a8a", "#ffffff", sigla);
           const prev = document.getElementById('previewMockup3x4Orc');
           if (prev) prev.src = it.mockupUrl;
@@ -8776,7 +8776,7 @@
         const preset = btn.getAttribute('data-preset');
         const cliId = document.getElementById('orcClienteSelect')?.value;
         const cObj = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
-        const sigla = (cObj ? (cObj.nomeFantasia || cObj.nome || "BRAVVI") : "BRAVVI").toString().substring(0, 6);
+        const sigla = (cObj ? (cObj.nomeFantasia || cObj.nome || "TEXFY") : "TEXFY").toString().substring(0, 6);
 
         if (preset === 'azul') it.mockupUrl = window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, "#1e3a8a", "#ffffff", sigla);
         else if (preset === 'cinza') it.mockupUrl = window.ERP_MOCKUPS.gerarMockupSvg("brim", "#475569", "#eab308", sigla);
@@ -9032,7 +9032,7 @@
 
       if (!it.mockupUploadPersonalizado) {
         const cli = (db.clientes || []).find(c => c.id === novoCliId);
-        const sigla = (cli ? (cli.nomeFantasia || cli.nome || "BRAVVI") : "BRAVVI").toString().substring(0, 6);
+        const sigla = (cli ? (cli.nomeFantasia || cli.nome || "TEXFY") : "TEXFY").toString().substring(0, 6);
         it.mockupUrl = window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, "#1e3a8a", "#ffffff", sigla);
         const prev = document.getElementById('previewMockup3x4Orc');
         if (prev) prev.src = it.mockupUrl;
@@ -10686,7 +10686,7 @@
       jogadores: dados.jogadores || [],
       unidadeTecido: dados.unidadeTecido || 'kg',
       consumoTotalTecido: dados.consumoTotalTecido || 0,
-      mockupUrl: dados.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(dados.prod ? dados.prod.nome : 'Camisa', "#1e3a8a", "#ffffff", (dados.cliente ? (dados.cliente.nomeFantasia || dados.cliente.nome || "BRAVVI") : "BRAVVI").toString().substring(0, 6)) : ''),
+      mockupUrl: dados.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(dados.prod ? dados.prod.nome : 'Camisa', "#1e3a8a", "#ffffff", (dados.cliente ? (dados.cliente.nomeFantasia || dados.cliente.nome || "TEXFY") : "TEXFY").toString().substring(0, 6)) : ''),
       artesAnexadas: [],
       grade: dados.grade,
       precoUnitarioVenda: dados.precoVendaUnitario,
@@ -12293,7 +12293,7 @@
       <!-- Cabeçalho Empresarial -->
       <div style="border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; align-items: center; gap: 14px;">
-          ${(emp.logoUrl || 'assets/bravvi-logo.png') ? `<img src="${emp.logoUrl || 'assets/bravvi-logo.png'}" style="max-height: 64px; max-width: 165px; object-fit: contain;" alt="Logo Bravvi">` : ''}
+          ${(emp.logoUrl || 'assets/texfy-logo.png') ? `<img src="${emp.logoUrl || 'assets/texfy-logo.png'}" style="max-height: 64px; max-width: 165px; object-fit: contain;" alt="Logo Bravvi">` : ''}
           <div>
             <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${emp.nomeFantasia || emp.razaoSocial}</h2>
             <div style="font-size: 11px; color: #475569;">
@@ -12364,7 +12364,7 @@
         ? it.aplicacoes.map(a => `• <strong>${a.local}:</strong> ${a.tecnica}`).join('<br>')
         : '<span style="color: #64748b; font-style: italic;">Peça Lisa</span>';
       const subtotal = (it.valorSubtotal || ((it.precoVendaUnitario || 0) * (it.grade?.total || 0))) || 0;
-      const itMockup = it.mockupUrl || p.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, '#1e3a8a', '#ffffff', (p.clienteNome || 'BRAVVI').substring(0, 6)) : '');
+      const itMockup = it.mockupUrl || p.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, '#1e3a8a', '#ffffff', (p.clienteNome || 'TEXFY').substring(0, 6)) : '');
       return `
                   <tr style="border-bottom: 1px solid #e2e8f0;">
                     <td style="padding: 4px; text-align: center; vertical-align: middle;">
@@ -13067,7 +13067,7 @@
       <!-- Cabeçalho da Ordem de Produção -->
       <div style="border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; align-items: center; gap: 14px;">
-          ${(emp.logoUrl || 'assets/bravvi-logo.png') ? `<img src="${emp.logoUrl || 'assets/bravvi-logo.png'}" style="max-height: 60px; max-width: 150px; object-fit: contain;" alt="Logo Bravvi">` : ''}
+          ${(emp.logoUrl || 'assets/texfy-logo.png') ? `<img src="${emp.logoUrl || 'assets/texfy-logo.png'}" style="max-height: 60px; max-width: 150px; object-fit: contain;" alt="Logo Bravvi">` : ''}
           <div>
             <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${emp.nomeFantasia || emp.razaoSocial}</h2>
             <span class="text-mono" style="color: #64748b; font-size: 11px;">ORDEM DE PRODUÇÃO: <strong>${os.id}</strong> • PEDIDO <strong>#${os.pedidoNumero}</strong></span>
@@ -13119,7 +13119,7 @@
           <div style="display: flex; gap: 8px; flex-wrap: wrap; max-width: 280px; align-items: flex-start;">
             ${itensLista.map((it, idx) => `
               <div class="card-mod-thumb-ficha" data-mod-idx="${idx}" style="cursor: pointer; text-align: center; border: 1.5px solid #cbd5e1; border-radius: 5px; padding: 4px 6px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: all 0.15s ease;" title="Clique para filtrar apenas o Modelo ${idx + 1}">
-                <img src="${it.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome || 'Uniforme', it.corPrincipal || '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6)) : '')}" 
+                <img src="${it.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome || 'Uniforme', it.corPrincipal || '#1e3a8a', '#ffffff', (os.cliente || 'TEXFY').substring(0, 6)) : '')}" 
                      class="mockup-thumb-3x4" 
                      data-os-id="${os.id}" 
                      data-item-idx="${idx}" 
@@ -13263,7 +13263,7 @@
               ${itensLista.map((it, idx) => `
                 <tr style="border-bottom: 1px solid #e2e8f0;">
                   <td style="padding: 4px; text-align: center; vertical-align: middle;">
-                    <img src="${it.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome || 'Uniforme', it.corPrincipal || '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6)) : '')}" 
+                    <img src="${it.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome || 'Uniforme', it.corPrincipal || '#1e3a8a', '#ffffff', (os.cliente || 'TEXFY').substring(0, 6)) : '')}" 
                          class="mockup-thumb-3x4" 
                          data-os-id="${os.id}" 
                          data-item-idx="${idx}" 
@@ -13687,7 +13687,7 @@
     if (itensLista.length > 1) {
       return itensLista.map((it, idx) => {
         const modNome = it.produtoNome || `Modelo ${idx + 1}`;
-        const mockSrc = it.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(modNome, '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6)) : '');
+        const mockSrc = it.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(modNome, '#1e3a8a', '#ffffff', (os.cliente || 'TEXFY').substring(0, 6)) : '');
         const corTecido = it.corPrincipal || it.corTecido || corTecidoPadrao;
         const obsCores = it.observacoesCoresDetalhes || obsCoresPadrao;
         const tecnica = (it.aplicacoes && it.aplicacoes.length > 0)
@@ -13700,7 +13700,7 @@
             <!-- Cabeçalho Industrial da Folha de Mockup -->
             <div style="border-bottom: 2.5px solid #0f172a; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
               <div style="display: flex; align-items: center; gap: 14px;">
-                <img src="${emp.logoUrl || 'assets/bravvi-logo.png'}" style="max-height: 48px; max-width: 130px; object-fit: contain;">
+                <img src="${emp.logoUrl || 'assets/texfy-logo.png'}" style="max-height: 48px; max-width: 130px; object-fit: contain;">
                 <div>
                   <h2 style="font-size: 16px; font-weight: 800; color: #0f172a; margin: 0; text-transform: uppercase;">
                     GUIA VISUAL DE CHÃO DE FÁBRICA • MODELO ${idx + 1} DE ${itensLista.length}
@@ -13745,14 +13745,14 @@
               <span style="font-weight: 800; color: #dc2626;">
                 🚨 CONFERÊNCIA OBRIGATÓRIA: BANCADA DEVE CONFERIR CORTE E APLICAÇÃO ESPECÍFICA DO MODELO ${idx + 1}
               </span>
-              <span>Bravvi ERP Têxtil • Documento de Produção • Guia ${idx + 1} de ${itensLista.length}</span>
+              <span>Texfy ERP Têxtil • Documento de Produção • Guia ${idx + 1} de ${itensLista.length}</span>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    const mockupSrc = os.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(os.produto || 'Camisa', '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6));
+    const mockupSrc = os.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(os.produto || 'Camisa', '#1e3a8a', '#ffffff', (os.cliente || 'TEXFY').substring(0, 6));
     const corTecido = corTecidoPadrao;
     const obsCores = obsCoresPadrao;
     const tecnica = tecnicaPadrao;
@@ -13763,7 +13763,7 @@
         <!-- Cabeçalho Industrial da Folha de Mockup -->
         <div style="border-bottom: 2.5px solid #0f172a; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
           <div style="display: flex; align-items: center; gap: 14px;">
-            <img src="${emp.logoUrl || 'assets/bravvi-logo.png'}" style="max-height: 48px; max-width: 130px; object-fit: contain;">
+            <img src="${emp.logoUrl || 'assets/texfy-logo.png'}" style="max-height: 48px; max-width: 130px; object-fit: contain;">
             <div>
               <h2 style="font-size: 16px; font-weight: 800; color: #0f172a; margin: 0; text-transform: uppercase;">
                 GUIA VISUAL DE CHÃO DE FÁBRICA • MOCKUP OFICIAL
@@ -13808,7 +13808,7 @@
           <span style="font-weight: 800; color: #dc2626;">
             🚨 CONFERÊNCIA OBRIGATÓRIA ANTES DO CORTE E ESTAMPA: FIXAR ESTA GUIA NA BANCADA
           </span>
-          <span>Bravvi ERP Têxtil • Documento de Produção</span>
+          <span>Texfy ERP Têxtil • Documento de Produção</span>
         </div>
       </div>
     `;
@@ -15985,7 +15985,7 @@
 
             <div class="form-group">
               <label class="form-label">Cliente / Identificação do Pedido</label>
-              <input type="text" id="inpClientePc" class="form-input" value="Cliente Oficial" placeholder="Ex: Atacado das Telas, Bravvi Confecções...">
+              <input type="text" id="inpClientePc" class="form-input" value="Cliente Oficial" placeholder="Ex: Atacado das Telas, Texfy Confecções...">
             </div>
 
             <!-- Dimensões com Proporção Rígida e Quantidade -->
@@ -20503,7 +20503,7 @@
             </table>
 
             <div style="font-size: 11px; color: var(--text-gray-500); text-align: center; border-top: 1px dashed var(--border-medium); padding-top: 10px;">
-              Documento contábil emitido eletronicamente pelo Sistema Bravvi ERP Têxtil.
+              Documento contábil emitido eletronicamente pelo Sistema Texfy ERP Têxtil.
             </div>
           </div>
 
@@ -23146,12 +23146,12 @@
         <indFinal>1</indFinal>
         <indPres>1</indPres>
         <procEmi>0</procEmi>
-        <verProc>BravviERP_8.0</verProc>
+        <verProc>TexfyERP_10.0</verProc>
       </ide>
       <emit>
         <CNPJ>${empCnpj}</CNPJ>
-        <xNome><![CDATA[${emp.razaoSocial || emp.nomeFantasia || 'Bravvi Confecções Ltda'}]]></xNome>
-        <xFant><![CDATA[${emp.nomeFantasia || 'Bravvi Indústria Têxtil'}]]></xFant>
+        <xNome><![CDATA[${emp.razaoSocial || emp.nomeFantasia || 'Texfy Confecções Ltda'}]]></xNome>
+        <xFant><![CDATA[${emp.nomeFantasia || 'Texfy Indústria Têxtil'}]]></xFant>
         <enderEmit>
           <xLgr><![CDATA[${emp.endereco || 'Rua das Indústrias Têxteis, 450'}]]></xLgr>
           <nro>450</nro>
@@ -23228,7 +23228,7 @@
   <protNFe versao="4.00">
     <infProt>
       <tpAmb>${nfe.ambiente === 'producao' ? '1' : '2'}</tpAmb>
-      <verAplic>BravviFiscal_4.0</verAplic>
+      <verAplic>TexfyFiscal_5.0</verAplic>
       <chNFe>${nfe.chaveAcesso}</chNFe>
       <dhRecbto>${dataHoraIso}</dhRecbto>
       <nProt>${nfe.protocolo || '135260098765432'}</nProt>
@@ -23800,7 +23800,7 @@
 
         <!-- 11. RODAPÉ DA FOLHA FISCAL -->
         <div class="danfe-rodape-fiscal">
-          <span>Impresso em ${dataEmissaoData} às ${dataEmissaoHora} - Sistema Tecnológico: Bravvi ERP Pro - https://bravvierp.com.br</span>
+          <span>Impresso em ${dataEmissaoData} às ${dataEmissaoHora} - Sistema Tecnológico: Texfy ERP Pro - https://texfyerp.com.br</span>
           <span>Emissor Oficial SEFAZ</span>
         </div>
       </div>
@@ -24715,7 +24715,7 @@
             <!-- Parâmetros de Nuvem Fiscal (Discreto / Avançado para Software House) -->
             <details style="margin-top: 12px; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 6px 12px; background: #f8fafc;">
               <summary style="font-size: 11px; color: #64748b; font-weight: 700; cursor: pointer; user-select: none;">
-                ⚙️ Conexão de Nuvem Fiscal SEFAZ (Bravvi Cloud)
+                ⚙️ Conexão de Nuvem Fiscal SEFAZ (Texfy Cloud)
               </summary>
               <div style="padding-top: 10px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -24809,9 +24809,9 @@
       btnPing.disabled = true;
       btnPing.innerHTML = `
         <svg class="icon-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
-        Testando Bravvi Fiscal...
+        Testando Texfy Fiscal...
       `;
-      resPing.innerHTML = '<span style="color: #0284c7;">Conectando à API Bravvi Fiscal Cloud e verificando status da SEFAZ...</span>';
+      resPing.innerHTML = '<span style="color: #0284c7;">Conectando à API Texfy Fiscal Cloud e verificando status da SEFAZ...</span>';
 
       const tokenInformado = modalEl.querySelector('#cfgFiscalToken').value.trim();
       const amb = modalEl.querySelector('#cfgFiscalAmbiente').value;
@@ -24824,7 +24824,7 @@
         if (resultado.sucesso) {
           resPing.innerHTML = `
             <div style="color: #15803d; font-weight: 800; margin-bottom: 2px;">
-              🟢 Bravvi Fiscal Cloud Fiscal Online & Conectada!
+              🟢 Texfy Fiscal Cloud Fiscal Online & Conectada!
             </div>
             <div style="font-size: 11px; color: #166534;">
               &bull; <strong>Ambiente:</strong> ${amb.toUpperCase()}<br>
@@ -24835,11 +24835,11 @@
         } else {
           resPing.innerHTML = `
             <div style="color: #0369a1; font-weight: 800; margin-bottom: 2px;">
-              🟡 Motor Fiscal Bravvi Fiscal (Modo Teste / Sandbox Ativo)
+              🟡 Motor Fiscal Texfy Fiscal (Modo Teste / Sandbox Ativo)
             </div>
             <div style="font-size: 11px; color: #334155;">
               &bull; Emissão de NF-e, DANFE A4, XML 4.00 e CC-e 100% funcionais no ERP.<br>
-              &bull; Para transmissão real com autorização oficial da Receita Estadual, conecte as credenciais Bravvi Fiscal.
+              &bull; Para transmissão real com autorização oficial da Receita Estadual, conecte as credenciais Texfy Fiscal.
             </div>
           `;
         }
@@ -25577,12 +25577,12 @@
             modalidade: '9',
             transportadoraNome: 'RETIRADA NO LOCAL / ENTREGA PRÓPRIA'
           },
-          informacoesComplementares: `NF-e emitida e autorizada pelo emissor Bravvi ERP Têxtil. ${pedObj ? `Ref. Pedido #${pedObj.numero}` : ''}`
+          informacoesComplementares: `NF-e emitida e autorizada pelo emissor Texfy ERP Têxtil. ${pedObj ? `Ref. Pedido #${pedObj.numero}` : ''}`
         };
 
         novaNfe.xmlGerado = gerarXmlNfePadrao400(novaNfe, emp);
 
-        // Disparo e Autorização Oficial via Motor Fiscal Bravvi Fiscal
+        // Disparo e Autorização Oficial via Motor Fiscal Texfy Fiscal
         if (window.TecnoSpeedEngine) {
           const resTS = await window.TecnoSpeedEngine.emitirNfeTecnoSpeed(novaNfe, emp, cfg);
           if (resTS && !resTS.sucesso && !resTS.simulado) {
@@ -26156,7 +26156,7 @@
     function extrairDadosDoModeloAtivo(idx) {
       if (itensLista && itensLista.length > 0 && itensLista[idx]) {
         const it = itensLista[idx];
-        const mSrc = it.mockupUrl || (pedido ? pedido.mockupUrl : (os ? os.mockupUrl : '')) || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome || "Uniforme", "#1e3a8a", "#ffffff", (clienteNome || "BRAVVI").substring(0, 6)) : '');
+        const mSrc = it.mockupUrl || (pedido ? pedido.mockupUrl : (os ? os.mockupUrl : '')) || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome || "Uniforme", "#1e3a8a", "#ffffff", (clienteNome || "TEXFY").substring(0, 6)) : '');
         const pNome = it.produtoNome || produtoNome;
         const cTec = it.corPrincipal || it.corTecido || (pedido ? pedido.corTecido : (os ? os.corTecido : 'A Definir'));
         const obs = it.observacoesCoresDetalhes || (pedido ? pedido.observacoesCoresDetalhes : (os ? os.observacoesCoresDetalhes : ''));
@@ -26166,7 +26166,7 @@
           : (pedido ? pedido.tipoPersonalizacao : (os ? os.tipoPersonalizacao : 'Personalização Conforme Ficha'));
         return { mSrc, pNome, cTec, obs, grd, tec };
       }
-      const mSrc = (pedido ? pedido.mockupUrl : (os ? os.mockupUrl : mockupSrc)) || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg("Polo", "#1e3a8a", "#ffffff", "BRAVVI") : '');
+      const mSrc = (pedido ? pedido.mockupUrl : (os ? os.mockupUrl : mockupSrc)) || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg("Polo", "#1e3a8a", "#ffffff", "TEXFY") : '');
       const pNome = (pedido ? pedido.produtoNome : (os ? os.produto : produtoNome));
       const cTec = (pedido ? pedido.corTecido : (os ? os.corTecido : 'A Definir'));
       const obs = (pedido ? pedido.observacoesCoresDetalhes : (os ? os.observacoesCoresDetalhes : ''));
@@ -26862,7 +26862,7 @@
     const nome = user?.user_metadata?.full_name || perfil?.nome || 'Usuário';
     const email = user?.email || 'contato@empresa.com.br';
     const cargo = user?.user_metadata?.role || perfil?.cargo || 'Colaborador';
-    const empresa = user?.user_metadata?.company_name || 'Bravvi Uniformes';
+    const empresa = user?.user_metadata?.company_name || 'Texfy Uniformes';
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
@@ -27128,8 +27128,8 @@
     const hoje = new Date().toISOString().split('T')[0];
 
     const empDemo = {
-      razaoSocial: "Bravvi Confecções e Uniformes Industriais Ltda",
-      nomeFantasia: "Bravvi Indústria Têxtil",
+      razaoSocial: "Texfy Confecções e Uniformes Industriais Ltda",
+      nomeFantasia: "Texfy Indústria Têxtil",
       cnpj: "34.582.910/0001-44",
       inscricaoEstadual: "123.456.789.110",
       telefone: "4499856245",
@@ -27142,7 +27142,7 @@
       cidade: "Americana",
       uf: "SP",
       cep: "13465-000",
-      logoUrl: "assets/bravvi-logo.png",
+      logoUrl: "assets/texfy-logo.png",
       rodapeProposta: "Proposta válida por 15 dias corridos. 50% de sinal na aprovação e 50% na entrega.",
       rodapeFicha: "Ordem de Produção Oficial. Tolerância industrial de 2mm. Confirme o encaixe antes do corte."
     };
@@ -27699,7 +27699,7 @@
         },
         transporte: {
           modalidade: "9",
-          transportadoraNome: "FROTA PRÓPRIA BRAVVI"
+          transportadoraNome: "FROTA PRÓPRIA TEXFY"
         },
         informacoesComplementares: "Documento emitido por ME ou EPP optante pelo Simples Nacional. Ref. Pedido #104."
       }
@@ -27818,12 +27818,12 @@
 
             <div class="form-group" style="margin-bottom: 12px;">
               <label class="form-label">Nome Fantasia (Como a fábrica é conhecida comercialmente):</label>
-              <input type="text" class="form-control" id="inpEmpNomeFantasia" value="${emp.nomeFantasia || ''}" placeholder="ex: Bravvi Uniformes">
+              <input type="text" class="form-control" id="inpEmpNomeFantasia" value="${emp.nomeFantasia || ''}" placeholder="ex: Texfy Uniformes">
             </div>
 
             <div class="form-group" style="margin-bottom: 12px;">
               <label class="form-label">Razão Social Completa:</label>
-              <input type="text" class="form-control" id="inpEmpRazaoSocial" value="${emp.razaoSocial || ''}" placeholder="ex: Bravvi Confecções e Uniformes Industriais Ltda">
+              <input type="text" class="form-control" id="inpEmpRazaoSocial" value="${emp.razaoSocial || ''}" placeholder="ex: Texfy Confecções e Uniformes Industriais Ltda">
             </div>
 
             <div class="grid-cards-2" style="gap: 10px; margin-bottom: 12px;">
@@ -28179,7 +28179,7 @@
           <div class="modal-header" style="background: #0f172a; color: #ffffff;">
             <div>
               <div class="modal-title" style="color: #ffffff; display: flex; align-items: center; gap: 8px;">
-                <span>🚀 Acelerador Comercial • Bravvi ERP Têxtil</span>
+                <span>🚀 Acelerador Comercial • Texfy ERP Têxtil</span>
                 <span class="status-pill status-green" style="font-size: 10px; background: #10b981; color: #ffffff;">PRONTO P/ VENDER</span>
               </div>
               <div style="font-size: 11.5px; color: #94a3b8; margin-top: 2px;">
@@ -28382,7 +28382,7 @@
                 <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; background: #ffffff;">
                   <strong style="color: #b91c1c; font-size: 13px;">❌ "E se a internet cair aqui no galpão?"</strong>
                   <p style="font-size: 12px; color: #334155; margin-top: 4px; line-height: 1.45;">
-                    <strong>✅ O que responder:</strong> <em>"O Bravvi ERP Têxtil funciona em modo Local Seguro Offline. Se a internet cair, você continua tirando pedidos e imprimindo fichas normalmente sem travar nada."</em>
+                    <strong>✅ O que responder:</strong> <em>"O Texfy ERP Têxtil funciona em modo Local Seguro Offline. Se a internet cair, você continua tirando pedidos e imprimindo fichas normalmente sem travar nada."</em>
                   </p>
                 </div>
               </div>
@@ -28455,7 +28455,7 @@
     });
   }
 
-  // Exposição Global das Funções Públicas da API Bravvi ERP Têxtil
+  // Exposição Global das Funções Públicas da API Texfy ERP Têxtil
 
   /* ==========================================================================
      REPARTIR ORDEM DE SERVIÇO / PEDIDO MULTI-MODELOS POR COSTUREIRA (CONFIDENCIAL)
@@ -28983,7 +28983,7 @@
       container.innerHTML = lotesTrabalho.map((lote, lIdx) => {
         const letra = lote.letra || String.fromCharCode(65 + lIdx);
         const corTec = itemOrig.corPrincipal || itemOrig.corTecido || os.corTecido || 'A Definir';
-        const mockSrc = lote.mockupUrl || itemOrig.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(lote.produtoNome, '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6)) : '');
+        const mockSrc = lote.mockupUrl || itemOrig.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(lote.produtoNome, '#1e3a8a', '#ffffff', (os.cliente || 'TEXFY').substring(0, 6)) : '');
         const totPecas = lote.grade?.total || 0;
 
         return `
@@ -29186,7 +29186,7 @@
         const modNome = lote.produtoNome;
         const corTec = itemOrig.corPrincipal || itemOrig.corTecido || os.corTecido || 'A Definir';
         const obsCores = itemOrig.observacoesCoresDetalhes || os.observacoesCoresDetalhes || '';
-        const itMockup = lote.mockupUrl || itemOrig.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(modNome, '#1e3a8a', '#ffffff', (os.cliente || 'BRAVVI').substring(0, 6)) : '');
+        const itMockup = lote.mockupUrl || itemOrig.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(modNome, '#1e3a8a', '#ffffff', (os.cliente || 'TEXFY').substring(0, 6)) : '');
 
         const subOS = {
           id: `${os.id}-${letra}`,
@@ -29422,8 +29422,8 @@
       try {
         const chaveTenant = obterChaveStorageTenant();
         localStorage.setItem(chaveTenant, JSON.stringify(compactarBancoParaStorage(db)));
-        localStorage.setItem('bravvi_erp_prod_v8', JSON.stringify(compactarBancoParaStorage(db)));
-        localStorage.setItem('BRAVVI_ERP_EMPRESA_CONFIG', JSON.stringify(db.empresa));
+        localStorage.setItem((localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : (localStorage.getItem('bravvi_erp_prod_v8') ? 'bravvi_erp_prod_v8' : 'texfy_erp_prod_v8')), JSON.stringify(compactarBancoParaStorage(db)));
+        localStorage.setItem('TEXFY_ERP_EMPRESA_CONFIG', JSON.stringify(db.empresa));
       } catch (e) { }
 
       salvarEstado(true);
@@ -29447,7 +29447,7 @@
       try {
         const chaveTenant = obterChaveStorageTenant();
         localStorage.removeItem(chaveTenant);
-        localStorage.removeItem('bravvi_erp_prod_v8');
+        localStorage.removeItem((localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : (localStorage.getItem('bravvi_erp_prod_v8') ? 'bravvi_erp_prod_v8' : 'texfy_erp_prod_v8')));
         localStorage.removeItem('texpro_erp_prod_v8');
       } catch (e) { }
       db = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA));

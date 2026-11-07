@@ -1,5 +1,5 @@
 /**
- * BRAVVI ERP TÊXTIL - INSTALADOR DE APLICATIVO DESKTOP (PWA)
+ * TEXFY ERP TÊXTIL - INSTALADOR DE APLICATIVO DESKTOP (PWA)
  * Permite instalar e rodar o ERP como programa nativo no Windows, Mac e Linux
  */
 
@@ -62,13 +62,13 @@
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
     isStandalone = true;
-    console.log('[PWA] Aplicativo Bravvi ERP instalado com sucesso no PC!');
+    console.log('[PWA] Aplicativo Texfy ERP instalado com sucesso no PC!');
     atualizarBotoesInstalacao(false, true);
 
     if (window.ERP && typeof window.ERP.mostrarToast === 'function') {
-      window.ERP.mostrarToast('🎉 Bravvi ERP instalado com sucesso na sua Área de Trabalho e Barra de Tarefas!', 'green');
+      window.ERP.mostrarToast('🎉 Texfy ERP instalado com sucesso na sua Área de Trabalho e Barra de Tarefas!', 'green');
     } else {
-      alert('🎉 Parabéns! O Bravvi ERP foi instalado com sucesso no seu computador e já está disponível no seu Menu Iniciar e Área de Trabalho.');
+      alert('🎉 Parabéns! O Texfy ERP foi instalado com sucesso no seu computador e já está disponível no seu Menu Iniciar e Área de Trabalho.');
     }
   });
 
@@ -80,7 +80,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
           <span>✓ App Instalado</span>
         `;
-        btn.title = 'Bravvi ERP instalado como aplicativo no computador';
+        btn.title = 'Texfy ERP instalado como aplicativo no computador';
         btn.style.opacity = '0.9';
         btn.style.background = '#047857';
         btn.style.borderColor = '#059669';
@@ -90,7 +90,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
           <span>💻 Baixar no PC</span>
         `;
-        btn.title = 'Instalar Bravvi ERP como aplicativo na Área de Trabalho e Barra de Tarefas';
+        btn.title = 'Instalar Texfy ERP como aplicativo na Área de Trabalho e Barra de Tarefas';
       }
     });
   }
@@ -137,9 +137,9 @@
         <!-- Header do Modal -->
         <div class="modal-header" style="background: linear-gradient(135deg, #032b35 0%, #064e3b 100%); padding: 18px 22px; color: #ffffff; display: flex; justify-content: space-between; align-items: center;">
           <div style="display: flex; align-items: center; gap: 12px;">
-            <img src="assets/bravvi-icon.png" alt="Bravvi" style="width: 40px; height: 40px; object-fit: contain; border-radius: 8px; background: rgba(255,255,255,0.1); padding: 2px;">
+            <img src="assets/texfy-icon.png" alt="Bravvi" style="width: 40px; height: 40px; object-fit: contain; border-radius: 8px; background: rgba(255,255,255,0.1); padding: 2px;">
             <div>
-              <div class="modal-title" style="color: #ffffff; font-size: 16px; font-weight: 800;">Instalar Bravvi ERP no Computador</div>
+              <div class="modal-title" style="color: #ffffff; font-size: 16px; font-weight: 800;">Instalar Texfy ERP no Computador</div>
               <div style="font-size: 11.5px; color: #2dd4bf; margin-top: 2px; font-weight: 600;">
                 Sistema direto na sua Área de Trabalho e Barra de Tarefas
               </div>
@@ -182,7 +182,7 @@
             <div style="font-size: 12px; color: #1e293b; line-height: 1.5;">
               <strong>Passo 2 (Pelo Menu do Navegador):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0;">
-                <li><strong>No Google Chrome:</strong> Clique nos 3 pontinhos no canto superior direito &rarr; <em>Transmitir, salvar e compartilhar</em> (ou <em>Instalar Bravvi ERP</em>) &rarr; <strong>Instalar página como aplicativo</strong>.</li>
+                <li><strong>No Google Chrome:</strong> Clique nos 3 pontinhos no canto superior direito &rarr; <em>Transmitir, salvar e compartilhar</em> (ou <em>Instalar Texfy ERP</em>) &rarr; <strong>Instalar página como aplicativo</strong>.</li>
                 <li><strong>No Microsoft Edge:</strong> Clique nos 3 pontinhos no canto superior direito &rarr; <em>Aplicativos</em> &rarr; <strong>Instalar este site como um aplicativo</strong>.</li>
               </ul>
             </div>
@@ -223,7 +223,7 @@
   }
 
   function abrirModalJaInstalado() {
-    alert('✓ O Bravvi ERP já está instalado e ativo como aplicativo no seu computador! Você pode abri-lo diretamente pelo Menu Iniciar ou pelo atalho na sua Área de Trabalho.');
+    alert('✓ O Texfy ERP já está instalado e ativo como aplicativo no seu computador! Você pode abri-lo diretamente pelo Menu Iniciar ou pelo atalho na sua Área de Trabalho.');
   }
 
   // Inicialização na montagem do DOM
@@ -232,8 +232,8 @@
   });
 
   // Expõe no escopo global garantido
-  window.solicitarInstalacaoBravviApp = solicitarInstalacaoApp;
-  window.BRAVVI_PWA = {
+  window.solicitarInstalacaoTexfyApp = solicitarInstalacaoApp;
+  window.TEXFY_PWA = {
     solicitarInstalacaoApp,
     isStandalone: () => isStandalone,
     atualizarBotoesInstalacao

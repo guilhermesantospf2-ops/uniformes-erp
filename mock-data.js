@@ -163,19 +163,19 @@ window.ERP_MOCKUPS = {
 
 window.ERP_INITIAL_DATA = {
   empresa: {
-    razaoSocial: "Bravvi Confecções e Uniformes Industriais Ltda",
-    nomeFantasia: "Bravvi Indústria Têxtil",
+    razaoSocial: "Texfy Confecções e Uniformes Industriais Ltda",
+    nomeFantasia: "Texfy Indústria Têxtil",
     cnpj: "34.582.910/0001-44",
     ie: "109.824.712.110",
     telefone: "11987654321",
-    email: "contato@bravvi.com.br",
+    email: "contato@texfy.com.br",
     endereco: "Rua das Indústrias Têxteis, 450 - Distrito Industrial",
     cidade: "Americana",
     uf: "SP",
     cep: "13470-000",
     regimeTributario: "Simples Nacional",
     aliquotaImpostoPadrao: 6.5,
-    logoUrl: "assets/bravvi-logo.png"
+    logoUrl: "assets/texfy-logo.png"
   },
 
   // CATÁLOGO COMPLETO DE MODELAGENS TÊXTEIS (28 MODELOS EXAUSTIVOS)

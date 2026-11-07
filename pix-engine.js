@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * BRAVVI ERP TÊXTIL — MOTOR PIX & SISTEMATIZAÇÃO DE COBRANÇAS
+ * TEXFY ERP TÊXTIL — MOTOR PIX & SISTEMATIZAÇÃO DE COBRANÇAS
  * ============================================================================
  * Geração de Payload BR Code (Padrão Oficial BACEN EMVCo), QR Code Vetorial SVG
  * e Mensagens de Cobrança com 1 clique para WhatsApp.
@@ -84,7 +84,7 @@
     gerarPayload: function ({
       chave,
       tipoChave = 'CNPJ',
-      nome = 'Bravvi Industria Textil',
+      nome = 'Texfy Industria Textil',
       cidade = 'Americana',
       valor = null,
       txId = '***',
@@ -95,7 +95,7 @@
       }
 
       const chaveLimpa = this.normalizarChave(chave, tipoChave);
-      const nomeLimpo = this.sanitizeText(nome, 25) || 'BRAVVI TEXTIL';
+      const nomeLimpo = this.sanitizeText(nome, 25) || 'TEXFY TEXTIL';
       const cidadeLimpa = this.sanitizeText(cidade, 15) || 'SAO PAULO';
       const txIdLimpo = this.sanitizeText(txId, 25) || '***';
 
@@ -172,7 +172,7 @@
       tipoCobranca = 'Quitação do Pedido',
       payloadPix = ''
     }) {
-      const nomeEmp = empresa?.nomeFantasia || empresa?.razaoSocial || 'Bravvi Indústria Têxtil';
+      const nomeEmp = empresa?.nomeFantasia || empresa?.razaoSocial || 'Texfy Indústria Têxtil';
       const numPed = pedido?.numero || pedido?.id || '';
       const prodResumo = pedido?.produtoNome
         ? `${pedido.grade?.total || ''}x ${pedido.produtoNome}`
@@ -331,7 +331,7 @@
                 <!-- Detalhes do PIX & Copia e Cola -->
                 <div>
                   <div style="font-size: 11.5px; color: #64748b; margin-bottom: 4px;">
-                    Beneficiário: <strong style="color: #0f172a;">${emp.nomeFantasia || emp.razaoSocial || 'Bravvi Têxtil'}</strong>
+                    Beneficiário: <strong style="color: #0f172a;">${emp.nomeFantasia || emp.razaoSocial || 'Texfy Têxtil'}</strong>
                   </div>
                   <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">
                     Chave: <span class="text-mono" style="color: #0f172a; font-weight: 700;">${emp.chavePix || 'Não informada'}</span> (${emp.tipoChavePix || 'PIX'})
@@ -411,7 +411,7 @@
           const payload = PixEngine.gerarPayload({
             chave: chave,
             tipoChave: emp.tipoChavePix || 'CNPJ',
-            nome: emp.nomeFantasia || emp.razaoSocial || 'Bravvi Textil',
+            nome: emp.nomeFantasia || emp.razaoSocial || 'Texfy Textil',
             cidade: emp.cidade || 'Americana',
             valor: val > 0 ? val : null,
             txId: `PED${p.numero || '101'}`,
@@ -538,6 +538,6 @@
     }
   };
 
-  // Exporta globalmente para uso pelo Bravvi ERP
+  // Exporta globalmente para uso pelo Texfy ERP
   window.PixEngine = PixEngine;
 })();

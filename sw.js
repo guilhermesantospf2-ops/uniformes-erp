@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bravvi-erp-desktop-v9.19.0';
+const CACHE_NAME = 'texfy-erp-desktop-v10.0.0';
 
 const CORE_ASSETS = [
   '/',
@@ -10,25 +10,25 @@ const CORE_ASSETS = [
   '/time.html',
   '/coleta',
   '/coleta.html',
-  '/style.css?v=9.19.0',
-  '/app.js?v=9.19.0',
-  '/cloud-sync.js?v=9.19.0',
-  '/nesting-engine.js?v=9.19.0',
-  '/market-benchmark.js?v=9.19.0',
-  '/mock-data.js?v=9.19.0',
-  '/pwa-install.js?v=9.19.0',
-  '/pix-engine.js?v=9.19.0',
+  '/style.css?v=10.0.0',
+  '/app.js?v=10.0.0',
+  '/cloud-sync.js?v=10.0.0',
+  '/nesting-engine.js?v=10.0.0',
+  '/market-benchmark.js?v=10.0.0',
+  '/mock-data.js?v=10.0.0',
+  '/pwa-install.js?v=10.0.0',
+  '/pix-engine.js?v=10.0.0',
   '/pix-qrcode.min.js',
-  '/infinitepay-engine.js?v=9.19.0',
+  '/infinitepay-engine.js?v=10.0.0',
   '/jszip.min.js',
-  '/tecnospeed-engine.js?v=9.19.0',
+  '/tecnospeed-engine.js?v=10.0.0',
   '/manifest.json',
   '/favicon.ico',
   '/assets/favicon.png',
   '/assets/icon-192.png',
   '/assets/icon-512.png',
-  '/assets/bravvi-icon.png',
-  '/assets/bravvi-logo.png'
+  '/assets/texfy-icon.png',
+  '/assets/texfy-logo.png'
 ];
 
 self.addEventListener('install', (event) => {

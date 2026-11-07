@@ -1,6 +1,6 @@
 {
-  "name": "Bravvi ERP Têxtil - Gestão Industrial",
-  "short_name": "Bravvi ERP",
+  "name": "Texfy ERP Têxtil - Gestão Industrial",
+  "short_name": "Texfy ERP",
   "description": "Sistema Completo de Gestão e Produção para Confecções e Fábricas de Uniformes",
   "start_url": "/index.html",
   "id": "/index.html",
@@ -23,7 +23,7 @@
       "purpose": "any maskable"
     },
     {
-      "src": "assets/bravvi-icon.png",
+      "src": "assets/texfy-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
