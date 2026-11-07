@@ -1,6 +1,28 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <script>
+    (function sanitizarStorageLegado() {
+      try {
+        for (var i = localStorage.length - 1; i >= 0; i--) {
+          var k = localStorage.key(i);
+          if (k && /bravvi/i.test(k)) {
+            var val = localStorage.getItem(k);
+            var novoK = k.replace(/bravvi/gi, 'texfy').replace(/BRAVVI/g, 'TEXFY');
+            if (val) {
+              localStorage.setItem(novoK, val.replace(/bravvi/gi, 'texfy').replace(/BRAVVI/g, 'TEXFY').replace(/Bravvi/g, 'Texfy'));
+            }
+            localStorage.removeItem(k);
+          } else if (k) {
+            var val = localStorage.getItem(k);
+            if (val && /bravvi/i.test(val)) {
+              localStorage.setItem(k, val.replace(/bravvi/gi, 'texfy').replace(/BRAVVI/g, 'TEXFY').replace(/Bravvi/g, 'Texfy'));
+            }
+          }
+        }
+      } catch (e) {}
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Texfy ERP Têxtil — Demonstração Interativa ao Vivo (Test Drive)</title>
@@ -53,7 +75,7 @@
       <div class="sidebar-header" style="display: flex; align-items: center; justify-content: space-between;">
         <div class="brand-wrapper" id="sidebarBrandWrapper" style="cursor: pointer;" onclick="window.ERP.navegarPara('empresa')" title="Configurar Dados e Logotipo da sua Confecção">
           <div class="brand-icon" id="sidebarBrandIcon" style="background: transparent; border: none; padding: 0; display: flex; align-items: center; justify-content: center;">
-            <img src="assets/texfy-icon.png" alt="Texfy" style="width: 40px; height: 40px; object-fit: contain;">
+            <img src="assets/texfy-icon.svg?v=10.0.0" alt="Texfy" style="width: 40px; height: 40px; object-fit: contain;">
           </div>
           <div>
             <div class="brand-title" id="sidebarBrandTitle">TEXFY</div>

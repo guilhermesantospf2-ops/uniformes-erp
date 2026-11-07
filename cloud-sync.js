@@ -32,7 +32,7 @@
     cidade: "Itajaí",
     uf: "SC",
     cep: "88309-677",
-    logoUrl: "assets/texfy-logo.png",
+    logoUrl: "assets/texfy-logo.svg?v=10.0.0",
     rodapeProposta: "Proposta válida por 15 dias corridos. Condições padrão de fornecimento Prime Uniformes.",
     rodapeFicha: "Ordem de Produção Oficial Prime Uniformes. Conferir grade e aviamentos antes do corte."
   };
@@ -84,7 +84,7 @@
         email: "contato@texfy.com.br",
         cidade: "Americana",
         uf: "SP",
-        logoUrl: "assets/texfy-logo.png"
+        logoUrl: "assets/texfy-logo.svg?v=10.0.0"
       });
     }
     try {
@@ -276,6 +276,14 @@
   }
 
   function atualizarElementosVisuaisEmpresa(empresa) {
+    if (empresa) {
+      if (empresa.nomeFantasia && /bravvi/i.test(empresa.nomeFantasia)) {
+        empresa.nomeFantasia = 'Texfy Indústria Têxtil';
+      }
+      if (empresa.razaoSocial && /bravvi/i.test(empresa.razaoSocial)) {
+        empresa.razaoSocial = 'Texfy Confecções e Uniformes Industriais Ltda';
+      }
+    }
     // Header da sidebar (Marca Oficial do Sistema ou Marca Própria Customizada)
     const title = document.getElementById('sidebarBrandTitle');
     if (title) {
@@ -296,7 +304,7 @@
         icon.style.background = 'transparent';
         icon.style.padding = '0';
       } else if (!empresa.nomeFantasia || empresa.nomeFantasia.toLowerCase().includes('texfy')) {
-        icon.innerHTML = `<img src="assets/texfy-icon.png" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;" alt="Texfy">`;
+        icon.innerHTML = `<img src="assets/texfy-icon.svg?v=10.0.0" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;" alt="Texfy">`;
         icon.style.background = 'transparent';
         icon.style.padding = '0';
       } else {
@@ -426,7 +434,7 @@
 
     overlay.innerHTML = `
       <div style="background: #ffffff; color: #0f172a; border-radius: 20px; max-width: 520px; width: 100%; padding: 40px 32px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4); border: 2px solid #cbd5e1;">
-        <img src="assets/texfy-logo.png" style="height: 48px; width: auto; object-fit: contain; margin-bottom: 20px;" alt="Texfy ERP">
+        <img src="assets/texfy-logo.svg?v=10.0.0" style="height: 48px; width: auto; object-fit: contain; margin-bottom: 20px;" alt="Texfy ERP">
         
         <div style="display: inline-flex; align-items: center; gap: 6px; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 4px 12px; border-radius: 9999px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 16px;">
           ACESSO OPERACIONAL SUSPENSO

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="texfyIconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="50%" stop-color="#0d9488" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="32" fill="url(#texfyIconGrad)" />
+  <path d="M 36 40 L 84 40 M 60 40 L 60 92" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="40" cy="76" r="7" fill="#ffffff" opacity="0.9" />
+  <circle cx="80" cy="76" r="7" fill="#ffffff" opacity="0.9" />
+  <path d="M 40 76 Q 60 96 80 76" stroke="#ffffff" stroke-width="5" fill="none" opacity="0.8" stroke-dasharray="4 4" />
+</svg>
