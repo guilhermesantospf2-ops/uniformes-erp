@@ -1765,12 +1765,65 @@
       }
     });
 
-    gatekeeper.querySelector('#gateLinkEsqueciSenha')?.addEventListener('click', () => {
-      const email = gatekeeper.querySelector('#gateLoginEmail').value.trim();
+    gatekeeper.querySelector('#gateLinkEsqueciSenha')?.addEventListener('click', async () => {
+      let email = gatekeeper.querySelector('#gateLoginEmail')?.value.trim();
       if (!email) {
-        alert('Por favor, informe seu e-mail no campo acima para solicitar a recuperação da senha.');
-      } else {
-        alert(`Instruções para redefinição de senha serão enviadas para: ${email}`);
+        mostrarAlertaGate('Por favor, digite seu e-mail no campo acima antes de solicitar a recuperação da senha.', 'error');
+        gatekeeper.querySelector('#gateLoginEmail')?.focus();
+        return;
+      }
+
+      mostrarAlertaGate('⏳ Verificando sua assinatura e ativando recuperação segura...', 'info');
+
+      try {
+        const resp = await fetch('/api/erp-security', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'forgot_password', email })
+        });
+        const data = await resp.json();
+
+        if (data && data.sucesso) {
+          const inpSenha = gatekeeper.querySelector('#gateLoginSenha');
+          if (inpSenha) {
+            inpSenha.value = 'Texfy@2026';
+            inpSenha.type = 'text';
+            const btnToggleL = gatekeeper.querySelector('#btnToggleSenhaGateLogin');
+            if (btnToggleL) btnToggleL.textContent = '🔒';
+          }
+
+          mostrarAlertaGate(
+            `🔑 <strong>Acesso de Emergência Ativado com Sucesso!</strong><br>
+            Sua conta foi liberada com a senha provisória oficial: <strong>Texfy@2026</strong>.<br>
+            O campo de senha foi preenchido automaticamente acima. Clique no botão azul <strong>"Acessar Meu Painel Industrial"</strong> para entrar e criar sua nova senha pessoal imediatamente.`,
+            'info',
+            `<div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+              <a href="https://wa.me/5544999856245?text=Ola%2C%20sou%20cliente%20Texfy%20ERP%20(${encodeURIComponent(email)})%20e%20solicitei%20recuperacao%20de%20senha" target="_blank" class="btn btn-sm" style="background: #25D366; color: #fff; font-weight: 700; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px;">
+                💬 Suporte VIP no WhatsApp
+              </a>
+            </div>`
+          );
+        } else {
+          mostrarAlertaGate(
+            `⚠️ ${data?.erro || 'Não foi possível redefinir no momento.'}`,
+            'error',
+            `<div style="margin-top: 8px;">
+              <a href="https://wa.me/5544999856245?text=Ola%2C%20sou%20cliente%20Texfy%20ERP%20(${encodeURIComponent(email)})%20e%20preciso%20de%20ajuda%20para%20recuperar%20meu%20acesso" target="_blank" style="color: #0284c7; font-weight: 700; text-decoration: underline; font-size: 12px;">
+                Falar com o Suporte Direto no WhatsApp &rarr;
+              </a>
+            </div>`
+          );
+        }
+      } catch (errRec) {
+        mostrarAlertaGate(
+          'Falha de comunicação com o servidor de recuperação. Entre em contato direto com o suporte.',
+          'error',
+          `<div style="margin-top: 8px;">
+            <a href="https://wa.me/5544999856245?text=Ola%2C%20preciso%20de%20ajuda%20com%20meu%20acesso%20Texfy%20ERP" target="_blank" style="color: #0284c7; font-weight: 700; text-decoration: underline; font-size: 12px;">
+              Chamar Suporte no WhatsApp (44) 99985-6245 &rarr;
+            </a>
+          </div>`
+        );
       }
     });
   }

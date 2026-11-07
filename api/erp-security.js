@@ -137,6 +137,46 @@ async function sbFetch(path, options = {}) {
   return { ok: res.ok, status: res.status, data: json, raw: text };
 }
 
+// Localiza o tenant de forma resiliente tanto para contas novas (tenant_texfy_) quanto legadas (tenant_bravvi_) e erp_subscriptions
+async function findTenantRowByEmail(cleanEmail) {
+  const clean = (cleanEmail || '').toLowerCase().trim();
+  if (!clean) return { tenantRow: null, tenantId: '' };
+
+  // 1. Tenta tenant_id moderno (tenant_texfy_)
+  const modernId = getTenantIdByEmail(clean);
+  let { data: rows } = await sbFetch(`erp_tenants?tenant_id=eq.${encodeURIComponent(modernId)}&select=tenant_id,empresa,db`);
+  if (Array.isArray(rows) && rows.length > 0 && rows[0].empresa) {
+    return { tenantRow: rows[0], tenantId: modernId };
+  }
+
+  // 2. Tenta tenant_id legado (tenant_bravvi_)
+  const legacyHash = sha256('tenant_bravvi_' + clean);
+  const legacyId = 'tenant_' + legacyHash.substring(0, 24);
+  let { data: legRows } = await sbFetch(`erp_tenants?tenant_id=eq.${encodeURIComponent(legacyId)}&select=tenant_id,empresa,db`);
+  if (Array.isArray(legRows) && legRows.length > 0 && legRows[0].empresa) {
+    return { tenantRow: legRows[0], tenantId: legacyId };
+  }
+
+  // 3. Busca vínculo direto em erp_subscriptions por e-mail
+  const { data: subRows } = await sbFetch(`erp_subscriptions?email=eq.${encodeURIComponent(clean)}&select=tenant_id`);
+  if (Array.isArray(subRows) && subRows.length > 0 && subRows[0].tenant_id) {
+    const subTenantId = subRows[0].tenant_id;
+    let { data: sRows } = await sbFetch(`erp_tenants?tenant_id=eq.${encodeURIComponent(subTenantId)}&select=tenant_id,empresa,db`);
+    if (Array.isArray(sRows) && sRows.length > 0) {
+      return { tenantRow: sRows[0], tenantId: subTenantId };
+    }
+    return { tenantRow: null, tenantId: subTenantId };
+  }
+
+  // 4. Busca por empresa->>email no erp_tenants
+  const { data: empRows } = await sbFetch(`erp_tenants?empresa->>email=eq.${encodeURIComponent(clean)}&select=tenant_id,empresa,db`);
+  if (Array.isArray(empRows) && empRows.length > 0) {
+    return { tenantRow: empRows[0], tenantId: empRows[0].tenant_id };
+  }
+
+  return { tenantRow: null, tenantId: modernId };
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -181,12 +221,9 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      const tenantId = getTenantIdByEmail(cleanEmail);
+      const { tenantRow, tenantId } = await findTenantRowByEmail(cleanEmail);
 
       // 1.1 Verifica Dono / Diretor em erp_tenants
-      const { data: rows } = await sbFetch(`erp_tenants?tenant_id=eq.${encodeURIComponent(tenantId)}&select=tenant_id,empresa,db`);
-      const tenantRow = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
-
       if (tenantRow && tenantRow.empresa && tenantRow.empresa.auth) {
         const emp = tenantRow.empresa;
         const auth = emp.auth;
@@ -199,6 +236,8 @@ module.exports = async function handler(req, res) {
             erro: 'Seu acesso ao Texfy ERP está temporariamente bloqueado pela administração. Entre em contato com o suporte comercial no WhatsApp (44) 99985-6245 para regularizar.'
           });
         }
+
+        const isTempMasterPass = (senhaStr === 'Texfy@2026' || senhaStr === 'Bravvi@2026');
 
         if (auth.salt && auth.hash) {
           const testHash = sha256(auth.salt + ':' + senhaStr);
@@ -232,15 +271,46 @@ module.exports = async function handler(req, res) {
               sessionToken,
               precisaTrocarSenha: precisaTrocar
             });
-          } else if (senhaStr === 'Texfy@2026' && auth.precisaTrocarSenha !== true) {
+          } else if (auth.precisaTrocarSenha === true && isTempMasterPass) {
+            // LIBERAÇÃO DE EMERGÊNCIA / RECUPERAÇÃO DE SENHA COM SENHA TEMPORÁRIA
+            const userObj = {
+              id: tenantId,
+              tenant_id: tenantId,
+              email: cleanEmail,
+              primeiroAcessoDono: true,
+              precisaTrocarSenha: true,
+              user_metadata: {
+                company_name: emp.nomeFantasia || emp.razaoSocial || 'Minha Confecção',
+                full_name: auth.nomeResponsavel || 'Administrador',
+                phone: auth.whatsapp || emp.telefone || '',
+                perfil: 'dono',
+                role: 'Dono / Diretor',
+                tenant_id: tenantId
+              }
+            };
+            const sessionToken = signSessionToken({
+              tenant_id: tenantId,
+              email: cleanEmail,
+              perfil: 'dono',
+              precisaTrocarSenha: true
+            });
+            return res.status(200).json({
+              sucesso: true,
+              user: userObj,
+              empresa: sanitizeEmpresaForClient(emp),
+              sessionToken,
+              precisaTrocarSenha: true,
+              primeiroAcessoDono: true
+            });
+          } else if (isTempMasterPass && auth.precisaTrocarSenha !== true) {
             return res.status(401).json({
               sucesso: false,
-              erro: 'Sua conta já possui uma senha pessoal definitiva cadastrada. Acesse com a sua senha pessoal.'
+              erro: 'Sua conta já possui uma senha pessoal definitiva cadastrada. Digite sua senha pessoal ou clique em "Esqueceu a senha?" para redefinir.'
             });
           } else {
-            return res.status(401).json({ sucesso: false, erro: 'E-mail ou senha incorretos.' });
+            return res.status(401).json({ sucesso: false, erro: 'E-mail ou senha incorretos. Se esqueceu sua senha, clique em "Esqueceu a senha?".' });
           }
-        } else if (auth.precisaTrocarSenha === true && senhaStr === 'Texfy@2026') {
+        } else if (auth.precisaTrocarSenha === true && isTempMasterPass) {
           const userObj = {
             id: tenantId,
             tenant_id: tenantId,
@@ -411,6 +481,66 @@ module.exports = async function handler(req, res) {
       return res.status(401).json({
         sucesso: false,
         erro: 'E-mail ou senha incorretos. Se acabou de adquirir o sistema, utilize o mesmo e-mail informado na compra.'
+      });
+    }
+
+    // ========================================================================
+    // 1.9 RECUPERAÇÃO DE SENHA / ESQUECI MINHA SENHA
+    // ========================================================================
+    if (action === 'forgot_password' || action === 'recover_password') {
+      let cleanEmail = (body.email || '').toLowerCase().trim();
+      cleanEmail = cleanEmail
+        .replace(/@(gmail|hotmail|outlook|yahoo)\.co[rn]$/i, '@$1.com')
+        .replace(/@(gmail|hotmail|outlook|yahoo)\.com\.b[rn]$/i, '@$1.com.br');
+
+      if (!cleanEmail) {
+        return res.status(400).json({ sucesso: false, erro: 'Informe o e-mail cadastrado na compra.' });
+      }
+
+      const { tenantRow, tenantId } = await findTenantRowByEmail(cleanEmail);
+
+      if (!tenantRow) {
+        // Verifica se há assinatura registrada em erp_subscriptions ou tokens
+        const { data: subRows } = await sbFetch(`erp_subscriptions?email=eq.${encodeURIComponent(cleanEmail)}&select=*`);
+        const sub = Array.isArray(subRows) && subRows.length > 0 ? subRows[0] : null;
+
+        if (!sub) {
+          return res.status(404).json({
+            sucesso: false,
+            erro: 'Nenhuma assinatura ou confecção foi encontrada com este e-mail. Verifique se digitou o mesmo e-mail utilizado na adesão.'
+          });
+        }
+      }
+
+      // Ativa flag precisaTrocarSenha: true para liberação imediata com a senha temporária oficial
+      if (tenantRow) {
+        const emp = tenantRow.empresa || {};
+        emp.auth = emp.auth || {};
+        emp.auth.precisaTrocarSenha = true;
+        emp.auth.recuperacaoSolicitadaEm = new Date().toISOString();
+
+        const db = tenantRow.db || {};
+        if (db.empresa) {
+          db.empresa.auth = emp.auth;
+          db.empresa.precisaTrocarSenha = true;
+        }
+
+        await sbFetch(`erp_tenants?tenant_id=eq.${encodeURIComponent(tenantId)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            empresa: emp,
+            db: db,
+            ultima_atualizacao_ms: Date.now(),
+            updated_at: new Date().toISOString()
+          })
+        });
+      }
+
+      return res.status(200).json({
+        sucesso: true,
+        mensagem: 'Acesso de emergência ativado! Sua senha temporária é Texfy@2026. Digite-a no campo de senha para entrar e criar sua nova senha pessoal imediatamente.',
+        senhaTemporaria: 'Texfy@2026',
+        whatsappSuporte: '5544999856245'
       });
     }
 
@@ -888,7 +1018,11 @@ module.exports = async function handler(req, res) {
 
       const subAction = body.subAction || 'list'; // 'list', 'lock', 'unlock'
       const targetEmail = (body.email || '').toLowerCase().trim();
-      const targetTenantId = (body.tenantId || '').trim() || (targetEmail ? getTenantIdByEmail(targetEmail) : '');
+      let targetTenantId = (body.tenantId || '').trim();
+      if (!targetTenantId && targetEmail) {
+        const found = await findTenantRowByEmail(targetEmail);
+        targetTenantId = found.tenantId;
+      }
 
       if (subAction === 'list') {
         const { data: tenants } = await sbFetch('erp_tenants?select=tenant_id,empresa,updated_at,created_at&limit=150');
