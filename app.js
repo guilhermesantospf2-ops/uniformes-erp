@@ -1334,7 +1334,7 @@
                 O acesso ao sistema é liberado após a adesão. Escolha seu plano com Cartão até 12x ou Pix para ativar sua confecção.
               </p>
               <a href="vendas.html#planos" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 14px; font-size: 12px; font-weight: 800; background: #0d9488; color: #ffffff; text-decoration: none; border-radius: 6px; box-shadow: 0 2px 6px rgba(13, 148, 136, 0.3); transition: all 0.2s;" onmouseover="this.style.background='#0f766e'" onmouseout="this.style.background='#0d9488'">
-                <span>Conhecer Planos & Assinar (a partir de R$ 397) &rarr;</span>
+                <span>Conhecer Planos & Assinar (a partir de R$ 107/mês) &rarr;</span>
               </a>
             </div>
 
