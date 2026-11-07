@@ -1,44 +1,45 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 76" width="340" height="76">
   <defs>
-    <linearGradient id="tRibbon1" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="ribbonCyan" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0284c7" />
       <stop offset="100%" stop-color="#0d9488" />
     </linearGradient>
-    <linearGradient id="tRibbon2" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="ribbonEmerald" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0d9488" />
       <stop offset="100%" stop-color="#10b981" />
     </linearGradient>
-    <linearGradient id="tAccent" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#38bdf8" />
-      <stop offset="100%" stop-color="#34d399" />
+    <linearGradient id="ribbonDeep" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#047857" />
+      <stop offset="100%" stop-color="#032b35" />
     </linearGradient>
-    <filter id="subtleGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0d9488" flood-opacity="0.18" />
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0d9488" flood-opacity="0.22" />
     </filter>
   </defs>
 
-  <!-- Símbolo Isotipo: O "T" Têxtil Entrelaçado (Precision Weave) -->
-  <g transform="translate(10, 8)" filter="url(#subtleGlow)">
-    <!-- Base / Sombra de profundidade suave -->
-    <rect x="0" y="0" width="60" height="60" rx="16" fill="#032b35" />
-    
-    <!-- Barra Superior do T (Fita Têxtil Horizontal Curvada) -->
-    <path d="M 16 20 C 16 16.5 19 14 23 14 L 37 14 C 41 14 44 16.5 44 20 C 44 23.5 41 26 37 26 L 23 26 C 19 26 16 23.5 16 20 Z" fill="url(#tAccent)" />
-    
-    <!-- Haste Vertical do T (Fita Entrelaçada passando por dentro) -->
-    <path d="M 24 22 L 36 22 C 37 22 38 23 38 24 L 38 41 C 38 45.5 34.5 49 30 49 C 25.5 49 22 45.5 22 41 L 22 24 C 22 23 23 22 24 22 Z" fill="url(#tRibbon2)" />
-    
-    <!-- Ponto de Trama Têxtil / Conexão Digital -->
-    <circle cx="30" cy="35" r="3.2" fill="#ffffff" />
+  <!-- Isotipo: Monograma T em Fitas Têxteis Diagonais Entrelaçadas -->
+  <g transform="translate(10, 8)" filter="url(#softGlow)">
+    <!-- Barra Superior Esquerda do T -->
+    <path d="M 6 18 L 22 6 L 34 6 L 20 18 Z" fill="url(#ribbonCyan)" />
+    <!-- Barra Superior Direita do T -->
+    <path d="M 28 6 L 54 6 L 44 18 L 22 18 Z" fill="url(#ribbonEmerald)" />
+    <!-- Fita Diagonal 1 (Descendente Esquerda) -->
+    <path d="M 20 18 L 32 18 L 18 42 L 8 42 Z" fill="url(#ribbonCyan)" />
+    <!-- Fita Diagonal 2 (Descendente Direita / Entrelaçamento) -->
+    <path d="M 32 18 L 44 18 L 26 48 L 16 48 Z" fill="url(#ribbonEmerald)" />
+    <!-- Dobra Inferior de Trama (Pontal Têxtil) -->
+    <path d="M 16 48 L 26 48 L 21 58 Z" fill="url(#ribbonDeep)" />
+    <!-- Ponto de Trama de Alta Precisão -->
+    <circle cx="27" cy="27" r="2.5" fill="#ffffff" opacity="0.9" />
   </g>
 
   <!-- Wordmark: TEXFY -->
-  <text x="88" y="45" font-family="'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="33" font-weight="900" fill="#032b35" letter-spacing="-0.8px">TEXFY</text>
+  <text x="82" y="45" font-family="'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="33" font-weight="900" fill="#032b35" letter-spacing="-0.8px">TEXFY</text>
   
   <!-- Subtítulo: ERP TÊXTIL -->
-  <text x="90" y="62" font-family="'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10.5" font-weight="800" fill="#0d9488" letter-spacing="3.8px">ERP TÊXTIL</text>
+  <text x="84" y="62" font-family="'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10.5" font-weight="800" fill="#0d9488" letter-spacing="3.8px">ERP TÊXTIL</text>
   
-  <!-- Pílula Discreta PRO -->
-  <rect x="238" y="24" width="38" height="18" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2" />
-  <text x="257" y="36.5" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="900" fill="#1d4ed8" text-anchor="middle">PRO</text>
+  <!-- Badge PRO -->
+  <rect x="232" y="24" width="38" height="18" rx="5" fill="#f0fdfa" stroke="#99f6e4" stroke-width="1.2" />
+  <text x="251" y="36.5" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="900" fill="#0d9488" text-anchor="middle">PRO</text>
 </svg>
