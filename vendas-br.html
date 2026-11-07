@@ -1486,6 +1486,274 @@
     }
 
   </style>
+<style>
+    /* ==========================================================================
+       TEXFY ERP — MOBILE 100% REDONDO (ZERO VAZAMENTO & CHÃO DE FÁBRICA MOBILE)
+       ========================================================================== */
+    @media (max-width: 768px) {
+      /* 1. Reset Global Anti-Vazamento */
+      html, body {
+        overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        position: relative !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        padding-bottom: 85px !important;
+      }
+      *, *::before, *::after {
+        box-sizing: border-box !important;
+      }
+      .container {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+      }
+
+      /* 2. Top Announcement Bar */
+      .top-announcement {
+        padding: 8px 12px !important;
+        font-size: 11.5px !important;
+        line-height: 1.4 !important;
+        flex-direction: column !important;
+        text-align: center !important;
+        gap: 6px !important;
+      }
+      .top-announcement span {
+        margin-left: 0 !important;
+      }
+
+      /* 3. Abas Navegáveis Touch (Scroll Horizontal sem quebra torta) */
+      .demo-tabs-nav,
+      .tutorial-nav {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+        gap: 8px !important;
+        padding: 6px 14px 14px 14px !important;
+        margin: 0 -14px 20px -14px !important;
+        scroll-snap-type: x mandatory !important;
+      }
+      .demo-tabs-nav::-webkit-scrollbar,
+      .tutorial-nav::-webkit-scrollbar {
+        display: none !important;
+      }
+      .demo-tab-btn,
+      .tutorial-tab-btn {
+        flex-shrink: 0 !important;
+        white-space: nowrap !important;
+        padding: 9px 16px !important;
+        font-size: 12.5px !important;
+        border-radius: 999px !important;
+        scroll-snap-align: start !important;
+      }
+
+      /* 4. Janela de Demonstração Interativa */
+      .demo-tab-viewport {
+        border-radius: 14px !important;
+        margin: 0 !important;
+        width: 100% !important;
+        overflow: hidden !important;
+      }
+      .tab-window-header {
+        padding: 10px 14px !important;
+      }
+      .window-title {
+        font-size: 11px !important;
+        max-width: 180px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+      }
+      .tab-content-panel {
+        padding: 16px 12px !important;
+      }
+
+      /* Painel 1: Orçamento com Mockup */
+      #tabPanel0 > div:first-child {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+      }
+      #tabPanel0 > div:nth-child(2) {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 14px !important;
+      }
+      #tabPanel0 > div:nth-child(2) > div {
+        width: 100% !important;
+        padding: 14px !important;
+      }
+
+      /* Painel 2: Radar de Prazos */
+      #tabPanel1 > div:first-child {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        margin-bottom: 16px !important;
+      }
+      #tabPanel1 > div:first-child > div {
+        padding: 12px 8px !important;
+      }
+
+      /* Painel 3: Ficha Técnica A4 */
+      #tabPanel2 > div {
+        padding: 14px 12px !important;
+      }
+      #tabPanel2 > div > div:first-child {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+      }
+      #tabPanel2 div[style*="repeat(5, 1fr)"] {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 8px !important;
+      }
+
+      /* Painel 4: Otimizador DTF */
+      #tabPanel3 > div {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 16px !important;
+      }
+
+      /* Painel 5: DRE */
+      #tabPanel4 > div {
+        padding: 14px 12px !important;
+      }
+      #tabPanel4 > div > div:first-child {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+      }
+      #tabPanel4 > div > div:nth-child(2) {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+      }
+
+      /* 5. Calculadora de Economia */
+      .calculator-section {
+        padding: 50px 0 !important;
+      }
+      .calc-card {
+        padding: 18px 14px !important;
+        border-radius: 16px !important;
+      }
+      .calc-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 24px !important;
+      }
+      .calc-result-box {
+        padding: 22px 14px !important;
+        border-radius: 14px !important;
+      }
+      .calc-big-value {
+        font-size: 32px !important;
+        margin: 6px 0 !important;
+      }
+      .calc-breakdown {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        margin-top: 18px !important;
+        padding-top: 16px !important;
+      }
+      .calc-breakdown > div {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 10px 12px !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        border-radius: 8px !important;
+        text-align: left !important;
+      }
+      .calc-breakdown-val {
+        margin-top: 0 !important;
+        font-size: 13.5px !important;
+      }
+
+      /* 6. Tabela de Comparativo (Scroll Limpo com Dica) */
+      .compare-section {
+        padding: 50px 0 !important;
+      }
+      .compare-table-wrapper {
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        border-radius: 14px !important;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border-subtle);
+        background: #ffffff;
+        margin-top: 14px !important;
+      }
+      .compare-table {
+        min-width: 580px !important;
+        width: 100% !important;
+        border: none !important;
+        border-radius: 0 !important;
+      }
+      .compare-table th,
+      .compare-table td {
+        padding: 12px 12px !important;
+        font-size: 12.5px !important;
+        line-height: 1.4 !important;
+      }
+      .compare-mobile-hint {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 11.5px;
+        color: var(--brand-teal);
+        font-weight: 700;
+        margin-bottom: 8px;
+        text-align: center;
+      }
+
+      /* 7. Tutoriais Passo a Passo */
+      .tutorials-section {
+        padding: 50px 0 !important;
+      }
+      .tutorial-panel.active {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 20px !important;
+        padding: 20px 14px !important;
+        border-radius: 14px !important;
+      }
+      .tutorial-visual-card {
+        padding: 16px 12px !important;
+        border-radius: 12px !important;
+      }
+      .tutorial-visual-card div[style*="repeat(3, 1fr)"] {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 6px !important;
+      }
+
+      /* 8. Barra Fixa Mobile e Gaveta de Lead */
+      .texfy-sticky-bottom {
+        display: block !important;
+        z-index: 99998 !important;
+      }
+      .texfy-lead-drawer {
+        width: 100% !important;
+        left: 0 !important;
+        right: 0 !important;
+        border-radius: 20px 20px 0 0 !important;
+        padding: 20px 16px !important;
+        box-sizing: border-box !important;
+      }
+    }
+</style>
 </head>
 <body>
 
@@ -2084,7 +2352,9 @@
         <p class="section-desc">A diferença entre viver apagando incêndio e ter uma fábrica previsível e lucrativa.</p>
       </div>
 
-      <table class="compare-table">
+      <div class="compare-mobile-hint">👉 Deslize para o lado para ver o comparativo completo</div>
+      <div class="compare-table-wrapper">
+        <table class="compare-table">
         <thead>
           <tr>
             <th style="width: 40%;">Desafio da Fábrica</th>
@@ -2125,6 +2395,7 @@
           </tr>
         </tbody>
       </table>
+      </div>
 
     </div>
   </section>
