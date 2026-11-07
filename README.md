@@ -1,4 +1,4 @@
-# Bravvi ERP Têxtil — Gestão Completa para Confecção & Estamparia
+# Texfy ERP Têxtil — Gestão Completa para Confecção & Estamparia
 
 Sistema operacional e financeiro completo para indústrias de uniformes profissionais, esportivos e escolares.
 

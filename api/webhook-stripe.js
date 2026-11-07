@@ -1,5 +1,5 @@
 // ============================================================================
-// BRAVVI ERP TÊXTIL — WEBHOOK SERVERLESS STRIPE (PARAGUAI & INTERNACIONAL USD)
+// TEXFY ERP TÊXTIL — WEBHOOK SERVERLESS STRIPE (PARAGUAI & INTERNACIONAL USD)
 // Rota: POST /api/webhook-stripe
 // Libera automaticamente o acesso do cliente no Supabase após pagamento USD
 // ============================================================================
@@ -23,7 +23,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({
       status: 'online',
       gateway: 'Stripe International (USD - Paraguay & LatAm)',
-      service: 'Bravvi ERP Têxtil Webhook Handler',
+      service: 'Texfy ERP Têxtil Webhook Handler',
       timestamp: new Date().toISOString()
     });
   }
@@ -82,8 +82,8 @@ module.exports = async function handler(req, res) {
     const dataVencimento = new Date();
     dataVencimento.setDate(dataVencimento.getDate() + diasAcesso);
 
-    const token = 'bravvi_py_' + crypto.randomBytes(8).toString('hex');
-    const tenantHash = crypto.createHash('sha256').update('tenant_bravvi_' + email).digest('hex').substring(0, 24);
+    const token = 'texfy_py_' + crypto.randomBytes(8).toString('hex');
+    const tenantHash = crypto.createHash('sha256').update('tenant_texfy_' + email).digest('hex').substring(0, 24);
     const tenantId = 'tenant_' + tenantHash;
 
     const supabaseUrl = process.env.SUPABASE_URL || 'https://nrhygqygcfjyniogjegq.supabase.co';

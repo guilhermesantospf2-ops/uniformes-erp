@@ -1,5 +1,5 @@
 // ============================================================================
-// BRAVVI / JARVIS — ALEXA CUSTOM SKILL BACKEND (GEMINI 3.1 FLASH-LITE VOICE)
+// TEXFY / JARVIS — ALEXA CUSTOM SKILL BACKEND (GEMINI 3.1 FLASH-LITE VOICE)
 // Rota Serverless Vercel: POST /api/alexa
 // Transforma a Echo Dot em um assistente de voz executivo com IA conversacional
 // ============================================================================
@@ -14,7 +14,7 @@ DIRETRIZES FUNDAMENTAIS PARA RESPOSTA DE VOZ:
 1. NUNCA use formatação Markdown como asteriscos (**negrito**), cerquilhas (# títulos), listas com traços (-) ou tabelas, pois o sintetizador de voz da Alexa lê esses símbolos literalmente.
 2. Seja direto, conciso, inteligente e natural (máximo de 2 a 4 frases por resposta, a menos que o Comandante peça uma explicação detalhada).
 3. Responda em português brasileiro de forma polida, elegante e prestativa ("Comandante Guilherme", "Pois não", "Certamente").
-4. Se o Guilherme perguntar sobre a Bravvi ou sobre a fábrica de uniformes, você sabe que ele é o fundador do Bravvi ERP Têxtil, o melhor sistema para confecções de uniformes no Brasil.`;
+4. Se o Guilherme perguntar sobre a Texfy ou sobre a fábrica de uniformes, você sabe que ele é o fundador do Texfy ERP Têxtil, o melhor sistema para confecções de uniformes no Brasil.`;
 
 function escaparSSML(texto) {
   if (!texto) return '';

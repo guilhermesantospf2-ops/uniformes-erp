@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bravvi 10K • Painel Comercial - Bravvi ERP • Operação Rota 10K & Gestão de Assinaturas</title>
+    <title>Texfy 10K • Painel Comercial - Texfy ERP • Operação Rota 10K & Gestão de Assinaturas</title>
     
     <!-- PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Bravvi 10K">
+    <meta name="apple-mobile-web-app-title" content="Texfy 10K">
     <meta name="theme-color" content="#10b981">
     <link rel="manifest" href="/manifest-meta10k.json">
     <link rel="apple-touch-icon" href="/assets/icon-192.png">
@@ -1738,7 +1738,7 @@
                 <audio id="crmAudioPlayer" controls style="display: none; width: 100%; margin-top: 16px; border-radius: 8px;"></audio>
                 
                 <div id="crmAudioActions" style="display: none; margin-top: 14px; gap: 8px; justify-content: center;">
-                    <a id="btnDownloadAudio" class="btn btn-secondary" download="audio_bravvi.webm" style="font-size: 12px;">
+                    <a id="btnDownloadAudio" class="btn btn-secondary" download="audio_texfy.webm" style="font-size: 12px;">
                         <i class="fa-solid fa-download"></i> Baixar Áudio
                     </a>
                     <button type="button" class="btn btn-primary" onclick="openWhatsAppForAudio()" style="background: #128c7e; font-size: 12px;">
@@ -1751,7 +1751,7 @@
                 📖 Roteiro de Áudio Testado (Leia enquanto grava):
             </div>
             <div style="background: #0b1120; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 12.5px; color: #cbd5e1; line-height: 1.45;" id="crmAudioScriptBox">
-                "Fala [Nome], Guilherme aqui da Bravvi! Vi que você pediu informações sobre o sistema. Eu tive confecção durante anos e sofria exatamente com corte errado, sobra de tecido e ficha técnica confusa. Desenvolvi o Bravvi justamente pra fábrica rodar no piloto automático, sem complicação. Como tá o controle de corte de vocês aí hoje?"
+                "Fala [Nome], Guilherme aqui da Texfy! Vi que você pediu informações sobre o sistema. Eu tive confecção durante anos e sofria exatamente com corte errado, sobra de tecido e ficha técnica confusa. Desenvolvi o Texfy justamente pra fábrica rodar no piloto automático, sem complicação. Como tá o controle de corte de vocês aí hoje?"
             </div>
             <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
                 <button type="button" class="btn btn-secondary" onclick="copyAudioPitchText()" style="padding: 6px 12px; font-size: 11px;">
@@ -1767,7 +1767,7 @@
     <div class="modal-card" style="max-width: 500px;">
         <div class="modal-head">
             <h3 style="font-size: 16px; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-shield-halved" style="color: #38bdf8;"></i> Gestão de Acesso ao Bravvi ERP
+                <i class="fa-solid fa-shield-halved" style="color: #38bdf8;"></i> Gestão de Acesso ao Texfy ERP
             </h3>
             <button onclick="closeCrmAccessModal()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px;">&times;</button>
         </div>
@@ -2005,7 +2005,7 @@
 <script>
     // Password Gate Key
     const MASTER_HASH = "Gui2026@";
-    const AUTH_SESSION_KEY = "bravvi_director_auth_token_v1";
+    const AUTH_SESSION_KEY = "texfy_director_auth_token_v1";
 
     function checkAuth() {
         const input = document.getElementById("loginPasswordInput").value;
@@ -2162,16 +2162,16 @@
         }
     ];
 
-    const STORAGE_KEY = "bravvi_meta_10k_clients_v6";
-    const CONFIG_KEY = "bravvi_billing_config_v1";
+    const STORAGE_KEY = "texfy_meta_10k_clients_v6";
+    const CONFIG_KEY = "texfy_billing_config_v1";
 
     function loadClients() {
         // Busca em todas as chaves anteriores para migrar e NUNCA perder os dados que o Guilherme cadastrou
         const possibleKeys = [
-            "bravvi_meta_10k_clients_v6",
-            "bravvi_meta_10k_clients_v5",
-            "bravvi_meta_10k_clients_v4",
-            "bravvi_meta_10k_clients_v3"
+            "texfy_meta_10k_clients_v6",
+            "texfy_meta_10k_clients_v5",
+            "texfy_meta_10k_clients_v4",
+            "texfy_meta_10k_clients_v3"
         ];
 
         let saved = null;
@@ -2666,9 +2666,9 @@
 
         let msg = "";
         if (type === "boas_vindas") {
-            msg = `Olá ${firstName}, tudo bem? Guilherme da Bravvi ERP por aqui! 🚀\n\nVi que você tem interesse em agilizar os pedidos e o corte da sua confecção de uniformes. Vocês fabricam uniformes profissionais, esportivos ou escolares aí?`;
+            msg = `Olá ${firstName}, tudo bem? Guilherme da Texfy ERP por aqui! 🚀\n\nVi que você tem interesse em agilizar os pedidos e o corte da sua confecção de uniformes. Vocês fabricam uniformes profissionais, esportivos ou escolares aí?`;
         } else if (type === "video_apresentacao") {
-            msg = `Fala ${firstName}! Separei esse vídeo rápido de 2 minutos mostrando como o Bravvi ERP calcula o consumo de tecido por grade, gera a ficha técnica em PDF A4 e a ordem de corte sem complicação:\n👉 https://uniformes-erp.vercel.app\n\nQuantas peças vocês costumam cortar por mês aí na fábrica?`;
+            msg = `Fala ${firstName}! Separei esse vídeo rápido de 2 minutos mostrando como o Texfy ERP calcula o consumo de tecido por grade, gera a ficha técnica em PDF A4 e a ordem de corte sem complicação:\n👉 https://uniformes-erp.vercel.app\n\nQuantas peças vocês costumam cortar por mês aí na fábrica?`;
         } else if (type === "teste_gratis") {
             msg = `${firstName}, para você testar na prática com a sua equipe sem nenhum compromisso, eu consigo liberar um login de teste VIP por 7 dias grátis para sua fábrica rodar suas ordens de serviço e orçamentos.\n\nPosso gerar o seu link de primeiro acesso agora?`;
         } else if (type === "proposta_pix") {
@@ -2799,7 +2799,7 @@
 
                     const downloadBtn = document.getElementById("btnDownloadAudio");
                     downloadBtn.href = audioUrl;
-                    downloadBtn.download = `audio_bravvi_${Date.now()}.webm`;
+                    downloadBtn.download = `audio_texfy_${Date.now()}.webm`;
 
                     document.getElementById("crmAudioActions").style.display = "flex";
                 };
@@ -2989,7 +2989,7 @@
             return;
         }
 
-        const nome = c ? c.name : "Cliente Bravvi ERP";
+        const nome = c ? c.name : "Cliente Texfy ERP";
 
         try {
             const resp = await fetch('/api/erp-security', {
@@ -3035,7 +3035,7 @@
     }
 
     function copyGeneratedAccessMsg() {
-        const msg = `Olá ${lastGeneratedName}! Seu acesso ao *Bravvi ERP Têxtil* foi liberado com sucesso! 🚀\n\nAqui está o seu link exclusivo de primeiro acesso:\n👉 ${lastGeneratedLink}\n\n🔑 *E-mail de Login:* ${lastGeneratedEmail}\n🔑 *Senha Temporária:* Bravvi@2026\n\nAo entrar pelo link, você já poderá cadastrar a sua senha pessoal definitiva e começar a emitir seus orçamentos e ordens de serviço!`;
+        const msg = `Olá ${lastGeneratedName}! Seu acesso ao *Texfy ERP Têxtil* foi liberado com sucesso! 🚀\n\nAqui está o seu link exclusivo de primeiro acesso:\n👉 ${lastGeneratedLink}\n\n🔑 *E-mail de Login:* ${lastGeneratedEmail}\n🔑 *Senha Temporária:* Texfy@2026\n\nAo entrar pelo link, você já poderá cadastrar a sua senha pessoal definitiva e começar a emitir seus orçamentos e ordens de serviço!`;
         navigator.clipboard.writeText(msg).then(() => {
             alert("✓ Mensagem pronta copiada! Só colar no WhatsApp do cliente.");
         });
@@ -3079,7 +3079,7 @@
     // =========================================================================
     // GESTÃO DE DESPESAS & DRE DA OPERAÇÃO
     // =========================================================================
-    const EXPENSES_STORAGE_KEY = "bravvi_meta_10k_expenses_v1";
+    const EXPENSES_STORAGE_KEY = "texfy_meta_10k_expenses_v1";
 
     const INITIAL_EXPENSES = [
         {
@@ -3380,7 +3380,7 @@
             const cleanPhone = (c.phone || '').replace(/\D/g, '');
             const firstName = (c.name || 'Cliente').split(' ')[0];
             
-            let message = `Olá ${firstName}, tudo bem? Aqui é o Guilherme da Bravvi ERP.\n\nPassando para enviar o lembrete da mensalidade do seu sistema no valor de R$ ${(c.price || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})} (Vencimento: ${dueFormatted}).\n\n📌 *Chave Pix:* ${pixKey}`;
+            let message = `Olá ${firstName}, tudo bem? Aqui é o Guilherme da Texfy ERP.\n\nPassando para enviar o lembrete da mensalidade do seu sistema no valor de R$ ${(c.price || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})} (Vencimento: ${dueFormatted}).\n\n📌 *Chave Pix:* ${pixKey}`;
             if (asaasLink) {
                 message += `\n💳 *Link de Pagamento:* ${asaasLink}`;
             }
@@ -3460,12 +3460,12 @@
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `bravvi_erp_crm_clientes_${new Date().toISOString().split('T')[0]}.csv`;
+        link.download = `texfy_erp_crm_clientes_${new Date().toISOString().split('T')[0]}.csv`;
         link.click();
     }
 
     function copyPitchScript() {
-        const text = `Fala [Nome], Guilherme aqui! Cara, o Carlos me passou seu contato agora.\n\nComo eu te falei no vídeo, eu tive confecção durante anos e criei o Bravvi exatamente pra resolver essa dor de corte e grade sem complicação.\n\nNosso plano Básico é R$ 107 por mês e o Pro completo é R$ 227, mas pra quem tá entrando nessa turma agora eu consigo liberar uma condição especial no plano anual com desconto, ou te dou 7 dias de teste grátis pra você rodar suas ordens de corte na prática aí na fábrica.\n\nQuer que eu já libere seu login de teste agora pra você ver como é simples?`;
+        const text = `Fala [Nome], Guilherme aqui! Cara, o Carlos me passou seu contato agora.\n\nComo eu te falei no vídeo, eu tive confecção durante anos e criei o Texfy exatamente pra resolver essa dor de corte e grade sem complicação.\n\nNosso plano Básico é R$ 107 por mês e o Pro completo é R$ 227, mas pra quem tá entrando nessa turma agora eu consigo liberar uma condição especial no plano anual com desconto, ou te dou 7 dias de teste grátis pra você rodar suas ordens de corte na prática aí na fábrica.\n\nQuer que eu já libere seu login de teste agora pra você ver como é simples?`;
         navigator.clipboard.writeText(text).then(() => {
             alert("Script de Áudio copiado com sucesso! Só colar no WhatsApp.");
         });
@@ -3506,7 +3506,7 @@
         } else {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (isIOS) {
-                alert("📲 Como instalar no iPhone (Safari):\n\n1. Toque no botão de Compartilhar\n2. Role para baixo e toque em 'Adicionar à Tela de Início'\n3. O ícone da Bravvi 10K vai aparecer na sua tela inicial como um App.");
+                alert("📲 Como instalar no iPhone (Safari):\n\n1. Toque no botão de Compartilhar\n2. Role para baixo e toque em 'Adicionar à Tela de Início'\n3. O ícone da Texfy 10K vai aparecer na sua tela inicial como um App.");
             } else {
                 alert("📲 Como instalar no Android ou PC:\n\n1. No Chrome/Edge, toque nos 3 pontinhos no canto superior\n2. Selecione 'Instalar aplicativo' ou 'Adicionar à tela inicial'\n3. O App será instalado em tela cheia!");
             }

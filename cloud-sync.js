@@ -6,11 +6,11 @@
 (function() {
   'use strict';
 
-  const STORAGE_KEY_EMPRESA = 'BRAVVI_ERP_EMPRESA_CONFIG';
-  const STORAGE_KEY_PERFIL = 'BRAVVI_ERP_PERFIL_ATIVO';
+  const STORAGE_KEY_EMPRESA = 'TEXFY_ERP_EMPRESA_CONFIG';
+  const STORAGE_KEY_PERFIL = 'TEXFY_ERP_PERFIL_ATIVO';
 
   function isModoDemo() {
-    return (window.BRAVVI_IS_DEMO === true) ||
+    return (window.TEXFY_IS_DEMO === true) ||
            (window.TEXPRO_IS_DEMO === true) || 
            (window.location && window.location.search && window.location.search.includes('demo=1')) || 
            (window.location && window.location.pathname && (window.location.pathname.includes('/demo') || window.location.pathname.includes('demo.html')));
@@ -135,7 +135,7 @@
 
   function obterTokenSessao() {
     try {
-      return sessionStorage.getItem('BRAVVI_ERP_SESSION_TOKEN') || localStorage.getItem('BRAVVI_ERP_SESSION_TOKEN') || null;
+      return sessionStorage.getItem('TEXFY_ERP_SESSION_TOKEN') || localStorage.getItem('TEXFY_ERP_SESSION_TOKEN') || null;
     } catch (e) {
       return null;
     }
@@ -144,11 +144,11 @@
   function salvarTokenSessao(token) {
     try {
       if (token) {
-        sessionStorage.setItem('BRAVVI_ERP_SESSION_TOKEN', token);
-        localStorage.setItem('BRAVVI_ERP_SESSION_TOKEN', token);
+        sessionStorage.setItem('TEXFY_ERP_SESSION_TOKEN', token);
+        localStorage.setItem('TEXFY_ERP_SESSION_TOKEN', token);
       } else {
-        sessionStorage.removeItem('BRAVVI_ERP_SESSION_TOKEN');
-        localStorage.removeItem('BRAVVI_ERP_SESSION_TOKEN');
+        sessionStorage.removeItem('TEXFY_ERP_SESSION_TOKEN');
+        localStorage.removeItem('TEXFY_ERP_SESSION_TOKEN');
       }
     } catch (e) {}
   }
@@ -279,7 +279,7 @@
     // Header da sidebar (Marca Oficial do Sistema ou Marca Própria Customizada)
     const title = document.getElementById('sidebarBrandTitle');
     if (title) {
-      if (empresa.nomeFantasia && !empresa.nomeFantasia.toLowerCase().includes('bravvi')) {
+      if (empresa.nomeFantasia && !empresa.nomeFantasia.toLowerCase().includes('texfy')) {
         title.textContent = empresa.nomeFantasia.toUpperCase();
       } else {
         title.textContent = 'TEXFY';
@@ -295,8 +295,8 @@
         icon.innerHTML = `<img src="${empresa.logoUrl}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;" alt="Logo">`;
         icon.style.background = 'transparent';
         icon.style.padding = '0';
-      } else if (!empresa.nomeFantasia || empresa.nomeFantasia.toLowerCase().includes('bravvi')) {
-        icon.innerHTML = `<img src="assets/texfy-icon.png" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;" alt="Bravvi">`;
+      } else if (!empresa.nomeFantasia || empresa.nomeFantasia.toLowerCase().includes('texfy')) {
+        icon.innerHTML = `<img src="assets/texfy-icon.png" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;" alt="Texfy">`;
         icon.style.background = 'transparent';
         icon.style.padding = '0';
       } else {
@@ -332,7 +332,7 @@
       return;
     }
     const vencimentoStr = dadosEmp.dataVencimento || 
-                          localStorage.getItem('BRAVVI_ERP_ASSINATURA_VENCIMENTO') || 
+                          localStorage.getItem('TEXFY_ERP_ASSINATURA_VENCIMENTO') || 
                           dadosEmp.vencimento;
 
     if (!vencimentoStr) return;
@@ -361,16 +361,16 @@
   }
 
   function removerAvisosAssinatura() {
-    const banner = document.getElementById('bravviBannerCarencia');
+    const banner = document.getElementById('texfyBannerCarencia');
     if (banner) banner.remove();
-    const modal = document.getElementById('bravviModalPaywall');
+    const modal = document.getElementById('texfyModalPaywall');
     if (modal) modal.remove();
   }
 
   function exibirBannerCarencia(dataVenc, diasRestantes) {
-    if (document.getElementById('bravviBannerCarencia')) return;
+    if (document.getElementById('texfyBannerCarencia')) return;
     const banner = document.createElement('div');
-    banner.id = 'bravviBannerCarencia';
+    banner.id = 'texfyBannerCarencia';
     banner.style.cssText = `
       background: #fef3c7;
       color: #92400e;
@@ -399,13 +399,13 @@
   }
 
   function exibirModalBloqueioInadimplencia(empresa, diasAtraso) {
-    if (document.getElementById('bravviModalPaywall')) return;
+    if (document.getElementById('texfyModalPaywall')) return;
 
     // Desativa rolagem do fundo
     document.body.style.overflow = 'hidden';
 
     const overlay = document.createElement('div');
-    overlay.id = 'bravviModalPaywall';
+    overlay.id = 'texfyModalPaywall';
     overlay.style.cssText = `
       position: fixed;
       top: 0;
@@ -446,7 +446,7 @@
             💳 Pagar Mensalidade via Cartão ou Pix (Desbloqueio Automático) &rarr;
           </a>
 
-          <a href="https://wa.me/554499856245?text=Ol%C3%A1!%20Minha%20mensalidade%20do%20Bravvi%20ERP%20venceu%20e%20quero%20enviar%20o%20comprovante%20para%20desbloqueio." target="_blank" style="background: #f1f5f9; color: #334155; padding: 12px 20px; border-radius: 9999px; text-decoration: none; font-weight: 700; font-size: 13.5px; border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <a href="https://wa.me/554499856245?text=Ol%C3%A1!%20Minha%20mensalidade%20do%20Texfy%20ERP%20venceu%20e%20quero%20enviar%20o%20comprovante%20para%20desbloqueio." target="_blank" style="background: #f1f5f9; color: #334155; padding: 12px 20px; border-radius: 9999px; text-decoration: none; font-weight: 700; font-size: 13.5px; border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: center; gap: 8px;">
             💬 Enviar Comprovante de Pagamento no WhatsApp
           </a>
 
@@ -510,9 +510,9 @@
   // ==========================================================================
   // MOTOR DE CONEXÃO SUPABASE (POSTGRESQL REALTIME) & FIREBASE
   // ==========================================================================
-  const STORAGE_KEY_SUPABASE = 'BRAVVI_ERP_SUPABASE_CONFIG';
-  const STORAGE_KEY_FIREBASE = 'BRAVVI_ERP_FIREBASE_CONFIG';
-  const STORAGE_KEY_PROVEDOR = 'BRAVVI_ERP_CLOUD_PROVEDOR_ATIVO';
+  const STORAGE_KEY_SUPABASE = 'TEXFY_ERP_SUPABASE_CONFIG';
+  const STORAGE_KEY_FIREBASE = 'TEXFY_ERP_FIREBASE_CONFIG';
+  const STORAGE_KEY_PROVEDOR = 'TEXFY_ERP_CLOUD_PROVEDOR_ATIVO';
 
   let supabaseClient = null;
   let supabaseChannel = null;
@@ -575,8 +575,8 @@ with check (true);
     } catch (e) {
       console.warn('Erro ao carregar credenciais do Supabase:', e);
     }
-    if (window.BRAVVI_SUPABASE_CONFIG || window.TEXPRO_SUPABASE_CONFIG) {
-      return window.BRAVVI_SUPABASE_CONFIG || window.TEXPRO_SUPABASE_CONFIG;
+    if (window.TEXFY_SUPABASE_CONFIG || window.TEXPRO_SUPABASE_CONFIG) {
+      return window.TEXFY_SUPABASE_CONFIG || window.TEXPRO_SUPABASE_CONFIG;
     }
     return Object.assign({}, SUPABASE_CONFIG_PADRAO);
   }
@@ -690,7 +690,7 @@ with check (true);
   // ==========================================================================
   // AUTENTICAÇÃO CRIPTOGRÁFICA OFICIAL & GESTÃO MULTI-TENANT ISOLADA
   // ==========================================================================
-  const STORAGE_KEY_AUTH_USER = 'BRAVVI_ERP_AUTH_USER';
+  const STORAGE_KEY_AUTH_USER = 'TEXFY_ERP_AUTH_USER';
   let usuarioAutenticado = null;
   let tenantAuthAtivo = null;
 
@@ -726,7 +726,7 @@ with check (true);
 
   async function obterTenantIdPorEmail(email) {
     const clean = (email || '').toLowerCase().trim();
-    const hash = await gerarHashSha256('tenant_bravvi_' + clean);
+    const hash = await gerarHashSha256('tenant_texfy_' + clean);
     return 'tenant_' + hash.substring(0, 24);
   }
 
@@ -737,7 +737,7 @@ with check (true);
       let raw = sessionStorage.getItem(STORAGE_KEY_AUTH_USER);
       // 2. Se a aba acabou de ser aberta, restaura da sessão persistente protegida de localStorage
       if (!raw) {
-        raw = localStorage.getItem('BRAVVI_ERP_PERSISTENT_SESSION');
+        raw = localStorage.getItem('TEXFY_ERP_PERSISTENT_SESSION');
       }
       if (raw) {
         const sessao = JSON.parse(raw);
@@ -748,7 +748,7 @@ with check (true);
             if (tokenPayload.exp && Date.now() > tokenPayload.exp) {
               sessionStorage.removeItem(STORAGE_KEY_AUTH_USER);
               salvarTokenSessao(null);
-      localStorage.removeItem('BRAVVI_ERP_PERSISTENT_SESSION');
+      localStorage.removeItem('TEXFY_ERP_PERSISTENT_SESSION');
               salvarTokenSessao(null);
               return null;
             }
@@ -782,7 +782,7 @@ with check (true);
         // Blindagem rigorosa: Se o usuário precisa trocar a senha temporária, NUNCA persiste sessão liberada
         if (user.precisaTrocarSenha === true || (authData && authData.precisaTrocarSenha === true)) {
           sessionStorage.removeItem(STORAGE_KEY_AUTH_USER);
-          localStorage.removeItem('BRAVVI_ERP_PERSISTENT_SESSION');
+          localStorage.removeItem('TEXFY_ERP_PERSISTENT_SESSION');
           return;
         }
 
@@ -794,14 +794,14 @@ with check (true);
         // Salva em sessionStorage para permitir F5 sem pedir senha
         sessionStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(sessao));
         // Guarda também de forma persistente para que fechar o navegador não perca o tenant da fábrica
-        localStorage.setItem('BRAVVI_ERP_PERSISTENT_SESSION', JSON.stringify(sessao));
+        localStorage.setItem('TEXFY_ERP_PERSISTENT_SESSION', JSON.stringify(sessao));
         // Guarda o e-mail em localStorage para vir pré-preenchido no próximo acesso
         if (user.email) {
-          localStorage.setItem('BRAVVI_REMEMBERED_EMAIL', user.email);
+          localStorage.setItem('TEXFY_REMEMBERED_EMAIL', user.email);
         }
       } else {
         sessionStorage.removeItem(STORAGE_KEY_AUTH_USER);
-        localStorage.removeItem('BRAVVI_ERP_PERSISTENT_SESSION');
+        localStorage.removeItem('TEXFY_ERP_PERSISTENT_SESSION');
       }
     } catch (e) {}
     atualizarVisuaisUsuarioLogado();
@@ -1003,7 +1003,7 @@ with check (true);
         // 2. Fallback de verificação local (tokens gerados manualmente ou compras locais)
         if (!aprovado) {
           try {
-            const tokensLocal = JSON.parse(localStorage.getItem('BRAVVI_TOKENS_X1') || '[]');
+            const tokensLocal = JSON.parse(localStorage.getItem('TEXFY_TOKENS_X1') || '[]');
             const achouLocal = tokensLocal.find(t => (t.email || '').toLowerCase().trim() === cleanEmail);
             if (achouLocal) aprovado = achouLocal;
           } catch(eLoc) {}
@@ -1153,7 +1153,7 @@ with check (true);
 
     // 1.5.2: Fallback para autenticação de colaborador local (offline / localStorage)
     try {
-      const localDbRaw = localStorage.getItem('bravvi_erp_prod_v8') || localStorage.getItem('texpro_erp_prod_v8');
+      const localDbRaw = localStorage.getItem('texfy_erp_prod_v8') || localStorage.getItem('texpro_erp_prod_v8');
       if (localDbRaw) {
         const localDb = JSON.parse(localDbRaw);
         if (localDb && Array.isArray(localDb.equipe)) {
@@ -1177,7 +1177,7 @@ with check (true);
             if (senhaCorreta) {
               const emp = obterEmpresaConfig();
               const perfilEscolhido = colab.perfil || (colab.nivelAcesso === 'Admin' ? 'dono' : (colab.nivelAcesso === 'Comercial' ? 'vendedor' : 'oficina'));
-              const tId = localStorage.getItem('BRAVVI_ERP_TENANT_ID') || 'local';
+              const tId = localStorage.getItem('TEXFY_ERP_TENANT_ID') || 'local';
               const userObj = {
                 id: colab.id,
                 tenant_id: tId,
@@ -1270,7 +1270,7 @@ with check (true);
         const dbLocal = (window.ERP && typeof window.ERP.obterDb === 'function') ? window.ERP.obterDb() : null;
         const resp = await fetch('/api/erp-security', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Bravvi-Token': sessionToken },
+          headers: { 'Content-Type': 'application/json', 'X-Texfy-Token': sessionToken },
           body: JSON.stringify({
             action: 'update_password',
             sessionToken,
@@ -1319,7 +1319,7 @@ with check (true);
           }
         }
       }
-      const raw = localStorage.getItem('bravvi_erp_prod_v8') || localStorage.getItem('texpro_erp_prod_v8');
+      const raw = localStorage.getItem('texfy_erp_prod_v8') || localStorage.getItem('texpro_erp_prod_v8');
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && Array.isArray(parsed.equipe)) {
@@ -1330,7 +1330,7 @@ with check (true);
             colab.senhaAlteradaEm = new Date().toISOString();
             delete colab.senha;
             delete colab.senhaTemporaria;
-            localStorage.setItem('bravvi_erp_prod_v8', JSON.stringify(parsed));
+            localStorage.setItem('texfy_erp_prod_v8', JSON.stringify(parsed));
           }
         }
       }
@@ -1522,7 +1522,7 @@ with check (true);
 
     if (!aprovado) {
       try {
-        const tokensLocal = JSON.parse(localStorage.getItem('BRAVVI_TOKENS_X1') || '[]');
+        const tokensLocal = JSON.parse(localStorage.getItem('TEXFY_TOKENS_X1') || '[]');
         if (tokensLocal.some(t => (t.email || '').toLowerCase().trim() === cleanEmail)) {
           aprovado = true;
         }
@@ -1682,8 +1682,8 @@ with check (true);
       } catch (e) {}
     }
     try {
-      localStorage.removeItem('BRAVVI_ERP_PERSISTENT_SESSION');
-      localStorage.removeItem('BRAVVI_ERP_USER_SESSION');
+      localStorage.removeItem('TEXFY_ERP_PERSISTENT_SESSION');
+      localStorage.removeItem('TEXFY_ERP_USER_SESSION');
       localStorage.removeItem(STORAGE_KEY_AUTH_USER);
       localStorage.removeItem(STORAGE_KEY_EMPRESA);
       sessionStorage.clear();
@@ -1702,7 +1702,7 @@ with check (true);
       try {
         const resp = await fetch('/api/erp-security', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Bravvi-Token': sessionToken },
+          headers: { 'Content-Type': 'application/json', 'X-Texfy-Token': sessionToken },
           body: JSON.stringify({ action: 'load_tenant', sessionToken })
         });
         if (resp && resp.ok) {
@@ -1712,7 +1712,7 @@ with check (true);
             if (resData.perfilAssinado) definirPerfilAtivo(resData.perfilAssinado);
             let dbFinal = resData.db;
             try {
-              const chaveTenant = 'bravvi_erp_tenant_' + tenantId;
+              const chaveTenant = 'texfy_erp_tenant_' + tenantId;
               const rawLocal = localStorage.getItem(chaveTenant);
               if (rawLocal) {
                 const dbLocal = JSON.parse(rawLocal);
@@ -1750,8 +1750,8 @@ with check (true);
         // Fusão inteligente com qualquer dado offline/local prévio no dispositivo
         let dbFinal = data.db;
         try {
-          const chaveTenant = 'bravvi_erp_tenant_' + tenantId;
-          const rawLocal = localStorage.getItem(chaveTenant) || localStorage.getItem('bravvi_erp_prod_v8');
+          const chaveTenant = 'texfy_erp_tenant_' + tenantId;
+          const rawLocal = localStorage.getItem(chaveTenant) || localStorage.getItem('texfy_erp_prod_v8');
           if (rawLocal) {
             const dbLocal = JSON.parse(rawLocal);
             if (dbLocal && Array.isArray(dbLocal.pedidos)) {
@@ -1829,8 +1829,8 @@ with check (true);
     } catch (e) {
       console.warn('Erro ao carregar credenciais do Firebase:', e);
     }
-    if (window.BRAVVI_FIREBASE_CONFIG || window.TEXPRO_FIREBASE_CONFIG) {
-      return window.BRAVVI_FIREBASE_CONFIG || window.TEXPRO_FIREBASE_CONFIG;
+    if (window.TEXFY_FIREBASE_CONFIG || window.TEXPRO_FIREBASE_CONFIG) {
+      return window.TEXFY_FIREBASE_CONFIG || window.TEXPRO_FIREBASE_CONFIG;
     }
     return null;
   }
@@ -2065,7 +2065,7 @@ with check (true);
       try {
         const resp = await fetch('/api/erp-security', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Bravvi-Token': sessionToken },
+          headers: { 'Content-Type': 'application/json', 'X-Texfy-Token': sessionToken },
           body: JSON.stringify({
             action: 'sync_tenant',
             sessionToken,
@@ -2187,7 +2187,7 @@ with check (true);
         try {
           const resp = await fetch('/api/erp-security', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Bravvi-Token': sessionToken },
+            headers: { 'Content-Type': 'application/json', 'X-Texfy-Token': sessionToken },
             body: JSON.stringify({
               action: 'sync_tenant',
               sessionToken,
@@ -2290,7 +2290,7 @@ with check (true);
         if (sTok) {
           fetch('/api/erp-security', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Bravvi-Token': sTok },
+            headers: { 'Content-Type': 'application/json', 'X-Texfy-Token': sTok },
             body: JSON.stringify({ action: 'load_tenant', sessionToken: sTok })
           }).then(r => r.json()).then(resData => {
             if (resData && resData.sucesso && resData.found && resData.db) {
@@ -2392,7 +2392,7 @@ with check (true);
       const dot = badge.querySelector('span:first-child');
       if (dot) dot.style.background = '#3b82f6';
       txt.textContent = '🏭 Showroom Ativo';
-      badge.title = 'Ambiente de demonstração interativo da fábrica Bravvi com todas as funções ativas.';
+      badge.title = 'Ambiente de demonstração interativo da fábrica Texfy com todas as funções ativas.';
       return;
     }
 

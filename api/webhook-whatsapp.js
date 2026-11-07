@@ -1,10 +1,10 @@
 // ============================================================================
-// BRAVVI ERP TÊXTIL — WEBHOOK SERVERLESS WHATSAPP CLOUD API OFICIAL (META)
+// TEXFY ERP TÊXTIL — WEBHOOK SERVERLESS WHATSAPP CLOUD API OFICIAL (META)
 // Rota: GET/POST /api/webhook-whatsapp
 // SDR Closer de Alta Performance (Metodologia Formação Closer Diamond)
 // ============================================================================
 
-const WHATSAPP_VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'bravvi_sdr_webhook_2026';
+const WHATSAPP_VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'texfy_sdr_webhook_2026';
 const PERMANENT_TOKEN = Buffer.from('RUFBTk54WkN4SmtDc0JTN0tFbnc1ZHBtSFZDVmtaQmpoc0hMS1B4bnMyc1gwZkExOVJqZnk5ZG1aQ1VFNzZJUnJSbWltbGQ5YVpBVGxTeWQ1WUNDWkNaQ3lEQzE1TnlyaWh3QTFYbXFPN0ZaQVdOVWRrOFZBM0swQUdRV0hYN0ZLSHZmS0QzZVlKblZ0Y1FYRnlUY2JIS2hPblA3RUpZR2V5Q2lDak11Q0dVelZVRlB4bThlRlpDbWhha09kb2haQnd4UVpEWkQ=', 'base64').toString('utf8');
 const WHATSAPP_TOKEN = PERMANENT_TOKEN;
 const WHATSAPP_PHONE_NUMBER_ID = '1324183054119560';
@@ -20,14 +20,14 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1N
 const processedMessageIds = new Map();
 
 // URLs Oficiais dos Vídeos no Supabase CDN
-const VIDEO_BOAS_VINDAS_URL = 'https://nrhygqygcfjyniogjegq.supabase.co/storage/v1/object/public/videos/bravvi_boas_vindas.mp4';
-const VIDEO_DEMO_ERP_URL = 'https://nrhygqygcfjyniogjegq.supabase.co/storage/v1/object/public/videos/bravvi_demonstracao_erp.mp4';
+const VIDEO_BOAS_VINDAS_URL = 'https://nrhygqygcfjyniogjegq.supabase.co/storage/v1/object/public/videos/texfy_boas_vindas.mp4';
+const VIDEO_DEMO_ERP_URL = 'https://nrhygqygcfjyniogjegq.supabase.co/storage/v1/object/public/videos/texfy_demonstracao_erp.mp4';
 
 // Prompt do Closer Carlos (Metodologia Formação Closer Diamond B2B + Pente Fino do ERP)
-const SYSTEM_PROMPT_SDR = `Você é o Carlos, Closer comercial da Bravvi ERP Têxtil no WhatsApp.
+const SYSTEM_PROMPT_SDR = `Você é o Carlos, Closer comercial da Texfy ERP Têxtil no WhatsApp.
 Sua comunicação segue a Formação Closer Diamond: postura consultiva de alto padrão, ultra-enxuto, direto e NUNCA promete o que o sistema não faz.
 
-TABELA DA REALIDADE DO SISTEMA (O QUE O BRAVVI ERP REALMENTE FAZ):
+TABELA DA REALIDADE DO SISTEMA (O QUE O TEXFY ERP REALMENTE FAZ):
 1. Fichas Técnicas A4 e Ordens de Serviço: calcula o consumo exato de tecido por peça (kg/metros), lista grades (Infantil ao G5) e ESCONDE o preço de venda e os custos do cortador/costureira.
 2. Proposta Comercial com PIX: gera PDF com foto do mockup e QR Code PIX para receber sinal na aprovação (50% entrada).
 3. Portal do Cliente: link onde o próprio cliente final preenche a lista de nomes e tamanhos direto pelo WhatsApp dele, zerando erros de grade.
@@ -59,8 +59,8 @@ FUNIL DE QUALIFICAÇÃO APÓS O ENVIO DOS VÍDEOS:
    - "Fazer na mão consome horas e sempre gera erro. E hoje o que mais toma o seu tempo ou gera retrabalho: calcular o tecido e custos ou organizar a grade dos pedidos?"
 
 3. APÓS O CLIENTE REVELAR O GARGALO DELE (seja do sistema atual ou da planilha):
-   - Mostre como o Bravvi resolve essa dor específica e direcione para a demonstração:
-   - "O Bravvi foi feito exatamente pra travar esse erro. Você conseguiu dar uma olhada no link de teste que te mandei com dados reais de fábrica?"
+   - Mostre como o Texfy resolve essa dor específica e direcione para a demonstração:
+   - "O Texfy foi feito exatamente pra travar esse erro. Você conseguiu dar uma olhada no link de teste que te mandei com dados reais de fábrica?"
 
 4. SE O CLIENTE PERGUNTAR O PREÇO:
    - Ancore o valor acessível e puxe para qualificação:
@@ -377,7 +377,7 @@ module.exports = async function handler(req, res) {
       // 🎬 FLUXO ETAPA 1: PRIMEIRO CONTATO DO LEAD
       // Carlos se apresenta da equipe do Guilherme e pergunta sobre o controle atual para liberar o teste
       if (stepAtual === 'inicio') {
-        const saudacaoInicial = 'Fala! Tudo bem? Sou o Carlos, da equipe do Guilherme na Bravvi ERP.\n\nPra eu já te liberar um acesso de teste do sistema com dados de fábrica, me conta: hoje você faz o controle de corte na planilha ou já usa algum sistema aí na confecção?';
+        const saudacaoInicial = 'Fala! Tudo bem? Sou o Carlos, da equipe do Guilherme na Texfy ERP.\n\nPra eu já te liberar um acesso de teste do sistema com dados de fábrica, me conta: hoje você faz o controle de corte na planilha ou já usa algum sistema aí na confecção?';
         
         await new Promise(r => setTimeout(r, 2000));
         await enviarMensagemWhatsApp(phoneId, from, saudacaoInicial);
@@ -447,7 +447,7 @@ module.exports = async function handler(req, res) {
         await enviarMensagemWhatsApp(phoneId, from, `${textoTransicao}\n\nO próprio Guilherme gravou esses dois vídeos rápidos para te mostrar a visão de fábrica e as telas do sistema por dentro: 👇`);
         
         await new Promise(r => setTimeout(r, 1200));
-        await enviarVideoWhatsApp(phoneId, from, VIDEO_BOAS_VINDAS_URL, '🎬 Boas-vindas do Guilherme (Fundador da Bravvi ERP)');
+        await enviarVideoWhatsApp(phoneId, from, VIDEO_BOAS_VINDAS_URL, '🎬 Boas-vindas do Guilherme (Fundador da Texfy ERP)');
         
         await new Promise(r => setTimeout(r, 2500));
         await enviarVideoWhatsApp(phoneId, from, VIDEO_DEMO_ERP_URL, '💻 Tour completo pelas telas do sistema (cálculo de tecido, OS e financeiro)');

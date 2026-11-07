@@ -1,5 +1,5 @@
 """
-Bravvi ERP — Jarvis SDR Manager (WhatsApp Cloud API & Prospecção Ativa)
+Texfy ERP — Jarvis SDR Manager (WhatsApp Cloud API & Prospecção Ativa)
 Permite disparar templates de prospecção fria, simular o cérebro da IA e monitorar a qualidade do número.
 """
 
@@ -26,7 +26,7 @@ GEMINI_API_KEY = env.get('GEMINI_API_KEY')
 TELEGRAM_BOT_TOKEN = env.get('TELEGRAM_BOT_TOKEN')
 TELEGRAM_CHAT_ID = env.get('TELEGRAM_AUTHORIZED_CHAT_ID', '8365248711')
 
-SYSTEM_PROMPT = """Você é o Carlos, consultor comercial e especialista de processos da Bravvi ERP Têxtil.
+SYSTEM_PROMPT = """Você é o Carlos, consultor comercial e especialista de processos da Texfy ERP Têxtil.
 Você está conversando no WhatsApp com um dono ou gestor de confecção de uniformes, estamparia ou facção.
 
 SEU OBJETIVO COMO SDR:
@@ -35,7 +35,7 @@ SEU OBJETIVO COMO SDR:
    - Que tipo de uniforme eles fabricam (Polo, Camiseta, Esportivo/Futebol, Brim Operacional, Jalecos, Escolar).
    - Volume aproximado mensal (quantas peças cortam por mês).
    - Maior dor atual (sobras de tecido, bobina DTF desperdiçada, cliente cobrando no WhatsApp, erro de grade).
-3. Apresentar brevemente como o Bravvi ERP resolve exatamente isso em 1 clique:
+3. Apresentar brevemente como o Texfy ERP resolve exatamente isso em 1 clique:
    - Ficha técnica A4 automática sem expor os custos ao cortador.
    - Cálculo automático de kg de tecido por peça com margem de segurança.
    - Otimizador de encaixe de filme DTF.

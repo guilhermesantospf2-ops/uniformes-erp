@@ -1,7 +1,7 @@
 {
-  "name": "Bravvi 10K • Painel Comercial",
-  "short_name": "Bravvi 10K",
-  "description": "Painel Diretor Comercial e Gestão de Assinantes Bravvi ERP",
+  "name": "Texfy 10K • Painel Comercial",
+  "short_name": "Texfy 10K",
+  "description": "Painel Diretor Comercial e Gestão de Assinantes Texfy ERP",
   "start_url": "/meta10k.html",
   "id": "/meta10k.html",
   "scope": "/",
@@ -23,7 +23,7 @@
       "purpose": "any maskable"
     },
     {
-      "src": "/assets/bravvi-icon.png",
+      "src": "/assets/texfy-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"

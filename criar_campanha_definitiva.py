@@ -1,0 +1,168 @@
+"""
+Criação Definitiva da Campanha Texfy ERP do Zero.
+Totalmente calibrada com as decisões tomadas:
+- Orçamento no Conjunto: R$ 30,00/dia
+- Zero Advantage Audience (advantage_audience: 0)
+- Zero Advantage Creative (sem alterações de IA no vídeo ou texto)
+- Interesses B2B manuais: Indústria Têxtil, Uniforme, Máquinas de Costura, Costura, Impressão/Estamparia
+- Idade: 24 a 58 anos
+- Vídeo 1017.mp4 do fundador
+- Destino: WhatsApp direto (+55 44 99985-6245) com mensagem pronta
+"""
+import os
+import sys
+import json
+import urllib.parse
+from pathlib import Path
+
+if sys.platform == 'win32':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
+import meta_ads_manager
+
+AD_ACCOUNT_ID = 'act_2320262458814661'
+PAGE_ID = '320117504509859'
+VIDEO_ID = '1630493205207764'
+THUMBNAIL_URL = 'https://scontent.ftow5-1.fna.fbcdn.net/v/t15.5256-10/858596670_1088757860824378_1012024318055655434_n.jpg?stp=dst-jpg_p160x160_tt6&_nc_cat=105&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=200999&_nc_ohc=A6FROO5B1VUQ7kNvwGtl1kw&_nc_oc=AdpIW67H1MLm3BxwaaWk3wjvAVi_torXo_chYbqmznX9YIxIeQGYeog6sjKL-RmxkYU&_nc_zt=23&_nc_ht=scontent.ftow5-1.fna&edm=APRAPSkEAAAA&_nc_gid=ToI8DExlMXDj1wJRHA6Jjw&_nc_tpa=Q5bMBQKJKWs2_ggaQmKMmD9OVMtgKrG0kL58SesCKjEHnLLOPIK_PFqNzlX9k-HSNDyRtBjHPhGBOkr-&oh=00_AQPulPuZ6AwoIkdI0x07zOY3sQeRpKV2sNQnz87GSRj6GA&oe=6ADEE916'
+WHATSAPP_NUMBER = '554499856245'
+DAILY_BUDGET_REAIS = 30.0
+
+def executar():
+    print("🚀 [1/4] Criando Campanha Oficial...")
+    camp_payload = {
+        'name': '[TEXFY ERP] Trafego WhatsApp - Video Pitch Fundador',
+        'objective': 'OUTCOME_TRAFFIC',
+        'status': 'ACTIVE',
+        'special_ad_categories': '[]',
+        'is_adset_budget_sharing_enabled': 'false'
+    }
+    camp_res = meta_ads_manager.meta_request(f'{AD_ACCOUNT_ID}/campaigns', method='POST', data=camp_payload)
+    camp_id = camp_res.get('id')
+    if not camp_id:
+        print("❌ Falha na criação da campanha:", camp_res)
+        return False
+    print(f"✓ Campanha criada com sucesso! ID: {camp_id}")
+
+    print("\n🎯 [2/4] Criando Conjunto de Anúncios (Segmentação Manual Cirúrgica B2B)...")
+    targeting = {
+        'geo_locations': {
+            'countries': ['BR']
+        },
+        'age_min': 24,
+        'age_max': 58,
+        'targeting_automation': {
+            'advantage_audience': 0
+        },
+        'flexible_spec': [
+            {
+                'interests': [
+                    {'id': '6002923522121', 'name': 'Uniforme'},
+                    {'id': '6002957337050', 'name': 'Indústria têxtil'},
+                    {'id': '6003142329161', 'name': 'Costura (artesanato)'},
+                    {'id': '6003342585787', 'name': 'Máquina de costura'},
+                    {'id': '6003719177983', 'name': 'Impressão'}
+                ]
+            }
+        ]
+    }
+
+    adset_payload = {
+        'name': '[TEXFY ERP] B2B Confecções, Uniformes e Têxtil (Manual)',
+        'campaign_id': camp_id,
+        'daily_budget': str(int(DAILY_BUDGET_REAIS * 100)),
+        'billing_event': 'IMPRESSIONS',
+        'optimization_goal': 'LINK_CLICKS',
+        'bid_strategy': 'LOWEST_COST_WITHOUT_CAP',
+        'targeting': json.dumps(targeting),
+        'status': 'ACTIVE'
+    }
+    adset_res = meta_ads_manager.meta_request(f'{AD_ACCOUNT_ID}/adsets', method='POST', data=adset_payload)
+    adset_id = adset_res.get('id')
+    if not adset_id:
+        print("❌ Falha na criação do conjunto de anúncios:", adset_res)
+        return False
+    print(f"✓ Conjunto de Anúncios criado! ID: {adset_id}")
+
+    print("\n✍️ [3/4] Registrando Criativo Oficial (Zero Alterações de IA)...")
+    copy_text = (
+        "Você ainda perde horas tentando controlar sua confecção de uniformes em planilhas que não batem?\n\n"
+        "O Texfy ERP foi desenhado exclusivamente para a realidade de quem fabrica uniformes, estampa e borda: "
+        "ficha técnica completa, cálculo exato de custo por peça, controle de grade, faturamento e ordens de produção sem dor de cabeça.\n\n"
+        "E o melhor: sem aquela taxa abusiva de R$ 15.000 de implantação que os sistemas engessados cobram.\n\n"
+        "👉 Toque no botão abaixo e fale direto comigo no WhatsApp para agendar sua demonstração sem custo!"
+    )
+
+    msg_whats = urllib.parse.quote("Olá Guilherme! Vi o vídeo do Texfy ERP e quero conhecer o sistema para minha confecção.")
+    link_whatsapp = f"https://wa.me/{WHATSAPP_NUMBER}?text={msg_whats}"
+
+    object_story_spec = {
+        'page_id': PAGE_ID,
+        'video_data': {
+            'video_id': VIDEO_ID,
+            'image_url': THUMBNAIL_URL,
+            'title': 'Texfy ERP | O Sistema para Confecção de Uniformes',
+            'message': copy_text,
+            'call_to_action': {
+                'type': 'LEARN_MORE',
+                'value': {
+                    'link': link_whatsapp
+                }
+            }
+        }
+    }
+
+    # Desligar explicitamente todas as otimizações automáticas do Advantage+ Creative
+    opt_out_all = {
+        "advantage_plus_creative": {"enroll_status": "OPT_OUT"},
+        "music_generation": {"enroll_status": "OPT_OUT"},
+        "video_auto_crop": {"enroll_status": "OPT_OUT"},
+        "video_filtering": {"enroll_status": "OPT_OUT"},
+        "text_generation": {"enroll_status": "OPT_OUT"},
+        "text_optimizations": {"enroll_status": "OPT_OUT"},
+        "dynamic_cta_text": {"enroll_status": "OPT_OUT"},
+        "image_brightness_and_contrast": {"enroll_status": "OPT_OUT"}
+    }
+
+    creative_payload = {
+        'name': 'Criativo Oficial Texfy ERP - Video 1017',
+        'object_story_spec': json.dumps(object_story_spec),
+        'degrees_of_freedom_spec': json.dumps({'creative_features_spec': opt_out_all})
+    }
+
+    creative_res = meta_ads_manager.meta_request(f'{AD_ACCOUNT_ID}/adcreatives', method='POST', data=creative_payload)
+    creative_id = creative_res.get('id')
+    if not creative_id:
+        print("❌ Falha na criação do criativo:", creative_res)
+        return False
+    print(f"✓ Criativo Oficial registrado! ID: {creative_id}")
+
+    print("\n📢 [4/4] Publicando e Ativando Anúncio...")
+    ad_payload = {
+        'name': '[TEXFY ERP] Vídeo Pitch Fundador - Anúncio 01',
+        'adset_id': adset_id,
+        'creative': json.dumps({'creative_id': creative_id}),
+        'status': 'ACTIVE'
+    }
+    ad_res = meta_ads_manager.meta_request(f'{AD_ACCOUNT_ID}/ads', method='POST', data=ad_payload)
+    ad_id = ad_res.get('id')
+    if not ad_id:
+        print("❌ Falha na publicação do anúncio:", ad_res)
+        return False
+
+    print("\n" + "="*50)
+    print("🎉 SUCESSO TOTAL! CAMPANHA 100% NO AR DO ZERO!")
+    print(f"🆔 ID da Campanha: {camp_id}")
+    print(f"🆔 ID do Conjunto: {adset_id}")
+    print(f"🆔 ID do Criativo: {creative_id}")
+    print(f"🆔 ID do Anúncio: {ad_id}")
+    print(f"💰 Orçamento Diário: R$ {DAILY_BUDGET_REAIS:.2f}")
+    print(f"📲 WhatsApp Destino: +{WHATSAPP_NUMBER}")
+    print("="*50)
+    return True
+
+if __name__ == '__main__':
+    executar()

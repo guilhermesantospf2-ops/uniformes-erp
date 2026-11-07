@@ -1,5 +1,5 @@
 -- ============================================================================
--- BRAVVI ERP TÊXTIL - SCHEMA DO SUPABASE BLINDADO (POSTGRESQL REALTIME + BACKUP)
+-- TEXFY ERP TÊXTIL - SCHEMA DO SUPABASE BLINDADO (POSTGRESQL REALTIME + BACKUP)
 -- ============================================================================
 -- Como rodar:
 -- 1. Acesse o seu dashboard no Supabase: https://supabase.com/dashboard

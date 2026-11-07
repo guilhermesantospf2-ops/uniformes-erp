@@ -40,7 +40,7 @@
       if ('caches' in window) {
         caches.keys().then(keys => {
           keys.forEach(key => {
-            if (key !== 'bravvi-erp-desktop-v9.18.4') {
+            if (key !== 'texfy-erp-desktop-v9.18.4') {
               console.log('[PWA] Purgando cache antigo de versão anterior:', key);
               caches.delete(key);
             }
@@ -137,7 +137,7 @@
         <!-- Header do Modal -->
         <div class="modal-header" style="background: linear-gradient(135deg, #032b35 0%, #064e3b 100%); padding: 18px 22px; color: #ffffff; display: flex; justify-content: space-between; align-items: center;">
           <div style="display: flex; align-items: center; gap: 12px;">
-            <img src="assets/texfy-icon.png" alt="Bravvi" style="width: 40px; height: 40px; object-fit: contain; border-radius: 8px; background: rgba(255,255,255,0.1); padding: 2px;">
+            <img src="assets/texfy-icon.png" alt="Texfy" style="width: 40px; height: 40px; object-fit: contain; border-radius: 8px; background: rgba(255,255,255,0.1); padding: 2px;">
             <div>
               <div class="modal-title" style="color: #ffffff; font-size: 16px; font-weight: 800;">Instalar Texfy ERP no Computador</div>
               <div style="font-size: 11.5px; color: #2dd4bf; margin-top: 2px; font-weight: 600;">

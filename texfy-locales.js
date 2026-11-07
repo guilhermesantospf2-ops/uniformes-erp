@@ -1,5 +1,5 @@
 /**
- * BRAVVI ERP TÊXTIL - MOTOR DE MOEDA MULTI-PAÍS (SEM TRADUÇÃO DE TEXTO)
+ * TEXFY ERP TÊXTIL - MOTOR DE MOEDA MULTI-PAÍS (SEM TRADUÇÃO DE TEXTO)
  * 100% em Português nativo. Altera exclusivamente a formatação monetária (R$, US$, Gs., €).
  */
 (function() {
@@ -57,7 +57,7 @@
   }
 
   let moedaAtual = resolverCodigoMoeda(
-    localStorage.getItem('bravvi_currency') || localStorage.getItem('bravvi_language')
+    localStorage.getItem('texfy_currency') || localStorage.getItem('texfy_language')
   );
 
   function obterConfig() {
@@ -128,11 +128,11 @@
   }
 
   function abrirModalIdioma() {
-    let modal = document.getElementById('bravviLanguageModal');
+    let modal = document.getElementById('texfyLanguageModal');
     if (modal) modal.remove();
 
     modal = document.createElement('div');
-    modal.id = 'bravviLanguageModal';
+    modal.id = 'texfyLanguageModal';
     modal.className = 'modal-overlay';
     modal.style.cssText = 'position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 16px;';
 
@@ -193,10 +193,10 @@
     if (!item) return;
 
     moedaAtual = item.code;
-    localStorage.setItem('bravvi_currency', moedaAtual);
-    localStorage.setItem('bravvi_language', 'pt-BR');
+    localStorage.setItem('texfy_currency', moedaAtual);
+    localStorage.setItem('texfy_language', 'pt-BR');
 
-    const modal = document.getElementById('bravviLanguageModal');
+    const modal = document.getElementById('texfyLanguageModal');
     if (modal) modal.remove();
 
     atualizarBotaoHeader();

@@ -1,5 +1,5 @@
 // ============================================================================
-// BRAVVI ERP TÊXTIL — MOTOR DE SEGURANÇA BANCÁRIA & GATEWAY MULTI-TENANT
+// TEXFY ERP TÊXTIL — MOTOR DE SEGURANÇA BANCÁRIA & GATEWAY MULTI-TENANT
 // Rota: POST /api/erp-security
 // Protege: Autenticação, Isolamento de Tenants, Filtro de Cargos (RBAC),
 // Ocultação de Hashes de Senha e Gerador de Acessos X1 com Senha Master.
@@ -11,7 +11,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || 'https://nrhygqygcfjyniogjegq.s
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
 
 // Chave secreta de assinatura HMAC dos tokens de sessão (lida do cofre Environment Variables da Vercel)
-const JWT_SECRET = process.env.BRAVVI_JWT_SECRET || process.env.WEBHOOK_SECRET || crypto.createHash('sha256').update('bravvi_erp_master_hmac_secret_2026_' + SUPABASE_KEY).digest('hex');
+const JWT_SECRET = process.env.TEXFY_JWT_SECRET || process.env.WEBHOOK_SECRET || crypto.createHash('sha256').update('texfy_erp_master_hmac_secret_2026_' + SUPABASE_KEY).digest('hex');
 
 // Senha Master do Dono do SaaS para o painel /gerar-acesso (lida exclusivamente de ADMIN_MASTER_PASSWORD na Vercel ou fallback diretor)
 const ADMIN_MASTER_PASSWORD = process.env.ADMIN_MASTER_PASSWORD || 'Gui2026@';
@@ -43,7 +43,7 @@ function sha256(text) {
 
 function getTenantIdByEmail(email) {
   const clean = (email || '').toLowerCase().trim();
-  const hash = sha256('tenant_bravvi_' + clean);
+  const hash = sha256('tenant_texfy_' + clean);
   return 'tenant_' + hash.substring(0, 24);
 }
 
@@ -141,7 +141,7 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Bravvi-Token');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Texfy-Token');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -196,7 +196,7 @@ module.exports = async function handler(req, res) {
           return res.status(403).json({
             sucesso: false,
             bloqueado: true,
-            erro: 'Seu acesso ao Bravvi ERP está temporariamente bloqueado pela administração. Entre em contato com o suporte comercial no WhatsApp (44) 99985-6245 para regularizar.'
+            erro: 'Seu acesso ao Texfy ERP está temporariamente bloqueado pela administração. Entre em contato com o suporte comercial no WhatsApp (44) 99985-6245 para regularizar.'
           });
         }
 
@@ -232,7 +232,7 @@ module.exports = async function handler(req, res) {
               sessionToken,
               precisaTrocarSenha: precisaTrocar
             });
-          } else if (senhaStr === 'Bravvi@2026' && auth.precisaTrocarSenha !== true) {
+          } else if (senhaStr === 'Texfy@2026' && auth.precisaTrocarSenha !== true) {
             return res.status(401).json({
               sucesso: false,
               erro: 'Sua conta já possui uma senha pessoal definitiva cadastrada. Acesse com a sua senha pessoal.'
@@ -240,7 +240,7 @@ module.exports = async function handler(req, res) {
           } else {
             return res.status(401).json({ sucesso: false, erro: 'E-mail ou senha incorretos.' });
           }
-        } else if (auth.precisaTrocarSenha === true && senhaStr === 'Bravvi@2026') {
+        } else if (auth.precisaTrocarSenha === true && senhaStr === 'Texfy@2026') {
           const userObj = {
             id: tenantId,
             tenant_id: tenantId,
@@ -274,7 +274,7 @@ module.exports = async function handler(req, res) {
       }
 
       // 1.2 Primeiro Acesso com Senha Temporária Oficial (Pós-compra Cakto / X1)
-      if (senhaStr === 'Bravvi@2026') {
+      if (senhaStr === 'Texfy@2026') {
         let aprovado = null;
         const { data: tokRows } = await sbFetch(`erp_tokens?email=eq.${encodeURIComponent(cleanEmail)}&status=eq.aprovado&select=*`);
         if (Array.isArray(tokRows) && tokRows.length > 0) aprovado = tokRows[0];
@@ -362,7 +362,7 @@ module.exports = async function handler(req, res) {
               if (testHash === colab.auth.hash) senhaCorreta = true;
             } else if (colab.senha && colab.senha === senhaStr) {
               senhaCorreta = true;
-            } else if (!colab.auth && !colab.senha && (senhaStr === 'Bravvi@2026' || senhaStr === 'Temp@2026')) {
+            } else if (!colab.auth && !colab.senha && (senhaStr === 'Texfy@2026' || senhaStr === 'Temp@2026')) {
               senhaCorreta = true;
               precisaTrocar = true;
             }
@@ -418,7 +418,7 @@ module.exports = async function handler(req, res) {
     // 2. TROCA DE SENHA SEGURA NO SERVIDOR (DONO OU COLABORADOR)
     // ========================================================================
     if (action === 'update_password') {
-      const tokenPayload = verifySessionToken(body.sessionToken || req.headers['x-bravvi-token']);
+      const tokenPayload = verifySessionToken(body.sessionToken || req.headers['x-texfy-token']);
       if (!tokenPayload || !tokenPayload.tenant_id) {
         return res.status(401).json({ sucesso: false, erro: 'Sessão inválida ou expirada. Faça login novamente.' });
       }
@@ -642,7 +642,7 @@ module.exports = async function handler(req, res) {
     // 3. LEITURA ISOLADA DO BANCO DO TENANT (LOAD) COM RBAC NO SERVIDOR
     // ========================================================================
     if (action === 'load_tenant') {
-      const tokenPayload = verifySessionToken(body.sessionToken || req.headers['x-bravvi-token']);
+      const tokenPayload = verifySessionToken(body.sessionToken || req.headers['x-texfy-token']);
       if (!tokenPayload || !tokenPayload.tenant_id) {
         return res.status(401).json({ sucesso: false, erro: 'Sessão não autenticada.' });
       }
@@ -669,7 +669,7 @@ module.exports = async function handler(req, res) {
     // 4. GRAVAÇÃO SEGURA DO TENANT (SYNC) PRESERVANDO HASHES E DADOS DO DONO
     // ========================================================================
     if (action === 'sync_tenant') {
-      const tokenPayload = verifySessionToken(body.sessionToken || req.headers['x-bravvi-token']);
+      const tokenPayload = verifySessionToken(body.sessionToken || req.headers['x-texfy-token']);
       if (!tokenPayload || !tokenPayload.tenant_id) {
         return res.status(401).json({ sucesso: false, erro: 'Sessão não autenticada.' });
       }
@@ -794,7 +794,7 @@ module.exports = async function handler(req, res) {
       }
 
       const tenantId = getTenantIdByEmail(email);
-      const token = 'bravvi_x1_' + crypto.randomBytes(8).toString('hex');
+      const token = 'texfy_x1_' + crypto.randomBytes(8).toString('hex');
       const dataVencimento = new Date(Date.now() + dias * 24 * 60 * 60 * 1000);
 
       const empNova = {
@@ -870,7 +870,7 @@ module.exports = async function handler(req, res) {
         token,
         tenant_id: tenantId,
         email,
-        senhaTemporaria: 'Bravvi@2026'
+        senhaTemporaria: 'Texfy@2026'
       });
     }
 

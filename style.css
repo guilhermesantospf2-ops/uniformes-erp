@@ -23,7 +23,7 @@ body.modal-aberto .content-area {
 }
 
 /* ==========================================================================
-   BRAVVI ERP TÊXTIL - ENTERPRISE LIGHT DESIGN SYSTEM
+   TEXFY ERP TÊXTIL - ENTERPRISE LIGHT DESIGN SYSTEM
    Paleta Estrita: Branco, Preto e Cinza com Verde e Vermelho Funcionais
    Zero Emojis • Tipografia Industrial de Alta Densidade • Alto Contraste
    ========================================================================== */
@@ -2207,9 +2207,9 @@ button.status-pill:hover {
 }
 
 /* ==========================================================================
-   BRAVVI AUTH GATEKEEPER - BLINDAGEM DE ACESSO & ISOLAMENTO TOTAL
+   TEXFY AUTH GATEKEEPER - BLINDAGEM DE ACESSO & ISOLAMENTO TOTAL
    ========================================================================== */
-.bravvi-gatekeeper-screen {
+.texfy-gatekeeper-screen {
   position: fixed;
   inset: 0;
   z-index: 999999;
@@ -2222,7 +2222,7 @@ button.status-pill:hover {
   box-sizing: border-box;
 }
 
-.bravvi-gatekeeper-card {
+.texfy-gatekeeper-card {
   max-width: 490px;
   width: 100%;
   border-radius: 18px;
@@ -2230,10 +2230,10 @@ button.status-pill:hover {
   box-shadow: 0 35px 90px -15px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.12);
   overflow: hidden;
   margin: auto;
-  animation: bravviFadeInUp 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: texfyFadeInUp 0.32s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes bravviFadeInUp {
+@keyframes texfyFadeInUp {
   from {
     opacity: 0;
     transform: translateY(24px) scale(0.97);
@@ -3100,7 +3100,7 @@ body.sidebar-collapsed .btn-floating-sidebar-open {
 
 
 /* ==========================================================================
-   BRAVVI ERP TÊXTIL — DESIGN SYSTEM RESPONSIVO DE ALTA PERFORMANCE (MOBILE)
+   TEXFY ERP TÊXTIL — DESIGN SYSTEM RESPONSIVO DE ALTA PERFORMANCE (MOBILE)
    ========================================================================== */
 
 /* Backdrop overlay para quando a sidebar estiver aberta no celular */

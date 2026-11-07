@@ -1,5 +1,5 @@
 // ============================================================================
-// BRAVVI ERP TÊXTIL — WEBHOOK SERVERLESS INFINITEPAY (VERCEL FUNCTION)
+// TEXFY ERP TÊXTIL — WEBHOOK SERVERLESS INFINITEPAY (VERCEL FUNCTION)
 // Rota: POST /api/webhook-infinitepay
 // ============================================================================
 
@@ -24,7 +24,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({
       status: 'online',
       gateway: 'InfinitePay (CloudWalk)',
-      service: 'Bravvi ERP Têxtil Webhook Handler',
+      service: 'Texfy ERP Têxtil Webhook Handler',
       timestamp: new Date().toISOString()
     });
   }
@@ -70,7 +70,7 @@ module.exports = async function handler(req, res) {
     // Gera um token criptograficamente seguro e aleatório para a ativação do cliente
     const crypto = require('crypto');
     const randomHex = crypto.randomBytes(8).toString('hex');
-    const token = 'bravvi_' + randomHex;
+    const token = 'texfy_' + randomHex;
 
     // Calcula 30 dias de acesso padrão (ou 365 se for anual acima de R$ 500)
     const diasAcesso = valor >= 500 ? 365 : 30;

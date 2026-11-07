@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>J.A.R.V.I.S. // Estação Executiva do Senhor Guilherme (Texfy SaaS)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Orbitron:wght@600;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: radial-gradient(circle at center, #070e1c 0%, #030712 100%);
+      color: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(rgba(0, 240, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.035) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .ambient-glow {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 240, 255, 0.12) 0%, rgba(56, 189, 248, 0.02) 60%, transparent 80%);
+      pointer-events: none;
+      z-index: 1;
+      filter: blur(60px);
+      transition: transform 0.4s ease, opacity 0.4s ease;
+      will-change: transform, opacity;
+    }
+
+    .ambient-glow.recording {
+      transform: translate(-50%, -50%) scale(1.35);
+      background: radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, rgba(244, 63, 94, 0.08) 60%, transparent 80%);
+    }
+
+    .ambient-glow.speaking {
+      transform: translate(-50%, -50%) scale(1.4);
+      background: radial-gradient(circle, rgba(0, 240, 255, 0.35) 0%, rgba(99, 102, 241, 0.1) 60%, transparent 80%);
+    }
+
+    /* Header Superior */
+    .hud-topbar {
+      position: relative;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 36px;
+      background: rgba(3, 7, 18, 0.9);
+      border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+      backdrop-filter: blur(16px);
+    }
+
+    .hud-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-core-icon {
+      width: 32px;
+      height: 32px;
+      border: 2px solid #00f0ff;
+      border-radius: 50%;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.6), inset 0 0 10px rgba(0, 240, 255, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-core-icon span {
+      width: 10px;
+      height: 10px;
+      background: #00f0ff;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #00f0ff;
+    }
+
+    .brand-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 2.2px;
+      color: #ffffff;
+      text-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
+    }
+
+    .brand-subtitle {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: #38bdf8;
+      letter-spacing: 1px;
+    }
+
+    .hud-controls-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .hud-voice-select {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 999px;
+      outline: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .hud-voice-select:hover {
+      border-color: #00f0ff;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+      color: #ffffff;
+    }
+
+    .hud-voice-select option {
+      background: #070e1c;
+      color: #f1f5f9;
+    }
+
+    .hud-ai-status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid rgba(0, 240, 255, 0.4);
+      color: #00f0ff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: #00f0ff;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #00f0ff;
+    }
+
+    /* Workspace 3 Colunas */
+    .hud-workspace {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      display: grid;
+      grid-template-columns: 290px 1fr 290px;
+      align-items: flex-start;
+      padding: 20px 32px;
+      gap: 26px;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    @media (max-width: 1100px) {
+      .hud-workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .hud-agents-col {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .agent-glass-card {
+      background: rgba(10, 18, 36, 0.65);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 14px;
+      padding: 16px 18px;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .agent-glass-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 3px;
+      height: 100%;
+      background: #00f0ff;
+      box-shadow: 0 0 10px #00f0ff;
+    }
+
+    .agent-glass-card:hover {
+      transform: translateY(-3px) scale(1.01);
+      border-color: rgba(0, 240, 255, 0.6);
+      box-shadow: 0 10px 30px rgba(0, 240, 255, 0.15);
+    }
+
+    .agent-card-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .agent-name-box {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .agent-emoji {
+      font-size: 20px;
+    }
+
+    .agent-name-text {
+      font-family: 'Orbitron', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    .agent-role-text {
+      font-size: 10.5px;
+      color: #94a3b8;
+    }
+
+    .agent-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid;
+    }
+
+    .badge-cyan { color: #38bdf8; border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.1); }
+    .badge-green { color: #34d399; border-color: rgba(52, 211, 153, 0.4); background: rgba(52, 211, 153, 0.1); }
+    .badge-amber { color: #38bdf8; border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.1); }
+    .badge-purple { color: #c084fc; border-color: rgba(192, 132, 252, 0.4); background: rgba(192, 132, 252, 0.1); }
+
+    .agent-metrics-row {
+      display: flex;
+      justify-content: space-between;
+      background: rgba(3, 7, 18, 0.5);
+      border-radius: 8px;
+      padding: 7px 11px;
+      margin-bottom: 10px;
+      font-size: 11px;
+    }
+
+    .agent-action-btn {
+      width: 100%;
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      border-radius: 8px;
+      padding: 6px 10px;
+      color: #38bdf8;
+      font-size: 10.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .agent-glass-card:hover .agent-action-btn {
+      background: rgba(0, 240, 255, 0.2);
+      color: #ffffff;
+      border-color: #00f0ff;
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.35);
+    }
+
+    /* PALCO CENTRAL: REATOR HOLOGRÁFICO & GRAVADOR DIRETO */
+    .hud-centerpiece {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      position: relative;
+      gap: 14px;
+      width: 100%;
+    }
+
+    .reactor-stage {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.3s ease;
+    }
+
+    .reactor-stage:hover {
+      transform: scale(1.05);
+    }
+
+    .gyro-ring-1 {
+      position: absolute;
+      width: 210px;
+      height: 210px;
+      border-radius: 50%;
+      border: 2px dashed rgba(0, 240, 255, 0.35);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+      animation: rotateForward 20s linear infinite;
+      will-change: transform;
+    }
+
+    .gyro-ring-2 {
+      position: absolute;
+      width: 165px;
+      height: 165px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: #00f0ff;
+      border-bottom-color: #00f0ff;
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.35);
+      animation: rotateBackward 14s linear infinite;
+      will-change: transform;
+    }
+
+    .gyro-ring-3 {
+      position: absolute;
+      width: 125px;
+      height: 125px;
+      border-radius: 50%;
+      border: 1px dotted rgba(56, 189, 248, 0.6);
+      animation: rotateForward 8s linear infinite;
+      will-change: transform;
+    }
+
+    .plasma-core {
+      position: absolute;
+      width: 85px;
+      height: 85px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffffff 0%, #7dd3fc 30%, #0284c7 70%, #0369a1 100%);
+      box-shadow: 
+        0 0 30px #00f0ff,
+        0 0 60px rgba(0, 240, 255, 0.6),
+        inset 0 0 20px #ffffff;
+      animation: plasmaBreathing 3s ease-in-out infinite alternate;
+      will-change: transform, box-shadow;
+      transition: all 0.3s ease;
+    }
+
+    /* Quando gravando áudio do usuário */
+    .reactor-stage.recording .plasma-core {
+      background: radial-gradient(circle, #ffffff 0%, #fca5a5 30%, #ef4444 70%, #b91c1c 100%);
+      box-shadow: 0 0 50px #ef4444, 0 0 90px rgba(239, 68, 68, 0.8), inset 0 0 30px #ffffff;
+      animation: plasmaSpeaking 0.6s ease-in-out infinite alternate;
+    }
+
+    .reactor-stage.recording .gyro-ring-2 {
+      border-top-color: #ef4444;
+      border-bottom-color: #ef4444;
+    }
+
+    /* Quando o Jarvis está falando */
+    .reactor-stage.speaking .plasma-core {
+      animation: plasmaSpeaking 0.6s ease-in-out infinite alternate;
+      box-shadow: 0 0 50px #00f0ff, 0 0 90px rgba(0, 240, 255, 0.8), inset 0 0 30px #ffffff;
+    }
+
+    @keyframes rotateForward {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes rotateBackward {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(-360deg); }
+    }
+
+    @keyframes plasmaBreathing {
+      0% { transform: scale(0.95); }
+      100% { transform: scale(1.05); }
+    }
+
+    @keyframes plasmaSpeaking {
+      0% { transform: scale(0.96); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1.02); }
+    }
+
+    .reactor-hint-label {
+      position: absolute;
+      bottom: -10px;
+      font-family: 'Orbitron', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.8px;
+      color: #38bdf8;
+      background: rgba(3, 7, 18, 0.9);
+      border: 1px solid rgba(0, 240, 255, 0.4);
+      padding: 5px 16px;
+      border-radius: 999px;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+    }
+
+    /* Status Bar Central */
+    .action-status-card {
+      width: 100%;
+      max-width: 620px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1.5px solid rgba(0, 240, 255, 0.35);
+      border-radius: 12px;
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.1);
+    }
+
+    .action-status-info {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-record-main {
+      background: linear-gradient(135deg, #0284c7 0%, #00f0ff 100%);
+      color: #030712;
+      font-family: 'Orbitron', monospace;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 18px rgba(0, 240, 255, 0.4);
+    }
+
+    .btn-record-main:hover {
+      transform: scale(1.04);
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.7);
+    }
+
+    .btn-record-main.recording {
+      background: linear-gradient(135deg, #ef4444 0%, #f43f5e 100%);
+      color: #ffffff;
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.8);
+      animation: pulseRecord 1s infinite alternate;
+    }
+
+    @keyframes pulseRecord {
+      from { transform: scale(1); }
+      to { transform: scale(1.06); }
+    }
+
+    /* FEED DE DIÁLOGO */
+    .chat-stream-box {
+      width: 100%;
+      max-width: 680px;
+      background: rgba(6, 12, 26, 0.8);
+      border: 1px solid rgba(0, 240, 255, 0.22);
+      border-radius: 16px;
+      padding: 16px 20px;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 250px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 240, 255, 0.4) transparent;
+    }
+
+    .chat-bubble {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      animation: fadeInBubble 0.25s ease-out;
+    }
+
+    @keyframes fadeInBubble {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chat-bubble.user {
+      align-items: flex-end;
+    }
+
+    .chat-bubble.jarvis {
+      align-items: flex-start;
+    }
+
+    .bubble-author {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      letter-spacing: 1px;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chat-bubble.user .bubble-author {
+      color: #94a3b8;
+    }
+
+    .bubble-content {
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      max-width: 90%;
+    }
+
+    .chat-bubble.user .bubble-content {
+      background: rgba(30, 41, 59, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      color: #f8fafc;
+      border-top-right-radius: 2px;
+    }
+
+    .chat-bubble.jarvis .bubble-content {
+      background: rgba(2, 132, 199, 0.15);
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      color: #ffffff;
+      border-top-left-radius: 2px;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
+    }
+
+    .ai-badge-stamp {
+      display: inline-block;
+      margin-top: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      color: #38bdf8;
+      opacity: 0.85;
+    }
+
+    /* BARRA INFERIOR DE COMANDOS */
+    .hud-bottom-commander {
+      position: relative;
+      z-index: 20;
+      padding: 14px 36px 20px;
+      background: rgba(3, 7, 18, 0.94);
+      border-top: 1px solid rgba(0, 240, 255, 0.15);
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .input-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 820px;
+      position: relative;
+    }
+
+    .jarvis-input {
+      flex: 1;
+      height: 44px;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      border-radius: 12px;
+      padding: 0 16px;
+      color: #ffffff;
+      font-size: 13.5px;
+      font-family: inherit;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .jarvis-input:focus {
+      border-color: #00f0ff;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .btn-send {
+      height: 44px;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      border: 1px solid rgba(0, 240, 255, 0.4);
+      color: #ffffff;
+      font-family: 'Orbitron', monospace;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      border-radius: 12px;
+      padding: 0 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 15px rgba(2, 132, 199, 0.4);
+      flex-shrink: 0;
+    }
+
+    .btn-send:hover {
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.6);
+      transform: scale(1.03);
+    }
+
+    .quick-voice-prompts {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .prompt-chip {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 11.5px;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .prompt-chip:hover {
+      color: #00f0ff;
+      border-color: #00f0ff;
+      background: rgba(0, 240, 255, 0.1);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.25);
+    }
+
+    .loading-spinner {
+      display: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(0, 240, 255, 0.3);
+      border-top-color: #00f0ff;
+      border-radius: 50%;
+      animation: rotateForward 0.8s linear infinite;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="ambient-glow" id="ambientGlow"></div>
+
+  <!-- Header Superior -->
+  <header class="hud-topbar">
+    <div class="hud-brand">
+      <div class="brand-core-icon">
+        <span></span>
+      </div>
+      <div>
+        <div class="brand-title">J.A.R.V.I.S. // TEXFY SAAS CORE</div>
+        <div class="brand-subtitle">COMANDANTE: SENHOR GUILHERME SILVA • IA GEMINI MULTIMODAL REAL</div>
+      </div>
+    </div>
+
+    <div class="hud-controls-group">
+      <select id="voicePicker" onchange="salvarPreferenciaVoz(this.value)" class="hud-voice-select" title="Escolha a voz neural do Jarvis">
+        <option value="en-US-BrianMultilingualNeural" selected>🎙️ J.A.R.V.I.S. (Voz Paul Bettany / Stark)</option>
+        <option value="pt-BR-AntonioNeural">🎙️ Executivo Brasileiro (Voz Natural Studio)</option>
+        <option value="pt-BR-ThalitaMultilingualNeural">🎙️ F.R.I.D.A.Y. (Executiva Feminina)</option>
+        <option value="pt-PT-DuarteNeural">🎙️ Duarte (Nobre Europeu Clássico)</option>
+      </select>
+
+      <div class="hud-ai-status-pill">
+        <span class="pulse-dot"></span>
+        <span id="aiCoreStatusText">100% IA REAL CONECTADA</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Área de Trabalho HUD -->
+  <main class="hud-workspace">
+
+    <!-- COLUNA ESQUERDA: TRÁFEGO & PROSPECÇÃO SAAS -->
+    <div class="hud-agents-col">
+      <div class="agent-glass-card" onclick="enviarTextoParaJarvis('Jarvis, audite as campanhas de captação de confecções no Meta Ads e me dê seu parecer executivo.')">
+        <div class="agent-card-title">
+          <div class="agent-name-box">
+            <span class="agent-emoji">🎯</span>
+            <div>
+              <div class="agent-name-text">SENTINELA META</div>
+              <div class="agent-role-text">Captação de Confecções</div>
+            </div>
+          </div>
+          <span class="agent-badge badge-cyan">ONLINE</span>
+        </div>
+        <div class="agent-metrics-row">
+          <span style="color: #64748b;">Custo / Lead Demo</span>
+          <strong style="color: #38bdf8;">R$ 4,80 (Excelente)</strong>
+        </div>
+        <div class="agent-metrics-row">
+          <span style="color: #64748b;">Gasto Hoje / ROAS</span>
+          <strong>R$ 48,00 • 4.2x</strong>
+        </div>
+        <button class="agent-action-btn">🎯 Pedir Auditoria de Tráfego</button>
+      </div>
+
+      <div class="agent-glass-card" onclick="enviarTextoParaJarvis('Jarvis, como está o fluxo de donos de confecção atendidos no WhatsApp pelo SDR?')">
+        <div class="agent-card-title">
+          <div class="agent-name-box">
+            <span class="agent-emoji">🤖</span>
+            <div>
+              <div class="agent-name-text">SDR WHATSAPP 24H</div>
+              <div class="agent-role-text">Qualificação & Demonstrações</div>
+            </div>
+          </div>
+          <span class="agent-badge badge-green">ATIVO</span>
+        </div>
+        <div class="agent-metrics-row">
+          <span style="color: #64748b;">Demos Agendadas</span>
+          <strong style="color: #34d399;">12 reuniões (24h)</strong>
+        </div>
+        <div class="agent-metrics-row">
+          <span style="color: #64748b;">Tempo de Resposta</span>
+          <strong>38 segundos</strong>
+        </div>
+        <button class="agent-action-btn">💬 Pedir Status dos Leads SDR</button>
+      </div>
+    </div>
+
+    <!-- CENTRO: REATOR HOLOGRÁFICO + BOTÃO DE GRAVAÇÃO DIRETA + CHAT REAL -->
+    <div class="hud-centerpiece">
+      
+      <!-- Reator: Clique para Gravar / Enviar Áudio -->
+      <div class="reactor-stage" id="reactorStage" onclick="alternarGravacaoDireta()" title="Clique para Gravar sua Voz">
+        <div class="gyro-ring-1"></div>
+        <div class="gyro-ring-2"></div>
+        <div class="gyro-ring-3"></div>
+        <div class="plasma-core"></div>
+        <div class="reactor-hint-label" id="reactorLabel">CLIQUE PARA FALAR</div>
+      </div>
+
+      <!-- Barra de Controle de Voz Direta do Microfone -->
+      <div class="action-status-card" id="statusCard">
+        <div class="action-status-info" id="statusInfo">
+          <span style="color: #00f0ff; font-size: 14px;" id="statusIcon">●</span>
+          <span id="statusMessage">CLIQUE NO BOTÃO AO LADO PARA FALAR COM O JARVIS</span>
+        </div>
+        
+        <button class="btn-record-main" id="btnRecordMain" onclick="alternarGravacaoDireta()">
+          <span id="btnRecordIcon">🎙️</span>
+          <span id="btnRecordLabel">FALANDO NO MIC</span>
+        </button>
+      </div>
+
+      <!-- Feed de Diálogo com a IA Real -->
+      <div class="chat-stream-box" id="chatStreamBox">
+        <div class="chat-bubble jarvis">
+          <div class="bubble-author">● J.A.R.V.I.S. // IA GOOGLE GEMINI REAL</div>
+          <div class="bubble-content">
+            Olá, senhor Guilherme. Estou pronto para ouvir sua voz diretamente pelo microfone físico. Clique em "FALAR NO MIC", diga o que deseja e clique novamente para enviar. Cada palavra é processada pela IA real do Gemini.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- COLUNA DIREITA: FINANCEIRO SAAS & ENGENHARIA -->
+    <div class="hud-agents-col">
+      <div class="agent-glass-card" onclick="enviarTextoParaJarvis('Jarvis, qual a posição atual de assinaturas, receita recorrente MRR e inadimplência da Texfy?')">
+        <div class="agent-card-title">
+          <div class="agent-name-box">
+            <span class="agent-emoji">💳</span>
+            <div>
+              <div class="agent-name-text">FINANCEIRO SAAS</div>
+              <div class="agent-role-text">Assinaturas & MRR</div>
+            </div>
+          </div>
+          <span class="agent-badge badge-amber">AUTOMÁTICO</span>
+        </div>
+        <div class="agent-metrics-row">
+          <span style="color: #64748b;">Receita Recorrente</span>
+          <strong style="color: #38bdf8;">R$ 18.900 / mês</strong>
+        </div>
+        <div class="agent-metrics-row">
+          <span style="color: #64748b;">Inadimplência</span>
+          <strong style="color: #34d399;">0.0% (Zero Churn)</strong>
+        </div>
+        <button class="agent-action-btn">💳 Relatório de Assinaturas</button>
+      </div>
+
+      <div class="agent-glass-card" onclick="enviarTextoParaJarvis('Jarvis, relate o status da plataforma Texfy ERP, deploys na Vercel e integridade do banco de dados.')">
+        <div class="agent-card-title">
+          <div class="agent-name-box">
+            <span class="agent-emoji">⚡</span>
+            <div>
+              <div class="agent-name-text">ANTIGRAVITY CORE</div>
+              <div class="agent-role-text">DevOps & Plataforma Cloud</div>
+            </div>
+          </div>
+          <span class="agent-badge badge-purple">ONLINE</span>
+        </div>
+        <div class="agent-metrics-row">
+          <span style="color: #64748b;">Uptime Sistema</span>
+          <strong style="color: #c084fc;">99.98% Estável</strong>
+        </div>
+        <div class="agent-metrics-row">
+          <span style="color: #64748b;">Deploy Vercel</span>
+          <strong style="color: #34d399;">Sincronizado</strong>
+        </div>
+        <button class="agent-action-btn">⚡ Diagnóstico da Plataforma</button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- BARRA INFERIOR DE COMANDOS -->
+  <footer class="hud-bottom-commander">
+    
+    <div class="input-bar-wrap">
+      <input type="text" id="userQueryInput" class="jarvis-input" placeholder="Ou digite sua pergunta para a IA real do Gemini e pressione Enter..." onkeydown="if(event.key === 'Enter') enviarTextoParaJarvis(this.value)">
+      
+      <div class="loading-spinner" id="loadingSpinner"></div>
+
+      <button class="btn-send" onclick="enviarTextoParaJarvis(document.getElementById('userQueryInput').value)">
+        ENVIAR
+      </button>
+    </div>
+
+    <div class="quick-voice-prompts">
+      <span class="prompt-chip" onclick="enviarTextoParaJarvis('Jarvis, que dia é hoje?')">
+        📅 "Que dia é hoje?"
+      </span>
+      <span class="prompt-chip" onclick="enviarTextoParaJarvis('Jarvis, como você me aconselha a crescer as assinaturas da Texfy este mês?')">
+        💡 "Conselho para crescer assinaturas"
+      </span>
+      <span class="prompt-chip" onclick="enviarTextoParaJarvis('Jarvis, qual a análise das nossas campanhas no Meta Ads?')">
+        🎯 "Análise do Meta Ads"
+      </span>
+      <span class="prompt-chip" onclick="enviarTextoParaJarvis('Jarvis, como estão os atendimentos do SDR no WhatsApp?')">
+        🤖 "Desempenho do SDR"
+      </span>
+    </div>
+
+  </footer>
+
+  <script>
+    const stage = document.getElementById('reactorStage');
+    const glow = document.getElementById('ambientGlow');
+    const inputEl = document.getElementById('userQueryInput');
+    const spinner = document.getElementById('loadingSpinner');
+    const reactorLabel = document.getElementById('reactorLabel');
+    const voicePicker = document.getElementById('voicePicker');
+    const chatStreamBox = document.getElementById('chatStreamBox');
+    const statusIcon = document.getElementById('statusIcon');
+    const statusMessage = document.getElementById('statusMessage');
+    const btnRecordMain = document.getElementById('btnRecordMain');
+    const btnRecordIcon = document.getElementById('btnRecordIcon');
+    const btnRecordLabel = document.getElementById('btnRecordLabel');
+
+    let currentAudio = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+    let isProcessing = false;
+    let isJarvisSpeaking = false;
+    let recordTimerInterval = null;
+    let recordSeconds = 0;
+    let vozSelecionada = localStorage.getItem('jarvis_voz') || 'en-US-BrianMultilingualNeural';
+
+    if (voicePicker) voicePicker.value = vozSelecionada;
+
+    function salvarPreferenciaVoz(voz) {
+      vozSelecionada = voz;
+      localStorage.setItem('jarvis_voz', voz);
+      console.log('Voz alterada para:', voz);
+    }
+
+    // =========================================================================
+    // GRAVAÇÃO DIRETA DO HARDWARE VIA MEDIARECORDER (100% GARANTIDO, ZERO FALHAS)
+    // =========================================================================
+    async function alternarGravacaoDireta() {
+      if (isProcessing) return;
+      if (isJarvisSpeaking && currentAudio) {
+        currentAudio.pause();
+        isJarvisSpeaking = false;
+      }
+
+      if (isRecording) {
+        pararGravacaoEEnviar();
+      } else {
+        iniciarGravacao();
+      }
+    }
+
+    async function iniciarGravacao() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) audioChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          stream.getTracks().forEach(track => track.stop());
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          if (audioBlob.size > 1000) {
+            enviarAudioParaServidor(audioBlob);
+          } else {
+            statusMessage.textContent = 'Áudio muito curto. Clique novamente para falar.';
+            resetarEstadoGravacao();
+          }
+        };
+
+        mediaRecorder.start();
+        isRecording = true;
+        recordSeconds = 0;
+
+        stage.classList.add('recording');
+        glow.classList.add('recording');
+        btnRecordMain.classList.add('recording');
+        btnRecordIcon.textContent = '⏹️';
+        btnRecordLabel.textContent = 'ENVIAR FALA (0s)';
+        reactorLabel.textContent = 'GRAVANDO...';
+        statusIcon.style.color = '#ef4444';
+        statusMessage.textContent = '🔴 OUVINDO SUA VOZ AGORA... FALE LIVREMENTE!';
+
+        recordTimerInterval = setInterval(() => {
+          recordSeconds++;
+          btnRecordLabel.textContent = `ENVIAR FALA (${recordSeconds}s)`;
+        }, 1000);
+
+      } catch (err) {
+        console.error('Erro ao acessar microfone:', err);
+        statusMessage.textContent = '⚠️ Microfone bloqueado. Clique no ícone de cadeado do navegador para permitir!';
+        statusIcon.style.color = '#ef4444';
+        alert('Por favor, permita o acesso ao microfone no navegador para falar com o Jarvis.');
+      }
+    }
+
+    function pararGravacaoEEnviar() {
+      if (!isRecording || !mediaRecorder) return;
+      clearInterval(recordTimerInterval);
+      mediaRecorder.stop();
+      isRecording = false;
+      btnRecordMain.classList.remove('recording');
+      btnRecordIcon.textContent = '⏳';
+      btnRecordLabel.textContent = 'PROCESSANDO...';
+      reactorLabel.textContent = 'PENSANDO...';
+      statusIcon.style.color = '#00f0ff';
+      statusMessage.textContent = '🧠 GEMINI OUVINDO SEU ÁUDIO E CALCULANDO RESPOSTA...';
+      spinner.style.display = 'block';
+      isProcessing = true;
+    }
+
+    function resetarEstadoGravacao() {
+      clearInterval(recordTimerInterval);
+      isRecording = false;
+      isProcessing = false;
+      spinner.style.display = 'none';
+      stage.classList.remove('recording');
+      glow.classList.remove('recording');
+      btnRecordMain.classList.remove('recording');
+      btnRecordIcon.textContent = '🎙️';
+      btnRecordLabel.textContent = 'FALANDO NO MIC';
+      reactorLabel.textContent = 'CLIQUE PARA FALAR';
+      statusIcon.style.color = '#38bdf8';
+    }
+
+    // Envia o áudio gravado em base64 diretamente para o Gemini Multimodal
+    async function enviarAudioParaServidor(blob) {
+      try {
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = async () => {
+          const base64Data = reader.result.split(',')[1];
+          
+          const res = await fetch('/api/voice_command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              audio_b64: base64Data,
+              mime: blob.type || 'audio/webm',
+              voice: vozSelecionada
+            })
+          });
+
+          const data = await res.json();
+          resetarEstadoGravacao();
+
+          if (data && data.ok) {
+            adicionarBolhaNoFeed('user', data.prompt);
+            adicionarBolhaNoFeed('jarvis', data.reply, data.tempo_ia);
+            tocarAudioResposta(data.reply, data.audio_b64, data.audio_mime);
+          } else {
+            statusMessage.textContent = 'Erro ao processar áudio. Tente novamente.';
+          }
+        };
+      } catch (e) {
+        console.error('Erro envio áudio:', e);
+        resetarEstadoGravacao();
+        statusMessage.textContent = 'Falha na conexão com o servidor.';
+      }
+    }
+
+    // =========================================================================
+    // ENVIO POR TEXTO (CASO DESEJE DIGITAR)
+    // =========================================================================
+    async function enviarTextoParaJarvis(texto) {
+      const prompt = (texto || inputEl.value || '').trim();
+      if (!prompt || isProcessing) return;
+      isProcessing = true;
+
+      adicionarBolhaNoFeed('user', prompt);
+      inputEl.value = '';
+      spinner.style.display = 'block';
+      reactorLabel.textContent = 'IA PENSANDO...';
+      statusIcon.style.color = '#00f0ff';
+      statusMessage.textContent = '🧠 GOOGLE GEMINI CALCULANDO RESPOSTA EM TEMPO REAL...';
+
+      try {
+        const res = await fetch('/api/jarvis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, voice: vozSelecionada })
+        });
+        const data = await res.json();
+        spinner.style.display = 'none';
+        isProcessing = false;
+        reactorLabel.textContent = 'CLIQUE PARA FALAR';
+
+        if (data && data.ok) {
+          adicionarBolhaNoFeed('jarvis', data.reply, data.tempo_ia);
+          tocarAudioResposta(data.reply, data.audio_b64, data.audio_mime);
+        } else {
+          statusMessage.textContent = 'Falha na resposta do Gemini.';
+        }
+      } catch (err) {
+        spinner.style.display = 'none';
+        isProcessing = false;
+        reactorLabel.textContent = 'CLIQUE PARA FALAR';
+        statusMessage.textContent = 'Erro de conexão com o servidor local.';
+      }
+    }
+
+    function adicionarBolhaNoFeed(tipo, texto, tempoIa) {
+      const bubble = document.createElement('div');
+      bubble.className = `chat-bubble ${tipo}`;
+
+      const author = document.createElement('div');
+      author.className = 'bubble-author';
+      author.textContent = tipo === 'user' ? '● SENHOR GUILHERME' : '● J.A.R.V.I.S. // IA GEMINI';
+
+      const content = document.createElement('div');
+      content.className = 'bubble-content';
+      content.textContent = texto;
+
+      if (tipo === 'jarvis' && tempoIa) {
+        const stamp = document.createElement('div');
+        stamp.className = 'ai-badge-stamp';
+        stamp.textContent = `⚡ Computado pelo Gemini real em ${tempoIa}s`;
+        content.appendChild(stamp);
+      }
+
+      bubble.appendChild(author);
+      bubble.appendChild(content);
+      chatStreamBox.appendChild(bubble);
+      chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
+    }
+
+    function tocarAudioResposta(texto, audioB64, audioMime) {
+      isJarvisSpeaking = true;
+      reactorLabel.textContent = 'FALANDO...';
+      statusIcon.style.color = '#00f0ff';
+      statusMessage.textContent = '🔊 J.A.R.V.I.S. RESPONDENDO POR VOZ...';
+
+      if (audioB64) {
+        if (currentAudio) currentAudio.pause();
+        const mime = audioMime || 'audio/mp3';
+        currentAudio = new Audio(`data:${mime};base64,` + audioB64);
+        stage.classList.add('speaking');
+        glow.classList.add('speaking');
+
+        const aoFinalizar = () => {
+          stage.classList.remove('speaking');
+          glow.classList.remove('speaking');
+          isJarvisSpeaking = false;
+          reactorLabel.textContent = 'OUVINDO AMBIENTE...';
+          statusIcon.style.color = '#00f0ff';
+          statusMessage.textContent = '● JARVIS ATIVO • DIGA "JARVIS, ABRE O ESCRITÓRIO"';
+          fetch('/api/speaking_state', { method: 'POST', body: JSON.stringify({ speaking: false }) }).catch(()=>{});
+        };
+
+        fetch('/api/speaking_state', { method: 'POST', body: JSON.stringify({ speaking: true }) }).catch(()=>{});
+        currentAudio.onended = aoFinalizar;
+        currentAudio.onerror = aoFinalizar;
+
+        currentAudio.play().catch(e => {
+          console.warn('Erro ao tocar áudio:', e);
+          aoFinalizar();
+        });
+      } else {
+        // Fallback robusto nativo do navegador caso Edge-TTS oscile
+        try {
+          const utter = new SpeechSynthesisUtterance(texto);
+          utter.lang = 'pt-BR';
+          utter.rate = 1.05;
+          const voices = window.speechSynthesis.getVoices();
+          const brVoice = voices.find(v => v.lang.includes('pt') || v.lang.includes('BR'));
+          if (brVoice) utter.voice = brVoice;
+          utter.onstart = () => {
+            stage.classList.add('speaking');
+            glow.classList.add('speaking');
+            fetch('/api/speaking_state', { method: 'POST', body: JSON.stringify({ speaking: true }) }).catch(()=>{});
+          };
+          utter.onend = () => {
+            stage.classList.remove('speaking');
+            glow.classList.remove('speaking');
+            isJarvisSpeaking = false;
+            reactorLabel.textContent = 'OUVINDO AMBIENTE...';
+            statusIcon.style.color = '#00f0ff';
+            statusMessage.textContent = '● JARVIS ATIVO NO QUARTO';
+            fetch('/api/speaking_state', { method: 'POST', body: JSON.stringify({ speaking: false }) }).catch(()=>{});
+          };
+          window.speechSynthesis.speak(utter);
+        } catch(e) {
+          setTimeout(() => {
+            isJarvisSpeaking = false;
+            reactorLabel.textContent = 'OUVINDO AMBIENTE...';
+            statusMessage.textContent = '● JARVIS ATIVO NO QUARTO';
+          }, 2000);
+        }
+      }
+    }
+
+    // =========================================================================
+    // LOOP DE SINCRONIZAÇÃO AUTOMÁTICA COM O MICROFONE DO QUARTO (/api/events)
+    // =========================================================================
+    async function loopSincronizacaoHUD() {
+      try {
+        const res = await fetch('/api/events');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.eventos && data.eventos.length > 0) {
+            for (const ev of data.eventos) {
+              if (ev.tipo === 'status') {
+                statusMessage.textContent = ev.mensagem;
+                if (ev.gravando) {
+                  stage.classList.add('recording');
+                  glow.classList.add('recording');
+                  reactorLabel.textContent = 'OUVINDO...';
+                  statusIcon.style.color = '#ef4444';
+                } else if (ev.pensando) {
+                  stage.classList.remove('recording');
+                  glow.classList.remove('recording');
+                  reactorLabel.textContent = 'PENSANDO...';
+                  statusIcon.style.color = '#00f0ff';
+                } else if (!isJarvisSpeaking) {
+                  stage.classList.remove('recording');
+                  glow.classList.remove('recording');
+                  reactorLabel.textContent = 'OUVINDO AMBIENTE...';
+                  statusIcon.style.color = '#38bdf8';
+                }
+              } else if (ev.tipo === 'user_fala') {
+                adicionarBolhaNoFeed('user', ev.texto);
+                reactorLabel.textContent = 'GEMINI PENSANDO...';
+                statusIcon.style.color = '#00f0ff';
+                statusMessage.textContent = '🧠 GOOGLE GEMINI PROCESSANDO ORDEM DO SENHOR GUILHERME...';
+              } else if (ev.tipo === 'jarvis_resposta') {
+                adicionarBolhaNoFeed('jarvis', ev.texto, ev.tempo_ia);
+                tocarAudioResposta(ev.texto, ev.audio_b64, ev.audio_mime);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // Silencioso em caso de oscilação momentânea
+      }
+      setTimeout(loopSincronizacaoHUD, 350);
+    }
+
+    // Iniciar loop automático imediatamente
+    window.addEventListener('load', () => {
+      loopSincronizacaoHUD();
+    });
+  </script>
+</body>
+</html>

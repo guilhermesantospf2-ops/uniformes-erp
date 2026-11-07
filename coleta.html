@@ -609,7 +609,7 @@
       ];
 
       // Tenta recuperar do storage local se já preenchido anteriormente
-      const storageKey = `bravvi_time_roster_${tenantIdParam}_${pedidoIdParam}`;
+      const storageKey = `texfy_time_roster_${tenantIdParam}_${pedidoIdParam}`;
       const saved = localStorage.getItem(storageKey);
       if (saved) {
         try {
@@ -880,15 +880,15 @@
       };
 
       function sincronizarComErp(atletasConfirmados, totalPecas, gradeCalculada, codigoValidacao) {
-        // 1. Atualiza nos bancos locais do ERP (bravvi_erp_prod_v8 e todos os tenants)
+        // 1. Atualiza nos bancos locais do ERP (texfy_erp_prod_v8 e todos os tenants)
         const chaves = [];
         for (let i = 0; i < localStorage.length; i++) {
           const k = localStorage.key(i);
-          if (k === 'bravvi_erp_prod_v8' || k === 'bravvi_erp_demo_temp' || (k && k.startsWith('bravvi_erp_tenant_'))) {
+          if (k === 'texfy_erp_prod_v8' || k === 'texfy_erp_demo_temp' || (k && k.startsWith('texfy_erp_tenant_'))) {
             chaves.push(k);
           }
         }
-        if (chaves.length === 0) chaves.push('bravvi_erp_prod_v8');
+        if (chaves.length === 0) chaves.push('texfy_erp_prod_v8');
 
         chaves.forEach(k => {
           try {

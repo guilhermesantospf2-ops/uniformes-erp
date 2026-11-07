@@ -1,11 +1,11 @@
-const CACHE_NAME = 'bravvi-10k-v1.0.2';
+const CACHE_NAME = 'texfy-10k-v1.0.2';
 
 const ASSETS = [
   '/meta10k.html',
   '/manifest-meta10k.json',
   '/assets/icon-192.png',
   '/assets/icon-512.png',
-  '/assets/bravvi-icon.png'
+  '/assets/texfy-icon.png'
 ];
 
 self.addEventListener('install', (event) => {

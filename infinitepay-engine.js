@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * BRAVVI ERP TÊXTIL — MOTOR DE PAGAMENTOS INFINITEPAY (CLOUDWALK)
+ * TEXFY ERP TÊXTIL — MOTOR DE PAGAMENTOS INFINITEPAY (CLOUDWALK)
  * ============================================================================
  * Integração oficial de pagamentos para assinaturas do ERP e cobranças:
  * - Plano Mensal: R$ 397,00 / mês
@@ -21,9 +21,9 @@
   const LINK_CAKTO_BASICO_107 = 'https://pay.cakto.com.br/ecrfqfr_1178654';
   const LINK_CAKTO_PRO_227 = 'https://pay.cakto.com.br/rb6atzs_1178556';
   const LINK_CAKTO_ANUAL_1890 = 'https://pay.cakto.com.br/qczfq37';
-  const LINK_WHATSAPP_BASICO = 'https://wa.me/554499856245?text=' + encodeURIComponent('Olá Guilherme! Quero assinar o Plano Básico do Bravvi ERP Têxtil por R$ 107/mês com Implantação Grátis.');
-  const LINK_WHATSAPP_MENSAL = 'https://wa.me/554499856245?text=' + encodeURIComponent('Olá Guilherme! Quero assinar o Plano Pro Industrial do Bravvi ERP Têxtil por R$ 227/mês com Implantação Grátis.');
-  const LINK_WHATSAPP_ANUAL = 'https://wa.me/554499856245?text=' + encodeURIComponent('Olá Guilherme! Quero contratar o Plano Anual Pro do Bravvi ERP Têxtil (12x de R$ 189 ou R$ 1.890/ano à vista).');
+  const LINK_WHATSAPP_BASICO = 'https://wa.me/554499856245?text=' + encodeURIComponent('Olá Guilherme! Quero assinar o Plano Básico do Texfy ERP Têxtil por R$ 107/mês com Implantação Grátis.');
+  const LINK_WHATSAPP_MENSAL = 'https://wa.me/554499856245?text=' + encodeURIComponent('Olá Guilherme! Quero assinar o Plano Pro Industrial do Texfy ERP Têxtil por R$ 227/mês com Implantação Grátis.');
+  const LINK_WHATSAPP_ANUAL = 'https://wa.me/554499856245?text=' + encodeURIComponent('Olá Guilherme! Quero contratar o Plano Anual Pro do Texfy ERP Têxtil (12x de R$ 189 ou R$ 1.890/ano à vista).');
   const LINK_WHATSAPP_TREINAMENTO = 'https://wa.me/554499856245?text=' + encodeURIComponent('Olá Guilherme! Quero contratar o Treinamento Dedicado VIP da Equipe (R$ 297 taxa única).');
 
   // Paraguai 🇵🇾 ($29 / $49 USD - Stripe Checkout Oficial)
@@ -182,12 +182,12 @@
     {
       titulo: '5. Auditoria & Acompanhamento dos Primeiros Pedidos',
       icone: '🚀',
-      descricao: 'Um especialista da Bravvi acompanha lado a lado os primeiros pedidos lançados até a entrega final ao cliente, garantindo que nenhum erro ou dúvida trave a sua produção.'
+      descricao: 'Um especialista da Texfy acompanha lado a lado os primeiros pedidos lançados até a entrega final ao cliente, garantindo que nenhum erro ou dúvida trave a sua produção.'
     }
   ];
 
   // Armazenamento de credenciais InfinitePay
-  const STORAGE_KEY = 'bravvi_infinitepay_settings';
+  const STORAGE_KEY = 'texfy_infinitepay_settings';
 
   function carregarConfiguracoes() {
     let data = null;
@@ -198,7 +198,7 @@
       console.warn('[InfinitePay] Erro ao carregar config:', e);
     }
     const padrao = {
-      handle: '', // ex: 'bravvitextil'
+      handle: '', // ex: 'texfytextil'
       linkBasico: LINK_CAKTO_BASICO_107,
       linkMensal: LINK_CAKTO_PRO_227,
       linkPro: LINK_CAKTO_PRO_227,

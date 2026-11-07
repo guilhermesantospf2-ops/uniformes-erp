@@ -12,7 +12,7 @@
   
   // Empresa Padrão / Cliente Oficial Prime Uniformes (PACIFIC WAVE COMPANY LTDA)
   const PRIME_COMPANY_ID = 'b8ac27d9851944a8baa5ad0c134d08f9';
-  const BRAVVI_COMPANY_ID = 'd71ac805e1324f43a6ed2800e9a82f47';
+  const TEXFY_COMPANY_ID = 'd71ac805e1324f43a6ed2800e9a82f47';
 
   const URL_ACCOUNTS = 'https://api.nfe.io';
   const URL_PRODUCTS = 'https://api.nfse.io';

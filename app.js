@@ -8,7 +8,7 @@
   'use strict';
 
   // Detecção de Modo Demonstração (Test Drive)
-  const isDemo = (window.BRAVVI_IS_DEMO === true) ||
+  const isDemo = (window.TEXFY_IS_DEMO === true) ||
     (window.TEXPRO_IS_DEMO === true) ||
     (window.location && window.location.search && window.location.search.includes('demo=1')) ||
     (window.location && window.location.pathname && (window.location.pathname.includes('/demo') || window.location.pathname.includes('demo.html')));
@@ -23,7 +23,7 @@
     const tenantId = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterTenantId === 'function')
       ? window.ERP_CLOUD.obterTenantId()
       : null;
-    return tenantId ? `bravvi_erp_tenant_${tenantId}` : (localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : (localStorage.getItem('bravvi_erp_prod_v8') ? 'bravvi_erp_prod_v8' : 'texfy_erp_prod_v8'));
+    return tenantId ? `texfy_erp_tenant_${tenantId}` : (localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : (localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : 'texfy_erp_prod_v8'));
   }
 
   /**
@@ -321,7 +321,7 @@
     if (isDemo || !dbParaSalvar) return;
     try {
       const tId = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterTenantId === 'function') ? window.ERP_CLOUD.obterTenantId() : 'master';
-      const chaveSnap = 'bravvi_snapshots_' + (tId || 'master');
+      const chaveSnap = 'texfy_snapshots_' + (tId || 'master');
       let historico = [];
       try {
         historico = JSON.parse(localStorage.getItem(chaveSnap) || '[]');
@@ -420,7 +420,7 @@
     try {
       const chaveTenant = obterChaveStorageTenant();
       const salvo = localStorage.getItem(chaveTenant) ||
-        localStorage.getItem((localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : (localStorage.getItem('bravvi_erp_prod_v8') ? 'bravvi_erp_prod_v8' : 'texfy_erp_prod_v8'))) ||
+        localStorage.getItem((localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : (localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : 'texfy_erp_prod_v8'))) ||
         localStorage.getItem('texpro_erp_prod_v8');
       if (salvo) {
         db = JSON.parse(salvo);
@@ -695,10 +695,10 @@
     const dbCompacto = compactarBancoParaStorage(db);
     try {
       // Remove cópias legadas pesadas que estouravam os 5MB do navegador
-      localStorage.removeItem((localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : (localStorage.getItem('bravvi_erp_prod_v8') ? 'bravvi_erp_prod_v8' : 'texfy_erp_prod_v8')));
+      localStorage.removeItem((localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : (localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : 'texfy_erp_prod_v8')));
       localStorage.removeItem('texpro_erp_prod_v8');
       const tId = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterTenantId === 'function') ? window.ERP_CLOUD.obterTenantId() : 'master';
-      localStorage.removeItem('bravvi_snapshots_' + (tId || 'master'));
+      localStorage.removeItem('texfy_snapshots_' + (tId || 'master'));
       localStorage.setItem(chaveEfetiva, JSON.stringify(dbCompacto));
     } catch (e) {
       console.warn('Alerta de cota local ao salvar no localStorage:', e);
@@ -1003,7 +1003,7 @@
     inicializarSidebarToggle();
 
     if (isDemo) {
-      document.body.classList.add('bravvi-demo-mode');
+      document.body.classList.add('texfy-demo-mode');
       carregarDemonstracaoShowroom();
       atualizarBadges();
       navegarPara(abaAtiva);
@@ -1038,14 +1038,14 @@
      ========================================================================== */
   async function desbloquearAcessoAoErp(user, callbackAposCarregar) {
     // 1. Remove a barreira do Gatekeeper
-    const gatekeeper = document.getElementById('bravviAuthGatekeeper');
+    const gatekeeper = document.getElementById('texfyAuthGatekeeper');
     if (gatekeeper) {
       gatekeeper.style.display = 'none';
       gatekeeper.innerHTML = '';
     }
 
     // 2. Torna o ERP visível apenas com autorização confirmada
-    document.body.classList.add('bravvi-authenticated');
+    document.body.classList.add('texfy-authenticated');
     const erpContainer = document.querySelector('.erp-container');
     if (erpContainer) {
       erpContainer.style.removeProperty('display');
@@ -1101,14 +1101,14 @@
     const colabId = colab?.id || user?.colaboradorId || user?.id;
 
     // 1. Oculta o Gatekeeper de login para que o onboarding apareça com foco total
-    const gatekeeper = document.getElementById('bravviAuthGatekeeper');
+    const gatekeeper = document.getElementById('texfyAuthGatekeeper');
     if (gatekeeper) {
       gatekeeper.style.display = 'none';
     }
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active" id="modalTrocaSenhaPrimeiroAcessoOverlay" style="z-index: 20000000 !important; position: fixed; inset: 0; background: radial-gradient(circle at 50% 15%, #06323d 0%, #031820 55%, #010a0e 100%); display: flex !important; align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">
-        <div class="modal-box" style="max-width: 490px; width: 100%; border-radius: 16px; box-shadow: 0 35px 90px -15px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.12); overflow: hidden; background: #ffffff; animation: bravviFadeInUp 0.32s cubic-bezier(0.16, 1, 0.3, 1);">
+        <div class="modal-box" style="max-width: 490px; width: 100%; border-radius: 16px; box-shadow: 0 35px 90px -15px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.12); overflow: hidden; background: #ffffff; animation: texfyFadeInUp 0.32s cubic-bezier(0.16, 1, 0.3, 1);">
           <div class="modal-header" style="background: linear-gradient(135deg, #032b35 0%, #0f172a 100%); color: #fff; padding: 22px 24px;">
             <div style="display: flex; align-items: center; gap: 14px;">
               <div style="width: 46px; height: 46px; border-radius: 12px; background: rgba(45, 212, 191, 0.15); border: 1px solid rgba(45, 212, 191, 0.3); color: #2dd4bf; display: flex; align-items: center; justify-content: center; font-size: 24px;">
@@ -1241,17 +1241,17 @@
 
   function exibirGatekeeperAutenticacao() {
     // Garante que o painel do ERP continue 100% invisível
-    document.body.classList.remove('bravvi-authenticated');
+    document.body.classList.remove('texfy-authenticated');
     const erpContainer = document.querySelector('.erp-container');
     if (erpContainer) {
       erpContainer.style.setProperty('display', 'none', 'important');
     }
 
-    let gatekeeper = document.getElementById('bravviAuthGatekeeper');
+    let gatekeeper = document.getElementById('texfyAuthGatekeeper');
     if (!gatekeeper) {
       gatekeeper = document.createElement('div');
-      gatekeeper.id = 'bravviAuthGatekeeper';
-      gatekeeper.className = 'bravvi-gatekeeper-screen';
+      gatekeeper.id = 'texfyAuthGatekeeper';
+      gatekeeper.className = 'texfy-gatekeeper-screen';
       document.body.appendChild(gatekeeper);
     }
 
@@ -1266,11 +1266,11 @@
     const emailInicial = emailUrl || emailSalvo;
 
     gatekeeper.innerHTML = `
-      <div class="bravvi-gatekeeper-card">
-        <!-- Cabeçalho Oficial Bravvi -->
+      <div class="texfy-gatekeeper-card">
+        <!-- Cabeçalho Oficial Texfy -->
         <div class="auth-header">
           <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px;">
-            <img src="assets/texfy-icon.png" alt="Bravvi" style="width: 40px; height: 40px; object-fit: contain;">
+            <img src="assets/texfy-icon.png" alt="Texfy" style="width: 40px; height: 40px; object-fit: contain;">
             <div style="text-align: left;">
               <div style="font-family: var(--font-heading, sans-serif); font-size: 20px; font-weight: 900; letter-spacing: 0.5px; color: #ffffff;">TEXFY ERP TÊXTIL</div>
               <div style="font-size: 10.5px; color: #2dd4bf; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Sistema Oficial de Gestão Industrial</div>
@@ -1445,8 +1445,8 @@
 
     // Vincular Eventos do Gatekeeper
     gatekeeper.querySelector('#gateBtnInstalarApp')?.addEventListener('click', () => {
-      if (typeof window.solicitarInstalacaoBravviApp === 'function') {
-        window.solicitarInstalacaoBravviApp();
+      if (typeof window.solicitarInstalacaoTexfyApp === 'function') {
+        window.solicitarInstalacaoTexfyApp();
       } else if (window.ERP && typeof window.ERP.solicitarInstalacaoApp === 'function') {
         window.ERP.solicitarInstalacaoApp();
       }
@@ -1679,7 +1679,7 @@
         console.error('Erro na autenticação:', errSubmit);
         mostrarAlertaGate('Erro ao verificar credenciais: ' + (errSubmit.message || 'Falha de comunicação'), 'error');
       } finally {
-        const gate = document.getElementById('bravviAuthGatekeeper');
+        const gate = document.getElementById('texfyAuthGatekeeper');
         if (gate && gate.style.display !== 'none') {
           btnSubmitLogin.disabled = false;
           btnSubmitLogin.innerHTML = '<span>Acessar Meu Painel Industrial</span><span>&rarr;</span>';
@@ -1826,7 +1826,7 @@
         <div class="modal-box modal-auth-box">
           <div class="auth-header">
             <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px;">
-              <img src="assets/texfy-icon.png" alt="Bravvi" style="width: 38px; height: 38px; object-fit: contain;">
+              <img src="assets/texfy-icon.png" alt="Texfy" style="width: 38px; height: 38px; object-fit: contain;">
               <div style="text-align: left;">
                 <div style="font-family: var(--font-heading, sans-serif); font-size: 19px; font-weight: 900; letter-spacing: 0.5px; color: #ffffff;">TEXFY ERP TÊXTIL</div>
                 <div style="font-size: 10px; color: #2dd4bf; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Sistema Oficial de Gestão Industrial</div>
@@ -2945,11 +2945,11 @@
 
     if (novoEstado) {
       document.body.classList.add('sidebar-collapsed');
-      localStorage.setItem('bravvi_sidebar_collapsed', '1');
+      localStorage.setItem('texfy_sidebar_collapsed', '1');
       mostrarToast('Menu lateral recolhido. Clique no botão superior ou pressione Ctrl+B para reabrir.', 'blue');
     } else {
       document.body.classList.remove('sidebar-collapsed');
-      localStorage.setItem('bravvi_sidebar_collapsed', '0');
+      localStorage.setItem('texfy_sidebar_collapsed', '0');
     }
 
     const btnToggle = document.getElementById('btnToggleSidebar');
@@ -2962,7 +2962,7 @@
   function inicializarSidebarToggle() {
     // Restaura preferência salva do usuário (desktop apenas)
     if (window.innerWidth > 768) {
-      const salvo = localStorage.getItem('bravvi_sidebar_collapsed');
+      const salvo = localStorage.getItem('texfy_sidebar_collapsed');
       if (salvo === '1') {
         document.body.classList.add('sidebar-collapsed');
         const btnToggle = document.getElementById('btnToggleSidebar');
@@ -3018,9 +3018,9 @@
     // 🌟 NO MODO DEMO / SHOWROOM COMERCIAL: 100% PRO INDUSTRIAL TOTALMENTE DESBLOQUEADO!
     if (
       (typeof isDemo !== 'undefined' && isDemo) ||
-      window.BRAVVI_IS_DEMO === true ||
+      window.TEXFY_IS_DEMO === true ||
       window.TEXPRO_IS_DEMO === true ||
-      window.BRAVVI_FORCAR_PRO === true ||
+      window.TEXFY_FORCAR_PRO === true ||
       (typeof window !== 'undefined' && window.location && (
         window.location.pathname.includes('/demo') ||
         window.location.pathname.endsWith('demo.html') ||
@@ -3387,7 +3387,7 @@
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active" style="z-index: 20000000 !important; position: fixed; inset: 0; background: radial-gradient(circle at 50% 15%, #032b35 0%, #02171d 60%, #010a0e 100%); display: flex !important; align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">
-        <div class="modal-box" style="max-width: 520px; width: 100%; border-radius: 16px; box-shadow: 0 35px 90px -15px rgba(0,0,0,0.8), 0 0 0 1px rgba(45, 212, 191, 0.25); overflow: hidden; background: #ffffff; animation: bravviFadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+        <div class="modal-box" style="max-width: 520px; width: 100%; border-radius: 16px; box-shadow: 0 35px 90px -15px rgba(0,0,0,0.8), 0 0 0 1px rgba(45, 212, 191, 0.25); overflow: hidden; background: #ffffff; animation: texfyFadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
           <div class="modal-header" style="background: linear-gradient(135deg, #032b35 0%, #0f172a 100%); color: #fff; padding: 22px 24px; display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 14px;">
               <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(45, 212, 191, 0.15); border: 1px solid rgba(45, 212, 191, 0.3); color: #2dd4bf; display: flex; align-items: center; justify-content: center; font-size: 24px;">
@@ -6439,8 +6439,8 @@
   }
 
   // Proteção Global: impede que o scroll do mouse (wheel) altere acidentalmente valores de inputs numéricos ou monetários
-  if (!window.__bravviInputGuardsInstalled) {
-    window.__bravviInputGuardsInstalled = true;
+  if (!window.__texfyInputGuardsInstalled) {
+    window.__texfyInputGuardsInstalled = true;
 
     document.addEventListener('wheel', (e) => {
       const active = document.activeElement;
@@ -10413,7 +10413,7 @@
       const cliSel = document.getElementById('orcClienteSelect');
       const nomeCli = cliSel ? cliSel.options[cliSel.selectedIndex]?.text.split('•')[0].trim() : 'Time';
       const numPed = isEdicao ? orcamentoExistente.numero : 'NOVO';
-      const tenantId = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterTenantId === 'function') ? window.ERP_CLOUD.obterTenantId() : 'bravvi';
+      const tenantId = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterTenantId === 'function') ? window.ERP_CLOUD.obterTenantId() : 'texfy';
       const empConfig = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function') ? window.ERP_CLOUD.obterEmpresaConfig() : {};
       const zapFabrica = empConfig.telefone || '11987654321';
 
@@ -12293,7 +12293,7 @@
       <!-- Cabeçalho Empresarial -->
       <div style="border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; align-items: center; gap: 14px;">
-          ${(emp.logoUrl || 'assets/texfy-logo.png') ? `<img src="${emp.logoUrl || 'assets/texfy-logo.png'}" style="max-height: 64px; max-width: 165px; object-fit: contain;" alt="Logo Bravvi">` : ''}
+          ${(emp.logoUrl || 'assets/texfy-logo.png') ? `<img src="${emp.logoUrl || 'assets/texfy-logo.png'}" style="max-height: 64px; max-width: 165px; object-fit: contain;" alt="Logo Texfy">` : ''}
           <div>
             <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${emp.nomeFantasia || emp.razaoSocial}</h2>
             <div style="font-size: 11px; color: #475569;">
@@ -13067,7 +13067,7 @@
       <!-- Cabeçalho da Ordem de Produção -->
       <div style="border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; align-items: center; gap: 14px;">
-          ${(emp.logoUrl || 'assets/texfy-logo.png') ? `<img src="${emp.logoUrl || 'assets/texfy-logo.png'}" style="max-height: 60px; max-width: 150px; object-fit: contain;" alt="Logo Bravvi">` : ''}
+          ${(emp.logoUrl || 'assets/texfy-logo.png') ? `<img src="${emp.logoUrl || 'assets/texfy-logo.png'}" style="max-height: 60px; max-width: 150px; object-fit: contain;" alt="Logo Texfy">` : ''}
           <div>
             <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${emp.nomeFantasia || emp.razaoSocial}</h2>
             <span class="text-mono" style="color: #64748b; font-size: 11px;">ORDEM DE PRODUÇÃO: <strong>${os.id}</strong> • PEDIDO <strong>#${os.pedidoNumero}</strong></span>
@@ -23835,7 +23835,7 @@
       <html lang="pt-BR">
       <head>
         <meta charset="UTF-8">
-        <title>DANFE_NFe_${nfe.numero}_${db.empresa?.nomeFantasia || 'Bravvi'}</title>
+        <title>DANFE_NFe_${nfe.numero}_${db.empresa?.nomeFantasia || 'Texfy'}</title>
         <style><style>
           @page {
             size: A4 portrait;
@@ -27133,7 +27133,7 @@
       cnpj: "34.582.910/0001-44",
       inscricaoEstadual: "123.456.789.110",
       telefone: "4499856245",
-      email: "contato@bravvi.com.br",
+      email: "contato@texfy.com.br",
       chavePix: "34.582.910/0001-44",
       tipoChavePix: "CNPJ",
       plano: "pro", // 🌟 100% PRO INDUSTRIAL LIBERADO
@@ -29365,10 +29365,10 @@
     exibirGatekeeperAutenticacao,
     desbloquearAcessoAoErp,
     solicitarInstalacaoApp: () => {
-      if (typeof window.solicitarInstalacaoBravviApp === 'function') {
-        window.solicitarInstalacaoBravviApp();
-      } else if (window.BRAVVI_PWA && typeof window.BRAVVI_PWA.solicitarInstalacaoApp === 'function') {
-        window.BRAVVI_PWA.solicitarInstalacaoApp();
+      if (typeof window.solicitarInstalacaoTexfyApp === 'function') {
+        window.solicitarInstalacaoTexfyApp();
+      } else if (window.TEXFY_PWA && typeof window.TEXFY_PWA.solicitarInstalacaoApp === 'function') {
+        window.TEXFY_PWA.solicitarInstalacaoApp();
       }
     },
     zerarParaOperacaoRealPrime: function(silencioso = false) {
@@ -29422,7 +29422,7 @@
       try {
         const chaveTenant = obterChaveStorageTenant();
         localStorage.setItem(chaveTenant, JSON.stringify(compactarBancoParaStorage(db)));
-        localStorage.setItem((localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : (localStorage.getItem('bravvi_erp_prod_v8') ? 'bravvi_erp_prod_v8' : 'texfy_erp_prod_v8')), JSON.stringify(compactarBancoParaStorage(db)));
+        localStorage.setItem((localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : (localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : 'texfy_erp_prod_v8')), JSON.stringify(compactarBancoParaStorage(db)));
         localStorage.setItem('TEXFY_ERP_EMPRESA_CONFIG', JSON.stringify(db.empresa));
       } catch (e) { }
 
@@ -29447,7 +29447,7 @@
       try {
         const chaveTenant = obterChaveStorageTenant();
         localStorage.removeItem(chaveTenant);
-        localStorage.removeItem((localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : (localStorage.getItem('bravvi_erp_prod_v8') ? 'bravvi_erp_prod_v8' : 'texfy_erp_prod_v8')));
+        localStorage.removeItem((localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : (localStorage.getItem('texfy_erp_prod_v8') ? 'texfy_erp_prod_v8' : 'texfy_erp_prod_v8')));
         localStorage.removeItem('texpro_erp_prod_v8');
       } catch (e) { }
       db = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA));
