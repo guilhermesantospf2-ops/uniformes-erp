@@ -880,69 +880,64 @@
       };
 
       function sincronizarComErp(atletasConfirmados, totalPecas, gradeCalculada, codigoValidacao) {
-        // 1. Atualiza nos bancos locais do ERP (texfy_erp_prod_v8 e todos os tenants)
-        const chaves = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (k === 'texfy_erp_prod_v8' || k === 'texfy_erp_demo_temp' || (k && k.startsWith('texfy_erp_tenant_'))) {
-            chaves.push(k);
-          }
-        }
-        if (chaves.length === 0) chaves.push('texfy_erp_prod_v8');
-
-        chaves.forEach(k => {
+        // 1. Atualiza no banco local apenas do tenant especifico (sem vazar para outras empresas)
+        if (tenantIdParam && tenantIdParam !== 'default') {
+          const k = `texfy_erp_tenant_${tenantIdParam}`;
           try {
             const raw = localStorage.getItem(k);
-            if (!raw) return;
-            const dbLocal = JSON.parse(raw);
-            if (!dbLocal || !Array.isArray(dbLocal.pedidos)) return;
-
-            const ped = dbLocal.pedidos.find(p => 
-              p.id === pedidoIdParam || 
-              (p.numero != null && p.numero.toString() === pedidoIdParam.replace('PED-', '').replace('ORC-', ''))
-            );
-
-            if (ped) {
-              ped.jogadores = atletasConfirmados;
-              ped.grade = gradeCalculada;
-              ped.quantidadeTotal = totalPecas;
-              if (Array.isArray(ped.itens) && ped.itens.length === 1) {
-                ped.itens[0].grade = gradeCalculada;
+            if (raw) {
+              const dbLocal = JSON.parse(raw);
+              if (dbLocal && Array.isArray(dbLocal.pedidos)) {
+                const ped = dbLocal.pedidos.find(p => 
+                  p.id === pedidoIdParam || 
+                  (p.numero != null && p.numero.toString() === pedidoIdParam.replace('PED-', '').replace('ORC-', ''))
+                );
+                if (ped) {
+                  ped.jogadores = atletasConfirmados;
+                  ped.grade = gradeCalculada;
+                  ped.quantidadeTotal = totalPecas;
+                  if (Array.isArray(ped.itens) && ped.itens.length === 1) {
+                    ped.itens[0].grade = gradeCalculada;
+                  }
+                  ped.status = 'Entrada Pendente';
+                  ped.etapaProducao = 'Quarentena';
+                  ped.etapaAtual = 'Quarentena';
+                  ped.origemEntrada = 'preenchido_cliente';
+                  ped.dataPreenchimentoCliente = new Date().toISOString();
+                  ped.codigoValidacao = codigoValidacao;
+                  localStorage.setItem(k, JSON.stringify(dbLocal));
+                }
               }
-              ped.status = 'Entrada Pendente';
-              ped.etapaProducao = 'Quarentena';
-              ped.etapaAtual = 'Quarentena';
-              ped.origemEntrada = 'preenchido_cliente';
-              ped.dataPreenchimentoCliente = new Date().toISOString();
-              ped.codigoValidacao = codigoValidacao;
-              localStorage.setItem(k, JSON.stringify(dbLocal));
             }
           } catch (e) {
             console.warn('Erro ao atualizar banco local do ERP:', e);
           }
-        });
+        }
 
         // 2. Notifica abas do ERP abertas no mesmo navegador
         try {
           window.dispatchEvent(new Event('storage'));
         } catch (e) {}
 
-        // 3. Sincronização em Nuvem via Gateway Blindado (/api/erp-security)
-        try {
-          fetch('/api/erp-security', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'submit_public_roster',
-              pedidoId: pedidoIdParam,
-              atletas: atletasConfirmados,
-              grade: gradeCalculada,
-              quantidadeTotal: totalPecas,
-              codigoValidacao: codigoValidacao
-            })
-          }).catch(err => console.warn('Gateway sync background:', err));
-        } catch (errCloud) {
-          console.warn('Falha silenciosa na nuvem:', errCloud);
+        // 3. Sincronização em Nuvem via Gateway Blindado (/api/erp-security) com tenant obrigatorio
+        if (tenantIdParam && tenantIdParam !== 'default') {
+          try {
+            fetch('/api/erp-security', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'submit_public_roster',
+                pedidoId: pedidoIdParam,
+                tenantId: tenantIdParam,
+                atletas: atletasConfirmados,
+                grade: gradeCalculada,
+                quantidadeTotal: totalPecas,
+                codigoValidacao: codigoValidacao
+              })
+            }).catch(err => console.warn('Gateway sync background:', err));
+          } catch (errCloud) {
+            console.warn('Falha silenciosa na nuvem:', errCloud);
+          }
         }
       }
 

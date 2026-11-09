@@ -1597,43 +1597,43 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ sucesso: false, erro: 'Dados do pedido ou lista de atletas inválidos.' });
       }
 
-      const queryPath = tenantHint
-        ? `erp_tenants?tenant_id=eq.${encodeURIComponent(tenantHint)}&select=tenant_id,db`
-        : 'erp_tenants?select=tenant_id,db';
+      if (!tenantHint || tenantHint === 'default' || tenantHint === 'texfy') {
+        return res.status(400).json({ sucesso: false, erro: 'Tenant ID obrigatorio para vincular a lista ao pedido.' });
+      }
 
-      const { data: allTenants } = await sbFetch(queryPath);
-      if (Array.isArray(allTenants)) {
-        const numClean = pedidoIdParam.replace('PED-', '').replace('ORC-', '');
-        for (const tRow of allTenants) {
-          if (tRow.db && Array.isArray(tRow.db.pedidos)) {
-            const ped = tRow.db.pedidos.find(p =>
-              p.id === pedidoIdParam ||
-              (p.numero != null && String(p.numero) === numClean)
-            );
-            if (ped) {
-              ped.jogadores = atletasConfirmados;
-              ped.grade = gradeCalculada;
-              ped.quantidadeTotal = totalPecas;
-              if (Array.isArray(ped.itens) && ped.itens.length === 1) {
-                ped.itens[0].grade = gradeCalculada;
-              }
-              ped.status = 'Entrada Pendente';
-              ped.origemEntrada = 'preenchido_cliente';
-              ped.dataPreenchimentoCliente = new Date().toISOString();
-              ped.codigoValidacao = codigoValidacao;
-              ped.ultimaModificacaoMs = Date.now();
-
-              await sbFetch(`erp_tenants?tenant_id=eq.${encodeURIComponent(tRow.tenant_id)}`, {
-                method: 'PATCH',
-                body: JSON.stringify({
-                  db: tRow.db,
-                  ultima_atualizacao_ms: Date.now(),
-                  updated_at: new Date().toISOString()
-                })
-              });
-
-              return res.status(200).json({ sucesso: true });
+      const queryPath = `erp_tenants?tenant_id=eq.${encodeURIComponent(tenantHint)}&select=tenant_id,db`;
+      const { data: tenantRows } = await sbFetch(queryPath);
+      if (Array.isArray(tenantRows) && tenantRows.length > 0) {
+        const tRow = tenantRows[0];
+        if (tRow.db && Array.isArray(tRow.db.pedidos)) {
+          const numClean = pedidoIdParam.replace('PED-', '').replace('ORC-', '');
+          const ped = tRow.db.pedidos.find(p =>
+            p.id === pedidoIdParam ||
+            (p.numero != null && String(p.numero) === numClean)
+          );
+          if (ped) {
+            ped.jogadores = atletasConfirmados;
+            ped.grade = gradeCalculada;
+            ped.quantidadeTotal = totalPecas;
+            if (Array.isArray(ped.itens) && ped.itens.length === 1) {
+              ped.itens[0].grade = gradeCalculada;
             }
+            ped.status = 'Entrada Pendente';
+            ped.origemEntrada = 'preenchido_cliente';
+            ped.dataPreenchimentoCliente = new Date().toISOString();
+            ped.codigoValidacao = codigoValidacao;
+            ped.ultimaModificacaoMs = Date.now();
+
+            await sbFetch(`erp_tenants?tenant_id=eq.${encodeURIComponent(tRow.tenant_id)}`, {
+              method: 'PATCH',
+              body: JSON.stringify({
+                db: tRow.db,
+                ultima_atualizacao_ms: Date.now(),
+                updated_at: new Date().toISOString()
+              })
+            });
+
+            return res.status(200).json({ sucesso: true });
           }
         }
       }

@@ -655,12 +655,11 @@
 
           // Correção e cura específica para o Pedido 102 (Cristiano Coimbra)
           const isPed102 = String(p.numero) === '102' || (p.clienteNome && p.clienteNome.toLowerCase().includes('cristiano'));
-          if (isPed102 && somaTotalItens === 10) {
-            p.grade = gradeConsolidadaCalculada;
-            p.quantidadeTotal = 10;
-            if (Array.isArray(p.jogadores) && p.jogadores.length > 10) {
-              p.jogadores = [];
-            }
+          if (isPed102) {
+            p.grade = (gradeConsolidadaCalculada && gradeConsolidadaCalculada.total > 0) ? gradeConsolidadaCalculada : { g: 2, xg: 8, total: 10 };
+            p.quantidadeTotal = p.grade.total || 10;
+            p.jogadores = [];
+            p.tipoPedidoModalidade = 'padrao';
           }
         }
       });
@@ -668,6 +667,10 @@
     if (Array.isArray(banco.ordensServico)) {
       banco.ordensServico.forEach(os => {
         if (!os) return;
+        if (String(os.pedidoNumero) === '102' || (os.cliente && os.cliente.toLowerCase().includes('cristiano'))) {
+          os.jogadores = [];
+          os.tipoPedidoModalidade = 'padrao';
+        }
         const ped = mapaPedidos[String(os.pedidoNumero)];
         if (ped && (!os.mockupUrl || os.mockupUrl === '__REF_MOCKUP_PEDIDO__')) {
           os.mockupUrl = ped.mockupUrl;
@@ -7514,7 +7517,8 @@
       if (loc && loc.origin && loc.origin !== 'null' && loc.protocol && loc.protocol.startsWith('http') && !loc.hostname.includes('localhost') && !loc.hostname.includes('127.0.0.1')) {
         baseUrl = loc.origin.replace(/\/+$/, '');
       }
-      const linkFinal = `${baseUrl}/cliente?pedidoId=${pedId}&cliente=${encodeURIComponent(nomeFinal)}&tipo=${modalidade}&tel=${encodeURIComponent(emp.telefone || '')}`;
+      const tIdAtivo = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterTenantId === 'function') ? window.ERP_CLOUD.obterTenantId() : '';
+      const linkFinal = `${baseUrl}/cliente?pedidoId=${pedId}&cliente=${encodeURIComponent(nomeFinal)}&tipo=${modalidade}&tel=${encodeURIComponent(emp.telefone || '')}${tIdAtivo ? `&t=${encodeURIComponent(tIdAtivo)}` : ''}`;
 
       // Monta texto formatado do WhatsApp
       const saudacao = (new Date().getHours() < 12) ? 'Bom dia' : (new Date().getHours() < 18) ? 'Boa tarde' : 'Boa noite';
@@ -26846,7 +26850,7 @@
                   </div>
                 </div>
 
-                ${(listaJogadores && listaJogadores.length > 0) ? `
+                ${(listaJogadores && listaJogadores.length > 0 && ((pedido && pedido.tipoPedidoModalidade === 'time') || (os && os.tipoPedidoModalidade === 'time'))) ? `
                   <div class="mockup-spec-card" style="border-left: 4px solid #16a34a; background: #f0fdf4;">
                     <div class="mockup-spec-title" style="display: flex; justify-content: space-between; align-items: center; color: #166534; font-weight: 800;">
                       <span style="display: flex; align-items: center; gap: 6px;">
