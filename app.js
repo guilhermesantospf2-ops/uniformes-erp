@@ -7029,6 +7029,7 @@
     { id: 'costas_tot', rotulo: 'Costas Total (Grande / Central)', padraoW: 28, padraoH: 18, padraoPontos: 25000, padraoValorBordado: 12.00 },
     { id: 'manga_dir', rotulo: 'Manga Direita', padraoW: 8, padraoH: 5, padraoPontos: 4500, padraoValorBordado: 3.50 },
     { id: 'manga_esq', rotulo: 'Manga Esquerda', padraoW: 8, padraoH: 5, padraoPontos: 4500, padraoValorBordado: 3.50 },
+    { id: 'total', rotulo: 'Total', padraoW: 58, padraoH: 75, padraoPontos: 0, padraoValorBordado: 0.00, padraoSubArea: 1.00 },
     { id: 'barra_outro', rotulo: 'Barra / Outro Local', padraoW: 12, padraoH: 6, padraoPontos: 5000, padraoValorBordado: 4.00 }
   ];
 
@@ -8093,6 +8094,9 @@
                     </button>
                     <button type="button" class="btn btn-secondary btn-sm btn-quick-add-app" data-tipo="silk-costas" style="font-size: 10px; padding: 2px 7px; font-weight: 700; color: #b45309; border-color: #fde68a; background: #fffbeb;" title="Adiciona Silk 2 cores">
                       + Silk 2 Cores
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-quick-add-app" data-tipo="sub-total" style="font-size: 10px; padding: 2px 7px; font-weight: 700; color: #0d9488; border-color: #99f6e4; background: #f0fdfa;" title="Adiciona Sublimação Total na peça">
+                      + Sublimação Total
                     </button>
                     <button type="button" class="btn btn-secondary btn-sm" id="btnAdicionarAplicacaoVazia" style="font-size: 10px; padding: 2px 7px; font-weight: 800; background: #f0fdf4; color: #166534; border-color: #bbf7d0;">
                       + Nova Aplicação...
@@ -9165,6 +9169,10 @@
               if (locConfig.padraoValorBordado) {
                 app.borValorUnitario = locConfig.padraoValorBordado;
               }
+            } else if (app.tecnica === 'Sublimacao') {
+              if (locConfig.padraoSubArea) {
+                app.subArea = locConfig.padraoSubArea;
+              }
             }
           }
           renderizarAplicacoes();
@@ -9264,6 +9272,15 @@
             silkTaxaTela: 35.00,
             silkBatida: 1.80,
             silkTinta: 0.90
+          });
+        } else if (tipo === 'sub-total') {
+          it.aplicacoes.push({
+            id: 'APP-' + Date.now(),
+            local: 'Total',
+            tecnica: 'Sublimacao',
+            subArea: 1.00,
+            subCustoM2: 9.50,
+            subCalandra: 2.00
           });
         }
 
