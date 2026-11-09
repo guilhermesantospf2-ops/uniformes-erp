@@ -774,9 +774,17 @@
     { nome: 'Terracota', hex: '#9a3412', grupo: 'Especiais' }
   ];
 
+  function obterPaletaCompletaCores() {
+    const custom = (window.db && Array.isArray(window.db.coresPersonalizadas)) ? window.db.coresPersonalizadas : [];
+    const nomesBase = new Set(PALETA_CORES_TEXTIL.map(c => c.nome.toLowerCase()));
+    const filtradas = custom.filter(c => !nomesBase.has(c.nome.toLowerCase()));
+    return [...PALETA_CORES_TEXTIL, ...filtradas];
+  }
+
   function gerarHTMLSeletorCoresIndustrial(prefixo, corAtual = 'Azul Marinho', obsAtual = '') {
     const corNormalizada = (corAtual || 'Azul Marinho').trim();
-    const corAtivaObj = PALETA_CORES_TEXTIL.find(c => c.nome.toLowerCase() === corNormalizada.toLowerCase());
+    const paletaCompleta = obterPaletaCompletaCores();
+    const corAtivaObj = paletaCompleta.find(c => c.nome.toLowerCase() === corNormalizada.toLowerCase());
     const hexAtivo = corAtivaObj ? corAtivaObj.hex : '#1e293b';
 
     return `
@@ -788,10 +796,16 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 0 20v-20z"></path></svg>
               Paleta Têxtil Industrial & Detalhes da Peça:
             </span>
-            <span class="status-pill status-orange" style="font-size: 10px; font-weight: 700; padding: 2px 8px;">36 Cores Comerciais</span>
+            <span class="status-pill status-orange" style="font-size: 10px; font-weight: 700; padding: 2px 8px;">${paletaCompleta.length} Cores Comerciais</span>
           </div>
 
-          <!-- Badge da Cor Ativa -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <!-- Botão Cadastrar Nova Cor -->
+            <button type="button" class="btn btn-secondary btn-xs btn-abrir-modal-nova-cor" id="${prefixo}BtnNovaCor" style="font-size: 11px; font-weight: 700; color: #c2410c; background: #fff7ed; border-color: #fed7aa; display: flex; align-items: center; gap: 4px;" title="Cadastrar nova cor e adicionar à paleta definitiva">
+              🎨 + Cadastrar Nova Cor
+            </button>
+
+            <!-- Badge da Cor Ativa -->
           <div id="${prefixo}BadgeCorSelecionada" style="display: flex; align-items: center; gap: 7px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 20px; padding: 3px 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
             <span style="font-size: 11px; color: var(--text-gray-500); font-weight: 600;">Cor Escolhida:</span>
             <span id="${prefixo}CircleCorAtiva" class="swatch-circle" style="background-color: ${hexAtivo}; width: 14px; height: 14px; ${hexAtivo === '#ffffff' ? 'border: 1px solid #cbd5e1;' : ''}"></span>
@@ -825,7 +839,7 @@
 
             <!-- Grade de Amostras de Cores (Swatches Clicáveis) -->
             <div id="${prefixo}ContainerSwatches" style="max-height: 125px; overflow-y: auto; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px; display: flex; flex-wrap: wrap; gap: 4px; align-content: flex-start; scrollbar-width: thin;">
-              ${PALETA_CORES_TEXTIL.map(c => `
+              ${paletaCompleta.map(c => `
                 <button type="button" class="swatch-chip ${c.nome.toLowerCase() === corNormalizada.toLowerCase() ? 'active' : ''}" data-cor="${c.nome}" data-hex="${c.hex}" data-grupo="${c.grupo}" title="Clique para selecionar ${c.nome} (${c.hex})">
                   <span class="swatch-circle" style="background-color: ${c.hex}; ${c.hex === '#ffffff' ? 'border: 1px solid #cbd5e1;' : ''}"></span>
                   <span>${c.nome}</span>
@@ -951,7 +965,7 @@
     inputCor?.addEventListener('input', () => {
       const val = inputCor.value.trim();
       if (!val) return;
-      const achada = PALETA_CORES_TEXTIL.find(c => c.nome.toLowerCase() === val.toLowerCase());
+      const achada = obterPaletaCompletaCores().find(c => c.nome.toLowerCase() === val.toLowerCase());
       if (achada) {
         selecionarCor(achada.nome, achada.hex, true);
       } else {
@@ -973,6 +987,180 @@
         }
         textareaObs.focus();
       });
+    });
+
+    // Botão de Cadastrar Nova Cor
+    container.querySelector(`#${prefixo}BtnNovaCor`)?.addEventListener('click', () => {
+      abrirModalCadastrarNovaCor(prefixo, onCorSelecionada);
+    });
+  }
+
+  // =========================================================================
+  // MODAL PARA CADASTRO DEFINITIVO DE NOVA COR NA PALETA INDUSTRIAL
+  // =========================================================================
+  function abrirModalCadastrarNovaCor(prefixo, onCorSelecionada) {
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active" id="modalNovaCorOverlay" style="z-index: 10001;">
+        <div class="modal-box" style="max-width: 480px;">
+          <div class="modal-header">
+            <div>
+              <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 20px;">🎨</span>
+                <span>Cadastrar Nova Cor Têxtil</span>
+              </div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">
+                A nova cor ficará salva na paleta de confecção do sistema e disponível em todos os pedidos
+              </span>
+            </div>
+            <button class="modal-close" id="btnFecharModalNovaCor">&times;</button>
+          </div>
+
+          <div class="modal-body" style="padding: 16px 20px;">
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" style="font-weight: 700;">Nome Oficial da Cor *</label>
+              <input type="text" id="inpNovaCorNome" class="form-input" placeholder="Ex: Verde Oliva Militar, Azul Cobalto, Terracota Escuro..." autofocus>
+            </div>
+
+            <div class="form-row" style="margin-bottom: 12px;">
+              <div class="form-group" style="flex: 1.5;">
+                <label class="form-label" style="font-weight: 700;">Tom Visual (Color Picker & Hex)</label>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <input type="color" id="inpNovaCorPicker" value="#2d6a4f" style="width: 42px; height: 38px; border: 1.5px solid #cbd5e1; border-radius: 6px; cursor: pointer; padding: 2px; background: #fff;">
+                  <input type="text" id="inpNovaCorHex" class="form-input text-mono" value="#2D6A4F" style="font-weight: 700; text-transform: uppercase;">
+                </div>
+              </div>
+
+              <div class="form-group" style="flex: 1.5;">
+                <label class="form-label" style="font-weight: 700;">Grupo / Categoria</label>
+                <select id="inpNovaCorGrupo" class="form-select">
+                  <option value="Verdes">Verdes</option>
+                  <option value="Azuis">Azuis</option>
+                  <option value="Neutros">Neutros e Pretos</option>
+                  <option value="Vermelhos">Vermelhos e Vinhos</option>
+                  <option value="Amarelos">Amarelos e Laranjas</option>
+                  <option value="Especiais" selected>Especiais / Outros</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Preview da Amostra -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 11.5px; color: #64748b; font-weight: 600;">Amostra na paleta:</span>
+              <div class="swatch-chip active" style="margin: 0; pointer-events: none; border-color: #2d6a4f;">
+                <span id="previewNovaCorCircle" class="swatch-circle" style="background-color: #2d6a4f; width: 14px; height: 14px;"></span>
+                <span id="previewNovaCorNome" style="font-weight: 700;">Verde Nova Cor</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+            <button type="button" class="btn btn-secondary" id="btnCancelarNovaCor">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnSalvarNovaCor" style="font-weight: 800; background: var(--color-green); border-color: var(--color-green);">
+              ✓ Salvar e Selecionar Cor
+            </button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    document.getElementById('btnFecharModalNovaCor')?.addEventListener('click', () => modalEl.remove());
+    document.getElementById('btnCancelarNovaCor')?.addEventListener('click', () => modalEl.remove());
+
+    const inpNome = document.getElementById('inpNovaCorNome');
+    const inpPicker = document.getElementById('inpNovaCorPicker');
+    const inpHex = document.getElementById('inpNovaCorHex');
+    const inpGrupo = document.getElementById('inpNovaCorGrupo');
+    const prevCircle = document.getElementById('previewNovaCorCircle');
+    const prevNome = document.getElementById('previewNovaCorNome');
+
+    function syncColor(hexVal) {
+      if (prevCircle) prevCircle.style.backgroundColor = hexVal;
+      if (inpHex) inpHex.value = hexVal.toUpperCase();
+      if (inpPicker) inpPicker.value = hexVal;
+    }
+
+    inpPicker?.addEventListener('input', () => syncColor(inpPicker.value));
+    inpHex?.addEventListener('input', () => {
+      let val = inpHex.value.trim();
+      if (!val.startsWith('#')) val = '#' + val;
+      if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+        syncColor(val);
+      }
+    });
+
+    inpNome?.addEventListener('input', () => {
+      if (prevNome) prevNome.textContent = inpNome.value.trim() || 'Nova Cor';
+    });
+
+    document.getElementById('btnSalvarNovaCor')?.addEventListener('click', () => {
+      const nome = inpNome?.value.trim();
+      if (!nome) {
+        mostrarToast('Informe o nome da nova cor.', 'red');
+        inpNome?.focus();
+        return;
+      }
+      let hex = inpHex?.value.trim();
+      if (!hex.startsWith('#')) hex = '#' + hex;
+      if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+        mostrarToast('Informe um código hexadecimal válido (ex: #2D6A4F).', 'red');
+        inpHex?.focus();
+        return;
+      }
+      const grupo = inpGrupo?.value || 'Especiais';
+
+      if (!Array.isArray(db.coresPersonalizadas)) {
+        db.coresPersonalizadas = [];
+      }
+
+      // Checa duplicidade
+      const jaExiste = db.coresPersonalizadas.some(c => c.nome.toLowerCase() === nome.toLowerCase());
+      if (jaExiste) {
+        mostrarToast(`A cor "${nome}" já está cadastrada na paleta.`, 'amber');
+      } else {
+        const novaCorObj = { nome, hex, grupo };
+        db.coresPersonalizadas.push(novaCorObj);
+        salvarEstado();
+        mostrarToast(`Cor "${nome}" cadastrada e salva com sucesso!`, 'green');
+      }
+
+      // Adicionar chip diretamente ao container e selecionar
+      const containerSwatches = document.getElementById(`${prefixo}ContainerSwatches`);
+      if (containerSwatches) {
+        const tempBtn = document.createElement('div');
+        tempBtn.innerHTML = `
+          <button type="button" class="swatch-chip" data-cor="${nome}" data-hex="${hex}" data-grupo="${grupo}" title="Clique para selecionar ${nome} (${hex})">
+            <span class="swatch-circle" style="background-color: ${hex}; ${hex === '#ffffff' ? 'border: 1px solid #cbd5e1;' : ''}"></span>
+            <span>${nome}</span>
+          </button>
+        `;
+        const newChip = tempBtn.firstElementChild;
+        containerSwatches.appendChild(newChip);
+
+        // Evento de clique no novo chip
+        newChip.addEventListener('click', () => {
+          const corNome = newChip.getAttribute('data-cor');
+          const corHex = newChip.getAttribute('data-hex');
+          const inputCor = document.getElementById(`${prefixo}CorPrincipalTecido`);
+          const circleAtivo = document.getElementById(`${prefixo}CircleCorAtiva`);
+          const nomeAtivo = document.getElementById(`${prefixo}NomeCorAtiva`);
+          if (inputCor) inputCor.value = corNome;
+          if (circleAtivo) {
+            circleAtivo.style.backgroundColor = corHex;
+            circleAtivo.style.border = corHex === '#ffffff' ? '1px solid #cbd5e1' : 'none';
+          }
+          if (nomeAtivo) nomeAtivo.textContent = corNome;
+          containerSwatches.querySelectorAll('.swatch-chip').forEach(c => c.classList.remove('active'));
+          newChip.classList.add('active');
+          if (typeof onCorSelecionada === 'function') {
+            onCorSelecionada(corNome, corHex);
+          }
+        });
+
+        // Clicar automaticamente no novo chip para selecioná-lo
+        newChip.click();
+      }
+
+      modalEl.remove();
     });
   }
 
