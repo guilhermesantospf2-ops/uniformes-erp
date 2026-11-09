@@ -4216,6 +4216,171 @@
     return mapa;
   }
 
+  // =========================================================================
+  // GESTÃO E EDIÇÃO DINÂMICA DE AVIAMENTOS FIXOS POR MODELAGEM (PRODUTOS BASE)
+  // =========================================================================
+  function calcularSomaAviamentos(aviamentos) {
+    if (!Array.isArray(aviamentos) || aviamentos.length === 0) return 0;
+    return aviamentos.reduce((acc, a) => {
+      const q = parseFloat(a.qtd) || 0;
+      const c = parseFloat(a.custoUnitario) || 0;
+      return acc + (q * c);
+    }, 0);
+  }
+
+  function gerarLinhaTabelaAviamento(a = {}, index = 0, prefixId = 'editmod') {
+    const nome = (a.nome || '').replace(/"/g, '&quot;');
+    const qtd = parseFloat(a.qtd) || 1;
+    const custo = parseFloat(a.custoUnitario) || 0;
+    const subtotal = qtd * custo;
+
+    return `
+      <tr class="linha-aviamento-${prefixId}" style="border-bottom: 1px solid #f1f5f9;">
+        <td style="padding: 5px 6px;">
+          <input type="text" class="form-input inp-av-nome" style="font-size: 11.5px; padding: 4px 7px; height: 30px;" value="${nome}" placeholder="Ex: Gola Retilínea, Botão 18mm, Zíper, Etiqueta...">
+        </td>
+        <td style="padding: 5px 6px;">
+          <input type="number" step="1" min="0.1" class="form-input text-mono inp-av-qtd" style="font-size: 11.5px; padding: 4px 6px; text-align: center; font-weight: 700; height: 30px;" value="${qtd}">
+        </td>
+        <td style="padding: 5px 6px;">
+          <input type="number" step="0.05" min="0" class="form-input text-mono inp-av-custo" style="font-size: 11.5px; padding: 4px 6px; text-align: right; font-weight: 700; height: 30px;" value="${custo.toFixed(2)}">
+        </td>
+        <td style="padding: 5px 6px; text-align: right; font-family: monospace; font-weight: 700; color: #1e293b; font-size: 11.5px;" class="col-av-subtotal">
+          ${formatarMoeda(subtotal)}
+        </td>
+        <td style="padding: 5px 6px; text-align: center;">
+          <button type="button" class="btn-remove-av" style="background: none; border: none; color: #ef4444; font-size: 15px; cursor: pointer; padding: 2px 5px; border-radius: 4px; line-height: 1;" title="Remover este aviamento">
+            🗑️
+          </button>
+        </td>
+      </tr>
+    `;
+  }
+
+  function gerarHtmlEditorAviamentosFixos(aviamentos = [], prefixId = 'editmod') {
+    const lista = Array.isArray(aviamentos) ? aviamentos : [];
+    const somaTotal = calcularSomaAviamentos(lista);
+
+    return `
+      <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-top: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <strong style="font-size: 13px; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+              Aviamentos Fixos da Peça (Gola, Punho, Botões, Zíper, Etiquetas, etc.)
+            </strong>
+            <span style="font-size: 11px; color: #64748b; display: block; margin-top: 2px;">
+              Ao lançar um pedido deste modelo, o sistema somará e puxará estes custos automaticamente.
+            </span>
+          </div>
+          <button type="button" class="btn btn-secondary btn-xs" id="${prefixId}_btnAddAviamento" style="font-size: 11px; font-weight: 700; color: #0284c7; background: #f0f9ff; border-color: #bae6fd; display: flex; align-items: center; gap: 4px;">
+            ➕ Adicionar Aviamento Fixo
+          </button>
+        </div>
+
+        <div style="max-height: 200px; overflow-y: auto; padding-right: 4px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+            <thead>
+              <tr style="background: #e2e8f0; color: #475569; text-align: left; font-size: 10.5px; text-transform: uppercase;">
+                <th style="padding: 5px 8px; border-radius: 4px 0 0 4px;">Descrição do Aviamento</th>
+                <th style="padding: 5px 8px; width: 90px; text-align: center;">Qtd / Peça</th>
+                <th style="padding: 5px 8px; width: 110px; text-align: right;">Custo Unit. (R$)</th>
+                <th style="padding: 5px 8px; width: 110px; text-align: right;">Subtotal (R$)</th>
+                <th style="padding: 5px 8px; width: 45px; text-align: center; border-radius: 0 4px 4px 0;"></th>
+              </tr>
+            </thead>
+            <tbody id="${prefixId}_corpoAviamentos">
+              ${lista.map((a, idx) => gerarLinhaTabelaAviamento(a, idx, prefixId)).join('')}
+            </tbody>
+          </table>
+          <div id="${prefixId}_emptyAviamentos" style="display: ${lista.length === 0 ? 'block' : 'none'}; text-align: center; color: #94a3b8; font-size: 11.5px; padding: 12px 0; font-style: italic;">
+            Nenhum aviamento fixo cadastrado. Clique em "Adicionar Aviamento Fixo" para incluir gola, botões, zíperes, etc.
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px solid #e2e8f0;">
+          <span style="font-size: 12px; font-weight: 700; color: #475569;">Custo Total de Aviamentos por Peça:</span>
+          <span class="text-mono" id="${prefixId}_totalAviamentosLabel" style="font-size: 13.5px; font-weight: 800; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 4px;">
+            ${formatarMoeda(somaTotal)}
+          </span>
+        </div>
+      </div>
+    `;
+  }
+
+  function configurarEventosAviamentosForm(modalEl, prefixId) {
+    const corpo = modalEl.querySelector(`#${prefixId}_corpoAviamentos`);
+    const btnAdd = modalEl.querySelector(`#${prefixId}_btnAddAviamento`);
+    const lblTotal = modalEl.querySelector(`#${prefixId}_totalAviamentosLabel`);
+    const emptyMsg = modalEl.querySelector(`#${prefixId}_emptyAviamentos`);
+
+    function atualizarSubtotaisETotal() {
+      let total = 0;
+      const linhas = modalEl.querySelectorAll(`.linha-aviamento-${prefixId}`);
+      linhas.forEach(tr => {
+        const q = parseFloat(tr.querySelector('.inp-av-qtd')?.value) || 0;
+        const c = parseFloat(tr.querySelector('.inp-av-custo')?.value) || 0;
+        const sub = q * c;
+        total += sub;
+        const colSub = tr.querySelector('.col-av-subtotal');
+        if (colSub) colSub.textContent = formatarMoeda(sub);
+      });
+
+      if (lblTotal) {
+        lblTotal.textContent = formatarMoeda(total);
+      }
+      if (emptyMsg) {
+        emptyMsg.style.display = linhas.length === 0 ? 'block' : 'none';
+      }
+    }
+
+    corpo?.addEventListener('input', (e) => {
+      if (e.target.classList.contains('inp-av-qtd') || e.target.classList.contains('inp-av-custo')) {
+        atualizarSubtotaisETotal();
+      }
+    });
+
+    corpo?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.btn-remove-av');
+      if (btn) {
+        const tr = btn.closest('tr');
+        if (tr) {
+          tr.remove();
+          atualizarSubtotaisETotal();
+        }
+      }
+    });
+
+    btnAdd?.addEventListener('click', () => {
+      if (emptyMsg) emptyMsg.style.display = 'none';
+      const tempDiv = document.createElement('tbody');
+      tempDiv.innerHTML = gerarLinhaTabelaAviamento({ nome: '', qtd: 1, custoUnitario: 1.00 }, Date.now(), prefixId);
+      const newTr = tempDiv.firstElementChild;
+      corpo?.appendChild(newTr);
+      newTr.querySelector('.inp-av-nome')?.focus();
+      atualizarSubtotaisETotal();
+    });
+
+    atualizarSubtotaisETotal();
+  }
+
+  function extrairAviamentosForm(modalEl, prefixId) {
+    const aviamentos = [];
+    modalEl.querySelectorAll(`.linha-aviamento-${prefixId}`).forEach(tr => {
+      const nome = tr.querySelector('.inp-av-nome')?.value.trim();
+      const qtd = parseFloat(tr.querySelector('.inp-av-qtd')?.value) || 0;
+      const custo = parseFloat(tr.querySelector('.inp-av-custo')?.value) || 0;
+      if (nome && qtd > 0) {
+        aviamentos.push({
+          nome: nome,
+          qtd: qtd,
+          custoUnitario: parseFloat(custo.toFixed(2))
+        });
+      }
+    });
+    return aviamentos;
+  }
+
   function obterTamanhosSelecionadosGrade(grade) {
     if (!grade) return [];
     const res = [];
@@ -6687,6 +6852,9 @@
       : '';
 
     const consumoInicial = numOuPadrao(prod.consumoMalhaKgPorPeca, numOuPadrao(pdr.consumoTecido, 0.28));
+    const somaAviamInicial = (prod.aviamentosPadrao && prod.aviamentosPadrao.length > 0)
+      ? prod.aviamentosPadrao.reduce((acc, a) => acc + ((parseFloat(a.qtd) || 0) * (parseFloat(a.custoUnitario) || 0)), 0)
+      : numOuPadrao(pdr.custoAviamento, 4.80);
 
     return {
       id: 'ITEM-' + Date.now() + '-' + idNum,
@@ -6704,7 +6872,7 @@
       custoTecidoKg: numOuPadrao(pdr.custoTecidoKg, 48.50),
       consumoTecido: consumoInicial,
       margemErroTecido: numOuPadrao(pdr.margemErroTecido, 8.0),
-      custoAviamento: numOuPadrao(pdr.custoAviamento, 4.80),
+      custoAviamento: parseFloat(somaAviamInicial.toFixed(2)),
       custoEstampaTotal: appInicial.custoUnitario,
       custoCostura: numOuPadrao(prod.custoMaoDeObraBase, numOuPadrao(pdr.custoCostura, 7.50)),
       precoVendaUnitario: 58.00,
@@ -8259,6 +8427,10 @@
                 it.unidadeTecido = novoMod.unidadeTecido || 'kg';
                 it.custoCostura = novoMod.custoMaoDeObraBase || 7.50;
                 it.consumoTecido = novoMod.consumoMalhaKgPorPeca || 0.28;
+                const somaAviamNovo = (novoMod.aviamentosPadrao && novoMod.aviamentosPadrao.length > 0)
+                  ? novoMod.aviamentosPadrao.reduce((acc, a) => acc + ((parseFloat(a.qtd) || 0) * (parseFloat(a.custoUnitario) || 0)), 0)
+                  : numOuPadrao(carregarPadroesSistema().custoAviamento, 4.80);
+                it.custoAviamento = parseFloat(somaAviamNovo.toFixed(2));
                 if (novoMod.consumosPorTamanho) {
                   it.consumosCustomizadosPorTamanho = JSON.parse(JSON.stringify(novoMod.consumosPorTamanho));
                 }
@@ -8773,6 +8945,10 @@
         it.unidadeTecido = prod.unidadeTecido || 'kg';
         it.consumoTecido = numOuPadrao(prod.consumoMalhaKgPorPeca, 0.28);
         it.custoCostura = numOuPadrao(prod.custoMaoDeObraBase, 7.50);
+        const somaAviamProd = (prod.aviamentosPadrao && prod.aviamentosPadrao.length > 0)
+          ? prod.aviamentosPadrao.reduce((acc, a) => acc + ((parseFloat(a.qtd) || 0) * (parseFloat(a.custoUnitario) || 0)), 0)
+          : numOuPadrao(carregarPadroesSistema().custoAviamento, 4.80);
+        it.custoAviamento = parseFloat(somaAviamProd.toFixed(2));
         delete it.consumosCustomizadosPorTamanho;
         delete it.custosCustomizadosPorTamanho;
         delete it.custoUnitarioCustomizadoPonderado;
@@ -8781,6 +8957,8 @@
         if (inpConsumo) inpConsumo.value = it.consumoTecido.toFixed(2);
         const inpCostura = document.getElementById('inputCustoCostura');
         if (inpCostura) inpCostura.value = formatarMoedaInput(it.custoCostura);
+        const inpAv = document.getElementById('inputCustoAviamento');
+        if (inpAv) inpAv.value = formatarMoedaInput(it.custoAviamento);
 
         if (!it.mockupUploadPersonalizado) {
           const cliId = document.getElementById('orcClienteSelect')?.value;
@@ -17440,6 +17618,11 @@
             <div id="containerGradeConsumoEditMod">
               ${gerarHtmlGradeConsumosTamanhoForm(prod.consumosPorTamanho, baseM, isMetrosInicial, 'editmod')}
             </div>
+
+            <!-- Aviamentos Fixos da Modelagem -->
+            <div id="containerAviamentosEditMod">
+              ${gerarHtmlEditorAviamentosFixos(prod.aviamentosPadrao, 'editmod')}
+            </div>
           </div>
 
           <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
@@ -17457,6 +17640,7 @@
     document.getElementById('btnCancelarEditarModelo')?.addEventListener('click', () => modalEl.remove());
 
     configurarEventosGradeConsumosForm(modalEl, 'editmod', isMetrosInicial);
+    configurarEventosAviamentosForm(modalEl, 'editmod');
 
     // Mudança de unidade (kg vs metro)
     document.getElementById('editModUnidade')?.addEventListener('change', () => {
@@ -17510,6 +17694,7 @@
       prod.custoMaoDeObraBase = parseFloat(document.getElementById('editModCostura')?.value || 7.50);
       prod.consumosPorTamanho = consumosValidados;
       prod.consumoMalhaKgPorPeca = consumosValidados['m'] || (isM ? 0.75 : 0.28);
+      prod.aviamentosPadrao = extrairAviamentosForm(modalEl, 'editmod');
 
       salvarEstado();
       modalEl.remove();
@@ -17597,6 +17782,11 @@
             <div id="containerGradeConsumoCadMod">
               ${gerarHtmlGradeConsumosTamanhoForm(mapaPadrao, baseMPadraoKg, false, 'cadmod')}
             </div>
+
+            <!-- Aviamentos Fixos da Modelagem -->
+            <div id="containerAviamentosCadMod">
+              ${gerarHtmlEditorAviamentosFixos([{ nome: "Aviamentos Básicos", qtd: 1, custoUnitario: 2.00 }], 'cadmod')}
+            </div>
           </div>
           <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
             <button type="button" class="btn btn-secondary" id="btnCancelarNovoModelo">Cancelar</button>
@@ -17613,6 +17803,7 @@
     document.getElementById('btnCancelarNovoModelo')?.addEventListener('click', () => modalEl.remove());
 
     configurarEventosGradeConsumosForm(modalEl, 'cadmod', false);
+    configurarEventosAviamentosForm(modalEl, 'cadmod');
 
     // Mudança de unidade
     document.getElementById('cadModUnidade')?.addEventListener('change', () => {
@@ -17665,7 +17856,7 @@
         consumoMalhaKgPorPeca: consumoM,
         consumosPorTamanho: consumosValidados,
         custoMaoDeObraBase: lerInputNumDom('cadModCostura', 8.00),
-        aviamentosPadrao: [{ nome: "Aviamentos Básicos", qtd: 1, custoUnitario: 2.00 }]
+        aviamentosPadrao: extrairAviamentosForm(modalEl, 'cadmod')
       };
 
       db.produtosBase.unshift(novoMod);
