@@ -4938,10 +4938,22 @@
                     <span style="display: block; font-size: 10.5px; color: var(--text-gray-500); margin-top: 3px;">${p.tipoPersonalizacao || 'Estampa Conforme Arte'}</span>
                   </td>
                   <td class="text-mono">
-                    <div style="font-size: 11px; line-height: 1.3;">
-                      ${formatarGradeSelecionadaHtml(p.grade, 'badge')}
-                    </div>
-                    <strong style="display: block; color: var(--text-primary); margin-top: 3px;">${p.grade?.total || 0} peças</strong>
+                    ${(p.itens && p.itens.length > 1) ? `
+                      <div style="font-size: 10.5px; line-height: 1.35; display: flex; flex-direction: column; gap: 4px;">
+                        ${p.itens.map((it, idx) => `
+                          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 2px 6px;">
+                            <span style="font-weight: 700; color: #1e40af; font-size: 9.5px;">Mod ${idx + 1} (${it.grade?.total || 0} un):</span>
+                            <div>${formatarGradeSelecionadaHtml(it.grade, 'badge')}</div>
+                          </div>
+                        `).join('')}
+                      </div>
+                      <strong style="display: block; color: var(--text-primary); margin-top: 4px; font-size: 12px;">Total: ${p.itens.reduce((acc, it) => acc + (it.grade?.total || 0), 0)} peças</strong>
+                    ` : `
+                      <div style="font-size: 11px; line-height: 1.3;">
+                        ${formatarGradeSelecionadaHtml(p.grade, 'badge')}
+                      </div>
+                      <strong style="display: block; color: var(--text-primary); margin-top: 3px;">${p.grade?.total || 0} peças</strong>
+                    `}
                   </td>
                   <td class="text-mono">${formatarMoeda(p.precoUnitarioVenda)}</td>
                   <td class="text-mono">
@@ -7720,6 +7732,9 @@
               </div>
 
               <!-- Abas dos Modelos -->
+              <div id="alertaMultiModelosAviso" style="display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px; padding: 6px 10px; margin-bottom: 8px; font-size: 11px; color: #1e40af;">
+                📦 <strong>Pedido Multimodelo:</strong> Cada aba representa um produto/modelo com suas quantidades próprias. Se quiser remover um modelo extra, basta clicar no <strong>&times;</strong> vermelho da aba dele.
+              </div>
               <div class="modelos-tabs-bar" id="orcModelosTabsBar">
                 <!-- Inserido dinamicamente via renderizarAbasModelos() -->
               </div>
@@ -8403,6 +8418,11 @@
     function renderizarAbasModelos() {
       const container = document.getElementById('orcModelosTabsBar');
       if (!container) return;
+
+      const alertaBox = document.getElementById('alertaMultiModelosAviso');
+      if (alertaBox) {
+        alertaBox.style.display = (itensOrcamento.length > 1) ? 'block' : 'none';
+      }
 
       container.innerHTML = `
         ${itensOrcamento.map((it, idx) => `
