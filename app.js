@@ -4228,7 +4228,23 @@
     { chave: 'slim_m', rotulo: 'Slim-M' },
     { chave: 'slim_g', rotulo: 'Slim-G' },
     { chave: 'slim_gg', rotulo: 'Slim-GG' },
-    { chave: 'slim_xg', rotulo: 'Slim-XG' }
+    { chave: 'slim_xg', rotulo: 'Slim-XG' },
+
+    // 6. Grade Numérica (Calças, Bermudas & Camisas - 34 ao 60)
+    { chave: 'num34', rotulo: '34' },
+    { chave: 'num36', rotulo: '36' },
+    { chave: 'num38', rotulo: '38' },
+    { chave: 'num40', rotulo: '40' },
+    { chave: 'num42', rotulo: '42' },
+    { chave: 'num44', rotulo: '44' },
+    { chave: 'num46', rotulo: '46' },
+    { chave: 'num48', rotulo: '48' },
+    { chave: 'num50', rotulo: '50' },
+    { chave: 'num52', rotulo: '52' },
+    { chave: 'num54', rotulo: '54' },
+    { chave: 'num56', rotulo: '56' },
+    { chave: 'num58', rotulo: '58' },
+    { chave: 'num60', rotulo: '60' }
   ];
 
   const CAMPOS_GRADE_REGULAR = [
@@ -4240,7 +4256,30 @@
     { id: 'gradeXG', chave: 'xg', rotulo: 'XG' }
   ];
 
+  const CAMPOS_GRADE_NUMERICA = [
+    { id: 'gradeNum34', chave: 'num34', rotulo: '34' },
+    { id: 'gradeNum36', chave: 'num36', rotulo: '36' },
+    { id: 'gradeNum38', chave: 'num38', rotulo: '38' },
+    { id: 'gradeNum40', chave: 'num40', rotulo: '40' },
+    { id: 'gradeNum42', chave: 'num42', rotulo: '42' },
+    { id: 'gradeNum44', chave: 'num44', rotulo: '44' },
+    { id: 'gradeNum46', chave: 'num46', rotulo: '46' },
+    { id: 'gradeNum48', chave: 'num48', rotulo: '48' },
+    { id: 'gradeNum50', chave: 'num50', rotulo: '50' },
+    { id: 'gradeNum52', chave: 'num52', rotulo: '52' },
+    { id: 'gradeNum54', chave: 'num54', rotulo: '54' },
+    { id: 'gradeNum56', chave: 'num56', rotulo: '56' },
+    { id: 'gradeNum58', chave: 'num58', rotulo: '58' },
+    { id: 'gradeNum60', chave: 'num60', rotulo: '60' }
+  ];
+
   const SECOES_GRADE_EXTRAS = [
+    {
+      id: 'secaoGrade_numerica',
+      chaveSecao: 'numerica',
+      titulo: '👖 Grade Numérica (Calças, Bermudas & Camisas - 34 ao 60)',
+      campos: CAMPOS_GRADE_NUMERICA
+    },
     {
       id: 'secaoGrade_especiais',
       chaveSecao: 'especiais',
@@ -4323,7 +4362,12 @@
     // Modelagem Baby Look Feminina:
     'bl_pp': 0.80, 'bl_p': 0.85, 'bl_m': 0.90, 'bl_g': 0.95, 'bl_gg': 1.05, 'bl_xg': 1.15,
     // Modelagem Slim Fit:
-    'slim_p': 0.90, 'slim_m': 0.95, 'slim_g': 1.00, 'slim_gg': 1.10, 'slim_xg': 1.20
+    'slim_p': 0.90, 'slim_m': 0.95, 'slim_g': 1.00, 'slim_gg': 1.10, 'slim_xg': 1.20,
+    // Grade Numérica (Calças, Bermudas, Camisaria - Base 40 = 1.00):
+    'num34': 0.85, 'num36': 0.88, 'num38': 0.94, 'num40': 1.00,
+    'num42': 1.06, 'num44': 1.15, 'num46': 1.25, 'num48': 1.35,
+    'num50': 1.45, 'num52': 1.55, 'num54': 1.65, 'num56': 1.75,
+    'num58': 1.85, 'num60': 1.95
   };
 
   // Garante que qualquer modelagem possua sua tabela de consumo em gramas por tamanho
@@ -4687,6 +4731,10 @@
     }
 
     function obterEstiloBadge(tam) {
+      const sTam = String(tam).trim();
+      if (['34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54', '56', '58', '60'].includes(sTam)) {
+        return 'background: #f0fdf4; color: #166534; border: 1.5px solid #86efac;';
+      }
       if (tam.startsWith('BL-')) {
         return 'background: #fdf2f8; color: #9d174d; border: 1px solid #fbcfe8;';
       }
@@ -7792,10 +7840,15 @@
                   </label>
                   <span style="font-size: 10px; color: var(--text-gray-500);">Clique na aba do modelo para editar sua modelagem, cor, grade e estampas</span>
                 </div>
-                <button type="button" class="btn-add-modelo-tab" id="btnAddModeloTab">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                  Adicionar Outro Modelo ao Pedido
-                </button>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <button type="button" class="btn-add-modelo-tab" id="btnAddModeloTab" title="Adiciona outro modelo (camisetas, polos, etc.)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    + Adicionar Outro Modelo
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btnAddModeloCalcaNumerica" style="font-size: 11px; padding: 4px 10px; font-weight: 800; color: #166534; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;" title="Adiciona um novo modelo de calça/bermuda com grade numérica (34 ao 60)">
+                    👖 + Adicionar Calça / Numérica
+                  </button>
+                </div>
               </div>
 
               <!-- Abas dos Modelos -->
@@ -7930,8 +7983,24 @@
                   </div>
                 </div>
 
-                <!-- Grade Regular Padrão (Adulto PP ao XG + Totalizador Geral) -->
-                <div class="grade-table-input" id="boxGradeTableInput">
+                <!-- Seletor de Tipo de Medida: Alfabética vs Numérica -->
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 6px; padding: 6px 10px; flex-wrap: wrap; gap: 8px;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 11.5px; font-weight: 800; color: #1e293b;">📏 Padrão de Medidas deste Modelo:</span>
+                    <span style="font-size: 10.5px; color: #64748b;">(Alterne entre letras para camisas ou números para calças)</span>
+                  </div>
+                  <div style="display: flex; gap: 6px;">
+                    <button type="button" class="btn btn-sm btn-modo-grade-toggle" id="btnModoGradeAlfabetica" data-modo="alfabetica" style="font-size: 11px; padding: 4px 12px; font-weight: 800; border-radius: 4px; border: 1.5px solid #2563eb; background: #2563eb; color: #ffffff; cursor: pointer;">
+                      🔤 Alfabética (PP ao XG / Camisetas & Casacos)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-modo-grade-toggle" id="btnModoGradeNumerica" data-modo="numerica" style="font-size: 11px; padding: 4px 12px; font-weight: 700; border-radius: 4px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer;">
+                      🔢 Numérica (34 ao 60 / Calças, Bermudas & Camisaria)
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 1. Grade Regular Alfabética (PP ao XG + Totalizador) -->
+                <div class="grade-table-input" id="boxGradeTableInputAlfabetica">
                   <div class="grade-col"><div class="grade-label">PP</div><input type="number" id="gradePP" class="grade-input" value="0" min="0"></div>
                   <div class="grade-col"><div class="grade-label">P</div><input type="number" id="gradeP" class="grade-input" value="0" min="0"></div>
                   <div class="grade-col"><div class="grade-label">M</div><input type="number" id="gradeM" class="grade-input" value="0" min="0"></div>
@@ -7941,6 +8010,29 @@
                   <div class="grade-col"><div class="grade-label" style="background: #0f172a; color: #38bdf8; font-weight: 900;">TOTAL</div><input type="text" id="gradeTotal" class="grade-input" style="font-weight: 900; background: #0f172a; color: #38bdf8;" value="0" readonly title="Total geral somando todos os tamanhos"></div>
                 </div>
 
+                <!-- 2. Grade Regular Numérica (34 ao 60 + Totalizador) -->
+                <div id="boxGradeTableInputNumerica" style="display: none;">
+                  <div class="grade-table-input" style="grid-template-columns: repeat(8, 1fr); margin-bottom: 6px;">
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">34</div><input type="number" id="gradeNum34" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">36</div><input type="number" id="gradeNum36" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">38</div><input type="number" id="gradeNum38" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">40</div><input type="number" id="gradeNum40" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">42</div><input type="number" id="gradeNum42" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">44</div><input type="number" id="gradeNum44" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">46</div><input type="number" id="gradeNum46" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">48</div><input type="number" id="gradeNum48" class="grade-input" value="0" min="0"></div>
+                  </div>
+                  <div class="grade-table-input" style="grid-template-columns: repeat(7, 1fr);">
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">50</div><input type="number" id="gradeNum50" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">52</div><input type="number" id="gradeNum52" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">54</div><input type="number" id="gradeNum54" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">56</div><input type="number" id="gradeNum56" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">58</div><input type="number" id="gradeNum58" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">60</div><input type="number" id="gradeNum60" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #0f172a; color: #38bdf8; font-weight: 900;">TOTAL</div><input type="text" id="gradeTotalNum" class="grade-input" style="font-weight: 900; background: #0f172a; color: #38bdf8;" value="0" readonly title="Total geral somando todos os tamanhos"></div>
+                  </div>
+                </div>
+
                 <!-- Barra de Seletores de Grades Especiais (Abrir sob demanda) -->
                 <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #cbd5e1; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
                   <div style="display: flex; align-items: center; gap: 6px;">
@@ -7948,6 +8040,9 @@
                     <span style="font-size: 10px; color: #94a3b8;">(Clique para selecionar se houver no pedido)</span>
                   </div>
                   <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary btn-sm btn-toggle-grade-extra" data-secao="numerica" id="btnToggle_numerica" style="font-size: 11px; padding: 3px 9px; font-weight: 700; color: #166534; background: #f0fdf4; border: 1px solid #86efac; border-radius: 4px; cursor: pointer;">
+                      👖 Numérica (34 ao 60)
+                    </button>
                     <button type="button" class="btn btn-secondary btn-sm btn-toggle-grade-extra" data-secao="especiais" id="btnToggle_especiais" style="font-size: 11px; padding: 3px 9px; font-weight: 700; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; cursor: pointer;">
                       ⚡ Especiais (G1 a G5)
                     </button>
@@ -7960,6 +8055,35 @@
                     <button type="button" class="btn btn-secondary btn-sm btn-toggle-grade-extra" data-secao="slim" id="btnToggle_slim" style="font-size: 11px; padding: 3px 9px; font-weight: 700; color: #6d28d9; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 4px; cursor: pointer;">
                       📐 Slim Fit
                     </button>
+                  </div>
+                </div>
+
+                <!-- Seção Expansível: Grade Numérica (34 ao 60) quando em modo alfabético -->
+                <div id="secaoGrade_numerica" class="secao-grade-extra-card" style="display: none; margin-top: 10px; padding: 10px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span style="font-size: 11.5px; font-weight: 800; color: #166534;">👖 Grade Numérica Adicional (Tamanhos 34 ao 60)</span>
+                      <span style="font-size: 10px; color: #15803d;">(Para peças em numeração mista, calças ou camisaria)</span>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm btn-fechar-grade-extra" data-secao="numerica" style="font-size: 10px; padding: 1px 7px; color: #166534; background: #ffffff; border: 1px solid #86efac;">✕ Fechar</button>
+                  </div>
+                  <div class="grade-table-input" style="grid-template-columns: repeat(7, 1fr); margin-bottom: 6px;">
+                    <div class="grade-col"><div class="grade-label" style="background: #dcfce7; color: #166534; font-weight: 800;">34</div><input type="number" class="grade-input" value="0" min="0" oninput="document.getElementById('gradeNum34').value = this.value; document.getElementById('gradeNum34').dispatchEvent(new Event('input'))"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #dcfce7; color: #166534; font-weight: 800;">36</div><input type="number" class="grade-input" value="0" min="0" oninput="document.getElementById('gradeNum36').value = this.value; document.getElementById('gradeNum36').dispatchEvent(new Event('input'))"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #dcfce7; color: #166534; font-weight: 800;">38</div><input type="number" class="grade-input" value="0" min="0" oninput="document.getElementById('gradeNum38').value = this.value; document.getElementById('gradeNum38').dispatchEvent(new Event('input'))"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #dcfce7; color: #166534; font-weight: 800;">40</div><input type="number" class="grade-input" value="0" min="0" oninput="document.getElementById('gradeNum40').value = this.value; document.getElementById('gradeNum40').dispatchEvent(new Event('input'))"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #dcfce7; color: #166534; font-weight: 800;">42</div><input type="number" class="grade-input" value="0" min="0" oninput="document.getElementById('gradeNum42').value = this.value; document.getElementById('gradeNum42').dispatchEvent(new Event('input'))"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #dcfce7; color: #166534; font-weight: 800;">44</div><input type="number" class="grade-input" value="0" min="0" oninput="document.getElementById('gradeNum44').value = this.value; document.getElementById('gradeNum44').dispatchEvent(new Event('input'))"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #dcfce7; color: #166534; font-weight: 800;">46</div><input type="number" class="grade-input" value="0" min="0" oninput="document.getElementById('gradeNum46').value = this.value; document.getElementById('gradeNum46').dispatchEvent(new Event('input'))"></div>
+                  </div>
+                  <div class="grade-table-input" style="grid-template-columns: repeat(7, 1fr);">
+                    <div class="grade-col"><div class="grade-label" style="background: #dcfce7; color: #166534; font-weight: 800;">48</div><input type="number" class="grade-input" value="0" min="0" oninput="document.getElementById('gradeNum48').value = this.value; document.getElementById('gradeNum48').dispatchEvent(new Event('input'))"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #dcfce7; color: #166534; font-weight: 800;">50</div><input type="number" class="grade-input" value="0" min="0" oninput="document.getElementById('gradeNum50').value = this.value; document.getElementById('gradeNum50').dispatchEvent(new Event('input'))"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #dcfce7; color: #166534; font-weight: 800;">52</div><input type="number" class="grade-input" value="0" min="0" oninput="document.getElementById('gradeNum52').value = this.value; document.getElementById('gradeNum52').dispatchEvent(new Event('input'))"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #dcfce7; color: #166534; font-weight: 800;">54</div><input type="number" class="grade-input" value="0" min="0" oninput="document.getElementById('gradeNum54').value = this.value; document.getElementById('gradeNum54').dispatchEvent(new Event('input'))"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #dcfce7; color: #166534; font-weight: 800;">56</div><input type="number" class="grade-input" value="0" min="0" oninput="document.getElementById('gradeNum56').value = this.value; document.getElementById('gradeNum56').dispatchEvent(new Event('input'))"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #dcfce7; color: #166534; font-weight: 800;">58</div><input type="number" class="grade-input" value="0" min="0" oninput="document.getElementById('gradeNum58').value = this.value; document.getElementById('gradeNum58').dispatchEvent(new Event('input'))"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #dcfce7; color: #166534; font-weight: 800;">60</div><input type="number" class="grade-input" value="0" min="0" oninput="document.getElementById('gradeNum60').value = this.value; document.getElementById('gradeNum60').dispatchEvent(new Event('input'))"></div>
                   </div>
                 </div>
 
@@ -8396,6 +8520,8 @@
         });
         const inpTotal = document.getElementById('gradeTotal');
         if (inpTotal) inpTotal.value = contagem.total;
+        const inpTotalNum = document.getElementById('gradeTotalNum');
+        if (inpTotalNum) inpTotalNum.value = contagem.total;
       } else {
         // No modo Padrão / Corporativo, lê dos inputs manuais da grade
         const novaGrade = {};
@@ -8978,7 +9104,7 @@
         prevMock.src = it.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, "#1e3a8a", "#ffffff", "TEXFY") : '');
       }
 
-      // Grade Completa (Regular + Especiais + Infantis + Baby Look + Slim)
+      // Grade Completa (Regular Alfabética + Numérica + Especiais + Infantis + Baby Look + Slim)
       const g = it.grade || {};
       TODOS_CAMPOS_GRADE.forEach(campo => {
         const inp = document.getElementById(campo.id);
@@ -8986,6 +9112,62 @@
       });
       const inpTotal = document.getElementById('gradeTotal');
       if (inpTotal) inpTotal.value = g.total || 0;
+      const inpTotalNum = document.getElementById('gradeTotalNum');
+      if (inpTotalNum) inpTotalNum.value = g.total || 0;
+
+      // Detecta / define o modo de medidas deste modelo (Alfabética vs Numérica)
+      const temQtdNum = CAMPOS_GRADE_NUMERICA.some(c => (g[c.chave] || 0) > 0);
+      const temQtdAlfa = CAMPOS_GRADE_REGULAR.some(c => (g[c.chave] || 0) > 0);
+      const pNome = (it.produtoNome || '').toLowerCase();
+      const ehItemNumerico = pNome.includes('calça') || pNome.includes('calca') || pNome.includes('bermuda') || pNome.includes('brim') || pNome.includes('sarja') || pNome.includes('camisa social') || pNome.includes('jeans');
+
+      let modoMedida = it.tipoGradeMedida;
+      if (!modoMedida) {
+        if (temQtdNum && !temQtdAlfa) modoMedida = 'numerica';
+        else if (ehItemNumerico && !temQtdAlfa) modoMedida = 'numerica';
+        else modoMedida = 'alfabetica';
+        it.tipoGradeMedida = modoMedida;
+      }
+
+      const boxAlfa = document.getElementById('boxGradeTableInputAlfabetica');
+      const boxNum = document.getElementById('boxGradeTableInputNumerica');
+      const btnModoAlfa = document.getElementById('btnModoGradeAlfabetica');
+      const btnModoNum = document.getElementById('btnModoGradeNumerica');
+      const btnTogNum = document.getElementById('btnToggle_numerica');
+
+      if (modoMedida === 'numerica') {
+        if (boxAlfa) boxAlfa.style.display = 'none';
+        if (boxNum) boxNum.style.display = 'block';
+        if (btnTogNum) btnTogNum.style.display = 'none';
+        if (btnModoNum) {
+          btnModoNum.style.background = '#16a34a';
+          btnModoNum.style.borderColor = '#16a34a';
+          btnModoNum.style.color = '#ffffff';
+          btnModoNum.style.fontWeight = '800';
+        }
+        if (btnModoAlfa) {
+          btnModoAlfa.style.background = '#ffffff';
+          btnModoAlfa.style.borderColor = '#cbd5e1';
+          btnModoAlfa.style.color = '#475569';
+          btnModoAlfa.style.fontWeight = '700';
+        }
+      } else {
+        if (boxAlfa) boxAlfa.style.display = 'grid';
+        if (boxNum) boxNum.style.display = 'none';
+        if (btnTogNum) btnTogNum.style.display = 'inline-block';
+        if (btnModoAlfa) {
+          btnModoAlfa.style.background = '#2563eb';
+          btnModoAlfa.style.borderColor = '#2563eb';
+          btnModoAlfa.style.color = '#ffffff';
+          btnModoAlfa.style.fontWeight = '800';
+        }
+        if (btnModoNum) {
+          btnModoNum.style.background = '#ffffff';
+          btnModoNum.style.borderColor = '#cbd5e1';
+          btnModoNum.style.color = '#475569';
+          btnModoNum.style.fontWeight = '700';
+        }
+      }
 
       // Auto-expande seções que já tenham quantidades preenchidas
       SECOES_GRADE_EXTRAS.forEach(sec => {
@@ -9327,6 +9509,88 @@
       renderizarAplicacoes();
       recalcularBenchmarkModal();
       mostrarToast('Peça configurada como Lisa (sem estampa).', 'blue');
+    });
+
+    // Switcher de Sistema de Medidas da Modelagem (Alfabética vs Numérica)
+    document.getElementById('btnModoGradeAlfabetica')?.addEventListener('click', () => {
+      const it = itensOrcamento[itemAtivoIndex];
+      if (it) it.tipoGradeMedida = 'alfabetica';
+      const boxAlfa = document.getElementById('boxGradeTableInputAlfabetica');
+      const boxNum = document.getElementById('boxGradeTableInputNumerica');
+      const btnModoAlfa = document.getElementById('btnModoGradeAlfabetica');
+      const btnModoNum = document.getElementById('btnModoGradeNumerica');
+      const btnTogNum = document.getElementById('btnToggle_numerica');
+
+      if (boxAlfa) boxAlfa.style.display = 'grid';
+      if (boxNum) boxNum.style.display = 'none';
+      if (btnTogNum) btnTogNum.style.display = 'inline-block';
+      if (btnModoAlfa) {
+        btnModoAlfa.style.background = '#2563eb';
+        btnModoAlfa.style.borderColor = '#2563eb';
+        btnModoAlfa.style.color = '#ffffff';
+        btnModoAlfa.style.fontWeight = '800';
+      }
+      if (btnModoNum) {
+        btnModoNum.style.background = '#ffffff';
+        btnModoNum.style.borderColor = '#cbd5e1';
+        btnModoNum.style.color = '#475569';
+        btnModoNum.style.fontWeight = '700';
+      }
+      recalcularBenchmarkModal();
+    });
+
+    document.getElementById('btnModoGradeNumerica')?.addEventListener('click', () => {
+      const it = itensOrcamento[itemAtivoIndex];
+      if (it) it.tipoGradeMedida = 'numerica';
+      const boxAlfa = document.getElementById('boxGradeTableInputAlfabetica');
+      const boxNum = document.getElementById('boxGradeTableInputNumerica');
+      const btnModoAlfa = document.getElementById('btnModoGradeAlfabetica');
+      const btnModoNum = document.getElementById('btnModoGradeNumerica');
+      const btnTogNum = document.getElementById('btnToggle_numerica');
+
+      if (boxAlfa) boxAlfa.style.display = 'none';
+      if (boxNum) boxNum.style.display = 'block';
+      if (btnTogNum) btnTogNum.style.display = 'none';
+      if (btnModoNum) {
+        btnModoNum.style.background = '#16a34a';
+        btnModoNum.style.borderColor = '#16a34a';
+        btnModoNum.style.color = '#ffffff';
+        btnModoNum.style.fontWeight = '800';
+      }
+      if (btnModoAlfa) {
+        btnModoAlfa.style.background = '#ffffff';
+        btnModoAlfa.style.borderColor = '#cbd5e1';
+        btnModoAlfa.style.color = '#475569';
+        btnModoAlfa.style.fontWeight = '700';
+      }
+      recalcularBenchmarkModal();
+    });
+
+    // Adicionar Modelo de Calça / Numérica Direto
+    document.getElementById('btnAddModeloCalcaNumerica')?.addEventListener('click', () => {
+      sincronizarItemAtivoDoDOM();
+      const novoNum = itensOrcamento.length + 1;
+      const prodsDisponiveis = db.produtosBase || [];
+      const prodCalca = prodsDisponiveis.find(p => {
+        const n = (p.nome || '').toLowerCase();
+        return n.includes('calça') || n.includes('calca') || n.includes('bermuda') || n.includes('brim');
+      }) || {
+        id: 'PROD-CALCA',
+        nome: 'Calça Operacional Brim / Sarja Pesada',
+        tipoMalhaPadrao: 'Brim Pesado 100% Algodão',
+        unidadeTecido: 'metro',
+        consumoMalhaKgPorPeca: 1.25,
+        custoMaoDeObraBase: 12.00
+      };
+
+      const novoItem = criarItemModeloPadrao(novoNum, prodCalca, padroes);
+      novoItem.tipoGradeMedida = 'numerica';
+
+      itensOrcamento.push(novoItem);
+      itemAtivoIndex = itensOrcamento.length - 1;
+      carregarItemAtivoNoDOM();
+      recalcularBenchmarkModal();
+      mostrarToast(`Modelo #${novoNum} (${novoItem.produtoNome}) adicionado com Grade Numérica (34 ao 60)!`, 'green');
     });
 
     // Adicionar Outro Modelo ao Pedido
@@ -10163,6 +10427,8 @@
       const totalPecasItem = itAtivo.grade?.total || 0;
       const inpTotal = document.getElementById('gradeTotal');
       if (inpTotal) inpTotal.value = totalPecasItem;
+      const inpTotalNum = document.getElementById('gradeTotalNum');
+      if (inpTotalNum) inpTotalNum.value = totalPecasItem;
 
       // Engenharia Têxtil Ponderada por Tamanho (PP ao G5) e Unidade (kg ou metro)
       const unidadeTec = itAtivo.unidadeTecido || 'kg';
@@ -10940,6 +11206,8 @@
         let tam = jog.tamanho.toLowerCase().trim();
         if (['2', '4', '6', '8', '10', '12', '14', '16'].includes(tam)) {
           tam = 'inf' + tam;
+        } else if (['34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54', '56', '58', '60'].includes(tam)) {
+          tam = 'num' + tam;
         } else if (tam.startsWith('bl-') || tam.startsWith('bl_')) {
           tam = 'bl_' + tam.replace('bl-', '').replace('bl_', '');
         } else if (tam.startsWith('slim-') || tam.startsWith('slim_')) {
@@ -11012,6 +11280,7 @@
 
       const opcoesTam = [
         'PP', 'P', 'M', 'G', 'GG', 'XG',
+        '34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54', '56', '58', '60',
         'G1', 'G2', 'G3', 'G4', 'G5',
         'BL-PP', 'BL-P', 'BL-M', 'BL-G', 'BL-GG', 'BL-XG',
         '2', '4', '6', '8', '10', '12', '14', '16',
