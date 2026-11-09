@@ -8154,31 +8154,73 @@
                   </div>
                 </div>
                 
-                <!-- SELETOR DE ORIGEM: ESTOQUE FÍSICO VS COMPRA SOB DEMANDA -->
-                <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;">
-                  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                    <label style="display: flex; align-items: center; gap: 7px; cursor: pointer; margin: 0; font-size: 11.5px; font-weight: 800; color: #15803d;">
-                      <input type="checkbox" id="chkUtilizarEstoqueFisico" style="width: 15px; height: 15px; accent-color: #16a34a; margin: 0;">
-                      <span>📦 Utilizar Matéria-Prima / Tecido do Estoque Físico</span>
-                    </label>
-                    <span id="badgeInfoEstoqueOrigem" style="font-size: 10px; font-weight: 700; color: #166534; background: #dcfce7; padding: 2px 7px; border-radius: 4px; border: 1px solid #bbf7d0;">
-                      Baixa Automática
+                <!-- SELETOR DE ORIGEM: SOB DEMANDA VS TECIDO ESTOQUE VS VESTUÁRIO PRONTO -->
+                <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                    <strong style="font-size: 11.5px; color: #1e3a8a; text-transform: uppercase; letter-spacing: 0.3px;">
+                      🏷️ Origem do Produto / Matéria-Prima:
+                    </strong>
+                    <span id="badgeInfoEstoqueOrigem" style="font-size: 10px; font-weight: 700; color: #047857; background: #ecfdf5; padding: 2px 8px; border-radius: 4px; border: 1px solid #a7f3d0;">
+                      Engenharia de Custos
                     </span>
                   </div>
+
+                  <div style="display: flex; gap: 14px; flex-wrap: wrap; align-items: center;">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; font-weight: 700; color: #334155;">
+                      <input type="radio" name="radioOrigemMaterialItem" id="radioOrigemConfeccao" value="confeccao" checked style="accent-color: #2563eb;">
+                      <span>🧵 Sob Demanda (Corte & Costura)</span>
+                    </label>
+
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; font-weight: 700; color: #047857;">
+                      <input type="radio" name="radioOrigemMaterialItem" id="radioOrigemTecidoEstoque" value="tecido_estoque" style="accent-color: #16a34a;">
+                      <span>📦 Tecido do Estoque (Rolo de Malha)</span>
+                    </label>
+
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; font-weight: 800; color: #7c2d12; background: #ffedd5; padding: 3px 8px; border-radius: 5px; border: 1px solid #fed7aa;">
+                      <input type="radio" name="radioOrigemMaterialItem" id="radioOrigemVestuarioPronto" value="vestuario_pronto" style="accent-color: #ea580c;">
+                      <span>👕 Camiseta / Peça Pronta do Estoque</span>
+                    </label>
+                  </div>
+
+                  <!-- Caixa 1: Seleção de Tecido/Insumo do Estoque -->
                   <div id="boxSeletorEstoqueItem" style="display: none; margin-top: 10px; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px;">
                     <label class="form-label" style="font-size: 11px; color: #15803d; margin-bottom: 4px; font-weight: 700;">
-                      Selecione o Tecido / Insumo ou Lote com Saldo:
+                      Selecione o Tecido / Insumo em Estoque:
                     </label>
                     <select id="selEstoqueItemAlvo" class="form-select" style="font-size: 12px; font-weight: 700; width: 100%;">
-                      <option value="">-- Selecione o Insumo em Estoque --</option>
-                      ${(db.estoque || []).map(e => `
+                      <option value="">-- Selecione o Tecido / Malha em Estoque --</option>
+                      ${(db.estoque || []).filter(e => e.categoria !== 'Vestuário Pronto').map(e => `
                         <option value="${e.id}" data-preco="${e.custoMedioUnitario}" data-saldo="${e.saldoAtual}" data-unid="${e.unidade}">
                           ${e.descricao} [Saldo: ${e.saldoAtual} ${e.unidade} • Custo: ${formatarMoeda(e.custoMedioUnitario)}/${e.unidade}]
                         </option>
                       `).join('')}
                     </select>
-                    <div id="alertaEstoqueSelecionado" style="font-size: 10.5px; color: #166534; margin-top: 5px; line-height: 1.35;">
-                      ✓ Ao selecionar do estoque, o preço de custo unitário é preenchido automaticamente e a fábrica não gerará nova compra a pagar no financeiro (evitando duplicar o custo da matéria-prima já comprada).
+                    <div style="font-size: 10.5px; color: #166534; margin-top: 5px; line-height: 1.35;">
+                      ✓ Ao selecionar tecido do estoque, o custo por kg é preenchido automaticamente e a baixa de metragem/kg é realizada no corte.
+                    </div>
+                  </div>
+
+                  <!-- Caixa 2: Seleção de Vestuário Pronto do Estoque -->
+                  <div id="boxSeletorVestuarioPronto" style="display: none; margin-top: 10px; background: #ffffff; border: 1.5px solid #fdba74; border-radius: 6px; padding: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                      <label class="form-label" style="font-size: 11.5px; color: #9a3412; margin: 0; font-weight: 800;">
+                        Selecione a Camiseta / Peça Pronta com Saldo:
+                      </label>
+                      <button type="button" class="btn btn-secondary btn-xs" id="btnCadastrarVestuarioDiretoOrc" style="font-size: 10px; padding: 2px 8px; font-weight: 800; color: #15803d; background: #ecfdf5; border-color: #86efac; border-radius: 4px; cursor: pointer;">
+                        + Entrada de Peças Prontas...
+                      </button>
+                    </div>
+
+                    <select id="selEstoqueVestuarioAlvo" class="form-select" style="font-size: 12px; font-weight: 700; width: 100%;">
+                      <option value="">-- Selecione a Peça Pronta no Estoque --</option>
+                      ${(db.estoque || []).filter(e => e.categoria === 'Vestuário Pronto' || e.tipo === 'vestuario_pronto').map(e => `
+                        <option value="${e.id}" data-preco="${e.custoMedioUnitario}" data-saldo="${e.saldoAtual}">
+                          ${e.descricao} [Saldo: ${e.saldoAtual} un • Custo: ${formatarMoeda(e.custoMedioUnitario)}/un]
+                        </option>
+                      `).join('')}
+                    </select>
+
+                    <div id="alertaGradeVestuarioDisponivel" style="margin-top: 8px; font-size: 11px; color: #9a3412; line-height: 1.4; background: #fff7ed; padding: 6px 10px; border-radius: 4px; border: 1px solid #fed7aa; display: none;">
                     </div>
                   </div>
                 </div>
@@ -8363,14 +8405,34 @@
         it.grade = novaGrade;
       }
 
-      it.utilizarEstoque = document.getElementById('chkUtilizarEstoqueFisico')?.checked || false;
-      it.estoqueItemId = document.getElementById('selEstoqueItemAlvo')?.value || '';
-      if (it.utilizarEstoque && it.estoqueItemId) {
+      const modoOrigem = document.querySelector('input[name="radioOrigemMaterialItem"]:checked')?.value || 'confeccao';
+      it.modoOrigemMaterial = modoOrigem;
+      if (modoOrigem === 'vestuario_pronto') {
+        it.isVestuarioPronto = true;
+        it.utilizarEstoque = true;
+        it.estoqueItemId = document.getElementById('selEstoqueVestuarioAlvo')?.value || '';
+        const itemEst = (db.estoque || []).find(e => e.id === it.estoqueItemId);
+        if (itemEst) {
+          it.estoqueItemDesc = itemEst.descricao;
+          it.custoUnitarioEstoque = Number(itemEst.custoMedioUnitario) || 0;
+          it.corTecido = itemEst.corTecido || it.corTecido;
+          it.custoTecidoKg = 0;
+          it.consumoTecido = 0;
+          it.custoCostura = 0;
+        }
+      } else if (modoOrigem === 'tecido_estoque') {
+        it.isVestuarioPronto = false;
+        it.utilizarEstoque = true;
+        it.estoqueItemId = document.getElementById('selEstoqueItemAlvo')?.value || '';
         const itemEst = (db.estoque || []).find(e => e.id === it.estoqueItemId);
         if (itemEst) {
           it.estoqueItemDesc = itemEst.descricao;
           it.estoqueLote = itemEst.lote || null;
         }
+      } else {
+        it.isVestuarioPronto = false;
+        it.utilizarEstoque = false;
+        it.estoqueItemId = '';
       }
       it.custoTecidoKg = lerInputNumDom('inputCustoTecido', numOuPadrao(padroes.custoTecidoKg, 48.50));
       let consumoLido = lerInputNumDom('inputConsumoTecido', 0.28);
@@ -8986,16 +9048,29 @@
       const inpImp = document.getElementById('inputAliquotaImposto');
       if (inpImp) inpImp.value = numOuPadrao(it.aliquotaImposto, 6.5).toFixed(1);
 
-      // Origem de Estoque Físico
-      const chkEst = document.getElementById('chkUtilizarEstoqueFisico');
-      const boxEst = document.getElementById('boxSeletorEstoqueItem');
-      const selEst = document.getElementById('selEstoqueItemAlvo');
-      if (chkEst && boxEst && selEst) {
-        chkEst.checked = !!it.utilizarEstoque;
-        boxEst.style.display = it.utilizarEstoque ? 'block' : 'none';
-        if (it.estoqueItemId) {
-          selEst.value = it.estoqueItemId;
-        }
+      // Origem do Material (Sob Demanda vs Tecido Estoque vs Vestuário Pronto)
+      const radConf = document.getElementById('radioOrigemConfeccao');
+      const radTec = document.getElementById('radioOrigemTecidoEstoque');
+      const radVest = document.getElementById('radioOrigemVestuarioPronto');
+      const boxTec = document.getElementById('boxSeletorEstoqueItem');
+      const boxVest = document.getElementById('boxSeletorVestuarioPronto');
+      const selTec = document.getElementById('selEstoqueItemAlvo');
+      const selVest = document.getElementById('selEstoqueVestuarioAlvo');
+
+      if (it.isVestuarioPronto) {
+        if (radVest) radVest.checked = true;
+        if (boxVest) boxVest.style.display = 'block';
+        if (boxTec) boxTec.style.display = 'none';
+        if (selVest && it.estoqueItemId) selVest.value = it.estoqueItemId;
+      } else if (it.utilizarEstoque) {
+        if (radTec) radTec.checked = true;
+        if (boxTec) boxTec.style.display = 'block';
+        if (boxVest) boxVest.style.display = 'none';
+        if (selTec && it.estoqueItemId) selTec.value = it.estoqueItemId;
+      } else {
+        if (radConf) radConf.checked = true;
+        if (boxTec) boxTec.style.display = 'none';
+        if (boxVest) boxVest.style.display = 'none';
       }
 
       // Renderiza as aplicações de personalização
@@ -10093,14 +10168,32 @@
         custoTotalTecidoModelo = consumoTotalTecidoModelo * precoKgAtivo;
       }
 
-      const consumoRealComPerdaMedio = totalPecasGrade > 0 ? (consumoTotalTecidoModelo / totalPecasGrade) : (consumoBaseM * fatorPerda);
-      const custoTecidoUnitario = totalPecasGrade > 0 ? (custoTotalTecidoModelo / totalPecasGrade) : (consumoRealComPerdaMedio * precoKgAtivo);
-      const rendimentoPecasPorKg = consumoRealComPerdaMedio > 0 ? (1 / consumoRealComPerdaMedio) : 0;
-      const totalKgTecido = consumoTotalTecidoModelo;
+      let consumoRealComPerdaMedio = 0;
+      let custoTecidoUnitario = 0;
+      let rendimentoPecasPorKg = 0;
+      let totalKgTecido = 0;
 
-      itAtivo.consumoTotalTecido = consumoTotalTecidoModelo;
-      itAtivo.consumoUnitarioPonderado = consumoRealComPerdaMedio;
-      itAtivo.custoTecidoUnitarioPonderado = custoTecidoUnitario;
+      if (itAtivo.isVestuarioPronto && itAtivo.custoUnitarioEstoque) {
+        custoTecidoUnitario = Number(itAtivo.custoUnitarioEstoque) || 0;
+        consumoTotalTecidoModelo = 0;
+        consumoRealComPerdaMedio = 0;
+        rendimentoPecasPorKg = 0;
+        totalKgTecido = 0;
+        itAtivo.consumoTotalTecido = 0;
+        itAtivo.consumoUnitarioPonderado = 0;
+        itAtivo.custoTecidoUnitarioPonderado = custoTecidoUnitario;
+        itAtivo.custoCostura = 0;
+        const inpCostura = document.getElementById('inputCustoCostura');
+        if (inpCostura) inpCostura.value = '0,00';
+      } else {
+        consumoRealComPerdaMedio = totalPecasGrade > 0 ? (consumoTotalTecidoModelo / totalPecasGrade) : (consumoBaseM * fatorPerda);
+        custoTecidoUnitario = totalPecasGrade > 0 ? (custoTotalTecidoModelo / totalPecasGrade) : (consumoRealComPerdaMedio * precoKgAtivo);
+        rendimentoPecasPorKg = consumoRealComPerdaMedio > 0 ? (1 / consumoRealComPerdaMedio) : 0;
+        totalKgTecido = consumoTotalTecidoModelo;
+        itAtivo.consumoTotalTecido = consumoTotalTecidoModelo;
+        itAtivo.consumoUnitarioPonderado = consumoRealComPerdaMedio;
+        itAtivo.custoTecidoUnitarioPonderado = custoTecidoUnitario;
+      }
       itAtivo.unidadeTecido = unidadeTec;
 
       // Atualiza badges dinâmicos de consumo base e média da grade no DOM
@@ -10193,6 +10286,33 @@
         document.getElementById('btnAbrirDetalhamentoCustosPeca')?.addEventListener('click', () => {
           abrirModalDetalhamentoCustosPorPeca();
         });
+
+        if (itAtivo.isVestuarioPronto) {
+          boxRendimento.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+              <strong style="color: #166534; font-size: 11.5px; display: flex; align-items: center; gap: 5px;">
+                <span>👕</span> Vestuário Pronto do Estoque (${itAtivo.estoqueItemDesc || itAtivo.produtoNome}):
+              </strong>
+              <span class="status-pill status-green" style="font-size: 9.5px; font-weight: 800; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">
+                ✓ Peça Lisa Já Confeccionada
+              </span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 11px;">
+              <div>
+                <span style="color: var(--text-gray-500); display: block; font-size: 9.5px;">Custo Peça Pronta (Estoque):</span>
+                <strong style="color: #1e40af; font-size: 12.5px;">${formatarMoeda(itAtivo.custoUnitarioEstoque || custoTecidoUnitario)}/un</strong>
+              </div>
+              <div>
+                <span style="color: var(--text-gray-500); display: block; font-size: 9.5px;">Mão de Obra de Costura:</span>
+                <strong style="color: #047857; font-size: 12.5px;">R$ 0,00 (Dispensada)</strong>
+              </div>
+              <div>
+                <span style="color: var(--text-gray-500); display: block; font-size: 9.5px;">Custo Base Peças (${totalPecasItem} un):</span>
+                <strong style="color: #0f172a; font-size: 12.5px;">${formatarMoeda((itAtivo.custoUnitarioEstoque || custoTecidoUnitario) * totalPecasItem)}</strong>
+              </div>
+            </div>
+          `;
+        }
       }
 
       // Benchmark e Viabilidade Financeira do Modelo Ativo
@@ -10482,16 +10602,44 @@
       };
     }
 
-    // Eventos do Seletor de Estoque Físico
-    document.getElementById('chkUtilizarEstoqueFisico')?.addEventListener('change', (e) => {
-      const box = document.getElementById('boxSeletorEstoqueItem');
-      if (box) box.style.display = e.target.checked ? 'block' : 'none';
-      if (!e.target.checked) {
-        const sel = document.getElementById('selEstoqueItemAlvo');
-        if (sel) sel.value = '';
-      }
-      sincronizarItemAtivoDoDOM();
-      recalcularBenchmarkModal();
+    // Eventos do Seletor de Origem de Material (Sob Demanda vs Tecido Estoque vs Vestuário Pronto)
+    document.querySelectorAll('input[name="radioOrigemMaterialItem"]').forEach(rad => {
+      rad.addEventListener('change', (e) => {
+        const modo = e.target.value;
+        const boxTec = document.getElementById('boxSeletorEstoqueItem');
+        const boxVest = document.getElementById('boxSeletorVestuarioPronto');
+        if (boxTec) boxTec.style.display = (modo === 'tecido_estoque') ? 'block' : 'none';
+        if (boxVest) boxVest.style.display = (modo === 'vestuario_pronto') ? 'block' : 'none';
+
+        const it = itensOrcamento[itemAtivoIndex];
+        if (it) {
+          if (modo === 'vestuario_pronto') {
+            it.isVestuarioPronto = true;
+            it.utilizarEstoque = true;
+            const selV = document.getElementById('selEstoqueVestuarioAlvo');
+            if (selV && selV.value) {
+              selV.dispatchEvent(new Event('change'));
+            }
+          } else if (modo === 'tecido_estoque') {
+            it.isVestuarioPronto = false;
+            it.utilizarEstoque = true;
+            const selT = document.getElementById('selEstoqueItemAlvo');
+            if (selT && selT.value) {
+              selT.dispatchEvent(new Event('change'));
+            }
+          } else {
+            it.isVestuarioPronto = false;
+            it.utilizarEstoque = false;
+            it.estoqueItemId = '';
+          }
+        }
+        sincronizarItemAtivoDoDOM();
+        recalcularBenchmarkModal();
+      });
+    });
+
+    document.getElementById('btnCadastrarVestuarioDiretoOrc')?.addEventListener('click', () => {
+      abrirModalEntradaVestuarioPronto();
     });
 
     document.getElementById('selEstoqueItemAlvo')?.addEventListener('change', (e) => {
@@ -10503,6 +10651,35 @@
         if (inpCusto && preco > 0) {
           inpCusto.value = formatarMoedaInput(preco);
         }
+      }
+      sincronizarItemAtivoDoDOM();
+      recalcularBenchmarkModal();
+    });
+
+    document.getElementById('selEstoqueVestuarioAlvo')?.addEventListener('change', (e) => {
+      const sel = e.target;
+      const val = sel.value;
+      const itemEst = (db.estoque || []).find(x => x.id === val);
+      const alerta = document.getElementById('alertaGradeVestuarioDisponivel');
+      const it = itensOrcamento[itemAtivoIndex];
+
+      if (itemEst && it) {
+        it.isVestuarioPronto = true;
+        it.utilizarEstoque = true;
+        it.estoqueItemId = itemEst.id;
+        it.estoqueItemDesc = itemEst.descricao;
+        it.custoUnitarioEstoque = Number(itemEst.custoMedioUnitario) || 0;
+        it.custoTecidoKg = 0;
+        it.consumoTecido = 0;
+        it.custoCostura = 0;
+
+        if (alerta) {
+          const gradeTexto = itemEst.gradeEstoque ? Object.keys(itemEst.gradeEstoque).filter(k => k !== 'total' && itemEst.gradeEstoque[k] > 0).map(k => `${k.toUpperCase()}: ${itemEst.gradeEstoque[k]}`).join(' | ') : 'Sem grade';
+          alerta.innerHTML = `✓ <strong>Saldo Físico Disponível:</strong> ${itemEst.saldoAtual} peças no total.<br><span style="font-family: monospace; font-size: 10.5px; display: inline-block; margin-top: 3px;">${gradeTexto}</span><br>Custo médio da peça lisa: <strong>${formatarMoeda(itemEst.custoMedioUnitario)}</strong>. Corte e costura dispensados.`;
+          alerta.style.display = 'block';
+        }
+      } else {
+        if (alerta) alerta.style.display = 'none';
       }
       sincronizarItemAtivoDoDOM();
       recalcularBenchmarkModal();
@@ -12446,104 +12623,74 @@
       }
       db.pedidos.unshift(pedidoOficial);
 
-      // Baixa automática de estoque físico para modelos que utilizaram matéria-prima da fábrica
+      // Baixa automática de estoque físico para modelos que utilizaram matéria-prima ou vestuário pronto
       if (Array.isArray(pedidoOficial.itens)) {
         pedidoOficial.itens.forEach(it => {
           if (it.utilizarEstoque && it.estoqueItemId) {
             const itemEst = (db.estoque || []).find(e => e.id === it.estoqueItemId);
             if (itemEst) {
-              const consumoUnid = numOuPadrao(it.consumoTecido, 0.28) * (1 + (numOuPadrao(it.margemErroTecido, 8.0) / 100));
-              const consumoTotal = parseFloat((consumoUnid * (it.grade?.total || 0)).toFixed(2));
-              if (consumoTotal > 0) {
-                const saldoAnt = Number(itemEst.saldoAtual) || 0;
-                itemEst.saldoAtual = Math.max(0, parseFloat((saldoAnt - consumoTotal).toFixed(2)));
+              if (it.isVestuarioPronto || itemEst.categoria === 'Vestuário Pronto' || itemEst.tipo === 'vestuario_pronto') {
+                const totalPecasBaixa = it.grade?.total || 0;
+                if (totalPecasBaixa > 0) {
+                  const saldoAnt = Number(itemEst.saldoAtual) || 0;
+                  itemEst.saldoAtual = Math.max(0, saldoAnt - totalPecasBaixa);
+                  if (itemEst.gradeEstoque && it.grade) {
+                    Object.keys(it.grade).forEach(tam => {
+                      if (tam === 'total') return;
+                      const qTam = parseInt(it.grade[tam], 10) || 0;
+                      if (qTam > 0) {
+                        itemEst.gradeEstoque[tam] = Math.max(0, (parseInt(itemEst.gradeEstoque[tam], 10) || 0) - qTam);
+                      }
+                    });
+                  }
+                  if (!Array.isArray(db.historicoEstoque)) db.historicoEstoque = [];
+                  db.historicoEstoque.unshift({
+                    id: `SAI-VEST-${Date.now().toString().slice(-6)}`,
+                    tipo: 'Baixa',
+                    itemId: itemEst.id,
+                    itemCodigo: itemEst.codigo,
+                    itemDescricao: itemEst.descricao,
+                    quantidade: totalPecasBaixa,
+                    grade: it.grade,
+                    unidade: 'un',
+                    custoUnitario: itemEst.custoMedioUnitario,
+                    valorTotal: parseFloat((totalPecasBaixa * (Number(itemEst.custoMedioUnitario) || 0)).toFixed(2)),
+                    motivo: `Atendimento Pedido Oficial #${pedidoOficial.numero} (${clienteNomeFinal})`,
+                    responsavel: 'Expedição / Almoxarifado',
+                    data: new Date().toISOString()
+                  });
+                }
+              } else {
+                const consumoUnid = numOuPadrao(it.consumoTecido, 0.28) * (1 + (numOuPadrao(it.margemErroTecido, 8.0) / 100));
+                const consumoTotal = parseFloat((consumoUnid * (it.grade?.total || 0)).toFixed(2));
+                if (consumoTotal > 0) {
+                  const saldoAnt = Number(itemEst.saldoAtual) || 0;
+                  itemEst.saldoAtual = Math.max(0, parseFloat((saldoAnt - consumoTotal).toFixed(2)));
 
-                if (!Array.isArray(db.historicoEstoque)) db.historicoEstoque = [];
-                db.historicoEstoque.unshift({
-                  id: `SAI-${Date.now().toString().slice(-6)}`,
-                  tipo: 'Baixa',
-                  itemId: itemEst.id,
-                  itemCodigo: itemEst.codigo,
-                  itemDescricao: itemEst.descricao,
-                  quantidade: consumoTotal,
-                  unidade: itemEst.unidade,
-                  custoUnitario: itemEst.custoMedioUnitario,
-                  valorTotal: parseFloat((consumoTotal * itemEst.custoMedioUnitario).toFixed(2)),
-                  saldoAnterior: saldoAnt,
-                  novoSaldo: itemEst.saldoAtual,
-                  motivo: `Consumo no Pedido #${pedidoOficial.numero} (${pedidoOficial.clienteNome})`,
-                  pedidoId: pedidoOficial.numero,
-                  responsavel: 'Chão de Fábrica',
-                  data: new Date().toISOString()
-                });
+                  if (!Array.isArray(db.historicoEstoque)) db.historicoEstoque = [];
+                  db.historicoEstoque.unshift({
+                    id: `SAI-${Date.now().toString().slice(-6)}`,
+                    tipo: 'Baixa',
+                    itemId: itemEst.id,
+                    itemCodigo: itemEst.codigo,
+                    itemDescricao: itemEst.descricao,
+                    quantidade: consumoTotal,
+                    unidade: itemEst.unidade,
+                    custoUnitario: itemEst.custoMedioUnitario,
+                    valorTotal: parseFloat((consumoTotal * (Number(itemEst.custoMedioUnitario) || 0)).toFixed(2)),
+                    motivo: `Corte Pedido Oficial #${pedidoOficial.numero} (${clienteNomeFinal})`,
+                    responsavel: 'Mesa de Corte',
+                    data: new Date().toISOString()
+                  });
+                }
               }
             }
           }
         });
       }
 
-      // Sincroniza custos operacionais do novo pedido no financeiro (Costura, Tecido, Aviamento, Estampa e Taxas de Cartão)
-      sincronizarCustosOperacionaisDosPedidos();
-
-      // 4. LANÇAMENTO AUTOMÁTICO NO FINANCEIRO (ENTRADAS & CONTAS A RECEBER)
-      if (!Array.isArray(db.lancamentosFinanceiros)) db.lancamentosFinanceiros = [];
-
-      // 4.1 Lançamento do Sinal ou Pagamento à Vista Recebido
-      if (valorEfetivoPago > 0) {
-        db.lancamentosFinanceiros.unshift({
-          id: `LAN-${Math.floor(100 + Math.random() * 9000)}`,
-          pedidoId: pedidoOficial.id,
-          pedidoNumero: pedidoOficial.numero,
-          data: new Date().toISOString().split('T')[0],
-          tipo: "Entrada",
-          status: "Confirmado",
-          descricao: isQuitadoNaEntrada
-            ? `Quitação 100% Pedido #${pedidoOficial.numero} (${pedidoOficial.grade.total}x ${pedidoOficial.produtoNome}) via ${formaPagamentoEntrada}`
-            : `Sinal Entrada Pedido #${pedidoOficial.numero} (${pedidoOficial.grade.total}x ${pedidoOficial.produtoNome}) via ${formaPagamentoEntrada}`,
-          cliente: clienteNomeFinal,
-          valor: valorEfetivoPago,
-          formaPagamento: formaPagamentoEntrada,
-          categoria: "Vendas de Uniformes"
-        });
-      }
-
-      // 4.2 Lançamento de Contas a Receber / Parcelas do Saldo
-      if (parcelasSaldo.length > 0) {
-        parcelasSaldo.forEach(parc => {
-          db.lancamentosFinanceiros.unshift({
-            id: `LAN-${Math.floor(100 + Math.random() * 9000)}`,
-            pedidoId: pedidoOficial.id,
-            pedidoNumero: pedidoOficial.numero,
-            parcelaId: parc.id,
-            data: parc.dataVencimento,
-            tipo: valorEfetivoPago > 0 ? "A Receber" : "Venda A Faturar",
-            status: "Pendente",
-            descricao: `Saldo Parc. ${parc.numero}/${parc.totalParcelas} Pedido #${pedidoOficial.numero} (${pedidoOficial.grade.total}x ${pedidoOficial.produtoNome})`,
-            cliente: clienteNomeFinal,
-            valor: parc.valor,
-            formaPagamento: parc.formaPagamento,
-            categoria: "Vendas de Uniformes"
-          });
-        });
-      } else if (saldoRestante > 0) {
-        db.lancamentosFinanceiros.unshift({
-          id: `LAN-${Math.floor(100 + Math.random() * 9000)}`,
-          pedidoId: pedidoOficial.id,
-          pedidoNumero: pedidoOficial.numero,
-          data: pedidoOficial.dataPrevisaoEntrega || new Date().toISOString().split('T')[0],
-          tipo: valorEfetivoPago > 0 ? "A Receber" : "Venda A Faturar",
-          status: "Pendente",
-          descricao: valorEfetivoPago > 0
-            ? `Saldo a Receber Pedido #${pedidoOficial.numero} (${pedidoOficial.grade.total}x ${pedidoOficial.produtoNome})`
-            : `Venda A Faturar Pedido #${pedidoOficial.numero} (${pedidoOficial.grade.total}x ${pedidoOficial.produtoNome})`,
-          cliente: clienteNomeFinal,
-          valor: saldoRestante,
-          formaPagamento: formaPagamentoSaldo || "A Receber na Entrega",
-          categoria: "Vendas de Uniformes"
-        });
-      }
-
       // 5. Geração de OS Técnica com Prazos e Especificação de DTF
+      const temVestuarioPronto = dadosBase.itens && dadosBase.itens.some(it => it.isVestuarioPronto);
       const novaOS = {
         id: `OS-${Math.floor(8400 + db.ordensServico.length + 1)}`,
         pedidoNumero: pedidoOficial.numero,
@@ -12555,6 +12702,7 @@
         mockupUrl: mockupDataUrl,
         quantidadeTotal: pedidoOficial.grade.total,
         grade: pedidoOficial.grade,
+        isVestuarioPronto: temVestuarioPronto,
         tipoPedidoModalidade: pedidoOficial.tipoPedidoModalidade || dadosBase.tipoPedidoModalidade || 'padrao',
         jogadores: Array.isArray(pedidoOficial.jogadores) ? JSON.parse(JSON.stringify(pedidoOficial.jogadores)) : (Array.isArray(dadosBase.jogadores) ? JSON.parse(JSON.stringify(dadosBase.jogadores)) : []),
         etapaAtual: "Quarentena",
@@ -12577,10 +12725,14 @@
           ? dadosBase.itens.reduce((acc, it) => acc + (((it.consumoTecido || 0.28) * (1 + ((it.margemErroTecido || 8) / 100))) * (it.grade?.total || 0)), 0).toFixed(1)
           : (pedidoOficial.grade.total * (dadosBase.consumoRealComPerda || 0.28)).toFixed(1),
         artesAplicacao: artesLista,
-        instrucoesCorte: (dadosBase.itens && dadosBase.itens.length > 1)
-          ? `Corte múltiplo para ${dadosBase.itens.length} modelos (${pedidoOficial.grade.total} pçs no total). Consulte a grade de cada modelo nesta Ficha Técnica.`
-          : `Corte padrão para ${pedidoOficial.grade.total} peças de ${prodNomeFinal}. Cor principal: ${corFinal}.${obsCoresFinal ? ' ATENÇÃO AOS DETALHES DE COR: ' + obsCoresFinal : ''}`,
-        instrucoesCostura: `Costureira responsável: ${costureiraObj.nome}.${obsCoresFinal ? ' DETALHES DE CONFECÇÃO: ' + obsCoresFinal : ' Fechamento com fio reforçado.'}`,
+        instrucoesCorte: temVestuarioPronto
+          ? `👕 DISPENSADO CORTE: Peça pronta retirada do estoque físico (${pedidoOficial.grade.total} peças). Direcionar direto para estamparia/personalização.`
+          : ((dadosBase.itens && dadosBase.itens.length > 1)
+            ? `Corte múltiplo para ${dadosBase.itens.length} modelos (${pedidoOficial.grade.total} pçs no total). Consulte a grade de cada modelo nesta Ficha Técnica.`
+            : `Corte padrão para ${pedidoOficial.grade.total} peças de ${prodNomeFinal}. Cor principal: ${corFinal}.${obsCoresFinal ? ' ATENÇÃO AOS DETALHES DE COR: ' + obsCoresFinal : ''}`),
+        instrucoesCostura: temVestuarioPronto
+          ? `👕 DISPENSADA COSTURA: Peça pronta já confeccionada em estoque. Encaminhar para personalização (Estampa/Bordado) ou acabamento/embalagem.`
+          : `Costureira responsável: ${costureiraObj.nome}.${obsCoresFinal ? ' DETALHES DE CONFECÇÃO: ' + obsCoresFinal : ' Fechamento com fio reforçado.'}`,
         statusBordado: "Pendente",
         statusCostura: "Pendente",
         statusAcabamento: "Pendente"
@@ -12601,10 +12753,12 @@
           const itMockup = it.mockupUrl || mockupDataUrl;
           const artesMod = artesLista.filter(a => !a.modeloNome || a.modeloNome === it.produtoNome || (it.aplicacoes && it.aplicacoes.some(app => app.local === a.local)));
 
+          const itIsVestuarioPronto = !!it.isVestuarioPronto;
           subOrdens.push({
             id: `${novaOS.id}-${letra}`,
             parentOsId: novaOS.id,
             subOs: true,
+            isVestuarioPronto: itIsVestuarioPronto,
             modeloIndice: idx,
             modeloNome: it.produtoNome,
             pedidoNumero: pedidoOficial.numero,
@@ -12631,8 +12785,12 @@
             dtfLarguraRolo: pedidoOficial.dtfLarguraRolo || 58,
             tecidoConsumidoKg: ((it.consumoTecido || 0.28) * totPecas).toFixed(1),
             artesAplicacao: artesMod.length > 0 ? artesMod : artesLista,
-            instrucoesCorte: `Corte isolado para ${totPecas} peças de ${it.produtoNome} (Sub-OS ${letra} de ${dadosBase.itens.length}). Cor: ${it.corPrincipal || it.corTecido || corFinal}.${it.observacoesCoresDetalhes ? ' ATENÇÃO: ' + it.observacoesCoresDetalhes : ''}`,
-            instrucoesCostura: `Costureira responsável: ${cObj.nome}. Fechamento para ${totPecas} peças de ${it.produtoNome}. Remuneração acordada: ${formatarMoeda(valPeca)}/un (Total a Pagar: ${formatarMoeda(valPeca * totPecas)}). Fechamento confidencial.`,
+            instrucoesCorte: itIsVestuarioPronto
+              ? `👕 DISPENSADO CORTE: Peça pronta retirada do estoque físico (${totPecas} peças).`
+              : `Corte isolado para ${totPecas} peças de ${it.produtoNome} (Sub-OS ${letra} de ${dadosBase.itens.length}). Cor: ${it.corPrincipal || it.corTecido || corFinal}.${it.observacoesCoresDetalhes ? ' ATENÇÃO: ' + it.observacoesCoresDetalhes : ''}`,
+            instrucoesCostura: itIsVestuarioPronto
+              ? `👕 DISPENSADA COSTURA: Peça pronta já costurada em estoque.`
+              : `Costureira responsável: ${cObj.nome}. Fechamento para ${totPecas} peças de ${it.produtoNome}. Remuneração acordada: ${formatarMoeda(valPeca)}/un (Total a Pagar: ${formatarMoeda(valPeca * totPecas)}). Fechamento confidencial.`,
             statusBordado: "Pendente",
             statusCostura: "Pendente",
             statusAcabamento: "Pendente"
@@ -13229,6 +13387,13 @@
                   <td><strong>${os.cliente}</strong></td>
                   <td>
                     <strong>${os.produto}</strong>
+                    ${(os.isVestuarioPronto || (os.itens && os.itens.some(it => it.isVestuarioPronto))) ? `
+                      <div style="margin-top: 2px;">
+                        <span class="status-pill" style="font-size: 9.5px; padding: 1px 6px; font-weight: 700; color: #1e40af; background: #dbeafe; border: 1px solid #93c5fd; display: inline-flex; align-items: center; gap: 3px;">
+                          👕 Peça Pronta (Estoque)
+                        </span>
+                      </div>
+                    ` : ''}
                     <div style="font-size: 10.5px; color: #1e3a8a; margin-top: 2px;">
                       🎨 Cor: <strong>${os.corTecido || pOrig.corTecido || 'A Definir'}</strong>
                     </div>
@@ -16975,12 +17140,19 @@
                 <option value="Malhas e Tecidos" ${filtroCategoriaEstoque === 'Malhas e Tecidos' ? 'selected' : ''}>Malhas e Tecidos</option>
                 <option value="Aviamentos" ${filtroCategoriaEstoque === 'Aviamentos' ? 'selected' : ''}>Aviamentos</option>
                 <option value="Insumos DTF" ${filtroCategoriaEstoque === 'Insumos DTF' ? 'selected' : ''}>Insumos DTF</option>
+                <option value="Vestuário Pronto" ${filtroCategoriaEstoque === 'Vestuário Pronto' ? 'selected' : ''}>👕 Vestuário Pronto (Peças Prontas)</option>
               </select>
             </div>
           ` : ''}
         </div>
 
         <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="btn btn-secondary" id="btnEntradaVestuarioProntoTopo" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 800; color: #166534; background: #ecfdf5; border: 1.5px solid #86efac;" title="Cadastrar ou dar entrada em camisetas e vestuário pronto por grade de tamanhos">
+            <span>👕 + Entrada Peças Prontas (Estoque)</span>
+          </button>
+          <button class="btn btn-secondary" id="btnCadastrarNovoInsumoEstoqueTopo" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 800; color: #1e40af; background: #eff6ff; border: 1.5px solid #bfdbfe;" title="Cadastrar nova malha, tecido ou aviamento">
+            <span>➕ Cadastrar Tecido / Insumo</span>
+          </button>
           <button class="btn btn-secondary" id="btnDarEntradaEstoque" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             <span>+ Cadastrar Entrada</span>
@@ -17025,7 +17197,14 @@
       return `
                   <tr>
                     <td class="text-mono"><strong>${item.codigo}</strong></td>
-                    <td><strong>${item.descricao}</strong></td>
+                    <td>
+                      <strong>${item.descricao}</strong>
+                      ${(item.categoria === 'Vestuário Pronto' && item.gradeEstoque) ? `
+                        <div style="font-size: 10px; color: #047857; margin-top: 3px; font-family: monospace; background: #f0fdf4; padding: 2px 6px; border-radius: 4px; display: inline-block; border: 1px solid #bbf7d0;">
+                          Grade: ${Object.keys(item.gradeEstoque).filter(k => k !== 'total' && item.gradeEstoque[k] > 0).map(k => `${k.toUpperCase()}:${item.gradeEstoque[k]}`).join(' | ') || '0 peças'}
+                        </div>
+                      ` : ''}
+                    </td>
                     <td>${item.categoria}</td>
                     <td class="text-mono">${item.unidade}</td>
                     <td class="text-mono" style="font-weight: 800; font-size: 13.5px; color: ${estaCritico ? '#dc2626' : 'var(--text-primary)'};">
@@ -17156,6 +17335,8 @@
     });
 
     // Eventos dos Botões de Ação
+    document.getElementById('btnEntradaVestuarioProntoTopo')?.addEventListener('click', () => abrirModalEntradaVestuarioPronto());
+    document.getElementById('btnCadastrarNovoInsumoEstoqueTopo')?.addEventListener('click', () => abrirModalCadastrarNovoInsumoCatalogo(() => renderizarEstoque()));
     document.getElementById('btnDarEntradaEstoque')?.addEventListener('click', () => abrirModalEntradaEstoque());
     document.getElementById('btnDarBaixaEstoque')?.addEventListener('click', () => abrirModalBaixaEstoque());
 
@@ -17489,10 +17670,14 @@
 
             <!-- Pesquisa de Insumo no Catálogo Mestre Têxtil -->
             <div class="form-group" style="margin-bottom: 16px;">
-              <label class="form-label">
-                ${itemPreselecionado ? 'Alterar Insumo / Catálogo Têxtil' : 'Pesquisar Insumo no Catálogo Têxtil Exaustivo'}
-              </label>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label class="form-label" style="margin: 0;">
+                  ${itemPreselecionado ? 'Alterar Insumo / Catálogo Têxtil' : 'Pesquisar Insumo no Catálogo Têxtil Exaustivo'}
+                </label>
+                <button type="button" class="btn btn-secondary btn-xs" id="btnCadastrarNovoInsumoModal" style="font-size: 11px; padding: 2px 8px; font-weight: 800; color: #1e40af; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">➕ Cadastrar Novo Tecido / Insumo</button>
+              </div>
               <select id="selInsumoCatalogo" class="form-select">
+                <option value="__NOVO_INSUMO__" style="color: #1e40af; font-weight: 800; background: #eff6ff;">➕ Cadastrar Novo Tecido / Insumo...</option>
                 ${db.insumosCatalogoMestre.map(cat => `
                   <option value="${cat.id}">${cat.nome} [${cat.categoria} • ${cat.unidade}]</option>
                 `).join('')}
@@ -17842,6 +18027,481 @@
     mostrarToast(`✓ Entrada de ${qtd} ${unid} cancelada com sucesso! Saldo e financeiro estornados.`, 'green');
   }
   window.ERP.cancelarEntradaEstoque = cancelarEntradaEstoque;
+
+  
+  /**
+   * CADASTRAR NOVO INSUMO / TECIDO NO CATÁLOGO MESTRE
+   * Permite cadastrar tecidos, aviamentos, tintas ou embalagens diretamente do modal de compras
+   */
+  function abrirModalCadastrarNovoInsumoCatalogo(callback = null) {
+    if (!modalContainer) return;
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active" id="modalCadastrarInsumoOverlay" style="z-index: 999999;">
+        <div class="modal-box" style="max-width: 580px; border-radius: 14px; overflow: hidden; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.5);">
+          <div class="modal-header" style="background: linear-gradient(135deg, #0f172a, #1e3a8a); color: #fff;">
+            <div>
+              <div class="modal-title" style="color: #fff; display: flex; align-items: center; gap: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Cadastrar Novo Tecido / Insumo no Catálogo
+              </div>
+              <span style="font-size: 11px; color: #93c5fd;">Adicione novas malhas, tecidos ou aviamentos para precificação e controle de compras</span>
+            </div>
+            <button class="modal-close" style="color: #fff;" onclick="window.ERP.fecharModal(this)">&times;</button>
+          </div>
+
+          <div class="modal-body" style="padding: 20px;">
+            <div class="form-group" style="margin-bottom: 14px;">
+              <label class="form-label">Nome Completo do Insumo / Tecido *</label>
+              <input type="text" id="cadInsumoNome" class="form-input" placeholder="Ex: Meia Malha 30.1 Penteada 100% Algodão" style="font-weight: 700; font-size: 13.5px;" autofocus>
+            </div>
+
+            <div class="form-row" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label">Categoria Têxtil</label>
+                <select id="cadInsumoCategoria" class="form-select" style="font-weight: 600;">
+                  <option value="Malhas e Tecidos" selected>Malhas e Tecidos</option>
+                  <option value="Aviamentos">Aviamentos & Costura</option>
+                  <option value="Insumos DTF">Insumos DTF & Impressão</option>
+                  <option value="Embalagens e Etiquetas">Embalagens & Etiquetas</option>
+                  <option value="Outros Insumos">Outros Insumos</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label">Unidade de Medida</label>
+                <select id="cadInsumoUnidade" class="form-select" style="font-weight: 700;">
+                  <option value="kg" selected>kg (Quilogramas)</option>
+                  <option value="m">m (Metros Lineares)</option>
+                  <option value="un">un (Unidades)</option>
+                  <option value="par">par (Pares)</option>
+                  <option value="grosa">grosa (144 un)</option>
+                  <option value="litro">litro (Litros)</option>
+                  <option value="rolo">rolo (Rolos)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+              <label class="form-label">Cores Disponíveis (separadas por vírgula)</label>
+              <input type="text" id="cadInsumoCores" class="form-input" placeholder="Ex: Azul Marinho, Branco, Preto Reativo, Cinza Mescla, Vermelho" value="Preto Reativo, Branco Alvejado, Azul Marinho, Cinza Mescla, Vermelho Ferrari">
+              <span style="font-size: 10.5px; color: #64748b; margin-top: 3px; display: block;">As cores cadastradas estarão disponíveis no seletor de entrada de compras.</span>
+            </div>
+
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 12px; margin-bottom: 14px;">
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label">Preço Médio / Custo Estimado (R$)</label>
+                <input type="number" id="cadInsumoCusto" class="form-input text-mono" placeholder="48.50" step="0.50" min="0" value="48.50" style="font-weight: 700;">
+              </div>
+
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label">Fornecedor Padrão (Opcional)</label>
+                <input type="text" id="cadInsumoFornecedor" class="form-input" placeholder="Ex: Malharia Santa Catarina S.A.">
+              </div>
+            </div>
+
+            <div id="boxRendimentoInsumoKg" class="form-group" style="margin-bottom: 0; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px;">
+              <label class="form-label" style="font-size: 11.5px; color: #1e3a8a; margin-bottom: 2px;">
+                Rendimento Médio Estimado por Quilo (Peças / kg)
+              </label>
+              <input type="number" id="cadInsumoRendimento" class="form-input text-mono" value="3.5" step="0.1" min="0.5" style="width: 120px; font-weight: 700;">
+              <span style="font-size: 10.5px; color: #64748b; margin-top: 3px; display: block;">
+                💡 Usado para sugerir o consumo base em orçamentos quando este tecido for selecionado.
+              </span>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 14px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal(this)">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnSalvarNovoInsumoCatalogo" style="font-weight: 800; background: #16a34a; border-color: #16a34a;">
+              ✓ Salvar Insumo no Catálogo
+            </button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    document.getElementById('cadInsumoUnidade')?.addEventListener('change', (e) => {
+      const box = document.getElementById('boxRendimentoInsumoKg');
+      if (box) box.style.display = (e.target.value === 'kg') ? 'block' : 'none';
+    });
+
+    document.getElementById('btnSalvarNovoInsumoCatalogo')?.addEventListener('click', () => {
+      const nome = (document.getElementById('cadInsumoNome')?.value || '').trim();
+      if (!nome) {
+        mostrarToast('Por favor, informe o nome do insumo ou tecido.', 'red');
+        return;
+      }
+
+      const categoria = document.getElementById('cadInsumoCategoria')?.value || 'Malhas e Tecidos';
+      const unidade = document.getElementById('cadInsumoUnidade')?.value || 'kg';
+      const coresRaw = (document.getElementById('cadInsumoCores')?.value || '').split(',').map(s => s.trim()).filter(Boolean);
+      const cores = coresRaw.length > 0 ? coresRaw : ['Preto Reativo', 'Branco Alvejado', 'Azul Marinho'];
+      const custo = parseFloat(document.getElementById('cadInsumoCusto')?.value || 0) || 0;
+      const fornecedor = (document.getElementById('cadInsumoFornecedor')?.value || '').trim() || 'Fornecedor Têxtil';
+      const rendimento = parseFloat(document.getElementById('cadInsumoRendimento')?.value || 3.5) || 3.5;
+
+      if (!Array.isArray(db.insumosCatalogoMestre)) db.insumosCatalogoMestre = [];
+
+      const novoInsumo = {
+        id: `CAT-INS-${Date.now().toString().slice(-6)}`,
+        nome: nome,
+        unidade: unidade,
+        categoria: categoria,
+        coresDisponiveis: cores,
+        custoReferencia: custo,
+        fornecedorPadrao: fornecedor,
+        rendimentoMedioPorKg: rendimento
+      };
+
+      db.insumosCatalogoMestre.unshift(novoInsumo);
+      salvarEstado();
+      fecharModal(modalEl);
+      mostrarToast(`✓ Insumo "${nome}" cadastrado com sucesso no catálogo!`, 'green');
+
+      if (typeof callback === 'function') {
+        callback(novoInsumo);
+      }
+    });
+  }
+
+  /**
+   * ENTRADA DE VESTUÁRIO PRONTO NO ESTOQUE (CAMISETAS / PEÇAS PRONTAS)
+   * Gestão de peças lisas prontas por tamanho com conciliação contábil e financeira
+   */
+  function abrirModalEntradaVestuarioPronto(itemEstoqueId = null) {
+    if (!modalContainer) return;
+
+    const itemPre = itemEstoqueId ? (db.estoque || []).find(e => e.id === itemEstoqueId) : null;
+    const prodsBase = db.produtosBase || [];
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active" id="modalEntradaVestuarioOverlay">
+        <div class="modal-box" style="max-width: 720px; border-radius: 14px; overflow: hidden; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.5);">
+          <div class="modal-header" style="background: linear-gradient(135deg, #064e3b, #047857); color: #fff;">
+            <div>
+              <div class="modal-title" style="color: #fff; display: flex; align-items: center; gap: 8px;">
+                <span>👕</span> Entrada de Vestuário Pronto no Estoque (Camisetas / Peças Prontas)
+              </div>
+              <span style="font-size: 11px; color: #a7f3d0;">Controle físico de peças lisas prontas por tamanho com integração financeira de compras</span>
+            </div>
+            <button class="modal-close" style="color: #fff;" onclick="window.ERP.fecharModal(this)">&times;</button>
+          </div>
+
+          <div class="modal-body" style="padding: 22px; max-height: 80vh; overflow-y: auto;">
+            ${itemPre ? `
+              <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: #166534;">
+                Dando entrada complementar no item: <strong>${itemPre.descricao}</strong><br>
+                <span>Saldo atual: <strong>${itemPre.saldoAtual} un</strong> • Custo médio atual: <strong>${formatarMoeda(itemPre.custoMedioUnitario)}</strong></span>
+              </div>
+            ` : ''}
+
+            <!-- Modelo e Cor -->
+            <div class="form-row" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label">Modelo Têxtil do Vestuário *</label>
+                <select id="entVestModeloSelect" class="form-select" style="font-weight: 700;">
+                  ${prodsBase.map(p => `
+                    <option value="${p.nome}" ${itemPre && itemPre.modeloNome === p.nome ? 'selected' : ''}>${p.nome}</option>
+                  `).join('')}
+                  <option value="__OUTRO__">+ Outro Modelo Personalizado...</option>
+                </select>
+                <input type="text" id="entVestModeloCustom" class="form-input" placeholder="Digite o nome do modelo..." style="display: none; margin-top: 6px; font-weight: 700;">
+              </div>
+
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label">Cor do Vestuário / Tecido *</label>
+                <select id="entVestCorSelect" class="form-select" style="font-weight: 700;">
+                  <option value="Preto Reativo" ${itemPre && itemPre.corTecido === 'Preto Reativo' ? 'selected' : ''}>Preto Reativo</option>
+                  <option value="Branco Alvejado" ${itemPre && itemPre.corTecido === 'Branco Alvejado' ? 'selected' : ''}>Branco Alvejado</option>
+                  <option value="Azul Marinho" ${itemPre && itemPre.corTecido === 'Azul Marinho' ? 'selected' : ''}>Azul Marinho</option>
+                  <option value="Cinza Mescla" ${itemPre && itemPre.corTecido === 'Cinza Mescla' ? 'selected' : ''}>Cinza Mescla</option>
+                  <option value="Azul Royal" ${itemPre && itemPre.corTecido === 'Azul Royal' ? 'selected' : ''}>Azul Royal</option>
+                  <option value="Vermelho Ferrari" ${itemPre && itemPre.corTecido === 'Vermelho Ferrari' ? 'selected' : ''}>Vermelho Ferrari</option>
+                  <option value="Verde Militar" ${itemPre && itemPre.corTecido === 'Verde Militar' ? 'selected' : ''}>Verde Militar</option>
+                  <option value="Amarelo Canário" ${itemPre && itemPre.corTecido === 'Amarelo Canário' ? 'selected' : ''}>Amarelo Canário</option>
+                  <option value="__OUTRA__">+ Outra Cor...</option>
+                </select>
+                <input type="text" id="entVestCorCustom" class="form-input" placeholder="Nome da cor..." style="display: none; margin-top: 6px; font-weight: 700;">
+              </div>
+            </div>
+
+            <!-- Origem / Natureza -->
+            <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+              <label class="form-label" style="font-size: 11px; text-transform: uppercase; color: #475569; font-weight: 800; margin-bottom: 6px;">Origem das Peças:</label>
+              <div style="display: flex; gap: 18px; flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; font-weight: 700; color: #1e3a8a;">
+                  <input type="radio" name="radioOrigemVest" id="origemCompraExterna" value="compra" checked style="accent-color: #2563eb;">
+                  <span>🏢 Compra Externa (Camisetas Lisas Compradas de Fornecedor)</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; font-weight: 700; color: #166534;">
+                  <input type="radio" name="radioOrigemVest" id="origemProducaoPropria" value="propria" style="accent-color: #16a34a;">
+                  <span>✂️ Confecção Própria (Produzido internamente p/ Estoque)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Dados Comerciais & Financeiros -->
+            <div class="form-row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label">Custo Unitário Pago/Custo (R$)*</label>
+                <input type="number" id="entVestCustoUnit" class="form-input text-mono" value="${itemPre ? itemPre.custoMedioUnitario : 18.50}" step="0.50" min="0.01" style="font-weight: 800; font-size: 13.5px; color: #1e40af;">
+              </div>
+
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label">Preço Sugerido Venda Lisa (R$)</label>
+                <input type="number" id="entVestPrecoVenda" class="form-input text-mono" value="${itemPre?.precoVendaSugerido || 38.00}" step="0.50" min="0" style="font-weight: 700;">
+              </div>
+
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label">Fornecedor / Oficina</label>
+                <input type="text" id="entVestFornecedor" class="form-input" value="${itemPre?.fornecedorUltimo || 'Malharia Sul Distribuidora'}" placeholder="Nome do fornecedor">
+              </div>
+            </div>
+
+            <!-- Grade de Tamanhos do Lote Entrando -->
+            <div style="background: #ffffff; border: 1.5px solid #059669; border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="font-size: 12px; font-weight: 800; color: #065f46; display: flex; align-items: center; gap: 6px;">
+                  <span>📏</span> Quantidades Entrando por Tamanho (Grade Física):
+                </div>
+                <div style="font-size: 12px; font-weight: 800; color: #047857; background: #d1fae5; padding: 2px 10px; border-radius: 4px; border: 1px solid #6ee7b7;">
+                  Total: <span id="lblTotalGradeVestEntrando">0</span> peças
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; text-align: center;">
+                ${['pp', 'p', 'm', 'g', 'gg', 'xg', 'g1', 'g2'].map(tam => `
+                  <div>
+                    <div style="font-size: 10px; font-weight: 800; background: #f0fdf4; color: #065f46; padding: 3px 0; border: 1px solid #bbf7d0; border-radius: 4px 4px 0 0; text-transform: uppercase;">${tam}</div>
+                    <input type="number" class="form-input inp-grade-vest-ent" data-tam="${tam}" value="0" min="0" style="text-align: center; font-weight: 800; font-size: 13px; border-radius: 0 0 4px 4px; border-top: none; padding: 5px 2px;">
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Integração Financeira (Contas a Pagar) -->
+            <div id="boxFinanceiroVestuario" style="background: #eff6ff; border: 1.5px solid #93c5fd; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px;">
+              <label style="display: flex; align-items: center; gap: 7px; cursor: pointer; font-size: 12px; font-weight: 800; color: #1e40af; margin-bottom: 8px;">
+                <input type="checkbox" id="chkLancarContasPagarVest" checked style="accent-color: #2563eb; width: 16px; height: 16px;">
+                <span>💳 Lançar Despesa / Contas a Pagar no Financeiro</span>
+              </label>
+              <div id="subBoxFinanceiroVest" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 11px;">
+                <div>
+                  <span style="color: #475569; display: block; margin-bottom: 2px;">Valor Total da Compra:</span>
+                  <strong id="lblValorTotalCompraVest" style="font-size: 13px; color: #1e3a8a;">R$ 0,00</strong>
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 10px; margin-bottom: 2px; color: #475569;">Forma de Pagamento:</label>
+                  <select id="selFormaPagamentoVest" class="form-select" style="font-size: 11.5px; padding: 4px 8px;">
+                    <option value="Boleto 30dd">Boleto 30dd</option>
+                    <option value="Boleto À Vista">Boleto À Vista</option>
+                    <option value="PIX">PIX</option>
+                    <option value="Transferência Bancária">Transferência Bancária</option>
+                    <option value="Cartão de Crédito">Cartão de Crédito</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 10px; margin-bottom: 2px; color: #475569;">Nota Fiscal (NF-e):</label>
+                  <input type="text" id="entVestNfe" class="form-input" placeholder="Ex: NF-7890" style="font-size: 11.5px; padding: 4px 8px;">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 14px 22px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal(this)">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnSalvarEntradaVestuario" style="background: #059669; border-color: #059669; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
+              <span>✓ Confirmar Entrada de Vestuário no Estoque</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    const selMod = document.getElementById('entVestModeloSelect');
+    const inpModCust = document.getElementById('entVestModeloCustom');
+    selMod?.addEventListener('change', (e) => {
+      if (inpModCust) {
+        inpModCust.style.display = (e.target.value === '__OUTRO__') ? 'block' : 'none';
+        if (e.target.value === '__OUTRO__') inpModCust.focus();
+      }
+    });
+
+    const selCor = document.getElementById('entVestCorSelect');
+    const inpCorCust = document.getElementById('entVestCorCustom');
+    selCor?.addEventListener('change', (e) => {
+      if (inpCorCust) {
+        inpCorCust.style.display = (e.target.value === '__OUTRA__') ? 'block' : 'none';
+        if (e.target.value === '__OUTRA__') inpCorCust.focus();
+      }
+    });
+
+    function recalcularTotaisGradeVest() {
+      let total = 0;
+      document.querySelectorAll('.inp-grade-vest-ent').forEach(inp => {
+        total += parseInt(inp.value, 10) || 0;
+      });
+      const custoUnit = parseFloat(document.getElementById('entVestCustoUnit')?.value || 0) || 0;
+      const lblTot = document.getElementById('lblTotalGradeVestEntrando');
+      if (lblTot) lblTot.textContent = total;
+      const lblVal = document.getElementById('lblValorTotalCompraVest');
+      if (lblVal) lblVal.textContent = formatarMoeda(total * custoUnit);
+    }
+
+    document.querySelectorAll('.inp-grade-vest-ent').forEach(inp => {
+      inp.addEventListener('input', recalcularTotaisGradeVest);
+    });
+    document.getElementById('entVestCustoUnit')?.addEventListener('input', recalcularTotaisGradeVest);
+
+    document.getElementById('origemProducaoPropria')?.addEventListener('change', () => {
+      const chkFin = document.getElementById('chkLancarContasPagarVest');
+      if (chkFin) chkFin.checked = false;
+    });
+    document.getElementById('origemCompraExterna')?.addEventListener('change', () => {
+      const chkFin = document.getElementById('chkLancarContasPagarVest');
+      if (chkFin) chkFin.checked = true;
+    });
+
+    document.getElementById('btnSalvarEntradaVestuario')?.addEventListener('click', () => {
+      let modNome = selMod?.value || 'Camiseta Básica';
+      if (modNome === '__OUTRO__') {
+        modNome = inpModCust?.value.trim() || 'Vestuário Avulso';
+      }
+
+      let corNome = selCor?.value || 'Preto Reativo';
+      if (corNome === '__OUTRA__') {
+        corNome = inpCorCust?.value.trim() || 'Cor Personalizada';
+      }
+
+      const custoUnit = parseFloat(document.getElementById('entVestCustoUnit')?.value || 0);
+      const precoVendaSug = parseFloat(document.getElementById('entVestPrecoVenda')?.value || 0) || (custoUnit * 2);
+      const fornecedor = (document.getElementById('entVestFornecedor')?.value || '').trim() || 'Fornecedor Têxtil';
+      const nfe = (document.getElementById('entVestNfe')?.value || '').trim() || 'S/N';
+      const formaPag = document.getElementById('selFormaPagamentoVest')?.value || 'Boleto 30dd';
+      const isCompra = document.getElementById('origemCompraExterna')?.checked === true;
+      const lancarFin = document.getElementById('chkLancarContasPagarVest')?.checked === true;
+
+      const gradeEnt = {};
+      let totalQtd = 0;
+      document.querySelectorAll('.inp-grade-vest-ent').forEach(inp => {
+        const tam = inp.getAttribute('data-tam');
+        const q = parseInt(inp.value, 10) || 0;
+        gradeEnt[tam] = q;
+        totalQtd += q;
+      });
+      gradeEnt.total = totalQtd;
+
+      if (totalQtd <= 0) {
+        mostrarToast('Por favor, informe a quantidade de peças na grade de tamanhos.', 'red');
+        return;
+      }
+      if (custoUnit <= 0) {
+        mostrarToast('Informe um custo unitário válido para o vestuário.', 'red');
+        return;
+      }
+
+      if (!Array.isArray(db.estoque)) db.estoque = [];
+
+      // Procura se já existe esse modelo e cor em estoque de vestuário pronto
+      let itemExistente = itemPre || db.estoque.find(e =>
+        e.categoria === 'Vestuário Pronto' &&
+        (e.modeloNome === modNome || (e.descricao && e.descricao.toLowerCase().includes(modNome.toLowerCase()))) &&
+        (e.corTecido === corNome || (e.descricao && e.descricao.toLowerCase().includes(corNome.toLowerCase())))
+      );
+
+      let saldoAnt = 0;
+      let custoAnt = custoUnit;
+
+      if (itemExistente) {
+        saldoAnt = Number(itemExistente.saldoAtual) || 0;
+        custoAnt = Number(itemExistente.custoMedioUnitario) || custoUnit;
+        const novoSaldo = saldoAnt + totalQtd;
+        const novoCusto = ((saldoAnt * custoAnt) + (totalQtd * custoUnit)) / (novoSaldo || 1);
+
+        itemExistente.saldoAtual = novoSaldo;
+        itemExistente.custoMedioUnitario = parseFloat(novoCusto.toFixed(2));
+        itemExistente.precoVendaSugerido = precoVendaSug;
+        itemExistente.fornecedorUltimo = fornecedor;
+        itemExistente.tipo = 'vestuario_pronto';
+        itemExistente.categoria = 'Vestuário Pronto';
+        if (!itemExistente.gradeEstoque) itemExistente.gradeEstoque = {};
+
+        Object.keys(gradeEnt).forEach(t => {
+          if (t === 'total') return;
+          itemExistente.gradeEstoque[t] = (parseInt(itemExistente.gradeEstoque[t], 10) || 0) + (gradeEnt[t] || 0);
+        });
+        itemExistente.gradeEstoque.total = novoSaldo;
+      } else {
+        const slugMod = modNome.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'CAM');
+        const slugCor = corNome.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'COR');
+        const cod = `VEST-${slugMod}-${slugCor}-${Math.floor(100 + Math.random() * 900)}`;
+
+        itemExistente = {
+          id: `EST-VEST-${Date.now().toString().slice(-6)}`,
+          codigo: cod,
+          descricao: `${modNome} - ${corNome} (Peça Pronta)`,
+          modeloNome: modNome,
+          corTecido: corNome,
+          categoria: 'Vestuário Pronto',
+          tipo: 'vestuario_pronto',
+          unidade: 'un',
+          saldoAtual: totalQtd,
+          estoqueMinimo: 15,
+          custoMedioUnitario: parseFloat(custoUnit.toFixed(2)),
+          precoVendaSugerido: precoVendaSug,
+          gradeEstoque: gradeEnt,
+          fornecedorUltimo: fornecedor,
+          notaFiscal: nfe
+        };
+        db.estoque.unshift(itemExistente);
+      }
+
+      // Registra no histórico de movimentações
+      if (!Array.isArray(db.historicoEstoque)) db.historicoEstoque = [];
+      const valorTotalCompra = parseFloat((totalQtd * custoUnit).toFixed(2));
+
+      db.historicoEstoque.unshift({
+        id: `ENT-VEST-${Date.now().toString().slice(-6)}`,
+        tipo: 'Entrada',
+        itemId: itemExistente.id,
+        itemCodigo: itemExistente.codigo,
+        itemDescricao: itemExistente.descricao,
+        quantidade: totalQtd,
+        unidade: 'un',
+        custoUnitario: custoUnit,
+        valorTotal: valorTotalCompra,
+        saldoAnterior: saldoAnt,
+        novoSaldo: itemExistente.saldoAtual,
+        grade: gradeEnt,
+        motivo: `Entrada de Vestuário Pronto (${isCompra ? 'Compra Fornecedor NF ' + nfe : 'Confecção Própria'})`,
+        fornecedor: fornecedor,
+        responsavel: 'Almoxarifado / Estoque',
+        data: new Date().toISOString()
+      });
+
+      // Se for compra externa com lançamento financeiro
+      if (isCompra && lancarFin && valorTotalCompra > 0) {
+        if (!Array.isArray(db.lancamentosFinanceiros)) db.lancamentosFinanceiros = [];
+        db.lancamentosFinanceiros.unshift({
+          id: `LAN-VEST-${Date.now().toString().slice(-6)}`,
+          data: new Date().toISOString().split('T')[0],
+          tipo: "Saida",
+          descricao: `Compra de Vestuário Pronto: ${totalQtd}x ${modNome} (${corNome}) NF: ${nfe}`,
+          cliente: fornecedor,
+          valor: valorTotalCompra,
+          formaPagamento: formaPag,
+          categoria: "Compra de Mercadorias para Estoque",
+          centroCusto: "CC-06"
+        });
+      }
+
+      salvarEstado();
+      fecharModal(modalEl);
+      renderizarEstoque();
+      mostrarToast(`✓ Entrada de ${totalQtd} peças de ${modNome} (${corNome}) registrada com sucesso no estoque!`, 'green');
+    });
+  }
 
   /* ==========================================================================
      MÓDULO 6: PRODUTOS & CATÁLOGO DE MODELAGEM COMPLETO (28 MODELOS)
@@ -29972,6 +30632,8 @@
     abrirModalInspecaoQuarentena,
     abrirModalReceberPagamento,
     abrirModalEntradaEstoque,
+    abrirModalEntradaVestuarioPronto,
+    abrirModalCadastrarNovoInsumoCatalogo,
     abrirModalBaixaEstoque,
     abrirModalEditarFinanceiro,
     abrirModalEditarCapacidades,
