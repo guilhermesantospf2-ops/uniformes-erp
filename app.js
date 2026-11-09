@@ -8434,37 +8434,47 @@
         it.utilizarEstoque = false;
         it.estoqueItemId = '';
       }
-      it.custoTecidoKg = lerInputNumDom('inputCustoTecido', numOuPadrao(padroes.custoTecidoKg, 48.50));
-      let consumoLido = lerInputNumDom('inputConsumoTecido', 0.28);
-      // Se digitou em gramas (> 10, ex: 280), converte automaticamente para kg (0.28)
-      if (it.unidadeTecido !== 'metro' && consumoLido > 10) {
-        consumoLido = parseFloat((consumoLido / 1000).toFixed(3));
-        const inpCons = document.getElementById('inputConsumoTecido');
-        if (inpCons) inpCons.value = consumoLido.toFixed(2);
-      }
+      if (it.isVestuarioPronto || modoOrigem === 'vestuario_pronto') {
+        it.isVestuarioPronto = true;
+        it.custoTecidoKg = 0;
+        it.consumoTecido = 0;
+        it.margemErroTecido = 0;
+        it.custoAviamento = 0;
+        it.custoCostura = 0;
+        delete it.consumosCustomizadosPorTamanho;
+      } else {
+        it.custoTecidoKg = lerInputNumDom('inputCustoTecido', numOuPadrao(padroes.custoTecidoKg, 48.50));
+        let consumoLido = lerInputNumDom('inputConsumoTecido', 0.28);
+        // Se digitou em gramas (> 10, ex: 280), converte automaticamente para kg (0.28)
+        if (it.unidadeTecido !== 'metro' && consumoLido > 10) {
+          consumoLido = parseFloat((consumoLido / 1000).toFixed(3));
+          const inpCons = document.getElementById('inputConsumoTecido');
+          if (inpCons) inpCons.value = consumoLido.toFixed(2);
+        }
 
-      const anteriorConsumo = numOuPadrao(it.consumoTecido, 0.28);
-      if (Math.abs(consumoLido - anteriorConsumo) > 0.0001) {
-        it.consumoTecido = consumoLido;
-        // Se já possui consumos customizados por tamanho, escala proporcionalmente ou zera se consumoLido === 0
-        if (it.consumosCustomizadosPorTamanho) {
-          if (consumoLido === 0) {
-            delete it.consumosCustomizadosPorTamanho;
-          } else if (anteriorConsumo > 0) {
-            const escala = consumoLido / anteriorConsumo;
-            if (escala > 0 && Math.abs(escala - 1.0) > 0.001) {
-              Object.keys(it.consumosCustomizadosPorTamanho).forEach(tam => {
-                it.consumosCustomizadosPorTamanho[tam] = parseFloat((it.consumosCustomizadosPorTamanho[tam] * escala).toFixed(3));
-              });
+        const anteriorConsumo = numOuPadrao(it.consumoTecido, 0.28);
+        if (Math.abs(consumoLido - anteriorConsumo) > 0.0001) {
+          it.consumoTecido = consumoLido;
+          // Se já possui consumos customizados por tamanho, escala proporcionalmente ou zera se consumoLido === 0
+          if (it.consumosCustomizadosPorTamanho) {
+            if (consumoLido === 0) {
+              delete it.consumosCustomizadosPorTamanho;
+            } else if (anteriorConsumo > 0) {
+              const escala = consumoLido / anteriorConsumo;
+              if (escala > 0 && Math.abs(escala - 1.0) > 0.001) {
+                Object.keys(it.consumosCustomizadosPorTamanho).forEach(tam => {
+                  it.consumosCustomizadosPorTamanho[tam] = parseFloat((it.consumosCustomizadosPorTamanho[tam] * escala).toFixed(3));
+                });
+              }
             }
           }
+        } else {
+          it.consumoTecido = consumoLido;
         }
-      } else {
-        it.consumoTecido = consumoLido;
+        it.margemErroTecido = lerInputNumDom('inputMargemErroTecido', 8.0);
+        it.custoAviamento = lerInputNumDom('inputCustoAviamento', 4.80);
+        it.custoCostura = lerInputNumDom('inputCustoCostura', 7.50);
       }
-      it.margemErroTecido = lerInputNumDom('inputMargemErroTecido', 8.0);
-      it.custoAviamento = lerInputNumDom('inputCustoAviamento', 4.80);
-      it.custoCostura = lerInputNumDom('inputCustoCostura', 7.50);
       it.precoVendaUnitario = lerInputNumDom('inputPrecoPretendido', 58.00);
       it.margemDesejada = lerInputNumDom('inputMargemDesejada', 30.0);
       it.aliquotaImposto = lerInputNumDom('inputAliquotaImposto', 6.5);
@@ -9010,19 +9020,26 @@
       if (lblCons) lblCons.textContent = isMet ? 'Consumo Base M (m/un)' : 'Consumo Base M (kg/un)';
 
       // Custos
-      const custoTecVal = numOuPadrao(it.custoTecidoKg, numOuPadrao(padroes.custoTecidoKg, 48.50));
-      const consumoVal = numOuPadrao(it.consumoTecido, isMet ? 0.75 : 0.28);
+      const isVest = !!it.isVestuarioPronto;
+      const custoTecVal = isVest ? 0 : numOuPadrao(it.custoTecidoKg, numOuPadrao(padroes.custoTecidoKg, 48.50));
+      const consumoVal = isVest ? 0 : numOuPadrao(it.consumoTecido, isMet ? 0.75 : 0.28);
       const inpTec = document.getElementById('inputCustoTecido');
-      if (inpTec) inpTec.value = formatarMoedaInput(custoTecVal);
+      if (inpTec) {
+        inpTec.value = formatarMoedaInput(custoTecVal);
+        inpTec.disabled = isVest;
+      }
       const inpCons = document.getElementById('inputConsumoTecido');
-      if (inpCons) inpCons.value = consumoVal.toFixed(2);
+      if (inpCons) {
+        inpCons.value = consumoVal.toFixed(2);
+        inpCons.disabled = isVest;
+      }
       const badgeGramas = document.getElementById('badgeConsumoEquivGramas');
       if (badgeGramas) {
-        badgeGramas.textContent = isMet ? `${consumoVal.toFixed(2)}m` : `${Math.round(consumoVal * 1000)}g`;
+        badgeGramas.textContent = isVest ? '0g' : (isMet ? `${consumoVal.toFixed(2)}m` : `${Math.round(consumoVal * 1000)}g`);
       }
       const spanDica = document.getElementById('spanConsumoGramasDica');
       if (spanDica) {
-        spanDica.textContent = isMet ? 'Metros lineares tam M' : `${Math.round(consumoVal * 1000)}g = ${consumoVal.toFixed(2)} kg`;
+        spanDica.textContent = isVest ? '0g = 0.00 kg (Peça Pronta de Estoque - Dispensado)' : (isMet ? 'Metros lineares tam M' : `${Math.round(consumoVal * 1000)}g = ${consumoVal.toFixed(2)} kg`);
       }
       const lblUnidadeBase = document.getElementById('labelUnidadeConsumoBase');
       if (lblUnidadeBase) {
@@ -9031,14 +9048,23 @@
       const badgePonderado = document.getElementById('badgeConsumoPonderadoReal');
       if (badgePonderado) {
         const totalGrade = it.grade?.total || 0;
-        badgePonderado.style.display = totalGrade > 0 ? 'inline-block' : 'none';
+        badgePonderado.style.display = (!isVest && totalGrade > 0) ? 'inline-block' : 'none';
       }
       const inpMarg = document.getElementById('inputMargemErroTecido');
-      if (inpMarg) inpMarg.value = numOuPadrao(it.margemErroTecido, 8.0).toFixed(1);
+      if (inpMarg) {
+        inpMarg.value = isVest ? '0.0' : numOuPadrao(it.margemErroTecido, 8.0).toFixed(1);
+        inpMarg.disabled = isVest;
+      }
       const inpAv = document.getElementById('inputCustoAviamento');
-      if (inpAv) inpAv.value = formatarMoedaInput(numOuPadrao(it.custoAviamento, 4.80));
+      if (inpAv) {
+        inpAv.value = formatarMoedaInput(isVest ? 0 : numOuPadrao(it.custoAviamento, 4.80));
+        inpAv.disabled = isVest;
+      }
       const inpCost = document.getElementById('inputCustoCostura');
-      if (inpCost) inpCost.value = formatarMoedaInput(numOuPadrao(it.custoCostura, 7.50));
+      if (inpCost) {
+        inpCost.value = formatarMoedaInput(isVest ? 0 : numOuPadrao(it.custoCostura, 7.50));
+        inpCost.disabled = isVest;
+      }
 
       // Preço e Margem
       const inpPrec = document.getElementById('inputPrecoPretendido');
@@ -10173,7 +10199,7 @@
       let rendimentoPecasPorKg = 0;
       let totalKgTecido = 0;
 
-      if (itAtivo.isVestuarioPronto && itAtivo.custoUnitarioEstoque) {
+      if (itAtivo.isVestuarioPronto) {
         custoTecidoUnitario = Number(itAtivo.custoUnitarioEstoque) || 0;
         consumoTotalTecidoModelo = 0;
         consumoRealComPerdaMedio = 0;
@@ -10183,8 +10209,21 @@
         itAtivo.consumoUnitarioPonderado = 0;
         itAtivo.custoTecidoUnitarioPonderado = custoTecidoUnitario;
         itAtivo.custoCostura = 0;
+        itAtivo.custoAviamento = 0;
+        itAtivo.custoTecidoKg = 0;
+        itAtivo.consumoTecido = 0;
+        itAtivo.margemErroTecido = 0;
+
         const inpCostura = document.getElementById('inputCustoCostura');
-        if (inpCostura) inpCostura.value = '0,00';
+        if (inpCostura) { inpCostura.value = '0,00'; inpCostura.disabled = true; }
+        const inpCons = document.getElementById('inputConsumoTecido');
+        if (inpCons) { inpCons.value = '0.00'; inpCons.disabled = true; }
+        const inpTec = document.getElementById('inputCustoTecido');
+        if (inpTec) { inpTec.value = '0,00'; inpTec.disabled = true; }
+        const inpAv = document.getElementById('inputCustoAviamento');
+        if (inpAv) { inpAv.value = '0,00'; inpAv.disabled = true; }
+        const inpMarg = document.getElementById('inputMargemErroTecido');
+        if (inpMarg) { inpMarg.value = '0.0'; inpMarg.disabled = true; }
       } else {
         consumoRealComPerdaMedio = totalPecasGrade > 0 ? (consumoTotalTecidoModelo / totalPecasGrade) : (consumoBaseM * fatorPerda);
         custoTecidoUnitario = totalPecasGrade > 0 ? (custoTotalTecidoModelo / totalPecasGrade) : (consumoRealComPerdaMedio * precoKgAtivo);
@@ -10613,24 +10652,59 @@
 
         const it = itensOrcamento[itemAtivoIndex];
         if (it) {
-          if (modo === 'vestuario_pronto') {
-            it.isVestuarioPronto = true;
+          const isVest = (modo === 'vestuario_pronto');
+          it.isVestuarioPronto = isVest;
+
+          const inpTec = document.getElementById('inputCustoTecido');
+          const inpCons = document.getElementById('inputConsumoTecido');
+          const inpMarg = document.getElementById('inputMargemErroTecido');
+          const inpAv = document.getElementById('inputCustoAviamento');
+          const inpCost = document.getElementById('inputCustoCostura');
+          const badgeGramas = document.getElementById('badgeConsumoEquivGramas');
+          const spanDica = document.getElementById('spanConsumoGramasDica');
+          const badgePonderado = document.getElementById('badgeConsumoPonderadoReal');
+
+          if (isVest) {
             it.utilizarEstoque = true;
+            it.custoTecidoKg = 0;
+            it.consumoTecido = 0;
+            it.margemErroTecido = 0;
+            it.custoAviamento = 0;
+            it.custoCostura = 0;
+
+            if (inpTec) { inpTec.value = '0,00'; inpTec.disabled = true; }
+            if (inpCons) { inpCons.value = '0.00'; inpCons.disabled = true; }
+            if (inpMarg) { inpMarg.value = '0.0'; inpMarg.disabled = true; }
+            if (inpAv) { inpAv.value = '0,00'; inpAv.disabled = true; }
+            if (inpCost) { inpCost.value = '0,00'; inpCost.disabled = true; }
+            if (badgeGramas) badgeGramas.textContent = '0g';
+            if (spanDica) spanDica.textContent = '0g = 0.00 kg (Peça Pronta de Estoque - Dispensado)';
+            if (badgePonderado) badgePonderado.style.display = 'none';
+
             const selV = document.getElementById('selEstoqueVestuarioAlvo');
             if (selV && selV.value) {
               selV.dispatchEvent(new Event('change'));
             }
           } else if (modo === 'tecido_estoque') {
-            it.isVestuarioPronto = false;
             it.utilizarEstoque = true;
+            if (inpTec) inpTec.disabled = false;
+            if (inpCons) inpCons.disabled = false;
+            if (inpMarg) inpMarg.disabled = false;
+            if (inpAv) inpAv.disabled = false;
+            if (inpCost) inpCost.disabled = false;
+
             const selT = document.getElementById('selEstoqueItemAlvo');
             if (selT && selT.value) {
               selT.dispatchEvent(new Event('change'));
             }
           } else {
-            it.isVestuarioPronto = false;
             it.utilizarEstoque = false;
             it.estoqueItemId = '';
+            if (inpTec) inpTec.disabled = false;
+            if (inpCons) inpCons.disabled = false;
+            if (inpMarg) inpMarg.disabled = false;
+            if (inpAv) inpAv.disabled = false;
+            if (inpCost) inpCost.disabled = false;
           }
         }
         sincronizarItemAtivoDoDOM();
