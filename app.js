@@ -1063,8 +1063,8 @@
       </div>
     `);
 
-    document.getElementById('btnFecharModalNovaCor')?.addEventListener('click', () => modalEl.remove());
-    document.getElementById('btnCancelarNovaCor')?.addEventListener('click', () => modalEl.remove());
+    document.getElementById('btnFecharModalNovaCor')?.addEventListener('click', () => fecharModal(modalEl));
+    document.getElementById('btnCancelarNovaCor')?.addEventListener('click', () => fecharModal(modalEl));
 
     const inpNome = document.getElementById('inpNovaCorNome');
     const inpPicker = document.getElementById('inpNovaCorPicker');
@@ -1160,7 +1160,7 @@
         newChip.click();
       }
 
-      modalEl.remove();
+      fecharModal(modalEl);
     });
   }
 
@@ -3472,7 +3472,15 @@
 
   // Trava e destrava a rolagem do fundo (body / tela anterior) quando houver modais abertos
   function atualizarTravaScrollFundo() {
-    const overlays = document.querySelectorAll('.modal-overlay');
+    // 1. Limpa da pilha elementos que foram removidos do DOM por qualquer motivo
+    for (let i = modalPilha.length - 1; i >= 0; i--) {
+      if (!modalPilha[i] || !modalPilha[i].isConnected) {
+        modalPilha.splice(i, 1);
+      }
+    }
+
+    // 2. Verifica se há modais conectados e visíveis no DOM
+    const overlays = Array.from(document.querySelectorAll('.modal-overlay')).filter(el => el.isConnected && getComputedStyle(el).display !== 'none');
     const temModal = (modalPilha && modalPilha.length > 0) || (overlays && overlays.length > 0);
     if (temModal) {
       if (!document.body.classList.contains('modal-aberto')) {
@@ -3514,6 +3522,18 @@
     if (nivel > 0) {
       modalEl.classList.add('modal-camada-filha');
     }
+
+    // Blindagem de ciclo de vida: se qualquer rotina invocar modalEl.remove(),
+    // garante a remoção da pilha de modais e a restauração imediata dos cliques do sistema
+    const originalRemove = modalEl.remove.bind(modalEl);
+    modalEl.remove = function() {
+      const idx = modalPilha.indexOf(modalEl);
+      if (idx !== -1) {
+        modalPilha.splice(idx, 1);
+      }
+      originalRemove();
+      atualizarTravaScrollFundo();
+    };
 
     // Registra na pilha e adiciona ao container no DOM
     modalPilha.push(modalEl);
@@ -9836,10 +9856,10 @@
         });
       });
 
-      document.getElementById('btnFecharModalDetalhamento')?.addEventListener('click', () => modalEl.remove());
-      document.getElementById('btnCancelarDetalhamento')?.addEventListener('click', () => modalEl.remove());
+      document.getElementById('btnFecharModalDetalhamento')?.addEventListener('click', () => fecharModal(modalEl));
+      document.getElementById('btnCancelarDetalhamento')?.addEventListener('click', () => fecharModal(modalEl));
       document.getElementById('btnVoltarEPreencherGrade')?.addEventListener('click', () => {
-        modalEl.remove();
+        fecharModal(modalEl);
         const primeiroCampo = document.getElementById('gradeP') || document.getElementById('gradeM') || document.getElementById('gradeTotal');
         if (primeiroCampo) {
           primeiroCampo.focus();
@@ -9924,7 +9944,7 @@
         }
 
         recalcularBenchmarkModal();
-        modalEl.remove();
+        fecharModal(modalEl);
         mostrarToast('Consumos e custos por tamanho salvos e recalculados no pedido!', 'green');
       });
     }
@@ -17824,8 +17844,8 @@
       </div>
     `);
 
-    document.getElementById('btnFecharModalEditarModelo')?.addEventListener('click', () => modalEl.remove());
-    document.getElementById('btnCancelarEditarModelo')?.addEventListener('click', () => modalEl.remove());
+    document.getElementById('btnFecharModalEditarModelo')?.addEventListener('click', () => fecharModal(modalEl));
+    document.getElementById('btnCancelarEditarModelo')?.addEventListener('click', () => fecharModal(modalEl));
 
     configurarEventosGradeConsumosForm(modalEl, 'editmod', isMetrosInicial);
     configurarEventosAviamentosForm(modalEl, 'editmod');
@@ -17885,7 +17905,7 @@
       prod.aviamentosPadrao = extrairAviamentosForm(modalEl, 'editmod');
 
       salvarEstado();
-      modalEl.remove();
+      fecharModal(modalEl);
       mostrarToast(`Modelagem "${prod.nome}" e consumos em gramas salvos com sucesso!`, 'green');
       if (callback) callback(prod);
     });
@@ -17987,8 +18007,8 @@
       </div>
     `);
 
-    document.getElementById('btnFecharModalNovoModelo')?.addEventListener('click', () => modalEl.remove());
-    document.getElementById('btnCancelarNovoModelo')?.addEventListener('click', () => modalEl.remove());
+    document.getElementById('btnFecharModalNovoModelo')?.addEventListener('click', () => fecharModal(modalEl));
+    document.getElementById('btnCancelarNovoModelo')?.addEventListener('click', () => fecharModal(modalEl));
 
     configurarEventosGradeConsumosForm(modalEl, 'cadmod', false);
     configurarEventosAviamentosForm(modalEl, 'cadmod');
@@ -18049,7 +18069,7 @@
 
       db.produtosBase.unshift(novoMod);
       salvarEstado();
-      modalEl.remove();
+      fecharModal(modalEl);
       mostrarToast(`Modelo "${novoMod.nome}" cadastrado com sucesso com grade de consumo!`, 'green');
       if (callback) callback(novoMod);
     });
