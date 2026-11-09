@@ -18082,11 +18082,6 @@
               </div>
             </div>
 
-            <div class="form-group" style="margin-bottom: 14px;">
-              <label class="form-label">Cores Disponíveis (separadas por vírgula)</label>
-              <input type="text" id="cadInsumoCores" class="form-input" placeholder="Ex: Azul Marinho, Branco, Preto Reativo, Cinza Mescla, Vermelho" value="Preto Reativo, Branco Alvejado, Azul Marinho, Cinza Mescla, Vermelho Ferrari">
-              <span style="font-size: 10.5px; color: #64748b; margin-top: 3px; display: block;">As cores cadastradas estarão disponíveis no seletor de entrada de compras.</span>
-            </div>
 
             <div class="form-row" style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 12px; margin-bottom: 14px;">
               <div class="form-group" style="margin: 0;">
@@ -18135,8 +18130,6 @@
 
       const categoria = document.getElementById('cadInsumoCategoria')?.value || 'Malhas e Tecidos';
       const unidade = document.getElementById('cadInsumoUnidade')?.value || 'kg';
-      const coresRaw = (document.getElementById('cadInsumoCores')?.value || '').split(',').map(s => s.trim()).filter(Boolean);
-      const cores = coresRaw.length > 0 ? coresRaw : ['Preto Reativo', 'Branco Alvejado', 'Azul Marinho'];
       const custo = parseFloat(document.getElementById('cadInsumoCusto')?.value || 0) || 0;
       const fornecedor = (document.getElementById('cadInsumoFornecedor')?.value || '').trim() || 'Fornecedor Têxtil';
       const rendimento = parseFloat(document.getElementById('cadInsumoRendimento')?.value || 3.5) || 3.5;
@@ -18148,7 +18141,6 @@
         nome: nome,
         unidade: unidade,
         categoria: categoria,
-        coresDisponiveis: cores,
         custoReferencia: custo,
         fornecedorPadrao: fornecedor,
         rendimentoMedioPorKg: rendimento
