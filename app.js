@@ -661,6 +661,9 @@
             p.jogadores = [];
             p.tipoPedidoModalidade = 'padrao';
           }
+          if (String(p.numero) === '104') {
+            p.quantidadeTotal = (p.grade && p.grade.total) ? p.grade.total : (somaTotalItens || 36);
+          }
         }
       });
     }
@@ -685,6 +688,15 @@
             }
           });
         }
+      });
+      const vistosOSMemoria = new Set();
+      banco.ordensServico = banco.ordensServico.filter(os => {
+        if (!os) return false;
+        if (os.subOs) return true;
+        const chave = String(os.pedidoNumero || os.id);
+        if (vistosOSMemoria.has(chave)) return false;
+        vistosOSMemoria.add(chave);
+        return true;
       });
     }
     setTimeout(() => verificarCicloVidaMockups7Dias(banco), 500);
@@ -1219,6 +1231,8 @@
   let abaAtiva = 'abertura';
   let visualizacaoPedidos = 'tabela'; // 'tabela' ou 'kanban'
   let ordenacaoPedidos = 'desc'; // 'desc' (mais recentes primeiro) ou 'asc' (mais antigos primeiro)
+  let filtroOSStatus = 'ATIVOS'; // 'ATIVOS' (pré-selecionado padrão), 'CANCELADOS', 'TODOS'
+  let filtroOSBusca = '';
   let visualizacaoEstoque = 'saldos'; // 'saldos' ou 'historico'
   let filtroBuscaEstoque = '';
   let filtroCategoriaEstoque = 'todos';
@@ -12628,6 +12642,14 @@
         novaOS.subOrdensGeradas = subOrdens.map(s => s.id);
         db.ordensServico.unshift(...subOrdens);
       }
+      const idxExistenteNovaOS = (db.ordensServico || []).findIndex(o => !o.subOs && String(o.pedidoNumero) === String(pedidoOficial.numero));
+      if (idxExistenteNovaOS !== -1) {
+        novaOS.id = db.ordensServico[idxExistenteNovaOS].id;
+        if (db.ordensServico[idxExistenteNovaOS].etapaAtual && db.ordensServico[idxExistenteNovaOS].etapaAtual !== 'Quarentena') {
+          novaOS.etapaAtual = db.ordensServico[idxExistenteNovaOS].etapaAtual;
+        }
+        db.ordensServico = db.ordensServico.filter(o => String(o.pedidoNumero) !== String(pedidoOficial.numero));
+      }
       db.ordensServico.unshift(novaOS);
 
       // 6. Adiciona artes para a fila do Nesting DTF automaticamente
@@ -13134,25 +13156,26 @@
   /* ==========================================================================
      MÓDULO 3: OS & FICHAS TÉCNICAS (OFICINA & CHÃO DE FÁBRICA)
      ========================================================================== */
-  function renderizarOrdensServico() {
-    pageTitleElem.textContent = 'Ordens de Serviço & Fichas Técnicas';
-    pageBreadcrumbElem.textContent = 'SISTEMA > OS & FICHAS TÉCNICAS';
-
-    contentArea.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-        <div>
-          <p style="color: var(--text-gray-500); margin: 0;">Fichas de produção com especificações de corte, costureira designada, consumo de malha e artes.</p>
+  function renderizarTabelaOrdensServicoHtml(listaOS) {
+    if (!listaOS.length) {
+      return `
+        <div class="table-wrapper">
+          <table class="erp-table">
+            <tbody>
+              <tr>
+                <td colspan="11" style="text-align: center; padding: 45px 20px; color: var(--text-gray-500);">
+                  <div style="font-size: 14px; font-weight: 700; color: #475569; margin-bottom: 6px;">Nenhuma Ordem de Serviço encontrada para o filtro selecionado</div>
+                  <div style="font-size: 12px; color: #94a3b8;">Altere os filtros acima para visualizar ordens ativas, canceladas ou todos os registros.</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span class="status-pill status-gray text-mono">${(db.ordensServico || []).length} Fichas de Produção Ativas</span>
-          <button class="btn btn-primary btn-sm" id="btnEmitirNovaOSTopo" style="font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            Emitir Nova OS / Ficha Técnica
-          </button>
-        </div>
-      </div>
+      `;
+    }
 
-<div class="table-wrapper">
+    return `
+      <div class="table-wrapper">
         <table class="erp-table">
           <thead>
             <tr>
@@ -13170,9 +13193,9 @@
             </tr>
           </thead>
           <tbody>
-            ${db.ordensServico.length ? db.ordensServico.map(os => {
-      const mockup = os.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(os.produto, "#1e3a8a", "#ffffff", os.cliente.substring(0, 6));
-      const pOrig = (db.pedidos || []).find(x => (x.numero != null && os.pedidoNumero != null && x.numero.toString() === os.pedidoNumero.toString()) || (x.id && (x.id === os.pedidoId || x.id === os.pedidoNumero))) || {};
+            ${listaOS.map(os => {
+      const mockup = os.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(os.produto, "#1e3a8a", "#ffffff", (os.cliente || '').substring(0, 6));
+      const pOrig = (db.pedidos || []).find(x => (x.numero != null && os.pedidoNumero != null && String(x.numero) === String(os.pedidoNumero)) || (x.id && (x.id === os.pedidoId || x.id === os.pedidoNumero))) || {};
       const listaJogOS = (os.jogadores && os.jogadores.length > 0) ? os.jogadores : (pOrig.jogadores || []);
       const countdown = calcularContagemRegressivaPedido(pOrig.id ? pOrig : {
         dataPrevisaoEntrega: os.dataPrevisaoEntrega,
@@ -13233,7 +13256,7 @@
                   </td>
                   <td><strong>${os.costureiraDesignada}</strong></td>
                   <td>
-                    <span class="status-pill status-green">${os.etapaAtual.toUpperCase()}</span>
+                    <span class="status-pill ${(os.etapaAtual === 'Cancelada' || os.status === 'Cancelada' || pOrig.status === 'Cancelado') ? 'status-red' : 'status-green'}">${(os.etapaAtual || 'Corte').toUpperCase()}</span>
                   </td>
                   <td class="text-mono">${os.tecidoConsumidoKg} kg/m</td>
                   <td>
@@ -13267,37 +13290,107 @@
                   </td>
                 </tr>
               `;
-    }).join('') : `
-              <tr>
-                <td colspan="11" style="text-align: center; padding: 40px 20px; color: var(--text-gray-500);">
-                  Nenhuma Ordem de Serviço na oficina. Conforme os pedidos forem aprovados, as OS industriais com fichas técnicas A4 serão geradas automaticamente aqui.
-                </td>
-              </tr>
-            `}
+    }).join('')}
           </tbody>
         </table>
       </div>
     `;
+  }
 
+  function renderizarOrdensServico() {
+    pageTitleElem.textContent = 'Ordens de Serviço & Fichas Técnicas';
+    pageBreadcrumbElem.textContent = 'SISTEMA > OS & FICHAS TÉCNICAS';
+
+    contentArea.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <input type="text" id="filtroOSBuscaInput" class="form-input" style="width: 250px;" placeholder="Buscar cliente, nº pedido ou OS..." value="${filtroOSBusca || ''}">
+          <select id="filtroOSStatusSelect" class="form-select" style="width: 235px; font-weight: 700;">
+            <option value="ATIVOS" ${filtroOSStatus === 'ATIVOS' ? 'selected' : ''}>⚡ Pedidos Ativos (Padrão)</option>
+            <option value="CANCELADOS" ${filtroOSStatus === 'CANCELADOS' ? 'selected' : ''}>🚫 Apenas Cancelados</option>
+            <option value="TODOS" ${filtroOSStatus === 'TODOS' ? 'selected' : ''}>📋 Todas as Ordens (Tudo)</option>
+          </select>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="status-pill status-gray text-mono" id="contadorFichasOSTopo">0 Fichas</span>
+          <button class="btn btn-primary btn-sm" id="btnEmitirNovaOSTopo" style="font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Emitir Nova OS / Ficha Técnica
+          </button>
+        </div>
+      </div>
+
+      <div id="osContainerVisualizacao"></div>
+    `;
+
+    function aplicarFiltrosOS() {
+      const termo = (document.getElementById('filtroOSBuscaInput')?.value || filtroOSBusca || '').toLowerCase().trim();
+      const statusSel = document.getElementById('filtroOSStatusSelect')?.value || filtroOSStatus || 'ATIVOS';
+      filtroOSBusca = termo;
+      filtroOSStatus = statusSel;
+
+      const todasOS = Array.isArray(db.ordensServico) ? db.ordensServico : [];
+
+      // Deduplicação defensiva de OSs duplicadas não-repartidas para o mesmo pedido
+      const vistos = new Set();
+      const ordensBase = todasOS.filter(os => {
+        if (!os) return false;
+        if (os.subOs) return true;
+        const chave = String(os.pedidoNumero || os.id);
+        if (vistos.has(chave)) return false;
+        vistos.add(chave);
+        return true;
+      });
+
+      const filtradas = ordensBase.filter(os => {
+        const pOrig = (db.pedidos || []).find(x =>
+          (x.numero != null && os.pedidoNumero != null && String(x.numero) === String(os.pedidoNumero)) ||
+          (x.id && (x.id === os.pedidoId || String(x.id) === String(os.pedidoNumero)))
+        ) || {};
+
+        const isCancelado = os.status === 'Cancelado' || os.status === 'Cancelada' || os.etapaAtual === 'Cancelada' || os.etapaAtual === 'Cancelado' || pOrig.status === 'Cancelado';
+
+        if (statusSel === 'ATIVOS' && isCancelado) return false;
+        if (statusSel === 'CANCELADOS' && !isCancelado) return false;
+
+        if (termo) {
+          const str = `${os.id} ${os.pedidoNumero} ${os.cliente} ${os.produto} ${os.costureiraDesignada || ''} ${os.corTecido || pOrig.corTecido || ''}`.toLowerCase();
+          if (!str.includes(termo)) return false;
+        }
+
+        return true;
+      });
+
+      const badgeTopo = document.getElementById('contadorFichasOSTopo');
+      if (badgeTopo) {
+        badgeTopo.textContent = `${filtradas.length} Fichas ${statusSel === 'ATIVOS' ? 'Ativas' : (statusSel === 'CANCELADOS' ? 'Canceladas' : 'Totais')}`;
+      }
+
+      const container = document.getElementById('osContainerVisualizacao');
+      if (container) {
+        container.innerHTML = renderizarTabelaOrdensServicoHtml(filtradas);
+        configurarEventosTabelaOS();
+      }
+    }
+
+    function configurarEventosTabelaOS() {
+      document.querySelectorAll('.btn-imprimir-os').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-id');
+          abrirFichaTecnica(id);
+        });
+      });
+    }
+
+    document.getElementById('filtroOSBuscaInput')?.addEventListener('input', aplicarFiltrosOS);
+    document.getElementById('filtroOSStatusSelect')?.addEventListener('change', aplicarFiltrosOS);
     document.getElementById('btnEmitirNovaOSTopo')?.addEventListener('click', () => {
       abrirModalSelecionarPedidoParaOS();
     });
 
-    document.querySelectorAll('.btn-imprimir-os').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-id');
-        abrirFichaTecnica(id);
-      });
-    });
+    aplicarFiltrosOS();
   }
 
-  /**
-   * FORMATAÇÃO DE TAMANHO DE ARQUIVOS (BYTES -> KB / MB)
-   */
-
-  /**
-   * MODAL SELETOR DE EMISSÃO RÁPIDA DE ORDEM DE SERVIÇO (OS INDUSTRIAL)
-   */
   function abrirModalSelecionarPedidoParaOS() {
     if (!modalContainer) return;
     const pedidosLista = (db.pedidos || []).filter(p => p.status !== 'Cancelado');
