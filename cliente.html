@@ -906,6 +906,9 @@
               ped.jogadores = atletasConfirmados;
               ped.grade = gradeCalculada;
               ped.quantidadeTotal = totalPecas;
+              if (Array.isArray(ped.itens) && ped.itens.length === 1) {
+                ped.itens[0].grade = gradeCalculada;
+              }
               ped.status = 'Entrada Pendente';
               ped.etapaProducao = 'Quarentena';
               ped.etapaAtual = 'Quarentena';

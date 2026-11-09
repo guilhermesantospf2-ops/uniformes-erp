@@ -1614,6 +1614,9 @@ module.exports = async function handler(req, res) {
               ped.jogadores = atletasConfirmados;
               ped.grade = gradeCalculada;
               ped.quantidadeTotal = totalPecas;
+              if (Array.isArray(ped.itens) && ped.itens.length === 1) {
+                ped.itens[0].grade = gradeCalculada;
+              }
               ped.status = 'Entrada Pendente';
               ped.origemEntrada = 'preenchido_cliente';
               ped.dataPreenchimentoCliente = new Date().toISOString();

@@ -1972,6 +1972,40 @@ with check (true);
             mesclado.dataQuarentenaAprovada = aprovadoRef.dataQuarentenaAprovada || new Date().toISOString().split('T')[0];
           }
         }
+
+        // Reconciliação não-destrutiva de grade se o pedido possui modelos configurados
+        if (Array.isArray(mesclado.itens) && mesclado.itens.length > 0) {
+          let somaItens = 0;
+          const gradeCalc = { total: 0 };
+          let temGradeValida = false;
+          mesclado.itens.forEach(it => {
+            if (it && it.grade && typeof it.grade === 'object') {
+              const tot = parseInt(it.grade.total, 10) || 0;
+              let somaK = 0;
+              Object.keys(it.grade).forEach(k => {
+                if (k === 'total') return;
+                const q = parseInt(it.grade[k], 10) || 0;
+                if (q > 0) {
+                  somaK += q;
+                  gradeCalc[k] = (gradeCalc[k] || 0) + q;
+                }
+              });
+              const ef = tot > 0 ? tot : somaK;
+              if (ef > 0) {
+                temGradeValida = true;
+                somaItens += ef;
+              }
+            }
+          });
+          if (temGradeValida && somaItens > 0) {
+            gradeCalc.total = somaItens;
+            if (!mesclado.grade || (parseInt(mesclado.grade.total, 10) || 0) !== somaItens) {
+              mesclado.grade = gradeCalc;
+              mesclado.quantidadeTotal = somaItens;
+            }
+          }
+        }
+
         mapa.set(id, mesclado);
       }
     });
