@@ -3388,3 +3388,76 @@ input[type="number"] {
   background: #ffffff;
   border-color: #2563eb;
 }
+
+/* ==========================================================================
+   ESTILIZAÇÃO DE SELEÇÃO DE TAMANHOS NA GRADE E RESTAURAÇÃO DE SPINNERS
+   ========================================================================== */
+/* Restaura as setinhas (spin buttons) para aumentar e diminuir a quantidade na grade */
+.grade-input::-webkit-outer-spin-button,
+.grade-input::-webkit-inner-spin-button {
+  -webkit-appearance: inner-spin-button !important;
+  display: block !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
+  height: 24px !important;
+}
+.grade-input {
+  -moz-appearance: number-input !important;
+  appearance: auto !important;
+  padding-right: 2px !important;
+}
+
+/* Coluna de tamanho: visual inativo/desabilitado */
+.grade-col {
+  transition: all 0.18s ease-in-out;
+  position: relative;
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.grade-col:not(.grade-col-total):not(.ativo) {
+  opacity: 0.52 !important;
+  background: #f8fafc !important;
+  border: 1.5px dashed #cbd5e1 !important;
+  cursor: pointer !important;
+}
+
+.grade-col:not(.grade-col-total):not(.ativo):hover {
+  opacity: 0.88 !important;
+  border-color: #3b82f6 !important;
+  background: #eff6ff !important;
+}
+
+.grade-col:not(.grade-col-total):not(.ativo) .grade-input,
+.grade-col:not(.grade-col-total):not(.ativo) .grade-preco-input {
+  background-color: #f1f5f9 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Coluna de tamanho: visual selecionado e ativo */
+.grade-col.ativo:not(.grade-col-total) {
+  opacity: 1 !important;
+  background: #eff6ff !important;
+  border: 2px solid #2563eb !important;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.22) !important;
+}
+
+.grade-col.ativo .grade-label {
+  color: #1d4ed8 !important;
+  font-weight: 900 !important;
+}
+
+.grade-col.ativo .grade-input {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #93c5fd !important;
+  font-weight: 800 !important;
+}
+
+.grade-col.ativo .grade-preco-input {
+  background-color: #ffffff !important;
+  color: #1e40af !important;
+  border-color: #93c5fd !important;
+}
