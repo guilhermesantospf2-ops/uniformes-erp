@@ -455,8 +455,8 @@
           endereco: "Rua Cingapura, 60",
           complemento: "Lote 171",
           bairro: "São Vicente",
-          cidade: "Itajaí",
-          uf: "SC",
+          cidade: (db.empresa && db.empresa.cidade) ? db.empresa.cidade : "São Paulo",
+          uf: (db.empresa && db.empresa.uf) ? db.empresa.uf : "SP",
           cep: "88309-677",
           nfeioCompanyId: "b8ac27d9851944a8baa5ad0c134d08f9"
         };
@@ -5023,7 +5023,7 @@
                       </div>
                       <div style="font-size: 10.5px; color: #334155; line-height: 1.35;">
                         ${p.itens.map((it) => `
-                          <div>• <strong>${it.grade?.total || 0}x</strong> ${it.produtoNome} <span style="color:#64748b; font-size:10px;">(${it.corPrincipal || 'Cor'})</span></div>
+                          <div>• <strong>${it.grade?.total || 0}x</strong> ${it.produtoNome} <span style="color:#64748b; font-size:10px;">(${it.corTecido || it.corPrincipal || 'Cor'})</span></div>
                         `).join('')}
                       </div>
                     ` : `
@@ -7196,6 +7196,7 @@
       produtoNome: prod.nome,
       tipoMalhaPadrao: prod.tipoMalhaPadrao,
       corTecido: corTec,
+      corPrincipal: corTec,
       observacoesCoresDetalhes: '',
       grade: { pp: 0, p: 0, m: 0, g: 0, gg: 0, xg: 0, total: 0 },
       aplicacoes: [appInicial],
@@ -8483,7 +8484,11 @@
       }
 
       const inpCor = document.getElementById('orcCorPrincipalTecido');
-      if (inpCor) it.corTecido = (inpCor.value || 'Azul Marinho').trim();
+      if (inpCor) {
+        const valCor = (inpCor.value || 'Azul Marinho').trim();
+        it.corTecido = valCor;
+        it.corPrincipal = valCor;
+      }
 
       const inpObs = document.getElementById('orcObservacoesCoresDetalhes');
       if (inpObs) it.observacoesCoresDetalhes = (inpObs.value || '').trim();
@@ -9087,6 +9092,7 @@
         boxCores.innerHTML = gerarHTMLSeletorCoresIndustrial('orc', it.corTecido || 'Azul Marinho', it.observacoesCoresDetalhes || '');
         configurarEventosSeletorCores('orc', (corNome, corHex) => {
           it.corTecido = corNome;
+          it.corPrincipal = corNome;
           if (!it.mockupUploadPersonalizado) {
             const cliId = document.getElementById('orcClienteSelect')?.value;
             const cli = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
@@ -9734,24 +9740,24 @@
       const cli = db.clientes.find(c => c.id === clienteId || c.nomeFantasia === clienteId || c.nome === clienteId);
       if (!cli) return null;
 
-      // 1. Prioridade: Padrão salvo explicitamente para este produto no cadastro do cliente
+      // 1. Prioridade máxima: Padrão salvo explicitamente para este produto específico no cadastro do cliente
       if (cli.padroesModelos && produtoId && cli.padroesModelos[produtoId]) {
         return { padrao: cli.padroesModelos[produtoId], origem: 'especifico_produto', cliente: cli };
       }
 
-      // 2. Segunda prioridade: Padrão último modelo salvo para este cliente
-      if (cli.padraoUltimoModelo) {
+      // 2. Segunda prioridade: Padrão do último modelo salvo SOMENTE se o produto coincidir
+      if (cli.padraoUltimoModelo && (!produtoId || cli.padraoUltimoModelo.produtoId === produtoId)) {
         return { padrao: cli.padraoUltimoModelo, origem: 'ultimo_modelo_cliente', cliente: cli };
       }
 
-      // 3. Terceira prioridade: Se o cliente já fez pedidos anteriores, buscar custos do pedido mais recente dele
+      // 3. Terceira prioridade: Buscar custos de pedidos anteriores SOMENTE do produto exato (evita contaminar avental com calça)
       if (Array.isArray(db.pedidos) && db.pedidos.length > 0) {
         const pedidosCli = db.pedidos.filter(p => p.clienteId === cli.id || p.clienteNome === cli.nomeFantasia || p.clienteNome === cli.nome);
         if (pedidosCli.length > 0) {
           const sorted = pedidosCli.slice().sort((a, b) => new Date(b.dataCriacao || 0) - new Date(a.dataCriacao || 0));
           for (const ped of sorted) {
             if (Array.isArray(ped.itens) && ped.itens.length > 0) {
-              const itemCorrespondente = produtoId ? (ped.itens.find(x => x.produtoId === produtoId) || ped.itens[0]) : ped.itens[0];
+              const itemCorrespondente = produtoId ? ped.itens.find(x => x.produtoId === produtoId) : ped.itens[0];
               if (itemCorrespondente) {
                 return {
                   padrao: {
@@ -10893,6 +10899,7 @@
         prod: db.produtosBase.find(p => p.id === itensOrcamento[0].produtoId) || db.produtosBase[0],
         produtoNome: produtoNomeGeral,
         corPrincipal: corPrincipalGeral,
+        corTecido: corPrincipalGeral,
         observacoesCoresDetalhes: obsCoresGeral,
         grade: gradeConsolidada,
         precoVendaUnitario: totalPecasGeral > 0 ? (faturamentoTotalGeral / totalPecasGeral) : 58.00,
@@ -11031,7 +11038,7 @@
         it.custoCostura = 0;
 
         if (alerta) {
-          const gradeTexto = itemEst.gradeEstoque ? Object.keys(itemEst.gradeEstoque).filter(k => k !== 'total' && itemEst.gradeEstoque[k] > 0).map(k => `${k.toUpperCase()}: ${itemEst.gradeEstoque[k]}`).join(' | ') : 'Sem grade';
+          const gradeTexto = itemEst.gradeEstoque ? Object.keys(itemEst.gradeEstoque).filter(k => k !== 'total' && itemEst.gradeEstoque[k] > 0).map(k => `${k.replace(/^num/i, '').toUpperCase()}: ${itemEst.gradeEstoque[k]}`).join(' | ') : 'Sem grade';
           alerta.innerHTML = `✓ <strong>Saldo Físico Disponível:</strong> ${itemEst.saldoAtual} peças no total.<br><span style="font-family: monospace; font-size: 10.5px; display: inline-block; margin-top: 3px;">${gradeTexto}</span><br>Custo médio da peça lisa: <strong>${formatarMoeda(itemEst.custoMedioUnitario)}</strong>. Corte e costura dispensados.`;
           alerta.style.display = 'block';
         }
@@ -11550,7 +11557,8 @@
         orcamentoExistente.produtoId = dadosOrcamento.prod ? dadosOrcamento.prod.id : orcamentoExistente.produtoId;
         orcamentoExistente.produtoNome = dadosOrcamento.produtoNome;
         orcamentoExistente.tecidoEspecificacao = dadosOrcamento.prod ? dadosOrcamento.prod.tipoMalhaPadrao : orcamentoExistente.tecidoEspecificacao;
-        orcamentoExistente.corTecido = dadosOrcamento.corPrincipal || 'A Definir';
+        orcamentoExistente.corTecido = dadosOrcamento.corPrincipal || dadosOrcamento.corTecido || 'A Definir';
+          orcamentoExistente.corPrincipal = orcamentoExistente.corTecido;
         orcamentoExistente.observacoesCoresDetalhes = dadosOrcamento.observacoesCoresDetalhes || '';
         orcamentoExistente.tipoPersonalizacao = dadosOrcamento.tipoPersonalizacao;
         orcamentoExistente.grade = dadosOrcamento.grade;
@@ -11740,7 +11748,8 @@
       itens: dados.itens || [],
       produtoId: dados.prod ? dados.prod.id : '',
       produtoNome: dados.prod ? dados.prod.nome : 'Produto',
-      corTecido: dados.corPrincipal || 'A Definir',
+      corTecido: dados.corPrincipal || dados.corTecido || 'A Definir',
+        corPrincipal: dados.corPrincipal || dados.corTecido || 'A Definir',
       observacoesCoresDetalhes: dados.observacoesCoresDetalhes || '',
       tecidoEspecificacao: dados.prod ? dados.prod.tipoMalhaPadrao : 'Padrão Têxtil',
       tipoPersonalizacao: dados.tipoPersonalizacao || 'Personalização Conforme Proposta',
@@ -13370,7 +13379,21 @@
             <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${emp.nomeFantasia || emp.razaoSocial}</h2>
             <div style="font-size: 11px; color: #475569;">
               ${emp.razaoSocial && emp.razaoSocial !== emp.nomeFantasia ? `${emp.razaoSocial} • ` : ''}CNPJ: ${emp.cnpj || 'Não informado'}<br>
-              ${emp.endereco ? `${emp.endereco}, ${emp.cidade || ''}/${emp.uf || ''}` : ''}<br>
+              ${(() => {
+                const parts = [];
+                if (emp.endereco) parts.push(emp.endereco);
+                if (emp.bairro && (!emp.endereco || !emp.endereco.toLowerCase().includes(emp.bairro.toLowerCase()))) {
+                  parts.push(emp.bairro);
+                }
+                const munUf = [emp.cidade, emp.uf].filter(Boolean).join(' - ');
+                if (munUf && (!emp.endereco || !emp.endereco.toLowerCase().includes(munUf.toLowerCase()))) {
+                  parts.push(munUf);
+                }
+                if (emp.cep && (!emp.endereco || !emp.endereco.includes(emp.cep))) {
+                  parts.push(`CEP: ${emp.cep}`);
+                }
+                return parts.length > 0 ? parts.join(', ') + '<br>' : '';
+              })()}
               Telefone: ${formatarTelefone(emp.telefone)} • E-mail: ${emp.email || '-'}
             </div>
           </div>
@@ -13446,7 +13469,7 @@
                       <strong style="color: #0f172a;">${idx + 1}. ${it.produtoNome}</strong>
                     </td>
                     <td style="padding: 6px 8px; vertical-align: top;">
-                      <span style="font-weight: 700; color: #1e3a8a;">${it.corPrincipal || 'A Definir'}</span><br>
+                      <span style="font-weight: 700; color: #1e3a8a;">${it.corTecido || it.corPrincipal || p.corTecido || 'A Definir'}</span><br>
                       <span style="font-size: 10px; color: #64748b;">${it.tecidoEspecificacao || ''}</span>
                       ${it.observacoesCoresDetalhes ? `<br><span style="font-size: 9.5px; color: #b45309;">${it.observacoesCoresDetalhes}</span>` : ''}
                     </td>
@@ -17561,7 +17584,7 @@
                       <strong>${item.descricao}</strong>
                       ${(item.categoria === 'Vestuário Pronto' && item.gradeEstoque) ? `
                         <div style="font-size: 10px; color: #047857; margin-top: 3px; font-family: monospace; background: #f0fdf4; padding: 2px 6px; border-radius: 4px; display: inline-block; border: 1px solid #bbf7d0;">
-                          Grade: ${Object.keys(item.gradeEstoque).filter(k => k !== 'total' && item.gradeEstoque[k] > 0).map(k => `${k.toUpperCase()}:${item.gradeEstoque[k]}`).join(' | ') || '0 peças'}
+                          Grade: ${Object.keys(item.gradeEstoque).filter(k => k !== 'total' && item.gradeEstoque[k] > 0).map(k => `${k.replace(/^num/i, '').toUpperCase()}:${item.gradeEstoque[k]}`).join(' | ') || '0 peças'}
                         </div>
                       ` : ''}
                     </td>
@@ -18622,13 +18645,40 @@
                 </div>
               </div>
 
-              <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; text-align: center;">
+              <!-- Seletor de Tipo de Grade (Alfabética vs Numérica para Calças/Bermudas) -->
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 6px 10px;">
+                <span style="font-size: 11px; font-weight: 700; color: #065f46;">Tipo de Medida da Peça:</span>
+                <div style="display: flex; gap: 8px;">
+                  <button type="button" class="btn btn-xs btn-tipo-grade-vest active" id="btnGradeVestAlfa" style="font-weight: 700; font-size: 11px; padding: 4px 10px; background: #059669; color: #fff; border: 1px solid #059669; border-radius: 4px; cursor: pointer;">
+                    🔤 Camisetas / Alfabética (PP ao G2)
+                  </button>
+                  <button type="button" class="btn btn-xs btn-tipo-grade-vest" id="btnGradeVestNum" style="font-weight: 700; font-size: 11px; padding: 4px 10px; background: #fff; color: #065f46; border: 1px solid #059669; border-radius: 4px; cursor: pointer;">
+                    👖 Calças & Bermudas / Numérica (34 ao 60)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Painel Grade Alfabética (PP ao G2) -->
+              <div id="painelGradeVestAlfa" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; text-align: center;">
                 ${['pp', 'p', 'm', 'g', 'gg', 'xg', 'g1', 'g2'].map(tam => `
                   <div>
                     <div style="font-size: 10px; font-weight: 800; background: #f0fdf4; color: #065f46; padding: 3px 0; border: 1px solid #bbf7d0; border-radius: 4px 4px 0 0; text-transform: uppercase;">${tam}</div>
                     <input type="number" class="form-input inp-grade-vest-ent" data-tam="${tam}" value="0" min="0" style="text-align: center; font-weight: 800; font-size: 13px; border-radius: 0 0 4px 4px; border-top: none; padding: 5px 2px;">
                   </div>
                 `).join('')}
+              </div>
+
+              <!-- Painel Grade Numérica (34 ao 60) para Calças, Camisas e Bermudas -->
+              <div id="painelGradeVestNum" style="display: none; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center;">
+                ${['num34', 'num36', 'num38', 'num40', 'num42', 'num44', 'num46', 'num48', 'num50', 'num52', 'num54', 'num56', 'num58', 'num60'].map(tam => {
+                  const numRotulo = tam.replace('num', '');
+                  return `
+                    <div>
+                      <div style="font-size: 10.5px; font-weight: 800; background: #eff6ff; color: #1e40af; padding: 3px 0; border: 1px solid #bfdbfe; border-radius: 4px 4px 0 0;">${numRotulo}</div>
+                      <input type="number" class="form-input inp-grade-vest-ent" data-tam="${tam}" value="0" min="0" style="text-align: center; font-weight: 800; font-size: 13px; border-radius: 0 0 4px 4px; border-top: none; padding: 5px 2px;">
+                    </div>
+                  `;
+                }).join('')}
               </div>
             </div>
 
@@ -18671,9 +18721,36 @@
       </div>
     `);
 
+    // Alternância e Auto-Detecção de Grade (Alfabética vs Numérica)
+    const btnAlfa = document.getElementById('btnGradeVestAlfa');
+    const btnNum = document.getElementById('btnGradeVestNum');
+    const pnlAlfa = document.getElementById('painelGradeVestAlfa');
+    const pnlNum = document.getElementById('painelGradeVestNum');
+
+    function alternarGradeVestuario(tipo) {
+      if (tipo === 'num') {
+        if (pnlNum) pnlNum.style.display = 'grid';
+        if (pnlAlfa) pnlAlfa.style.display = 'none';
+        if (btnNum) { btnNum.style.background = '#059669'; btnNum.style.color = '#fff'; }
+        if (btnAlfa) { btnAlfa.style.background = '#fff'; btnAlfa.style.color = '#065f46'; }
+      } else {
+        if (pnlAlfa) pnlAlfa.style.display = 'grid';
+        if (pnlNum) pnlNum.style.display = 'none';
+        if (btnAlfa) { btnAlfa.style.background = '#059669'; btnAlfa.style.color = '#fff'; }
+        if (btnNum) { btnNum.style.background = '#fff'; btnNum.style.color = '#065f46'; }
+      }
+    }
+
+    btnAlfa?.addEventListener('click', () => alternarGradeVestuario('alfa'));
+    btnNum?.addEventListener('click', () => alternarGradeVestuario('num'));
+
     const selMod = document.getElementById('entVestModeloSelect');
     const inpModCust = document.getElementById('entVestModeloCustom');
     selMod?.addEventListener('change', (e) => {
+      const valLower = (e.target.value || '').toLowerCase();
+      if (valLower.includes('calça') || valLower.includes('calca') || valLower.includes('bermuda') || valLower.includes('brim') || valLower.includes('jeans') || valLower.includes('social')) {
+        alternarGradeVestuario('num');
+      }
       if (inpModCust) {
         inpModCust.style.display = (e.target.value === '__OUTRO__') ? 'block' : 'none';
         if (e.target.value === '__OUTRO__') inpModCust.focus();
@@ -29531,8 +29608,28 @@
             </div>
 
             <div class="form-group" style="margin-bottom: 12px;">
-              <label class="form-label">Endereço da Fábrica (Rua, Bairro, Cidade/UF):</label>
-              <input type="text" class="form-control" id="inpEmpEndereco" value="${emp.endereco || ''}" placeholder="Rua das Confecções, 100 - Bairro Industrial - Americana/SP">
+              <label class="form-label">Endereço Completo (Rua e Número):</label>
+              <input type="text" class="form-control" id="inpEmpEndereco" value="${emp.endereco || ''}" placeholder="ex: Rua das Confecções, 100">
+            </div>
+
+            <div class="grid-cards-3" style="gap: 10px; margin-bottom: 12px;">
+              <div class="form-group">
+                <label class="form-label">Bairro:</label>
+                <input type="text" class="form-control" id="inpEmpBairro" value="${emp.bairro || ''}" placeholder="ex: Brás / Industrial">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Cidade:</label>
+                <input type="text" class="form-control" id="inpEmpCidade" value="${emp.cidade || ''}" placeholder="ex: São Paulo">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Estado (UF):</label>
+                <input type="text" class="form-control text-mono" id="inpEmpUf" value="${emp.uf || ''}" maxlength="2" placeholder="SP" style="text-transform: uppercase;">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label">CEP:</label>
+              <input type="text" class="form-control text-mono" id="inpEmpCep" value="${emp.cep || ''}" placeholder="00000-000">
             </div>
 
             <div class="form-group" style="margin-bottom: 12px;">
@@ -29733,6 +29830,10 @@
         tipoChavePix: document.getElementById('inpEmpTipoChavePix')?.value || 'CNPJ',
         chavePix: document.getElementById('inpEmpChavePix')?.value.trim() || '',
         endereco: document.getElementById('inpEmpEndereco')?.value.trim() || '',
+        bairro: document.getElementById('inpEmpBairro')?.value.trim() || '',
+        cidade: document.getElementById('inpEmpCidade')?.value.trim() || '',
+        uf: (document.getElementById('inpEmpUf')?.value.trim() || '').toUpperCase(),
+        cep: document.getElementById('inpEmpCep')?.value.trim() || '',
         rodapeProposta: document.getElementById('inpEmpRodapeProposta')?.value.trim() || '',
         rodapeFicha: document.getElementById('inpEmpRodapeFicha')?.value.trim() || '',
         logoUrl: emp.logoUrl || null
