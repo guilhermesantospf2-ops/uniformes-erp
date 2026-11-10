@@ -5050,7 +5050,7 @@
                     ` : ''}
                     <span style="display: block; font-size: 10.5px; color: var(--text-gray-500); margin-top: 3px;">${p.tipoPersonalizacao || 'Estampa Conforme Arte'}</span>
                   </td>
-                  <td class="text-mono">
+                  <td class="text-mono" style="max-width: 250px; min-width: 175px; white-space: normal !important; vertical-align: middle;">
                     ${(p.itens && p.itens.length > 1) ? `
                       <div style="font-size: 10.5px; line-height: 1.35; display: flex; flex-direction: column; gap: 4px;">
                         ${p.itens.map((it, idx) => `
@@ -5068,8 +5068,8 @@
                       <strong style="display: block; color: var(--text-primary); margin-top: 3px;">${p.grade?.total || 0} peças</strong>
                     `}
                   </td>
-                  <td class="text-mono">${formatarMoeda(p.precoUnitarioVenda)}</td>
-                  <td class="text-mono">
+                  <td class="text-mono" style="white-space: nowrap !important; text-align: right; vertical-align: middle; min-width: 95px;">${formatarMoeda(p.precoUnitarioVenda)}</td>
+                  <td class="text-mono" style="white-space: nowrap !important; text-align: right; vertical-align: middle; min-width: 105px;">
                     <strong style="font-size: 13.5px; color: var(--text-primary);">${formatarMoeda(p.valorTotalVenda)}</strong>
                   </td>
                   <td>
@@ -8002,34 +8002,62 @@
 
                 <!-- 1. Grade Regular Alfabética (PP ao XG + Totalizador) -->
                 <div class="grade-table-input" id="boxGradeTableInputAlfabetica">
-                  <div class="grade-col"><div class="grade-label">PP</div><input type="number" id="gradePP" class="grade-input" value="0" min="0"></div>
-                  <div class="grade-col"><div class="grade-label">P</div><input type="number" id="gradeP" class="grade-input" value="0" min="0"></div>
-                  <div class="grade-col"><div class="grade-label">M</div><input type="number" id="gradeM" class="grade-input" value="0" min="0"></div>
-                  <div class="grade-col"><div class="grade-label">G</div><input type="number" id="gradeG" class="grade-input" value="0" min="0"></div>
-                  <div class="grade-col"><div class="grade-label">GG</div><input type="number" id="gradeGG" class="grade-input" value="0" min="0"></div>
-                  <div class="grade-col"><div class="grade-label">XG</div><input type="number" id="gradeXG" class="grade-input" value="0" min="0"></div>
-                  <div class="grade-col"><div class="grade-label" style="background: #0f172a; color: #38bdf8; font-weight: 900;">TOTAL</div><input type="text" id="gradeTotal" class="grade-input" style="font-weight: 900; background: #0f172a; color: #38bdf8;" value="0" readonly title="Total geral somando todos os tamanhos"></div>
+                  <div class="grade-col">
+                    <div class="grade-label">PP</div>
+                    <input type="number" id="gradePP" class="grade-input" value="0" min="0" placeholder="Qtd">
+                    <input type="text" inputmode="decimal" id="precoGrade_pp" class="grade-preco-input input-moeda-centavos" data-chave="pp" value="58,00" title="Preço de Venda do PP (R$)">
+                  </div>
+                  <div class="grade-col">
+                    <div class="grade-label">P</div>
+                    <input type="number" id="gradeP" class="grade-input" value="0" min="0" placeholder="Qtd">
+                    <input type="text" inputmode="decimal" id="precoGrade_p" class="grade-preco-input input-moeda-centavos" data-chave="p" value="58,00" title="Preço de Venda do P (R$)">
+                  </div>
+                  <div class="grade-col">
+                    <div class="grade-label">M</div>
+                    <input type="number" id="gradeM" class="grade-input" value="0" min="0" placeholder="Qtd">
+                    <input type="text" inputmode="decimal" id="precoGrade_m" class="grade-preco-input input-moeda-centavos" data-chave="m" value="58,00" title="Preço de Venda do M (R$)">
+                  </div>
+                  <div class="grade-col">
+                    <div class="grade-label">G</div>
+                    <input type="number" id="gradeG" class="grade-input" value="0" min="0" placeholder="Qtd">
+                    <input type="text" inputmode="decimal" id="precoGrade_g" class="grade-preco-input input-moeda-centavos" data-chave="g" value="58,00" title="Preço de Venda do G (R$)">
+                  </div>
+                  <div class="grade-col">
+                    <div class="grade-label">GG</div>
+                    <input type="number" id="gradeGG" class="grade-input" value="0" min="0" placeholder="Qtd">
+                    <input type="text" inputmode="decimal" id="precoGrade_gg" class="grade-preco-input input-moeda-centavos" data-chave="gg" value="58,00" title="Preço de Venda do GG (R$)">
+                  </div>
+                  <div class="grade-col">
+                    <div class="grade-label">XG</div>
+                    <input type="number" id="gradeXG" class="grade-input" value="0" min="0" placeholder="Qtd">
+                    <input type="text" inputmode="decimal" id="precoGrade_xg" class="grade-preco-input input-moeda-centavos" data-chave="xg" value="58,00" title="Preço de Venda do XG (R$)">
+                  </div>
+                  <div class="grade-col">
+                    <div class="grade-label" style="background: #0f172a; color: #38bdf8; font-weight: 900;">TOTAL</div>
+                    <input type="text" id="gradeTotal" class="grade-input" style="font-weight: 900; background: #0f172a; color: #38bdf8;" value="0" readonly title="Total geral somando todos os tamanhos">
+                    <div style="font-size: 9px; color: #64748b; text-align: center; margin-top: 3px; font-weight: 700;">Qtd / Preço</div>
+                  </div>
                 </div>
 
                 <!-- 2. Grade Regular Numérica (34 ao 60 + Totalizador) -->
                 <div id="boxGradeTableInputNumerica" style="display: none;">
                   <div class="grade-table-input" style="grid-template-columns: repeat(8, 1fr); margin-bottom: 6px;">
-                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">34</div><input type="number" id="gradeNum34" class="grade-input" value="0" min="0"></div>
-                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">36</div><input type="number" id="gradeNum36" class="grade-input" value="0" min="0"></div>
-                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">38</div><input type="number" id="gradeNum38" class="grade-input" value="0" min="0"></div>
-                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">40</div><input type="number" id="gradeNum40" class="grade-input" value="0" min="0"></div>
-                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">42</div><input type="number" id="gradeNum42" class="grade-input" value="0" min="0"></div>
-                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">44</div><input type="number" id="gradeNum44" class="grade-input" value="0" min="0"></div>
-                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">46</div><input type="number" id="gradeNum46" class="grade-input" value="0" min="0"></div>
-                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">48</div><input type="number" id="gradeNum48" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">34</div><input type="number" id="gradeNum34" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num34" class="grade-preco-input input-moeda-centavos" data-chave="num34" value="58,00" title="Preço de Venda do 34 (R$)"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">36</div><input type="number" id="gradeNum36" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num36" class="grade-preco-input input-moeda-centavos" data-chave="num36" value="58,00" title="Preço de Venda do 36 (R$)"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">38</div><input type="number" id="gradeNum38" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num38" class="grade-preco-input input-moeda-centavos" data-chave="num38" value="58,00" title="Preço de Venda do 38 (R$)"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">40</div><input type="number" id="gradeNum40" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num40" class="grade-preco-input input-moeda-centavos" data-chave="num40" value="58,00" title="Preço de Venda do 40 (R$)"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">42</div><input type="number" id="gradeNum42" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num42" class="grade-preco-input input-moeda-centavos" data-chave="num42" value="58,00" title="Preço de Venda do 42 (R$)"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">44</div><input type="number" id="gradeNum44" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num44" class="grade-preco-input input-moeda-centavos" data-chave="num44" value="58,00" title="Preço de Venda do 44 (R$)"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">46</div><input type="number" id="gradeNum46" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num46" class="grade-preco-input input-moeda-centavos" data-chave="num46" value="58,00" title="Preço de Venda do 46 (R$)"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">48</div><input type="number" id="gradeNum48" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num48" class="grade-preco-input input-moeda-centavos" data-chave="num48" value="58,00" title="Preço de Venda do 48 (R$)"></div>
                   </div>
                   <div class="grade-table-input" style="grid-template-columns: repeat(7, 1fr);">
-                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">50</div><input type="number" id="gradeNum50" class="grade-input" value="0" min="0"></div>
-                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">52</div><input type="number" id="gradeNum52" class="grade-input" value="0" min="0"></div>
-                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">54</div><input type="number" id="gradeNum54" class="grade-input" value="0" min="0"></div>
-                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">56</div><input type="number" id="gradeNum56" class="grade-input" value="0" min="0"></div>
-                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">58</div><input type="number" id="gradeNum58" class="grade-input" value="0" min="0"></div>
-                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">60</div><input type="number" id="gradeNum60" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">50</div><input type="number" id="gradeNum50" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num50" class="grade-preco-input input-moeda-centavos" data-chave="num50" value="58,00" title="Preço de Venda do 50 (R$)"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">52</div><input type="number" id="gradeNum52" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num52" class="grade-preco-input input-moeda-centavos" data-chave="num52" value="58,00" title="Preço de Venda do 52 (R$)"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">54</div><input type="number" id="gradeNum54" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num54" class="grade-preco-input input-moeda-centavos" data-chave="num54" value="58,00" title="Preço de Venda do 54 (R$)"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">56</div><input type="number" id="gradeNum56" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num56" class="grade-preco-input input-moeda-centavos" data-chave="num56" value="58,00" title="Preço de Venda do 56 (R$)"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">58</div><input type="number" id="gradeNum58" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num58" class="grade-preco-input input-moeda-centavos" data-chave="num58" value="58,00" title="Preço de Venda do 58 (R$)"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">60</div><input type="number" id="gradeNum60" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num60" class="grade-preco-input input-moeda-centavos" data-chave="num60" value="58,00" title="Preço de Venda do 60 (R$)"></div>
                     <div class="grade-col"><div class="grade-label" style="background: #0f172a; color: #38bdf8; font-weight: 900;">TOTAL</div><input type="text" id="gradeTotalNum" class="grade-input" style="font-weight: 900; background: #0f172a; color: #38bdf8;" value="0" readonly title="Total geral somando todos os tamanhos"></div>
                   </div>
                 </div>
@@ -8098,11 +8126,11 @@
                     <button type="button" class="btn btn-secondary btn-sm btn-fechar-grade-extra" data-secao="especiais" style="font-size: 10px; padding: 1px 7px; color: #92400e; background: #ffffff; border: 1px solid #fde68a;">✕ Fechar</button>
                   </div>
                   <div class="grade-table-input" style="grid-template-columns: repeat(5, 1fr);">
-                    <div class="grade-col"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">G1</div><input type="number" id="gradeG1" class="grade-input" value="0" min="0"></div>
-                    <div class="grade-col"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">G2</div><input type="number" id="gradeG2" class="grade-input" value="0" min="0"></div>
-                    <div class="grade-col"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">G3</div><input type="number" id="gradeG3" class="grade-input" value="0" min="0"></div>
-                    <div class="grade-col"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">G4</div><input type="number" id="gradeG4" class="grade-input" value="0" min="0"></div>
-                    <div class="grade-col"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">G5</div><input type="number" id="gradeG5" class="grade-input" value="0" min="0"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">G1</div><input type="number" id="gradeG1" class="grade-input" value="0" min="0" placeholder="Qtd"><input type="text" inputmode="decimal" id="precoGrade_g1" class="grade-preco-input input-moeda-centavos" data-chave="g1" value="68,00" title="Preço Venda G1 (R$)"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">G2</div><input type="number" id="gradeG2" class="grade-input" value="0" min="0" placeholder="Qtd"><input type="text" inputmode="decimal" id="precoGrade_g2" class="grade-preco-input input-moeda-centavos" data-chave="g2" value="68,00" title="Preço Venda G2 (R$)"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">G3</div><input type="number" id="gradeG3" class="grade-input" value="0" min="0" placeholder="Qtd"><input type="text" inputmode="decimal" id="precoGrade_g3" class="grade-preco-input input-moeda-centavos" data-chave="g3" value="74,00" title="Preço Venda G3 (R$)"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">G4</div><input type="number" id="gradeG4" class="grade-input" value="0" min="0" placeholder="Qtd"><input type="text" inputmode="decimal" id="precoGrade_g4" class="grade-preco-input input-moeda-centavos" data-chave="g4" value="78,00" title="Preço Venda G4 (R$)"></div>
+                    <div class="grade-col"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">G5</div><input type="number" id="gradeG5" class="grade-input" value="0" min="0" placeholder="Qtd"><input type="text" inputmode="decimal" id="precoGrade_g5" class="grade-preco-input input-moeda-centavos" data-chave="g5" value="84,00" title="Preço Venda G5 (R$)"></div>
                   </div>
                 </div>
 
@@ -8165,7 +8193,47 @@
                 </div>
               </div>
 
-              <!-- Painel Exclusivo de Uniforme de Time (Grade Nominal Direta via Relação de Atletas) -->
+              <!-- Seletor de Modo de Custos: Calcular Custos vs Custo Direto -->
+              <div style="margin: 14px 0 10px 0; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                  <strong style="font-size: 12px; color: #0f172a; display: block;">Modo de Apuração de Custos deste Modelo:</strong>
+                  <span style="font-size: 11px; color: #64748b;">Escolha entre calcular detalhadamente os insumos ou lançar direto o custo por peça</span>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                  <button type="button" class="btn btn-sm btn-modo-custo-toggle" id="btnModoCalcularCustos" data-modo="calcular" style="font-size: 11.5px; padding: 5px 12px; font-weight: 800; border-radius: 4px; border: 1.5px solid #0284c7; background: #0284c7; color: #ffffff; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+                    📊 Calcular Custos (Engenharia Completa)
+                  </button>
+                  <button type="button" class="btn btn-sm btn-modo-custo-toggle" id="btnModoCustoDireto" data-modo="direto" style="font-size: 11.5px; padding: 5px 12px; font-weight: 800; border-radius: 4px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+                    ⚡ Custo Direto (Lançamento Rápido)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Painel Exclusivo de Custo Direto (Lançamento Rápido Sem Burocracia) -->
+              <div id="boxPainelCustoDireto" style="display: none; background: #f0fdf4; border: 2px solid #10b981; border-radius: 6px; padding: 14px 16px; margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                  <div>
+                    <span style="font-size: 11px; font-weight: 800; color: #047857; text-transform: uppercase;">⚡ Custo Direto por Peça Acabada:</span>
+                    <p style="font-size: 11.5px; color: #166534; margin: 2px 0 0 0;">
+                      Informe o custo fechado total da peça (já somando tecido + estampa + costura). O sistema calculará margem e lucro automaticamente.
+                    </p>
+                  </div>
+                </div>
+                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                  <div class="form-group" style="margin: 0;">
+                    <label class="form-label" style="font-weight: 800; color: #065f46; font-size: 12.5px;">Custo Unitário Total por Peça (R$):</label>
+                    <input type="text" inputmode="decimal" id="inputCustoDiretoTotal" class="form-input input-moeda-centavos text-mono" style="font-size: 16px; font-weight: 900; color: #047857; background: #ffffff;" value="22,50">
+                  </div>
+                  <div class="form-group" style="margin: 0;">
+                    <label class="form-label" style="font-size: 11px; color: #475569;">Custo Total Previsto para o Lote:</label>
+                    <div style="font-size: 16px; font-weight: 900; color: #1e3a8a; padding: 8px 12px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 4px;" id="lblCustoDiretoTotalLote" class="text-mono">
+                      R$ 0,00
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+<!-- Painel Exclusivo de Uniforme de Time (Grade Nominal Direta via Relação de Atletas) -->
               <div id="painelTimeJogadoresCard" style="display: ${modalidadePedido === 'time' ? 'block' : 'none'}; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius-sm); padding: 14px; margin-bottom: 14px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
                   <div>
@@ -8196,6 +8264,7 @@
                 </div>
               </div>
 
+              <div id="boxBlocoEngenhariaECustos">
               <!-- APLICAÇÕES DE PERSONALIZAÇÃO (BORDADO + DTF + SILK + LOCALIZAÇÃO) -->
               <div class="form-group" style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
@@ -8613,6 +8682,33 @@
       it.precoVendaUnitario = lerInputNumDom('inputPrecoPretendido', 58.00);
       it.margemDesejada = lerInputNumDom('inputMargemDesejada', 30.0);
       it.aliquotaImposto = lerInputNumDom('inputAliquotaImposto', 6.5);
+
+      // Sincronização dos preços individuais por tamanho (PP ao G5 e 34 ao 60)
+      it.precosPorTamanho = it.precosPorTamanho || {};
+      document.querySelectorAll('.grade-preco-input').forEach(inp => {
+        const chave = inp.getAttribute('data-chave') || inp.id.replace('precoGrade_', '');
+        const val = lerInputNumDom(inp.id, it.precoVendaUnitario || 58.00);
+        if (chave) it.precosPorTamanho[chave] = val;
+      });
+
+      // Modo de Custos e Custo Direto Manual
+      it.modoCusto = it.modoCusto || 'calcular';
+      const inpCustoDir = document.getElementById('inputCustoDiretoTotal');
+      if (inpCustoDir) {
+        it.custoDiretoManual = lerInputNumDom('inputCustoDiretoTotal', 22.50);
+      }
+
+      // Blindagem da cor do tecido (nunca deixar 'A Definir' se houver cor selecionada ou digitada)
+      if (!it.corTecido || it.corTecido === 'A Definir') {
+        const valCor = document.getElementById('orcCorPrincipalTecido')?.value?.trim();
+        if (valCor && valCor !== 'A Definir') {
+          it.corTecido = valCor;
+          it.corPrincipal = valCor;
+        } else {
+          it.corTecido = 'Azul Marinho';
+          it.corPrincipal = 'Azul Marinho';
+        }
+      }
 
       // Ler dados específicos das aplicações de personalização
       lerDadosAplicacoesDoDOM();
@@ -9266,6 +9362,25 @@
       const inpImp = document.getElementById('inputAliquotaImposto');
       if (inpImp) inpImp.value = numOuPadrao(it.aliquotaImposto, 6.5).toFixed(1);
 
+      // Preenche os preços individuais por tamanho na grade
+      const precoPadraoItem = it.precoVendaUnitario || 58.00;
+      document.querySelectorAll('.grade-preco-input').forEach(inp => {
+        const chave = inp.getAttribute('data-chave') || inp.id.replace('precoGrade_', '');
+        const val = (it.precosPorTamanho && it.precosPorTamanho[chave] != null && !isNaN(it.precosPorTamanho[chave]))
+          ? it.precosPorTamanho[chave]
+          : precoPadraoItem;
+        inp.value = formatarMoedaInput(val);
+      });
+
+      // Restaura o modo de custos (Calcular vs Custo Direto)
+      if (typeof alternarModoCustos === 'function') {
+        alternarModoCustos(it.modoCusto || 'calcular');
+      }
+      const inpCustoDirCarregar = document.getElementById('inputCustoDiretoTotal');
+      if (inpCustoDirCarregar && it.custoDiretoManual !== undefined) {
+        inpCustoDirCarregar.value = formatarMoedaInput(it.custoDiretoManual);
+      }
+
       // Origem do Material (Sob Demanda vs Tecido Estoque vs Vestuário Pronto)
       const radConf = document.getElementById('radioOrigemConfeccao');
       const radTec = document.getElementById('radioOrigemTecidoEstoque');
@@ -9597,6 +9712,66 @@
       carregarItemAtivoNoDOM();
       recalcularBenchmarkModal();
       mostrarToast(`Modelo #${novoNum} (${novoItem.produtoNome}) adicionado com Grade Numérica (34 ao 60)!`, 'green');
+    });
+
+    // Função de Alternância de Custos (Calcular Engenharia vs Custo Direto)
+    function alternarModoCustos(modo) {
+      const it = itensOrcamento[itemAtivoIndex];
+      if (it) it.modoCusto = modo;
+
+      const btnCalc = document.getElementById('btnModoCalcularCustos');
+      const btnDir = document.getElementById('btnModoCustoDireto');
+      const boxDir = document.getElementById('boxPainelCustoDireto');
+      const boxBlocoEng = document.getElementById('boxBlocoEngenhariaECustos');
+
+      if (modo === 'direto') {
+        if (boxDir) boxDir.style.display = 'block';
+        if (boxBlocoEng) boxBlocoEng.style.display = 'none';
+
+        if (btnDir) {
+          btnDir.style.background = '#10b981';
+          btnDir.style.borderColor = '#10b981';
+          btnDir.style.color = '#ffffff';
+          btnDir.classList.add('active');
+        }
+        if (btnCalc) {
+          btnCalc.style.background = '#ffffff';
+          btnCalc.style.borderColor = '#cbd5e1';
+          btnCalc.style.color = '#475569';
+          btnCalc.classList.remove('active');
+        }
+      } else {
+        if (boxDir) boxDir.style.display = 'none';
+        if (boxBlocoEng) boxBlocoEng.style.display = 'block';
+
+        if (btnCalc) {
+          btnCalc.style.background = '#0284c7';
+          btnCalc.style.borderColor = '#0284c7';
+          btnCalc.style.color = '#ffffff';
+          btnCalc.classList.add('active');
+        }
+        if (btnDir) {
+          btnDir.style.background = '#ffffff';
+          btnDir.style.borderColor = '#cbd5e1';
+          btnDir.style.color = '#475569';
+          btnDir.classList.remove('active');
+        }
+      }
+      recalcularBenchmarkModal();
+    }
+
+    document.getElementById('btnModoCalcularCustos')?.addEventListener('click', () => alternarModoCustos('calcular'));
+    document.getElementById('btnModoCustoDireto')?.addEventListener('click', () => alternarModoCustos('direto'));
+    document.getElementById('inputCustoDiretoTotal')?.addEventListener('input', () => {
+      const it = itensOrcamento[itemAtivoIndex];
+      if (it) it.custoDiretoManual = lerInputNumDom('inputCustoDiretoTotal', 22.50);
+      recalcularBenchmarkModal();
+    });
+
+    // Escuta alterações em todos os inputs de preço por tamanho
+    document.querySelectorAll('.grade-preco-input').forEach(inp => {
+      inp.addEventListener('input', () => recalcularBenchmarkModal());
+      inp.addEventListener('change', () => recalcularBenchmarkModal());
     });
 
     // Adicionar Outro Modelo ao Pedido
@@ -10700,12 +10875,46 @@
         }
       }
 
+      // Se o modo for Custo Direto, sobrepõe o custo com o valor único digitado pelo cliente
+      if (itAtivo.modoCusto === 'direto') {
+        const inpCustoDir = document.getElementById('inputCustoDiretoTotal');
+        const cDireto = parseNumMoeda(inpCustoDir?.value || itAtivo.custoDiretoManual || 22.50, 22.50);
+        itAtivo.custoDiretoManual = cDireto;
+        custoProducaoCalculado = cDireto;
+        viabilidade.custoProducaoUnitario = cDireto;
+        const lblLote = document.getElementById('lblCustoDiretoTotalLote');
+        if (lblLote) lblLote.textContent = formatarMoeda(cDireto * totalPecasItem);
+      }
+
+      // Cálculo do Preço de Venda Ponderado pelos Preços por Tamanho (ex: PP/M = 39,90 vs G5 = 48,00)
+      let somaFaturamentoGrade = 0;
+      let pecasComGrade = 0;
+      if (itAtivo.grade) {
+        Object.keys(itAtivo.grade).forEach(k => {
+          if (k === 'total') return;
+          const q = parseInt(itAtivo.grade[k], 10) || 0;
+          if (q > 0) {
+            pecasComGrade += q;
+            const pTam = (itAtivo.precosPorTamanho && itAtivo.precosPorTamanho[k] != null && !isNaN(itAtivo.precosPorTamanho[k]) && itAtivo.precosPorTamanho[k] > 0)
+              ? parseFloat(itAtivo.precosPorTamanho[k])
+              : (parseFloat(itAtivo.precoVendaUnitario) || 58.00);
+            somaFaturamentoGrade += (q * pTam);
+          }
+        });
+      }
+
+      if (pecasComGrade > 0 && somaFaturamentoGrade > 0) {
+        itAtivo.precoVendaUnitario = somaFaturamentoGrade / pecasComGrade;
+        itAtivo.valorTotalVenda = somaFaturamentoGrade;
+      } else {
+        itAtivo.valorTotalVenda = itAtivo.precoVendaUnitario * totalPecasItem;
+      }
+
       // Atualiza propriedades financeiras do item ativo
       itAtivo.custoUnitarioProducao = custoProducaoCalculado;
-      itAtivo.valorTotalVenda = itAtivo.precoVendaUnitario * totalPecasItem;
       itAtivo.custoTotalProducao = custoProducaoCalculado * totalPecasItem;
       itAtivo.lucroTotal = itAtivo.valorTotalVenda - itAtivo.custoTotalProducao;
-      itAtivo.margemReal = viabilidade.margemLiquidaReal;
+      itAtivo.margemReal = itAtivo.valorTotalVenda > 0 ? ((itAtivo.lucroTotal / itAtivo.valorTotalVenda) * 100) : 0;
 
       // Painel de Benchmark do Modelo Ativo
       const painel = document.getElementById('painelBenchmarkResultado');
@@ -12257,7 +12466,7 @@
 
     // Cadastro de costureira inline
     document.getElementById('btnCadastrarCostureiraInline')?.addEventListener('click', () => {
-      abrirModalNovoColaboradorInline((novaCost) => {
+      abrirModalCadastrarCostureiraFaccao((novaCost) => {
         const sel = document.getElementById('selCostureiraAvanco');
         if (sel) {
           const opt = document.createElement('option');
@@ -12905,7 +13114,13 @@
         status: "Quarentena", // Vai para quarentena para aprovação administrativa obrigatória
         etapaProducao: "Aguardando Aprovação Técnica",
         quarentenaAprovada: false,
-        itens: dadosBase.itens || [],
+        itens: (dadosBase.itens || []).map(item => {
+          const corItem = item.corTecido || item.corPrincipal || dadosBase.corPrincipal || dadosBase.corTecido || 'Azul Marinho';
+          return Object.assign({}, item, {
+            corTecido: corItem,
+            corPrincipal: corItem
+          });
+        }),
         produtoId: prodIdFinal,
         produtoNome: prodNomeFinal,
         corTecido: corFinal,
@@ -13380,17 +13595,31 @@
             <div style="font-size: 11px; color: #475569;">
               ${emp.razaoSocial && emp.razaoSocial !== emp.nomeFantasia ? `${emp.razaoSocial} • ` : ''}CNPJ: ${emp.cnpj || 'Não informado'}<br>
               ${(() => {
-                const parts = [];
-                if (emp.endereco) parts.push(emp.endereco);
-                if (emp.bairro && (!emp.endereco || !emp.endereco.toLowerCase().includes(emp.bairro.toLowerCase()))) {
-                  parts.push(emp.bairro);
+                // Formatação blindada do endereço da empresa (sem duplicar cidade/UF ou exibir cidade divergente)
+                let endLimpo = (emp.endereco || '').trim();
+                const cidEmp = (emp.cidade || '').trim();
+                const ufEmp = (emp.uf || '').trim();
+                const bairroEmp = (emp.bairro || '').trim();
+                const cepEmp = (emp.cep || '').trim();
+
+                // Se a cidade cadastrada for São Paulo / SP (ou outra), remove menções residuais a 'Itajaí - SC' do texto do endereço
+                if (cidEmp && !cidEmp.toLowerCase().includes('itaja')) {
+                  endLimpo = endLimpo.replace(/,\s*Itaja[ií](\s*-\s*SC)?/gi, '')
+                                     .replace(/\bItaja[ií]\s*-\s*SC\b/gi, '')
+                                     .replace(/\bItaja[ií]\b/gi, '').trim();
                 }
-                const munUf = [emp.cidade, emp.uf].filter(Boolean).join(' - ');
-                if (munUf && (!emp.endereco || !emp.endereco.toLowerCase().includes(munUf.toLowerCase()))) {
+
+                const parts = [];
+                if (endLimpo) parts.push(endLimpo);
+                if (bairroEmp && !endLimpo.toLowerCase().includes(bairroEmp.toLowerCase())) {
+                  parts.push(bairroEmp);
+                }
+                const munUf = [cidEmp, ufEmp].filter(Boolean).join(' - ');
+                if (munUf && !endLimpo.toLowerCase().includes(munUf.toLowerCase())) {
                   parts.push(munUf);
                 }
-                if (emp.cep && (!emp.endereco || !emp.endereco.includes(emp.cep))) {
-                  parts.push(`CEP: ${emp.cep}`);
+                if (cepEmp && !endLimpo.includes(cepEmp)) {
+                  parts.push('CEP: ' + cepEmp);
                 }
                 return parts.length > 0 ? parts.join(', ') + '<br>' : '';
               })()}
@@ -13469,7 +13698,7 @@
                       <strong style="color: #0f172a;">${idx + 1}. ${it.produtoNome}</strong>
                     </td>
                     <td style="padding: 6px 8px; vertical-align: top;">
-                      <span style="font-weight: 700; color: #1e3a8a;">${it.corTecido || it.corPrincipal || p.corTecido || 'A Definir'}</span><br>
+                      <span style="font-weight: 700; color: #1e3a8a;">${it.corTecido || it.corPrincipal || p.corTecido || p.corPrincipal || 'Azul Marinho'}</span><br>
                       <span style="font-size: 10px; color: #64748b;">${it.tecidoEspecificacao || ''}</span>
                       ${it.observacoesCoresDetalhes ? `<br><span style="font-size: 9.5px; color: #b45309;">${it.observacoesCoresDetalhes}</span>` : ''}
                     </td>
@@ -14369,6 +14598,52 @@
       </div>
 
       <!-- ESPECIFICAÇÃO DE CORES & DETALHES DE CONFECÇÃO (DESTAQUE CHÃO DE FÁBRICA A4) -->
+      ${(os.desmembrada || (os.subOrdensGeradas && os.subOrdensGeradas.length > 0)) ? (() => {
+        const subOrdens = (db.ordensServico || []).filter(o => o.subOs && (o.parentOsId === os.id || (os.pedidoNumero != null && String(o.pedidoNumero) === String(os.pedidoNumero))));
+        if (!subOrdens.length) return '';
+        return `
+          <!-- PAINEL DUPLO DAS SUB-OSS REPARTIDAS (DIVISAO VISUAL CLARA DE PRODUCAO) -->
+          <div style="background: #f0f9ff; border: 2px solid #0284c7; border-radius: 6px; padding: 12px 14px; margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
+              <strong style="color: #0369a1; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+                <span>✂️</span> OS REPARTIDA EM ${subOrdens.length} SUB-ORDENS DE PRODUÇÃO ATIVAS:
+              </strong>
+              <span style="font-size: 11px; color: #0284c7; font-weight: 700;">Produção dividida com sigilo financeiro</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+              ${subOrdens.map((sub, sIdx) => {
+                const letraLote = String.fromCharCode(65 + sIdx);
+                const qtdSub = sub.quantidadeTotal || (sub.grade?.total) || 0;
+                return `
+                  <div style="background: #ffffff; border: 1.5px solid #bae6fd; border-radius: 6px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                      <strong style="color: #0c4a6e; font-size: 13.5px; font-family: monospace;">${sub.id} (Lote ${letraLote})</strong>
+                      <span class="status-pill status-green" style="font-size: 9px; font-weight: 800;">${sub.etapaAtual || 'Corte'}</span>
+                    </div>
+                    <div style="font-size: 12px; color: #1e293b; margin-bottom: 4px;">
+                      Costureira / Facção: <strong style="color: #047857;">${sub.costureiraDesignada || 'A Definir'}</strong>
+                    </div>
+                    <div style="font-size: 11px; color: #475569; margin-bottom: 6px;">
+                      Quantidade: <strong>${qtdSub} peças</strong> • Remuneração: <strong>${formatarMoeda((sub.valorCosturaPeca || 7.50) * qtdSub)}</strong>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                      ${formatarGradeSelecionadaHtml(sub.grade, 'badge')}
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                      <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.abrirFichaTecnica(\'${sub.id}\')" style="flex: 1; font-weight: 700; color: #0284c7; background: #f0f9ff; border-color: #bae6fd;">
+                        🔍 Abrir Ficha ${sub.id}
+                      </button>
+                      <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.imprimirFichaTecnicaIsolada(\'${sub.id}\')" style="font-weight: 700;">
+                        🖨️ Imprimir A4
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      })() : ''}
       <div style="background: #fffbeb; border: 2px solid #f59e0b; border-radius: 4px; padding: 10px 12px; margin-bottom: 12px;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; flex-wrap: wrap; gap: 6px;">
           <strong style="color: #b45309; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
@@ -18434,6 +18709,15 @@
           </div>
 
           <div class="modal-body" style="padding: 20px;">
+            <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 11.5px; color: #166534; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <div>
+                🧵 <strong>Precisa cadastrar uma Costureira ou Facção Terceirizada?</strong><br>
+                Costureiras externas não precisam de e-mail e login. Cadastre-as direto com nome, telefone e endereço.
+              </div>
+              <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.fecharModal(); window.ERP.abrirModalCadastrarCostureiraFaccao();" style="font-weight: 800; color: #047857; background: #ffffff; border-color: #86efac;">
+                + Cadastro Rápido de Costureira
+              </button>
+            </div>
             <div class="form-group" style="margin-bottom: 14px;">
               <label class="form-label">Nome Completo do Insumo / Tecido *</label>
               <input type="text" id="cadInsumoNome" class="form-input" placeholder="Ex: Meia Malha 30.1 Penteada 100% Algodão" style="font-weight: 700; font-size: 13.5px;" autofocus>
@@ -23767,8 +24051,13 @@
               </div>
             </div>
 
-            <div style="font-size: 12px; font-weight: 700; color: var(--color-red); margin-bottom: 10px;">
-              VOCÊ DEVE SELECIONAR OBRIGATORIAMENTE CADA PONTO DE ATENÇÃO PARA CONFIRMAR QUE CONFERIU:
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <div style="font-size: 12px; font-weight: 700; color: var(--color-red);">
+                VOCÊ DEVE SELECIONAR OBRIGATORIAMENTE CADA PONTO DE ATENÇÃO PARA CONFIRMAR QUE CONFERIU:
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" id="btnQuarentenaSelecionarTudo" style="font-weight: 800; font-size: 11.5px; background: #ecfdf5; color: #047857; border: 1.5px solid #10b981; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; padding: 4px 10px; border-radius: 5px;">
+                ✓ Selecionar / Conferir Tudo
+              </button>
             </div>
 
             <!-- 5 Pontos de Atenção Obrigatórios -->
@@ -23872,6 +24161,23 @@
       }
     }
 
+    document.getElementById('btnQuarentenaSelecionarTudo')?.addEventListener('click', () => {
+      const todosJaMarcados = checkboxes.every(cb => cb && cb.checked);
+      const novoEstado = !todosJaMarcados;
+      checkboxes.forEach((cb, idx) => {
+        if (cb) {
+          cb.checked = novoEstado;
+          const item = document.getElementById('itemCheck' + (idx + 1));
+          if (novoEstado) {
+            item?.classList.add('checked');
+          } else {
+            item?.classList.remove('checked');
+          }
+        }
+      });
+      validarChecklist();
+    });
+
     checkboxes.forEach((cb, idx) => {
       cb?.addEventListener('change', () => {
         const item = document.getElementById(`itemCheck${idx + 1}`);
@@ -23946,10 +24252,15 @@
           <h2 style="font-size: 16px; font-weight: 800; color: var(--text-primary); margin: 0 0 4px 0;">Controle de Acessos & Equipe da Confecção</h2>
           <p style="color: var(--text-gray-500); font-size: 12px; margin: 0;">Cadastre seus funcionários com e-mail, senha provisória e nível de acesso. Eles criarão a própria senha no 1º login.</p>
         </div>
-        <button class="btn btn-primary" id="btnCadastrarColaborador" style="display: flex; align-items: center; gap: 6px;">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          + Cadastrar Novo Usuário / Funcionário
-        </button>
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <button type="button" class="btn btn-secondary" id="btnCadastrarCostureiraEquipe" style="display: flex; align-items: center; gap: 6px; font-weight: 800; color: #047857; background: #ecfdf5; border: 1.5px solid #86efac; border-radius: 6px; cursor: pointer;">
+            🧵 + Cadastrar Costureira / Facção Externa
+          </button>
+          <button class="btn btn-primary" id="btnCadastrarColaborador" style="display: flex; align-items: center; gap: 6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            + Cadastrar Novo Usuário / Funcionário
+          </button>
+        </div>
       </div>
 
       <div class="table-wrapper">
@@ -24053,6 +24364,163 @@
           mostrarToast(`Usuário "${col.nome}" removido do sistema.`, 'green');
         }
       });
+    });
+  }
+
+  
+  /**
+   * Modal Exclusivo e Simplificado de Cadastro de Costureira / Facção Externa
+   * 100% focado no chão de fábrica têxtil: sem e-mail, sem login, sem senha
+   */
+  function abrirModalCadastrarCostureiraFaccao(callback) {
+    if (!modalContainer) return;
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active" id="modalCadastrarCostureiraFaccaoOverlay">
+        <div class="modal-box" style="max-width: 580px; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);">
+          <div class="modal-header" style="background: linear-gradient(135deg, #065f46, #047857); color: #ffffff; padding: 16px 20px;">
+            <div>
+              <div class="modal-title" style="color: #ffffff; font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                <span>🧵</span> Cadastrar Costureira / Facção Externa
+              </div>
+              <div style="font-size: 11.5px; color: #a7f3d0; margin-top: 2px;">
+                Cadastro direto para envio de lotes de corte (sem necessidade de e-mail ou senha de login)
+              </div>
+            </div>
+            <button class="modal-close" style="color: #ffffff;" onclick="window.ERP.fecharModal(this)">&times;</button>
+          </div>
+
+          <div class="modal-body" style="padding: 20px; max-height: 80vh; overflow-y: auto;">
+            <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: #166534; line-height: 1.45;">
+              💡 <strong>Parceira de Produção Externa:</strong> Cadastre a facção ou costureira que confecciona seus pedidos. Ela ficará imediatamente disponível em todos os pedidos e ordens de corte.
+            </div>
+
+            <div class="form-row" style="margin-bottom: 12px;">
+              <div class="form-group" style="flex: 2; margin: 0;">
+                <label class="form-label" style="font-weight: 700;">Nome da Costureira / Oficina *</label>
+                <input type="text" id="cadCostNome" class="form-input" placeholder="Ex: Josiani Oliveira / Facção Estrela" style="font-weight: 700;">
+              </div>
+              <div class="form-group" style="flex: 1.2; margin: 0;">
+                <label class="form-label" style="font-weight: 700;">WhatsApp / Telefone *</label>
+                <input type="text" id="cadCostTel" class="form-input text-mono" placeholder="47 99999-3187">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" style="font-weight: 700;">Endereço / Bairro (Para Entrega & Coleta de Peças):</label>
+              <input type="text" id="cadCostEnd" class="form-input" placeholder="Ex: Rua das Indústrias, 250 - Bairro Industrial">
+            </div>
+
+            <div class="form-row" style="margin-bottom: 12px;">
+              <div class="form-group" style="flex: 1.4; margin: 0;">
+                <label class="form-label" style="font-weight: 700;">Especialidade de Costura:</label>
+                <select id="cadCostEsp" class="form-select" style="font-weight: 600;">
+                  <option value="Camisetas & Polos">Camisetas & Polos (Gola Careca / Piquet)</option>
+                  <option value="Calças, Bermudas & Brim">Calças Operacionais, Bermudas & Brim</option>
+                  <option value="Moletons & Casacos">Moletons, Casacos & Jaquetas</option>
+                  <option value="Uniformes Sociais & Camisaria">Uniformes Sociais & Camisaria</option>
+                  <option value="Fechamento Geral">Fechamento Geral / Todas as Peças</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="flex: 1; margin: 0;">
+                <label class="form-label" style="font-weight: 700;">Capacidade Diária (peças):</label>
+                <input type="number" id="cadCostCap" class="form-input text-mono" value="80" min="1" step="10">
+              </div>
+            </div>
+
+            <div class="form-row" style="margin-bottom: 12px;">
+              <div class="form-group" style="flex: 1; margin: 0;">
+                <label class="form-label" style="font-weight: 700;">Custo Médio Pago por Peça (R$):</label>
+                <input type="number" id="cadCostValorPeca" class="form-input text-mono" value="7.50" step="0.50" min="0" style="font-weight: 800; color: #166534;">
+              </div>
+              <div class="form-group" style="flex: 1.5; margin: 0;">
+                <label class="form-label">Observações / Maquinário Disponível:</label>
+                <input type="text" id="cadCostObs" class="form-input" placeholder="Ex: Galoneira, overloque 4 fios, reta industrial">
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 14px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal(this)">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnConfirmarSalvarCostureira" style="background: #059669; border-color: #059669; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
+              <span>✓ Salvar Costureira no Sistema</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    modalEl.querySelector('#btnConfirmarSalvarCostureira')?.addEventListener('click', async () => {
+      const nome = (modalEl.querySelector('#cadCostNome')?.value || '').trim();
+      const tel = (modalEl.querySelector('#cadCostTel')?.value || '').trim();
+      const end = (modalEl.querySelector('#cadCostEnd')?.value || '').trim();
+      const esp = modalEl.querySelector('#cadCostEsp')?.value || 'Fechamento Geral';
+      const cap = parseInt(modalEl.querySelector('#cadCostCap')?.value || 80, 10);
+      const valPeca = parseFloat(modalEl.querySelector('#cadCostValorPeca')?.value || 7.50);
+      const obs = (modalEl.querySelector('#cadCostObs')?.value || '').trim();
+
+      if (!nome) {
+        mostrarToast('Informe o nome da costureira ou oficina.', 'red');
+        modalEl.querySelector('#cadCostNome')?.focus();
+        return;
+      }
+
+      const novaCost = {
+        id: 'COST-' + Date.now().toString().slice(-6),
+        nome: nome,
+        responsavel: nome,
+        telefone: tel,
+        endereco: end,
+        especialidade: esp,
+        cargo: 'Costureira / Facção',
+        tipo: 'terceirizado',
+        terceirizado: true,
+        capacidadeDiaPecas: cap,
+        valorMedioPorPeca: valPeca,
+        valorRemuneracao: valPeca * 100,
+        status: 'Ativo',
+        observacoes: obs,
+        criadoEm: new Date().toISOString()
+      };
+
+      if (!Array.isArray(db.costureiras)) db.costureiras = [];
+      if (!Array.isArray(db.equipe)) db.equipe = [];
+
+      db.costureiras.unshift(novaCost);
+      db.equipe.unshift(novaCost);
+
+      salvarEstado(true);
+
+      if (window.ERP_CLOUD && typeof window.ERP_CLOUD.sincronizarImediatoComNuvem === 'function') {
+        window.ERP_CLOUD.sincronizarImediatoComNuvem(db);
+      }
+
+      // Atualiza qualquer dropdown de costureira aberto no formulário de avanço de pedido
+      const selAvanco = document.getElementById('selCostureiraAvanco');
+      if (selAvanco) {
+        const opt = document.createElement('option');
+        opt.value = novaCost.id;
+        opt.textContent = `${novaCost.nome} • Resp: ${novaCost.nome} • Esp: ${novaCost.especialidade} (Ativo)`;
+        opt.selected = true;
+        selAvanco.appendChild(opt);
+        selAvanco.value = novaCost.id;
+      }
+
+      // Atualiza todos os seletores de costureira por modelo
+      document.querySelectorAll('.sel-cost-avanco-item').forEach(sel => {
+        const opt = document.createElement('option');
+        opt.value = novaCost.id;
+        opt.textContent = `${novaCost.nome} (${novaCost.especialidade})`;
+        sel.appendChild(opt);
+      });
+
+      fecharModal(modalEl);
+      mostrarToast(`Costureira "${novaCost.nome}" cadastrada com sucesso!`, 'green');
+
+      if (typeof callback === 'function') {
+        callback(novaCost);
+      }
     });
   }
 
@@ -24396,9 +24864,9 @@
       endereco: "Rua Cingapura, 60",
       complemento: "Lote 171",
       bairro: "São Vicente",
-      cidade: "Itajaí",
-      uf: "SC",
-      cep: "88309-677",
+      cidade: (db && db.empresa && db.empresa.cidade) ? db.empresa.cidade : "São Paulo",
+      uf: (db && db.empresa && db.empresa.uf) ? db.empresa.uf : "SP",
+      cep: (db && db.empresa && db.empresa.cep) ? db.empresa.cep : "01001-000",
       nfeioCompanyId: "b8ac27d9851944a8baa5ad0c134d08f9"
     };
 
@@ -26315,7 +26783,7 @@
                 </span>
                 <strong style="font-size: 13.5px; color: #0f172a;">${emp.razaoSocial || emp.nomeFantasia || 'Confecção de Uniformes'}</strong>
                 <div style="font-size: 11px; color: #475569; margin-top: 2px;">
-                  CNPJ: <strong class="text-mono">${emp.cnpj || '59.441.843/0001-76'}</strong> &bull; I.E.: <strong class="text-mono">${emp.inscricaoEstadual || emp.ie || 'ISENTO'}</strong> &bull; ${emp.cidade || 'Itajaí'}/${emp.uf || 'SC'}
+                  CNPJ: <strong class="text-mono">${emp.cnpj || '59.441.843/0001-76'}</strong> &bull; I.E.: <strong class="text-mono">${emp.inscricaoEstadual || emp.ie || 'ISENTO'}</strong> &bull; ${emp.cidade || 'São Paulo'}/${emp.uf || 'SP'}
                 </div>
               </div>
               <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.fecharTodosModais(); window.ERP.navegarPara('empresa');" style="font-size: 11px; font-weight: 700;">
@@ -31080,7 +31548,7 @@
     abrirModalCancelarPedido,
     reativarPedido,
     abrirModalDetalhesCancelamento,
-    abrirModalNovoClienteInline,
+    abrirModalCadastrarCostureiraFaccao, abrirModalNovoClienteInline,
     abrirModalNovoModeloInline,
     abrirModalInspecaoQuarentena,
     abrirModalReceberPagamento,

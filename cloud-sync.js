@@ -2031,6 +2031,10 @@ with check (true);
     base.quarentena = fundirColecaoPorId(local.quarentena, remoto.quarentena, 'id');
     base.despesasFixas = fundirColecaoPorId(local.despesasFixas, remoto.despesasFixas, 'id');
     base.compras = fundirColecaoPorId(local.compras, remoto.compras, 'id');
+    base.costureiras = fundirColecaoPorId(local.costureiras, remoto.costureiras, 'id');
+    base.equipe = fundirColecaoPorId(local.equipe, remoto.equipe, 'id');
+    base.produtosBase = fundirColecaoPorId(local.produtosBase, remoto.produtosBase, 'id');
+    base.estoque = fundirColecaoPorId(local.estoque, remoto.estoque, 'id');
     // Se na nuvem as notas foram expurgadas/revertidas (length === 0), respeita a nuvem
     if (Array.isArray(remoto.notasFiscais) && remoto.notasFiscais.length === 0) {
       base.notasFiscais = [];

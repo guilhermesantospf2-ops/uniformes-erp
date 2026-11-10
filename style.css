@@ -3357,3 +3357,34 @@ input[type="number"] {
   appearance: textfield !important;
 }
 
+
+/* Blindagem contra sobreposicao de tags de tamanhos na tabela de pedidos */
+.erp-table-pedidos td:nth-child(5) {
+  white-space: normal !important;
+  max-width: 260px !important;
+  min-width: 180px !important;
+}
+.erp-table-pedidos td:nth-child(6),
+.erp-table-pedidos td:nth-child(7) {
+  white-space: nowrap !important;
+  text-align: right !important;
+}
+
+.grade-preco-input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  padding: 3px 2px;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+  color: #1e40af;
+  background: #f8fafc;
+  font-family: 'JetBrains Mono', Consolas, monospace;
+}
+.grade-preco-input:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: #2563eb;
+}
