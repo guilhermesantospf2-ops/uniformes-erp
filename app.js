@@ -6980,6 +6980,21 @@
     return n.toFixed(2).replace('.', ',');
   }
 
+  function parseNumMoeda(val, padrao = 0) {
+    if (val === undefined || val === null || val === '') return padrao;
+    if (typeof val === 'number') return isNaN(val) ? padrao : val;
+    let str = String(val).trim().replace(/^R\$\s*/i, '');
+    if (str === '') return padrao;
+    if (str.includes(',') && str.includes('.')) {
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else {
+      str = str.replace(',', '.');
+    }
+    const n = parseFloat(str);
+    return isNaN(n) ? padrao : n;
+  }
+  window.parseNumMoeda = parseNumMoeda;
+
   // Lê um input numérico do DOM preservando 0 ou campo limpo ('') como 0!
   function lerInputNumDom(idOuEl, padraoSeInexistente = 0) {
     const el = typeof idOuEl === 'string' ? document.getElementById(idOuEl) : idOuEl;
@@ -8232,6 +8247,14 @@
                     </div>
                   </div>
                 </div>
+                <!-- Aviso Financeiro & Centro de Custos Obrigatório -->
+                <div style="margin-top: 12px; padding: 10px 14px; background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 6px; font-size: 11.5px; color: #92400e; line-height: 1.45; display: flex; align-items: flex-start; gap: 8px;">
+                  <span style="font-size: 16px; line-height: 1;">⚠️</span>
+                  <div>
+                    <strong>Aviso Financeiro & Centro de Custos:</strong><br>
+                    Esta opção selecionada no financeiro entrará como <strong>"Custo com Mercadoria"</strong>, mas não conseguirá ser separada por setor no centro de custos. Portanto, ela cai em <strong>Produção: Costura & Facções (CC-03)</strong> como <em>"Custo com Mercadoria"</em>.
+                  </div>
+                </div>
               </div>
 
 <!-- Painel Exclusivo de Uniforme de Time (Grade Nominal Direta via Relação de Atletas) -->
@@ -8696,7 +8719,7 @@
       it.modoCusto = it.modoCusto || 'calcular';
       const inpCustoDir = document.getElementById('inputCustoDiretoTotal');
       if (inpCustoDir) {
-        it.custoDiretoManual = lerInputNumDom('inputCustoDiretoTotal', 22.50);
+        it.custoDiretoManual = parseNumMoeda(inpCustoDir.value, it.custoDiretoManual || 22.50);
       }
 
       // Blindagem da cor do tecido (nunca deixar 'A Definir' se houver cor selecionada ou digitada)
@@ -9378,12 +9401,12 @@
       }
 
       // Restaura o modo de custos (Calcular vs Custo Direto)
+      const inpCustoDirCarregar = document.getElementById('inputCustoDiretoTotal');
+      if (inpCustoDirCarregar && it.custoDiretoManual !== undefined && it.custoDiretoManual !== null) {
+        inpCustoDirCarregar.value = formatarMoedaInput(it.custoDiretoManual);
+      }
       if (typeof alternarModoCustos === 'function') {
         alternarModoCustos(it.modoCusto || 'calcular');
-      }
-      const inpCustoDirCarregar = document.getElementById('inputCustoDiretoTotal');
-      if (inpCustoDirCarregar && it.custoDiretoManual !== undefined) {
-        inpCustoDirCarregar.value = formatarMoedaInput(it.custoDiretoManual);
       }
 
       // Origem do Material (Sob Demanda vs Tecido Estoque vs Vestuário Pronto)
@@ -9745,6 +9768,15 @@
           btnCalc.style.color = '#475569';
           btnCalc.classList.remove('active');
         }
+
+        const inpCustoDir = document.getElementById('inputCustoDiretoTotal');
+        if (inpCustoDir && it) {
+          if (it.custoDiretoManual !== undefined && it.custoDiretoManual !== null && it.custoDiretoManual > 0) {
+            inpCustoDir.value = formatarMoedaInput(it.custoDiretoManual);
+          } else {
+            it.custoDiretoManual = parseNumMoeda(inpCustoDir.value || 22.50, 22.50);
+          }
+        }
       } else {
         if (boxDir) boxDir.style.display = 'none';
         if (boxBlocoEng) boxBlocoEng.style.display = 'block';
@@ -9767,11 +9799,17 @@
 
     document.getElementById('btnModoCalcularCustos')?.addEventListener('click', () => alternarModoCustos('calcular'));
     document.getElementById('btnModoCustoDireto')?.addEventListener('click', () => alternarModoCustos('direto'));
-    document.getElementById('inputCustoDiretoTotal')?.addEventListener('input', () => {
-      const it = itensOrcamento[itemAtivoIndex];
-      if (it) it.custoDiretoManual = lerInputNumDom('inputCustoDiretoTotal', 22.50);
-      recalcularBenchmarkModal();
-    });
+    
+    const inpCustoDirEl = document.getElementById('inputCustoDiretoTotal');
+    if (inpCustoDirEl) {
+      ['input', 'change', 'keyup', 'blur'].forEach(ev => {
+        inpCustoDirEl.addEventListener(ev, () => {
+          const it = itensOrcamento[itemAtivoIndex];
+          if (it) it.custoDiretoManual = parseNumMoeda(inpCustoDirEl.value, 22.50);
+          recalcularBenchmarkModal();
+        });
+      });
+    }
 
     // Escuta alterações em todos os inputs de preço por tamanho
     document.querySelectorAll('.grade-preco-input').forEach(inp => {
@@ -10883,10 +10921,19 @@
       // Se o modo for Custo Direto, sobrepõe o custo com o valor único digitado pelo cliente
       if (itAtivo.modoCusto === 'direto') {
         const inpCustoDir = document.getElementById('inputCustoDiretoTotal');
-        const cDireto = parseNumMoeda(inpCustoDir?.value || itAtivo.custoDiretoManual || 22.50, 22.50);
+        const cDireto = parseNumMoeda(inpCustoDir ? inpCustoDir.value : (itAtivo.custoDiretoManual || 22.50), 22.50);
         itAtivo.custoDiretoManual = cDireto;
         custoProducaoCalculado = cDireto;
         viabilidade.custoProducaoUnitario = cDireto;
+        const aliqImp = numOuPadrao(itAtivo.aliquotaImposto, 6.5);
+        const margDes = numOuPadrao(itAtivo.margemDesejada, 30.0);
+        const taxaDeducoes = (aliqImp + margDes) / 100;
+        const divisor = Math.max(0.1, 1 - taxaDeducoes);
+        viabilidade.precoSugeridoCalculado = cDireto / divisor;
+        viabilidade.lucroLiquidoUnitario = itAtivo.precoVendaUnitario - cDireto - (itAtivo.precoVendaUnitario * (aliqImp / 100));
+        viabilidade.margemLiquidaReal = (itAtivo.precoVendaUnitario > 0)
+          ? ((viabilidade.lucroLiquidoUnitario / itAtivo.precoVendaUnitario) * 100)
+          : 0;
         const lblLote = document.getElementById('lblCustoDiretoTotalLote');
         if (lblLote) lblLote.textContent = formatarMoeda(cDireto * totalPecasItem);
       }
@@ -19788,6 +19835,11 @@
     const cat = (item.categoria || '').toLowerCase();
     const desc = (item.descricao || item.itens || '').toLowerCase();
 
+    // 0. Custo com Mercadoria (Lançamento Direto fechado de produção / compras) -> CC-03 (Produção: Costura & Facções)
+    if (cat.includes('mercadoria') || desc.includes('mercadoria') || cat.includes('custo direto') || desc.includes('custo direto')) {
+      return 'CC-03';
+    }
+
     // 1. Comercial & Marketing (COM / CC-01)
     if (cat.includes('comiss') || cat.includes('mkt') || cat.includes('marketing') || cat.includes('propaganda') ||
       desc.includes('comiss') || desc.includes('anúncio') || desc.includes('meta ads') || desc.includes('google ads') || desc.includes('vendedor')) {
@@ -20831,29 +20883,40 @@
             } else if (p.itens && Array.isArray(p.itens) && p.itens.length > 0) {
               p.itens.forEach(it => {
                 const q = it.grade?.total || 0;
-                const precoKg = numOuPadrao(it.custoTecidoKg, 48.50);
-                const consumo = numOuPadrao(it.consumoTecido, 0.28);
-                const margem = 1 + (numOuPadrao(it.margemErroTecido, 8.0) / 100);
-                somaRealTec += (precoKg * consumo * margem * q);
-                somaRealCost += (numOuPadrao(it.custoCostura, 7.50) * q);
-                somaRealAviam += (numOuPadrao(it.custoAviamento, 4.80) * q);
+                if (it.modoCusto === 'direto' || (p.modoCusto === 'direto' && !it.modoCusto)) {
+                  // Custo Direto (Lançamento Rápido): entra como Custo com Mercadoria em Produção: Costura & Facções (CC-03)
+                  const cDir = numOuPadrao(it.custoDiretoManual || it.custoUnitarioProducao, 0);
+                  somaRealCost += (cDir * q);
+                } else {
+                  const precoKg = numOuPadrao(it.custoTecidoKg, 48.50);
+                  const consumo = numOuPadrao(it.consumoTecido, 0.28);
+                  const margem = 1 + (numOuPadrao(it.margemErroTecido, 8.0) / 100);
+                  somaRealTec += (precoKg * consumo * margem * q);
+                  somaRealCost += (numOuPadrao(it.custoCostura, 7.50) * q);
+                  somaRealAviam += (numOuPadrao(it.custoAviamento, 4.80) * q);
 
-                if (it.custoEstampaTotal !== undefined && it.custoEstampaTotal !== null && it.custoEstampaTotal !== '') {
-                  somaRealEst += (numOuPadrao(it.custoEstampaTotal, 0) * q);
-                } else if (Array.isArray(it.aplicacoes)) {
-                  it.aplicacoes.forEach(ap => {
-                    const vApp = numOuPadrao(ap.custoEstimadoUnitario ?? ap.custoUnitario, ap.tecnica === 'Lisa' ? 0 : (ap.tipo === 'Bordado' ? 6.50 : 4.50));
-                    somaRealEst += vApp * q;
-                  });
+                  if (it.custoEstampaTotal !== undefined && it.custoEstampaTotal !== null && it.custoEstampaTotal !== '') {
+                    somaRealEst += (numOuPadrao(it.custoEstampaTotal, 0) * q);
+                  } else if (Array.isArray(it.aplicacoes)) {
+                    it.aplicacoes.forEach(ap => {
+                      const vApp = numOuPadrao(ap.custoEstimadoUnitario ?? ap.custoUnitario, ap.tecnica === 'Lisa' ? 0 : (ap.tipo === 'Bordado' ? 6.50 : 4.50));
+                      somaRealEst += vApp * q;
+                    });
+                  }
                 }
               });
               somaRealTaxas += parseFloat(p.taxaTotalOperadoraValor || p.pagamentoDetalhes?.taxaTotalOperadoraValor || 0);
             } else {
               const qTot = p.grade?.total || 1;
-              somaRealTec += (numOuPadrao(p.custoTecidoPorPeca, 14.67) * qTot);
-              somaRealCost += (numOuPadrao(p.custoCostura, 7.50) * qTot);
-              somaRealAviam += (numOuPadrao(p.custoAviamento, 4.80) * qTot);
-              somaRealEst += numOuPadrao(p.custoEstampaTotal, 0);
+              if (p.modoCusto === 'direto') {
+                const cDir = numOuPadrao(p.custoTotalEstimado ? (p.custoTotalEstimado / qTot) : 0, 0);
+                somaRealCost += (cDir * qTot);
+              } else {
+                somaRealTec += (numOuPadrao(p.custoTecidoPorPeca, 14.67) * qTot);
+                somaRealCost += (numOuPadrao(p.custoCostura, 7.50) * qTot);
+                somaRealAviam += (numOuPadrao(p.custoAviamento, 4.80) * qTot);
+                somaRealEst += numOuPadrao(p.custoEstampaTotal, 0);
+              }
               somaRealTaxas += parseFloat(p.taxaTotalOperadoraValor || 0);
             }
           });
@@ -20887,7 +20950,7 @@
                     <td></td>
                   </tr>
                   <tr class="dre-row-sub-2">
-                    <td>• Mão de Obra de Costura (Facções Externas e Oficinas) (${receitaLiquida > 0 ? ((somaRealCost / receitaLiquida) * 100).toFixed(1) : 0}%)</td>
+                    <td>• Mão de Obra de Costura & Custo com Mercadoria (CC-03 - Costura e Facções) (${receitaLiquida > 0 ? ((somaRealCost / receitaLiquida) * 100).toFixed(1) : 0}%)</td>
                     <td class="text-mono text-gray-500" style="text-align: right;">- ${formatarMoeda(somaRealCost)}</td>
                     <td></td>
                   </tr>
@@ -22143,6 +22206,7 @@
               <div class="form-group" style="flex: 1.2;">
                 <label class="form-label">Categoria de Custo *</label>
                 <select id="despCategoria" class="form-select">
+                  <option value="Custo com Mercadoria" ${desp.categoria === 'Custo com Mercadoria' ? 'selected' : ''}>Custo com Mercadoria (Produção / Facções)</option>
                   <option value="Instalações" ${desp.categoria === 'Instalações' ? 'selected' : ''}>Instalações (Aluguel, IPTU, Condomínio)</option>
                   <option value="Utilidades" ${desp.categoria === 'Utilidades' ? 'selected' : ''}>Utilidades (Energia, Água, Gás)</option>
                   <option value="Fornecedores Malhas" ${desp.categoria === 'Fornecedores Malhas' ? 'selected' : ''}>Fornecedores (Malhas e Tecidos)</option>
@@ -22222,6 +22286,19 @@
         </div>
       </div>
     `);
+
+    document.getElementById('despCategoria')?.addEventListener('change', (e) => {
+      const val = e.target.value;
+      const selCC = document.getElementById('despCentroCusto');
+      if (!selCC) return;
+      if (val === 'Custo com Mercadoria' || val === 'Facções Externas') {
+        selCC.value = 'CC-03';
+      } else if (val === 'Fornecedores Malhas') {
+        selCC.value = 'CC-06';
+      } else if (val === 'Comissões') {
+        selCC.value = 'CC-01';
+      }
+    });
 
     document.getElementById('btnSalvarDespesaModal')?.addEventListener('click', () => {
       const desc = document.getElementById('despDescricao')?.value.trim();
