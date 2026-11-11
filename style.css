@@ -3407,7 +3407,7 @@ input[type="number"] {
   padding-right: 2px !important;
 }
 
-/* Colunas da Grade de Tamanhos - Design Limpo e Profissional */
+/* Colunas da Grade de Tamanhos - Design Limpo, Seleção & Obrigatoriedade */
 .grade-col {
   transition: all 0.18s ease-in-out;
   position: relative;
@@ -3422,13 +3422,33 @@ input[type="number"] {
 }
 
 .grade-col .grade-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   font-size: 11px;
   font-weight: 800;
   color: #334155;
   margin-bottom: 4px;
   text-align: center;
   border-radius: 4px;
-  padding: 2px 0;
+  padding: 2px 2px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.grade-col .grade-check-tam {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+.grade-col .grade-nome-tam {
+  display: inline-block;
+  line-height: 1;
 }
 
 .grade-col .grade-input {
@@ -3462,19 +3482,40 @@ input[type="number"] {
   color: #94a3b8;
 }
 
-/* Quando a coluna tem peças (> 0) ou foi ativada */
+/* Coluna Não Selecionada (Inativa) */
+.grade-col:not(.ativo):not(.grade-col-total) {
+  opacity: 0.68;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+}
+
+.grade-col:not(.ativo):not(.grade-col-total) .grade-input,
+.grade-col:not(.ativo):not(.grade-col-total) .grade-preco-input {
+  background-color: #f1f5f9 !important;
+  color: #94a3b8 !important;
+  border-color: #e2e8f0 !important;
+  cursor: not-allowed !important;
+}
+
+/* Quando o tamanho foi selecionado (Ativo) */
 .grade-col.ativo:not(.grade-col-total) {
+  opacity: 1 !important;
   background: #eff6ff !important;
   border: 2px solid #2563eb !important;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.18) !important;
 }
 
 .grade-col.ativo .grade-label {
-  color: #1d4ed8 !important;
-  font-weight: 900 !important;
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.grade-col.ativo .grade-label .grade-check-tam {
+  accent-color: #1e3a8a;
 }
 
 .grade-col.ativo .grade-input {
+  background-color: #ffffff !important;
   border-color: #3b82f6 !important;
   color: #1e3a8a !important;
 }
@@ -3484,4 +3525,17 @@ input[type="number"] {
   color: #1e40af !important;
   border-color: #93c5fd !important;
   cursor: text !important;
+}
+
+/* Preenchimento Obrigatório Pendente (quando selecionado e ainda não preenchido) */
+.grade-col.ativo .grade-input.campo-invalido-obrigatorio,
+.grade-col.ativo .grade-preco-input.campo-invalido-obrigatorio {
+  border: 1.5px solid #ef4444 !important;
+  background-color: #fff1f2 !important;
+  color: #b91c1c !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25) !important;
+}
+
+.grade-col.ativo.incompleto-alerta {
+  border-color: #ef4444 !important;
 }

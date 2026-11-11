@@ -9234,12 +9234,28 @@
       const g = it.grade || {};
       TODOS_CAMPOS_GRADE.forEach(campo => {
         const inp = document.getElementById(campo.id);
-        if (inp) inp.value = g[campo.chave] || 0;
+        const qVal = g[campo.chave] || 0;
+        if (inp) inp.value = qVal;
+
+        const inpPreco = document.getElementById('precoGrade_' + campo.chave);
+        if (inpPreco) {
+          if (it.precosPorTamanho && it.precosPorTamanho[campo.chave] !== undefined) {
+            inpPreco.value = formatarMoedaInput(it.precosPorTamanho[campo.chave]);
+          } else if (qVal > 0 && it.precoVendaUnitario > 0) {
+            inpPreco.value = formatarMoedaInput(it.precoVendaUnitario);
+          } else {
+            inpPreco.value = '0,00';
+          }
+        }
       });
       const inpTotal = document.getElementById('gradeTotal');
       if (inpTotal) inpTotal.value = g.total || 0;
       const inpTotalNum = document.getElementById('gradeTotalNum');
       if (inpTotalNum) inpTotalNum.value = g.total || 0;
+
+      if (typeof atualizarEstadoVisualTamanhos === 'function') {
+        atualizarEstadoVisualTamanhos();
+      }
 
       // Detecta / define o modo de medidas deste modelo (Alfabética vs Numérica)
       const temQtdNum = CAMPOS_GRADE_NUMERICA.some(c => (g[c.chave] || 0) > 0);
@@ -11083,13 +11099,58 @@
 
       const totalPecasGeral = itensOrcamento.reduce((s, it) => s + (it.grade?.total || 0), 0);
       if (totalPecasGeral <= 0) {
-        mostrarToast('Por favor, informe a quantidade de peças na grade de tamanhos (PP a XG) de pelo menos um modelo.', 'red');
-        const boxGrade = document.getElementById('boxGradeTableInput');
+        mostrarToast('Por favor, selecione os tamanhos desejados e informe a quantidade na grade.', 'red');
+        const boxGrade = document.getElementById('boxGradeTableInputAlfabetica') || document.getElementById('boxGradeTableInputNumerica');
         if (boxGrade) {
           boxGrade.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.45)';
           setTimeout(() => { boxGrade.style.boxShadow = ''; }, 3000);
         }
         return null;
+      }
+
+      // Validação estrita: Quando selecionado, quantidade (> 0) e preço (> 0) são obrigatórios!
+      for (let i = 0; i < itensOrcamento.length; i++) {
+        const it = itensOrcamento[i];
+        const g = it.grade || {};
+        const precos = it.precosPorTamanho || {};
+
+        for (const c of TODOS_CAMPOS_GRADE) {
+          const qtd = parseInt(g[c.chave] || 0, 10);
+          const preco = parseNumMoeda(precos[c.chave], 0);
+
+          const chk = document.querySelector(`.grade-check-tam[data-chave="${c.chave}"]`);
+          const selecionado = (i === itemAtivoIndex && chk) ? chk.checked : (qtd > 0 || preco > 0);
+
+          if (selecionado) {
+            if (qtd <= 0) {
+              mostrarToast(`⚠️ O tamanho ${c.rotulo} (Modelo ${i + 1}) está selecionado, mas a QUANTIDADE é obrigatória!`, 'amber');
+              if (i !== itemAtivoIndex && typeof alternarParaModeloIndex === 'function') {
+                alternarParaModeloIndex(i);
+              }
+              const inpQ = document.getElementById(c.id);
+              if (inpQ) {
+                inpQ.classList.add('campo-invalido-obrigatorio');
+                inpQ.focus();
+                inpQ.select();
+              }
+              return null;
+            }
+
+            if (preco <= 0) {
+              mostrarToast(`⚠️ O tamanho ${c.rotulo} (Modelo ${i + 1}) está selecionado, mas o PREÇO DE VENDA (R$) é obrigatório!`, 'amber');
+              if (i !== itemAtivoIndex && typeof alternarParaModeloIndex === 'function') {
+                alternarParaModeloIndex(i);
+              }
+              const inpP = document.getElementById('precoGrade_' + c.chave);
+              if (inpP) {
+                inpP.classList.add('campo-invalido-obrigatorio');
+                inpP.focus();
+                inpP.select();
+              }
+              return null;
+            }
+          }
+        }
       }
 
       const clienteId = document.getElementById('orcClienteSelect')?.value;
@@ -11353,22 +11414,68 @@
       abrirModalDetalhamentoCustosPorPeca();
     });
 
-    // Sincronização e interação visual para seleção ativa de tamanhos da grade
+    // Sincronização, seleção ativa e validação de preenchimento obrigatório da grade
+    function validarCamposObrigatoriosColuna(col) {
+      if (!col || col.classList.contains('grade-col-total') || col.querySelector('#gradeTotal') || col.querySelector('#gradeTotalNum')) return true;
+      const inpQtd = col.querySelector('.grade-input');
+      const inpPreco = col.querySelector('.grade-preco-input');
+      const chk = col.querySelector('.grade-check-tam');
+      if (!inpQtd) return true;
+
+      const isAtivo = (chk && chk.checked) || col.classList.contains('ativo');
+      if (!isAtivo) {
+        inpQtd.classList.remove('campo-invalido-obrigatorio');
+        if (inpPreco) inpPreco.classList.remove('campo-invalido-obrigatorio');
+        col.classList.remove('incompleto-alerta');
+        return true;
+      }
+
+      const q = parseInt(inpQtd.value || 0, 10);
+      const p = parseNumMoeda(inpPreco ? inpPreco.value : '0', 0);
+
+      let valido = true;
+      if (q <= 0) {
+        inpQtd.classList.add('campo-invalido-obrigatorio');
+        inpQtd.title = 'Quantidade obrigatória para este tamanho (> 0)';
+        valido = false;
+      } else {
+        inpQtd.classList.remove('campo-invalido-obrigatorio');
+        inpQtd.title = 'Quantidade informada';
+      }
+
+      if (inpPreco) {
+        if (p <= 0) {
+          inpPreco.classList.add('campo-invalido-obrigatorio');
+          inpPreco.title = 'Preço de venda obrigatório para este tamanho (> R$ 0,00)';
+          valido = false;
+        } else {
+          inpPreco.classList.remove('campo-invalido-obrigatorio');
+          inpPreco.title = 'Preço de venda do tamanho';
+        }
+      }
+
+      col.classList.toggle('incompleto-alerta', !valido);
+      return valido;
+    }
+
     function atualizarEstadoVisualTamanhos() {
       document.querySelectorAll('.grade-col').forEach(col => {
         if (col.classList.contains('grade-col-total') || col.querySelector('#gradeTotal') || col.querySelector('#gradeTotalNum')) return;
         const inpQtd = col.querySelector('.grade-input');
         const inpPreco = col.querySelector('.grade-preco-input');
+        const chk = col.querySelector('.grade-check-tam');
         if (!inpQtd) return;
 
         const q = parseInt(inpQtd.value || 0, 10);
         const p = parseNumMoeda(inpPreco ? inpPreco.value : '0', 0);
-        const estaAtivo = (q > 0 || p > 0);
+        const estaAtivo = (chk ? chk.checked : false) || (q > 0) || (p > 0);
 
+        if (chk) chk.checked = estaAtivo;
         col.classList.toggle('ativo', estaAtivo);
-        // Garante que o input seja sempre clicável e editável sem travar o usuário
-        inpQtd.disabled = false;
-        if (inpPreco) inpPreco.disabled = false;
+        inpQtd.disabled = !estaAtivo;
+        if (inpPreco) inpPreco.disabled = !estaAtivo;
+
+        validarCamposObrigatoriosColuna(col);
       });
     }
 
@@ -11380,32 +11487,90 @@
         const label = col.querySelector('.grade-label');
         if (!inpQtd) return;
 
-        // Garante que os inputs iniciem clicáveis e utilizáveis
-        inpQtd.disabled = false;
-        if (inpPreco) inpPreco.disabled = false;
+        // Injeta o checkbox visual no label se ainda não existir
+        let chk = col.querySelector('.grade-check-tam');
+        if (!chk && label) {
+          const rotuloOriginal = label.textContent.trim();
+          label.innerHTML = `
+            <input type="checkbox" class="grade-check-tam" data-chave="${col.getAttribute('data-chave') || ''}" title="Marque para selecionar este tamanho">
+            <span class="grade-nome-tam">${rotuloOriginal}</span>
+          `;
+          chk = col.querySelector('.grade-check-tam');
+        }
+
+        function alternarSelecaoTamanho(novoAtivo, focar = true) {
+          if (chk) chk.checked = novoAtivo;
+          col.classList.toggle('ativo', novoAtivo);
+          inpQtd.disabled = !novoAtivo;
+          if (inpPreco) inpPreco.disabled = !novoAtivo;
+
+          if (novoAtivo) {
+            const q = parseInt(inpQtd.value || 0, 10);
+            if (q === 0) {
+              inpQtd.value = 1;
+            }
+            const p = parseNumMoeda(inpPreco ? inpPreco.value : '0', 0);
+            if (p === 0 && inpPreco) {
+              const it = itensOrcamento[itemAtivoIndex];
+              if (it && it.precoVendaUnitario > 0) {
+                inpPreco.value = formatarMoedaInput(it.precoVendaUnitario);
+              }
+            }
+            if (focar) {
+              inpQtd.focus();
+              inpQtd.select();
+            }
+          } else {
+            inpQtd.value = 0;
+            if (inpPreco) inpPreco.value = '0,00';
+            inpQtd.classList.remove('campo-invalido-obrigatorio');
+            if (inpPreco) inpPreco.classList.remove('campo-invalido-obrigatorio');
+            col.classList.remove('incompleto-alerta');
+          }
+          validarCamposObrigatoriosColuna(col);
+          recalcularBenchmarkModal();
+        }
+
+        if (chk) {
+          chk.addEventListener('change', (e) => {
+            e.stopPropagation();
+            alternarSelecaoTamanho(chk.checked, true);
+          });
+        }
 
         if (label) {
           label.style.cursor = 'pointer';
-          label.title = 'Clique para selecionar este tamanho';
+          label.title = 'Clique para selecionar/desmarcar este tamanho';
           label.addEventListener('click', (e) => {
+            if (e.target === chk) return;
+            e.preventDefault();
             e.stopPropagation();
-            const qAtual = parseInt(inpQtd.value || 0, 10);
-            if (qAtual === 0) {
-              inpQtd.value = 1;
-            }
-            inpQtd.focus();
-            inpQtd.select();
-            atualizarEstadoVisualTamanhos();
-            recalcularBenchmarkModal();
+            const novo = chk ? !chk.checked : !col.classList.contains('ativo');
+            alternarSelecaoTamanho(novo, true);
           });
         }
+
+        col.addEventListener('click', (e) => {
+          // Se o usuário clicar na coluna inativa, ativa e seleciona
+          const ativoAgora = chk ? chk.checked : col.classList.contains('ativo');
+          if (!ativoAgora) {
+            alternarSelecaoTamanho(true, true);
+          }
+        });
 
         inpQtd.addEventListener('focus', () => {
           inpQtd.select();
         });
 
         inpQtd.addEventListener('input', () => {
-          atualizarEstadoVisualTamanhos();
+          const q = parseInt(inpQtd.value || 0, 10);
+          if (q > 0 && chk && !chk.checked) {
+            chk.checked = true;
+            col.classList.add('ativo');
+            inpQtd.disabled = false;
+            if (inpPreco) inpPreco.disabled = false;
+          }
+          validarCamposObrigatoriosColuna(col);
           recalcularBenchmarkModal();
         });
 
@@ -11414,11 +11579,11 @@
             inpPreco.select();
           });
           inpPreco.addEventListener('input', () => {
-            atualizarEstadoVisualTamanhos();
+            validarCamposObrigatoriosColuna(col);
             recalcularBenchmarkModal();
           });
           inpPreco.addEventListener('change', () => {
-            atualizarEstadoVisualTamanhos();
+            validarCamposObrigatoriosColuna(col);
             recalcularBenchmarkModal();
           });
         }
@@ -11450,12 +11615,22 @@
             el.value = val;
             const col = el.closest('.grade-col');
             if (col) {
+              const chk = col.querySelector('.grade-check-tam');
               const inpPreco = col.querySelector('.grade-preco-input');
               if (val > 0) {
+                if (chk) chk.checked = true;
                 col.classList.add('ativo');
                 el.disabled = false;
-                if (inpPreco) inpPreco.disabled = false;
+                if (inpPreco) {
+                  inpPreco.disabled = false;
+                  const pAtual = parseNumMoeda(inpPreco.value, 0);
+                  if (pAtual === 0) {
+                    const it = itensOrcamento[itemAtivoIndex];
+                    if (it && it.precoVendaUnitario > 0) inpPreco.value = formatarMoedaInput(it.precoVendaUnitario);
+                  }
+                }
               } else {
+                if (chk) chk.checked = false;
                 col.classList.remove('ativo');
                 el.disabled = true;
                 if (inpPreco) {
@@ -11466,6 +11641,7 @@
             }
           }
         });
+        atualizarEstadoVisualTamanhos();
         recalcularBenchmarkModal();
       });
     });
@@ -11476,15 +11652,20 @@
         if (el) {
           el.value = 0;
           el.disabled = true;
+          el.classList.remove('campo-invalido-obrigatorio');
         }
         const inpPreco = document.getElementById('precoGrade_' + c.chave);
         if (inpPreco) {
           inpPreco.value = '0,00';
           inpPreco.disabled = true;
+          inpPreco.classList.remove('campo-invalido-obrigatorio');
         }
         const col = el?.closest('.grade-col');
         if (col && !col.classList.contains('grade-col-total')) {
           col.classList.remove('ativo');
+          col.classList.remove('incompleto-alerta');
+          const chk = col.querySelector('.grade-check-tam');
+          if (chk) chk.checked = false;
         }
       });
       recalcularBenchmarkModal();
