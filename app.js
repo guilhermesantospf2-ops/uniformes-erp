@@ -4837,6 +4837,82 @@
   window.ERP.toggleGradePedidoTabela = alternarGradePedidoTabela;
   window.ERP.toggleTodasGradesTabela = alternarTodasGradesTabela;
 
+  // Toggle de visualização das opções de ações na tabela de pedidos (recolhível por padrão)
+  function alternarAcoesPedidoTabela(btnElOrId, pedidoIdParam) {
+    let btnEl = null;
+    let pedidoId = null;
+
+    if (btnElOrId instanceof HTMLElement || (btnElOrId && btnElOrId.nodeType === 1)) {
+      btnEl = btnElOrId;
+      pedidoId = pedidoIdParam || btnEl.getAttribute('data-pedido-id');
+    } else {
+      pedidoId = btnElOrId;
+      btnEl = pedidoIdParam instanceof HTMLElement ? pedidoIdParam : null;
+    }
+
+    const td = btnEl ? (btnEl.closest('.col-acoes-pedidos') || btnEl.closest('td')) : null;
+    const el = (td ? td.querySelector('.acoes-detalhes-tabela-collapse') : null) 
+      || (pedidoId ? document.getElementById('acoesDetalhesTabela_' + pedidoId) : null);
+
+    if (!el) return;
+
+    const estaVisivel = el.style.display !== 'none';
+    if (estaVisivel) {
+      el.style.display = 'none';
+      if (btnEl) {
+        btnEl.innerHTML = '<span>⚡</span> <span>Ações ▾</span>';
+        btnEl.style.background = '#ffffff';
+        btnEl.style.color = '#1e293b';
+        btnEl.style.borderColor = '#cbd5e1';
+        btnEl.setAttribute('title', 'Clique para ver todas as opções e ações deste pedido');
+      }
+    } else {
+      el.style.display = 'block';
+      if (btnEl) {
+        btnEl.innerHTML = '<span>🔼</span> <span>Ocultar</span>';
+        btnEl.style.background = '#f1f5f9';
+        btnEl.style.color = '#475569';
+        btnEl.style.borderColor = '#cbd5e1';
+        btnEl.setAttribute('title', 'Clique para recolher as opções de ações');
+      }
+    }
+  }
+
+  function alternarTodasAcoesTabela(btnHeader) {
+    const todosCollapses = document.querySelectorAll('.acoes-detalhes-tabela-collapse');
+    if (!todosCollapses.length) return;
+    const algumOculto = Array.from(todosCollapses).some(el => el.style.display === 'none');
+
+    todosCollapses.forEach(el => {
+      el.style.display = algumOculto ? 'block' : 'none';
+    });
+
+    document.querySelectorAll('.btn-toggle-acoes-tabela').forEach(btn => {
+      if (algumOculto) {
+        btn.innerHTML = '<span>🔼</span> <span>Ocultar</span>';
+        btn.style.background = '#f1f5f9';
+        btn.style.color = '#475569';
+        btn.style.borderColor = '#cbd5e1';
+        btn.setAttribute('title', 'Clique para recolher as opções de ações');
+      } else {
+        btn.innerHTML = '<span>⚡</span> <span>Ações ▾</span>';
+        btn.style.background = '#ffffff';
+        btn.style.color = '#1e293b';
+        btn.style.borderColor = '#cbd5e1';
+        btn.setAttribute('title', 'Clique para ver todas as opções e ações deste pedido');
+      }
+    });
+
+    if (btnHeader) {
+      btnHeader.innerHTML = algumOculto
+        ? '<span>🔼 Ocultar Todas</span>'
+        : '<span>⚡ Ver Todas as Ações</span>';
+    }
+  }
+
+  window.ERP.toggleAcoesPedidoTabela = alternarAcoesPedidoTabela;
+  window.ERP.toggleTodasAcoesTabela = alternarTodasAcoesTabela;
+
   /* ==========================================================================
      MÓDULO 2: PEDIDOS & ORÇAMENTOS (DUPLO FLUXO + BENCHMARK BRASIL + KANBAN)
      ========================================================================== */
@@ -4997,6 +5073,9 @@
           <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
             <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.toggleTodasGradesTabela(this)" title="Expandir ou recolher todas as grades de tamanhos na tabela" style="padding: 3px 9px; font-size: 11px; font-weight: 700; color: #1e40af; background: #eff6ff; border: 1px solid #bfdbfe; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
               <span>👁️</span> <span>Ver Todas as Grades</span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.toggleTodasAcoesTabela(this)" title="Expandir ou recolher todas as opções de ações na tabela" style="padding: 3px 9px; font-size: 11px; font-weight: 700; color: #1e293b; background: #ffffff; border: 1px solid #cbd5e1; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+              <span>⚡</span> <span>Ver Todas as Ações</span>
             </button>
             <button type="button" class="btn btn-secondary btn-sm" onclick="const w=this.closest('.table-wrapper');w.scrollTo({left:0,behavior:'smooth'})" title="Rolar para o Início da Tabela" style="padding: 3px 8px; font-size: 11px; font-weight: 700;">◀ Início</button>
             <button type="button" class="btn btn-secondary btn-sm" onclick="const w=this.closest('.table-wrapper');w.scrollTo({left:w.scrollWidth,behavior:'smooth'})" title="Rolar para Ações, Status e Totais" style="padding: 3px 8px; font-size: 11px; font-weight: 700;">Ações & Totais ▶</button>
@@ -5292,9 +5371,22 @@
                       </select>
                     `}
                   </td>
-                  <td>
-                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                      <button class="btn btn-secondary btn-sm btn-disparar-wpp" data-id="${p.id}" title="Enviar Notificação pelo WhatsApp">
+                  <td class="col-acoes-pedidos" style="vertical-align: middle;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <button type="button" 
+                              class="btn btn-secondary btn-sm btn-toggle-acoes-tabela" 
+                              data-pedido-id="${p.id}"
+                              onclick="window.ERP.toggleAcoesPedidoTabela(this, '${p.id}')"
+                              style="font-size: 11px; padding: 3px 9px; font-weight: 700; color: #1e293b; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.15s ease;"
+                              title="Clique para ver todas as opções e ações deste pedido">
+                        <span>⚡</span> <span>Ações ▾</span>
+                      </button>
+                    </div>
+
+                    <!-- Detalhamento de Ações (Oculto por padrão, expande ao clicar) -->
+                    <div id="acoesDetalhesTabela_${p.id}" class="acoes-detalhes-tabela-collapse" style="display: none; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #cbd5e1;">
+                      <div style="display: flex; gap: 5px; flex-wrap: wrap; max-width: 260px;">
+                        <button class="btn btn-secondary btn-sm btn-disparar-wpp" data-id="${p.id}" title="Enviar Notificação pelo WhatsApp">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                         WPP
                       </button>
@@ -5349,6 +5441,7 @@
                           Cancelar
                         </button>
                       `}
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -32223,6 +32316,8 @@
     alternarOrdenacaoPedidos: () => { if (typeof alternarOrdenacaoPedidos === 'function') return alternarOrdenacaoPedidos(); },
     toggleGradePedidoTabela: (id, btn) => { if (typeof alternarGradePedidoTabela === 'function') return alternarGradePedidoTabela(id, btn); },
     toggleTodasGradesTabela: (btn) => { if (typeof alternarTodasGradesTabela === 'function') return alternarTodasGradesTabela(btn); },
+    toggleAcoesPedidoTabela: (id, btn) => { if (typeof alternarAcoesPedidoTabela === 'function') return alternarAcoesPedidoTabela(id, btn); },
+    toggleTodasAcoesTabela: (btn) => { if (typeof alternarTodasAcoesTabela === 'function') return alternarTodasAcoesTabela(btn); },
     imprimirFichaTecnicaIsolada,
     abrirModalRepartirOS,
     desfazerReparticaoOS,

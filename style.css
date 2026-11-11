@@ -3372,12 +3372,18 @@ input[type="number"] {
   border-color: #93c5fd !important;
   color: #1e3a8a !important;
 }
-.grade-detalhes-tabela-collapse {
-  animation: fadeInGrade 0.18s ease-in-out;
+.grade-detalhes-tabela-collapse,
+.acoes-detalhes-tabela-collapse {
+  animation: fadeInTabelaCollapse 0.18s ease-in-out;
 }
-@keyframes fadeInGrade {
+@keyframes fadeInTabelaCollapse {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+.btn-toggle-acoes-tabela:hover {
+  background-color: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
 }
 .erp-table-pedidos td:nth-child(6),
 .erp-table-pedidos td:nth-child(7) {
