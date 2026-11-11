@@ -5208,6 +5208,10 @@
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                           Editar
                         </button>
+                        <button class="btn btn-secondary btn-sm btn-baixar-proposta" data-id="${p.id}" title="Ver Resumo Oficial do Pedido / Proposta Têxtil (A4)">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                          Proposta
+                        </button>
                         <button class="btn btn-secondary btn-sm btn-ver-os" data-id="${p.id}">OS</button>
                         ${temReparticaoAtiva ? `
                           <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.desfazerReparticaoOS('${p.numero || p.id}')" style="font-weight: 800; font-size: 11px; color: #b91c1c; background: #fee2e2; border-color: #fca5a5; padding: 3px 6px;" title="Desfazer a repartição, excluir sub-ordens repartidas e unificar o pedido novamente">🔄 Unificar OS</button>
@@ -5359,6 +5363,9 @@
                         ` : `
                           <button class="btn btn-secondary btn-sm btn-editar-orcamento" data-id="${p.id}" style="padding: 3px 7px; font-weight: 700; color: #b45309; border-color: #fde68a; background: #fffbeb;" title="Editar Pedido (alterar grade, tamanhos, cores ou custos — reenvia para Quarentena)">
                             ✏️ Editar
+                          </button>
+                          <button class="btn btn-secondary btn-sm btn-baixar-proposta" data-id="${p.id}" style="padding: 3px 7px;" title="Ver Resumo Oficial do Pedido / Proposta A4">
+                            📄 Proposta
                           </button>
                           <button class="btn btn-primary btn-sm btn-ver-os" data-id="${p.id}" style="flex: 1;">
                             Ficha OS
@@ -9258,7 +9265,7 @@
       if (inpTotalNum) inpTotalNum.value = g.total || 0;
 
       if (typeof atualizarEstadoVisualTamanhos === 'function') {
-        atualizarEstadoVisualTamanhos();
+        atualizarEstadoVisualTamanhos(true);
       }
 
       // Detecta / define o modo de medidas deste modelo (Alfabética vs Numérica)
@@ -9417,7 +9424,7 @@
 
       // Atualiza estado ativo/desabilitado dos campos conforme quantidade e preço
       if (typeof atualizarEstadoVisualTamanhos === 'function') {
-        atualizarEstadoVisualTamanhos();
+        atualizarEstadoVisualTamanhos(true);
       }
 
       // Restaura o modo de custos (Calcular vs Custo Direto Bidirecional)
@@ -11539,7 +11546,7 @@
       return valido;
     }
 
-    function atualizarEstadoVisualTamanhos() {
+    function atualizarEstadoVisualTamanhos(sincronizarPorQtd = false) {
       document.querySelectorAll('.grade-col').forEach(col => {
         if (col.classList.contains('grade-col-total') || col.querySelector('#gradeTotal') || col.querySelector('#gradeTotalNum')) return;
         const inpQtd = col.querySelector('.grade-input');
@@ -11547,11 +11554,18 @@
         const chk = col.querySelector('.grade-check-tam');
         if (!inpQtd) return;
 
-        const q = parseInt(inpQtd.value || 0, 10);
-        const p = parseNumMoeda(inpPreco ? inpPreco.value : '0', 0);
-        const estaAtivo = (chk ? chk.checked : false) || (q > 0) || (p > 0);
+        let estaAtivo = false;
+        if (chk) {
+          if (sincronizarPorQtd) {
+            const q = parseInt(inpQtd.value || 0, 10);
+            chk.checked = (q > 0);
+          }
+          estaAtivo = chk.checked;
+        } else {
+          const q = parseInt(inpQtd.value || 0, 10);
+          estaAtivo = (q > 0) || col.classList.contains('ativo');
+        }
 
-        if (chk) chk.checked = estaAtivo;
         col.classList.toggle('ativo', estaAtivo);
         inpQtd.disabled = !estaAtivo;
         if (inpPreco) inpPreco.disabled = !estaAtivo;
@@ -11580,10 +11594,13 @@
         }
 
         function alternarSelecaoTamanho(novoAtivo, focar = true) {
-          if (chk) chk.checked = novoAtivo;
-          col.classList.toggle('ativo', novoAtivo);
+          if (chk) chk.checked = !!novoAtivo;
+          col.classList.toggle('ativo', !!novoAtivo);
           inpQtd.disabled = !novoAtivo;
           if (inpPreco) inpPreco.disabled = !novoAtivo;
+
+          const it = itensOrcamento[itemAtivoIndex];
+          const chave = col.getAttribute('data-chave') || (inpQtd.id || '').replace('grade_', '').replace('gradeNum_', '').toLowerCase();
 
           if (novoAtivo) {
             const q = parseInt(inpQtd.value || 0, 10);
@@ -11592,7 +11609,6 @@
             }
             const p = parseNumMoeda(inpPreco ? inpPreco.value : '0', 0);
             if (p === 0 && inpPreco) {
-              const it = itensOrcamento[itemAtivoIndex];
               if (it && it.precoVendaUnitario > 0) {
                 inpPreco.value = formatarMoedaInput(it.precoVendaUnitario);
               }
@@ -11607,15 +11623,24 @@
             inpQtd.classList.remove('campo-invalido-obrigatorio');
             if (inpPreco) inpPreco.classList.remove('campo-invalido-obrigatorio');
             col.classList.remove('incompleto-alerta');
+            if (it && it.grade && chave) {
+              it.grade[chave] = 0;
+            }
+            if (it && it.precosPorTamanho && chave) {
+              delete it.precosPorTamanho[chave];
+            }
           }
           validarCamposObrigatoriosColuna(col);
           recalcularBenchmarkModal();
         }
 
         if (chk) {
+          chk.addEventListener('click', (e) => {
+            e.stopPropagation();
+          });
           chk.addEventListener('change', (e) => {
             e.stopPropagation();
-            alternarSelecaoTamanho(chk.checked, true);
+            alternarSelecaoTamanho(chk.checked, chk.checked);
           });
         }
 
@@ -11627,12 +11652,13 @@
             e.preventDefault();
             e.stopPropagation();
             const novo = chk ? !chk.checked : !col.classList.contains('ativo');
-            alternarSelecaoTamanho(novo, true);
+            alternarSelecaoTamanho(novo, novo);
           });
         }
 
         col.addEventListener('click', (e) => {
-          // Se o usuário clicar na coluna inativa, ativa e seleciona
+          // Ignora se o clique for no label, no checkbox ou nos próprios inputs
+          if (e.target.closest('.grade-label') || e.target === chk || e.target === inpQtd || e.target === inpPreco) return;
           const ativoAgora = chk ? chk.checked : col.classList.contains('ativo');
           if (!ativoAgora) {
             alternarSelecaoTamanho(true, true);
@@ -13990,6 +14016,7 @@
      PROPOSTA COMERCIAL FORMATADA (ORÇAMENTO IMPRESSÃO / DOWNLOAD)
      ========================================================================== */
   function gerarHtmlCorpoPropostaComercial(p) {
+    const isOrcamento = p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento' || p.status === 'Orçamento';
     const prazoDias = p.prazoPedidoDias || 15;
     const dataPrev = p.dataPrevisaoEntrega || calcularDataFuturaDiasUteis(prazoDias);
     const emp = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterEmpresaConfig === 'function')
@@ -14061,7 +14088,7 @@
           </div>
         </div>
         <div style="text-align: right;">
-          <span class="status-pill status-gray text-mono" style="font-size: 10.5px;">PROPOSTA COMERCIAL</span>
+          <span class="status-pill ${isOrcamento ? 'status-gray' : 'status-green'} text-mono" style="font-size: 10.5px; font-weight: 800;">${isOrcamento ? 'PROPOSTA COMERCIAL' : 'RESUMO OFICIAL DO PEDIDO'}</span>
           <div class="text-mono" style="font-weight: 800; font-size: 14px; margin-top: 4px;">Nº ${p.numero}</div>
           <div style="font-size: 10.5px; color: #64748b;">Emissão: ${p.dataCriacao}</div>
         </div>
@@ -14302,8 +14329,8 @@
         <div class="modal-box a4-print-sheet" style="max-width: 760px;">
           <div class="modal-header">
             <div>
-              <div class="modal-title">Proposta Comercial & Orçamento Têxtil (#${p.numero})</div>
-              <span style="font-size: 11px; color: var(--text-gray-500);">Documento oficial pronto para impressão ou envio</span>
+              <div class="modal-title">${isOrcamento ? `Proposta Comercial & Orçamento Têxtil (#${p.numero})` : `Resumo Oficial do Pedido & Proposta Têxtil (#${p.numero})`}</div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">${isOrcamento ? 'Documento oficial pronto para impressão ou envio' : 'Resumo completo do pedido já aprovado e em produção'}</span>
             </div>
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
@@ -14315,6 +14342,10 @@
           <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
             <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-secondary" id="btnEnviarWhatsPropostaModal" style="font-weight: 700; color: #047857; border-color: #86efac; background: #ecfdf5; display: inline-flex; align-items: center; gap: 6px;" title="Enviar Resumo deste Pedido no WhatsApp do Cliente">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                Enviar no WhatsApp
+              </button>
               ${isOrcamento ? `
                 <button type="button" class="btn btn-secondary" id="btnEditarOrcamentoProposta" style="font-weight: 700; color: #b45309; border-color: #fde68a; background: #fffbeb;" title="Editar valores, quantidades ou prazos desta proposta caso a negociação mude">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
@@ -14327,13 +14358,18 @@
               ` : ''}
               <button type="button" class="btn btn-primary" id="btnImprimirPropostaDoc" onclick="window.ERP.imprimirPropostaComercialIsolada('${p.id}')">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                Imprimir / Baixar Proposta em PDF
+                ${isOrcamento ? 'Imprimir / Baixar Proposta em PDF' : 'Imprimir / Baixar Resumo do Pedido'}
               </button>
             </div>
           </div>
         </div>
       </div>
     `);
+
+    document.getElementById('btnEnviarWhatsPropostaModal')?.addEventListener('click', () => {
+      fecharModal(modalEl);
+      abrirModalWhatsApp(p.id, isOrcamento ? 'orcamento' : 'resumo');
+    });
 
     document.getElementById('btnEditarOrcamentoProposta')?.addEventListener('click', () => {
       fecharModal(modalEl);
@@ -28644,26 +28680,55 @@
 
 
   /* ==========================================================================
-     MODAL DE DISPARO DE WHATSAPP AUTOMÁTICO COM LINK DIRETO
+     MODAL DE DISPARO DE WHATSAPP AUTOMÁTICO COM LINK DIRETO E RESUMO DO PEDIDO
      ========================================================================== */
-  function abrirModalWhatsApp(pedidoId) {
+  function abrirModalWhatsApp(pedidoId, modoPreferido = null) {
     const pedido = db.pedidos.find(p => p.id === pedidoId);
     if (!pedido || !modalContainer) return;
 
+    const isOrc = pedido.tipoRegistro === 'Orcamento' || pedido.status === 'Orcamento' || pedido.status === 'Orçamento';
     const descCor = pedido.corTecido ? `\n🎨 *Cor Principal:* ${pedido.corTecido}` : '';
     const descDetalhes = pedido.observacoesCoresDetalhes ? `\n🧵 *Detalhes de Confecção:* ${pedido.observacoesCoresDetalhes}` : '';
-    const mensagemPadrao = `Olá, *${pedido.clienteNome}*!\n\nAqui é da equipe da *${db.empresa.nomeFantasia}*.\n\nInformamos que seu pedido *#${pedido.numero}* (${pedido.grade?.total || 0} peças de ${pedido.produtoNome}) acabou de avançar para a etapa de: *${(pedido.etapaProducao || pedido.status).toUpperCase()}*.${descCor}${descDetalhes}\n\n📅 *Previsão de Entrega:* ${pedido.dataPrevisaoEntrega}\n💰 *Saldo Pendente na Retirada:* ${formatarMoeda(pedido.saldoPendente)}\n\nEstamos acompanhando cada detalhe da produção do seu uniforme!`;
-    const mensagemEncoded = encodeURIComponent(mensagemPadrao);
+
+    // Montagem da grade resumida
+    let gradeResumoStr = '';
+    if (pedido.grade) {
+      const partsGrade = [];
+      Object.keys(pedido.grade).forEach(k => {
+        if (k === 'total') return;
+        const q = parseInt(pedido.grade[k], 10) || 0;
+        if (q > 0) partsGrade.push(`${k.toUpperCase()}: ${q}`);
+      });
+      if (partsGrade.length > 0) {
+        gradeResumoStr = `\n📏 *Grade:* ${partsGrade.join(', ')}`;
+      }
+    }
+
+    const msgResumoOficial = `Olá, *${pedido.clienteNome}*! Tudo bem?\n\nAqui é da equipe da *${db.empresa?.nomeFantasia || 'Texfy'}*.\n\nPassando para enviar o *Resumo Oficial do seu Pedido #${pedido.numero}*:\n\n📦 *Produto:* ${pedido.produtoNome} (${pedido.grade?.total || 0} peças)${descCor}${descDetalhes}${gradeResumoStr}\n💰 *Valor Total:* ${formatarMoeda(pedido.valorTotalVenda)}\n${pedido.valorSinalPago > 0 ? `💵 *Entrada/Sinal Pago:* ${formatarMoeda(pedido.valorSinalPago)}\n` : ''}${pedido.saldoPendente > 0 ? `💳 *Saldo Restante na Retirada:* ${formatarMoeda(pedido.saldoPendente)}\n` : '✅ *Status Financeiro:* Quitado\n'}📅 *Previsão de Entrega:* ${pedido.dataPrevisaoEntrega}\n\nSeu pedido está em produção com total qualidade e carinho! Qualquer dúvida estamos à disposição.`;
+
+    const msgAtualizacaoEtapa = `Olá, *${pedido.clienteNome}*!\n\nAqui é da equipe da *${db.empresa?.nomeFantasia || 'Texfy'}*.\n\nInformamos que seu pedido *#${pedido.numero}* (${pedido.grade?.total || 0} peças de ${pedido.produtoNome}) acabou de avançar para a etapa de: *${(pedido.etapaProducao || pedido.status).toUpperCase()}*.${descCor}${descDetalhes}\n\n📅 *Previsão de Entrega:* ${pedido.dataPrevisaoEntrega}\n💳 *Saldo Pendente na Retirada:* ${formatarMoeda(pedido.saldoPendente)}\n\nEstamos acompanhando cada detalhe da produção do seu uniforme!`;
+
+    const msgOrcamento = `Olá, *${pedido.clienteNome}*!\n\nAqui é da equipe da *${db.empresa?.nomeFantasia || 'Texfy'}*.\n\nSegue a *Proposta Comercial / Orçamento #${pedido.numero}*:\n\n📦 *Produto:* ${pedido.produtoNome} (${pedido.grade?.total || 0} peças)${descCor}${gradeResumoStr}\n💰 *Valor Total Proposto:* ${formatarMoeda(pedido.valorTotalVenda)}\n📅 *Prazo Estimado:* ${pedido.prazoPedidoDias || 15} dias úteis (${pedido.dataPrevisaoEntrega})\n\nFicamos no aguardo de sua aprovação para iniciarmos a confecção!`;
+
+    let msgInicial = msgResumoOficial;
+    if (modoPreferido === 'etapa') {
+      msgInicial = msgAtualizacaoEtapa;
+    } else if (modoPreferido === 'orcamento' || isOrc) {
+      msgInicial = msgOrcamento;
+    } else {
+      msgInicial = msgResumoOficial;
+    }
+
     const telNumeros = (pedido.clienteTelefone || '').toString().replace(/\D/g, '');
-    const linkWhatsApp = `https://api.whatsapp.com/send?phone=55${telNumeros}&text=${mensagemEncoded}`;
+    const linkWhatsApp = `https://api.whatsapp.com/send?phone=55${telNumeros}&text=${encodeURIComponent(msgInicial)}`;
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
-        <div class="modal-box" style="max-width: 580px;">
+        <div class="modal-box" style="max-width: 600px;">
           <div class="modal-header">
             <div>
-              <div class="modal-title">Notificação Instantânea pelo WhatsApp</div>
-              <span style="font-size: 11px; color: var(--text-gray-500);">Mensagem oficial de atualização de etapa do pedido</span>
+              <div class="modal-title">Notificação & Resumo pelo WhatsApp</div>
+              <span style="font-size: 11px; color: var(--text-gray-500);">Envio direto do resumo oficial ou atualização do pedido #${pedido.numero}</span>
             </div>
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
           </div>
@@ -28675,9 +28740,24 @@
               <span class="text-mono" style="color: var(--color-green); font-weight: 700;">${formatarTelefone(pedido.clienteTelefone)}</span>
             </div>
 
+            <div style="margin-bottom: 10px;">
+              <span class="form-label" style="font-size: 11.5px; margin-bottom: 6px; display: block;">Modelos de Mensagem Prontos (Clique para alternar):</span>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-xs btn-trocar-tpl-wpp" data-tipo="resumo" style="font-weight: 700; ${msgInicial === msgResumoOficial ? 'background: #ecfdf5; color: #047857; border-color: #10b981;' : ''}">
+                  📋 Resumo Oficial do Pedido
+                </button>
+                <button type="button" class="btn btn-secondary btn-xs btn-trocar-tpl-wpp" data-tipo="etapa" style="font-weight: 700; ${msgInicial === msgAtualizacaoEtapa ? 'background: #eff6ff; color: #1d4ed8; border-color: #3b82f6;' : ''}">
+                  🚚 Atualização de Etapa
+                </button>
+                <button type="button" class="btn btn-secondary btn-xs btn-trocar-tpl-wpp" data-tipo="orcamento" style="font-weight: 700; ${msgInicial === msgOrcamento ? 'background: #fffbeb; color: #b45309; border-color: #f59e0b;' : ''}">
+                  📑 Proposta / Orçamento
+                </button>
+              </div>
+            </div>
+
             <div class="form-group">
-              <label class="form-label">Texto da Mensagem (Você pode editar antes de enviar):</label>
-              <textarea id="wppTextoMensagemEdit" class="form-textarea" rows="7" style="font-family: var(--font-mono); font-size: 12px;">${mensagemPadrao}</textarea>
+              <label class="form-label">Texto da Mensagem (Você pode editar livremente antes de enviar):</label>
+              <textarea id="wppTextoMensagemEdit" class="form-textarea" rows="8" style="font-family: var(--font-mono); font-size: 12px;">${msgInicial}</textarea>
             </div>
 
             <div style="font-size: 11px; color: var(--text-gray-500);">
@@ -28687,7 +28767,7 @@
 
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Fechar</button>
-            <a href="${linkWhatsApp}" target="_blank" class="btn btn-green" id="btnDispararWhatsAppReal" style="font-weight: 800;">
+            <a href="${linkWhatsApp}" target="_blank" class="btn btn-green" id="btnDispararWhatsAppReal" style="font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
               Enviar pelo WhatsApp Agora
             </a>
@@ -28698,9 +28778,47 @@
 
     const txtArea = document.getElementById('wppTextoMensagemEdit');
     const btnLink = document.getElementById('btnDispararWhatsAppReal');
+
+    function atualizarLinkWhats(texto) {
+      if (btnLink) {
+        btnLink.href = `https://api.whatsapp.com/send?phone=55${telNumeros}&text=${encodeURIComponent(texto)}`;
+      }
+    }
+
     txtArea?.addEventListener('input', () => {
-      const novoEncoded = encodeURIComponent(txtArea.value);
-      btnLink.href = `https://api.whatsapp.com/send?phone=55${telNumeros}&text=${novoEncoded}`;
+      atualizarLinkWhats(txtArea.value);
+    });
+
+    modalEl.querySelectorAll('.btn-trocar-tpl-wpp').forEach(btn => {
+      btn.addEventListener('click', () => {
+        modalEl.querySelectorAll('.btn-trocar-tpl-wpp').forEach(b => {
+          b.style.background = '';
+          b.style.color = '';
+          b.style.borderColor = '';
+        });
+        const tipo = btn.getAttribute('data-tipo');
+        let novoTexto = msgResumoOficial;
+        if (tipo === 'etapa') {
+          novoTexto = msgAtualizacaoEtapa;
+          btn.style.background = '#eff6ff';
+          btn.style.color = '#1d4ed8';
+          btn.style.borderColor = '#3b82f6';
+        } else if (tipo === 'orcamento') {
+          novoTexto = msgOrcamento;
+          btn.style.background = '#fffbeb';
+          btn.style.color = '#b45309';
+          btn.style.borderColor = '#f59e0b';
+        } else {
+          novoTexto = msgResumoOficial;
+          btn.style.background = '#ecfdf5';
+          btn.style.color = '#047857';
+          btn.style.borderColor = '#10b981';
+        }
+        if (txtArea) {
+          txtArea.value = novoTexto;
+          atualizarLinkWhats(novoTexto);
+        }
+      });
     });
 
     btnLink?.addEventListener('click', () => {
