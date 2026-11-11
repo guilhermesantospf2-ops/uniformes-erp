@@ -3591,7 +3591,7 @@
     // Blindagem de ciclo de vida: se qualquer rotina invocar modalEl.remove(),
     // garante a remoção da pilha de modais e a restauração imediata dos cliques do sistema
     const originalRemove = modalEl.remove.bind(modalEl);
-    modalEl.remove = function() {
+    modalEl.remove = function () {
       const idx = modalPilha.indexOf(modalEl);
       if (idx !== -1) {
         modalPilha.splice(idx, 1);
@@ -7021,7 +7021,7 @@
       if (el && el.tagName === 'INPUT' && el.classList.contains('input-moeda-centavos')) {
         el.dataset.novoCiclo = '1';
         setTimeout(() => {
-          try { el.select(); } catch (_) {}
+          try { el.select(); } catch (_) { }
         }, 10);
       }
     }, true);
@@ -7030,7 +7030,7 @@
       const el = e.target;
       if (el && el.tagName === 'INPUT' && el.classList.contains('input-moeda-centavos')) {
         if (el.dataset.novoCiclo === '1') {
-          try { el.select(); } catch (_) {}
+          try { el.select(); } catch (_) { }
         }
       }
     }, true);
@@ -7081,7 +7081,7 @@
       try {
         const len = el.value.length;
         el.setSelectionRange(len, len);
-      } catch (_) {}
+      } catch (_) { }
     }, true);
   }
 
@@ -8237,14 +8237,14 @@
                 </div>
                 <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
                   <div class="form-group" style="margin: 0;">
-                    <label class="form-label" style="font-weight: 800; color: #065f46; font-size: 12.5px;">Custo Unitário Total por Peça (R$):</label>
-                    <input type="text" inputmode="decimal" id="inputCustoDiretoTotal" class="form-input input-moeda-centavos text-mono" style="font-size: 16px; font-weight: 900; color: #047857; background: #ffffff;" value="22,50">
+                    <label class="form-label" style="font-weight: 800; color: #047857; font-size: 12.5px;">⚡ Custo Total de Fabricação do Lote (R$):</label>
+                    <input type="text" inputmode="decimal" id="inputCustoDiretoLote" class="form-input input-moeda-centavos text-mono" style="font-size: 16px; font-weight: 900; color: #047857; background: #ffffff;" placeholder="0,00" value="0,00" title="Informe quanto custou todo o lote fechado para calcular a média por peça">
+                    <span style="font-size: 10px; color: #059669; display: block; margin-top: 3px;">Gasto total do lote (malha + facção + insumos)</span>
                   </div>
                   <div class="form-group" style="margin: 0;">
-                    <label class="form-label" style="font-size: 11px; color: #475569;">Custo Total Previsto para o Lote:</label>
-                    <div style="font-size: 16px; font-weight: 900; color: #1e3a8a; padding: 8px 12px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 4px;" id="lblCustoDiretoTotalLote" class="text-mono">
-                      R$ 0,00
-                    </div>
+                    <label class="form-label" style="font-weight: 800; color: #1e3a8a; font-size: 12.5px;">Custo Médio por Peça (R$/un):</label>
+                    <input type="text" inputmode="decimal" id="inputCustoDiretoTotal" class="form-input input-moeda-centavos text-mono" style="font-size: 16px; font-weight: 900; color: #1e3a8a; background: #ffffff;" placeholder="0,00" value="0,00" title="Custo unitário calculado ou digitado manualmente">
+                    <span style="font-size: 10px; color: #475569; display: block; margin-top: 3px;" id="dicaCalculoCustoDireto">Calculado dividindo o lote pelas peças (ou digite o unitário)</span>
                   </div>
                 </div>
                 <!-- Aviso Financeiro & Centro de Custos Obrigatório -->
@@ -8715,11 +8715,15 @@
         if (chave) it.precosPorTamanho[chave] = val;
       });
 
-      // Modo de Custos e Custo Direto Manual
+      // Modo de Custos e Custo Direto Manual (Bidirecional: Lote Total ⇄ Unitário)
       it.modoCusto = it.modoCusto || 'calcular';
       const inpCustoDir = document.getElementById('inputCustoDiretoTotal');
+      const inpCustoLote = document.getElementById('inputCustoDiretoLote');
       if (inpCustoDir) {
-        it.custoDiretoManual = parseNumMoeda(inpCustoDir.value, it.custoDiretoManual || 22.50);
+        it.custoDiretoManual = parseNumMoeda(inpCustoDir.value, it.custoDiretoManual || 0);
+      }
+      if (inpCustoLote) {
+        it.custoDiretoLoteManual = parseNumMoeda(inpCustoLote.value, it.custoDiretoLoteManual || 0);
       }
 
       // Blindagem da cor do tecido (nunca deixar 'A Definir' se houver cor selecionada ou digitada)
@@ -9416,10 +9420,23 @@
         atualizarEstadoVisualTamanhos();
       }
 
-      // Restaura o modo de custos (Calcular vs Custo Direto)
+      // Restaura o modo de custos (Calcular vs Custo Direto Bidirecional)
       const inpCustoDirCarregar = document.getElementById('inputCustoDiretoTotal');
-      if (inpCustoDirCarregar && it.custoDiretoManual !== undefined && it.custoDiretoManual !== null) {
-        inpCustoDirCarregar.value = formatarMoedaInput(it.custoDiretoManual);
+      const inpCustoLoteCarregar = document.getElementById('inputCustoDiretoLote');
+      const totalPecasCarregadas = g.total || 0;
+
+      if (it.custoDiretoLoteManual !== undefined && it.custoDiretoLoteManual !== null && it.custoDiretoLoteManual > 0) {
+        if (inpCustoLoteCarregar) inpCustoLoteCarregar.value = formatarMoedaInput(it.custoDiretoLoteManual);
+        if (inpCustoDirCarregar) {
+          const cUnit = totalPecasCarregadas > 0 ? (it.custoDiretoLoteManual / totalPecasCarregadas) : it.custoDiretoLoteManual;
+          inpCustoDirCarregar.value = formatarMoedaInput(cUnit);
+        }
+      } else if (it.custoDiretoManual !== undefined && it.custoDiretoManual !== null && it.custoDiretoManual > 0) {
+        if (inpCustoDirCarregar) inpCustoDirCarregar.value = formatarMoedaInput(it.custoDiretoManual);
+        if (inpCustoLoteCarregar) {
+          const cLote = totalPecasCarregadas > 0 ? (it.custoDiretoManual * totalPecasCarregadas) : it.custoDiretoManual;
+          inpCustoLoteCarregar.value = formatarMoedaInput(cLote);
+        }
       }
       if (typeof alternarModoCustos === 'function') {
         alternarModoCustos(it.modoCusto || 'calcular');
@@ -9786,11 +9803,20 @@
         }
 
         const inpCustoDir = document.getElementById('inputCustoDiretoTotal');
-        if (inpCustoDir && it) {
-          if (it.custoDiretoManual !== undefined && it.custoDiretoManual !== null && it.custoDiretoManual > 0) {
-            inpCustoDir.value = formatarMoedaInput(it.custoDiretoManual);
-          } else {
-            it.custoDiretoManual = parseNumMoeda(inpCustoDir.value || 22.50, 22.50);
+        const inpCustoLote = document.getElementById('inputCustoDiretoLote');
+        const totalPecas = it ? (it.grade?.total || 0) : 0;
+
+        if (it) {
+          if (it.custoDiretoLoteManual && it.custoDiretoLoteManual > 0) {
+            if (inpCustoLote) inpCustoLote.value = formatarMoedaInput(it.custoDiretoLoteManual);
+            const cUnit = totalPecas > 0 ? (it.custoDiretoLoteManual / totalPecas) : it.custoDiretoLoteManual;
+            if (inpCustoDir) inpCustoDir.value = formatarMoedaInput(cUnit);
+            it.custoDiretoManual = cUnit;
+          } else if (it.custoDiretoManual && it.custoDiretoManual > 0) {
+            if (inpCustoDir) inpCustoDir.value = formatarMoedaInput(it.custoDiretoManual);
+            const cLote = totalPecas > 0 ? (it.custoDiretoManual * totalPecas) : it.custoDiretoManual;
+            if (inpCustoLote) inpCustoLote.value = formatarMoedaInput(cLote);
+            it.custoDiretoLoteManual = cLote;
           }
         }
       } else {
@@ -9815,13 +9841,41 @@
 
     document.getElementById('btnModoCalcularCustos')?.addEventListener('click', () => alternarModoCustos('calcular'));
     document.getElementById('btnModoCustoDireto')?.addEventListener('click', () => alternarModoCustos('direto'));
-    
-    const inpCustoDirEl = document.getElementById('inputCustoDiretoTotal');
-    if (inpCustoDirEl) {
-      ['input', 'change', 'keyup', 'blur'].forEach(ev => {
-        inpCustoDirEl.addEventListener(ev, () => {
+
+    const inpCustoLoteEl = document.getElementById('inputCustoDiretoLote');
+    const inpCustoUnitEl = document.getElementById('inputCustoDiretoTotal');
+
+    if (inpCustoLoteEl) {
+      ['input', 'change', 'keyup'].forEach(ev => {
+        inpCustoLoteEl.addEventListener(ev, () => {
           const it = itensOrcamento[itemAtivoIndex];
-          if (it) it.custoDiretoManual = parseNumMoeda(inpCustoDirEl.value, 22.50);
+          if (!it) return;
+          const totalP = it.grade?.total || 0;
+          const cLote = parseNumMoeda(inpCustoLoteEl.value, 0);
+          it.custoDiretoLoteManual = cLote;
+          const cUnit = totalP > 0 ? (cLote / totalP) : cLote;
+          it.custoDiretoManual = cUnit;
+          if (inpCustoUnitEl && document.activeElement !== inpCustoUnitEl) {
+            inpCustoUnitEl.value = formatarMoedaInput(cUnit);
+          }
+          recalcularBenchmarkModal();
+        });
+      });
+    }
+
+    if (inpCustoUnitEl) {
+      ['input', 'change', 'keyup'].forEach(ev => {
+        inpCustoUnitEl.addEventListener(ev, () => {
+          const it = itensOrcamento[itemAtivoIndex];
+          if (!it) return;
+          const totalP = it.grade?.total || 0;
+          const cUnit = parseNumMoeda(inpCustoUnitEl.value, 0);
+          it.custoDiretoManual = cUnit;
+          const cLote = totalP > 0 ? (cUnit * totalP) : cUnit;
+          it.custoDiretoLoteManual = cLote;
+          if (inpCustoLoteEl && document.activeElement !== inpCustoLoteEl) {
+            inpCustoLoteEl.value = formatarMoedaInput(cLote);
+          }
           recalcularBenchmarkModal();
         });
       });
@@ -10934,13 +10988,31 @@
         }
       }
 
-      // Se o modo for Custo Direto, sobrepõe o custo com o valor único digitado pelo cliente
+      // Se o modo for Custo Direto, calcula bidirecionalmente (Lote Total ⇄ Média por Peça)
       if (itAtivo.modoCusto === 'direto') {
         const inpCustoDir = document.getElementById('inputCustoDiretoTotal');
-        const cDireto = parseNumMoeda(inpCustoDir ? inpCustoDir.value : (itAtivo.custoDiretoManual || 22.50), 22.50);
+        const inpCustoLote = document.getElementById('inputCustoDiretoLote');
+
+        let cLote = parseNumMoeda(inpCustoLote ? inpCustoLote.value : (itAtivo.custoDiretoLoteManual || 0), 0);
+        let cDireto = parseNumMoeda(inpCustoDir ? inpCustoDir.value : (itAtivo.custoDiretoManual || 0), 0);
+
+        if (cLote > 0 && totalPecasItem > 0) {
+          cDireto = cLote / totalPecasItem;
+          if (inpCustoDir && document.activeElement !== inpCustoDir) {
+            inpCustoDir.value = formatarMoedaInput(cDireto);
+          }
+        } else if (cDireto > 0 && totalPecasItem > 0) {
+          cLote = cDireto * totalPecasItem;
+          if (inpCustoLote && document.activeElement !== inpCustoLote) {
+            inpCustoLote.value = formatarMoedaInput(cLote);
+          }
+        }
+
         itAtivo.custoDiretoManual = cDireto;
+        itAtivo.custoDiretoLoteManual = cLote;
         custoProducaoCalculado = cDireto;
         viabilidade.custoProducaoUnitario = cDireto;
+
         const aliqImp = numOuPadrao(itAtivo.aliquotaImposto, 6.5);
         const margDes = numOuPadrao(itAtivo.margemDesejada, 30.0);
         const taxaDeducoes = (aliqImp + margDes) / 100;
@@ -10950,8 +11022,15 @@
         viabilidade.margemLiquidaReal = (itAtivo.precoVendaUnitario > 0)
           ? ((viabilidade.lucroLiquidoUnitario / itAtivo.precoVendaUnitario) * 100)
           : 0;
-        const lblLote = document.getElementById('lblCustoDiretoTotalLote');
-        if (lblLote) lblLote.textContent = formatarMoeda(cDireto * totalPecasItem);
+
+        const dicaEl = document.getElementById('dicaCalculoCustoDireto');
+        if (dicaEl) {
+          if (totalPecasItem > 0) {
+            dicaEl.textContent = `Lote de ${totalPecasItem} peças: Total ${formatarMoeda(cLote)} (Média de ${formatarMoeda(cDireto)}/pç)`;
+          } else {
+            dicaEl.textContent = 'Informe a quantidade na grade acima para calcular a média por peça';
+          }
+        }
       }
 
       // Cálculo do Preço de Venda Ponderado pelos Preços por Tamanho (ex: PP/M = 39,90 vs G5 = 48,00)
@@ -10983,7 +11062,9 @@
 
       // Atualiza propriedades financeiras do item ativo
       itAtivo.custoUnitarioProducao = custoProducaoCalculado;
-      itAtivo.custoTotalProducao = custoProducaoCalculado * totalPecasItem;
+      itAtivo.custoTotalProducao = (itAtivo.modoCusto === 'direto' && itAtivo.custoDiretoLoteManual > 0)
+        ? itAtivo.custoDiretoLoteManual
+        : (custoProducaoCalculado * totalPecasItem);
       itAtivo.lucroTotal = itAtivo.valorTotalVenda - itAtivo.custoTotalProducao;
       itAtivo.margemReal = itAtivo.valorTotalVenda > 0 ? ((itAtivo.lucroTotal / itAtivo.valorTotalVenda) * 100) : 0;
 
@@ -12119,7 +12200,7 @@
         orcamentoExistente.produtoNome = dadosOrcamento.produtoNome;
         orcamentoExistente.tecidoEspecificacao = dadosOrcamento.prod ? dadosOrcamento.prod.tipoMalhaPadrao : orcamentoExistente.tecidoEspecificacao;
         orcamentoExistente.corTecido = dadosOrcamento.corPrincipal || dadosOrcamento.corTecido || 'A Definir';
-          orcamentoExistente.corPrincipal = orcamentoExistente.corTecido;
+        orcamentoExistente.corPrincipal = orcamentoExistente.corTecido;
         orcamentoExistente.observacoesCoresDetalhes = dadosOrcamento.observacoesCoresDetalhes || '';
         orcamentoExistente.tipoPersonalizacao = dadosOrcamento.tipoPersonalizacao;
         orcamentoExistente.grade = dadosOrcamento.grade;
@@ -12310,7 +12391,7 @@
       produtoId: dados.prod ? dados.prod.id : '',
       produtoNome: dados.prod ? dados.prod.nome : 'Produto',
       corTecido: dados.corPrincipal || dados.corTecido || 'A Definir',
-        corPrincipal: dados.corPrincipal || dados.corTecido || 'A Definir',
+      corPrincipal: dados.corPrincipal || dados.corTecido || 'A Definir',
       observacoesCoresDetalhes: dados.observacoesCoresDetalhes || '',
       tecidoEspecificacao: dados.prod ? dados.prod.tipoMalhaPadrao : 'Padrão Têxtil',
       tipoPersonalizacao: dados.tipoPersonalizacao || 'Personalização Conforme Proposta',
@@ -13947,34 +14028,34 @@
             <div style="font-size: 11px; color: #475569;">
               ${emp.razaoSocial && emp.razaoSocial !== emp.nomeFantasia ? `${emp.razaoSocial} • ` : ''}CNPJ: ${emp.cnpj || 'Não informado'}<br>
               ${(() => {
-                // Formatação blindada do endereço da empresa (sem duplicar cidade/UF ou exibir cidade divergente)
-                let endLimpo = (emp.endereco || '').trim();
-                const cidEmp = (emp.cidade || '').trim();
-                const ufEmp = (emp.uf || '').trim();
-                const bairroEmp = (emp.bairro || '').trim();
-                const cepEmp = (emp.cep || '').trim();
+        // Formatação blindada do endereço da empresa (sem duplicar cidade/UF ou exibir cidade divergente)
+        let endLimpo = (emp.endereco || '').trim();
+        const cidEmp = (emp.cidade || '').trim();
+        const ufEmp = (emp.uf || '').trim();
+        const bairroEmp = (emp.bairro || '').trim();
+        const cepEmp = (emp.cep || '').trim();
 
-                // Se a cidade cadastrada for São Paulo / SP (ou outra), remove menções residuais a 'Itajaí - SC' do texto do endereço
-                if (cidEmp && !cidEmp.toLowerCase().includes('itaja')) {
-                  endLimpo = endLimpo.replace(/,\s*Itaja[ií](\s*-\s*SC)?/gi, '')
-                                     .replace(/\bItaja[ií]\s*-\s*SC\b/gi, '')
-                                     .replace(/\bItaja[ií]\b/gi, '').trim();
-                }
+        // Se a cidade cadastrada for São Paulo / SP (ou outra), remove menções residuais a 'Itajaí - SC' do texto do endereço
+        if (cidEmp && !cidEmp.toLowerCase().includes('itaja')) {
+          endLimpo = endLimpo.replace(/,\s*Itaja[ií](\s*-\s*SC)?/gi, '')
+            .replace(/\bItaja[ií]\s*-\s*SC\b/gi, '')
+            .replace(/\bItaja[ií]\b/gi, '').trim();
+        }
 
-                const parts = [];
-                if (endLimpo) parts.push(endLimpo);
-                if (bairroEmp && !endLimpo.toLowerCase().includes(bairroEmp.toLowerCase())) {
-                  parts.push(bairroEmp);
-                }
-                const munUf = [cidEmp, ufEmp].filter(Boolean).join(' - ');
-                if (munUf && !endLimpo.toLowerCase().includes(munUf.toLowerCase())) {
-                  parts.push(munUf);
-                }
-                if (cepEmp && !endLimpo.includes(cepEmp)) {
-                  parts.push('CEP: ' + cepEmp);
-                }
-                return parts.length > 0 ? parts.join(', ') + '<br>' : '';
-              })()}
+        const parts = [];
+        if (endLimpo) parts.push(endLimpo);
+        if (bairroEmp && !endLimpo.toLowerCase().includes(bairroEmp.toLowerCase())) {
+          parts.push(bairroEmp);
+        }
+        const munUf = [cidEmp, ufEmp].filter(Boolean).join(' - ');
+        if (munUf && !endLimpo.toLowerCase().includes(munUf.toLowerCase())) {
+          parts.push(munUf);
+        }
+        if (cepEmp && !endLimpo.includes(cepEmp)) {
+          parts.push('CEP: ' + cepEmp);
+        }
+        return parts.length > 0 ? parts.join(', ') + '<br>' : '';
+      })()}
               Telefone: ${formatarTelefone(emp.telefone)} • E-mail: ${emp.email || '-'}
             </div>
           </div>
@@ -14036,12 +14117,12 @@
             </thead>
             <tbody>
               ${p.itens.map((it, idx) => {
-      const appsHtml = (it.aplicacoes && it.aplicacoes.length > 0)
-        ? it.aplicacoes.map(a => `• <strong>${a.local}:</strong> ${a.tecnica}`).join('<br>')
-        : '<span style="color: #64748b; font-style: italic;">Peça Lisa</span>';
-      const subtotal = (it.valorSubtotal || ((it.precoVendaUnitario || 0) * (it.grade?.total || 0))) || 0;
-      const itMockup = it.mockupUrl || p.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, '#1e3a8a', '#ffffff', (p.clienteNome || 'TEXFY').substring(0, 6)) : '');
-      return `
+        const appsHtml = (it.aplicacoes && it.aplicacoes.length > 0)
+          ? it.aplicacoes.map(a => `• <strong>${a.local}:</strong> ${a.tecnica}`).join('<br>')
+          : '<span style="color: #64748b; font-style: italic;">Peça Lisa</span>';
+        const subtotal = (it.valorSubtotal || ((it.precoVendaUnitario || 0) * (it.grade?.total || 0))) || 0;
+        const itMockup = it.mockupUrl || p.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, '#1e3a8a', '#ffffff', (p.clienteNome || 'TEXFY').substring(0, 6)) : '');
+        return `
                   <tr style="border-bottom: 1px solid #e2e8f0;">
                     <td style="padding: 4px; text-align: center; vertical-align: middle;">
                       <img src="${itMockup}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" data-item-idx="${idx}" alt="Mockup Mod ${idx + 1}" style="width: 44px !important; height: 58px !important; aspect-ratio: 3/4; object-fit: contain; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; cursor: pointer; display: block; margin: 0 auto; box-shadow: 0 1px 2px rgba(0,0,0,0.06);" title="Clique para ampliar mockup de ${it.produtoNome}">
@@ -14071,7 +14152,7 @@
                     </td>
                   </tr>
                 `;
-    }).join('')}
+      }).join('')}
             </tbody>
             <tfoot>
               <tr style="background: #f8fafc; font-weight: 800; border-top: 2px solid #cbd5e1;">
@@ -14648,7 +14729,7 @@
     // Sincroniza e recupera lista completa de modelos entre OS e Pedido Oficial
     if (!os.desmembrada && !os.subOs && typeof reunificarItensDeReparticao === 'function') {
       const temLotesResiduais = (Array.isArray(os.itens) && os.itens.length > 1 && os.itens.some(it => /\(Lote\s+[A-Z0-9]+\)/i.test(it.produtoNome || ''))) ||
-                                (Array.isArray(pedido.itens) && pedido.itens.length > 1 && pedido.itens.some(it => /\(Lote\s+[A-Z0-9]+\)/i.test(it.produtoNome || '')));
+        (Array.isArray(pedido.itens) && pedido.itens.length > 1 && pedido.itens.some(it => /\(Lote\s+[A-Z0-9]+\)/i.test(it.produtoNome || '')));
       if (temLotesResiduais) {
         reunificarItensDeReparticao(os, pedido);
       }
@@ -14964,9 +15045,9 @@
             </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
               ${subOrdens.map((sub, sIdx) => {
-                const letraLote = String.fromCharCode(65 + sIdx);
-                const qtdSub = sub.quantidadeTotal || (sub.grade?.total) || 0;
-                return `
+          const letraLote = String.fromCharCode(65 + sIdx);
+          const qtdSub = sub.quantidadeTotal || (sub.grade?.total) || 0;
+          return `
                   <div style="background: #ffffff; border: 1.5px solid #bae6fd; border-radius: 6px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                       <strong style="color: #0c4a6e; font-size: 13.5px; font-family: monospace;">${sub.id} (Lote ${letraLote})</strong>
@@ -14991,7 +15072,7 @@
                     </div>
                   </div>
                 `;
-              }).join('')}
+        }).join('')}
             </div>
           </div>
         `;
@@ -19038,7 +19119,7 @@
   }
   window.ERP.cancelarEntradaEstoque = cancelarEntradaEstoque;
 
-  
+
   /**
    * CADASTRAR NOVO INSUMO / TECIDO NO CATÁLOGO MESTRE
    * Permite cadastrar tecidos, aviamentos, tintas ou embalagens diretamente do modal de compras
@@ -19307,14 +19388,14 @@
               <!-- Painel Grade Numérica (34 ao 60) para Calças, Camisas e Bermudas -->
               <div id="painelGradeVestNum" style="display: none; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center;">
                 ${['num34', 'num36', 'num38', 'num40', 'num42', 'num44', 'num46', 'num48', 'num50', 'num52', 'num54', 'num56', 'num58', 'num60'].map(tam => {
-                  const numRotulo = tam.replace('num', '');
-                  return `
+      const numRotulo = tam.replace('num', '');
+      return `
                     <div>
                       <div style="font-size: 10.5px; font-weight: 800; background: #eff6ff; color: #1e40af; padding: 3px 0; border: 1px solid #bfdbfe; border-radius: 4px 4px 0 0;">${numRotulo}</div>
                       <input type="number" class="form-input inp-grade-vest-ent" data-tam="${tam}" value="0" min="0" style="text-align: center; font-weight: 800; font-size: 13px; border-radius: 0 0 4px 4px; border-top: none; padding: 5px 2px;">
                     </div>
                   `;
-                }).join('')}
+    }).join('')}
               </div>
             </div>
 
@@ -21047,8 +21128,12 @@
                 const q = it.grade?.total || 0;
                 if (it.modoCusto === 'direto' || (p.modoCusto === 'direto' && !it.modoCusto)) {
                   // Custo Direto (Lançamento Rápido): entra como Custo com Mercadoria em Produção: Costura & Facções (CC-03)
-                  const cDir = numOuPadrao(it.custoDiretoManual || it.custoUnitarioProducao, 0);
-                  somaRealCost += (cDir * q);
+                  const cTot = (it.custoDiretoLoteManual && it.custoDiretoLoteManual > 0)
+                    ? Number(it.custoDiretoLoteManual)
+                    : (it.custoTotalProducao && it.custoTotalProducao > 0
+                      ? Number(it.custoTotalProducao)
+                      : (numOuPadrao(it.custoDiretoManual || it.custoUnitarioProducao, 0) * q));
+                  somaRealCost += cTot;
                 } else {
                   const precoKg = numOuPadrao(it.custoTecidoKg, 48.50);
                   const consumo = numOuPadrao(it.consumoTecido, 0.28);
@@ -24749,7 +24834,7 @@
     });
   }
 
-  
+
   /**
    * Modal Exclusivo e Simplificado de Cadastro de Costureira / Facção Externa
    * 100% focado no chão de fábrica têxtil: sem e-mail, sem login, sem senha
@@ -25393,7 +25478,7 @@
       const os101 = (b.ordensServico || []).find(o => !o.subOs && (String(o.pedidoNumero) === '101' || o.id === 'OS-101'));
       const temSubOs101 = (b.ordensServico || []).some(o => o.subOs && (String(o.pedidoNumero) === '101' || o.parentOsId === 'OS-101' || String(o.id).startsWith('OS-101-')));
       const temLotes101 = (ped101 && Array.isArray(ped101.itens) && ped101.itens.length > 1 && ped101.itens.some(it => /\(Lote\s+[A-Z0-9]+\)/i.test(it.produtoNome || ''))) ||
-                          (os101 && Array.isArray(os101.itens) && os101.itens.length > 1 && os101.itens.some(it => /\(Lote\s+[A-Z0-9]+\)/i.test(it.produtoNome || '')));
+        (os101 && Array.isArray(os101.itens) && os101.itens.length > 1 && os101.itens.some(it => /\(Lote\s+[A-Z0-9]+\)/i.test(it.produtoNome || '')));
       if (!b.configFiscal._reparticaoPed101DesfeitaV1 && (temSubOs101 || temLotes101 || (os101 && os101.desmembrada))) {
         b.ordensServico = (b.ordensServico || []).filter(o => {
           if (o.subOs && (String(o.pedidoNumero) === '101' || (os101 && o.parentOsId === os101.id) || String(o.id).startsWith('OS-101-'))) return false;
@@ -26723,7 +26808,7 @@
           mostrarToast(`✓ Arquivo XML Oficial SEFAZ da NF-e #${nfe.numero} baixado!`, 'green');
           return;
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     if (!xmlConteudo) {
@@ -27952,8 +28037,8 @@
         if (inpIe && (!inpIe.value.trim() || inpIe.value.trim().toUpperCase() === 'ISENTO' || forcar)) {
           if (Array.isArray(est.inscricoes_estaduais) && est.inscricoes_estaduais.length > 0) {
             const ieAtiva = est.inscricoes_estaduais.find(i => i.ativo && i.estado?.sigla?.toUpperCase() === ufSigla)
-                         || est.inscricoes_estaduais.find(i => i.ativo)
-                         || est.inscricoes_estaduais[0];
+              || est.inscricoes_estaduais.find(i => i.ativo)
+              || est.inscricoes_estaduais[0];
             if (ieAtiva && ieAtiva.inscricao_estadual) {
               inpIe.value = String(ieAtiva.inscricao_estadual).replace(/\D/g, '');
             }
@@ -27998,7 +28083,7 @@
           }
           if (clienteIbge) cliCad.ibge = clienteIbge;
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const inpDocCli = modalEl.querySelector('#emitNfeCliDoc');
@@ -31622,9 +31707,9 @@
                   </span>
                   <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     ${tamanhosAtivos.map(t => {
-                      const qOrig = parseInt(gradeOriginal[t], 10) || 0;
-                      const qLote = lote.grade[t] || 0;
-                      return `
+          const qOrig = parseInt(gradeOriginal[t], 10) || 0;
+          const qLote = lote.grade[t] || 0;
+          return `
                         <div style="display: flex; flex-direction: column; align-items: center; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 6px; min-width: 50px;">
                           <label style="font-size: 10px; font-weight: 800; color: #1e40af; text-transform: uppercase; margin-bottom: 2px;">
                             ${t} <span style="font-size: 9px; color: #64748b;">(max ${qOrig})</span>
@@ -31632,7 +31717,7 @@
                           <input type="number" min="0" max="${qOrig}" class="form-input inp-grade-lote" data-lote="${lIdx}" data-tam="${t}" value="${qLote}" style="font-size: 12px; font-weight: 800; text-align: center; padding: 2px 4px; width: 44px; height: auto;">
                         </div>
                       `;
-                    }).join('')}
+        }).join('')}
                   </div>
                 </div>
               ` : `
@@ -31873,7 +31958,7 @@
   }
 
   window.ERP = Object.assign(window.ERP || {}, {
-    zerarSistema: function() { return window.ERP.zerarParaOperacaoRealPrime(false); },
+    zerarSistema: function () { return window.ERP.zerarParaOperacaoRealPrime(false); },
     db,
     obterDb: () => db,
     abaAtiva: () => abaAtiva || 'abertura',
@@ -31974,7 +32059,7 @@
         window.TEXFY_PWA.solicitarInstalacaoApp();
       }
     },
-    zerarParaOperacaoRealPrime: function(silencioso = false) {
+    zerarParaOperacaoRealPrime: function (silencioso = false) {
       if (!silencioso) {
         if (!confirm('Confirma zerar todos os pedidos, clientes, OS e financeiro de teste para iniciar a operação real da Prime Uniformes?')) {
           return;
