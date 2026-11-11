@@ -11204,6 +11204,56 @@
         return null;
       }
 
+      // Validação: Preço de venda obrigatório para todos os tamanhos com quantidade preenchida
+      for (let i = 0; i < itensOrcamento.length; i++) {
+        const itemMod = itensOrcamento[i];
+        const gradeMod = itemMod.grade || {};
+        const precosMod = itemMod.precosPorTamanho || {};
+
+        for (const c of TODOS_CAMPOS_GRADE) {
+          const qtdTam = parseInt(gradeMod[c.chave] || 0, 10);
+          if (qtdTam > 0) {
+            const pTam = (precosMod[c.chave] != null && !isNaN(precosMod[c.chave]))
+              ? parseFloat(precosMod[c.chave])
+              : 0;
+
+            if (pTam <= 0) {
+              if (itemAtivoIndex !== i && typeof selecionarModeloAtivo === 'function') {
+                selecionarModeloAtivo(i);
+              }
+              const inpInvalido = document.getElementById('precoGrade_' + c.chave);
+              if (inpInvalido) {
+                // Se o input estiver dentro de uma seção extra que está recolhida, abre-a
+                const elSecao = inpInvalido.closest('.secao-grade-extra-card');
+                if (elSecao && elSecao.style.display === 'none') {
+                  elSecao.style.display = 'block';
+                  const secaoKey = elSecao.id.replace('secaoGrade_', '');
+                  const btnTog = document.getElementById(`btnToggle_${secaoKey}`);
+                  if (btnTog) {
+                    btnTog.style.boxShadow = '0 0 0 2px currentColor';
+                    btnTog.style.fontWeight = '800';
+                  }
+                }
+                // Se estiver no container numérico que estiver oculto
+                const containerNum = document.getElementById('boxGradeTableInputNumerica');
+                if (containerNum && containerNum.contains(inpInvalido) && containerNum.style.display === 'none') {
+                  const btnModoNum = document.getElementById('btnModoGradeNumerica');
+                  if (btnModoNum) btnModoNum.click();
+                }
+
+                inpInvalido.classList.add('campo-invalido-obrigatorio');
+                inpInvalido.focus();
+                inpInvalido.select();
+                const col = inpInvalido.closest('.grade-col');
+                if (col) col.classList.add('incompleto-alerta');
+              }
+              mostrarToast(`Por favor, informe o preço de venda para o tamanho ${c.rotulo} (Modelo ${i + 1})!`, 'red');
+              return null;
+            }
+          }
+        }
+      }
+
 
 
       const clienteId = document.getElementById('orcClienteSelect')?.value;
@@ -11483,8 +11533,23 @@
         if (inpPreco) inpPreco.disabled = false;
 
         const q = parseInt(inpQtd.value || 0, 10);
+        const p = inpPreco ? parseNumMoeda(inpPreco.value, 0) : 0;
+
         col.classList.toggle('tem-quantidade', q > 0);
-        col.classList.remove('ativo', 'incompleto-alerta');
+
+        if (q > 0 && p <= 0) {
+          col.classList.add('incompleto-alerta');
+          if (inpPreco) {
+            inpPreco.classList.add('campo-invalido-obrigatorio');
+            inpPreco.setAttribute('title', 'Preço de venda obrigatório para tamanho com quantidade!');
+          }
+        } else {
+          col.classList.remove('incompleto-alerta');
+          if (inpPreco) {
+            inpPreco.classList.remove('campo-invalido-obrigatorio');
+            inpPreco.removeAttribute('title');
+          }
+        }
       });
     }
 
@@ -11516,6 +11581,7 @@
         inpQtd.addEventListener('input', () => {
           const q = parseInt(inpQtd.value || 0, 10);
           col.classList.toggle('tem-quantidade', q > 0);
+          atualizarEstadoVisualTamanhos();
           recalcularBenchmarkModal();
         });
 
@@ -11524,9 +11590,11 @@
             inpPreco.select();
           });
           inpPreco.addEventListener('input', () => {
+            atualizarEstadoVisualTamanhos();
             recalcularBenchmarkModal();
           });
           inpPreco.addEventListener('change', () => {
+            atualizarEstadoVisualTamanhos();
             recalcularBenchmarkModal();
           });
         }

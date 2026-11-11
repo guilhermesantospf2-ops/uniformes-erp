@@ -3478,3 +3478,18 @@ input[type="number"] {
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15) !important;
   color: #1e3a8a;
 }
+
+/* Feedback visual e destaque de preco obrigatorio quando ha quantidade */
+.grade-col.incompleto-alerta .grade-preco-input,
+.grade-preco-input.campo-invalido-obrigatorio {
+  border: 1.5px solid #ef4444 !important;
+  background-color: #fef2f2 !important;
+  color: #b91c1c !important;
+  animation: pulse-borda-obrigatoria 1.5s infinite alternate ease-in-out;
+}
+
+@keyframes pulse-borda-obrigatoria {
+  0% { box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.4); }
+  100% { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.6); }
+}
+
