@@ -1044,10 +1044,10 @@ button.status-pill:hover {
   gap: 14px;
 }
 
-/* Grade de Tamanhos Têxtil (PP, P, M, G, GG, XG) */
+/* Grade de Tamanhos Têxtil (PP, P, M, G, GG + TOTAL ou XG a G5) */
 .grade-table-input {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 8px;
   background-color: #f8fafc;
   padding: 12px;

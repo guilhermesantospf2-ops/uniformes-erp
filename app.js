@@ -4206,9 +4206,9 @@
     { chave: 'm', rotulo: 'M' },
     { chave: 'g', rotulo: 'G' },
     { chave: 'gg', rotulo: 'GG' },
-    { chave: 'xg', rotulo: 'XG' },
 
     // 3. Tamanhos Especiais / Plus Size
+    { chave: 'xg', rotulo: 'XG' },
     { chave: 'g1', rotulo: 'G1' },
     { chave: 'g2', rotulo: 'G2' },
     { chave: 'g3', rotulo: 'G3' },
@@ -4252,8 +4252,7 @@
     { id: 'gradeP', chave: 'p', rotulo: 'P' },
     { id: 'gradeM', chave: 'm', rotulo: 'M' },
     { id: 'gradeG', chave: 'g', rotulo: 'G' },
-    { id: 'gradeGG', chave: 'gg', rotulo: 'GG' },
-    { id: 'gradeXG', chave: 'xg', rotulo: 'XG' }
+    { id: 'gradeGG', chave: 'gg', rotulo: 'GG' }
   ];
 
   const CAMPOS_GRADE_NUMERICA = [
@@ -4283,8 +4282,9 @@
     {
       id: 'secaoGrade_especiais',
       chaveSecao: 'especiais',
-      titulo: '⚡ Tamanhos Especiais / Plus Size (G1 a G5)',
+      titulo: '⚡ Tamanhos Especiais / Plus Size (XG, G1 a G5)',
       campos: [
+        { id: 'gradeXG', chave: 'xg', rotulo: 'XG' },
         { id: 'gradeG1', chave: 'g1', rotulo: 'G1' },
         { id: 'gradeG2', chave: 'g2', rotulo: 'G2' },
         { id: 'gradeG3', chave: 'g3', rotulo: 'G3' },
@@ -4392,11 +4392,11 @@
     const secoes = [
       {
         titulo: '👕 Adulto Regular (Comercial)',
-        chaves: ['pp', 'p', 'm', 'g', 'gg', 'xg']
+        chaves: ['pp', 'p', 'm', 'g', 'gg']
       },
       {
         titulo: '⚡ Tamanhos Especiais / Plus Size',
-        chaves: ['g1', 'g2', 'g3', 'g4', 'g5']
+        chaves: ['xg', 'g1', 'g2', 'g3', 'g4', 'g5']
       },
       {
         titulo: '👶 Grade Infantil & Juvenil',
@@ -4738,8 +4738,8 @@
       if (tam.startsWith('BL-')) {
         return 'background: #fdf2f8; color: #9d174d; border: 1px solid #fbcfe8;';
       }
-      if ((tam.startsWith('G1') || tam.startsWith('G2') || tam.startsWith('G3') || tam.startsWith('G4') || tam.startsWith('G5')) && !tam.startsWith('GG')) {
-        return 'background: #fffbeb; color: #92400e; border: 1px solid #fde68a;';
+      if ((tam.startsWith('G1') || tam.startsWith('G2') || tam.startsWith('G3') || tam.startsWith('G4') || tam.startsWith('G5') || sTam === 'XG') && !tam.startsWith('GG')) {
+        return 'background: #fffbeb; color: #92400e; border: 1.5px solid #fde68a;';
       }
       if (tam.includes('(Inf)')) {
         return 'background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd;';
@@ -8000,9 +8000,9 @@
                     <span style="font-size: 10.5px; color: var(--text-gray-500);">Preencha os tamanhos necessários. Somente os tamanhos com quantidade aparecerão no orçamento e corte.</span>
                   </div>
                   <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
-                    <button type="button" class="btn btn-secondary btn-sm btn-grade-rapida" data-dist="2,4,8,4,2,0" style="font-size: 10px; padding: 2px 7px; font-weight: 600;" title="Preencher com 20 peças">+20 Pçs</button>
-                    <button type="button" class="btn btn-secondary btn-sm btn-grade-rapida" data-dist="5,10,15,12,6,2" style="font-size: 10px; padding: 2px 7px; font-weight: 600;" title="Preencher com 50 peças">+50 Pçs</button>
-                    <button type="button" class="btn btn-secondary btn-sm btn-grade-rapida" data-dist="10,20,30,25,10,5" style="font-size: 10px; padding: 2px 7px; font-weight: 600;" title="Preencher com 100 peças">+100 Pçs</button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-grade-rapida" data-dist="2,4,8,4,2" style="font-size: 10px; padding: 2px 7px; font-weight: 600;" title="Preencher com 20 peças">+20 Pçs</button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-grade-rapida" data-dist="5,10,20,10,5" style="font-size: 10px; padding: 2px 7px; font-weight: 600;" title="Preencher com 50 peças">+50 Pçs</button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-grade-rapida" data-dist="10,20,40,20,10" style="font-size: 10px; padding: 2px 7px; font-weight: 600;" title="Preencher com 100 peças">+100 Pçs</button>
                     <button type="button" class="btn btn-secondary btn-sm" id="btnZerarGrade" style="font-size: 10px; padding: 2px 7px; color: #dc2626; font-weight: 700;" title="Zerar todas as quantidades da grade">Zerar Grade</button>
                   </div>
                 </div>
@@ -8015,7 +8015,7 @@
                   </div>
                   <div style="display: flex; gap: 6px;">
                     <button type="button" class="btn btn-sm btn-modo-grade-toggle" id="btnModoGradeAlfabetica" data-modo="alfabetica" style="font-size: 11px; padding: 4px 12px; font-weight: 800; border-radius: 4px; border: 1.5px solid #2563eb; background: #2563eb; color: #ffffff; cursor: pointer;">
-                      🔤 Alfabética (PP ao XG / Camisetas & Casacos)
+                      🔤 Alfabética (PP ao GG / Regular)
                     </button>
                     <button type="button" class="btn btn-sm btn-modo-grade-toggle" id="btnModoGradeNumerica" data-modo="numerica" style="font-size: 11px; padding: 4px 12px; font-weight: 700; border-radius: 4px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer;">
                       🔢 Numérica (34 ao 60 / Calças, Bermudas & Camisaria)
@@ -8023,8 +8023,8 @@
                   </div>
                 </div>
 
-                <!-- 1. Grade Regular Alfabética (PP ao XG + Totalizador) -->
-                <div class="grade-table-input" id="boxGradeTableInputAlfabetica">
+                <!-- 1. Grade Regular Alfabética (PP ao GG + Totalizador) -->
+                <div class="grade-table-input" id="boxGradeTableInputAlfabetica" style="grid-template-columns: repeat(6, 1fr);">
                   <div class="grade-col" data-chave="pp">
                     <div class="grade-label">PP</div>
                     <input type="number" id="gradePP" class="grade-input" value="0" min="0" placeholder="0">
@@ -8049,11 +8049,6 @@
                     <div class="grade-label">GG</div>
                     <input type="number" id="gradeGG" class="grade-input" value="0" min="0" placeholder="0">
                     <input type="text" inputmode="decimal" id="precoGrade_gg" class="grade-preco-input input-moeda-centavos" data-chave="gg" value="0,00" title="Preço de Venda do GG (R$)">
-                  </div>
-                  <div class="grade-col" data-chave="xg">
-                    <div class="grade-label">XG</div>
-                    <input type="number" id="gradeXG" class="grade-input" value="0" min="0" placeholder="0">
-                    <input type="text" inputmode="decimal" id="precoGrade_xg" class="grade-preco-input input-moeda-centavos" data-chave="xg" value="0,00" title="Preço de Venda do XG (R$)">
                   </div>
                   <div class="grade-col grade-col-total">
                     <div class="grade-label" style="background: #0f172a; color: #38bdf8; font-weight: 900;">TOTAL</div>
@@ -8096,7 +8091,7 @@
                       👖 Numérica (34 ao 60)
                     </button>
                     <button type="button" class="btn btn-secondary btn-sm btn-toggle-grade-extra" data-secao="especiais" id="btnToggle_especiais" style="font-size: 11px; padding: 3px 9px; font-weight: 700; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; cursor: pointer;">
-                      ⚡ Especiais (G1 a G5)
+                      ⚡ Especiais (XG a G5)
                     </button>
                     <button type="button" class="btn btn-secondary btn-sm btn-toggle-grade-extra" data-secao="infantis" id="btnToggle_infantis" style="font-size: 11px; padding: 3px 9px; font-weight: 700; color: #0369a1; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 4px; cursor: pointer;">
                       👶 Infantis (2 ao 16)
@@ -8139,16 +8134,17 @@
                   </div>
                 </div>
 
-                <!-- Seção Expansível 1: Especiais Plus Size (G1 a G5) -->
+                <!-- Seção Expansível 1: Especiais Plus Size (XG, G1 a G5) -->
                 <div id="secaoGrade_especiais" class="secao-grade-extra-card" style="display: none; margin-top: 10px; padding: 10px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                     <div style="display: flex; align-items: center; gap: 6px;">
-                      <span style="font-size: 11.5px; font-weight: 800; color: #92400e;">⚡ Tamanhos Especiais / Plus Size (G1 ao G5)</span>
+                      <span style="font-size: 11.5px; font-weight: 800; color: #92400e;">⚡ Tamanhos Especiais / Plus Size (XG, G1 ao G5)</span>
                       <span style="font-size: 10px; color: #b45309;">(Preencha as quantidades para peças plus size)</span>
                     </div>
                     <button type="button" class="btn btn-secondary btn-sm btn-fechar-grade-extra" data-secao="especiais" style="font-size: 10px; padding: 1px 7px; color: #92400e; background: #ffffff; border: 1px solid #fde68a;">✕ Fechar</button>
                   </div>
-                  <div class="grade-table-input" style="grid-template-columns: repeat(5, 1fr);">
+                  <div class="grade-table-input" style="grid-template-columns: repeat(6, 1fr);">
+                    <div class="grade-col" data-chave="xg"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">XG</div><input type="number" id="gradeXG" class="grade-input" value="0" min="0" placeholder="Qtd"><input type="text" inputmode="decimal" id="precoGrade_xg" class="grade-preco-input input-moeda-centavos" data-chave="xg" value="0,00" title="Preço Venda XG (R$)"></div>
                     <div class="grade-col" data-chave="g1"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">G1</div><input type="number" id="gradeG1" class="grade-input" value="0" min="0" placeholder="Qtd"><input type="text" inputmode="decimal" id="precoGrade_g1" class="grade-preco-input input-moeda-centavos" data-chave="g1" value="0,00" title="Preço Venda G1 (R$)"></div>
                     <div class="grade-col" data-chave="g2"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">G2</div><input type="number" id="gradeG2" class="grade-input" value="0" min="0" placeholder="Qtd"><input type="text" inputmode="decimal" id="precoGrade_g2" class="grade-preco-input input-moeda-centavos" data-chave="g2" value="0,00" title="Preço Venda G2 (R$)"></div>
                     <div class="grade-col" data-chave="g3"><div class="grade-label" style="background: #fef3c7; color: #92400e; font-weight: 800;">G3</div><input type="number" id="gradeG3" class="grade-input" value="0" min="0" placeholder="Qtd"><input type="text" inputmode="decimal" id="precoGrade_g3" class="grade-preco-input input-moeda-centavos" data-chave="g3" value="0,00" title="Preço Venda G3 (R$)"></div>
@@ -10442,7 +10438,7 @@
 
         const precoSugeridoTam = custoSalvo / divisorMarkup;
 
-        const isPlus = ['g1', 'g2', 'g3', 'g4', 'g5'].includes(ch);
+        const isPlus = ['xg', 'g1', 'g2', 'g3', 'g4', 'g5'].includes(ch);
         const isBase = ch === 'm';
 
         let diffPercStr = `${fator >= 1 ? `+${((fator - 1) * 100).toFixed(0)}%` : `${((fator - 1) * 100).toFixed(0)}%`}`;
@@ -10758,7 +10754,7 @@
           if (qtd > 0) {
             totalPecasGrade += qtd;
             const fator = FATORES_CONSUMO_TAMANHO[chave] || 1.00;
-            if (['g1', 'g2', 'g3', 'g4', 'g5'].includes(chave)) {
+            if (['xg', 'g1', 'g2', 'g3', 'g4', 'g5'].includes(chave)) {
               qtdEspeciaisPlusSize += qtd;
             }
             // Prioriza o consumo customizado se o usuário alterou na tabela (e o consumo base não foi zerado)
@@ -10862,7 +10858,7 @@
             <div style="display: flex; gap: 6px; align-items: center;">
               ${qtdEspeciaisPlusSize > 0 ? `
                 <span class="status-pill status-amber" style="font-size: 9.5px; font-weight: 800; background: #fffbeb; color: #b45309; border: 1px solid #fde68a;">
-                  ⚡ ${qtdEspeciaisPlusSize} Peça(s) Plus Size (G1 a G5)
+                  ⚡ ${qtdEspeciaisPlusSize} Peça(s) Plus Size (XG ao G5)
                 </span>
               ` : ''}
               <span class="status-pill status-gray" style="font-size: 9.5px; font-weight: 700;">Perda Corte/Enfesto: ${margemErro.toFixed(1)}%</span>
@@ -10889,7 +10885,7 @@
           ${qtdEspeciaisPlusSize > 0 ? `
             <div style="margin-top: 6px; padding: 4px 8px; background: #fffbeb; border-radius: 4px; font-size: 10px; color: #92400e; display: flex; align-items: center; gap: 5px;">
               <span>ℹ️</span>
-              <span><strong>Diferenciação por Tamanho Ativa:</strong> Peças G1 a G5 consomem até 90% mais tecido que a modelagem base M. O custo e o total a enfestar já estão ponderados com precisão!</span>
+              <span><strong>Diferenciação por Tamanho Ativa:</strong> Peças XG a G5 consomem até 90% mais tecido que a modelagem base M. O custo e o total a enfestar já estão ponderados com precisão!</span>
             </div>
           ` : ''}
 
@@ -11546,7 +11542,7 @@
     document.querySelectorAll('.btn-grade-rapida').forEach(btn => {
       btn.addEventListener('click', () => {
         const dist = (btn.getAttribute('data-dist') || '').split(',').map(n => parseInt(n, 10) || 0);
-        const campos = ['gradePP', 'gradeP', 'gradeM', 'gradeG', 'gradeGG', 'gradeXG'];
+        const campos = ['gradePP', 'gradeP', 'gradeM', 'gradeG', 'gradeGG'];
         campos.forEach((id, idx) => {
           const el = document.getElementById(id);
           const val = dist[idx] || 0;
@@ -11562,6 +11558,35 @@
         recalcularBenchmarkModal();
       });
     });
+
+    // Função que zera completamente todas as quantidades e preços ao fechar uma grade extra
+    function zerarSecaoGradeExtra(secaoKey) {
+      const secaoObj = SECOES_GRADE_EXTRAS.find(s => s.chaveSecao === secaoKey);
+      const it = itensOrcamento[itemAtivoIndex];
+      if (secaoObj && secaoObj.campos) {
+        secaoObj.campos.forEach(c => {
+          const elQtd = document.getElementById(c.id);
+          if (elQtd) elQtd.value = 0;
+          const elPreco = document.getElementById('precoGrade_' + c.chave);
+          if (elPreco) elPreco.value = '0,00';
+          if (it && it.grade) it.grade[c.chave] = 0;
+          if (it && it.precosPorTamanho) delete it.precosPorTamanho[c.chave];
+
+          const col = document.querySelector(`.grade-col[data-chave="${c.chave}"]`);
+          if (col && !col.classList.contains('grade-col-total')) {
+            col.classList.remove('ativo', 'incompleto-alerta', 'tem-quantidade');
+          }
+        });
+      }
+      if (secaoKey === 'numerica') {
+        const secaoEl = document.getElementById('secaoGrade_numerica');
+        if (secaoEl) {
+          secaoEl.querySelectorAll('input').forEach(inp => { inp.value = 0; });
+        }
+      }
+      atualizarEstadoVisualTamanhos();
+      recalcularBenchmarkModal();
+    }
 
     document.getElementById('btnZerarGrade')?.addEventListener('click', () => {
       const it = itensOrcamento[itemAtivoIndex];
@@ -11589,22 +11614,24 @@
       recalcularBenchmarkModal();
     });
 
-    // Toggle de seções extras de grade sob demanda
+    // Toggle de seções extras de grade sob demanda (ao fechar, zera os tamanhos daquela aba)
     document.querySelectorAll('.btn-toggle-grade-extra').forEach(btn => {
       btn.addEventListener('click', () => {
         const secaoKey = btn.getAttribute('data-secao');
         const elSecao = document.getElementById(`secaoGrade_${secaoKey}`);
         if (!elSecao) return;
         const estaVisivel = elSecao.style.display !== 'none';
-        elSecao.style.display = estaVisivel ? 'none' : 'block';
-        if (!estaVisivel) {
+        if (estaVisivel) {
+          elSecao.style.display = 'none';
+          btn.style.boxShadow = '';
+          btn.style.fontWeight = '700';
+          zerarSecaoGradeExtra(secaoKey);
+        } else {
+          elSecao.style.display = 'block';
           btn.style.boxShadow = '0 0 0 2px currentColor';
           btn.style.fontWeight = '800';
           const primeiroInput = elSecao.querySelector('input');
           if (primeiroInput) primeiroInput.focus();
-        } else {
-          btn.style.boxShadow = '';
-          btn.style.fontWeight = '700';
         }
       });
     });
@@ -11619,6 +11646,7 @@
           btnTog.style.boxShadow = '';
           btnTog.style.fontWeight = '700';
         }
+        zerarSecaoGradeExtra(secaoKey);
       });
     });
 
@@ -13930,133 +13958,188 @@
       </div>
 
       <!-- Detalhamento de Modelos & Grades de Tamanhos -->
-      ${(p.itens && p.itens.length > 1) ? `
-        <!-- Detalhamento Multi-Modelos do Pedido -->
-        <div style="margin-bottom: 14px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <strong style="color: #0f172a; font-size: 11.5px; text-transform: uppercase;">
-              ITENS & MODELOS DO PEDIDO (${p.itens.length} MODELOS CONFIGURADOS):
-            </strong>
-            <span style="font-size: 11px; color: #475569;">Grade detalhada com personalizações por peça</span>
-          </div>
-          
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11px;">
-            <thead>
-              <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1; color: #1e293b;">
-                <th style="padding: 6px 6px; text-align: center; width: 9%;">Mockup</th>
-                <th style="padding: 6px 8px; text-align: left; width: 20%;">Item / Modelo</th>
-                <th style="padding: 6px 8px; text-align: left; width: 17%;">Cor / Tecido</th>
-                <th style="padding: 6px 8px; text-align: left; width: 24%;">Personalizações (Locais)</th>
-                <th style="padding: 6px 8px; text-align: left; width: 15%;">Tamanhos Selecionados</th>
-                <th style="padding: 6px 6px; text-align: center; width: 6%; background: #e2e8f0;">Qtd</th>
-                <th style="padding: 6px 8px; text-align: right; width: 11%;">Unitário</th>
-                <th style="padding: 6px 8px; text-align: right; width: 11%;">Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${p.itens.map((it, idx) => {
-        const appsHtml = (it.aplicacoes && it.aplicacoes.length > 0)
-          ? it.aplicacoes.map(a => `• <strong>${a.local}:</strong> ${a.tecnica}`).join('<br>')
-          : '<span style="color: #64748b; font-style: italic;">Peça Lisa</span>';
-        const subtotal = (it.valorSubtotal || ((it.precoVendaUnitario || 0) * (it.grade?.total || 0))) || 0;
-        const itMockup = it.mockupUrl || p.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, '#1e3a8a', '#ffffff', (p.clienteNome || 'TEXFY').substring(0, 6)) : '');
-        return `
-                  <tr style="border-bottom: 1px solid #e2e8f0;">
-                    <td style="padding: 4px; text-align: center; vertical-align: middle;">
-                      <img src="${itMockup}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" data-item-idx="${idx}" alt="Mockup Mod ${idx + 1}" style="width: 44px !important; height: 58px !important; aspect-ratio: 3/4; object-fit: contain; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; cursor: pointer; display: block; margin: 0 auto; box-shadow: 0 1px 2px rgba(0,0,0,0.06);" title="Clique para ampliar mockup de ${it.produtoNome}">
+      ${(() => {
+        function extrairLinhasTamanhosComPreco(itemOuPedido) {
+          const g = itemOuPedido.grade || {};
+          const precos = itemOuPedido.precosPorTamanho || p.precosPorTamanho || {};
+          const pBase = parseFloat(itemOuPedido.precoVendaUnitario) || parseFloat(itemOuPedido.precoUnitarioVenda) || parseFloat(p.precoUnitarioVenda) || 0;
+          const selecionados = obterTamanhosSelecionadosGrade(g);
+          return selecionados.map(s => {
+            const pUnit = (precos[s.chave] != null && !isNaN(precos[s.chave]) && parseFloat(precos[s.chave]) > 0)
+              ? parseFloat(precos[s.chave])
+              : pBase;
+            return {
+              tam: s.tam,
+              chave: s.chave,
+              qtd: s.qtd,
+              precoUnit: pUnit,
+              subtotal: s.qtd * pUnit
+            };
+          });
+        }
+
+        if (p.itens && p.itens.length > 1) {
+          return `
+            <!-- Detalhamento Multi-Modelos do Pedido -->
+            <div style="margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <strong style="color: #0f172a; font-size: 11.5px; text-transform: uppercase;">
+                  ITENS & MODELOS DO PEDIDO (${p.itens.length} MODELOS CONFIGURADOS):
+                </strong>
+                <span style="font-size: 11px; color: #475569;">Grade detalhada com personalizações e preços por peça</span>
+              </div>
+              
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11px;">
+                <thead>
+                  <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1; color: #1e293b;">
+                    <th style="padding: 6px 6px; text-align: center; width: 8%;">Mockup</th>
+                    <th style="padding: 6px 8px; text-align: left; width: 19%;">Item / Modelo</th>
+                    <th style="padding: 6px 8px; text-align: left; width: 16%;">Cor / Tecido</th>
+                    <th style="padding: 6px 8px; text-align: left; width: 20%;">Personalizações</th>
+                    <th style="padding: 6px 8px; text-align: left; width: 19%;">Tamanhos & Preços</th>
+                    <th style="padding: 6px 6px; text-align: center; width: 6%; background: #e2e8f0;">Qtd</th>
+                    <th style="padding: 6px 8px; text-align: right; width: 12%;">Unitário</th>
+                    <th style="padding: 6px 8px; text-align: right; width: 10%;">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${p.itens.map((it, idx) => {
+                    const appsHtml = (it.aplicacoes && it.aplicacoes.length > 0)
+                      ? it.aplicacoes.map(a => `• <strong>${a.local}:</strong> ${a.tecnica}`).join('<br>')
+                      : '<span style="color: #64748b; font-style: italic;">Peça Lisa</span>';
+                    const subtotal = (it.valorSubtotal || ((it.precoVendaUnitario || 0) * (it.grade?.total || 0))) || 0;
+                    const itMockup = it.mockupUrl || p.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, '#1e3a8a', '#ffffff', (p.clienteNome || 'TEXFY').substring(0, 6)) : '');
+                    const tamsDet = extrairLinhasTamanhosComPreco(it);
+                    const temPrecosVar = tamsDet.some(t => Math.abs(t.precoUnit - tamsDet[0].precoUnit) > 0.009);
+
+                    return `
+                      <tr style="border-bottom: 1px solid #e2e8f0;">
+                        <td style="padding: 4px; text-align: center; vertical-align: middle;">
+                          <img src="${itMockup}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" data-item-idx="${idx}" alt="Mockup Mod ${idx + 1}" style="width: 44px !important; height: 58px !important; aspect-ratio: 3/4; object-fit: contain; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; cursor: pointer; display: block; margin: 0 auto; box-shadow: 0 1px 2px rgba(0,0,0,0.06);" title="Clique para ampliar mockup de ${it.produtoNome}">
+                        </td>
+                        <td style="padding: 6px 8px; vertical-align: top;">
+                          <strong style="color: #0f172a;">${idx + 1}. ${it.produtoNome}</strong>
+                        </td>
+                        <td style="padding: 6px 8px; vertical-align: top;">
+                          <span style="font-weight: 700; color: #1e3a8a;">${it.corTecido || it.corPrincipal || p.corTecido || p.corPrincipal || 'Azul Marinho'}</span><br>
+                          <span style="font-size: 10px; color: #64748b;">${it.tecidoEspecificacao || ''}</span>
+                          ${it.observacoesCoresDetalhes ? `<br><span style="font-size: 9.5px; color: #b45309;">${it.observacoesCoresDetalhes}</span>` : ''}
+                        </td>
+                        <td style="padding: 6px 8px; vertical-align: top; font-size: 10.5px; color: #334155; line-height: 1.35;">
+                          ${appsHtml}
+                        </td>
+                        <td style="padding: 6px 8px; vertical-align: top;">
+                          ${temPrecosVar ? `
+                            <div style="display: flex; flex-direction: column; gap: 3px;">
+                              ${tamsDet.map(t => `
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; background: #f8fafc; padding: 2px 5px; border-radius: 3px; border: 1px solid #e2e8f0;">
+                                  <span style="font-weight: 800; color: #0f172a;">${t.qtd}x ${t.tam}</span>
+                                  <span style="color: #1e40af; font-weight: 700;" class="text-mono">${formatarMoeda(t.precoUnit)}</span>
+                                </div>
+                              `).join('')}
+                            </div>
+                          ` : `
+                            ${formatarGradeSelecionadaHtml(it.grade, 'badge')}
+                          `}
+                        </td>
+                        <td style="padding: 6px 6px; text-align: center; font-weight: 800; background: #f8fafc; vertical-align: top;" class="text-mono">
+                          ${it.grade?.total || 0}
+                        </td>
+                        <td style="padding: 6px 8px; text-align: right; vertical-align: top;" class="text-mono">
+                          ${temPrecosVar ? `
+                            <span style="color: #1e40af; font-weight: 700; font-size: 10px;" title="Valores discriminados por tamanho ao lado">
+                              Diferenciado<br><small style="color: #64748b; font-weight: 600;">(ver tamanhos)</small>
+                            </span>
+                          ` : `
+                            ${formatarMoeda(tamsDet[0]?.precoUnit || it.precoVendaUnitario)}
+                          `}
+                        </td>
+                        <td style="padding: 6px 8px; text-align: right; font-weight: 700; vertical-align: top;" class="text-mono">
+                          ${formatarMoeda(subtotal)}
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+                <tfoot>
+                  <tr style="background: #f8fafc; font-weight: 800; border-top: 2px solid #cbd5e1;">
+                    <td colspan="4" style="padding: 8px 8px; text-align: right; font-size: 11px;">TOTAIS CONSOLIDADOS DO PEDIDO:</td>
+                    <td style="padding: 8px 8px; text-align: left;">
+                      ${formatarGradeSelecionadaHtml(gradeEfetivaDoc, 'badge-blue')}
                     </td>
-                    <td style="padding: 6px 8px; vertical-align: top;">
-                      <strong style="color: #0f172a;">${idx + 1}. ${it.produtoNome}</strong>
+                    <td style="padding: 8px 6px; text-align: center; color: #047857; background: #e2e8f0; font-size: 12px;" class="text-mono">
+                      ${qtdTotalEfetivaDoc} un
                     </td>
-                    <td style="padding: 6px 8px; vertical-align: top;">
-                      <span style="font-weight: 700; color: #1e3a8a;">${it.corTecido || it.corPrincipal || p.corTecido || p.corPrincipal || 'Azul Marinho'}</span><br>
-                      <span style="font-size: 10px; color: #64748b;">${it.tecidoEspecificacao || ''}</span>
-                      ${it.observacoesCoresDetalhes ? `<br><span style="font-size: 9.5px; color: #b45309;">${it.observacoesCoresDetalhes}</span>` : ''}
-                    </td>
-                    <td style="padding: 6px 8px; vertical-align: top; font-size: 10.5px; color: #334155; line-height: 1.35;">
-                      ${appsHtml}
-                    </td>
-                    <td style="padding: 6px 8px; vertical-align: top;">
-                      ${formatarGradeSelecionadaHtml(it.grade, 'badge')}
-                    </td>
-                    <td style="padding: 6px 6px; text-align: center; font-weight: 800; background: #f8fafc; vertical-align: top;" class="text-mono">
-                      ${it.grade?.total || 0}
-                    </td>
-                    <td style="padding: 6px 8px; text-align: right; vertical-align: top;" class="text-mono">
-                      ${formatarMoeda(it.precoVendaUnitario)}
-                    </td>
-                    <td style="padding: 6px 8px; text-align: right; font-weight: 700; vertical-align: top;" class="text-mono">
-                      ${formatarMoeda(subtotal)}
+                    <td style="padding: 8px 8px; text-align: right;">-</td>
+                    <td style="padding: 8px 8px; text-align: right; color: #0f172a; font-size: 13px;" class="text-mono">
+                      ${formatarMoeda(p.valorTotalVenda)}
                     </td>
                   </tr>
-                `;
-      }).join('')}
-            </tbody>
-            <tfoot>
-              <tr style="background: #f8fafc; font-weight: 800; border-top: 2px solid #cbd5e1;">
-                <td colspan="4" style="padding: 8px 8px; text-align: right; font-size: 11px;">TOTAIS CONSOLIDADOS DO PEDIDO:</td>
-                <td style="padding: 8px 8px; text-align: left;">
-                  ${formatarGradeSelecionadaHtml(gradeEfetivaDoc, 'badge-blue')}
-                </td>
-                <td style="padding: 8px 6px; text-align: center; color: #047857; background: #e2e8f0; font-size: 12px;" class="text-mono">
-                  ${qtdTotalEfetivaDoc} un
-                </td>
-                <td style="padding: 8px 8px; text-align: right;">-</td>
-                <td style="padding: 8px 8px; text-align: right; color: #0f172a; font-size: 13px;" class="text-mono">
-                  ${formatarMoeda(p.valorTotalVenda)}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      ` : `
-        <!-- Detalhamento do Produto & Mockup 3x4 -->
-        <div style="display: flex; gap: 14px; margin-bottom: 14px; align-items: center;">
-          <img src="${p.mockupUrl || ''}" class="mockup-thumb-3x4" alt="Mockup da Peça" style="width: 78px; height: 104px;">
-          <div style="flex: 1;">
-            <h3 style="font-size: 14px; font-weight: 800; color: #0f172a;">${p.produtoNome}</h3>
-            <div style="font-size: 11.5px; color: #475569; margin-top: 3px; line-height: 1.4;">
-              <strong>Cor Principal:</strong> <span style="font-weight: 700; color: #0f172a;">${p.corTecido || 'A Definir'}</span><br>
-              ${p.observacoesCoresDetalhes ? `
-                <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 4px 8px; margin: 4px 0; font-size: 11px; color: #92400e; line-height: 1.35; white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; box-sizing: border-box;">
-                  <strong>Detalhes de Cores / Confecção:</strong> ${p.observacoesCoresDetalhes}
-                </div>
-              ` : ''}
-              <strong>Especificação do Tecido:</strong> ${p.tecidoEspecificacao || 'Padrão da Indústria'}<br>
-              <strong>Personalização:</strong> ${p.tipoPersonalizacao || 'Estampa/Bordado Conforme Pedido'}<br>
-              <strong>Quantidade Total:</strong> ${p.grade?.total || 0} peças
+                </tfoot>
+              </table>
+            </div>
+          `;
+        }
+
+        // Caso de Modelo Único:
+        const tamsDet = extrairLinhasTamanhosComPreco(p.itens?.[0] || p);
+        const temPrecosVar = tamsDet.some(t => Math.abs(t.precoUnit - tamsDet[0].precoUnit) > 0.009);
+
+        return `
+          <!-- Detalhamento do Produto & Mockup 3x4 -->
+          <div style="display: flex; gap: 14px; margin-bottom: 14px; align-items: center;">
+            <img src="${p.mockupUrl || ''}" class="mockup-thumb-3x4" alt="Mockup da Peça" style="width: 78px; height: 104px;">
+            <div style="flex: 1;">
+              <h3 style="font-size: 14px; font-weight: 800; color: #0f172a;">${p.produtoNome}</h3>
+              <div style="font-size: 11.5px; color: #475569; margin-top: 3px; line-height: 1.4;">
+                <strong>Cor Principal:</strong> <span style="font-weight: 700; color: #0f172a;">${p.corTecido || 'A Definir'}</span><br>
+                ${p.observacoesCoresDetalhes ? `
+                  <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 4px 8px; margin: 4px 0; font-size: 11px; color: #92400e; line-height: 1.35; white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; box-sizing: border-box;">
+                    <strong>Detalhes de Cores / Confecção:</strong> ${p.observacoesCoresDetalhes}
+                  </div>
+                ` : ''}
+                <strong>Especificação do Tecido:</strong> ${p.tecidoEspecificacao || 'Padrão da Indústria'}<br>
+                <strong>Personalização:</strong> ${p.tipoPersonalizacao || 'Estampa/Bordado Conforme Pedido'}<br>
+                <strong>Quantidade Total:</strong> ${p.grade?.total || 0} peças
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Grade de Tamanhos Selecionados (Sem colunas de 0) -->
-        ${(() => {
-        const tamsAtivos = obterTamanhosSelecionadosGrade(p.grade);
-        if (!tamsAtivos.length) {
-          return `
-              <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; font-size: 11px; color: #64748b;">
-                Quantidade Total: <strong>${p.grade?.total || 0} peças</strong> (Grade em definição)
-              </div>
-            `;
-        }
-        return `
-            <table style="margin-bottom: 12px; width: auto; min-width: 260px; border-collapse: collapse; font-size: 11px;">
+          <!-- Grade de Tamanhos Selecionados com Discriminação de Preços -->
+          ${(!tamsDet.length) ? `
+            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; font-size: 11px; color: #64748b;">
+              Quantidade Total: <strong>${p.grade?.total || 0} peças</strong> (Grade em definição)
+            </div>
+          ` : `
+            <table style="margin-bottom: 12px; width: 100%; max-width: 680px; border-collapse: collapse; font-size: 11px; border: 1.5px solid #cbd5e1; border-radius: 4px; overflow: hidden;">
               <thead>
-                <tr style="background: #f1f5f9; color: #1e293b; border-bottom: 2px solid #cbd5e1;">
-                  ${tamsAtivos.map(s => `<th style="text-align: center; padding: 5px 12px; font-size: 11px;">${s.tam}</th>`).join('')}
-                  <th style="text-align: center; padding: 5px 14px; background: #e2e8f0; font-size: 11px;">TOTAL</th>
+                <tr style="background: #0f172a; color: #ffffff;">
+                  <th style="padding: 6px 8px; text-align: left; font-size: 11px; width: 120px;">Tamanho</th>
+                  ${tamsDet.map(s => `<th style="text-align: center; padding: 6px 8px; font-size: 11px;">${s.tam}</th>`).join('')}
+                  <th style="text-align: center; padding: 6px 10px; background: #1e293b; color: #38bdf8; font-size: 11px;">TOTAL</th>
                 </tr>
               </thead>
               <tbody>
-                <tr style="border-bottom: 1px solid #e2e8f0;">
-                  ${tamsAtivos.map(s => `<td style="text-align: center; padding: 6px 12px; font-weight: 800;" class="text-mono">${s.qtd}</td>`).join('')}
-                  <td style="text-align: center; padding: 6px 14px; font-weight: 800; color: #047857; background: #f8fafc;" class="text-mono">${p.grade?.total || 0} peças</td>
+                <tr style="border-bottom: 1px solid #e2e8f0; background: #ffffff;">
+                  <td style="padding: 6px 8px; font-weight: 700; color: #475569;">Quantidade</td>
+                  ${tamsDet.map(s => `<td style="text-align: center; padding: 6px 8px; font-weight: 800;" class="text-mono">${s.qtd} un</td>`).join('')}
+                  <td style="text-align: center; padding: 6px 10px; font-weight: 900; color: #047857; background: #f8fafc;" class="text-mono">${p.grade?.total || 0} un</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                  <td style="padding: 6px 8px; font-weight: 700; color: #475569;">Preço Unitário</td>
+                  ${tamsDet.map(s => `<td style="text-align: center; padding: 6px 8px; font-weight: 800; color: #1e40af;" class="text-mono">${formatarMoeda(s.precoUnit)}</td>`).join('')}
+                  <td style="text-align: center; padding: 6px 10px; color: #64748b; font-size: 10px;">${temPrecosVar ? 'Diferenciado' : formatarMoeda(tamsDet[0]?.precoUnit || 0)}</td>
+                </tr>
+                <tr style="background: #f1f5f9; font-weight: 800;">
+                  <td style="padding: 6px 8px; font-weight: 800; color: #0f172a;">Subtotal</td>
+                  ${tamsDet.map(s => `<td style="text-align: center; padding: 6px 8px; font-weight: 800; color: #0f172a;" class="text-mono">${formatarMoeda(s.subtotal)}</td>`).join('')}
+                  <td style="text-align: center; padding: 6px 10px; font-weight: 900; color: #0f172a; background: #e2e8f0;" class="text-mono">${formatarMoeda(p.valorTotalVenda)}</td>
                 </tr>
               </tbody>
             </table>
-          `;
+          `}
+        `;
       })()}
-      `}
 
       <!-- Relação Oficial de Atletas / Uniforme de Time na Proposta Comercial -->
       ${(p.jogadores && Array.isArray(p.jogadores) && p.jogadores.length > 0) ? `
@@ -14098,16 +14181,40 @@
 
       <!-- Resumo de Valores -->
       <div style="border-top: 1px solid #cbd5e1; padding-top: 8px; display: flex; justify-content: flex-end; margin-bottom: 12px;">
-        <div style="width: 260px; display: flex; flex-direction: column; gap: 4px;">
+        <div style="width: 280px; display: flex; flex-direction: column; gap: 4px;">
           ${(!p.itens || p.itens.length <= 1) ? `
-            <div style="display: flex; justify-content: space-between;">
-              <span>Preço Unitário:</span>
-              <span class="text-mono">${formatarMoeda(p.precoUnitarioVenda)}</span>
-            </div>
+            ${(() => {
+              const itemUnico = p.itens?.[0] || p;
+              const g = itemUnico.grade || {};
+              const precos = itemUnico.precosPorTamanho || p.precosPorTamanho || {};
+              const pBase = parseFloat(itemUnico.precoVendaUnitario) || parseFloat(itemUnico.precoUnitarioVenda) || parseFloat(p.precoUnitarioVenda) || 0;
+              const selecionados = obterTamanhosSelecionadosGrade(g);
+              const listaPrecos = selecionados.map(s => {
+                return (precos[s.chave] != null && !isNaN(precos[s.chave]) && parseFloat(precos[s.chave]) > 0)
+                  ? parseFloat(precos[s.chave])
+                  : pBase;
+              });
+              const temPrecosVar = listaPrecos.some(pr => Math.abs(pr - listaPrecos[0]) > 0.009);
+
+              if (temPrecosVar) {
+                return `
+                  <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                    <span style="color: #475569;">Tabela de Preços:</span>
+                    <span style="font-weight: 700; color: #1e40af;">Valores por Tamanho (acima)</span>
+                  </div>
+                `;
+              }
+              return `
+                <div style="display: flex; justify-content: space-between;">
+                  <span>Preço Unitário:</span>
+                  <span class="text-mono">${formatarMoeda(listaPrecos[0] || p.precoUnitarioVenda)}</span>
+                </div>
+              `;
+            })()}
           ` : `
             <div style="display: flex; justify-content: space-between; font-size: 11px; color: #64748b;">
-              <span>Preço Médio / Pç:</span>
-              <span class="text-mono">${formatarMoeda((p.valorTotalVenda || 0) / (p.grade?.total || 1))}</span>
+              <span>Modelos do Pedido:</span>
+              <span class="text-mono" style="font-weight: 700;">${p.itens.length} itens (${p.grade?.total || 0} pçs)</span>
             </div>
           `}
           <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 800; border-top: 1px solid #cbd5e1; padding-top: 4px;">
@@ -28501,17 +28608,25 @@
     const descCor = pedido.corTecido ? `\n🎨 *Cor Principal:* ${pedido.corTecido}` : '';
     const descDetalhes = pedido.observacoesCoresDetalhes ? `\n🧵 *Detalhes de Confecção:* ${pedido.observacoesCoresDetalhes}` : '';
 
-    // Montagem da grade resumida
+    // Montagem da grade resumida discriminando quantidades e preços por tamanho
     let gradeResumoStr = '';
     if (pedido.grade) {
       const partsGrade = [];
-      Object.keys(pedido.grade).forEach(k => {
-        if (k === 'total') return;
-        const q = parseInt(pedido.grade[k], 10) || 0;
-        if (q > 0) partsGrade.push(`${k.toUpperCase()}: ${q}`);
+      const precos = pedido.precosPorTamanho || {};
+      const pBase = parseFloat(pedido.precoVendaUnitario) || parseFloat(pedido.precoUnitarioVenda) || 0;
+      const selecionados = (typeof obterTamanhosSelecionadosGrade === 'function')
+        ? obterTamanhosSelecionadosGrade(pedido.grade)
+        : Object.keys(pedido.grade).filter(k => k !== 'total' && (pedido.grade[k] || 0) > 0).map(k => ({ tam: k.toUpperCase(), qtd: pedido.grade[k], chave: k }));
+
+      selecionados.forEach(s => {
+        const pTam = (precos[s.chave] != null && !isNaN(precos[s.chave]) && parseFloat(precos[s.chave]) > 0)
+          ? parseFloat(precos[s.chave])
+          : pBase;
+        const precoStr = pTam > 0 ? ` (${formatarMoeda(pTam)}/un)` : '';
+        partsGrade.push(`${s.tam}: ${s.qtd} un${precoStr}`);
       });
       if (partsGrade.length > 0) {
-        gradeResumoStr = `\n📏 *Grade:* ${partsGrade.join(', ')}`;
+        gradeResumoStr = `\n📏 *Grade & Valores:* \n• ${partsGrade.join('\n• ')}`;
       }
     }
 
