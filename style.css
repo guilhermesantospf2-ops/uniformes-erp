@@ -3407,41 +3407,66 @@ input[type="number"] {
   padding-right: 2px !important;
 }
 
-/* Coluna de tamanho: visual inativo/desabilitado */
+/* Colunas da Grade de Tamanhos - Design Limpo e Profissional */
 .grade-col {
   transition: all 0.18s ease-in-out;
   position: relative;
   border-radius: 6px;
-  padding: 2px;
+  padding: 4px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
 }
 
-.grade-col:not(.grade-col-total):not(.ativo) {
-  opacity: 0.52 !important;
-  background: #f8fafc !important;
-  border: 1.5px dashed #cbd5e1 !important;
-  cursor: pointer !important;
+.grade-col:hover {
+  border-color: #94a3b8;
 }
 
-.grade-col:not(.grade-col-total):not(.ativo):hover {
-  opacity: 0.88 !important;
-  border-color: #3b82f6 !important;
-  background: #eff6ff !important;
+.grade-col .grade-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #334155;
+  margin-bottom: 4px;
+  text-align: center;
+  border-radius: 4px;
+  padding: 2px 0;
 }
 
-.grade-col:not(.grade-col-total):not(.ativo) .grade-input,
-.grade-col:not(.grade-col-total):not(.ativo) .grade-preco-input {
-  background-color: #f1f5f9 !important;
-  color: #94a3b8 !important;
-  cursor: not-allowed !important;
-  border-color: #e2e8f0 !important;
+.grade-col .grade-input {
+  width: 100%;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1.5px solid #cbd5e1 !important;
+  text-align: center;
+  font-weight: 800;
+  font-size: 13.5px;
+  border-radius: 4px;
+  padding: 5px 2px;
+  cursor: text !important;
 }
 
-/* Coluna de tamanho: visual selecionado e ativo */
+.grade-col .grade-input:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
+}
+
+.grade-col .grade-preco-input {
+  width: 100%;
+  margin-top: 4px;
+  font-size: 11px;
+  text-align: center;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 3px 2px;
+  border: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  color: #94a3b8;
+}
+
+/* Quando a coluna tem peças (> 0) ou foi ativada */
 .grade-col.ativo:not(.grade-col-total) {
-  opacity: 1 !important;
   background: #eff6ff !important;
   border: 2px solid #2563eb !important;
-  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.22) !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.18) !important;
 }
 
 .grade-col.ativo .grade-label {
@@ -3450,14 +3475,13 @@ input[type="number"] {
 }
 
 .grade-col.ativo .grade-input {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-  border-color: #93c5fd !important;
-  font-weight: 800 !important;
+  border-color: #3b82f6 !important;
+  color: #1e3a8a !important;
 }
 
 .grade-col.ativo .grade-preco-input {
   background-color: #ffffff !important;
   color: #1e40af !important;
   border-color: #93c5fd !important;
+  cursor: text !important;
 }
