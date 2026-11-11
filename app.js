@@ -8028,32 +8028,32 @@
                   <div class="grade-col" data-chave="pp">
                     <div class="grade-label">PP</div>
                     <input type="number" id="gradePP" class="grade-input" value="0" min="0" placeholder="0">
-                    <input type="text" inputmode="decimal" id="precoGrade_pp" class="grade-preco-input input-moeda-centavos" data-chave="pp" value="0,00" title="Preço de Venda do PP (R$)" disabled>
+                    <input type="text" inputmode="decimal" id="precoGrade_pp" class="grade-preco-input input-moeda-centavos" data-chave="pp" value="0,00" title="Preço de Venda do PP (R$)">
                   </div>
                   <div class="grade-col" data-chave="p">
                     <div class="grade-label">P</div>
                     <input type="number" id="gradeP" class="grade-input" value="0" min="0" placeholder="0">
-                    <input type="text" inputmode="decimal" id="precoGrade_p" class="grade-preco-input input-moeda-centavos" data-chave="p" value="0,00" title="Preço de Venda do P (R$)" disabled>
+                    <input type="text" inputmode="decimal" id="precoGrade_p" class="grade-preco-input input-moeda-centavos" data-chave="p" value="0,00" title="Preço de Venda do P (R$)">
                   </div>
                   <div class="grade-col" data-chave="m">
                     <div class="grade-label">M</div>
                     <input type="number" id="gradeM" class="grade-input" value="0" min="0" placeholder="0">
-                    <input type="text" inputmode="decimal" id="precoGrade_m" class="grade-preco-input input-moeda-centavos" data-chave="m" value="0,00" title="Preço de Venda do M (R$)" disabled>
+                    <input type="text" inputmode="decimal" id="precoGrade_m" class="grade-preco-input input-moeda-centavos" data-chave="m" value="0,00" title="Preço de Venda do M (R$)">
                   </div>
                   <div class="grade-col" data-chave="g">
                     <div class="grade-label">G</div>
                     <input type="number" id="gradeG" class="grade-input" value="0" min="0" placeholder="0">
-                    <input type="text" inputmode="decimal" id="precoGrade_g" class="grade-preco-input input-moeda-centavos" data-chave="g" value="0,00" title="Preço de Venda do G (R$)" disabled>
+                    <input type="text" inputmode="decimal" id="precoGrade_g" class="grade-preco-input input-moeda-centavos" data-chave="g" value="0,00" title="Preço de Venda do G (R$)">
                   </div>
                   <div class="grade-col" data-chave="gg">
                     <div class="grade-label">GG</div>
                     <input type="number" id="gradeGG" class="grade-input" value="0" min="0" placeholder="0">
-                    <input type="text" inputmode="decimal" id="precoGrade_gg" class="grade-preco-input input-moeda-centavos" data-chave="gg" value="0,00" title="Preço de Venda do GG (R$)" disabled>
+                    <input type="text" inputmode="decimal" id="precoGrade_gg" class="grade-preco-input input-moeda-centavos" data-chave="gg" value="0,00" title="Preço de Venda do GG (R$)">
                   </div>
                   <div class="grade-col" data-chave="xg">
                     <div class="grade-label">XG</div>
                     <input type="number" id="gradeXG" class="grade-input" value="0" min="0" placeholder="0">
-                    <input type="text" inputmode="decimal" id="precoGrade_xg" class="grade-preco-input input-moeda-centavos" data-chave="xg" value="0,00" title="Preço de Venda do XG (R$)" disabled>
+                    <input type="text" inputmode="decimal" id="precoGrade_xg" class="grade-preco-input input-moeda-centavos" data-chave="xg" value="0,00" title="Preço de Venda do XG (R$)">
                   </div>
                   <div class="grade-col grade-col-total">
                     <div class="grade-label" style="background: #0f172a; color: #38bdf8; font-weight: 900;">TOTAL</div>
@@ -8065,22 +8065,22 @@
                 <!-- 2. Grade Regular Numérica (34 ao 60 + Totalizador) -->
                 <div id="boxGradeTableInputNumerica" style="display: none;">
                   <div class="grade-table-input" style="grid-template-columns: repeat(8, 1fr); margin-bottom: 6px;">
-                    <div class="grade-col" data-chave="num34"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">34</div><input type="number" id="gradeNum34" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num34" class="grade-preco-input input-moeda-centavos" data-chave="num34" value="0,00" title="Preço de Venda do 34 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="num36"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">36</div><input type="number" id="gradeNum36" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num36" class="grade-preco-input input-moeda-centavos" data-chave="num36" value="0,00" title="Preço de Venda do 36 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="num38"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">38</div><input type="number" id="gradeNum38" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num38" class="grade-preco-input input-moeda-centavos" data-chave="num38" value="0,00" title="Preço de Venda do 38 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="num40"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">40</div><input type="number" id="gradeNum40" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num40" class="grade-preco-input input-moeda-centavos" data-chave="num40" value="0,00" title="Preço de Venda do 40 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="num42"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">42</div><input type="number" id="gradeNum42" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num42" class="grade-preco-input input-moeda-centavos" data-chave="num42" value="0,00" title="Preço de Venda do 42 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="num44"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">44</div><input type="number" id="gradeNum44" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num44" class="grade-preco-input input-moeda-centavos" data-chave="num44" value="0,00" title="Preço de Venda do 44 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="num46"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">46</div><input type="number" id="gradeNum46" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num46" class="grade-preco-input input-moeda-centavos" data-chave="num46" value="0,00" title="Preço de Venda do 46 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="num48"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">48</div><input type="number" id="gradeNum48" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num48" class="grade-preco-input input-moeda-centavos" data-chave="num48" value="0,00" title="Preço de Venda do 48 (R$)" disabled></div>
+                    <div class="grade-col" data-chave="num34"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">34</div><input type="number" id="gradeNum34" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num34" class="grade-preco-input input-moeda-centavos" data-chave="num34" value="0,00" title="Preço de Venda do 34 (R$)"></div>
+                    <div class="grade-col" data-chave="num36"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">36</div><input type="number" id="gradeNum36" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num36" class="grade-preco-input input-moeda-centavos" data-chave="num36" value="0,00" title="Preço de Venda do 36 (R$)"></div>
+                    <div class="grade-col" data-chave="num38"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">38</div><input type="number" id="gradeNum38" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num38" class="grade-preco-input input-moeda-centavos" data-chave="num38" value="0,00" title="Preço de Venda do 38 (R$)"></div>
+                    <div class="grade-col" data-chave="num40"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">40</div><input type="number" id="gradeNum40" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num40" class="grade-preco-input input-moeda-centavos" data-chave="num40" value="0,00" title="Preço de Venda do 40 (R$)"></div>
+                    <div class="grade-col" data-chave="num42"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">42</div><input type="number" id="gradeNum42" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num42" class="grade-preco-input input-moeda-centavos" data-chave="num42" value="0,00" title="Preço de Venda do 42 (R$)"></div>
+                    <div class="grade-col" data-chave="num44"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">44</div><input type="number" id="gradeNum44" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num44" class="grade-preco-input input-moeda-centavos" data-chave="num44" value="0,00" title="Preço de Venda do 44 (R$)"></div>
+                    <div class="grade-col" data-chave="num46"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">46</div><input type="number" id="gradeNum46" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num46" class="grade-preco-input input-moeda-centavos" data-chave="num46" value="0,00" title="Preço de Venda do 46 (R$)"></div>
+                    <div class="grade-col" data-chave="num48"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">48</div><input type="number" id="gradeNum48" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num48" class="grade-preco-input input-moeda-centavos" data-chave="num48" value="0,00" title="Preço de Venda do 48 (R$)"></div>
                   </div>
                   <div class="grade-table-input" style="grid-template-columns: repeat(7, 1fr);">
-                    <div class="grade-col" data-chave="num50"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">50</div><input type="number" id="gradeNum50" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num50" class="grade-preco-input input-moeda-centavos" data-chave="num50" value="0,00" title="Preço de Venda do 50 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="num52"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">52</div><input type="number" id="gradeNum52" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num52" class="grade-preco-input input-moeda-centavos" data-chave="num52" value="0,00" title="Preço de Venda do 52 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="num54"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">54</div><input type="number" id="gradeNum54" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num54" class="grade-preco-input input-moeda-centavos" data-chave="num54" value="0,00" title="Preço de Venda do 54 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="num56"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">56</div><input type="number" id="gradeNum56" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num56" class="grade-preco-input input-moeda-centavos" data-chave="num56" value="0,00" title="Preço de Venda do 56 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="num58"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">58</div><input type="number" id="gradeNum58" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num58" class="grade-preco-input input-moeda-centavos" data-chave="num58" value="0,00" title="Preço de Venda do 58 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="num60"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">60</div><input type="number" id="gradeNum60" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num60" class="grade-preco-input input-moeda-centavos" data-chave="num60" value="0,00" title="Preço de Venda do 60 (R$)" disabled></div>
+                    <div class="grade-col" data-chave="num50"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">50</div><input type="number" id="gradeNum50" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num50" class="grade-preco-input input-moeda-centavos" data-chave="num50" value="0,00" title="Preço de Venda do 50 (R$)"></div>
+                    <div class="grade-col" data-chave="num52"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">52</div><input type="number" id="gradeNum52" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num52" class="grade-preco-input input-moeda-centavos" data-chave="num52" value="0,00" title="Preço de Venda do 52 (R$)"></div>
+                    <div class="grade-col" data-chave="num54"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">54</div><input type="number" id="gradeNum54" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num54" class="grade-preco-input input-moeda-centavos" data-chave="num54" value="0,00" title="Preço de Venda do 54 (R$)"></div>
+                    <div class="grade-col" data-chave="num56"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">56</div><input type="number" id="gradeNum56" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num56" class="grade-preco-input input-moeda-centavos" data-chave="num56" value="0,00" title="Preço de Venda do 56 (R$)"></div>
+                    <div class="grade-col" data-chave="num58"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">58</div><input type="number" id="gradeNum58" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num58" class="grade-preco-input input-moeda-centavos" data-chave="num58" value="0,00" title="Preço de Venda do 58 (R$)"></div>
+                    <div class="grade-col" data-chave="num60"><div class="grade-label" style="background: #f0fdf4; color: #166534; font-weight: 800;">60</div><input type="number" id="gradeNum60" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_num60" class="grade-preco-input input-moeda-centavos" data-chave="num60" value="0,00" title="Preço de Venda do 60 (R$)"></div>
                     <div class="grade-col grade-col-total"><div class="grade-label" style="background: #0f172a; color: #38bdf8; font-weight: 900;">TOTAL</div><input type="text" id="gradeTotalNum" class="grade-input" style="font-weight: 900; background: #0f172a; color: #38bdf8;" value="0" readonly title="Total geral somando todos os tamanhos"></div>
                   </div>
                 </div>
@@ -8167,14 +8167,14 @@
                     <button type="button" class="btn btn-secondary btn-sm btn-fechar-grade-extra" data-secao="infantis" style="font-size: 10px; padding: 1px 7px; color: #0369a1; background: #ffffff; border: 1px solid #bae6fd;">✕ Fechar</button>
                   </div>
                   <div class="grade-table-input" style="grid-template-columns: repeat(8, 1fr);">
-                    <div class="grade-col" data-chave="inf2"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 2</div><input type="number" id="gradeInf2" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_inf2" class="grade-preco-input input-moeda-centavos" data-chave="inf2" value="0,00" title="Preço Venda Tam 2 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="inf4"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 4</div><input type="number" id="gradeInf4" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_inf4" class="grade-preco-input input-moeda-centavos" data-chave="inf4" value="0,00" title="Preço Venda Tam 4 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="inf6"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 6</div><input type="number" id="gradeInf6" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_inf6" class="grade-preco-input input-moeda-centavos" data-chave="inf6" value="0,00" title="Preço Venda Tam 6 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="inf8"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 8</div><input type="number" id="gradeInf8" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_inf8" class="grade-preco-input input-moeda-centavos" data-chave="inf8" value="0,00" title="Preço Venda Tam 8 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="inf10"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 10</div><input type="number" id="gradeInf10" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_inf10" class="grade-preco-input input-moeda-centavos" data-chave="inf10" value="0,00" title="Preço Venda Tam 10 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="inf12"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 12</div><input type="number" id="gradeInf12" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_inf12" class="grade-preco-input input-moeda-centavos" data-chave="inf12" value="0,00" title="Preço Venda Tam 12 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="inf14"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 14</div><input type="number" id="gradeInf14" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_inf14" class="grade-preco-input input-moeda-centavos" data-chave="inf14" value="0,00" title="Preço Venda Tam 14 (R$)" disabled></div>
-                    <div class="grade-col" data-chave="inf16"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 16</div><input type="number" id="gradeInf16" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_inf16" class="grade-preco-input input-moeda-centavos" data-chave="inf16" value="0,00" title="Preço Venda Tam 16 (R$)" disabled></div>
+                    <div class="grade-col" data-chave="inf2"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 2</div><input type="number" id="gradeInf2" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_inf2" class="grade-preco-input input-moeda-centavos" data-chave="inf2" value="0,00" title="Preço Venda Tam 2 (R$)"></div>
+                    <div class="grade-col" data-chave="inf4"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 4</div><input type="number" id="gradeInf4" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_inf4" class="grade-preco-input input-moeda-centavos" data-chave="inf4" value="0,00" title="Preço Venda Tam 4 (R$)"></div>
+                    <div class="grade-col" data-chave="inf6"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 6</div><input type="number" id="gradeInf6" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_inf6" class="grade-preco-input input-moeda-centavos" data-chave="inf6" value="0,00" title="Preço Venda Tam 6 (R$)"></div>
+                    <div class="grade-col" data-chave="inf8"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 8</div><input type="number" id="gradeInf8" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_inf8" class="grade-preco-input input-moeda-centavos" data-chave="inf8" value="0,00" title="Preço Venda Tam 8 (R$)"></div>
+                    <div class="grade-col" data-chave="inf10"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 10</div><input type="number" id="gradeInf10" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_inf10" class="grade-preco-input input-moeda-centavos" data-chave="inf10" value="0,00" title="Preço Venda Tam 10 (R$)"></div>
+                    <div class="grade-col" data-chave="inf12"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 12</div><input type="number" id="gradeInf12" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_inf12" class="grade-preco-input input-moeda-centavos" data-chave="inf12" value="0,00" title="Preço Venda Tam 12 (R$)"></div>
+                    <div class="grade-col" data-chave="inf14"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 14</div><input type="number" id="gradeInf14" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_inf14" class="grade-preco-input input-moeda-centavos" data-chave="inf14" value="0,00" title="Preço Venda Tam 14 (R$)"></div>
+                    <div class="grade-col" data-chave="inf16"><div class="grade-label" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">Tam 16</div><input type="number" id="gradeInf16" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_inf16" class="grade-preco-input input-moeda-centavos" data-chave="inf16" value="0,00" title="Preço Venda Tam 16 (R$)"></div>
                   </div>
                 </div>
 
@@ -8188,12 +8188,12 @@
                     <button type="button" class="btn btn-secondary btn-sm btn-fechar-grade-extra" data-secao="babylook" style="font-size: 10px; padding: 1px 7px; color: #9d174d; background: #ffffff; border: 1px solid #fbcfe8;">✕ Fechar</button>
                   </div>
                   <div class="grade-table-input" style="grid-template-columns: repeat(6, 1fr);">
-                    <div class="grade-col" data-chave="bl_pp"><div class="grade-label" style="background: #fce7f3; color: #9d174d; font-weight: 800;">BL-PP</div><input type="number" id="gradeBlPp" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_bl_pp" class="grade-preco-input input-moeda-centavos" data-chave="bl_pp" value="0,00" title="Preço Venda BL-PP (R$)" disabled></div>
-                    <div class="grade-col" data-chave="bl_p"><div class="grade-label" style="background: #fce7f3; color: #9d174d; font-weight: 800;">BL-P</div><input type="number" id="gradeBlP" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_bl_p" class="grade-preco-input input-moeda-centavos" data-chave="bl_p" value="0,00" title="Preço Venda BL-P (R$)" disabled></div>
-                    <div class="grade-col" data-chave="bl_m"><div class="grade-label" style="background: #fce7f3; color: #9d174d; font-weight: 800;">BL-M</div><input type="number" id="gradeBlM" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_bl_m" class="grade-preco-input input-moeda-centavos" data-chave="bl_m" value="0,00" title="Preço Venda BL-M (R$)" disabled></div>
-                    <div class="grade-col" data-chave="bl_g"><div class="grade-label" style="background: #fce7f3; color: #9d174d; font-weight: 800;">BL-G</div><input type="number" id="gradeBlG" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_bl_g" class="grade-preco-input input-moeda-centavos" data-chave="bl_g" value="0,00" title="Preço Venda BL-G (R$)" disabled></div>
-                    <div class="grade-col" data-chave="bl_gg"><div class="grade-label" style="background: #fce7f3; color: #9d174d; font-weight: 800;">BL-GG</div><input type="number" id="gradeBlGg" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_bl_gg" class="grade-preco-input input-moeda-centavos" data-chave="bl_gg" value="0,00" title="Preço Venda BL-GG (R$)" disabled></div>
-                    <div class="grade-col" data-chave="bl_xg"><div class="grade-label" style="background: #fce7f3; color: #9d174d; font-weight: 800;">BL-XG</div><input type="number" id="gradeBlXg" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_bl_xg" class="grade-preco-input input-moeda-centavos" data-chave="bl_xg" value="0,00" title="Preço Venda BL-XG (R$)" disabled></div>
+                    <div class="grade-col" data-chave="bl_pp"><div class="grade-label" style="background: #fce7f3; color: #9d174d; font-weight: 800;">BL-PP</div><input type="number" id="gradeBlPp" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_bl_pp" class="grade-preco-input input-moeda-centavos" data-chave="bl_pp" value="0,00" title="Preço Venda BL-PP (R$)"></div>
+                    <div class="grade-col" data-chave="bl_p"><div class="grade-label" style="background: #fce7f3; color: #9d174d; font-weight: 800;">BL-P</div><input type="number" id="gradeBlP" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_bl_p" class="grade-preco-input input-moeda-centavos" data-chave="bl_p" value="0,00" title="Preço Venda BL-P (R$)"></div>
+                    <div class="grade-col" data-chave="bl_m"><div class="grade-label" style="background: #fce7f3; color: #9d174d; font-weight: 800;">BL-M</div><input type="number" id="gradeBlM" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_bl_m" class="grade-preco-input input-moeda-centavos" data-chave="bl_m" value="0,00" title="Preço Venda BL-M (R$)"></div>
+                    <div class="grade-col" data-chave="bl_g"><div class="grade-label" style="background: #fce7f3; color: #9d174d; font-weight: 800;">BL-G</div><input type="number" id="gradeBlG" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_bl_g" class="grade-preco-input input-moeda-centavos" data-chave="bl_g" value="0,00" title="Preço Venda BL-G (R$)"></div>
+                    <div class="grade-col" data-chave="bl_gg"><div class="grade-label" style="background: #fce7f3; color: #9d174d; font-weight: 800;">BL-GG</div><input type="number" id="gradeBlGg" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_bl_gg" class="grade-preco-input input-moeda-centavos" data-chave="bl_gg" value="0,00" title="Preço Venda BL-GG (R$)"></div>
+                    <div class="grade-col" data-chave="bl_xg"><div class="grade-label" style="background: #fce7f3; color: #9d174d; font-weight: 800;">BL-XG</div><input type="number" id="gradeBlXg" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_bl_xg" class="grade-preco-input input-moeda-centavos" data-chave="bl_xg" value="0,00" title="Preço Venda BL-XG (R$)"></div>
                   </div>
                 </div>
 
@@ -8207,11 +8207,11 @@
                     <button type="button" class="btn btn-secondary btn-sm btn-fechar-grade-extra" data-secao="slim" style="font-size: 10px; padding: 1px 7px; color: #6d28d9; background: #ffffff; border: 1px solid #ddd6fe;">✕ Fechar</button>
                   </div>
                   <div class="grade-table-input" style="grid-template-columns: repeat(5, 1fr);">
-                    <div class="grade-col" data-chave="slim_p"><div class="grade-label" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Slim-P</div><input type="number" id="gradeSlimP" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_slim_p" class="grade-preco-input input-moeda-centavos" data-chave="slim_p" value="0,00" title="Preço Venda Slim-P (R$)" disabled></div>
-                    <div class="grade-col" data-chave="slim_m"><div class="grade-label" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Slim-M</div><input type="number" id="gradeSlimM" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_slim_m" class="grade-preco-input input-moeda-centavos" data-chave="slim_m" value="0,00" title="Preço Venda Slim-M (R$)" disabled></div>
-                    <div class="grade-col" data-chave="slim_g"><div class="grade-label" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Slim-G</div><input type="number" id="gradeSlimG" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_slim_g" class="grade-preco-input input-moeda-centavos" data-chave="slim_g" value="0,00" title="Preço Venda Slim-G (R$)" disabled></div>
-                    <div class="grade-col" data-chave="slim_gg"><div class="grade-label" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Slim-GG</div><input type="number" id="gradeSlimGg" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_slim_gg" class="grade-preco-input input-moeda-centavos" data-chave="slim_gg" value="0,00" title="Preço Venda Slim-GG (R$)" disabled></div>
-                    <div class="grade-col" data-chave="slim_xg"><div class="grade-label" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Slim-XG</div><input type="number" id="gradeSlimXg" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_slim_xg" class="grade-preco-input input-moeda-centavos" data-chave="slim_xg" value="0,00" title="Preço Venda Slim-XG (R$)" disabled></div>
+                    <div class="grade-col" data-chave="slim_p"><div class="grade-label" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Slim-P</div><input type="number" id="gradeSlimP" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_slim_p" class="grade-preco-input input-moeda-centavos" data-chave="slim_p" value="0,00" title="Preço Venda Slim-P (R$)"></div>
+                    <div class="grade-col" data-chave="slim_m"><div class="grade-label" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Slim-M</div><input type="number" id="gradeSlimM" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_slim_m" class="grade-preco-input input-moeda-centavos" data-chave="slim_m" value="0,00" title="Preço Venda Slim-M (R$)"></div>
+                    <div class="grade-col" data-chave="slim_g"><div class="grade-label" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Slim-G</div><input type="number" id="gradeSlimG" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_slim_g" class="grade-preco-input input-moeda-centavos" data-chave="slim_g" value="0,00" title="Preço Venda Slim-G (R$)"></div>
+                    <div class="grade-col" data-chave="slim_gg"><div class="grade-label" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Slim-GG</div><input type="number" id="gradeSlimGg" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_slim_gg" class="grade-preco-input input-moeda-centavos" data-chave="slim_gg" value="0,00" title="Preço Venda Slim-GG (R$)"></div>
+                    <div class="grade-col" data-chave="slim_xg"><div class="grade-label" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Slim-XG</div><input type="number" id="gradeSlimXg" class="grade-input" value="0" min="0"><input type="text" inputmode="decimal" id="precoGrade_slim_xg" class="grade-preco-input input-moeda-centavos" data-chave="slim_xg" value="0,00" title="Preço Venda Slim-XG (R$)"></div>
                   </div>
                 </div>
               </div>
@@ -8714,12 +8714,18 @@
       it.margemDesejada = lerInputNumDom('inputMargemDesejada', 30.0);
       it.aliquotaImposto = lerInputNumDom('inputAliquotaImposto', 6.5);
 
-      // Sincronização dos preços individuais por tamanho (PP ao G5 e 34 ao 60)
+      // Sincronização dos preços individuais por tamanho (somente salva se o usuário preencheu explicitamente > 0)
       it.precosPorTamanho = it.precosPorTamanho || {};
       document.querySelectorAll('.grade-preco-input').forEach(inp => {
         const chave = inp.getAttribute('data-chave') || inp.id.replace('precoGrade_', '');
-        const val = lerInputNumDom(inp.id, it.precoVendaUnitario || 58.00);
-        if (chave) it.precosPorTamanho[chave] = val;
+        const val = parseNumMoeda(inp.value, 0);
+        if (chave) {
+          if (val > 0) {
+            it.precosPorTamanho[chave] = val;
+          } else {
+            delete it.precosPorTamanho[chave];
+          }
+        }
       });
 
       // Modo de Custos e Custo Direto Manual (Bidirecional: Lote Total ⇄ Unitário)
@@ -9250,10 +9256,8 @@
 
         const inpPreco = document.getElementById('precoGrade_' + campo.chave);
         if (inpPreco) {
-          if (it.precosPorTamanho && it.precosPorTamanho[campo.chave] !== undefined) {
+          if (it.precosPorTamanho && it.precosPorTamanho[campo.chave] > 0) {
             inpPreco.value = formatarMoedaInput(it.precosPorTamanho[campo.chave]);
-          } else if (qVal > 0 && it.precoVendaUnitario > 0) {
-            inpPreco.value = formatarMoedaInput(it.precoVendaUnitario);
           } else {
             inpPreco.value = '0,00';
           }
@@ -11196,50 +11200,7 @@
         return null;
       }
 
-      // Validação estrita: Quando selecionado, quantidade (> 0) e preço (> 0) são obrigatórios!
-      for (let i = 0; i < itensOrcamento.length; i++) {
-        const it = itensOrcamento[i];
-        const g = it.grade || {};
-        const precos = it.precosPorTamanho || {};
 
-        for (const c of TODOS_CAMPOS_GRADE) {
-          const qtd = parseInt(g[c.chave] || 0, 10);
-          const preco = parseNumMoeda(precos[c.chave], 0);
-
-          const chk = document.querySelector(`.grade-check-tam[data-chave="${c.chave}"]`);
-          const selecionado = (i === itemAtivoIndex && chk) ? chk.checked : (qtd > 0 || preco > 0);
-
-          if (selecionado) {
-            if (qtd <= 0) {
-              mostrarToast(`⚠️ O tamanho ${c.rotulo} (Modelo ${i + 1}) está selecionado, mas a QUANTIDADE é obrigatória!`, 'amber');
-              if (i !== itemAtivoIndex && typeof alternarParaModeloIndex === 'function') {
-                alternarParaModeloIndex(i);
-              }
-              const inpQ = document.getElementById(c.id);
-              if (inpQ) {
-                inpQ.classList.add('campo-invalido-obrigatorio');
-                inpQ.focus();
-                inpQ.select();
-              }
-              return null;
-            }
-
-            if (preco <= 0) {
-              mostrarToast(`⚠️ O tamanho ${c.rotulo} (Modelo ${i + 1}) está selecionado, mas o PREÇO DE VENDA (R$) é obrigatório!`, 'amber');
-              if (i !== itemAtivoIndex && typeof alternarParaModeloIndex === 'function') {
-                alternarParaModeloIndex(i);
-              }
-              const inpP = document.getElementById('precoGrade_' + c.chave);
-              if (inpP) {
-                inpP.classList.add('campo-invalido-obrigatorio');
-                inpP.focus();
-                inpP.select();
-              }
-              return null;
-            }
-          }
-        }
-      }
 
       const clienteId = document.getElementById('orcClienteSelect')?.value;
       const cliente = db.clientes.find(c => c.id === clienteId) || db.clientes[0];
@@ -11502,48 +11463,9 @@
       abrirModalDetalhamentoCustosPorPeca();
     });
 
-    // Sincronização, seleção ativa e validação de preenchimento obrigatório da grade
+    // Validação e controle visual da grade (livre, sem travas e sem preenchimento automático)
     function validarCamposObrigatoriosColuna(col) {
-      if (!col || col.classList.contains('grade-col-total') || col.querySelector('#gradeTotal') || col.querySelector('#gradeTotalNum')) return true;
-      const inpQtd = col.querySelector('.grade-input');
-      const inpPreco = col.querySelector('.grade-preco-input');
-      const chk = col.querySelector('.grade-check-tam');
-      if (!inpQtd) return true;
-
-      const isAtivo = (chk && chk.checked) || col.classList.contains('ativo');
-      if (!isAtivo) {
-        inpQtd.classList.remove('campo-invalido-obrigatorio');
-        if (inpPreco) inpPreco.classList.remove('campo-invalido-obrigatorio');
-        col.classList.remove('incompleto-alerta');
-        return true;
-      }
-
-      const q = parseInt(inpQtd.value || 0, 10);
-      const p = parseNumMoeda(inpPreco ? inpPreco.value : '0', 0);
-
-      let valido = true;
-      if (q <= 0) {
-        inpQtd.classList.add('campo-invalido-obrigatorio');
-        inpQtd.title = 'Quantidade obrigatória para este tamanho (> 0)';
-        valido = false;
-      } else {
-        inpQtd.classList.remove('campo-invalido-obrigatorio');
-        inpQtd.title = 'Quantidade informada';
-      }
-
-      if (inpPreco) {
-        if (p <= 0) {
-          inpPreco.classList.add('campo-invalido-obrigatorio');
-          inpPreco.title = 'Preço de venda obrigatório para este tamanho (> R$ 0,00)';
-          valido = false;
-        } else {
-          inpPreco.classList.remove('campo-invalido-obrigatorio');
-          inpPreco.title = 'Preço de venda do tamanho';
-        }
-      }
-
-      col.classList.toggle('incompleto-alerta', !valido);
-      return valido;
+      return true;
     }
 
     function atualizarEstadoVisualTamanhos(sincronizarPorQtd = false) {
@@ -11551,26 +11473,14 @@
         if (col.classList.contains('grade-col-total') || col.querySelector('#gradeTotal') || col.querySelector('#gradeTotalNum')) return;
         const inpQtd = col.querySelector('.grade-input');
         const inpPreco = col.querySelector('.grade-preco-input');
-        const chk = col.querySelector('.grade-check-tam');
         if (!inpQtd) return;
 
-        let estaAtivo = false;
-        if (chk) {
-          if (sincronizarPorQtd) {
-            const q = parseInt(inpQtd.value || 0, 10);
-            chk.checked = (q > 0);
-          }
-          estaAtivo = chk.checked;
-        } else {
-          const q = parseInt(inpQtd.value || 0, 10);
-          estaAtivo = (q > 0) || col.classList.contains('ativo');
-        }
+        inpQtd.disabled = false;
+        if (inpPreco) inpPreco.disabled = false;
 
-        col.classList.toggle('ativo', estaAtivo);
-        inpQtd.disabled = !estaAtivo;
-        if (inpPreco) inpPreco.disabled = !estaAtivo;
-
-        validarCamposObrigatoriosColuna(col);
+        const q = parseInt(inpQtd.value || 0, 10);
+        col.classList.toggle('tem-quantidade', q > 0);
+        col.classList.remove('ativo', 'incompleto-alerta');
       });
     }
 
@@ -11582,88 +11492,18 @@
         const label = col.querySelector('.grade-label');
         if (!inpQtd) return;
 
-        // Injeta o checkbox visual no label se ainda não existir
-        let chk = col.querySelector('.grade-check-tam');
-        if (!chk && label) {
-          const rotuloOriginal = label.textContent.trim();
-          label.innerHTML = `
-            <input type="checkbox" class="grade-check-tam" data-chave="${col.getAttribute('data-chave') || ''}" title="Marque para selecionar este tamanho">
-            <span class="grade-nome-tam">${rotuloOriginal}</span>
-          `;
-          chk = col.querySelector('.grade-check-tam');
-        }
-
-        function alternarSelecaoTamanho(novoAtivo, focar = true) {
-          if (chk) chk.checked = !!novoAtivo;
-          col.classList.toggle('ativo', !!novoAtivo);
-          inpQtd.disabled = !novoAtivo;
-          if (inpPreco) inpPreco.disabled = !novoAtivo;
-
-          const it = itensOrcamento[itemAtivoIndex];
-          const chave = col.getAttribute('data-chave') || (inpQtd.id || '').replace('grade_', '').replace('gradeNum_', '').toLowerCase();
-
-          if (novoAtivo) {
-            const q = parseInt(inpQtd.value || 0, 10);
-            if (q === 0) {
-              inpQtd.value = 1;
-            }
-            const p = parseNumMoeda(inpPreco ? inpPreco.value : '0', 0);
-            if (p === 0 && inpPreco) {
-              if (it && it.precoVendaUnitario > 0) {
-                inpPreco.value = formatarMoedaInput(it.precoVendaUnitario);
-              }
-            }
-            if (focar) {
-              inpQtd.focus();
-              inpQtd.select();
-            }
-          } else {
-            inpQtd.value = 0;
-            if (inpPreco) inpPreco.value = '0,00';
-            inpQtd.classList.remove('campo-invalido-obrigatorio');
-            if (inpPreco) inpPreco.classList.remove('campo-invalido-obrigatorio');
-            col.classList.remove('incompleto-alerta');
-            if (it && it.grade && chave) {
-              it.grade[chave] = 0;
-            }
-            if (it && it.precosPorTamanho && chave) {
-              delete it.precosPorTamanho[chave];
-            }
-          }
-          validarCamposObrigatoriosColuna(col);
-          recalcularBenchmarkModal();
-        }
-
-        if (chk) {
-          chk.addEventListener('click', (e) => {
-            e.stopPropagation();
-          });
-          chk.addEventListener('change', (e) => {
-            e.stopPropagation();
-            alternarSelecaoTamanho(chk.checked, chk.checked);
-          });
-        }
-
+        // Se houver algum checkbox residual no rótulo, remove e restaura o texto puro
         if (label) {
-          label.style.cursor = 'pointer';
-          label.title = 'Clique para selecionar/desmarcar este tamanho';
-          label.addEventListener('click', (e) => {
-            if (e.target === chk) return;
-            e.preventDefault();
-            e.stopPropagation();
-            const novo = chk ? !chk.checked : !col.classList.contains('ativo');
-            alternarSelecaoTamanho(novo, novo);
-          });
+          const chkResidual = label.querySelector('.grade-check-tam');
+          if (chkResidual) {
+            const nomeSpan = label.querySelector('.grade-nome-tam');
+            const textoLimpo = (nomeSpan ? nomeSpan.textContent : label.textContent).trim();
+            label.textContent = textoLimpo;
+          }
         }
 
-        col.addEventListener('click', (e) => {
-          // Ignora se o clique for no label, no checkbox ou nos próprios inputs
-          if (e.target.closest('.grade-label') || e.target === chk || e.target === inpQtd || e.target === inpPreco) return;
-          const ativoAgora = chk ? chk.checked : col.classList.contains('ativo');
-          if (!ativoAgora) {
-            alternarSelecaoTamanho(true, true);
-          }
-        });
+        inpQtd.disabled = false;
+        if (inpPreco) inpPreco.disabled = false;
 
         inpQtd.addEventListener('focus', () => {
           inpQtd.select();
@@ -11671,13 +11511,7 @@
 
         inpQtd.addEventListener('input', () => {
           const q = parseInt(inpQtd.value || 0, 10);
-          if (q > 0 && chk && !chk.checked) {
-            chk.checked = true;
-            col.classList.add('ativo');
-            inpQtd.disabled = false;
-            if (inpPreco) inpPreco.disabled = false;
-          }
-          validarCamposObrigatoriosColuna(col);
+          col.classList.toggle('tem-quantidade', q > 0);
           recalcularBenchmarkModal();
         });
 
@@ -11686,11 +11520,9 @@
             inpPreco.select();
           });
           inpPreco.addEventListener('input', () => {
-            validarCamposObrigatoriosColuna(col);
             recalcularBenchmarkModal();
           });
           inpPreco.addEventListener('change', () => {
-            validarCamposObrigatoriosColuna(col);
             recalcularBenchmarkModal();
           });
         }
@@ -11722,29 +11554,7 @@
             el.value = val;
             const col = el.closest('.grade-col');
             if (col) {
-              const chk = col.querySelector('.grade-check-tam');
-              const inpPreco = col.querySelector('.grade-preco-input');
-              if (val > 0) {
-                if (chk) chk.checked = true;
-                col.classList.add('ativo');
-                el.disabled = false;
-                if (inpPreco) {
-                  inpPreco.disabled = false;
-                  const pAtual = parseNumMoeda(inpPreco.value, 0);
-                  if (pAtual === 0) {
-                    const it = itensOrcamento[itemAtivoIndex];
-                    if (it && it.precoVendaUnitario > 0) inpPreco.value = formatarMoedaInput(it.precoVendaUnitario);
-                  }
-                }
-              } else {
-                if (chk) chk.checked = false;
-                col.classList.remove('ativo');
-                el.disabled = true;
-                if (inpPreco) {
-                  inpPreco.disabled = true;
-                  inpPreco.value = '0,00';
-                }
-              }
+              col.classList.toggle('tem-quantidade', val > 0);
             }
           }
         });
@@ -11754,25 +11564,26 @@
     });
 
     document.getElementById('btnZerarGrade')?.addEventListener('click', () => {
+      const it = itensOrcamento[itemAtivoIndex];
+      if (it && it.precosPorTamanho) {
+        it.precosPorTamanho = {};
+      }
       TODOS_CAMPOS_GRADE.forEach(c => {
         const el = document.getElementById(c.id);
         if (el) {
           el.value = 0;
-          el.disabled = true;
+          el.disabled = false;
           el.classList.remove('campo-invalido-obrigatorio');
         }
         const inpPreco = document.getElementById('precoGrade_' + c.chave);
         if (inpPreco) {
           inpPreco.value = '0,00';
-          inpPreco.disabled = true;
+          inpPreco.disabled = false;
           inpPreco.classList.remove('campo-invalido-obrigatorio');
         }
         const col = el?.closest('.grade-col');
         if (col && !col.classList.contains('grade-col-total')) {
-          col.classList.remove('ativo');
-          col.classList.remove('incompleto-alerta');
-          const chk = col.querySelector('.grade-check-tam');
-          if (chk) chk.checked = false;
+          col.classList.remove('ativo', 'incompleto-alerta', 'tem-quantidade');
         }
       });
       recalcularBenchmarkModal();
