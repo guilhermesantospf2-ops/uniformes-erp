@@ -4761,9 +4761,24 @@
   }
 
   // Toggle de visualização da grade detalhada na tabela de pedidos (recolhível por padrão)
-  function alternarGradePedidoTabela(pedidoId, btnEl) {
-    const el = document.getElementById('gradeDetalhesTabela_' + pedidoId);
+  function alternarGradePedidoTabela(btnElOrId, pedidoIdParam) {
+    let btnEl = null;
+    let pedidoId = null;
+
+    if (btnElOrId instanceof HTMLElement || (btnElOrId && btnElOrId.nodeType === 1)) {
+      btnEl = btnElOrId;
+      pedidoId = pedidoIdParam || btnEl.getAttribute('data-pedido-id');
+    } else {
+      pedidoId = btnElOrId;
+      btnEl = pedidoIdParam instanceof HTMLElement ? pedidoIdParam : null;
+    }
+
+    const td = btnEl ? (btnEl.closest('.col-grade-tamanhos-pedidos') || btnEl.closest('td')) : null;
+    const el = (td ? td.querySelector('.grade-detalhes-tabela-collapse') : null) 
+      || (pedidoId ? document.getElementById('gradeDetalhesTabela_' + pedidoId) : null);
+
     if (!el) return;
+
     const estaVisivel = el.style.display !== 'none';
     if (estaVisivel) {
       el.style.display = 'none';
@@ -5133,7 +5148,7 @@
                           <button type="button" 
                                   class="btn btn-secondary btn-xs btn-toggle-grade-tabela" 
                                   data-pedido-id="${p.id}"
-                                  onclick="window.ERP.toggleGradePedidoTabela('${p.id}', this)"
+                                  onclick="window.ERP.toggleGradePedidoTabela(this, '${p.id}')"
                                   style="font-size: 10.5px; padding: 2.5px 8px; font-weight: 700; color: #1e40af; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s ease;"
                                   title="Clique para ver a grade detalhada com tamanhos">
                             <span>👁️</span> <span>Ver Grade</span>
@@ -5636,17 +5651,6 @@
         e.stopPropagation();
         const id = btn.getAttribute('data-id');
         abrirModalDetalhesCancelamento(id);
-      });
-    });
-
-    // Toggle Grade de Tamanhos na Tabela de Pedidos
-    document.querySelectorAll('.btn-toggle-grade-tabela').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = btn.getAttribute('data-pedido-id');
-        if (id && typeof alternarGradePedidoTabela === 'function') {
-          alternarGradePedidoTabela(id, btn);
-        }
       });
     });
 
