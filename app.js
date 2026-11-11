@@ -4752,7 +4752,7 @@
 
     if (estilo === 'badge' || estilo === 'badge-blue') {
       return selecionados.map(s => `
-        <span style="display: inline-block; font-weight: 800; padding: 2px 7px; border-radius: 4px; font-size: 11px; margin: 1px 3px 1px 0; ${obterEstiloBadge(s.tam)}">
+        <span style="display: inline-block; font-weight: 800; padding: 2px 6px; border-radius: 4px; font-size: 10.5px; margin: 1px 2px; white-space: nowrap; ${obterEstiloBadge(s.tam)}">
           ${s.qtd}x ${s.tam}
         </span>
       `).join('');
@@ -5050,22 +5050,30 @@
                     ` : ''}
                     <span style="display: block; font-size: 10.5px; color: var(--text-gray-500); margin-top: 3px;">${p.tipoPersonalizacao || 'Estampa Conforme Arte'}</span>
                   </td>
-                  <td class="text-mono" style="max-width: 250px; min-width: 175px; white-space: normal !important; vertical-align: middle;">
+                  <td class="text-mono col-grade-tamanhos-pedidos" style="min-width: 320px; max-width: 650px; white-space: normal !important; vertical-align: middle;">
                     ${(p.itens && p.itens.length > 1) ? `
                       <div style="font-size: 10.5px; line-height: 1.35; display: flex; flex-direction: column; gap: 4px;">
                         ${p.itens.map((it, idx) => `
-                          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 2px 6px;">
-                            <span style="font-weight: 700; color: #1e40af; font-size: 9.5px;">Mod ${idx + 1} (${it.grade?.total || 0} un):</span>
-                            <div>${formatarGradeSelecionadaHtml(it.grade, 'badge')}</div>
+                          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                              <span style="font-weight: 800; color: #1e40af; font-size: 10px;">Mod ${idx + 1}: ${it.produtoNome ? `<span style='color: #475569; font-weight: 600;'>(${it.produtoNome.split(' ')[0]})</span>` : ''}</span>
+                              <span style="font-weight: 800; color: #047857; font-size: 10px; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.5px 5px; border-radius: 3px;">${it.grade?.total || 0} un</span>
+                            </div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 2px 3px; align-items: center;">
+                              ${formatarGradeSelecionadaHtml(it.grade, 'badge')}
+                            </div>
                           </div>
                         `).join('')}
                       </div>
-                      <strong style="display: block; color: var(--text-primary); margin-top: 4px; font-size: 12px;">Total: ${p.itens.reduce((acc, it) => acc + (it.grade?.total || 0), 0)} peças</strong>
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; padding-top: 2px; border-top: 1px dashed #cbd5e1;">
+                        <span style="color: var(--text-gray-500); font-size: 10px; font-weight: 700; text-transform: uppercase;">Total Geral:</span>
+                        <strong style="color: #047857; font-size: 12px; font-weight: 900;">${p.itens.reduce((acc, it) => acc + (it.grade?.total || 0), 0)} peças</strong>
+                      </div>
                     ` : `
-                      <div style="font-size: 11px; line-height: 1.3;">
+                      <div style="display: flex; flex-wrap: wrap; gap: 2px 3px; align-items: center;">
                         ${formatarGradeSelecionadaHtml(p.grade, 'badge')}
                       </div>
-                      <strong style="display: block; color: var(--text-primary); margin-top: 3px;">${p.grade?.total || 0} peças</strong>
+                      <strong style="display: block; color: var(--text-primary); margin-top: 4px; font-size: 11.5px;">Total: ${p.grade?.total || 0} peças</strong>
                     `}
                   </td>
                   <td class="text-mono" style="white-space: nowrap !important; text-align: right; vertical-align: middle; min-width: 95px;">${formatarMoeda(p.precoUnitarioVenda)}</td>

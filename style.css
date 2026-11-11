@@ -3358,11 +3358,14 @@ input[type="number"] {
 }
 
 
-/* Blindagem contra sobreposicao de tags de tamanhos na tabela de pedidos */
-.erp-table-pedidos td:nth-child(5) {
+/* Aproveitamento dos espacos laterais nas tags de tamanhos na tabela de pedidos */
+.erp-table-pedidos td:nth-child(5),
+.erp-table-pedidos th:nth-child(5),
+.erp-table-pedidos .col-grade-tamanhos-pedidos {
   white-space: normal !important;
-  max-width: 260px !important;
-  min-width: 180px !important;
+  min-width: 320px !important;
+  max-width: 650px !important;
+  width: auto !important;
 }
 .erp-table-pedidos td:nth-child(6),
 .erp-table-pedidos td:nth-child(7) {
