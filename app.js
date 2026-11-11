@@ -4760,6 +4760,68 @@
     return selecionados.map(s => `<strong>${s.qtd}x</strong> ${s.tam}`).join(' • ');
   }
 
+  // Toggle de visualização da grade detalhada na tabela de pedidos (recolhível por padrão)
+  function alternarGradePedidoTabela(pedidoId, btnEl) {
+    const el = document.getElementById('gradeDetalhesTabela_' + pedidoId);
+    if (!el) return;
+    const estaVisivel = el.style.display !== 'none';
+    if (estaVisivel) {
+      el.style.display = 'none';
+      if (btnEl) {
+        btnEl.innerHTML = '<span>👁️</span> <span>Ver Grade</span>';
+        btnEl.style.background = '#eff6ff';
+        btnEl.style.color = '#1e40af';
+        btnEl.style.borderColor = '#bfdbfe';
+        btnEl.setAttribute('title', 'Clique para ver a grade detalhada com tamanhos');
+      }
+    } else {
+      el.style.display = 'block';
+      if (btnEl) {
+        btnEl.innerHTML = '<span>🔼</span> <span>Ocultar</span>';
+        btnEl.style.background = '#f1f5f9';
+        btnEl.style.color = '#475569';
+        btnEl.style.borderColor = '#cbd5e1';
+        btnEl.setAttribute('title', 'Clique para recolher os tamanhos');
+      }
+    }
+  }
+
+  function alternarTodasGradesTabela(btnHeader) {
+    const todosCollapses = document.querySelectorAll('.grade-detalhes-tabela-collapse');
+    if (!todosCollapses.length) return;
+    const algumOculto = Array.from(todosCollapses).some(el => el.style.display === 'none');
+
+    todosCollapses.forEach(el => {
+      el.style.display = algumOculto ? 'block' : 'none';
+    });
+
+    document.querySelectorAll('.btn-toggle-grade-tabela').forEach(btn => {
+      if (algumOculto) {
+        btn.innerHTML = '<span>🔼</span> <span>Ocultar</span>';
+        btn.style.background = '#f1f5f9';
+        btn.style.color = '#475569';
+        btn.style.borderColor = '#cbd5e1';
+        btn.setAttribute('title', 'Clique para recolher os tamanhos');
+      } else {
+        btn.innerHTML = '<span>👁️</span> <span>Ver Grade</span>';
+        btn.style.background = '#eff6ff';
+        btn.style.color = '#1e40af';
+        btn.style.borderColor = '#bfdbfe';
+        btn.setAttribute('title', 'Clique para ver a grade detalhada com tamanhos');
+      }
+    });
+
+    if (btnHeader) {
+      btnHeader.innerHTML = algumOculto
+        ? '<span>🔼 Ocultar Todas</span>'
+        : '<span>👁️ Ver Todas as Grades</span>';
+    }
+  }
+
+  window.ERP = window.ERP || {};
+  window.ERP.toggleGradePedidoTabela = alternarGradePedidoTabela;
+  window.ERP.toggleTodasGradesTabela = alternarTodasGradesTabela;
+
   /* ==========================================================================
      MÓDULO 2: PEDIDOS & ORÇAMENTOS (DUPLO FLUXO + BENCHMARK BRASIL + KANBAN)
      ========================================================================== */
@@ -4917,7 +4979,10 @@
       <div class="table-wrapper">
         <div class="table-header-bar">
           <div class="table-title">Ordens de Pedidos Oficiais & Orçamentos Ativos (${pedidos.length})</div>
-          <div style="display: flex; gap: 8px; align-items: center;">
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.toggleTodasGradesTabela(this)" title="Expandir ou recolher todas as grades de tamanhos na tabela" style="padding: 3px 9px; font-size: 11px; font-weight: 700; color: #1e40af; background: #eff6ff; border: 1px solid #bfdbfe; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+              <span>👁️</span> <span>Ver Todas as Grades</span>
+            </button>
             <button type="button" class="btn btn-secondary btn-sm" onclick="const w=this.closest('.table-wrapper');w.scrollTo({left:0,behavior:'smooth'})" title="Rolar para o Início da Tabela" style="padding: 3px 8px; font-size: 11px; font-weight: 700;">◀ Início</button>
             <button type="button" class="btn btn-secondary btn-sm" onclick="const w=this.closest('.table-wrapper');w.scrollTo({left:w.scrollWidth,behavior:'smooth'})" title="Rolar para Ações, Status e Totais" style="padding: 3px 8px; font-size: 11px; font-weight: 700;">Ações & Totais ▶</button>
             <span class="table-scroll-hint" title="Use a barra fixa no rodapé da tela para navegar pelas colunas sem descer a página">
@@ -5050,31 +5115,60 @@
                     ` : ''}
                     <span style="display: block; font-size: 10.5px; color: var(--text-gray-500); margin-top: 3px;">${p.tipoPersonalizacao || 'Estampa Conforme Arte'}</span>
                   </td>
-                  <td class="text-mono col-grade-tamanhos-pedidos" style="min-width: 320px; max-width: 650px; white-space: normal !important; vertical-align: middle;">
-                    ${(p.itens && p.itens.length > 1) ? `
-                      <div style="font-size: 10.5px; line-height: 1.35; display: flex; flex-direction: column; gap: 4px;">
-                        ${p.itens.map((it, idx) => `
-                          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                              <span style="font-weight: 800; color: #1e40af; font-size: 10px;">Mod ${idx + 1}: ${it.produtoNome ? `<span style='color: #475569; font-weight: 600;'>(${it.produtoNome.split(' ')[0]})</span>` : ''}</span>
-                              <span style="font-weight: 800; color: #047857; font-size: 10px; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.5px 5px; border-radius: 3px;">${it.grade?.total || 0} un</span>
-                            </div>
-                            <div style="display: flex; flex-wrap: wrap; gap: 2px 3px; align-items: center;">
-                              ${formatarGradeSelecionadaHtml(it.grade, 'badge')}
-                            </div>
+                  <td class="text-mono col-grade-tamanhos-pedidos" style="min-width: 190px; max-width: 550px; white-space: normal !important; vertical-align: middle;">
+                    ${(() => {
+                      const ehMulti = p.itens && p.itens.length > 1;
+                      const totalPecas = ehMulti
+                        ? p.itens.reduce((acc, it) => acc + (it.grade?.total || 0), 0)
+                        : (p.grade?.total || 0);
+                      const qtdModelos = ehMulti ? p.itens.length : 1;
+
+                      return `
+                        <!-- Resumo Compacto Sempre Visível -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;">
+                          <div>
+                            <strong style="color: #047857; font-size: 12.5px; font-weight: 900;">${totalPecas} peças</strong>
+                            ${ehMulti ? `<span style="font-size: 10px; color: #64748b; font-weight: 700; display: block;">(${qtdModelos} modelos)</span>` : ''}
                           </div>
-                        `).join('')}
-                      </div>
-                      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; padding-top: 2px; border-top: 1px dashed #cbd5e1;">
-                        <span style="color: var(--text-gray-500); font-size: 10px; font-weight: 700; text-transform: uppercase;">Total Geral:</span>
-                        <strong style="color: #047857; font-size: 12px; font-weight: 900;">${p.itens.reduce((acc, it) => acc + (it.grade?.total || 0), 0)} peças</strong>
-                      </div>
-                    ` : `
-                      <div style="display: flex; flex-wrap: wrap; gap: 2px 3px; align-items: center;">
-                        ${formatarGradeSelecionadaHtml(p.grade, 'badge')}
-                      </div>
-                      <strong style="display: block; color: var(--text-primary); margin-top: 4px; font-size: 11.5px;">Total: ${p.grade?.total || 0} peças</strong>
-                    `}
+                          <button type="button" 
+                                  class="btn btn-secondary btn-xs btn-toggle-grade-tabela" 
+                                  data-pedido-id="${p.id}"
+                                  onclick="window.ERP.toggleGradePedidoTabela('${p.id}', this)"
+                                  style="font-size: 10.5px; padding: 2.5px 8px; font-weight: 700; color: #1e40af; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s ease;"
+                                  title="Clique para ver a grade detalhada com tamanhos">
+                            <span>👁️</span> <span>Ver Grade</span>
+                          </button>
+                        </div>
+
+                        <!-- Detalhamento dos Tamanhos (Oculto por padrão, expande ao clicar) -->
+                        <div id="gradeDetalhesTabela_${p.id}" class="grade-detalhes-tabela-collapse" style="display: none; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #cbd5e1;">
+                          ${ehMulti ? `
+                            <div style="font-size: 10.5px; line-height: 1.35; display: flex; flex-direction: column; gap: 4px;">
+                              ${p.itens.map((it, idx) => `
+                                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px;">
+                                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                    <span style="font-weight: 800; color: #1e40af; font-size: 10px;">Mod ${idx + 1}: ${it.produtoNome ? `<span style='color: #475569; font-weight: 600;'>(${it.produtoNome.split(' ')[0]})</span>` : ''}</span>
+                                    <span style="font-weight: 800; color: #047857; font-size: 10px; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.5px 5px; border-radius: 3px;">${it.grade?.total || 0} un</span>
+                                  </div>
+                                  <div style="display: flex; flex-wrap: wrap; gap: 2px 3px; align-items: center;">
+                                    ${formatarGradeSelecionadaHtml(it.grade, 'badge')}
+                                  </div>
+                                </div>
+                              `).join('')}
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; padding-top: 2px; border-top: 1px dashed #cbd5e1;">
+                              <span style="color: var(--text-gray-500); font-size: 10px; font-weight: 700; text-transform: uppercase;">Total Geral:</span>
+                              <strong style="color: #047857; font-size: 12px; font-weight: 900;">${totalPecas} peças</strong>
+                            </div>
+                          ` : `
+                            <div style="display: flex; flex-wrap: wrap; gap: 2px 3px; align-items: center;">
+                              ${formatarGradeSelecionadaHtml(p.grade, 'badge')}
+                            </div>
+                            <strong style="display: block; color: var(--text-primary); margin-top: 4px; font-size: 11.5px;">Total: ${totalPecas} peças</strong>
+                          `}
+                        </div>
+                      `;
+                    })()}
                   </td>
                   <td class="text-mono" style="white-space: nowrap !important; text-align: right; vertical-align: middle; min-width: 95px;">${formatarMoeda(p.precoUnitarioVenda)}</td>
                   <td class="text-mono" style="white-space: nowrap !important; text-align: right; vertical-align: middle; min-width: 105px;">
@@ -5542,6 +5636,17 @@
         e.stopPropagation();
         const id = btn.getAttribute('data-id');
         abrirModalDetalhesCancelamento(id);
+      });
+    });
+
+    // Toggle Grade de Tamanhos na Tabela de Pedidos
+    document.querySelectorAll('.btn-toggle-grade-tabela').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-pedido-id');
+        if (id && typeof alternarGradePedidoTabela === 'function') {
+          alternarGradePedidoTabela(id, btn);
+        }
       });
     });
 
@@ -14081,15 +14186,15 @@
                 </thead>
                 <tbody>
                   ${p.itens.map((it, idx) => {
-                    const appsHtml = (it.aplicacoes && it.aplicacoes.length > 0)
-                      ? it.aplicacoes.map(a => `• <strong>${a.local}:</strong> ${a.tecnica}`).join('<br>')
-                      : '<span style="color: #64748b; font-style: italic;">Peça Lisa</span>';
-                    const subtotal = (it.valorSubtotal || ((it.precoVendaUnitario || 0) * (it.grade?.total || 0))) || 0;
-                    const itMockup = it.mockupUrl || p.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, '#1e3a8a', '#ffffff', (p.clienteNome || 'TEXFY').substring(0, 6)) : '');
-                    const tamsDet = extrairLinhasTamanhosComPreco(it);
-                    const temPrecosVar = tamsDet.some(t => Math.abs(t.precoUnit - tamsDet[0].precoUnit) > 0.009);
+            const appsHtml = (it.aplicacoes && it.aplicacoes.length > 0)
+              ? it.aplicacoes.map(a => `• <strong>${a.local}:</strong> ${a.tecnica}`).join('<br>')
+              : '<span style="color: #64748b; font-style: italic;">Peça Lisa</span>';
+            const subtotal = (it.valorSubtotal || ((it.precoVendaUnitario || 0) * (it.grade?.total || 0))) || 0;
+            const itMockup = it.mockupUrl || p.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, '#1e3a8a', '#ffffff', (p.clienteNome || 'TEXFY').substring(0, 6)) : '');
+            const tamsDet = extrairLinhasTamanhosComPreco(it);
+            const temPrecosVar = tamsDet.some(t => Math.abs(t.precoUnit - tamsDet[0].precoUnit) > 0.009);
 
-                    return `
+            return `
                       <tr style="border-bottom: 1px solid #e2e8f0;">
                         <td style="padding: 4px; text-align: center; vertical-align: middle;">
                           <img src="${itMockup}" class="mockup-thumb-3x4" data-pedido-id="${p.id}" data-item-idx="${idx}" alt="Mockup Mod ${idx + 1}" style="width: 44px !important; height: 58px !important; aspect-ratio: 3/4; object-fit: contain; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; cursor: pointer; display: block; margin: 0 auto; box-shadow: 0 1px 2px rgba(0,0,0,0.06);" title="Clique para ampliar mockup de ${it.produtoNome}">
@@ -14136,7 +14241,7 @@
                         </td>
                       </tr>
                     `;
-                  }).join('')}
+          }).join('')}
                 </tbody>
                 <tfoot>
                   <tr style="background: #f8fafc; font-weight: 800; border-top: 2px solid #cbd5e1;">
@@ -14261,33 +14366,33 @@
         <div style="width: 280px; display: flex; flex-direction: column; gap: 4px;">
           ${(!p.itens || p.itens.length <= 1) ? `
             ${(() => {
-              const itemUnico = p.itens?.[0] || p;
-              const g = itemUnico.grade || {};
-              const precos = itemUnico.precosPorTamanho || p.precosPorTamanho || {};
-              const pBase = parseFloat(itemUnico.precoVendaUnitario) || parseFloat(itemUnico.precoUnitarioVenda) || parseFloat(p.precoUnitarioVenda) || 0;
-              const selecionados = obterTamanhosSelecionadosGrade(g);
-              const listaPrecos = selecionados.map(s => {
-                return (precos[s.chave] != null && !isNaN(precos[s.chave]) && parseFloat(precos[s.chave]) > 0)
-                  ? parseFloat(precos[s.chave])
-                  : pBase;
-              });
-              const temPrecosVar = listaPrecos.some(pr => Math.abs(pr - listaPrecos[0]) > 0.009);
+          const itemUnico = p.itens?.[0] || p;
+          const g = itemUnico.grade || {};
+          const precos = itemUnico.precosPorTamanho || p.precosPorTamanho || {};
+          const pBase = parseFloat(itemUnico.precoVendaUnitario) || parseFloat(itemUnico.precoUnitarioVenda) || parseFloat(p.precoUnitarioVenda) || 0;
+          const selecionados = obterTamanhosSelecionadosGrade(g);
+          const listaPrecos = selecionados.map(s => {
+            return (precos[s.chave] != null && !isNaN(precos[s.chave]) && parseFloat(precos[s.chave]) > 0)
+              ? parseFloat(precos[s.chave])
+              : pBase;
+          });
+          const temPrecosVar = listaPrecos.some(pr => Math.abs(pr - listaPrecos[0]) > 0.009);
 
-              if (temPrecosVar) {
-                return `
+          if (temPrecosVar) {
+            return `
                   <div style="display: flex; justify-content: space-between; font-size: 11px;">
                     <span style="color: #475569;">Tabela de Preços:</span>
                     <span style="font-weight: 700; color: #1e40af;">Valores por Tamanho (acima)</span>
                   </div>
                 `;
-              }
-              return `
+          }
+          return `
                 <div style="display: flex; justify-content: space-between;">
                   <span>Preço Unitário:</span>
                   <span class="text-mono">${formatarMoeda(listaPrecos[0] || p.precoUnitarioVenda)}</span>
                 </div>
               `;
-            })()}
+        })()}
           ` : `
             <div style="display: flex; justify-content: space-between; font-size: 11px; color: #64748b;">
               <span>Modelos do Pedido:</span>
@@ -32112,6 +32217,8 @@
     abrirModalFechamentoPrevistoRealizadoPedido,
     cancelarEntradaEstoque,
     alternarOrdenacaoPedidos: () => { if (typeof alternarOrdenacaoPedidos === 'function') return alternarOrdenacaoPedidos(); },
+    toggleGradePedidoTabela: (id, btn) => { if (typeof alternarGradePedidoTabela === 'function') return alternarGradePedidoTabela(id, btn); },
+    toggleTodasGradesTabela: (btn) => { if (typeof alternarTodasGradesTabela === 'function') return alternarTodasGradesTabela(btn); },
     imprimirFichaTecnicaIsolada,
     abrirModalRepartirOS,
     desfazerReparticaoOS,

@@ -3363,9 +3363,21 @@ input[type="number"] {
 .erp-table-pedidos th:nth-child(5),
 .erp-table-pedidos .col-grade-tamanhos-pedidos {
   white-space: normal !important;
-  min-width: 320px !important;
-  max-width: 650px !important;
+  min-width: 190px !important;
+  max-width: 550px !important;
   width: auto !important;
+}
+.btn-toggle-grade-tabela:hover {
+  background-color: #dbeafe !important;
+  border-color: #93c5fd !important;
+  color: #1e3a8a !important;
+}
+.grade-detalhes-tabela-collapse {
+  animation: fadeInGrade 0.18s ease-in-out;
+}
+@keyframes fadeInGrade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 .erp-table-pedidos td:nth-child(6),
 .erp-table-pedidos td:nth-child(7) {
