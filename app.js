@@ -20197,8 +20197,10 @@
           textoBotao: 'Sim, Excluir Produto',
           estiloBotao: 'background: #dc2626; border-color: #dc2626; color: #ffffff; font-weight: 700;',
           onConfirm: () => {
+            if (!Array.isArray(db.produtosExcluidosIds)) db.produtosExcluidosIds = [];
+            if (!db.produtosExcluidosIds.includes(pId)) db.produtosExcluidosIds.push(pId);
             db.produtosBase = db.produtosBase.filter(p => p.id !== pId);
-            salvarEstado();
+            salvarEstado(true);
             renderizarProdutos();
             mostrarToast(`Produto "${prod.nome}" excluído do catálogo.`, 'amber');
           }
@@ -25807,12 +25809,15 @@
       }
     } catch (e) { }
 
-    if (empCloud && empCloud.cnpj && empCloud.cnpj !== '34.582.910/0001-44') {
+    const temCloudEditado = empCloud && (empCloud._configuradoManual || (empCloud.cnpj && empCloud.cnpj !== '34.582.910/0001-44') || (empCloud.nomeFantasia && empCloud.nomeFantasia !== 'Texfy Confecções'));
+    const temDbEditado = db && db.empresa && (db.empresa._configuradoManual || (db.empresa.cnpj && db.empresa.cnpj !== '34.582.910/0001-44') || (db.empresa.nomeFantasia && db.empresa.nomeFantasia !== 'Texfy Confecções'));
+
+    if (temCloudEditado) {
       if (db) db.empresa = Object.assign({}, empPadraoPrime, db.empresa || {}, empCloud);
-      return Object.assign({}, empPadraoPrime, empCloud);
+      return Object.assign({}, empPadraoPrime, db.empresa || {}, empCloud);
     }
 
-    if (db && db.empresa && db.empresa.cnpj && db.empresa.cnpj !== '34.582.910/0001-44') {
+    if (temDbEditado) {
       return Object.assign({}, empPadraoPrime, db.empresa);
     }
 
@@ -31314,6 +31319,7 @@
 
     function salvarFormularioEmpresa() {
       const novosDados = {
+        _configuradoManual: true,
         nomeFantasia: document.getElementById('inpEmpNomeFantasia')?.value.trim() || 'Minha Confecção',
         razaoSocial: document.getElementById('inpEmpRazaoSocial')?.value.trim() || 'Minha Confecção Ltda',
         cnpj: document.getElementById('inpEmpCnpj')?.value.trim() || '',
@@ -31337,8 +31343,8 @@
         window.ERP_CLOUD.salvarEmpresaConfig(novosDados);
       }
       db.empresa = Object.assign({}, db.empresa, novosDados);
-      salvarEstado();
-      mostrarToast('Dados cadastrais da empresa atualizados com sucesso!', 'green');
+      salvarEstado(true);
+      mostrarToast('Dados cadastrais da empresa salvos e sincronizados!', 'green');
     }
 
     document.getElementById('btnSalvarEmpresaTopo')?.addEventListener('click', salvarFormularioEmpresa);

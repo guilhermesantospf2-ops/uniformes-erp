@@ -2033,7 +2033,12 @@ with check (true);
     base.compras = fundirColecaoPorId(local.compras, remoto.compras, 'id');
     base.costureiras = fundirColecaoPorId(local.costureiras, remoto.costureiras, 'id');
     base.equipe = fundirColecaoPorId(local.equipe, remoto.equipe, 'id');
-    base.produtosBase = fundirColecaoPorId(local.produtosBase, remoto.produtosBase, 'id');
+    const excluidosProdSet = new Set([
+      ...(Array.isArray(local.produtosExcluidosIds) ? local.produtosExcluidosIds : []),
+      ...(Array.isArray(remoto.produtosExcluidosIds) ? remoto.produtosExcluidosIds : [])
+    ]);
+    base.produtosExcluidosIds = Array.from(excluidosProdSet);
+    base.produtosBase = fundirColecaoPorId(local.produtosBase, remoto.produtosBase, 'id').filter(p => !excluidosProdSet.has(p.id));
     base.estoque = fundirColecaoPorId(local.estoque, remoto.estoque, 'id');
     // Se na nuvem as notas foram expurgadas/revertidas (length === 0), respeita a nuvem
     if (Array.isArray(remoto.notasFiscais) && remoto.notasFiscais.length === 0) {
