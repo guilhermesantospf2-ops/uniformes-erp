@@ -14012,7 +14012,7 @@
         consumoTecido: (dadosBase.itens && dadosBase.itens.length > 0)
           ? (dadosBase.itens.reduce((acc, it) => acc + ((parseFloat(it.consumoTecido) || 0.28) * (it.grade?.total || 0)), 0) / Math.max(1, pedidoOficial.grade.total))
           : (parseFloat(dadosBase.consumoRealComPerda) || 0.28),
-        responsavelCorte: "Vanderlei Souza",
+        responsavelCorte: (db.empresa && db.empresa.encarregadoCortePadrao) ? db.empresa.encarregadoCortePadrao : "A Definir",
         dataEntradaCorte: new Date().toISOString().split('T')[0],
         prazoPedidoDias: pedidoOficial.prazoPedidoDias,
         prazoInternoDias: pedidoOficial.prazoInternoDias,
@@ -14074,7 +14074,7 @@
             costureiraDesignada: cObj.nome,
             costureiraId: cObj.id,
             valorCosturaPeca: valPeca,
-            responsavelCorte: "Vanderlei Souza",
+            responsavelCorte: (db.empresa && db.empresa.encarregadoCortePadrao) ? db.empresa.encarregadoCortePadrao : "A Definir",
             dataEntradaCorte: new Date().toISOString().split('T')[0],
             prazoPedidoDias: pedidoOficial.prazoPedidoDias,
             prazoInternoDias: pedidoOficial.prazoInternoDias,
@@ -15369,7 +15369,11 @@
             </div>
             <div><strong>Total de Peças:</strong> <span style="font-weight: 800; color: #047857; font-size: 12.5px;">${qtdTotal} un</span> ${itAtivo ? `<span style="font-size: 10px; color: #64748b;">(deste modelo)</span>` : (temMultiplosModelos ? `<span style="font-size: 10px; color: #64748b;">(total do pedido)</span>` : '')}</div>
             <div><strong>Costureira Designada:</strong> <span style="font-weight: 800; color: #047857;">${os.costureiraDesignada}</span></div>
-            <div><strong>Encarregado de Corte:</strong> ${os.responsavelCorte}</div>
+            <div>
+              <strong>Encarregado de Corte:</strong>
+              <span id="lblEncarregadoCorteOS_${os.id}" style="font-weight: 700; color: #0f172a;">${os.responsavelCorte || (db.empresa && db.empresa.encarregadoCortePadrao) || 'A Definir'}</span>
+              <button type="button" class="no-print" onclick="window.ERP.alterarEncarregadoCorteOS('${os.id}')" style="margin-left: 5px; font-size: 10.5px; padding: 1px 6px; border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; border-radius: 4px; cursor: pointer; font-weight: 600;" title="Alterar nome do Encarregado de Corte nesta OS">✏️ Alterar</button>
+            </div>
             <div><strong>Consumo Estimado:</strong> <strong>${consumoEstimadoTexto}</strong> ${(pedido.unidadeTecido === 'metro' ? 'metros' : 'kg de malha')}${(!itAtivo && temMultiplosModelos) ? ` <span style="font-size: 10px; color: #64748b;">(soma dos modelos)</span>` : ''}</div>
           </div>
 
@@ -16171,7 +16175,7 @@
       jogadores: Array.isArray(p.jogadores) ? JSON.parse(JSON.stringify(p.jogadores)) : [],
       etapaAtual: p.etapaProducao || 'Corte',
       costureiraDesignada: p.costureiraNome || "Oficina Interna",
-      responsavelCorte: "Vanderlei Souza",
+      responsavelCorte: (db.empresa && db.empresa.encarregadoCortePadrao) ? db.empresa.encarregadoCortePadrao : "A Definir",
       dataEntradaCorte: p.dataCriacao || new Date().toISOString().split('T')[0],
       prazoPedidoDias: p.prazoPedidoDias || 15,
       prazoInternoDias: p.prazoInternoDias || 10,
@@ -31117,6 +31121,11 @@
             </div>
 
             <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label">Encarregado de Corte Padrão (para novas Ordens de Serviço):</label>
+              <input type="text" class="form-control" id="inpEmpEncarregadoCorte" value="${emp.encarregadoCortePadrao || ''}" placeholder="Ex: Nome do encarregado de corte da sua fábrica">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
               <label class="form-label">Texto Padrão de Condições na Proposta Comercial:</label>
               <textarea class="form-control" id="inpEmpRodapeProposta" rows="2" style="font-size: 11.5px;">${emp.rodapeProposta || 'Proposta válida por 15 dias corridos. Pagamento de 50% de sinal na aprovação e saldo restante na retirada.'}</textarea>
             </div>
@@ -31318,6 +31327,7 @@
         cidade: document.getElementById('inpEmpCidade')?.value.trim() || '',
         uf: (document.getElementById('inpEmpUf')?.value.trim() || '').toUpperCase(),
         cep: document.getElementById('inpEmpCep')?.value.trim() || '',
+        encarregadoCortePadrao: document.getElementById('inpEmpEncarregadoCorte')?.value.trim() || '',
         rodapeProposta: document.getElementById('inpEmpRodapeProposta')?.value.trim() || '',
         rodapeFicha: document.getElementById('inpEmpRodapeFicha')?.value.trim() || '',
         logoUrl: emp.logoUrl || null
@@ -32444,7 +32454,7 @@
           costureiraDesignada: costObj.nome,
           costureiraId: costObj.id,
           valorCosturaPeca: valPeca,
-          responsavelCorte: os.responsavelCorte || 'Vanderlei Souza',
+          responsavelCorte: os.responsavelCorte || (db.empresa && db.empresa.encarregadoCortePadrao) || 'A Definir',
           dataEntradaCorte: os.dataEntradaCorte || new Date().toISOString().split('T')[0],
           prazoPedidoDias: os.prazoPedidoDias,
           prazoInternoDias: os.prazoInternoDias,
@@ -32506,6 +32516,66 @@
     });
   }
 
+  function alterarEncarregadoCorteOS(osId) {
+    const os = (db.ordensServico || []).find(o => o.id === osId);
+    if (!os || !modalContainer) return;
+
+    const valorAtual = (os.responsavelCorte && os.responsavelCorte !== 'A Definir')
+      ? os.responsavelCorte
+      : (db.empresa?.encarregadoCortePadrao || '');
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active" style="z-index: 10050;">
+        <div class="modal-box" style="max-width: 420px;">
+          <div class="modal-header">
+            <div class="modal-title" style="font-size: 15px; font-weight: 800;">✂️ Alterar Encarregado de Corte</div>
+            <button type="button" class="modal-close" id="btnFecharAlterarCorte">&times;</button>
+          </div>
+          <div class="modal-body" style="padding: 16px 20px;">
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label">Nome do Encarregado de Corte (OS ${os.id}):</label>
+              <input type="text" class="form-control" id="inpNovoEncarregadoCorte" value="${(valorAtual || '').replace(/"/g, '&quot;')}" placeholder="Digite o nome do cortador/encarregado">
+            </div>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #334155; cursor: pointer;">
+              <input type="checkbox" id="chkSalvarCortePadrao" checked>
+              <span>Salvar também como <strong>padrão da fábrica</strong> para as próximas OS</span>
+            </label>
+          </div>
+          <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+            <button type="button" class="btn btn-secondary" id="btnCancelarAlterarCorte">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnSalvarAlterarCorte">Salvar Alteração</button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    const inp = document.getElementById('inpNovoEncarregadoCorte');
+    setTimeout(() => inp?.focus(), 60);
+
+    document.getElementById('btnFecharAlterarCorte')?.addEventListener('click', () => fecharModal(modalEl));
+    document.getElementById('btnCancelarAlterarCorte')?.addEventListener('click', () => fecharModal(modalEl));
+    document.getElementById('btnSalvarAlterarCorte')?.addEventListener('click', () => {
+      const novoNome = (inp?.value || '').trim() || 'A Definir';
+      os.responsavelCorte = novoNome;
+
+      if (document.getElementById('chkSalvarCortePadrao')?.checked) {
+        if (!db.empresa) db.empresa = {};
+        db.empresa.encarregadoCortePadrao = novoNome === 'A Definir' ? '' : novoNome;
+        if (window.ERP_CLOUD && typeof window.ERP_CLOUD.salvarEmpresaConfig === 'function') {
+          window.ERP_CLOUD.salvarEmpresaConfig(db.empresa);
+        }
+      }
+
+      salvarEstado();
+
+      const lbl = document.getElementById(`lblEncarregadoCorteOS_${os.id}`);
+      if (lbl) lbl.textContent = novoNome;
+
+      fecharModal(modalEl);
+      mostrarToast(`Encarregado de corte atualizado para "${novoNome}"!`, 'green');
+    });
+  }
+
   window.ERP = Object.assign(window.ERP || {}, {
     zerarSistema: function () { return window.ERP.zerarParaOperacaoRealPrime(false); },
     db,
@@ -32545,6 +32615,7 @@
     toggleAcoesPedidoTabela: (id, btn) => { if (typeof alternarAcoesPedidoTabela === 'function') return alternarAcoesPedidoTabela(id, btn); },
     toggleTodasAcoesTabela: (btn) => { if (typeof alternarTodasAcoesTabela === 'function') return alternarTodasAcoesTabela(btn); },
     imprimirFichaTecnicaIsolada,
+    alterarEncarregadoCorteOS,
     abrirModalRepartirOS,
     desfazerReparticaoOS,
     reunificarItensDeReparticao,
