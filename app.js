@@ -20091,22 +20091,53 @@
               </div>
 
               <!-- Ações da Modelagem -->
-              <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-subtle); display: flex; gap: 6px; flex-wrap: wrap;">
-                <button type="button" class="btn btn-secondary btn-sm btn-editar-modelo-catalogo" data-id="${prod.id}" style="flex: 1; min-width: 120px; font-size: 11.5px; font-weight: 700; color: #1e40af; background: #eff6ff; border-color: #bfdbfe; display: flex; align-items: center; justify-content: center; gap: 5px;" title="Editar gramas consumidas por tamanho e custos da modelagem">
+              <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 6px;">
+                <button type="button" class="btn btn-secondary btn-sm btn-editar-modelo-catalogo" data-id="${prod.id}" style="width: 100%; font-size: 11.5px; font-weight: 700; color: #1e40af; background: #eff6ff; border-color: #bfdbfe; display: flex; align-items: center; justify-content: center; gap: 5px;" title="Editar gramas consumidas por tamanho e custos da modelagem">
                   ✏️ Editar Gramas & Custos
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm btn-duplicar-modelo-catalogo" data-id="${prod.id}" style="font-size: 11.5px; font-weight: 700; color: #047857; background: #ecfdf5; border-color: #a7f3d0; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 5px 10px;" title="Duplicar este produto para criar uma variação rápida">
-                  📋 Duplicar
-                </button>
-                <button type="button" class="btn btn-secondary btn-sm btn-excluir-modelo-catalogo" data-id="${prod.id}" style="font-size: 11.5px; font-weight: 700; color: #dc2626; background: #fef2f2; border-color: #fca5a5; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 5px 10px;" title="Excluir este produto do catálogo">
-                  🗑️ Excluir
-                </button>
+                <div style="display: flex; gap: 6px; width: 100%;">
+                  <button type="button" class="btn btn-secondary btn-sm btn-duplicar-modelo-catalogo" data-id="${prod.id}" style="flex: 1; font-size: 11.5px; font-weight: 700; color: #047857; background: #ecfdf5; border-color: #a7f3d0; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 5px 8px;" title="Duplicar este produto para criar uma variação rápida">
+                    📋 Duplicar
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm btn-excluir-modelo-catalogo" data-id="${prod.id}" style="flex: 1; font-size: 11.5px; font-weight: 700; color: #dc2626; background: #fef2f2; border-color: #fca5a5; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 5px 8px;" title="Excluir este produto do catálogo">
+                    🗑️ Excluir
+                  </button>
+                </div>
               </div>
             </div>
           `;
     }).join('')}
       </div>
     `;
+
+    function abrirModalConfirmacaoProduto({ titulo, subtitulo, aviso, textoBotao, estiloBotao, onConfirm }) {
+      if (!modalContainer) return;
+      const modalEl = criarModalCamada(`
+        <div class="modal-overlay active" style="z-index: 10050;">
+          <div class="modal-box" style="max-width: 440px;">
+            <div class="modal-header">
+              <div class="modal-title" style="font-size: 15px; font-weight: 800; color: #0f172a;">${titulo}</div>
+              <button type="button" class="modal-close" id="btnFecharConfProd">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 16px 20px;">
+              <p style="font-size: 13.5px; font-weight: 700; color: #1e293b; margin: 0 0 8px 0;">${subtitulo}</p>
+              ${aviso ? `<p style="font-size: 12px; color: #64748b; margin: 0; line-height: 1.45;">${aviso}</p>` : ''}
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+              <button type="button" class="btn btn-secondary" id="btnCancelarConfProd">Cancelar</button>
+              <button type="button" class="btn btn-primary" id="btnConfirmarConfProd" style="${estiloBotao}">${textoBotao}</button>
+            </div>
+          </div>
+        </div>
+      `);
+
+      document.getElementById('btnFecharConfProd')?.addEventListener('click', () => fecharModal(modalEl));
+      document.getElementById('btnCancelarConfProd')?.addEventListener('click', () => fecharModal(modalEl));
+      document.getElementById('btnConfirmarConfProd')?.addEventListener('click', () => {
+        fecharModal(modalEl);
+        if (typeof onConfirm === 'function') onConfirm();
+      });
+    }
 
     document.getElementById('btnNovoModeloCatalogo')?.addEventListener('click', () => {
       abrirModalNovoModeloInline(() => renderizarProdutos());
@@ -20128,14 +20159,24 @@
         const idx = (db.produtosBase || []).findIndex(p => p.id === pId);
         if (idx === -1) return;
         const original = db.produtosBase[idx];
-        const copia = JSON.parse(JSON.stringify(original));
-        copia.id = 'prod_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-        copia.codigo = (original.codigo ? original.codigo + '-COPIA' : 'MOD-' + Math.floor(10 + Math.random() * 90));
-        copia.nome = (original.nome || 'Produto') + ' (Cópia)';
-        db.produtosBase.splice(idx + 1, 0, copia);
-        salvarEstado();
-        renderizarProdutos();
-        mostrarToast(`Produto "${original.nome}" duplicado com sucesso!`, 'green');
+
+        abrirModalConfirmacaoProduto({
+          titulo: '📋 Deseja mesmo duplicar este produto?',
+          subtitulo: `${original.nome} (${original.codigo || 'Sem código'})`,
+          aviso: 'Será criada uma cópia idêntica com todos os consumos por tamanho, tecido, costura e aviamentos para você editar.',
+          textoBotao: 'Sim, Duplicar Produto',
+          estiloBotao: 'background: #047857; border-color: #047857; color: #ffffff; font-weight: 700;',
+          onConfirm: () => {
+            const copia = JSON.parse(JSON.stringify(original));
+            copia.id = 'prod_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+            copia.codigo = (original.codigo ? original.codigo + '-COPIA' : 'MOD-' + Math.floor(10 + Math.random() * 90));
+            copia.nome = (original.nome || 'Produto') + ' (Cópia)';
+            db.produtosBase.splice(idx + 1, 0, copia);
+            salvarEstado();
+            renderizarProdutos();
+            mostrarToast(`Produto "${original.nome}" duplicado com sucesso!`, 'green');
+          }
+        });
       });
     });
 
@@ -20144,12 +20185,20 @@
         const pId = btn.getAttribute('data-id');
         const prod = (db.produtosBase || []).find(p => p.id === pId);
         if (!prod) return;
-        const ok = confirm(`Tem certeza que deseja excluir o produto "${prod.nome}" (${prod.codigo || ''}) do catálogo?\n\n(Pedidos e orçamentos antigos que já usaram este produto não serão afetados.)`);
-        if (!ok) return;
-        db.produtosBase = db.produtosBase.filter(p => p.id !== pId);
-        salvarEstado();
-        renderizarProdutos();
-        mostrarToast(`Produto "${prod.nome}" excluído do catálogo.`, 'amber');
+
+        abrirModalConfirmacaoProduto({
+          titulo: '🗑️ Deseja mesmo excluir este produto?',
+          subtitulo: `${prod.nome} (${prod.codigo || 'Sem código'})`,
+          aviso: 'Atenção: esta ação remove o produto do catálogo permanentemente. (Pedidos e orçamentos antigos já emitidos não serão apagados.)',
+          textoBotao: 'Sim, Excluir Produto',
+          estiloBotao: 'background: #dc2626; border-color: #dc2626; color: #ffffff; font-weight: 700;',
+          onConfirm: () => {
+            db.produtosBase = db.produtosBase.filter(p => p.id !== pId);
+            salvarEstado();
+            renderizarProdutos();
+            mostrarToast(`Produto "${prod.nome}" excluído do catálogo.`, 'amber');
+          }
+        });
       });
     });
   }
