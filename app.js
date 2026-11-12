@@ -26966,7 +26966,7 @@
       <head>
         <meta charset="UTF-8">
         <title>DANFE_NFe_${nfe.numero}_${db.empresa?.nomeFantasia || 'Texfy'}</title>
-        <style><style>
+        <style>
           @page {
             size: A4 portrait;
             margin: 4mm 5mm;
@@ -26988,13 +26988,14 @@
           .danfe-sheet {
             width: 100% !important;
             max-width: 100% !important;
-            min-height: 288mm !important;
+            height: auto !important;
+            min-height: auto !important;
             border: 1px solid #000000;
-            padding: 4mm 5mm;
+            padding: 2.5mm 3.5mm;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: flex-start;
             background: #ffffff;
             page-break-inside: avoid;
           }
@@ -27133,7 +27134,7 @@
           }
           .danfe-tabela-produtos-container {
             border: 1px solid #000000;
-            min-height: 220px;
+            min-height: 110px;
             background: #ffffff;
           }
           .danfe-table {
@@ -27165,11 +27166,11 @@
           }
           .danfe-dados-adicionais-row .danfe-box-inf-compl {
             flex: 7.5;
-            min-height: 90px;
+            min-height: 55px;
           }
           .danfe-dados-adicionais-row .danfe-box-fisco {
             flex: 2.5;
-            min-height: 90px;
+            min-height: 55px;
           }
           .danfe-rodape-fiscal {
             display: flex;
@@ -27295,14 +27296,76 @@
     mostrarToast(`✓ Arquivo XML da NF-e #${nfe.numero} baixado com sucesso!`, 'green');
   }
 
-  function enviarNfeWhatsApp(nfeId) {
+  async function enviarNfeWhatsApp(nfeId) {
     const nfe = (db.notasFiscais || []).find(n => n.id === nfeId);
     if (!nfe) return;
 
     const empNome = db.empresa?.nomeFantasia || 'Prime Uniformes';
     const telNumeros = (nfe.cliente?.telefone || '').toString().replace(/\D/g, '');
     const chave44 = String(nfe.chaveAcesso || '').replace(/\D/g, '');
-    const mensagem = `Olá, *${nfe.cliente?.nome || 'Cliente'}*!\n\nAqui é da equipe da *${empNome}*.\n\nSua *Nota Fiscal Eletrônica (NF-e Modelo 55)* foi emitida e autorizada com sucesso pela SEFAZ!\n\n📄 *NF-e Nº:* #${nfe.numero} (Série ${nfe.serie})\n💰 *Valor Total:* ${formatarMoeda(nfe.totais?.valorTotal || 0)}\n📅 *Data de Emissão:* ${nfe.dataEmissao}\n\n🔑 *Chave de Acesso Oficial (44 dígitos):*\n\`${chave44}\`\n\n🌐 *Consulta SEFAZ:* Você pode consultar a autenticidade e baixar o DANFE/XML no portal oficial:\nhttps://www.nfe.fazenda.gov.br/portal/consultaRecaptcha.aspx?tipoConsulta=completa\n\nQualquer dúvida estamos à disposição!`;
+
+    if (typeof mostrarToast === 'function') {
+      mostrarToast('Preparando PDF e XML da NF-e para envio no WhatsApp...', 'info');
+    }
+
+    let pdfUrl = nfe.pdfUrl || nfe.linkDanfe || '';
+    let xmlUrl = nfe.xmlUrl || nfe.linkXml || '';
+    let xmlContent = '';
+
+    if (window.TecnoSpeedEngine && typeof TecnoSpeedEngine.obterLinkOficialNfe === 'function') {
+      const cfg = typeof obterConfigFiscal === 'function' ? obterConfigFiscal() : (db.configFiscal || {});
+      const emp = typeof obterEmpresaAtiva === 'function' ? obterEmpresaAtiva() : (db.empresa || {});
+      const [resPdf, resXml] = await Promise.all([
+        TecnoSpeedEngine.obterLinkOficialNfe(nfe, 'pdf', cfg, emp).catch(() => null),
+        TecnoSpeedEngine.obterLinkOficialNfe(nfe, 'xml', cfg, emp).catch(() => null)
+      ]);
+      if (resPdf?.uri) pdfUrl = resPdf.uri;
+      if (resXml?.uri) xmlUrl = resXml.uri;
+      if (resXml?.xmlContent) xmlContent = resXml.xmlContent;
+    }
+
+    // Baixa o XML localmente para anexar junto com o PDF no WhatsApp
+    try {
+      const xmlFinal = xmlContent || (typeof gerarXmlNfePadrao400 === 'function' ? gerarXmlNfePadrao400(nfe, db.empresa) : '');
+      if (xmlFinal) {
+        const blobXml = new Blob([xmlFinal], { type: 'application/xml;charset=utf-8;' });
+        const blobUrl = URL.createObjectURL(blobXml);
+        const aXml = document.createElement('a');
+        aXml.href = blobUrl;
+        aXml.download = `NFe_${chave44 || nfe.numero}.xml`;
+        document.body.appendChild(aXml);
+        aXml.click();
+        document.body.removeChild(aXml);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+      } else if (xmlUrl) {
+        window.open(xmlUrl, '_blank');
+      }
+    } catch (e) {}
+
+    // Baixa/abre o PDF da DANFE para anexar no WhatsApp
+    try {
+      if (pdfUrl) {
+        const aPdf = document.createElement('a');
+        aPdf.href = pdfUrl;
+        aPdf.download = `DANFE_NFe_${nfe.numero}.pdf`;
+        aPdf.target = '_blank';
+        aPdf.rel = 'noopener';
+        document.body.appendChild(aPdf);
+        aPdf.click();
+        document.body.removeChild(aPdf);
+      } else if (typeof imprimirDanfeIsolada === 'function') {
+        imprimirDanfeIsolada(nfe.id);
+      }
+    } catch (e) {}
+
+    const blocosArquivos = [];
+    if (pdfUrl) blocosArquivos.push(`📄 *DANFE (PDF):*\n${pdfUrl}`);
+    if (xmlUrl) blocosArquivos.push(`🧾 *Arquivo XML:*\n${xmlUrl}`);
+    const textoArquivos = blocosArquivos.length > 0
+      ? `\n\n${blocosArquivos.join('\n\n')}`
+      : `\n\n📎 Seguem em anexo o *PDF (DANFE)* e o *XML* oficial da sua Nota Fiscal.`;
+
+    const mensagem = `Olá, *${nfe.cliente?.nome || 'Cliente'}*!\n\nAqui é da equipe da *${empNome}*.\n\nSua *Nota Fiscal Eletrônica (NF-e Modelo 55)* foi emitida e autorizada com sucesso pela SEFAZ!\n\n📄 *NF-e Nº:* #${nfe.numero} (Série ${nfe.serie})\n💰 *Valor Total:* ${formatarMoeda(nfe.totais?.valorTotal || 0)}\n📅 *Data de Emissão:* ${nfe.dataEmissao}\n\n🔑 *Chave de Acesso (44 dígitos):*\n\`${chave44}\`${textoArquivos}\n\nQualquer dúvida estamos à disposição!`;
 
     const linkWpp = `https://api.whatsapp.com/send?phone=55${telNumeros}&text=${encodeURIComponent(mensagem)}`;
     window.open(linkWpp, '_blank');
