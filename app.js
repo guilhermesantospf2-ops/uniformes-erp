@@ -4841,7 +4841,7 @@
     }
 
     const td = btnEl ? (btnEl.closest('.col-grade-tamanhos-pedidos') || btnEl.closest('td')) : null;
-    const el = (td ? td.querySelector('.grade-detalhes-tabela-collapse') : null) 
+    const el = (td ? td.querySelector('.grade-detalhes-tabela-collapse') : null)
       || (pedidoId ? document.getElementById('gradeDetalhesTabela_' + pedidoId) : null);
 
     if (!el) return;
@@ -4918,7 +4918,7 @@
     }
 
     const td = btnEl ? (btnEl.closest('.col-acoes-pedidos') || btnEl.closest('td')) : null;
-    const el = (td ? td.querySelector('.acoes-detalhes-tabela-collapse') : null) 
+    const el = (td ? td.querySelector('.acoes-detalhes-tabela-collapse') : null)
       || (pedidoId ? document.getElementById('acoesDetalhesTabela_' + pedidoId) : null);
 
     if (!el) return;
@@ -5278,13 +5278,13 @@
                   </td>
                   <td class="text-mono col-grade-tamanhos-pedidos" style="min-width: 190px; max-width: 550px; white-space: normal !important; vertical-align: middle;">
                     ${(() => {
-                      const ehMulti = p.itens && p.itens.length > 1;
-                      const totalPecas = ehMulti
-                        ? p.itens.reduce((acc, it) => acc + (it.grade?.total || 0), 0)
-                        : (p.grade?.total || 0);
-                      const qtdModelos = ehMulti ? p.itens.length : 1;
+          const ehMulti = p.itens && p.itens.length > 1;
+          const totalPecas = ehMulti
+            ? p.itens.reduce((acc, it) => acc + (it.grade?.total || 0), 0)
+            : (p.grade?.total || 0);
+          const qtdModelos = ehMulti ? p.itens.length : 1;
 
-                      return `
+          return `
                         <!-- Resumo Compacto Sempre Visível -->
                         <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;">
                           <div>
@@ -5329,7 +5329,7 @@
                           `}
                         </div>
                       `;
-                    })()}
+        })()}
                   </td>
                   <td class="text-mono" style="white-space: nowrap !important; text-align: right; vertical-align: middle; min-width: 95px;">${formatarMoeda(p.precoUnitarioVenda)}</td>
                   <td class="text-mono" style="white-space: nowrap !important; text-align: right; vertical-align: middle; min-width: 105px;">
@@ -14420,11 +14420,12 @@
                 </thead>
                 <tbody>
                   ${p.itens.map((it, idx) => {
+            const itMockup = it.mockupUrl || p.mockupUrl || (window.ERP_MOCKUPS && typeof window.ERP_MOCKUPS.gerarMockupSvg === 'function' ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome || p.produtoNome || 'Uniforme', '#1e3a8a', '#ffffff', '') : '');
             const appsHtml = (it.aplicacoes && it.aplicacoes.length > 0)
               ? it.aplicacoes.map(a => `• <strong>${a.local}:</strong> ${a.tecnica}`).join('<br>')
               : '<span style="color: #64748b; font-style: italic;">Peça Lisa</span>';
             const tamsDet = extrairLinhasTamanhosComPreco(it);
-            const temPrecosVar = tamsDet.some(t => Math.abs(t.precoUnit - tamsDet[0].precoUnit) > 0.009);
+            const temPrecosVar = tamsDet.length > 0 && tamsDet.some(t => Math.abs(t.precoUnit - tamsDet[0].precoUnit) > 0.009);
             const somaTamsExata = tamsDet.reduce((acc, t) => acc + (t.subtotal || 0), 0);
             const subtotal = (it.valorTotalVenda && it.valorTotalVenda > 0)
               ? it.valorTotalVenda
@@ -14501,7 +14502,7 @@
 
         // Caso de Modelo Único:
         const tamsDet = extrairLinhasTamanhosComPreco(p.itens?.[0] || p);
-        const temPrecosVar = tamsDet.some(t => Math.abs(t.precoUnit - tamsDet[0].precoUnit) > 0.009);
+        const temPrecosVar = tamsDet.length > 0 && tamsDet.some(t => Math.abs(t.precoUnit - tamsDet[0].precoUnit) > 0.009);
 
         return `
           <!-- Detalhamento do Produto & Mockup 3x4 -->
@@ -14612,7 +14613,7 @@
               ? parseFloat(precos[s.chave])
               : pBase;
           });
-          const temPrecosVar = listaPrecos.some(pr => Math.abs(pr - listaPrecos[0]) > 0.009);
+          const temPrecosVar = listaPrecos.length > 0 && listaPrecos.some(pr => Math.abs(pr - listaPrecos[0]) > 0.009);
 
           if (temPrecosVar) {
             return `
@@ -20090,9 +20091,15 @@
               </div>
 
               <!-- Ações da Modelagem -->
-              <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-subtle); display: flex; gap: 6px;">
-                <button type="button" class="btn btn-secondary btn-sm btn-editar-modelo-catalogo" data-id="${prod.id}" style="width: 100%; font-size: 11.5px; font-weight: 700; color: #1e40af; background: #eff6ff; border-color: #bfdbfe; display: flex; align-items: center; justify-content: center; gap: 5px;" title="Editar gramas consumidas por tamanho e custos da modelagem">
-                  ✏️ Editar Gramas por Tamanho & Custos
+              <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-subtle); display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-sm btn-editar-modelo-catalogo" data-id="${prod.id}" style="flex: 1; min-width: 120px; font-size: 11.5px; font-weight: 700; color: #1e40af; background: #eff6ff; border-color: #bfdbfe; display: flex; align-items: center; justify-content: center; gap: 5px;" title="Editar gramas consumidas por tamanho e custos da modelagem">
+                  ✏️ Editar Gramas & Custos
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm btn-duplicar-modelo-catalogo" data-id="${prod.id}" style="font-size: 11.5px; font-weight: 700; color: #047857; background: #ecfdf5; border-color: #a7f3d0; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 5px 10px;" title="Duplicar este produto para criar uma variação rápida">
+                  📋 Duplicar
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm btn-excluir-modelo-catalogo" data-id="${prod.id}" style="font-size: 11.5px; font-weight: 700; color: #dc2626; background: #fef2f2; border-color: #fca5a5; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 5px 10px;" title="Excluir este produto do catálogo">
+                  🗑️ Excluir
                 </button>
               </div>
             </div>
@@ -20112,6 +20119,37 @@
         if (prod) {
           abrirModalEditarModelo(prod, () => renderizarProdutos());
         }
+      });
+    });
+
+    contentArea.querySelectorAll('.btn-duplicar-modelo-catalogo').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pId = btn.getAttribute('data-id');
+        const idx = (db.produtosBase || []).findIndex(p => p.id === pId);
+        if (idx === -1) return;
+        const original = db.produtosBase[idx];
+        const copia = JSON.parse(JSON.stringify(original));
+        copia.id = 'prod_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+        copia.codigo = (original.codigo ? original.codigo + '-COPIA' : 'MOD-' + Math.floor(10 + Math.random() * 90));
+        copia.nome = (original.nome || 'Produto') + ' (Cópia)';
+        db.produtosBase.splice(idx + 1, 0, copia);
+        salvarEstado();
+        renderizarProdutos();
+        mostrarToast(`Produto "${original.nome}" duplicado com sucesso!`, 'green');
+      });
+    });
+
+    contentArea.querySelectorAll('.btn-excluir-modelo-catalogo').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pId = btn.getAttribute('data-id');
+        const prod = (db.produtosBase || []).find(p => p.id === pId);
+        if (!prod) return;
+        const ok = confirm(`Tem certeza que deseja excluir o produto "${prod.nome}" (${prod.codigo || ''}) do catálogo?\n\n(Pedidos e orçamentos antigos que já usaram este produto não serão afetados.)`);
+        if (!ok) return;
+        db.produtosBase = db.produtosBase.filter(p => p.id !== pId);
+        salvarEstado();
+        renderizarProdutos();
+        mostrarToast(`Produto "${prod.nome}" excluído do catálogo.`, 'amber');
       });
     });
   }
