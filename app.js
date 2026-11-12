@@ -28058,7 +28058,7 @@
     // Detecção da UF de origem (Fábrica / Confecção emitente)
     const empUf = (emp.uf || (emp.endereco && emp.endereco.match(/\b([A-Z]{2})\b/)?.[1]) || 'SP').toUpperCase();
 
-    // Monta itens iniciais a partir do pedido com CFOP ajustado conforme UF
+    // Monta itens iniciais a partir do pedido com CFOP ajustado conforme UF (preços reais por modelo e tamanho especial, sem média geral)
     function extrairItensDoPedido(p, ufDestino = 'SP') {
       const isInter = ufDestino.toUpperCase() !== empUf;
       const cfopPadrao = isInter ? (cfg.cfopInterestadualPadrao || '6101') : (cfg.cfopEstadualPadrao || '5101');
@@ -28067,29 +28067,89 @@
         return [];
       }
 
-      if (p.itens && p.itens.length > 0) {
-        return p.itens.map((it, idx) => ({
-          codigo: `MOD-${String(idx + 1).padStart(3, '0')}`,
-          descricao: `${it.produtoNome || p.produtoNome || 'Uniforme'} ${it.corPrincipal ? `(${it.corPrincipal})` : ''}`,
-          ncm: obterNcmSugerido(it.produtoNome || p.produtoNome),
-          cfop: cfopPadrao,
-          unidade: 'UN',
-          quantidade: Number(it.grade?.total || it.quantidade || 1),
-          valorUnitario: Number(it.precoUnitario || it.valorUnitario || p.precoUnitarioVenda || 0),
-          csosn: '102'
-        }));
-      }
+      const listaFonte = (p.itens && p.itens.length > 0)
+        ? p.itens
+        : [{
+            produtoNome: p.produtoNome || 'Uniformes Profissionais',
+            corPrincipal: p.corTecido || '',
+            grade: p.grade || { total: 1 },
+            precosPorTamanho: p.precosPorTamanho || {},
+            precoVendaUnitario: p.precoUnitarioVenda || 0,
+            valorTotalVenda: p.valorTotalVenda || 0
+          }];
 
-      return [{
-        codigo: 'PED-' + (p.numero || '101'),
-        descricao: `${p.produtoNome || 'Uniformes Profissionais'} ${p.corTecido ? `(${p.corTecido})` : ''}`,
-        ncm: obterNcmSugerido(p.produtoNome),
-        cfop: cfopPadrao,
-        unidade: 'UN',
-        quantidade: Number(p.grade?.total || 1),
-        valorUnitario: Number(p.precoUnitarioVenda || (p.valorTotalVenda / (p.grade?.total || 1)) || 0),
-        csosn: '102'
-      }];
+      const linhasNfe = [];
+
+      listaFonte.forEach((it, idx) => {
+        const qtdTotalItem = Number(it.grade?.total || it.quantidade || 0) || 1;
+        const nomeBase = it.produtoNome || p.produtoNome || 'Uniforme';
+        const corBase = it.corPrincipal || it.corTecido || '';
+        const corStr = corBase ? ` (${corBase})` : '';
+        const ncmItem = obterNcmSugerido(nomeBase);
+
+        // Preço unitário real deste item (nunca usa média geral de outros modelos do pedido)
+        let pBaseItem = parseFloat(it.precoVendaUnitario) || parseFloat(it.precoUnitarioVenda) || parseFloat(it.precoUnitario) || parseFloat(it.valorUnitario) || 0;
+        if (pBaseItem <= 0 && parseFloat(it.valorTotalVenda) > 0 && qtdTotalItem > 0) {
+          pBaseItem = parseFloat(it.valorTotalVenda) / qtdTotalItem;
+        }
+        if (pBaseItem <= 0 && listaFonte.length === 1) {
+          pBaseItem = parseFloat(p.precoUnitarioVenda) || (parseFloat(p.valorTotalVenda) / qtdTotalItem) || 0;
+        }
+
+        const precosTam = it.precosPorTamanho || (listaFonte.length === 1 ? p.precosPorTamanho : null) || {};
+        const tamsSelecionados = typeof obterTamanhosSelecionadosGrade === 'function'
+          ? obterTamanhosSelecionadosGrade(it.grade || {})
+          : [];
+
+        if (tamsSelecionados.length > 0) {
+          const gruposPorPreco = new Map();
+          tamsSelecionados.forEach(s => {
+            const precoTam = (precosTam[s.chave] != null && !isNaN(precosTam[s.chave]) && parseFloat(precosTam[s.chave]) > 0)
+              ? parseFloat(precosTam[s.chave])
+              : pBaseItem;
+            const chavePreco = Number(precoTam).toFixed(4);
+            if (!gruposPorPreco.has(chavePreco)) {
+              gruposPorPreco.set(chavePreco, { preco: precoTam, qtd: 0, tams: [] });
+            }
+            const g = gruposPorPreco.get(chavePreco);
+            g.qtd += s.qtd;
+            g.tams.push(`${s.qtd}x ${s.tam}`);
+          });
+
+          const gruposOrdenados = Array.from(gruposPorPreco.values()).sort((a, b) => a.preco - b.preco);
+          const temDiferencaEspecial = gruposOrdenados.length > 1;
+
+          gruposOrdenados.forEach((grp, gIdx) => {
+            const sufixoEsp = temDiferencaEspecial
+              ? (gIdx === 0 ? ` [${grp.tams.join(', ')}]` : ` - Modelo Especial [${grp.tams.join(', ')}]`)
+              : '';
+            const codSufixo = temDiferencaEspecial && gIdx > 0 ? `-ESP${gIdx}` : '';
+            linhasNfe.push({
+              codigo: `MOD-${String(idx + 1).padStart(3, '0')}${codSufixo}`,
+              descricao: `${nomeBase}${corStr}${sufixoEsp}`,
+              ncm: ncmItem,
+              cfop: cfopPadrao,
+              unidade: 'UN',
+              quantidade: grp.qtd,
+              valorUnitario: Number(grp.preco.toFixed(4)),
+              csosn: '102'
+            });
+          });
+        } else {
+          linhasNfe.push({
+            codigo: `MOD-${String(idx + 1).padStart(3, '0')}`,
+            descricao: `${nomeBase}${corStr}`,
+            ncm: ncmItem,
+            cfop: cfopPadrao,
+            unidade: 'UN',
+            quantidade: qtdTotalItem,
+            valorUnitario: Number(pBaseItem.toFixed(4)),
+            csosn: '102'
+          });
+        }
+      });
+
+      return linhasNfe;
     }
 
     // Dados do cliente a partir do pedido ou cliente do banco (Vazio se não houver pedido)
