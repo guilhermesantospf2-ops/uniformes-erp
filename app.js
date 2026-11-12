@@ -412,6 +412,71 @@
     return alterado;
   }
 
+  /**
+   * BLINDAGEM CONTÁBIL: Auto-reparo de dízimas e arredondamento em orçamentos e pedidos.
+   * Recalcula a soma exata (qtd * preco individual por tamanho) evitando que médias ponderadas
+   * com dízimas periódicas (ex: 669 / 17 = 39,3529... truncado para 39,35) comam centavos na base salva.
+   */
+  function autoCorrigirDizimasPedidos(banco) {
+    if (!banco || !Array.isArray(banco.pedidos)) return false;
+    let alterou = false;
+
+    banco.pedidos.forEach(p => {
+      let totalCorreto = 0;
+      if (Array.isArray(p.itens) && p.itens.length > 0) {
+        p.itens.forEach(it => {
+          let somaItem = 0;
+          if (it.grade && typeof it.grade === 'object') {
+            Object.keys(it.grade).forEach(k => {
+              if (k === 'total') return;
+              const q = parseInt(it.grade[k], 10) || 0;
+              if (q > 0) {
+                const pTam = (it.precosPorTamanho && it.precosPorTamanho[k] != null && !isNaN(it.precosPorTamanho[k]))
+                  ? parseFloat(it.precosPorTamanho[k])
+                  : (parseFloat(it.precoVendaUnitario || it.precoUnitarioVenda) || 0);
+                somaItem += (q * pTam);
+              }
+            });
+          }
+          if (somaItem > 0) {
+            if (Math.abs(somaItem - (it.valorTotalVenda || 0)) > 0.009) {
+              it.valorTotalVenda = somaItem;
+              it.valorSubtotal = somaItem;
+              alterou = true;
+            }
+            totalCorreto += somaItem;
+          } else {
+            totalCorreto += (Number(it.valorTotalVenda) || ((Number(it.precoVendaUnitario || it.precoUnitarioVenda) || 0) * (it.grade?.total || 1)));
+          }
+        });
+      } else if (p.grade && typeof p.grade === 'object') {
+        let somaGrade = 0;
+        Object.keys(p.grade).forEach(k => {
+          if (k === 'total') return;
+          const q = parseInt(p.grade[k], 10) || 0;
+          if (q > 0) {
+            const pTam = (p.precosPorTamanho && p.precosPorTamanho[k] != null && !isNaN(p.precosPorTamanho[k]))
+              ? parseFloat(p.precosPorTamanho[k])
+              : (parseFloat(p.precoVendaUnitario || p.precoUnitarioVenda) || 0);
+            somaGrade += (q * pTam);
+          }
+        });
+        if (somaGrade > 0) totalCorreto = somaGrade;
+      }
+
+      if (totalCorreto > 0 && Math.abs(totalCorreto - (p.valorTotalVenda || 0)) > 0.009) {
+        console.log(`[AutoRepair Dízimas] Corrigindo pedido #${p.numero || p.id}: de R$ ${p.valorTotalVenda} para R$ ${totalCorreto.toFixed(2)}`);
+        p.valorTotalVenda = totalCorreto;
+        p.valorTotal = totalCorreto;
+        const sinal = Number(p.valorSinalPago) || 0;
+        p.saldoPendente = Math.max(0, totalCorreto - sinal);
+        alterou = true;
+      }
+    });
+
+    return alterou;
+  }
+
   // Inicialização Local Segura (Sem reset destrutivo)
   if (isDemo) {
     db = JSON.parse(JSON.stringify(window.ERP_INITIAL_DATA));
@@ -486,6 +551,7 @@
         db.configFiscal.certificadoA1.senha = 'nino230601';
         db.configFiscal.certificadoA1.senhaSalva = true;
       }
+      autoCorrigirDizimasPedidos(db);
     }
   }
 
@@ -1323,6 +1389,7 @@
           // Auto-reparo imediato: se houver pedidos que não tinham lançamento financeiro, gera agora!
           sincronizarPedidosComFinanceiro(db);
           reconciliarNotasFiscaisComSefaz(db);
+          autoCorrigirDizimasPedidos(db);
           salvarEstado(true);
           atualizarBadges();
         }
@@ -8935,6 +9002,28 @@
         }
       });
 
+      // Blindagem anti-arredondamento: calcula a soma exata de faturamento da grade por tamanho
+      let somaFatSync = 0;
+      let totalPecasSync = 0;
+      if (it.grade) {
+        Object.keys(it.grade).forEach(k => {
+          if (k === 'total') return;
+          const q = parseInt(it.grade[k], 10) || 0;
+          if (q > 0) {
+            totalPecasSync += q;
+            const pTam = (it.precosPorTamanho && it.precosPorTamanho[k] != null && !isNaN(it.precosPorTamanho[k]))
+              ? parseFloat(it.precosPorTamanho[k])
+              : (parseFloat(it.precoVendaUnitario) || 0);
+            somaFatSync += (q * pTam);
+          }
+        });
+      }
+      if (totalPecasSync > 0 && somaFatSync > 0) {
+        it.valorTotalVenda = somaFatSync;
+        it.valorSubtotal = somaFatSync;
+        it.precoVendaUnitario = somaFatSync / totalPecasSync;
+      }
+
       // Modo de Custos e Custo Direto Manual (Bidirecional: Lote Total ⇄ Unitário)
       it.modoCusto = it.modoCusto || 'calcular';
       const inpCustoDir = document.getElementById('inputCustoDiretoTotal');
@@ -11344,7 +11433,31 @@
       // TOTAIS GERAIS CONSOLIDADOS DO PEDIDO (TODOS OS MODELOS JUNTOS)
       // ========================================================================
       const totalPecasGeral = itensOrcamento.reduce((s, it) => s + (it.grade?.total || 0), 0);
-      const faturamentoTotalGeral = itensOrcamento.reduce((s, it) => s + ((it.precoVendaUnitario || 0) * (it.grade?.total || 0)), 0);
+      // Cálculo preciso do faturamento total do pedido sem perdas de centavos por dízima da média ponderada
+      const faturamentoTotalGeral = itensOrcamento.reduce((s, it) => {
+        let totalItemExato = 0;
+        if (it.grade) {
+          Object.keys(it.grade).forEach(k => {
+            if (k === 'total') return;
+            const q = parseInt(it.grade[k], 10) || 0;
+            if (q > 0) {
+              const pTam = (it.precosPorTamanho && it.precosPorTamanho[k] != null && !isNaN(it.precosPorTamanho[k]))
+                ? parseFloat(it.precosPorTamanho[k])
+                : (parseFloat(it.precoVendaUnitario) || 0);
+              totalItemExato += (q * pTam);
+            }
+          });
+        }
+        if (totalItemExato > 0) {
+          it.valorTotalVenda = totalItemExato;
+          it.valorSubtotal = totalItemExato;
+          return s + totalItemExato;
+        }
+        if (typeof it.valorTotalVenda === 'number' && it.valorTotalVenda > 0) {
+          return s + it.valorTotalVenda;
+        }
+        return s + ((it.precoVendaUnitario || 0) * (it.grade?.total || 0));
+      }, 0);
       const custoTotalGeral = itensOrcamento.reduce((s, it) => s + ((it.custoUnitarioProducao || 0) * (it.grade?.total || 0)), 0);
       const lucroTotalGeral = faturamentoTotalGeral - custoTotalGeral;
       const margemMediaGeral = faturamentoTotalGeral > 0 ? (lucroTotalGeral / faturamentoTotalGeral) * 100 : 0;
@@ -11479,7 +11592,31 @@
         gradeConsolidada.total += (it.grade?.total || 0);
       });
 
-      const faturamentoTotalGeral = itensOrcamento.reduce((s, it) => s + ((it.precoVendaUnitario || 0) * (it.grade?.total || 0)), 0);
+      // Cálculo preciso do faturamento total do pedido sem perdas de centavos por dízima da média ponderada
+      const faturamentoTotalGeral = itensOrcamento.reduce((s, it) => {
+        let totalItemExato = 0;
+        if (it.grade) {
+          Object.keys(it.grade).forEach(k => {
+            if (k === 'total') return;
+            const q = parseInt(it.grade[k], 10) || 0;
+            if (q > 0) {
+              const pTam = (it.precosPorTamanho && it.precosPorTamanho[k] != null && !isNaN(it.precosPorTamanho[k]))
+                ? parseFloat(it.precosPorTamanho[k])
+                : (parseFloat(it.precoVendaUnitario) || 0);
+              totalItemExato += (q * pTam);
+            }
+          });
+        }
+        if (totalItemExato > 0) {
+          it.valorTotalVenda = totalItemExato;
+          it.valorSubtotal = totalItemExato;
+          return s + totalItemExato;
+        }
+        if (typeof it.valorTotalVenda === 'number' && it.valorTotalVenda > 0) {
+          return s + it.valorTotalVenda;
+        }
+        return s + ((it.precoVendaUnitario || 0) * (it.grade?.total || 0));
+      }, 0);
       const custoTotalGeral = itensOrcamento.reduce((s, it) => s + ((it.custoUnitarioProducao || 0) * (it.grade?.total || 0)), 0);
       const lucroTotalGeral = faturamentoTotalGeral - custoTotalGeral;
       const margemMediaGeral = faturamentoTotalGeral > 0 ? (lucroTotalGeral / faturamentoTotalGeral) * 100 : 0;
@@ -14286,10 +14423,12 @@
             const appsHtml = (it.aplicacoes && it.aplicacoes.length > 0)
               ? it.aplicacoes.map(a => `• <strong>${a.local}:</strong> ${a.tecnica}`).join('<br>')
               : '<span style="color: #64748b; font-style: italic;">Peça Lisa</span>';
-            const subtotal = (it.valorSubtotal || ((it.precoVendaUnitario || 0) * (it.grade?.total || 0))) || 0;
-            const itMockup = it.mockupUrl || p.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome, '#1e3a8a', '#ffffff', (p.clienteNome || 'TEXFY').substring(0, 6)) : '');
             const tamsDet = extrairLinhasTamanhosComPreco(it);
             const temPrecosVar = tamsDet.some(t => Math.abs(t.precoUnit - tamsDet[0].precoUnit) > 0.009);
+            const somaTamsExata = tamsDet.reduce((acc, t) => acc + (t.subtotal || 0), 0);
+            const subtotal = (it.valorTotalVenda && it.valorTotalVenda > 0)
+              ? it.valorTotalVenda
+              : (somaTamsExata > 0 ? somaTamsExata : (it.valorSubtotal || ((it.precoVendaUnitario || 0) * (it.grade?.total || 0)))) || 0;
 
             return `
                       <tr style="border-bottom: 1px solid #e2e8f0;">
@@ -14412,7 +14551,7 @@
                 <tr style="background: #f1f5f9; font-weight: 800;">
                   <td style="padding: 6px 8px; font-weight: 800; color: #0f172a;">Subtotal</td>
                   ${tamsDet.map(s => `<td style="text-align: center; padding: 6px 8px; font-weight: 800; color: #0f172a;" class="text-mono">${formatarMoeda(s.subtotal)}</td>`).join('')}
-                  <td style="text-align: center; padding: 6px 10px; font-weight: 900; color: #0f172a; background: #e2e8f0;" class="text-mono">${formatarMoeda(p.valorTotalVenda)}</td>
+                  <td style="text-align: center; padding: 6px 10px; font-weight: 900; color: #0f172a; background: #e2e8f0;" class="text-mono">${formatarMoeda(tamsDet.reduce((acc, s) => acc + (s.subtotal || 0), 0) || p.valorTotalVenda)}</td>
                 </tr>
               </tbody>
             </table>
