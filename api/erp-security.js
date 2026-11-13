@@ -1219,11 +1219,29 @@ module.exports = async function handler(req, res) {
       }
     }
 
+    const PRIME_NFEIO_COMPANY_ID = 'b8ac27d9851944a8baa5ad0c134d08f9';
+    const PRIME_CNPJ_DIGITS = '59441843000176';
+    function resolverCompanyIdSeguro(payloadBody) {
+      const cid = (payloadBody.companyId || '').trim();
+      const issuerCnpj = String(payloadBody.issuerCnpj || '').replace(/\D/g, '');
+      if (!cid) {
+        return { erro: 'Company ID fiscal (NFe.io) não informado. Operação bloqueada por segurança multi-tenant.' };
+      }
+      if (cid === PRIME_NFEIO_COMPANY_ID && issuerCnpj && issuerCnpj !== PRIME_CNPJ_DIGITS) {
+        return { erro: 'Bloqueio de segurança: este CNPJ não pode operar no Company ID da Prime Uniformes.' };
+      }
+      return { companyId: cid };
+    }
+
     // ========================================================================
     // 5.3 TRANSMISSÃO OFICIAL DE NF-E MODELO 55 PARA NFE.IO & SEFAZ PRODUÇÃO
     // ========================================================================
     if (action === 'transmit_nfe_nfeio') {
-      const companyId = (body.companyId || '').trim() || 'b8ac27d9851944a8baa5ad0c134d08f9';
+      const resolved = resolverCompanyIdSeguro(body);
+      if (resolved.erro) {
+        return res.status(400).json({ sucesso: false, erro: resolved.erro });
+      }
+      const companyId = resolved.companyId;
       const ambiente = (body.ambiente === 'producao' || body.ambiente === 'Production') ? 'Production' : 'Test';
       const payload = body.payload;
       const apiKey = (body.apiKey && body.apiKey.length > 20) ? body.apiKey : 'xZmurLgFPBsPRao5stS31ZlpWIinXUDmNIQMXdzbau6WgNdviSEGyv5c1sAd8JTXsGA';
@@ -1363,7 +1381,11 @@ module.exports = async function handler(req, res) {
     }
 
     if (action === 'cancel_nfe_nfeio') {
-      const companyId = (body.companyId || '').trim() || 'b8ac27d9851944a8baa5ad0c134d08f9';
+      const resolved = resolverCompanyIdSeguro(body);
+      if (resolved.erro) {
+        return res.status(400).json({ sucesso: false, erro: resolved.erro });
+      }
+      const companyId = resolved.companyId;
       const nfeioId = (body.nfeioId || '').trim();
       const ambiente = (body.ambiente === 'producao' || body.ambiente === 'Production' || !body.ambiente) ? 'Production' : 'Test';
       const apiKey = (body.apiKey && body.apiKey.length > 20) ? body.apiKey : 'xZmurLgFPBsPRao5stS31ZlpWIinXUDmNIQMXdzbau6WgNdviSEGyv5c1sAd8JTXsGA';
@@ -1409,7 +1431,11 @@ module.exports = async function handler(req, res) {
     }
 
     if (action === 'cce_nfe_nfeio') {
-      const companyId = (body.companyId || '').trim() || 'b8ac27d9851944a8baa5ad0c134d08f9';
+      const resolved = resolverCompanyIdSeguro(body);
+      if (resolved.erro) {
+        return res.status(400).json({ sucesso: false, erro: resolved.erro });
+      }
+      const companyId = resolved.companyId;
       const nfeioId = (body.nfeioId || '').trim();
       const textoCorrecao = (body.textoCorrecao || '').trim();
       const ambiente = (body.ambiente === 'producao' || body.ambiente === 'Production' || !body.ambiente) ? 'Production' : 'Test';
@@ -1448,7 +1474,11 @@ module.exports = async function handler(req, res) {
     }
 
     if (action === 'get_nfe_pdf_xml') {
-      const companyId = (body.companyId || '').trim() || 'b8ac27d9851944a8baa5ad0c134d08f9';
+      const resolved = resolverCompanyIdSeguro(body);
+      if (resolved.erro) {
+        return res.status(400).json({ sucesso: false, erro: resolved.erro });
+      }
+      const companyId = resolved.companyId;
       const nfeioId = (body.nfeioId || '').trim();
       const tipo = body.tipo === 'xml' ? 'xml' : 'pdf';
       const ambiente = (body.ambiente === 'producao' || body.ambiente === 'Production' || !body.ambiente) ? 'Production' : 'Test';
@@ -1482,8 +1512,15 @@ module.exports = async function handler(req, res) {
     }
 
     if (action === 'get_nfe_statetax_info') {
-      const companyId = (body.companyId || '').trim() || 'b8ac27d9851944a8baa5ad0c134d08f9';
-      const taxId = (body.taxId || '').trim() || 'f4527a4c17cc4eb485869b8db1559f41';
+      const resolved = resolverCompanyIdSeguro(body);
+      if (resolved.erro) {
+        return res.status(400).json({ sucesso: false, erro: resolved.erro });
+      }
+      const companyId = resolved.companyId;
+      const taxId = (body.taxId || '').trim() || (companyId === PRIME_NFEIO_COMPANY_ID ? 'f4527a4c17cc4eb485869b8db1559f41' : '');
+      if (!taxId) {
+        return res.status(400).json({ sucesso: false, erro: 'StateTax ID não informado para esta empresa.' });
+      }
       const apiKey = (body.apiKey && body.apiKey.length > 20) ? body.apiKey : 'xZmurLgFPBsPRao5stS31ZlpWIinXUDmNIQMXdzbau6WgNdviSEGyv5c1sAd8JTXsGA';
       const fetchFn = global.fetch || require('node-fetch');
       try {
@@ -1508,8 +1545,15 @@ module.exports = async function handler(req, res) {
     }
 
     if (action === 'sync_nfeio_statetax_number') {
-      const companyId = (body.companyId || '').trim() || 'b8ac27d9851944a8baa5ad0c134d08f9';
-      const taxId = (body.taxId || '').trim() || 'f4527a4c17cc4eb485869b8db1559f41';
+      const resolved = resolverCompanyIdSeguro(body);
+      if (resolved.erro) {
+        return res.status(400).json({ sucesso: false, erro: resolved.erro });
+      }
+      const companyId = resolved.companyId;
+      const taxId = (body.taxId || '').trim() || (companyId === PRIME_NFEIO_COMPANY_ID ? 'f4527a4c17cc4eb485869b8db1559f41' : '');
+      if (!taxId) {
+        return res.status(400).json({ sucesso: false, erro: 'StateTax ID não informado para esta empresa.' });
+      }
       const number = parseInt(body.number, 10);
       const apiKey = (body.apiKey && body.apiKey.length > 20) ? body.apiKey : 'xZmurLgFPBsPRao5stS31ZlpWIinXUDmNIQMXdzbau6WgNdviSEGyv5c1sAd8JTXsGA';
 

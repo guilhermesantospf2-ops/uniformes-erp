@@ -63,13 +63,15 @@
       return MASTER_API_KEY;
     },
 
-    // Identifica o Company ID correto da confecção pelo CNPJ
+    // Identifica o Company ID correto da confecção pelo CNPJ (blindagem estrita multi-tenant)
     obterCompanyId(empresa, configFiscal) {
       const cnpj = String((empresa && empresa.cnpj) || '').replace(/\D/g, '');
       if (cnpj === '59441843000176') return PRIME_COMPANY_ID;
-      if (empresa && empresa.nfeioCompanyId) return empresa.nfeioCompanyId;
-      if (configFiscal && configFiscal.nfeioCompanyId) return configFiscal.nfeioCompanyId;
-      return PRIME_COMPANY_ID;
+      const empId = empresa && empresa.nfeioCompanyId ? String(empresa.nfeioCompanyId).trim() : '';
+      if (empId && empId !== PRIME_COMPANY_ID) return empId;
+      const cfgId = configFiscal && configFiscal.nfeioCompanyId ? String(configFiscal.nfeioCompanyId).trim() : '';
+      if (cfgId && cfgId !== PRIME_COMPANY_ID) return cfgId;
+      return null;
     },
 
     // Normaliza cidade para busca de código IBGE
@@ -147,9 +149,17 @@
         };
       }
 
+      const ownId = this.obterCompanyId(empresa);
+      if (!ownId) {
+        return {
+          sucesso: false,
+          erro: 'Esta confecção ainda não possui um Company ID próprio na NFe.io. Cadastre o CNPJ e o Certificado A1 desta empresa na NFe.io antes de emitir.'
+        };
+      }
+
       return {
         sucesso: true,
-        companyId: this.obterCompanyId(empresa),
+        companyId: ownId,
         mensagem: '✓ Confecção sincronizada com sucesso no Texfy Fiscal Hub!'
       };
     },
@@ -291,7 +301,16 @@
       const emp = empresa || {};
       const key = this.obterApiKey(cfg.tecnospeedApiKey || cfg.apiToken);
       const companyId = this.obterCompanyId(emp, cfg);
-      const isPrime = String(emp.cnpj || '').replace(/\D/g, '') === '59441843000176';
+      const issuerCnpj = String(emp.cnpj || '').replace(/\D/g, '');
+      const isPrime = issuerCnpj === '59441843000176';
+      if (!companyId) {
+        return {
+          sucesso: false,
+          simulado: false,
+          erro: 'Empresa fiscal não vinculada na NFe.io. Cadastre seu próprio Company ID e Certificado Digital A1 antes de emitir NF-e.',
+          mensagem: 'Emissão bloqueada: esta empresa ainda não possui vínculo fiscal próprio na NFe.io.'
+        };
+      }
       const ambiente = (nfe.ambiente === 'producao' || cfg.ambiente === 'producao' || isPrime) ? 'Production' : 'Test';
       const payload = this.montarPayloadNfe(nfe, emp, cfg);
 
@@ -306,6 +325,7 @@
             body: JSON.stringify({
               action: 'transmit_nfe_nfeio',
               companyId: companyId,
+              issuerCnpj: issuerCnpj,
               ambiente: ambiente,
               payload: payload,
               apiKey: key
@@ -423,7 +443,7 @@
             status: 'AUTORIZADO',
             danfeUrl: resData.danfeUrl,
             xmlUrl: resData.xmlUrl,
-            mensagem: `✓ NF-e autorizada pela SEFAZ com Certificado Digital da Prime Uniformes!`,
+            mensagem: `✓ NF-e autorizada pela SEFAZ com Certificado Digital de ${emp.nomeFantasia || emp.razaoSocial || 'sua empresa'}!`,
             dados: resData.dados
           };
         } else {
@@ -452,7 +472,12 @@
       const emp = empresa || {};
       const key = this.obterApiKey(cfg.tecnospeedApiKey || cfg.apiToken);
       const companyId = this.obterCompanyId(emp, cfg);
+      const issuerCnpj = String(emp.cnpj || '').replace(/\D/g, '');
       const nfeioId = (typeof idOuNfe === 'object' ? (idOuNfe.nfeioId || idOuNfe.tecnospeedId) : idOuNfe) || '';
+
+      if (!companyId) {
+        return { sucesso: false, erro: 'Empresa fiscal não vinculada na NFe.io para registrar CC-e.' };
+      }
 
       if (nfeioId && nfeioId.length >= 20 && !nfeioId.startsWith('nfe_')) {
         try {
@@ -462,6 +487,7 @@
             body: JSON.stringify({
               action: 'cce_nfe_nfeio',
               companyId,
+              issuerCnpj,
               nfeioId,
               textoCorrecao,
               ambiente: 'Production',
@@ -498,7 +524,12 @@
       const emp = empresa || {};
       const key = this.obterApiKey(cfg.tecnospeedApiKey || cfg.apiToken);
       const companyId = this.obterCompanyId(emp, cfg);
+      const issuerCnpj = String(emp.cnpj || '').replace(/\D/g, '');
       const nfeioId = (typeof idOuNfe === 'object' ? (idOuNfe.nfeioId || idOuNfe.tecnospeedId) : idOuNfe) || '';
+
+      if (!companyId) {
+        return { sucesso: false, erro: 'Empresa fiscal não vinculada na NFe.io para cancelar NF-e.' };
+      }
 
       if (nfeioId && nfeioId.length >= 20 && !nfeioId.startsWith('nfe_')) {
         try {
@@ -508,6 +539,7 @@
             body: JSON.stringify({
               action: 'cancel_nfe_nfeio',
               companyId,
+              issuerCnpj,
               nfeioId,
               justificativa,
               ambiente: 'Production',
@@ -562,9 +594,10 @@
       const emp = empresa || {};
       const key = this.obterApiKey(cfg.tecnospeedApiKey || cfg.apiToken);
       const companyId = this.obterCompanyId(emp, cfg);
+      const issuerCnpj = String(emp.cnpj || '').replace(/\D/g, '');
       const nfeioId = nfe?.nfeioId || nfe?.tecnospeedId || '';
 
-      if (!nfeioId || nfeioId.startsWith('nfe_')) return null;
+      if (!companyId || !nfeioId || nfeioId.startsWith('nfe_')) return null;
 
       try {
         const proxyRes = await fetch('/api/erp-security', {
@@ -573,6 +606,7 @@
           body: JSON.stringify({
             action: 'get_nfe_pdf_xml',
             companyId,
+            issuerCnpj,
             nfeioId,
             tipo,
             downloadContent: tipo === 'xml',
@@ -607,6 +641,13 @@
       const emp = empresa || {};
       const key = this.obterApiKey(cfg.tecnospeedApiKey || cfg.apiToken);
       const companyId = this.obterCompanyId(emp, cfg);
+      const issuerCnpj = String(emp.cnpj || '').replace(/\D/g, '');
+      if (!companyId) return null;
+
+      const taxId = (companyId === PRIME_COMPANY_ID)
+        ? 'f4527a4c17cc4eb485869b8db1559f41'
+        : (cfg.nfeioStateTaxId || '');
+      if (!taxId) return null;
 
       try {
         const proxyRes = await fetch('/api/erp-security', {
@@ -615,7 +656,8 @@
           body: JSON.stringify({
             action: 'get_nfe_statetax_info',
             companyId,
-            taxId: 'f4527a4c17cc4eb485869b8db1559f41',
+            issuerCnpj,
+            taxId,
             apiKey: key
           })
         });

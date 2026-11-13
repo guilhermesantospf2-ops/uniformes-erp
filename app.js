@@ -535,21 +535,29 @@
       if (typeof db.configFiscal.cfopEstadualPadrao === 'undefined') db.configFiscal.cfopEstadualPadrao = '5101';
       if (typeof db.configFiscal.cfopInterestadualPadrao === 'undefined') db.configFiscal.cfopInterestadualPadrao = '6101';
       if (typeof db.configFiscal.csosnPadrao === 'undefined') db.configFiscal.csosnPadrao = '102';
-      if (typeof db.configFiscal.emailContador === 'undefined') db.configFiscal.emailContador = 'comercial@pacificwave.com.br';
-      if (!db.configFiscal.nfeioCompanyId) db.configFiscal.nfeioCompanyId = 'b8ac27d9851944a8baa5ad0c134d08f9';
-      if (!db.configFiscal.certificadoA1) {
-        db.configFiscal.certificadoA1 = {
-          instalado: true,
-          nomeArquivo: 'PACIFIC WAVE COMPANY LTDA_59441843000176certificado.pfx',
-          validade: '23/03/2027',
-          emissor: 'RFB e-CNPJ A1 / ICP-Brasil',
-          senhaSalva: true,
-          senha: 'nino230601',
-          dataUpload: new Date().toISOString()
-        };
-      } else if (!db.configFiscal.certificadoA1.senha) {
-        db.configFiscal.certificadoA1.senha = 'nino230601';
-        db.configFiscal.certificadoA1.senhaSalva = true;
+      const isPrimeInit = String(db.empresa?.cnpj || '').replace(/\D/g, '') === '59441843000176';
+      if (typeof db.configFiscal.emailContador === 'undefined') db.configFiscal.emailContador = isPrimeInit ? 'comercial@pacificwave.com.br' : (db.empresa?.email || '');
+      if (isPrimeInit) {
+        if (!db.configFiscal.nfeioCompanyId) db.configFiscal.nfeioCompanyId = 'b8ac27d9851944a8baa5ad0c134d08f9';
+        if (!db.configFiscal.certificadoA1) {
+          db.configFiscal.certificadoA1 = {
+            instalado: true,
+            nomeArquivo: 'PACIFIC WAVE COMPANY LTDA_59441843000176certificado.pfx',
+            validade: '23/03/2027',
+            emissor: 'RFB e-CNPJ A1 / ICP-Brasil',
+            senhaSalva: true,
+            senha: 'nino230601',
+            dataUpload: new Date().toISOString()
+          };
+        } else if (!db.configFiscal.certificadoA1.senha) {
+          db.configFiscal.certificadoA1.senha = 'nino230601';
+          db.configFiscal.certificadoA1.senhaSalva = true;
+        }
+      } else {
+        if (db.configFiscal.nfeioCompanyId === 'b8ac27d9851944a8baa5ad0c134d08f9') db.configFiscal.nfeioCompanyId = '';
+        if (db.configFiscal.certificadoA1?.nomeArquivo && String(db.configFiscal.certificadoA1.nomeArquivo).includes('59441843000176')) {
+          db.configFiscal.certificadoA1 = null;
+        }
       }
       autoCorrigirDizimasPedidos(db);
     }
@@ -25813,12 +25821,22 @@
     const temDbEditado = db && db.empresa && (db.empresa._configuradoManual || (db.empresa.cnpj && db.empresa.cnpj !== '34.582.910/0001-44') || (db.empresa.nomeFantasia && db.empresa.nomeFantasia !== 'Texfy Confecções'));
 
     if (temCloudEditado) {
-      if (db) db.empresa = Object.assign({}, empPadraoPrime, db.empresa || {}, empCloud);
-      return Object.assign({}, empPadraoPrime, db.empresa || {}, empCloud);
+      const merged = Object.assign({}, db.empresa || {}, empCloud);
+      const cnpjLimpo = String(merged.cnpj || '').replace(/\D/g, '');
+      if (cnpjLimpo && cnpjLimpo !== '59441843000176' && merged.nfeioCompanyId === 'b8ac27d9851944a8baa5ad0c134d08f9') {
+        merged.nfeioCompanyId = '';
+      }
+      if (db) db.empresa = merged;
+      return merged;
     }
 
     if (temDbEditado) {
-      return Object.assign({}, empPadraoPrime, db.empresa);
+      const mergedDb = Object.assign({}, db.empresa);
+      const cnpjLimpo = String(mergedDb.cnpj || '').replace(/\D/g, '');
+      if (cnpjLimpo && cnpjLimpo !== '59441843000176' && mergedDb.nfeioCompanyId === 'b8ac27d9851944a8baa5ad0c134d08f9') {
+        mergedDb.nfeioCompanyId = '';
+      }
+      return mergedDb;
     }
 
     if (db) db.empresa = Object.assign({}, empPadraoPrime, db.empresa || {});
@@ -26069,7 +26087,7 @@
     const emp = (typeof obterEmpresaAtiva === 'function') ? obterEmpresaAtiva() : (db.empresa || {});
     const isPrime = String(emp.cnpj || '').replace(/\D/g, '') === '59441843000176';
 
-    if (!db.configFiscal || !db.configFiscal.nfeioCompanyId || db.configFiscal.nfeioCompanyId === 'd71ac805e1324f43a6ed2800e9a82f47') {
+    if (isPrime && (!db.configFiscal || !db.configFiscal.nfeioCompanyId || db.configFiscal.nfeioCompanyId === 'd71ac805e1324f43a6ed2800e9a82f47')) {
       db.configFiscal = Object.assign({}, db.configFiscal || {}, {
         ambiente: 'producao', // SEFAZ Produção Oficial
         serie: '1',
@@ -26098,6 +26116,14 @@
         }
       });
       salvarEstado();
+    } else if (!isPrime) {
+      if (!db.configFiscal) db.configFiscal = {};
+      if (db.configFiscal.nfeioCompanyId === 'b8ac27d9851944a8baa5ad0c134d08f9' || db.configFiscal.nfeioCompanyId === 'd71ac805e1324f43a6ed2800e9a82f47') {
+        db.configFiscal.nfeioCompanyId = (emp.nfeioCompanyId && emp.nfeioCompanyId !== 'b8ac27d9851944a8baa5ad0c134d08f9') ? emp.nfeioCompanyId : '';
+      }
+      if (db.configFiscal.certificadoA1?.nomeArquivo && String(db.configFiscal.certificadoA1.nomeArquivo).includes('59441843000176')) {
+        db.configFiscal.certificadoA1 = null;
+      }
     }
 
     if (isPrime) {
@@ -26470,15 +26496,15 @@
     const destUf = cli.endereco?.uf || cli.uf || 'SC';
     const destFone = cli.telefone || '';
 
-    const empNome = emp.razaoSocial || emp.nomeFantasia || 'Pacific Wave Confecções';
-    const empEnd = emp.logradouro || emp.endereco || 'Rua Uruguai, 60 - piso superior';
-    const empBairro = emp.bairro || 'São Vicente';
-    const empCep = emp.cep || '88309-677';
-    const empMun = emp.cidade || 'Itajaí';
-    const empUf = emp.uf || 'SC';
-    const empFone = emp.telefone || '4732241112';
-    const empIe = emp.ie || emp.inscricaoEstadual || '263420248';
-    const empCnpj = emp.cnpj || '59.441.843/0001-76';
+    const empNome = emp.razaoSocial || emp.nomeFantasia || 'Empresa Emitente';
+    const empEnd = emp.logradouro || emp.endereco || '';
+    const empBairro = emp.bairro || '';
+    const empCep = emp.cep || '';
+    const empMun = emp.cidade || '';
+    const empUf = emp.uf || '';
+    const empFone = emp.telefone || '';
+    const empIe = emp.ie || emp.inscricaoEstadual || '';
+    const empCnpj = emp.cnpj || '';
     const empLogo = emp.logoUrl || '';
 
     const protAut = nfe.protocolo ? `${nfe.protocolo} - ${dataEmissaoData} ${dataEmissaoHora}` : `242260499108975 - ${dataEmissaoData} ${dataEmissaoHora}`;
@@ -27783,7 +27809,7 @@
                 </span>
                 <strong style="font-size: 13.5px; color: #0f172a;">${emp.razaoSocial || emp.nomeFantasia || 'Confecção de Uniformes'}</strong>
                 <div style="font-size: 11px; color: #475569; margin-top: 2px;">
-                  CNPJ: <strong class="text-mono">${emp.cnpj || '59.441.843/0001-76'}</strong> &bull; I.E.: <strong class="text-mono">${emp.inscricaoEstadual || emp.ie || 'ISENTO'}</strong> &bull; ${emp.cidade || 'São Paulo'}/${emp.uf || 'SP'}
+                  CNPJ: <strong class="text-mono">${emp.cnpj || 'Não configurado'}</strong> &bull; I.E.: <strong class="text-mono">${emp.inscricaoEstadual || emp.ie || 'ISENTO'}</strong> &bull; ${emp.cidade || ''}/${emp.uf || ''}
                 </div>
               </div>
               <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.fecharTodosModais(); window.ERP.navegarPara('empresa');" style="font-size: 11px; font-weight: 700;">
