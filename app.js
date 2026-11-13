@@ -26988,8 +26988,9 @@
           .danfe-sheet {
             width: 100% !important;
             max-width: 100% !important;
-            height: auto !important;
-            min-height: auto !important;
+            height: 286mm !important;
+            min-height: 286mm !important;
+            max-height: 287mm !important;
             border: 1px solid #000000;
             padding: 2.5mm 3.5mm;
             box-sizing: border-box;
@@ -27134,6 +27135,7 @@
           }
           .danfe-tabela-produtos-container {
             border: 1px solid #000000;
+            flex: 1 1 auto;
             min-height: 110px;
             background: #ffffff;
           }

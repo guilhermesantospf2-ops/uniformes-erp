@@ -2814,14 +2814,18 @@ button.status-pill:hover {
     border: 1.5px solid #000000 !important;
     max-width: 100% !important;
     width: 100% !important;
-    height: auto !important;
-    min-height: auto !important;
+    height: 286mm !important;
+    min-height: 286mm !important;
+    max-height: 287mm !important;
     padding: 2.5mm 3.5mm !important;
     margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
     page-break-inside: avoid;
     box-shadow: none !important;
   }
   .danfe-tabela-produtos-container {
+    flex: 1 1 auto !important;
     min-height: 110px !important;
   }
   .danfe-dados-adicionais-row .danfe-box-inf-compl,
