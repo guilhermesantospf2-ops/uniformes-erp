@@ -15208,6 +15208,9 @@
     let valorCosturaUnitario = 7.50;
     let totalPagarCostura = 0;
     let htmlRemuneracaoCostura = '';
+    if (os.subOs && os.valorCosturaPeca != null && !isNaN(os.valorCosturaPeca)) {
+      valorCosturaUnitario = parseFloat(os.valorCosturaPeca);
+    } else 
 
     if (itAtivo) {
       valorCosturaUnitario = (itAtivo.custoCostura != null && !isNaN(itAtivo.custoCostura) && parseFloat(itAtivo.custoCostura) > 0)
@@ -15437,17 +15440,55 @@
             <div><strong>Consumo Estimado:</strong> <strong>${consumoEstimadoTexto}</strong> ${(pedido.unidadeTecido === 'metro' ? 'metros' : 'kg de malha')}${(!itAtivo && temMultiplosModelos) ? ` <span style="font-size: 10px; color: #64748b;">(soma dos modelos)</span>` : ''}</div>
           </div>
 
-          <!-- REMUNERAÇÃO & CONTROLE DO SETOR (OCULTO NA IMPRESSÃO DA OS, APARECE SOMENTE NO SISTEMA) -->
+          <!-- REMUNERAÇÃO & CONTROLE DO SETOR (PRESTADOR / OFICINA / FÁBRICA) -->
           ${(() => {
             const setorLower = (os.setorDestino || os.etapaAtual || "").toLowerCase();
             const isCostura = setorLower.includes("costura") || (!os.setorDestino && !os.subOs);
-            if (!isCostura) {
-              // Para setores internos que não são costura (Corte, Bordado, etc.),
-              // este painel aparece SOMENTE NO SISTEMA (no-print) e NUNCA na OS impressa!
+            const nomePrestador = os.responsavelSetor || os.costureiraDesignada || 'A Definir';
+            const temValorMdo = valorCosturaUnitario > 0;
+            const tituloRemuneracao = isCostura
+              ? '🧵 Remuneração da Costura (Facção / Produção):'
+              : `💰 Remuneração do Setor (${os.setorDestino || 'Oficina / Fábrica'}):`;
+            const rotuloPrestador = isCostura ? 'Costureira / Facção' : 'Prestador / Responsável';
+
+            if (temValorMdo) {
+              return `
+                <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 4px; padding: 9px 12px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                  <div>
+                    <span style="font-size: 10px; font-weight: 800; color: #15803d; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">
+                      ${tituloRemuneracao}
+                    </span>
+                    <div style="font-size: 13px; font-weight: 800; color: #0f172a;">
+                      <span style="color: #047857;">${formatarMoeda(valorCosturaUnitario)}</span> <span style="font-size: 11px; font-weight: 600; color: #64748b;">/ peça</span> &nbsp;&bull;&nbsp; Total a Pagar (${rotuloPrestador} - <strong>${nomePrestador}</strong>): <strong style="color: #15803d; font-size: 14px;">${formatarMoeda(totalPagarCostura)}</strong> <span style="font-size: 11px; font-weight: 600; color: #64748b;">(${qtdTotal} pçs deste lote)</span>
+                    </div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <div class="no-print" style="display: inline-flex; align-items: center; gap: 6px;">
+                      ${(!os.desmembrada && !os.subOs) ? `
+                        <button type="button" class="btn btn-sm no-print" onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="background: #fef08a; color: #854d0e; border: 1.5px solid #facc15; font-weight: 800; font-size: 11.5px; padding: 4px 10px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;" title="Repartir este pedido em divisões/setores">
+                          ✂️ Repartir Pedido
+                        </button>
+                      ` : `
+                        <span class="status-pill status-gray no-print" style="font-size: 11px; font-weight: 800; color: #854d0e; background: #fef9c3; border: 1px solid #fde047;">
+                          ✂️ ${os.subOs ? `Sub-OS (${os.id})` : `OS Repartida (${os.subOrdensGeradas ? os.subOrdensGeradas.length : 2} Sub-OSs)`}
+                        </span>
+                        <button type="button" class="btn btn-sm no-print" onclick="window.ERP.desfazerReparticaoOS('${os.parentOsId || os.pedidoNumero || os.id}')" style="background: #fee2e2; color: #b91c1c; border: 1.5px solid #fca5a5; font-weight: 800; font-size: 11.5px; padding: 4px 10px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;" title="Desfazer repartição e unificar">
+                          🔄 Desfazer Repartição & Unificar
+                        </button>
+                      `}
+                    </div>
+                    <div style="text-align: right; font-size: 11px;">
+                      <span style="color: #64748b;">${rotuloPrestador}:</span><br>
+                      <strong style="color: #047857; font-size: 12px;">${nomePrestador}</strong>
+                    </div>
+                  </div>
+                </div>
+              `;
+            } else {
               return `
                 <div class="no-print" style="background: #f8fafc; border: 1.5px dashed #93c5fd; border-radius: 6px; padding: 7px 12px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                   <div style="font-size: 11.5px; color: #1e3a8a; font-weight: 700;">
-                    🏭 Controle de Setor: <strong>${os.setorDestino || "Mesa de Corte"}</strong> <span style="font-size: 10.5px; font-weight: 500; color: #64748b;">(Visível apenas no sistema)</span>
+                    🏭 Setor: <strong>${os.setorDestino || "Produção Interna"}</strong> &bull; Responsável: <strong>${nomePrestador}</strong> <span style="font-size: 10.5px; font-weight: 500; color: #64748b;">(Produção Interna / Sem remuneração MDO externa)</span>
                   </div>
                   <div style="display: flex; align-items: center; gap: 6px;">
                     ${(!os.desmembrada && !os.subOs) ? `
@@ -15466,37 +15507,6 @@
                 </div>
               `;
             }
-            // Se for Costura, exibe na OS o valor acordado com a costureira, mas esconde os botões do sistema na impressão
-            return `
-              <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 4px; padding: 9px 12px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                <div>
-                  <span style="font-size: 10px; font-weight: 800; color: #15803d; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">
-                    🧵 Remuneração da Costura (Facção / Produção):
-                  </span>
-                  ${htmlRemuneracaoCostura}
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <div class="no-print" style="display: inline-flex; align-items: center; gap: 6px;">
-                    ${(!os.desmembrada && !os.subOs) ? `
-                      <button type="button" class="btn btn-sm no-print" onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="background: #fef08a; color: #854d0e; border: 1.5px solid #facc15; font-weight: 800; font-size: 11.5px; padding: 4px 10px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;" title="Repartir esta OS para costureiras diferentes">
-                        ✂️ Repartir Pedido
-                      </button>
-                    ` : `
-                      <span class="status-pill status-gray no-print" style="font-size: 11px; font-weight: 800; color: #854d0e; background: #fef9c3; border: 1px solid #fde047;">
-                        ✂️ ${os.subOs ? `Sub-OS Confidencial (${os.id})` : `OS Repartida (${os.subOrdensGeradas ? os.subOrdensGeradas.length : 2} Sub-OSs)`}
-                      </span>
-                      <button type="button" class="btn btn-sm no-print" onclick="window.ERP.desfazerReparticaoOS('${os.parentOsId || os.pedidoNumero || os.id}')" style="background: #fee2e2; color: #b91c1c; border: 1.5px solid #fca5a5; font-weight: 800; font-size: 11.5px; padding: 4px 10px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;" title="Desfazer a repartição e unificar o pedido novamente">
-                        🔄 Desfazer Repartição & Unificar
-                      </button>
-                    `}
-                  </div>
-                  <div style="text-align: right; font-size: 11px;">
-                    <span style="color: #64748b;">Costureira:</span><br>
-                    <strong style="color: #047857; font-size: 12px;">${os.costureiraDesignada}</strong>
-                  </div>
-                </div>
-              </div>
-            `;
           })()}
         </div>
       </div>
@@ -15782,7 +15792,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 4px; padding: 8px 12px; font-size: 11px; flex-wrap: wrap; gap: 8px;">
               <div><strong>Setor:</strong> <span style="color: #1e3a8a; font-weight: 700;">${os.setorDestino || "Fábrica"}</span> &bull; <strong>Resp:</strong> <span style="font-weight: 700; color: #047857;">${os.responsavelSetor || os.costureiraDesignada || "Fábrica"}</span></div>
               <div><strong>Qtd Peças:</strong> ${qtdTotal} un ${itAtivo ? `(Mod ${modeloIdx + 1})` : ""}</div>
-              ${isCostura ? `
+              ${valorCosturaUnitario > 0 ? `
                 <div><strong>Valor Unitário MDO:</strong> ${formatarMoeda(valorCosturaUnitario)} / pç</div>
                 <div><strong>Total a Receber:</strong> <strong style="color: #15803d; font-size: 13.5px;">${formatarMoeda(totalPagarCostura)}</strong></div>
               ` : `
@@ -32770,7 +32780,7 @@
           <!-- Rodapé do Modal -->
           <div style="padding: 14px 22px; background: #f8fafc; border-top: 1.5px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div>
-              <span style="font-size: 11.5px; color: #64748b; display: block;">Total Geral MDO Costura:</span>
+              <span style="font-size: 11.5px; color: #64748b; display: block;">Total Geral MDO Prestadores / Setores:</span>
               <strong id="lblTotalGeralFaccaoRepartir" style="font-size: 16px; color: #15803d; font-family: monospace;">
                 R$ 0,00
               </strong>
@@ -32842,13 +32852,12 @@
           }
         }
 
-        const isCostura = (lote.setorDestino || '').toLowerCase().includes('costura');
-        const subTot = isCostura ? (totLote * valPeca) : 0;
+        const subTot = valPeca > 0 ? (totLote * valPeca) : 0;
         totalValorGeral += subTot;
 
         const lblSub = document.querySelector(`.lbl-subtotal-repartir[data-lote="${lIdx}"]`);
         if (lblSub) {
-          lblSub.textContent = isCostura ? formatarMoeda(subTot) : 'Setor Interno';
+          lblSub.textContent = valPeca > 0 ? formatarMoeda(subTot) : 'Setor Interno (R$ 0,00)';
         }
       });
 
