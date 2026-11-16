@@ -6787,7 +6787,8 @@
     recalcularTabela();
 
     function fecharModal() {
-      if (modalEl) modalEl.style.display = 'none';
+      if (modalEl) modalEl.remove();
+      if (typeof atualizarTravaScrollFundo === 'function') atualizarTravaScrollFundo();
     }
 
     document.getElementById('btnFecharModalFechamento')?.addEventListener('click', fecharModal);
@@ -15320,10 +15321,15 @@
             <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${emp.nomeFantasia || emp.razaoSocial}</h2>
             <span class="text-mono" style="color: #64748b; font-size: 11px;">ORDEM DE PRODUÇÃO: <strong>${os.id}</strong> • PEDIDO <strong>#${os.pedidoNumero}</strong></span>
             ${os.setorDestino ? `
-              <div style="margin-top: 4px;">
+              <div style="margin-top: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <span style="font-size: 12px; font-weight: 900; color: #ffffff; background: #1e3a8a; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase; display: inline-flex; align-items: center; gap: 4px;">
                   📍 SETOR DESTINO: ${os.setorDestino}
                 </span>
+                ${(os.responsavelSetor || os.costureiraDesignada) ? `
+                  <span style="font-size: 12px; font-weight: 800; color: #047857; background: #ecfdf5; border: 1.5px solid #86efac; padding: 2px 8px; border-radius: 4px;">
+                    👤 RESPONSÁVEL: <strong>${os.responsavelSetor || os.costureiraDesignada}</strong>
+                  </span>
+                ` : ''}
               </div>
             ` : ''}
           </div>
@@ -15774,7 +15780,7 @@
               <span class="text-mono" style="font-weight: 700; font-size: 11px;">OS #${os.id} • PEDIDO #${os.pedidoNumero}</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 4px; padding: 8px 12px; font-size: 11px; flex-wrap: wrap; gap: 8px;">
-              <div><strong>Setor:</strong> <span style="color: #1e3a8a; font-weight: 700;">${os.setorDestino || "Fábrica"}</span> ${isCostura ? `&bull; <strong>Resp:</strong> ${os.costureiraDesignada}` : "" }</div>
+              <div><strong>Setor:</strong> <span style="color: #1e3a8a; font-weight: 700;">${os.setorDestino || "Fábrica"}</span> &bull; <strong>Resp:</strong> <span style="font-weight: 700; color: #047857;">${os.responsavelSetor || os.costureiraDesignada || "Fábrica"}</span></div>
               <div><strong>Qtd Peças:</strong> ${qtdTotal} un ${itAtivo ? `(Mod ${modeloIdx + 1})` : ""}</div>
               ${isCostura ? `
                 <div><strong>Valor Unitário MDO:</strong> ${formatarMoeda(valorCosturaUnitario)} / pç</div>
@@ -25314,6 +25320,10 @@
           <p style="color: var(--text-gray-500); font-size: 12px; margin: 0;">Cadastre seus funcionários com e-mail, senha provisória e nível de acesso. Eles criarão a própria senha no 1º login.</p>
         </div>
         <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          
+          <button type="button" class="btn btn-secondary" id="btnCadastrarPrestadorEquipe" style="display: flex; align-items: center; gap: 6px; font-weight: 800; color: #0369a1; background: #f0f9ff; border: 1.5px solid #7dd3fc; border-radius: 6px; cursor: pointer;">
+            🤝 + Cadastrar Prestador de Setor (Corte, DTF, Bordado...)
+          </button>
           <button type="button" class="btn btn-secondary" id="btnCadastrarCostureiraEquipe" style="display: flex; align-items: center; gap: 6px; font-weight: 800; color: #047857; background: #ecfdf5; border: 1.5px solid #86efac; border-radius: 6px; cursor: pointer;">
             🧵 + Cadastrar Costureira / Facção Externa
           </button>
@@ -25395,7 +25405,114 @@
           </tbody>
         </table>
       </div>
+
+      <!-- SEÇÃO CHÃO DE FÁBRICA: PRESTADORES DE SERVIÇO & RESPONSÁVEIS DE SETOR (SEM LOGIN) -->
+      <div style="margin-top: 32px; border-top: 2px dashed #cbd5e1; padding-top: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h3 style="font-size: 15px; font-weight: 800; color: var(--text-primary); margin: 0 0 3px 0; display: flex; align-items: center; gap: 8px;">
+              <span>🏭</span> Prestadores de Serviço, Facções & Responsáveis de Setor (Chão de Fábrica)
+            </h3>
+            <p style="color: var(--text-gray-500); font-size: 11.5px; margin: 0;">Oficinas externas de corte, bordado, estamparia/DTF e costureiras cadastradas sem burocracia (sem e-mail/senha), prontas para divisão de OS.</p>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" id="btnNovoPrestadorTabela" style="background: #0284c7; border-color: #0369a1; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+            🤝 + Cadastrar Prestador de Setor
+          </button>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="erp-table">
+            <thead>
+              <tr>
+                <th>Prestador / Responsável</th>
+                <th>Setor Principal</th>
+                <th>Vínculo</th>
+                <th>Contato / WhatsApp</th>
+                <th>Especialidade / Maquinário</th>
+                <th>Remuneração MDO</th>
+                <th style="text-align: right; min-width: 100px;">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(() => {
+                const listaP = obterListaPrestadoresDisponiveis();
+                if (listaP.length === 0) {
+                  return `
+                    <tr>
+                      <td colspan="7" style="text-align: center; padding: 30px; color: #64748b;">
+                        Nenhum prestador de serviço cadastrado. Clique no botão acima para adicionar.
+                      </td>
+                    </tr>
+                  `;
+                }
+                return listaP.map(p => {
+                  let badgeSetor = '<span class="status-pill status-blue" style="font-weight: 700;">📍 ' + (p.setor || 'Geral') + '</span>';
+                  const sLow = (p.setor || '').toLowerCase();
+                  if (sLow.includes('corte')) badgeSetor = '<span class="status-pill" style="font-weight: 800; background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe;">✂️ 1. Mesa de Corte</span>';
+                  else if (sLow.includes('estamp')) badgeSetor = '<span class="status-pill" style="font-weight: 800; background: #ffedd5; color: #9a3412; border: 1px solid #fed7aa;">🎨 2. Estamparia / DTF</span>';
+                  else if (sLow.includes('bordad')) badgeSetor = '<span class="status-pill" style="font-weight: 800; background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff;">🪡 3. Bordado</span>';
+                  else if (sLow.includes('costura')) badgeSetor = '<span class="status-pill status-green" style="font-weight: 800;">🧵 4. Costura</span>';
+                  else if (sLow.includes('revis') || sLow.includes('acab')) badgeSetor = '<span class="status-pill" style="font-weight: 800; background: #ecfeff; color: #155e75; border: 1px solid #a5f3fc;">🔍 5. Revisão</span>';
+
+                  return `
+                    <tr>
+                      <td>
+                        <strong style="color: #0f172a; font-size: 13px;">${p.nome}</strong>
+                        ${p.observacoes ? `<div style="font-size: 10.5px; color: #64748b; font-style: italic;">${p.observacoes}</div>` : ''}
+                      </td>
+                      <td>${badgeSetor}</td>
+                      <td>
+                        <span class="status-pill ${p.tipo === 'interno' ? 'status-gray' : 'status-orange'}" style="font-weight: 700;">
+                          ${p.tipo === 'interno' ? '🏢 Interno' : '🌐 Terceirizado / Facção'}
+                        </span>
+                      </td>
+                      <td class="text-mono">${p.telefone || '-'}</td>
+                      <td>${p.especialidade || p.cargo || '-'}</td>
+                      <td class="text-mono" style="font-weight: 700; color: #15803d;">
+                        ${p.valorMedioPorPeca > 0 ? formatarMoeda(p.valorMedioPorPeca) + ' / pç' : '<span style="color: #94a3b8; font-weight: 400;">Setor Interno</span>'}
+                      </td>
+                      <td style="text-align: right;">
+                        <button type="button" class="btn btn-red btn-xs btn-excluir-prestador" data-id="${p.id}" data-nome="${p.nome}">
+                          Excluir
+                        </button>
+                      </td>
+                    </tr>
+                  `;
+                }).join('');
+              })()}
+            </tbody>
+          </table>
+        </div>
+      </div>
     `;
+
+    document.getElementById('btnCadastrarCostureiraEquipe')?.addEventListener('click', () => {
+      abrirModalCadastrarCostureiraFaccao(() => renderizarEquipe());
+    });
+    document.getElementById('btnCadastrarPrestadorEquipe')?.addEventListener('click', () => {
+      abrirModalCadastrarPrestadorServico(null, () => renderizarEquipe());
+    });
+    document.getElementById('btnNovoPrestadorTabela')?.addEventListener('click', () => {
+      abrirModalCadastrarPrestadorServico(null, () => renderizarEquipe());
+    });
+
+    document.querySelectorAll('.btn-excluir-prestador').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const nome = btn.getAttribute('data-nome');
+        if (confirm(`Deseja realmente remover o prestador "${nome}" do sistema?`)) {
+          if (Array.isArray(db.prestadores)) {
+            db.prestadores = db.prestadores.filter(p => p.id !== id && p.nome !== nome);
+          }
+          if (Array.isArray(db.costureiras)) {
+            db.costureiras = db.costureiras.filter(c => c.id !== id && c.nome !== nome);
+          }
+          salvarEstado(true);
+          renderizarEquipe();
+          mostrarToast(`Prestador "${nome}" removido.`, 'green');
+        }
+      });
+    });
 
     document.getElementById('btnCadastrarColaborador')?.addEventListener('click', () => {
       abrirModalNovoColaboradorInline(() => renderizarEquipe());
@@ -25433,6 +25550,245 @@
    * Modal Exclusivo e Simplificado de Cadastro de Costureira / Facção Externa
    * 100% focado no chão de fábrica têxtil: sem e-mail, sem login, sem senha
    */
+  
+  /**
+   * Retorna a lista unificada de Prestadores de Serviço, Facções e Responsáveis de Setor
+   * Cobre Corte, Estamparia/DTF, Bordado, Costura e Revisão/Acabamento
+   */
+  function obterListaPrestadoresDisponiveis() {
+    const lista = [];
+    const nomesAdicionados = new Set();
+
+    // 1. Prestadores de Serviço cadastrados diretamente
+    (db.prestadores || []).forEach(p => {
+      if (p && p.nome && !nomesAdicionados.has(p.nome.trim().toLowerCase())) {
+        nomesAdicionados.add(p.nome.trim().toLowerCase());
+        lista.push({
+          id: p.id,
+          nome: p.nome.trim(),
+          setor: p.setor || '4. Costura & Fechamento',
+          cargo: p.cargo || 'Prestador de Serviço',
+          telefone: p.telefone || '',
+          tipo: p.tipo || 'terceirizado',
+          valorMedioPorPeca: parseFloat(p.valorMedioPorPeca) || 0,
+          valorCosturaPeca: parseFloat(p.valorMedioPorPeca) || 7.50,
+          especialidade: p.especialidade || p.setor || 'Geral',
+          observacoes: p.observacoes || ''
+        });
+      }
+    });
+
+    // 2. Costureiras / Facções já cadastradas no sistema
+    (db.costureiras || []).forEach(c => {
+      if (c && c.nome && !nomesAdicionados.has(c.nome.trim().toLowerCase())) {
+        nomesAdicionados.add(c.nome.trim().toLowerCase());
+        lista.push({
+          id: c.id,
+          nome: c.nome.trim(),
+          setor: c.setor || '4. Costura & Fechamento',
+          cargo: c.cargo || 'Costureira / Facção',
+          telefone: c.telefone || '',
+          tipo: c.tipo || 'terceirizado',
+          valorMedioPorPeca: parseFloat(c.valorMedioPorPeca) || parseFloat(c.valorCosturaPeca) || 7.50,
+          valorCosturaPeca: parseFloat(c.valorMedioPorPeca) || parseFloat(c.valorCosturaPeca) || 7.50,
+          especialidade: c.especialidade || 'Costura & Fechamento',
+          observacoes: c.observacoes || ''
+        });
+      }
+    });
+
+    // 3. Colaboradores internos da equipe têxtil
+    (db.equipe || []).forEach(e => {
+      if (e && e.nome && !nomesAdicionados.has(e.nome.trim().toLowerCase())) {
+        nomesAdicionados.add(e.nome.trim().toLowerCase());
+        let setorAuto = '4. Costura & Fechamento';
+        const str = ((e.cargo || '') + ' ' + (e.especialidade || '') + ' ' + (e.setor || '')).toLowerCase();
+        if (str.includes('corte') || str.includes('cortad')) setorAuto = '1. Mesa de Corte';
+        else if (str.includes('estamp') || str.includes('dtf') || str.includes('silk')) setorAuto = '2. Estamparia / DTF';
+        else if (str.includes('bordad')) setorAuto = '3. Bordado Computadorizado';
+        else if (str.includes('revis') || str.includes('acabam') || str.includes('embal')) setorAuto = '5. Revisão & Acabamento';
+
+        lista.push({
+          id: e.id,
+          nome: e.nome.trim(),
+          setor: e.setor || setorAuto,
+          cargo: e.cargo || 'Colaborador da Confecção',
+          telefone: e.telefone || '',
+          tipo: 'interno',
+          valorMedioPorPeca: 0,
+          valorCosturaPeca: 0,
+          especialidade: e.especialidade || e.cargo || 'Interno',
+          observacoes: ''
+        });
+      }
+    });
+
+    // Fallbacks inteligentes para fábrica começar imediatamente
+    if (lista.length === 0) {
+      lista.push(
+        { id: 'PREST-01', nome: 'Carlos Encarregado de Corte', setor: '1. Mesa de Corte', cargo: 'Cortador Responsável', tipo: 'interno', valorMedioPorPeca: 0, valorCosturaPeca: 0 },
+        { id: 'PREST-02', nome: 'Lucas DTF Express', setor: '2. Estamparia / DTF', cargo: 'Estampador', tipo: 'interno', valorMedioPorPeca: 0, valorCosturaPeca: 0 },
+        { id: 'PREST-03', nome: 'Oficina Bordados Alfa', setor: '3. Bordado Computadorizado', cargo: 'Bordador Terceirizado', tipo: 'terceirizado', valorMedioPorPeca: 2.50, valorCosturaPeca: 2.50 },
+        { id: 'PREST-04', nome: 'Dona Maria Facção de Costura', setor: '4. Costura & Fechamento', cargo: 'Costureira / Facção', tipo: 'terceirizado', valorMedioPorPeca: 7.50, valorCosturaPeca: 7.50 },
+        { id: 'PREST-05', nome: 'Fátima Revisão & Embalagem', setor: '5. Revisão & Acabamento', cargo: 'Revisora', tipo: 'interno', valorMedioPorPeca: 0, valorCosturaPeca: 0 }
+      );
+    }
+
+    return lista;
+  }
+
+  /**
+   * Modal Simplificado e Sem Burocracia para Cadastrar Prestadores de Serviço / Responsáveis de Setor
+   * Igual ao cadastro de costureira: sem e-mail, sem login, sem senha!
+   */
+  function abrirModalCadastrarPrestadorServico(setorInicial = null, callback = null) {
+    if (!modalContainer) return;
+
+    const setorPreDefinido = setorInicial || '1. Mesa de Corte';
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active" id="modalCadastrarPrestadorOverlay" style="z-index: 100050;">
+        <div class="modal-box" style="max-width: 580px; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);">
+          <div class="modal-header" style="background: linear-gradient(135deg, #1e3a8a, #0369a1); color: #ffffff; padding: 16px 20px;">
+            <div>
+              <div class="modal-title" style="color: #ffffff; font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                <span>🤝</span> Cadastrar Prestador de Serviço / Responsável de Setor
+              </div>
+              <div style="font-size: 11.5px; color: #bae6fd; margin-top: 2px;">
+                Cadastro direto para chão de fábrica e emissão de OS (sem necessidade de e-mail ou senha)
+              </div>
+            </div>
+            <button class="modal-close" style="color: #ffffff;" onclick="window.ERP.fecharModal(this)">&times;</button>
+          </div>
+
+          <div class="modal-body" style="padding: 20px; max-height: 80vh; overflow-y: auto;">
+            <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: #1e40af; line-height: 1.45;">
+              💡 <strong>Chão de Fábrica Sem Burocracia:</strong> Cadastre o responsável ou prestador do setor (Corte, Estamparia, Bordado, Costura ou Revisão). Ele ficará imediatamente disponível para receber as ordens de serviço e aparecer no canhoto.
+            </div>
+
+            <div class="form-row" style="margin-bottom: 12px;">
+              <div class="form-group" style="flex: 2; margin: 0;">
+                <label class="form-label" style="font-weight: 700;">Nome do Prestador / Responsável / Oficina *</label>
+                <input type="text" id="cadPrestNome" class="form-input" placeholder="Ex: Carlos Corte, Bordados Alfa, Josiani Facção..." style="font-weight: 700;">
+              </div>
+              <div class="form-group" style="flex: 1.2; margin: 0;">
+                <label class="form-label" style="font-weight: 700;">WhatsApp / Telefone</label>
+                <input type="text" id="cadPrestTel" class="form-input text-mono" placeholder="(11) 99999-9999">
+              </div>
+            </div>
+
+            <div class="form-row" style="margin-bottom: 12px;">
+              <div class="form-group" style="flex: 1.4; margin: 0;">
+                <label class="form-label" style="font-weight: 700;">Setor da Fábrica (Atuação Principal) *</label>
+                <select id="cadPrestSetor" class="form-select" style="font-weight: 700; color: #1e3a8a;">
+                  <option value="1. Mesa de Corte" ${setorPreDefinido.includes('Corte') ? 'selected' : ''}>📍 1. Mesa de Corte</option>
+                  <option value="2. Estamparia / DTF" ${setorPreDefinido.includes('Estampa') ? 'selected' : ''}>📍 2. Estamparia / DTF</option>
+                  <option value="3. Bordado Computadorizado" ${setorPreDefinido.includes('Bordad') ? 'selected' : ''}>📍 3. Bordado Computadorizado</option>
+                  <option value="4. Costura & Fechamento" ${setorPreDefinido.includes('Costura') ? 'selected' : ''}>📍 4. Costura & Fechamento</option>
+                  <option value="5. Revisão & Acabamento" ${setorPreDefinido.includes('Acab') || setorPreDefinido.includes('Revis') ? 'selected' : ''}>📍 5. Revisão & Acabamento</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="flex: 1; margin: 0;">
+                <label class="form-label" style="font-weight: 700;">Tipo de Vínculo:</label>
+                <select id="cadPrestTipo" class="form-select" style="font-weight: 600;">
+                  <option value="terceirizado">Prestador Terceirizado / Oficina</option>
+                  <option value="interno">Colaborador / Encarregado Interno</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row" style="margin-bottom: 12px;">
+              <div class="form-group" style="flex: 1.2; margin: 0;">
+                <label class="form-label" style="font-weight: 700;">Especialidade / Função:</label>
+                <input type="text" id="cadPrestEsp" class="form-input" placeholder="Ex: Corte Industrial, Silk DTF, Matrizes, Fechamento...">
+              </div>
+              <div class="form-group" style="flex: 1; margin: 0;">
+                <label class="form-label" style="font-weight: 700;">Valor MDO / Peça (R$ - opcional):</label>
+                <input type="number" id="cadPrestValorPeca" class="form-input text-mono" value="0.00" step="0.50" min="0" style="font-weight: 800; color: #15803d;">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label">Endereço / Bairro (Opcional - Coleta/Entrega de Peças):</label>
+              <input type="text" id="cadPrestEnd" class="form-input" placeholder="Ex: Rua das Fábricas, 120 - Galpão 3">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Observações / Maquinário Disponível:</label>
+              <input type="text" id="cadPrestObs" class="form-input" placeholder="Ex: Máquina de bordado 4 cabeças, serra fita, prensa térmica 40x50...">
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 14px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal(this)">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnConfirmarSalvarPrestador" style="background: #0284c7; border-color: #0369a1; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
+              <span>✓ Salvar Prestador no Sistema</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    modalEl.querySelector('#btnConfirmarSalvarPrestador')?.addEventListener('click', () => {
+      const nome = (modalEl.querySelector('#cadPrestNome')?.value || '').trim();
+      const tel = (modalEl.querySelector('#cadPrestTel')?.value || '').trim();
+      const setor = modalEl.querySelector('#cadPrestSetor')?.value || '1. Mesa de Corte';
+      const tipo = modalEl.querySelector('#cadPrestTipo')?.value || 'terceirizado';
+      const esp = (modalEl.querySelector('#cadPrestEsp')?.value || '').trim() || setor;
+      const valPeca = parseFloat(modalEl.querySelector('#cadPrestValorPeca')?.value || 0) || 0;
+      const end = (modalEl.querySelector('#cadPrestEnd')?.value || '').trim();
+      const obs = (modalEl.querySelector('#cadPrestObs')?.value || '').trim();
+
+      if (!nome) {
+        mostrarToast('Por favor, informe o nome do prestador ou responsável.', 'red');
+        modalEl.querySelector('#cadPrestNome')?.focus();
+        return;
+      }
+
+      const novoPrest = {
+        id: 'PREST-' + Date.now().toString().slice(-6),
+        nome: nome,
+        responsavel: nome,
+        telefone: tel,
+        setor: setor,
+        tipo: tipo,
+        terceirizado: tipo !== 'interno',
+        especialidade: esp,
+        cargo: `${setor} (${tipo === 'interno' ? 'Interno' : 'Prestador'})`,
+        valorMedioPorPeca: valPeca,
+        valorCosturaPeca: valPeca,
+        endereco: end,
+        observacoes: obs,
+        status: 'Ativo',
+        criadoEm: new Date().toISOString()
+      };
+
+      if (!Array.isArray(db.prestadores)) db.prestadores = [];
+      db.prestadores.unshift(novoPrest);
+
+      // Se for Costura, também mantém sincronia com db.costureiras
+      if (setor.toLowerCase().includes('costura')) {
+        if (!Array.isArray(db.costureiras)) db.costureiras = [];
+        db.costureiras.unshift(novoPrest);
+      }
+
+      salvarEstado(true);
+
+      if (window.ERP_CLOUD && typeof window.ERP_CLOUD.sincronizarImediatoComNuvem === 'function') {
+        window.ERP_CLOUD.sincronizarImediatoComNuvem(db);
+      }
+
+      fecharModal(modalEl);
+      mostrarToast(`✓ Prestador "${novoPrest.nome}" cadastrado com sucesso no setor ${setor}!`, 'green');
+
+      if (typeof callback === 'function') {
+        callback(novoPrest);
+      }
+    });
+  }
+
+
   function abrirModalCadastrarCostureiraFaccao(callback) {
     if (!modalContainer) return;
 
@@ -31987,6 +32343,12 @@
   function fecharModalRepartir() {
     const el = document.getElementById('modalRepartirOS');
     if (el) el.remove();
+    if (typeof atualizarTravaScrollFundo === 'function') {
+      atualizarTravaScrollFundo();
+    } else {
+      document.body.classList.remove('modal-aberto');
+      document.documentElement.classList.remove('modal-aberto');
+    }
   }
 
   /**
@@ -32296,6 +32658,8 @@
         produtoNome: `${itemOrig.produtoNome || os.produto} (Lote A)`,
         grade: gradeA,
         setorDestino: '1. Mesa de Corte',
+        responsavelId: (prestadoresDisponiveis.find(p => (p.setor || '').toLowerCase().includes('corte')) || {}).id || '',
+        responsavelNome: (prestadoresDisponiveis.find(p => (p.setor || '').toLowerCase().includes('corte')) || {}).nome || '',
         costureiraId: '',
         costureiraNome: os.costureiraDesignada || '',
         valorCosturaPeca: itemOrig.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50,
@@ -32309,6 +32673,8 @@
         produtoNome: `${itemOrig.produtoNome || os.produto} (Lote B)`,
         grade: gradeB,
         setorDestino: '4. Costura & Fechamento',
+        responsavelId: (prestadoresDisponiveis.find(p => p.nome === os.costureiraDesignada) || prestadoresDisponiveis.find(p => (p.setor || '').toLowerCase().includes('costura')) || {}).id || '',
+        responsavelNome: os.costureiraDesignada || (prestadoresDisponiveis.find(p => (p.setor || '').toLowerCase().includes('costura')) || {}).nome || '',
         costureiraId: '',
         costureiraNome: os.costureiraDesignada || '',
         valorCosturaPeca: itemOrig.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50,
@@ -32335,9 +32701,13 @@
 
     fecharModalRepartir();
 
-    const costureirasDisponiveis = db.costureiras && db.costureiras.length > 0
-      ? db.costureiras
-      : [{ id: 'COST-001', nome: os.costureiraDesignada || 'Costureira Padrão', valorCosturaPeca: 7.50 }];
+    const prestadoresDisponiveis = (typeof obterListaPrestadoresDisponiveis === 'function')
+      ? obterListaPrestadoresDisponiveis()
+      : (db.costureiras || [{ id: 'PREST-001', nome: os.costureiraDesignada || 'Responsável Padrão', valorCosturaPeca: 7.50 }]);
+
+    const costureirasDisponiveis = prestadoresDisponiveis.filter(p => (p.setor || '').toLowerCase().includes('costura')).length > 0
+      ? prestadoresDisponiveis.filter(p => (p.setor || '').toLowerCase().includes('costura'))
+      : prestadoresDisponiveis;
 
     const setoresFabricaDisponiveis = [
       { id: 'corte', nome: '1. Mesa de Corte' },
@@ -32377,9 +32747,18 @@
                   Calculando distribuição...
                 </span>
               </div>
-              <button type="button" class="btn btn-primary" id="btnAdicionarLoteRepartir" style="background: #1d4ed8; border-color: #1e40af; font-weight: 800; font-size: 12px; padding: 7px 14px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(29, 78, 216, 0.2); cursor: pointer;">
-                ➕ Adicionar Outra Divisão / Setor / Lote
-              </button>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                ${itensLista.length > 1 ? `
+                  <select id="selModeloNovaDivisao" class="form-select" style="font-size: 11.5px; padding: 6px 10px; height: auto; font-weight: 700; color: #1e3a8a; border: 1.5px solid #93c5fd; background: #ffffff; max-width: 260px;">
+                    ${itensLista.map((it, itIdx) => `
+                      <option value="${itIdx}">👕 Mod ${itIdx + 1}: ${it.produtoNome}</option>
+                    `).join('')}
+                  </select>
+                ` : ''}
+                <button type="button" class="btn btn-primary" id="btnAdicionarLoteRepartir" style="background: #1d4ed8; border-color: #1e40af; font-weight: 800; font-size: 12px; padding: 7px 14px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(29, 78, 216, 0.2); cursor: pointer;">
+                  ➕ Adicionar Outra Divisão / Setor / Lote
+                </button>
+              </div>
             </div>
 
             <!-- Listagem das Divisões / Lotes a Repartir -->
@@ -32416,7 +32795,12 @@
       </div>
     `;
 
-    document.body.insertAdjacentHTML('beforeend', htmlModal);
+    if (modalContainer) {
+      modalContainer.insertAdjacentHTML('beforeend', htmlModal);
+    } else {
+      document.body.insertAdjacentHTML('beforeend', htmlModal);
+    }
+    if (typeof atualizarTravaScrollFundo === 'function') atualizarTravaScrollFundo();
 
     function recalcularTotaisLotes() {
       let totalGeralAtribuido = 0;
@@ -32448,6 +32832,15 @@
 
         const selCost = document.querySelector(`.sel-costureira-repartir[data-lote="${lIdx}"]`);
         if (selCost && selCost.value) lote.costureiraId = selCost.value;
+        const selResp = document.querySelector(`.sel-responsavel-repartir[data-lote="${lIdx}"]`);
+        if (selResp && selResp.value) {
+          lote.responsavelId = selResp.value;
+          const pObj = prestadoresDisponiveis.find(p => p.id === selResp.value);
+          if (pObj) {
+            lote.responsavelNome = pObj.nome;
+            lote.costureiraNome = pObj.nome;
+          }
+        }
 
         const isCostura = (lote.setorDestino || '').toLowerCase().includes('costura');
         const subTot = isCostura ? (totLote * valPeca) : 0;
@@ -32583,15 +32976,33 @@
               </div>
               
               <div style="margin-bottom: 8px;">
-                <label style="font-size: 11px; font-weight: 700; color: #0f172a; display: block; margin-bottom: 2px;">
-                  Costureira / Facção:
-                </label>
-                <select class="form-select sel-costureira-repartir" data-lote="${lIdx}" style="font-size: 11.5px; padding: 5px 8px; height: auto;">
-                  ${costureirasDisponiveis.map(c => `
-                    <option value="${c.id}" ${c.nome === lote.costureiraNome ? 'selected' : ''}>
-                      ${c.nome} (${c.especialidade || 'Costura'})
-                    </option>
-                  `).join('')}
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                  <label style="font-size: 11px; font-weight: 700; color: #0f172a;">
+                    Responsável / Prestador do Setor:
+                  </label>
+                  <button type="button" class="btn btn-secondary btn-xs btn-add-prestador-inline" data-lote="${lIdx}" style="font-size: 10px; padding: 1px 6px; font-weight: 800; color: #0284c7; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 4px; cursor: pointer;" title="Cadastrar novo prestador sem burocracia">
+                    ➕ Novo Prestador
+                  </button>
+                </div>
+                <select class="form-select sel-responsavel-repartir" data-lote="${lIdx}" style="font-size: 11.5px; padding: 5px 8px; height: auto; font-weight: 700; color: #0f172a; border: 1.5px solid #94a3b8; background: #ffffff;">
+                  <option value="">-- Selecionar Responsável / Prestador --</option>
+                  ${prestadoresDisponiveis.map(p => {
+                    const isSelected = (lote.responsavelId && p.id === lote.responsavelId) ||
+                                       (lote.responsavelNome && p.nome.toLowerCase() === lote.responsavelNome.toLowerCase()) ||
+                                       (!lote.responsavelId && !lote.responsavelNome && lote.costureiraNome && p.nome.toLowerCase() === lote.costureiraNome.toLowerCase());
+                    const matchSetor = lote.setorDestino && p.setor && (
+                      (lote.setorDestino.toLowerCase().includes('corte') && p.setor.toLowerCase().includes('corte')) ||
+                      (lote.setorDestino.toLowerCase().includes('estamp') && p.setor.toLowerCase().includes('estamp')) ||
+                      (lote.setorDestino.toLowerCase().includes('bordad') && p.setor.toLowerCase().includes('bordad')) ||
+                      (lote.setorDestino.toLowerCase().includes('costura') && p.setor.toLowerCase().includes('costura')) ||
+                      (lote.setorDestino.toLowerCase().includes('revis') && (p.setor.toLowerCase().includes('revis') || p.setor.toLowerCase().includes('acab')))
+                    );
+                    return `
+                      <option value="${p.id}" ${isSelected ? 'selected' : ''}>
+                        ${matchSetor ? '⭐ ' : ''}${p.nome} &bull; [${p.setor}] ${p.tipo === 'interno' ? '(Interno)' : '(Prestador/Oficina)'}
+                      </option>
+                    `;
+                  }).join('')}
                 </select>
               </div>
 
@@ -32626,10 +33037,22 @@
           const mIdx = parseInt(e.target.value, 10);
           if (lotesTrabalho[lIdx]) {
             const itMod = itensLista[mIdx] || itensLista[0];
+            const tNovos = extrairTamanhosDoModelo(itMod);
+            const gradeAnterior = lotesTrabalho[lIdx].grade || {};
+            const novaGrade = {};
+            let novoTot = 0;
+            tNovos.forEach(t => {
+              const q = parseInt(gradeAnterior[t], 10) || 0;
+              novaGrade[t] = q;
+              novoTot += q;
+            });
+            novaGrade.total = novoTot;
+
             lotesTrabalho[lIdx].modeloIndice = mIdx;
             lotesTrabalho[lIdx].produtoNome = `${itMod.produtoNome} (Lote ${lotesTrabalho[lIdx].letra})`;
-            lotesTrabalho[lIdx].valorCosturaPeca = itMod.custoCostura || 7.50;
-            lotesTrabalho[lIdx].mockupUrl = itMod.mockupUrl || '';
+            lotesTrabalho[lIdx].grade = novaGrade;
+            lotesTrabalho[lIdx].valorCosturaPeca = itMod.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50;
+            lotesTrabalho[lIdx].mockupUrl = itMod.mockupUrl || os.mockupUrl || '';
             renderizarCardsLotesRepartir();
             recalcularTotaisLotes();
           }
@@ -32656,6 +33079,48 @@
             lotesTrabalho[lIdx].setorDestino = setorNome;
             recalcularTotaisLotes();
           }
+        });
+      });
+
+      container.querySelectorAll('.sel-responsavel-repartir').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+          const lIdx = parseInt(e.target.getAttribute('data-lote'), 10);
+          const respId = e.target.value;
+          const lote = lotesTrabalho[lIdx];
+          if (lote) {
+            const prest = prestadoresDisponiveis.find(p => p.id === respId);
+            if (prest) {
+              lote.responsavelId = prest.id;
+              lote.responsavelNome = prest.nome;
+              lote.costureiraNome = prest.nome;
+              if (prest.valorMedioPorPeca > 0 && (!lote.valorCosturaPeca || lote.valorCosturaPeca === 7.5)) {
+                lote.valorCosturaPeca = prest.valorMedioPorPeca;
+              }
+            } else {
+              lote.responsavelId = '';
+              lote.responsavelNome = '';
+            }
+            recalcularTotaisLotes();
+          }
+        });
+      });
+
+      container.querySelectorAll('.btn-add-prestador-inline').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const lIdx = parseInt(btn.getAttribute('data-lote'), 10);
+          const lote = lotesTrabalho[lIdx];
+          abrirModalCadastrarPrestadorServico(lote ? lote.setorDestino : null, (novoPrest) => {
+            if (lote) {
+              lote.responsavelId = novoPrest.id;
+              lote.responsavelNome = novoPrest.nome;
+              lote.costureiraNome = novoPrest.nome;
+              if (novoPrest.valorMedioPorPeca > 0) {
+                lote.valorCosturaPeca = novoPrest.valorMedioPorPeca;
+              }
+            }
+            renderizarCardsLotesRepartir();
+            recalcularTotaisLotes();
+          });
         });
       });
 
@@ -32700,17 +33165,20 @@
       recalcularTotaisLotes();
     }
 
-    // BOTÃO ADICIONAR DIVISÃO (ILIMITADO): Adiciona quantas divisões o usuário desejar!
+    // BOTÃO ADICIONAR DIVISÃO (ILIMITADO): Adiciona quantas divisões o usuário desejar, respeitando o modelo escolhido!
     document.getElementById('btnAdicionarLoteRepartir')?.addEventListener('click', () => {
       const proximaLetra = gerarLetraLote(lotesTrabalho.length);
-      const modIndicePadrao = 0;
+      const selModNovo = document.getElementById('selModeloNovaDivisao');
+      const ultimoLote = lotesTrabalho[lotesTrabalho.length - 1];
+      const modIndicePadrao = selModNovo
+        ? (parseInt(selModNovo.value, 10) || 0)
+        : (ultimoLote ? (ultimoLote.modeloIndice || 0) : 0);
       const itModelo = itensLista[modIndicePadrao] || itensLista[0];
       const tAtivos = extrairTamanhosDoModelo(itModelo);
       const gradeVazia = {};
       tAtivos.forEach(t => gradeVazia[t] = 0);
       gradeVazia.total = 0;
 
-      const ultimoLote = lotesTrabalho[lotesTrabalho.length - 1];
       const setorSugestao = ultimoLote ? ultimoLote.setorDestino : '4. Costura & Fechamento';
 
       lotesTrabalho.push({
@@ -32720,6 +33188,8 @@
         produtoNome: `${itModelo.produtoNome} (Lote ${proximaLetra})`,
         grade: gradeVazia,
         setorDestino: setorSugestao,
+        responsavelId: (prestadoresDisponiveis.find(p => (p.setor || '').toLowerCase().includes(setorSugestao.toLowerCase())) || {}).id || '',
+        responsavelNome: (prestadoresDisponiveis.find(p => (p.setor || '').toLowerCase().includes(setorSugestao.toLowerCase())) || {}).nome || '',
         costureiraId: '',
         costureiraNome: os.costureiraDesignada || '',
         valorCosturaPeca: itModelo.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50,
@@ -32752,12 +33222,15 @@
 
       lotesTrabalho.forEach((lote, idx) => {
         const letra = lote.letra || gerarLetraLote(idx);
-        const selCost = document.querySelector(`.sel-costureira-repartir[data-lote="${idx}"]`);
-        const selSetor = document.querySelector(`.sel-setor-repartir[data-lote="${idx}"]`);
-        const inpVal = document.querySelector(`.inp-valor-repartir[data-lote="${idx}"]`);
+        const selResp = document.querySelector(`.sel-responsavel-repartir[data-lote="${idx}"]`);
+        const respId = selResp ? selResp.value : (lote.responsavelId || '');
+        const respObj = prestadoresDisponiveis.find(p => p.id === respId) ||
+                        prestadoresDisponiveis.find(p => p.nome === lote.responsavelNome) ||
+                        costureirasDisponiveis.find(c => c.id === (lote.costureiraId || '')) ||
+                        { id: '', nome: (lote.responsavelNome || lote.costureiraNome || os.costureiraDesignada || 'A Definir'), tipo: 'terceirizado' };
 
-        const costId = selCost ? selCost.value : (lote.costureiraId || '');
-        const costObj = costureirasDisponiveis.find(c => c.id === costId) || costureirasDisponiveis[0] || { nome: os.costureiraDesignada };
+        const costObj = respObj;
+        const selSetor = document.querySelector(`.sel-setor-repartir[data-lote="${idx}"]`);
         const setorDestino = selSetor ? selSetor.value : (lote.setorDestino || '4. Costura & Fechamento');
         const valPeca = parseFloat(inpVal ? inpVal.value : lote.valorCosturaPeca) || 7.50;
         const totalPecasMod = lote.grade?.total || 0;
@@ -32786,6 +33259,9 @@
           tipoPedidoModalidade: os.tipoPedidoModalidade || 'padrao',
           jogadores: os.jogadores || [],
           etapaAtual: setorDestino.toLowerCase().includes("corte") ? "Corte" : (setorDestino.toLowerCase().includes("costura") ? "Costura" : (setorDestino.toLowerCase().includes("estamp") ? "Estamparia / DTF" : (setorDestino.toLowerCase().includes("bordad") ? "Bordado" : "Acabamento"))),
+          responsavelSetor: respObj.nome,
+          responsavelId: respObj.id,
+          responsavelTipo: respObj.tipo || 'terceirizado',
           costureiraDesignada: costObj.nome,
           costureiraId: costObj.id,
           valorCosturaPeca: valPeca,
@@ -32975,7 +33451,9 @@
     abrirModalCancelarPedido,
     reativarPedido,
     abrirModalDetalhesCancelamento,
-    abrirModalCadastrarCostureiraFaccao, abrirModalNovoClienteInline,
+    abrirModalCadastrarCostureiraFaccao,
+    abrirModalCadastrarPrestadorServico,
+    obterListaPrestadoresDisponiveis, abrirModalNovoClienteInline,
     abrirModalNovoModeloInline,
     abrirModalInspecaoQuarentena,
     abrirModalReceberPagamento,
