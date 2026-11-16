@@ -32234,7 +32234,6 @@
 
     const pedido = (db.pedidos || []).find(p => (p.numero != null && os.pedidoNumero != null && p.numero.toString() === os.pedidoNumero.toString()) || p.id === os.pedidoId) || {};
 
-    // Se os itens ficaram com "(Lote A)" / "(Lote B)" de um teste anterior, reunifica antes de montar a tela de repartição
     if (!os.desmembrada) {
       reunificarItensDeReparticao(os, pedido);
     }
@@ -32243,29 +32242,43 @@
       ? os.itens
       : (pedido.itens && Array.isArray(pedido.itens) && pedido.itens.length > 0 ? pedido.itens : []);
 
-    const isModeloUnico = (itensLista.length <= 1);
-    const itemOrig = itensLista[0] || { produtoNome: os.produto, grade: os.grade || {} };
-    const gradeOriginal = JSON.parse(JSON.stringify(itemOrig.grade || os.grade || {}));
-    delete gradeOriginal.total;
-    const totalOriginalOS = os.quantidadeTotal || Object.values(gradeOriginal).reduce((a, b) => a + (parseInt(b, 10) || 0), 0);
+    const totalOriginalOS = os.quantidadeTotal || itensLista.reduce((s, it) => s + (it.grade?.total || 0), 0) || 1;
 
-    // Lista de tamanhos presentes na grade original deste pedido
-    const tamanhosAtivos = Object.keys(gradeOriginal).filter(t => (parseInt(gradeOriginal[t], 10) || 0) > 0);
-    tamanhosAtivos.sort((a, b) => {
-      const idxA = (typeof CATALOGO_TAMANHOS_MESTRE !== 'undefined') ? CATALOGO_TAMANHOS_MESTRE.findIndex(x => x.chave === a) : -1;
-      const idxB = (typeof CATALOGO_TAMANHOS_MESTRE !== 'undefined') ? CATALOGO_TAMANHOS_MESTRE.findIndex(x => x.chave === b) : -1;
-      return (idxA !== -1 ? idxA : 999) - (idxB !== -1 ? idxB : 999);
-    });
+    // Gerador ilimitado de letras de lote: A, B, C ... Z, AA, AB, AC ...
+    function gerarLetraLote(idx) {
+      let s = '';
+      let n = idx;
+      while (n >= 0) {
+        s = String.fromCharCode(65 + (n % 26)) + s;
+        n = Math.floor(n / 26) - 1;
+      }
+      return s;
+    }
 
+    // Extrai tamanhos ativos de um modelo têxtil específico
+    function extrairTamanhosDoModelo(item) {
+      const g = JSON.parse(JSON.stringify((item && item.grade) || os.grade || {}));
+      delete g.total;
+      const tAtivos = Object.keys(g).filter(t => (parseInt(g[t], 10) || 0) > 0);
+      tAtivos.sort((a, b) => {
+        const idxA = (typeof CATALOGO_TAMANHOS_MESTRE !== 'undefined') ? CATALOGO_TAMANHOS_MESTRE.findIndex(x => x.chave === a) : -1;
+        const idxB = (typeof CATALOGO_TAMANHOS_MESTRE !== 'undefined') ? CATALOGO_TAMANHOS_MESTRE.findIndex(x => x.chave === b) : -1;
+        return (idxA !== -1 ? idxA : 999) - (idxB !== -1 ? idxB : 999);
+      });
+      return tAtivos.length > 0 ? tAtivos : ['UN'];
+    }
+
+    // Inicialização flexível dos lotes de trabalho
     let lotesTrabalho = [];
-    if (isModeloUnico) {
+    if (itensLista.length <= 1) {
+      const itemOrig = itensLista[0] || { produtoNome: os.produto || 'Uniforme', grade: os.grade || {} };
+      const tAtivos = extrairTamanhosDoModelo(itemOrig);
       const gradeA = {};
       const gradeB = {};
       let totA = 0;
       let totB = 0;
-
-      tamanhosAtivos.forEach(tam => {
-        const q = parseInt(gradeOriginal[tam], 10) || 0;
+      tAtivos.forEach(tam => {
+        const q = parseInt(itemOrig.grade?.[tam] || os.grade?.[tam], 10) || 0;
         const qA = Math.ceil(q / 2);
         const qB = q - qA;
         gradeA[tam] = qA;
@@ -32279,9 +32292,10 @@
       lotesTrabalho.push({
         idNum: 1,
         letra: 'A',
+        modeloIndice: 0,
         produtoNome: `${itemOrig.produtoNome || os.produto} (Lote A)`,
         grade: gradeA,
-        setorDestino: '4. Costura & Fechamento',
+        setorDestino: '1. Mesa de Corte',
         costureiraId: '',
         costureiraNome: os.costureiraDesignada || '',
         valorCosturaPeca: itemOrig.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50,
@@ -32291,6 +32305,7 @@
       lotesTrabalho.push({
         idNum: 2,
         letra: 'B',
+        modeloIndice: 0,
         produtoNome: `${itemOrig.produtoNome || os.produto} (Lote B)`,
         grade: gradeB,
         setorDestino: '4. Costura & Fechamento',
@@ -32300,17 +32315,22 @@
         mockupUrl: itemOrig.mockupUrl || os.mockupUrl || ''
       });
     } else {
-      lotesTrabalho = itensLista.map((it, idx) => ({
-        idNum: idx + 1,
-        letra: String.fromCharCode(65 + idx),
-        produtoNome: it.produtoNome || `Modelo ${idx + 1}`,
-        grade: it.grade || {},
-        setorDestino: it.setorDestino || '3. Costura & Fechamento',
-        costureiraId: '',
-        costureiraNome: os.costureiraDesignada || '',
-        valorCosturaPeca: it.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50,
-        mockupUrl: it.mockupUrl || os.mockupUrl || ''
-      }));
+      // Se há múltiplos modelos, inicia 1 lote para cada modelo inicialmente
+      lotesTrabalho = itensLista.map((it, idx) => {
+        const gClone = JSON.parse(JSON.stringify(it.grade || {}));
+        return {
+          idNum: idx + 1,
+          letra: gerarLetraLote(idx),
+          modeloIndice: idx,
+          produtoNome: `${it.produtoNome} (Lote ${gerarLetraLote(idx)})`,
+          grade: gClone,
+          setorDestino: idx === 0 ? '1. Mesa de Corte' : '4. Costura & Fechamento',
+          costureiraId: '',
+          costureiraNome: os.costureiraDesignada || '',
+          valorCosturaPeca: it.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50,
+          mockupUrl: it.mockupUrl || os.mockupUrl || ''
+        };
+      });
     }
 
     fecharModalRepartir();
@@ -32329,16 +32349,16 @@
 
     const htmlModal = `
       <div class="modal-overlay modal-active" id="modalRepartirOS" style="z-index: 99999; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px);">
-        <div class="modal-content" style="max-width: 880px; width: 95%; max-height: 92vh; display: flex; flex-direction: column; background: #ffffff; border-radius: 8px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden;">
+        <div class="modal-content" style="max-width: 920px; width: 95%; max-height: 92vh; display: flex; flex-direction: column; background: #ffffff; border-radius: 8px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden;">
           
           <!-- Cabeçalho -->
           <div style="background: #0f172a; color: #ffffff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #2563eb;">
             <div>
               <h3 style="margin: 0; font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px; letter-spacing: -0.3px;">
-                ✂️ Repartir Pedido por Setor & Modelo &bull; OS ${os.id} (Pedido #${os.pedidoNumero})
+                ✂️ Repartir Pedido em Múltiplas Divisões &bull; OS ${os.id} (Pedido #${os.pedidoNumero})
               </h3>
               <span style="font-size: 11.5px; color: #94a3b8; margin-top: 3px; display: block;">
-                Cliente: <strong>${os.cliente}</strong> &bull; Total Consolidado: <strong>${os.quantidadeTotal} peças</strong> em <strong>${itensLista.length} modelos têxteis</strong>
+                Cliente: <strong>${os.cliente || pedido.clienteNome || 'Cliente'}</strong> &bull; Total Consolidado: <strong>${totalOriginalOS} peças</strong> em <strong>${itensLista.length} modelo(s) têxtil(is)</strong>
               </span>
             </div>
             <button type="button" class="modal-close-btn" onclick="window.ERP.fecharModalRepartir()" style="color: #ffffff; font-size: 24px; background: transparent; border: none; cursor: pointer; padding: 0 4px;">&times;</button>
@@ -32346,45 +32366,23 @@
 
           <!-- Corpo com Rolagem -->
           <div style="padding: 18px 22px; overflow-y: auto; flex: 1;">
-            <!-- Alerta de Sigilo e Confidencialidade Industrial -->
-            <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 12px 16px; margin-bottom: 18px; display: flex; gap: 12px; align-items: flex-start;">
-              <span style="font-size: 22px; line-height: 1;">🔒</span>
-              <div style="font-size: 12px; color: #166534; line-height: 1.5;">
-                <strong style="color: #14532d; font-size: 13px;">Sigilo & Confidencialidade entre Costureiras / Facções:</strong><br>
-                Ao confirmar a divisão, o sistema desmembra esta ordem em <strong>${itensLista.length} Fichas Técnicas independentes</strong> (${os.id}-A, ${os.id}-B...). 
-                Cada costureira designada terá acesso <strong>apenas ao seu respectivo modelo, sua foto de mockup e ao seu valor a receber</strong>.
-                Nenhuma costureira verá o valor que você está pagando para as outras profissionais.
+            
+            <!-- Barra de Status de Distribuição & Botão Adicionar Divisão (ILIMITADO) -->
+            <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 12px 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <span style="font-size: 12px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">
+                  📊 Distribuição das Peças (Total do Pedido: ${totalOriginalOS} un)
+                </span>
+                <span id="badgeStatusDistribuicao" style="font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 4px; background: #dcfce7; color: #166534; border: 1px solid #86efac; display: inline-block;">
+                  Calculando distribuição...
+                </span>
               </div>
+              <button type="button" class="btn btn-primary" id="btnAdicionarLoteRepartir" style="background: #1d4ed8; border-color: #1e40af; font-weight: 800; font-size: 12px; padding: 7px 14px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(29, 78, 216, 0.2); cursor: pointer;">
+                ➕ Adicionar Outra Divisão / Setor / Lote
+              </button>
             </div>
 
-            <!-- Painel de Saldo da Grade Original -->
-            <div id="painelSaldoGradeRepartir" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 12px 14px; margin-bottom: 16px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-                <span style="font-size: 12px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
-                  📊 Grade Consolidada da OS (Total: ${totalOriginalOS} peças)
-                </span>
-                <span id="badgeStatusDistribuicao" style="font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: #dcfce7; color: #166534; border: 1px solid #86efac;">
-                  ✓ Grade 100% Distribuída
-                </span>
-              </div>
-              <div id="boxSaldosTamanhosRepartir" style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-                <!-- Preenchido dinamicamente via recalcularTotaisLotes() -->
-              </div>
-            </div>
-
-            <!-- Botão Adicionar Costureira / Facção se for modelo único -->
-            ${isModeloUnico ? `
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <span style="font-size: 12px; font-weight: 700; color: #475569;">
-                  🧵 Costureiras / Facções Designadas:
-                </span>
-                <button type="button" class="btn btn-secondary btn-sm" id="btnAdicionarLoteRepartir" style="font-size: 11px; font-weight: 800; color: #1d4ed8; background: #eff6ff; border-color: #93c5fd; padding: 4px 10px;">
-                  + Adicionar Outra Costureira / Lote
-                </button>
-              </div>
-            ` : ''}
-
-            <!-- Listagem dos Modelos / Lotes a Repartir -->
+            <!-- Listagem das Divisões / Lotes a Repartir -->
             <div style="display: flex; flex-direction: column; gap: 14px;" id="boxCardsModelosRepartir">
               <!-- Renderizado dinamicamente via renderizarCardsLotesRepartir() -->
             </div>
@@ -32393,9 +32391,9 @@
           <!-- Rodapé do Modal -->
           <div style="padding: 14px 22px; background: #f8fafc; border-top: 1.5px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div>
-              <span style="font-size: 11.5px; color: #64748b; display: block;">Total Geral de Facção desta Ordem:</span>
+              <span style="font-size: 11.5px; color: #64748b; display: block;">Total Geral MDO Costura:</span>
               <strong id="lblTotalGeralFaccaoRepartir" style="font-size: 16px; color: #15803d; font-family: monospace;">
-                ${formatarMoeda(itensLista.reduce((s, it) => s + ((it.custoCostura || os.valorCosturaPeca || 7.50) * (it.grade?.total || 0)), 0))}
+                R$ 0,00
               </strong>
             </div>
 
@@ -32409,7 +32407,7 @@
                 Cancelar
               </button>
               <button type="button" class="btn btn-primary" id="btnConfirmarRepartirOS" style="background: #047857; border-color: #059669; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
-                ✂️ Confirmar e Gerar ${itensLista.length} Fichas Individuais
+                ✂️ Confirmar e Gerar Fichas
               </button>
             </div>
           </div>
@@ -32420,30 +32418,22 @@
 
     document.body.insertAdjacentHTML('beforeend', htmlModal);
 
-    // =========================================================================
-    // RENDERIZADOR DINÂMICO DE LOTES & SALDOS DE GRADE PARA FACÇÃO
-    // =========================================================================
-
     function recalcularTotaisLotes() {
-      const somasPorTamanho = {};
-      tamanhosAtivos.forEach(t => somasPorTamanho[t] = 0);
       let totalGeralAtribuido = 0;
       let totalValorGeral = 0;
 
       lotesTrabalho.forEach((lote, lIdx) => {
+        const itemModelo = itensLista[lote.modeloIndice || 0] || itensLista[0];
+        const tAtivos = extrairTamanhosDoModelo(itemModelo);
         let totLote = 0;
-        if (isModeloUnico) {
-          tamanhosAtivos.forEach(t => {
-            const inp = document.querySelector(`.inp-grade-lote[data-lote="${lIdx}"][data-tam="${t}"]`);
-            const q = inp ? (parseInt(inp.value, 10) || 0) : (lote.grade[t] || 0);
-            lote.grade[t] = q;
-            somasPorTamanho[t] += q;
-            totLote += q;
-          });
-          lote.grade.total = totLote;
-        } else {
-          totLote = lote.grade?.total || 0;
-        }
+
+        tAtivos.forEach(t => {
+          const inp = document.querySelector(`.inp-grade-lote[data-lote="${lIdx}"][data-tam="${t}"]`);
+          const q = inp ? (parseInt(inp.value, 10) || 0) : (lote.grade[t] || 0);
+          lote.grade[t] = q;
+          totLote += q;
+        });
+        lote.grade.total = totLote;
         totalGeralAtribuido += totLote;
 
         const lblTot = document.querySelector(`.lbl-total-pecas-lote[data-lote="${lIdx}"]`);
@@ -32453,50 +32443,36 @@
         const valPeca = inpVal ? (parseFloat(inpVal.value) || 0) : (lote.valorCosturaPeca || 7.50);
         lote.valorCosturaPeca = valPeca;
 
-        const subTot = totLote * valPeca;
+        const selSetor = document.querySelector(`.sel-setor-repartir[data-lote="${lIdx}"]`);
+        if (selSetor && selSetor.value) lote.setorDestino = selSetor.value;
+
+        const selCost = document.querySelector(`.sel-costureira-repartir[data-lote="${lIdx}"]`);
+        if (selCost && selCost.value) lote.costureiraId = selCost.value;
+
+        const isCostura = (lote.setorDestino || '').toLowerCase().includes('costura');
+        const subTot = isCostura ? (totLote * valPeca) : 0;
         totalValorGeral += subTot;
+
         const lblSub = document.querySelector(`.lbl-subtotal-repartir[data-lote="${lIdx}"]`);
-        if (lblSub) lblSub.textContent = formatarMoeda(subTot);
+        if (lblSub) {
+          lblSub.textContent = isCostura ? formatarMoeda(subTot) : 'Setor Interno';
+        }
       });
-
-      let haPendencias = false;
-      const boxSaldos = document.getElementById('boxSaldosTamanhosRepartir');
-      if (boxSaldos && isModeloUnico) {
-        boxSaldos.innerHTML = tamanhosAtivos.map(t => {
-          const totalOriginal = parseInt(gradeOriginal[t], 10) || 0;
-          const alocado = somasPorTamanho[t] || 0;
-          const diff = totalOriginal - alocado;
-          if (diff !== 0) haPendencias = true;
-
-          const corBg = diff === 0 ? '#ecfdf5' : diff > 0 ? '#fffbeb' : '#fef2f2';
-          const corBorda = diff === 0 ? '#86efac' : diff > 0 ? '#fde68a' : '#fca5a5';
-          const corTexto = diff === 0 ? '#15803d' : diff > 0 ? '#b45309' : '#b91c1c';
-
-          return `
-            <div style="background: ${corBg}; border: 1.5px solid ${corBorda}; border-radius: 4px; padding: 4px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 5px;">
-              <strong style="color: ${corTexto}; text-transform: uppercase;">${t}: ${alocado}/${totalOriginal}</strong>
-              <span style="font-size: 10px; color: ${corTexto}; font-weight: 600;">
-                ${diff === 0 ? '✓ Ok' : diff > 0 ? `falta ${diff}` : `sobra ${Math.abs(diff)}`}
-              </span>
-            </div>
-          `;
-        }).join('');
-      }
 
       const badgeStatus = document.getElementById('badgeStatusDistribuicao');
       if (badgeStatus) {
-        if (totalGeralAtribuido === totalOriginalOS && !haPendencias) {
-          badgeStatus.textContent = `✓ Grade 100% Distribuída (${totalGeralAtribuido}/${totalOriginalOS})`;
+        if (totalGeralAtribuido === totalOriginalOS) {
+          badgeStatus.textContent = `✓ Grade 100% Distribuída (${totalGeralAtribuido}/${totalOriginalOS} peças em ${lotesTrabalho.length} divisões)`;
           badgeStatus.style.background = '#dcfce7';
           badgeStatus.style.color = '#166534';
           badgeStatus.style.borderColor = '#86efac';
         } else if (totalGeralAtribuido < totalOriginalOS) {
-          badgeStatus.textContent = `⚠️ Faltam distribuir ${totalOriginalOS - totalGeralAtribuido} peças`;
+          badgeStatus.textContent = `⚠️ Faltam distribuir ${totalOriginalOS - totalGeralAtribuido} peças (${totalGeralAtribuido}/${totalOriginalOS})`;
           badgeStatus.style.background = '#fef3c7';
           badgeStatus.style.color = '#92400e';
           badgeStatus.style.borderColor = '#fde68a';
         } else {
-          badgeStatus.textContent = `⛔ Excesso de ${totalGeralAtribuido - totalOriginalOS} peças distribuídas`;
+          badgeStatus.textContent = `⛔ Excesso de ${totalGeralAtribuido - totalOriginalOS} peças distribuídas (${totalGeralAtribuido}/${totalOriginalOS})`;
           badgeStatus.style.background = '#fee2e2';
           badgeStatus.style.color = '#991b1b';
           badgeStatus.style.borderColor = '#fca5a5';
@@ -32515,10 +32491,12 @@
       if (!container) return;
 
       container.innerHTML = lotesTrabalho.map((lote, lIdx) => {
-        const letra = lote.letra || String.fromCharCode(65 + lIdx);
-        const corTec = itemOrig.corPrincipal || itemOrig.corTecido || os.corTecido || 'A Definir';
-        const mockSrc = lote.mockupUrl || itemOrig.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(lote.produtoNome, '#1e3a8a', '#ffffff', (os.cliente || 'TEXFY').substring(0, 6)) : '');
+        const letra = lote.letra || gerarLetraLote(lIdx);
+        const itemModelo = itensLista[lote.modeloIndice || 0] || itensLista[0];
+        const corTec = itemModelo.corPrincipal || itemModelo.corTecido || os.corTecido || 'A Definir';
+        const mockSrc = lote.mockupUrl || itemModelo.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(lote.produtoNome, '#1e3a8a', '#ffffff', (os.cliente || 'TEXFY').substring(0, 6)) : '');
         const totPecas = lote.grade?.total || 0;
+        const tAtivos = extrairTamanhosDoModelo(itemModelo);
 
         return `
           <div class="card-repartir-modelo" data-lote="${lIdx}" style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap;">
@@ -32531,49 +32509,59 @@
               </label>
             </div>
 
-            <div style="flex: 1.3; min-width: 250px;">
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 6px;">
+            <div style="flex: 1.3; min-width: 260px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 6px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <span style="background: #0f172a; color: #ffffff; font-weight: 800; font-size: 11px; padding: 2px 7px; border-radius: 4px;">
-                    Sub-OS ${os.id}-${letra}
+                    Divisão ${letra} (${os.id}-${letra})
                   </span>
                   <strong style="font-size: 13.5px; color: #0f172a;">${lote.produtoNome}</strong>
                 </div>
-                ${(isModeloUnico && lotesTrabalho.length > 2) ? `
-                  <button type="button" class="btn btn-secondary btn-xs btn-remover-lote-repartir" data-lote="${lIdx}" style="color: #dc2626; border-color: #fca5a5; font-size: 10px; padding: 1px 6px;" title="Remover esta costureira / lote">&times; Excluir</button>
+                ${lotesTrabalho.length > 1 ? `
+                  <button type="button" class="btn btn-secondary btn-xs btn-remover-lote-repartir" data-lote="${lIdx}" style="color: #dc2626; border-color: #fca5a5; font-size: 10.5px; padding: 2px 7px; font-weight: 700; cursor: pointer;" title="Excluir esta divisão">&times; Excluir Divisão</button>
                 ` : ''}
               </div>
 
+              ${itensLista.length > 1 ? `
+                <div style="margin-bottom: 8px;">
+                  <label style="font-size: 10.5px; font-weight: 700; color: #0f172a; display: block; margin-bottom: 2px;">
+                    Modelo Têxtil desta Divisão:
+                  </label>
+                  <select class="form-select sel-modelo-repartir" data-lote="${lIdx}" style="font-size: 11.5px; padding: 4px 8px; font-weight: 700; color: #1e3a8a; height: auto;">
+                    ${itensLista.map((it, itIdx) => `
+                      <option value="${itIdx}" ${(lote.modeloIndice === itIdx) ? 'selected' : ''}>
+                        👕 Mod ${itIdx + 1}: ${it.produtoNome} (${it.grade?.total || 0} pçs no pedido)
+                      </option>
+                    `).join('')}
+                  </select>
+                </div>
+              ` : ''}
+
               <div style="font-size: 11.5px; color: #475569; margin-bottom: 6px;">
-                Cor: <strong style="color: #1e3a8a;">${corTec}</strong> &bull; Total: <strong style="color: #047857;" class="lbl-total-pecas-lote" data-lote="${lIdx}">${totPecas} peças</strong>
+                Cor: <strong style="color: #1e3a8a;">${corTec}</strong> &bull; Total Desta Divisão: <strong style="color: #047857;" class="lbl-total-pecas-lote" data-lote="${lIdx}">${totPecas} peças</strong>
               </div>
 
-              ${isModeloUnico ? `
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; margin-top: 4px;">
-                  <span style="font-size: 10.5px; color: #334155; font-weight: 800; display: block; margin-bottom: 6px;">
-                    📐 Quantidades por Tamanho para esta Costureira:
-                  </span>
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    ${tamanhosAtivos.map(t => {
-          const qOrig = parseInt(gradeOriginal[t], 10) || 0;
-          const qLote = lote.grade[t] || 0;
-          return `
-                        <div style="display: flex; flex-direction: column; align-items: center; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 6px; min-width: 50px;">
-                          <label style="font-size: 10px; font-weight: 800; color: #1e40af; text-transform: uppercase; margin-bottom: 2px;">
-                            ${t} <span style="font-size: 9px; color: #64748b;">(max ${qOrig})</span>
-                          </label>
-                          <input type="number" min="0" max="${qOrig}" class="form-input inp-grade-lote" data-lote="${lIdx}" data-tam="${t}" value="${qLote}" style="font-size: 12px; font-weight: 800; text-align: center; padding: 2px 4px; width: 44px; height: auto;">
-                        </div>
-                      `;
-        }).join('')}
-                  </div>
+              <!-- Inputs de Quantidades por Tamanho desta Divisão (100% Editável para qualquer lote) -->
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; margin-top: 4px;">
+                <span style="font-size: 10.5px; color: #334155; font-weight: 800; display: block; margin-bottom: 6px;">
+                  📐 Quantidades por Tamanho para esta Divisão:
+                </span>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  ${tAtivos.map(t => {
+                    const qOrig = parseInt(itemModelo.grade?.[t] || os.grade?.[t], 10) || 0;
+                    const qLote = lote.grade[t] || 0;
+                    return `
+                      <div style="display: flex; flex-direction: column; align-items: center; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 6px; min-width: 50px;">
+                        <label style="font-size: 10px; font-weight: 800; color: #1e40af; text-transform: uppercase; margin-bottom: 2px;">
+                          ${t} ${qOrig > 0 ? `<span style="font-size: 9px; color: #64748b;">(tot ${qOrig})</span>` : ''}
+                        </label>
+                        <input type="number" min="0" class="form-input inp-grade-lote" data-lote="${lIdx}" data-tam="${t}" value="${qLote}" style="font-size: 12px; font-weight: 800; text-align: center; padding: 2px 4px; width: 44px; height: auto;">
+                      </div>
+                    `;
+                  }).join('')}
                 </div>
-              ` : `
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 6px 8px; font-size: 11px;">
-                  <span style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 3px;">Grade Selecionada:</span>
-                  ${formatarGradeSelecionadaHtml(lote.grade, 'badge')}
-                </div>
-              `}
+              </div>
+
             </div>
 
             <div style="flex: 1.1; min-width: 220px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 10px 12px;">
@@ -32610,12 +32598,12 @@
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center;">
                 <div>
                   <label style="font-size: 10.5px; font-weight: 700; color: #0f172a; display: block; margin-bottom: 2px;">
-                    Valor / Peça (R$):
+                    Valor MDO / Pç (R$):
                   </label>
                   <input type="number" step="0.50" min="0" class="form-input inp-valor-repartir" data-lote="${lIdx}" value="${(lote.valorCosturaPeca || 7.50).toFixed(2)}" style="font-size: 12px; font-weight: 800; padding: 4px 8px; text-align: right; height: auto;">
                 </div>
                 <div style="text-align: right;">
-                  <span style="font-size: 10px; color: #64748b; font-weight: 700; display: block;">Subtotal a Pagar:</span>
+                  <span style="font-size: 10px; color: #64748b; font-weight: 700; display: block;">Subtotal MDO:</span>
                   <strong class="lbl-subtotal-repartir" data-lote="${lIdx}" style="font-size: 13.5px; color: #15803d; font-family: monospace;">
                     ${formatarMoeda((totPecas) * (lote.valorCosturaPeca || 7.50))}
                   </strong>
@@ -32630,6 +32618,22 @@
       container.querySelectorAll('.inp-grade-lote, .inp-valor-repartir').forEach(inp => {
         inp.addEventListener('input', recalcularTotaisLotes);
         inp.addEventListener('change', recalcularTotaisLotes);
+      });
+
+      container.querySelectorAll('.sel-modelo-repartir').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+          const lIdx = parseInt(e.target.getAttribute('data-lote'), 10);
+          const mIdx = parseInt(e.target.value, 10);
+          if (lotesTrabalho[lIdx]) {
+            const itMod = itensLista[mIdx] || itensLista[0];
+            lotesTrabalho[lIdx].modeloIndice = mIdx;
+            lotesTrabalho[lIdx].produtoNome = `${itMod.produtoNome} (Lote ${lotesTrabalho[lIdx].letra})`;
+            lotesTrabalho[lIdx].valorCosturaPeca = itMod.custoCostura || 7.50;
+            lotesTrabalho[lIdx].mockupUrl = itMod.mockupUrl || '';
+            renderizarCardsLotesRepartir();
+            recalcularTotaisLotes();
+          }
+        });
       });
 
       container.querySelectorAll('.sel-costureira-repartir').forEach(sel => {
@@ -32650,6 +32654,7 @@
           const setorNome = e.target.value;
           if (lotesTrabalho[lIdx]) {
             lotesTrabalho[lIdx].setorDestino = setorNome;
+            recalcularTotaisLotes();
           }
         });
       });
@@ -32657,11 +32662,13 @@
       container.querySelectorAll('.btn-remover-lote-repartir').forEach(btn => {
         btn.addEventListener('click', (e) => {
           const lIdx = parseInt(e.currentTarget.getAttribute('data-lote'), 10);
-          if (lotesTrabalho.length > 2) {
+          if (lotesTrabalho.length > 1) {
             lotesTrabalho.splice(lIdx, 1);
             lotesTrabalho.forEach((l, i) => {
-              l.letra = String.fromCharCode(65 + i);
-              l.produtoNome = `${itemOrig.produtoNome || os.produto} (Lote ${l.letra})`;
+              l.idNum = i + 1;
+              l.letra = gerarLetraLote(i);
+              const itMod = itensLista[l.modeloIndice || 0] || itensLista[0];
+              l.produtoNome = `${itMod.produtoNome} (Lote ${l.letra})`;
             });
             renderizarCardsLotesRepartir();
             recalcularTotaisLotes();
@@ -32680,7 +32687,7 @@
                 lotesTrabalho[lIdx].mockupUrl = b64;
                 const img = document.getElementById(`imgMockupRepartir_${lIdx}`);
                 if (img) img.src = b64;
-                mostrarToast(`✓ Mockup do Lote ${lotesTrabalho[lIdx].letra} atualizado!`, 'green');
+                mostrarToast(`✓ Mockup da Divisão ${lotesTrabalho[lIdx].letra} atualizado!`, 'green');
               }
             } catch (err) {
               console.error(err);
@@ -32693,26 +32700,35 @@
       recalcularTotaisLotes();
     }
 
+    // BOTÃO ADICIONAR DIVISÃO (ILIMITADO): Adiciona quantas divisões o usuário desejar!
     document.getElementById('btnAdicionarLoteRepartir')?.addEventListener('click', () => {
-      const proximaLetra = String.fromCharCode(65 + lotesTrabalho.length);
+      const proximaLetra = gerarLetraLote(lotesTrabalho.length);
+      const modIndicePadrao = 0;
+      const itModelo = itensLista[modIndicePadrao] || itensLista[0];
+      const tAtivos = extrairTamanhosDoModelo(itModelo);
       const gradeVazia = {};
-      tamanhosAtivos.forEach(t => gradeVazia[t] = 0);
+      tAtivos.forEach(t => gradeVazia[t] = 0);
       gradeVazia.total = 0;
+
+      const ultimoLote = lotesTrabalho[lotesTrabalho.length - 1];
+      const setorSugestao = ultimoLote ? ultimoLote.setorDestino : '4. Costura & Fechamento';
 
       lotesTrabalho.push({
         idNum: lotesTrabalho.length + 1,
         letra: proximaLetra,
-        produtoNome: `${itemOrig.produtoNome || os.produto} (Lote ${proximaLetra})`,
+        modeloIndice: modIndicePadrao,
+        produtoNome: `${itModelo.produtoNome} (Lote ${proximaLetra})`,
         grade: gradeVazia,
+        setorDestino: setorSugestao,
         costureiraId: '',
         costureiraNome: os.costureiraDesignada || '',
-        valorCosturaPeca: itemOrig.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50,
-        mockupUrl: itemOrig.mockupUrl || os.mockupUrl || ''
+        valorCosturaPeca: itModelo.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50,
+        mockupUrl: itModelo.mockupUrl || os.mockupUrl || ''
       });
 
       renderizarCardsLotesRepartir();
       recalcularTotaisLotes();
-      mostrarToast(`Nova facção / Lote ${proximaLetra} adicionado! Selecione os tamanhos para esta costureira.`, 'blue');
+      mostrarToast(`Nova Divisão (Lote ${proximaLetra}) adicionada! Defina o setor e as quantidades.`, 'blue');
     });
 
     renderizarCardsLotesRepartir();
@@ -32721,43 +32737,47 @@
     document.getElementById('btnConfirmarRepartirOS')?.addEventListener('click', () => {
       recalcularTotaisLotes();
 
-      if (isModeloUnico) {
-        let somaGeral = lotesTrabalho.reduce((acc, l) => acc + (l.grade?.total || 0), 0);
-        if (somaGeral !== totalOriginalOS) {
-          const confirmarMesmoAssim = confirm(`Atenção: A soma dos lotes (${somaGeral} peças) está diferente do total original da ordem (${totalOriginalOS} peças).\n\nDeseja confirmar a divisão mesmo assim?`);
-          if (!confirmarMesmoAssim) return;
-        }
+      const somaGeral = lotesTrabalho.reduce((acc, l) => acc + (l.grade?.total || 0), 0);
+      if (somaGeral !== totalOriginalOS) {
+        const confirmarMesmoAssim = confirm(
+          `Atenção na distribuição das peças:\n\n` +
+          `• Total Original da Ordem: ${totalOriginalOS} peças\n` +
+          `• Total Alocado nas Divisões: ${somaGeral} peças\n\n` +
+          `Deseja confirmar a divisão em ${lotesTrabalho.length} fichas mesmo assim?`
+        );
+        if (!confirmarMesmoAssim) return;
       }
 
       const subOrdens = [];
 
       lotesTrabalho.forEach((lote, idx) => {
-        const letra = lote.letra || String.fromCharCode(65 + idx);
+        const letra = lote.letra || gerarLetraLote(idx);
         const selCost = document.querySelector(`.sel-costureira-repartir[data-lote="${idx}"]`);
         const selSetor = document.querySelector(`.sel-setor-repartir[data-lote="${idx}"]`);
         const inpVal = document.querySelector(`.inp-valor-repartir[data-lote="${idx}"]`);
 
         const costId = selCost ? selCost.value : (lote.costureiraId || '');
         const costObj = costureirasDisponiveis.find(c => c.id === costId) || costureirasDisponiveis[0] || { nome: os.costureiraDesignada };
-        const setorDestino = selSetor ? selSetor.value : (lote.setorDestino || '3. Costura & Fechamento');
+        const setorDestino = selSetor ? selSetor.value : (lote.setorDestino || '4. Costura & Fechamento');
         const valPeca = parseFloat(inpVal ? inpVal.value : lote.valorCosturaPeca) || 7.50;
         const totalPecasMod = lote.grade?.total || 0;
+        const itemModelo = itensLista[lote.modeloIndice || 0] || itensLista[0];
         const modNome = lote.produtoNome;
-        const corTec = itemOrig.corPrincipal || itemOrig.corTecido || os.corTecido || 'A Definir';
-        const obsCores = itemOrig.observacoesCoresDetalhes || os.observacoesCoresDetalhes || '';
-        const itMockup = lote.mockupUrl || itemOrig.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(modNome, '#1e3a8a', '#ffffff', (os.cliente || 'TEXFY').substring(0, 6)) : '');
+        const corTec = itemModelo.corPrincipal || itemModelo.corTecido || os.corTecido || 'A Definir';
+        const obsCores = itemModelo.observacoesCoresDetalhes || os.observacoesCoresDetalhes || '';
+        const itMockup = lote.mockupUrl || itemModelo.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(modNome, '#1e3a8a', '#ffffff', (os.cliente || 'TEXFY').substring(0, 6)) : '');
 
         const subOS = {
           id: `${os.id}-${letra}`,
           parentOsId: os.id,
           subOs: true,
           setorDestino: setorDestino,
-          modeloIndice: idx,
+          modeloIndice: lote.modeloIndice || 0,
           modeloNome: modNome,
           pedidoNumero: os.pedidoNumero,
           cliente: os.cliente || (pedido && pedido.clienteNome) || (pedido && pedido.cliente) || "Cliente",
           produto: modNome,
-          itens: [Object.assign({}, itemOrig, { produtoNome: modNome, grade: lote.grade, setorDestino: setorDestino })],
+          itens: [Object.assign({}, itemModelo, { produtoNome: modNome, grade: lote.grade, setorDestino: setorDestino })],
           grade: lote.grade || {},
           quantidadeTotal: totalPecasMod,
           corTecido: corTec,
@@ -32776,7 +32796,7 @@
           dataPrevisaoEntrega: os.dataPrevisaoEntrega,
           dataMetaInterna: os.dataMetaInterna,
           dtfLarguraRolo: os.dtfLarguraRolo || 58,
-          tecidoConsumidoKg: ((itemOrig.consumoTecido || 0.28) * totalPecasMod).toFixed(1),
+          tecidoConsumidoKg: ((itemModelo.consumoTecido || 0.28) * totalPecasMod).toFixed(1),
           artesAplicacao: (os.artesAplicacao || []),
           instrucoesCorte: `Corte para ${totalPecasMod} peças de ${modNome} (Sub-OS ${letra} de ${lotesTrabalho.length}). Destino: [${setorDestino}]. Cor: ${corTec}.${obsCores ? ' ATENÇÃO: ' + obsCores : ''}`,
           instrucoesCostura: setorDestino.toLowerCase().includes('costura')
@@ -32820,7 +32840,7 @@
 
       salvarEstado(true);
       fecharModalRepartir();
-      mostrarToast(`✂️ OS ${os.id} repartida com sucesso em ${subOrdens.length} Fichas Técnicas confidenciais!`, 'green');
+      mostrarToast(`✂️ OS ${os.id} repartida com sucesso em ${subOrdens.length} Fichas Técnicas individuais!`, 'green');
 
       if (typeof renderizarOrdensServico === 'function') {
         renderizarOrdensServico();
@@ -32832,7 +32852,6 @@
       }, 300);
     });
   }
-
   function alterarEncarregadoCorteOS(osId) {
     const os = (db.ordensServico || []).find(o => o.id === osId);
     if (!os || !modalContainer) return;
