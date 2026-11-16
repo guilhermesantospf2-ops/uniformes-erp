@@ -1759,6 +1759,14 @@
             <div style="font-size: 11.5px; color: #64748b;">
               Quer apenas conhecer as ferramentas antes de assinar?
             </div>
+            ${(typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) ? `
+              <div style="margin-bottom: 6px; padding: 10px; background: #ecfdf5; border: 1.5px solid #86efac; border-radius: 6px; text-align: center;">
+                <span style="font-size: 11px; font-weight: 800; color: #166534; display: block; margin-bottom: 4px;">⚡ MODO TESTE LOCALHOST HABILITADO</span>
+                <button type="button" id="btnAutoPreencherLoginTeste" style="width: 100%; padding: 7px 10px; font-size: 12px; font-weight: 800; color: #ffffff; background: #059669; border: none; border-radius: 4px; cursor: pointer;">
+                  🔑 Entrar Direto com Login de Teste
+                </button>
+              </div>
+            ` : ''}
             <a href="demo.html" id="gateBtnEntrarDemo" style="background: none; border: none; cursor: pointer; color: #0284c7; font-weight: 700; font-size: 12.5px; text-decoration: underline; display: inline-flex; align-items: center; justify-content: center; gap: 5px;">
               ✨ Explorar Modo Demonstração Showroom (Sem Cadastro) &rarr;
             </a>
@@ -1772,6 +1780,15 @@
     `;
 
     // Vincular Eventos do Gatekeeper
+        // Atalho de login de teste para localhost
+    gatekeeper.querySelector('#btnAutoPreencherLoginTeste')?.addEventListener('click', () => {
+      const inpE = gatekeeper.querySelector('#gateLoginEmail');
+      const inpS = gatekeeper.querySelector('#gateLoginSenha');
+      if (inpE) inpE.value = 'admin@teste.com';
+      if (inpS) inpS.value = '123456';
+      gatekeeper.querySelector('#gateFormLogin')?.dispatchEvent(new Event('submit', { cancelable: true }));
+    });
+
     gatekeeper.querySelector('#gateBtnInstalarApp')?.addEventListener('click', () => {
       if (typeof window.solicitarInstalacaoTexfyApp === 'function') {
         window.solicitarInstalacaoTexfyApp();
@@ -5438,10 +5455,11 @@
                       <select class="form-select select-trocar-etapa" data-id="${p.id}" style="font-size: 11.5px; padding: 4px 6px; font-weight: 700; background-color: var(--bg-green-soft); border-color: var(--border-green); color: var(--color-green);">
                         <option value="Quarentena">🔒 Reenviar p/ Quarentena</option>
                         <option value="Corte" ${p.etapaProducao === 'Corte' ? 'selected' : ''}>Oficina: 1. Mesa de Corte</option>
-                        <option value="Estamparia / DTF" ${p.etapaProducao === 'Estamparia / DTF' || p.etapaProducao === 'Bordado' ? 'selected' : ''}>Oficina: 2. Estamparia / DTF</option>
-                        <option value="Costura" ${p.etapaProducao === 'Costura' ? 'selected' : ''}>Oficina: 3. Costura & Fechamento</option>
-                        <option value="Acabamento" ${p.etapaProducao === 'Acabamento' ? 'selected' : ''}>Oficina: 4. Revisão & Acabamento</option>
-                        <option value="Expedicao" ${p.etapaProducao === 'Expedicao' ? 'selected' : ''}>Oficina: 5. Expedição / Pronto</option>
+                        <option value="Estamparia / DTF" ${p.etapaProducao === 'Estamparia / DTF' ? 'selected' : ''}>Oficina: 2. Estamparia / DTF</option>
+                        <option value="Bordado" ${p.etapaProducao === 'Bordado' ? 'selected' : ''}>Oficina: 3. Bordado Computadorizado</option>
+                        <option value="Costura" ${p.etapaProducao === 'Costura' ? 'selected' : ''}>Oficina: 4. Costura & Fechamento</option>
+                        <option value="Acabamento" ${p.etapaProducao === 'Acabamento' ? 'selected' : ''}>Oficina: 5. Revisão & Acabamento</option>
+                        <option value="Expedicao" ${p.etapaProducao === 'Expedicao' ? 'selected' : ''}>Oficina: 6. Expedição / Pronto</option>
                         <option value="Entregue" ${p.status === 'Finalizado' || p.etapaProducao === 'Entregue' ? 'selected' : ''}>Entregue ao Cliente</option>
                       </select>
                     `}
@@ -14251,6 +14269,14 @@
             width: 100%;
             max-width: 100%;
           }
+          .no-print, button, .btn {
+            display: none !important;
+          }
+          @media print {
+            .no-print, button, .btn {
+              display: none !important;
+            }
+          }
         </style>
       </head>
       <body>
@@ -14808,7 +14834,10 @@
                       <img src="${mockup}" class="mockup-thumb-3x4" data-os-id="${os.id}" data-item-idx="0" data-pedido-id="${os.pedidoNumero || pOrig.id || ''}" alt="Mockup 3x4" title="Clique para abrir o mockup 3x4 na tela" style="cursor: pointer;">
                     `}
                   </td>
-                  <td class="text-mono"><strong>${os.id}</strong></td>
+                  <td class="text-mono">
+                    <strong>${os.id}</strong>
+                    ${os.setorDestino ? `<div style="font-size: 9.5px; color: #1e40af; font-weight: 800; background: #e0f2fe; padding: 1px 4px; border-radius: 3px; margin-top: 3px; border: 1px solid #bae6fd;">📍 ${os.setorDestino}</div>` : ''}
+                  </td>
                   <td class="text-mono">#${os.pedidoNumero}</td>
                   <td><strong>${os.cliente}</strong></td>
                   <td>
@@ -14858,7 +14887,7 @@
                       </button>
                       ${!os.desmembrada && !os.subOs ? `
                         <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="font-size: 11px; padding: 3px 6px; color: #854d0e; background: #fef9c3; border-color: #fde047; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 3px;" title="Repartir esta OS por Costureira mantendo sigilo de valores">
-                          ✂️ Repartir OS
+                          ✂️ Repartir Pedido
                         </button>
                       ` : ''}
                       ${os.desmembrada ? `
@@ -15115,15 +15144,18 @@
         reunificarItensDeReparticao(os, pedido);
       }
     }
-    let itensLista = (os.itens && Array.isArray(os.itens) && os.itens.length > 0) ? os.itens : [];
-    if (pedido.itens && Array.isArray(pedido.itens) && pedido.itens.length > itensLista.length) {
-      itensLista = pedido.itens;
-      os.itens = pedido.itens;
+        let itensLista = (os.itens && Array.isArray(os.itens) && os.itens.length > 0) ? os.itens : [];
+    // Sub-OSs NUNCA devem herdar a lista completa de itens do pedido pai, pois representam estritamente o seu lote/modelo
+    if (!os.subOs) {
+      if (pedido.itens && Array.isArray(pedido.itens) && pedido.itens.length > itensLista.length) {
+        itensLista = pedido.itens;
+        os.itens = pedido.itens;
+      }
+      if (itensLista.length === 0 && pedido.itens && pedido.itens.length > 0) {
+        itensLista = pedido.itens;
+      }
     }
-    if (itensLista.length === 0 && pedido.itens && pedido.itens.length > 0) {
-      itensLista = pedido.itens;
-    }
-    const temMultiplosModelos = itensLista.length > 1;
+    const temMultiplosModelos = !os.subOs && itensLista.length > 1;
 
     // Se modeloIdx for numérico, filtra a visualização para focar 100% naquele modelo específico
     const itAtivo = (modeloIdx !== null && itensLista[modeloIdx]) ? itensLista[modeloIdx] : null;
@@ -15259,11 +15291,11 @@
         <div class="nav-modelos-ficha" style="margin-bottom: 12px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
           <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
             <span style="font-size: 11px; font-weight: 800; color: #0f172a; margin-right: 4px;">MODELO ATIVO NA FICHA:</span>
-            <button type="button" class="btn btn-xs ${modeloIdx === null ? 'btn-primary' : 'btn-secondary'} btn-sel-mod-ficha" data-mod-idx="all" style="font-weight: 800; font-size: 11px; padding: 3px 8px;">
+            <button class="no-print btn btn-xs ${modeloIdx === null ? 'btn-primary' : 'btn-secondary'} btn-sel-mod-ficha" type="button"  data-mod-idx="all" style="font-weight: 800; font-size: 11px; padding: 3px 8px;">
               ★ Todos (${os.quantidadeTotal} pçs)
             </button>
             ${itensLista.map((it, idx) => `
-              <button type="button" class="btn btn-xs ${modeloIdx === idx ? 'btn-primary' : 'btn-secondary'} btn-sel-mod-ficha" data-mod-idx="${idx}" style="font-weight: 800; font-size: 11px; padding: 3px 8px;">
+              <button class="no-print btn btn-xs ${modeloIdx === idx ? 'btn-primary' : 'btn-secondary'} btn-sel-mod-ficha" type="button"  data-mod-idx="${idx}" style="font-weight: 800; font-size: 11px; padding: 3px 8px;">
                 👕 Mod ${idx + 1}: ${it.produtoNome.split(' ')[0]} ${it.produtoNome.split(' ')[1] || ''} (${it.grade?.total || 0} pçs)
               </button>
             `).join('')}
@@ -15287,11 +15319,19 @@
           <div>
             <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${emp.nomeFantasia || emp.razaoSocial}</h2>
             <span class="text-mono" style="color: #64748b; font-size: 11px;">ORDEM DE PRODUÇÃO: <strong>${os.id}</strong> • PEDIDO <strong>#${os.pedidoNumero}</strong></span>
+            ${os.setorDestino ? `
+              <div style="margin-top: 4px;">
+                <span style="font-size: 12px; font-weight: 900; color: #ffffff; background: #1e3a8a; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase; display: inline-flex; align-items: center; gap: 4px;">
+                  📍 SETOR DESTINO: ${os.setorDestino}
+                </span>
+              </div>
+            ` : ''}
           </div>
         </div>
         <div class="text-mono" style="text-align: right; font-size: 11px;">
           <strong>DATA ENTRADA: ${os.dataEntradaCorte}</strong><br>
           <span class="status-pill status-gray" style="margin-top: 3px;">ETAPA: ${os.etapaAtual.toUpperCase()}</span>
+          ${os.setorDestino ? `<div style="font-size: 11px; font-weight: 800; color: #1e40af; margin-top: 4px;">OFICINA / SETOR: ${os.setorDestino}</div>` : ''}
         </div>
       </div>
 
@@ -15361,7 +15401,7 @@
         
         <div style="flex: 1;">
           <div class="grid-cards-2" style="gap: 8px; font-size: 11.5px;">
-            <div><strong>Cliente:</strong> ${os.cliente}</div>
+            <div><strong>Cliente:</strong> ${os.cliente || pedido.clienteNome || pedido.cliente || 'Confecção'}</div>
             <div>
               <strong>Produto Têxtil:</strong> 
               ${itAtivo ? `
@@ -15376,7 +15416,13 @@
               `)}
             </div>
             <div><strong>Total de Peças:</strong> <span style="font-weight: 800; color: #047857; font-size: 12.5px;">${qtdTotal} un</span> ${itAtivo ? `<span style="font-size: 10px; color: #64748b;">(deste modelo)</span>` : (temMultiplosModelos ? `<span style="font-size: 10px; color: #64748b;">(total do pedido)</span>` : '')}</div>
-            <div><strong>Costureira Designada:</strong> <span style="font-weight: 800; color: #047857;">${os.costureiraDesignada}</span></div>
+            ${(() => {
+              const sLow = (os.setorDestino || os.etapaAtual || "").toLowerCase();
+              const isCost = sLow.includes("costura") || (!os.setorDestino && !os.subOs);
+              return isCost
+                ? `<div><strong>Costureira Designada:</strong> <span style="font-weight: 800; color: #047857;">${os.costureiraDesignada || 'A Definir'}</span></div>`
+                : `<div><strong>Setor Destino:</strong> <span style="font-weight: 800; color: #1e3a8a;">${os.setorDestino || '1. Mesa de Corte'}</span></div>`;
+            })()}
             <div>
               <strong>Encarregado de Corte:</strong>
               <span id="lblEncarregadoCorteOS_${os.id}" style="font-weight: 700; color: #0f172a;">${os.responsavelCorte || (db.empresa && db.empresa.encarregadoCortePadrao) || 'A Definir'}</span>
@@ -15385,36 +15431,69 @@
             <div><strong>Consumo Estimado:</strong> <strong>${consumoEstimadoTexto}</strong> ${(pedido.unidadeTecido === 'metro' ? 'metros' : 'kg de malha')}${(!itAtivo && temMultiplosModelos) ? ` <span style="font-size: 10px; color: #64748b;">(soma dos modelos)</span>` : ''}</div>
           </div>
 
-          <!-- REMUNERAÇÃO & CONTROLE DA COSTUREIRA / FACÇÃO -->
-          <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 4px; padding: 9px 12px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-            <div>
-              <span style="font-size: 10px; font-weight: 800; color: #15803d; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">
-                🧵 Remuneração da Costura (Facção / Produção):
-              </span>
-              ${htmlRemuneracaoCostura}
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-              ${(!os.desmembrada && !os.subOs) ? `
-                <button type="button" class="btn btn-sm" onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="background: #fef08a; color: #854d0e; border: 1.5px solid #facc15; font-weight: 800; font-size: 11.5px; padding: 4px 10px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.06);" title="Repartir esta OS para costureiras diferentes com sigilo absoluto de valores">
-                  ✂️ Repartir Produção por Costureira
-                </button>
-              ` : `
-                <span class="status-pill status-gray" style="font-size: 11px; font-weight: 800; color: #854d0e; background: #fef9c3; border: 1px solid #fde047;">
-                  ✂️ ${os.subOs ? `Sub-OS Confidencial (${os.id})` : `OS Repartida (${os.subOrdensGeradas ? os.subOrdensGeradas.length : 2} Sub-OSs)`}
-                </span>
-                <button type="button" class="btn btn-sm" onclick="window.ERP.desfazerReparticaoOS('${os.parentOsId || os.pedidoNumero || os.id}')" style="background: #fee2e2; color: #b91c1c; border: 1.5px solid #fca5a5; font-weight: 800; font-size: 11.5px; padding: 4px 10px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.06);" title="Desfazer a repartição, excluir as sub-ordens repartidas e unificar o pedido novamente">
-                  🔄 Desfazer Repartição & Unificar
-                </button>
-              `}
-              <div style="text-align: right; font-size: 11px;">
-                <span style="color: #64748b;">Costureira:</span><br>
-                <strong style="color: #047857; font-size: 12px;">${os.costureiraDesignada}</strong>
+          <!-- REMUNERAÇÃO & CONTROLE DO SETOR (OCULTO NA IMPRESSÃO DA OS, APARECE SOMENTE NO SISTEMA) -->
+          ${(() => {
+            const setorLower = (os.setorDestino || os.etapaAtual || "").toLowerCase();
+            const isCostura = setorLower.includes("costura") || (!os.setorDestino && !os.subOs);
+            if (!isCostura) {
+              // Para setores internos que não são costura (Corte, Bordado, etc.),
+              // este painel aparece SOMENTE NO SISTEMA (no-print) e NUNCA na OS impressa!
+              return `
+                <div class="no-print" style="background: #f8fafc; border: 1.5px dashed #93c5fd; border-radius: 6px; padding: 7px 12px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                  <div style="font-size: 11.5px; color: #1e3a8a; font-weight: 700;">
+                    🏭 Controle de Setor: <strong>${os.setorDestino || "Mesa de Corte"}</strong> <span style="font-size: 10.5px; font-weight: 500; color: #64748b;">(Visível apenas no sistema)</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    ${(!os.desmembrada && !os.subOs) ? `
+                      <button type="button" class="btn btn-sm no-print" onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="background: #fef08a; color: #854d0e; border: 1.5px solid #facc15; font-weight: 800; font-size: 11px; padding: 3px 8px; border-radius: 4px; cursor: pointer;">
+                        ✂️ Repartir Pedido
+                      </button>
+                    ` : `
+                      <span class="status-pill status-gray no-print" style="font-size: 10.5px; font-weight: 800; color: #854d0e; background: #fef9c3; border: 1px solid #fde047;">
+                        ✂️ ${os.subOs ? `Sub-OS (${os.id})` : `OS Repartida (${os.subOrdensGeradas ? os.subOrdensGeradas.length : 2} Sub-OSs)`}
+                      </span>
+                      <button type="button" class="btn btn-sm no-print" onclick="window.ERP.desfazerReparticaoOS('${os.parentOsId || os.pedidoNumero || os.id}')" style="background: #fee2e2; color: #b91c1c; border: 1.5px solid #fca5a5; font-weight: 800; font-size: 11px; padding: 3px 8px; border-radius: 4px; cursor: pointer;">
+                        🔄 Desfazer Repartição & Unificar
+                      </button>
+                    `}
+                  </div>
+                </div>
+              `;
+            }
+            // Se for Costura, exibe na OS o valor acordado com a costureira, mas esconde os botões do sistema na impressão
+            return `
+              <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 4px; padding: 9px 12px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div>
+                  <span style="font-size: 10px; font-weight: 800; color: #15803d; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">
+                    🧵 Remuneração da Costura (Facção / Produção):
+                  </span>
+                  ${htmlRemuneracaoCostura}
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <div class="no-print" style="display: inline-flex; align-items: center; gap: 6px;">
+                    ${(!os.desmembrada && !os.subOs) ? `
+                      <button type="button" class="btn btn-sm no-print" onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="background: #fef08a; color: #854d0e; border: 1.5px solid #facc15; font-weight: 800; font-size: 11.5px; padding: 4px 10px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;" title="Repartir esta OS para costureiras diferentes">
+                        ✂️ Repartir Pedido
+                      </button>
+                    ` : `
+                      <span class="status-pill status-gray no-print" style="font-size: 11px; font-weight: 800; color: #854d0e; background: #fef9c3; border: 1px solid #fde047;">
+                        ✂️ ${os.subOs ? `Sub-OS Confidencial (${os.id})` : `OS Repartida (${os.subOrdensGeradas ? os.subOrdensGeradas.length : 2} Sub-OSs)`}
+                      </span>
+                      <button type="button" class="btn btn-sm no-print" onclick="window.ERP.desfazerReparticaoOS('${os.parentOsId || os.pedidoNumero || os.id}')" style="background: #fee2e2; color: #b91c1c; border: 1.5px solid #fca5a5; font-weight: 800; font-size: 11.5px; padding: 4px 10px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;" title="Desfazer a repartição e unificar o pedido novamente">
+                        🔄 Desfazer Repartição & Unificar
+                      </button>
+                    `}
+                  </div>
+                  <div style="text-align: right; font-size: 11px;">
+                    <span style="color: #64748b;">Costureira:</span><br>
+                    <strong style="color: #047857; font-size: 12px;">${os.costureiraDesignada}</strong>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            `;
+          })()}
         </div>
       </div>
-
       <!-- ESPECIFICAÇÃO DE CORES & DETALHES DE CONFECÇÃO (DESTAQUE CHÃO DE FÁBRICA A4) -->
       ${(os.desmembrada || (os.subOrdensGeradas && os.subOrdensGeradas.length > 0)) ? (() => {
         const subOrdens = (db.ordensServico || []).filter(o => o.subOs && (o.parentOsId === os.id || (os.pedidoNumero != null && String(o.pedidoNumero) === String(os.pedidoNumero))));
@@ -15439,6 +15518,9 @@
                       <span class="status-pill status-green" style="font-size: 9px; font-weight: 800;">${sub.etapaAtual || 'Corte'}</span>
                     </div>
                     <div style="font-size: 12px; color: #1e293b; margin-bottom: 4px;">
+                      Setor da Fábrica: <strong style="color: #1e40af; background: #e0f2fe; padding: 2px 6px; border-radius: 4px; border: 1px solid #bae6fd;">📍 ${sub.setorDestino || 'Costura'}</strong>
+                    </div>
+                    <div style="font-size: 12px; color: #1e293b; margin-bottom: 4px;">
                       Costureira / Facção: <strong style="color: #047857;">${sub.costureiraDesignada || 'A Definir'}</strong>
                     </div>
                     <div style="font-size: 11px; color: #475569; margin-bottom: 6px;">
@@ -15448,10 +15530,10 @@
                       ${formatarGradeSelecionadaHtml(sub.grade, 'badge')}
                     </div>
                     <div style="display: flex; gap: 6px;">
-                      <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.abrirFichaTecnica(\'${sub.id}\')" style="flex: 1; font-weight: 700; color: #0284c7; background: #f0f9ff; border-color: #bae6fd;">
+                      <button class="no-print btn btn-secondary btn-xs" type="button"  onclick="window.ERP.abrirFichaTecnica(\'${sub.id}\')" style="flex: 1; font-weight: 700; color: #0284c7; background: #f0f9ff; border-color: #bae6fd;">
                         🔍 Abrir Ficha ${sub.id}
                       </button>
-                      <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.imprimirFichaTecnicaIsolada(\'${sub.id}\')" style="font-weight: 700;">
+                      <button class="no-print btn btn-secondary btn-xs" type="button"  onclick="window.ERP.imprimirFichaTecnicaIsolada(\'${sub.id}\')" style="font-weight: 700;">
                         🖨️ Imprimir A4
                       </button>
                     </div>
@@ -15508,8 +15590,8 @@
             <div style="display: flex; align-items: center; gap: 8px;">
               <strong style="color: #0f172a; font-size: 11.5px;">GRADE OFICIAL DE CORTE POR MODELO (${itensLista.length} MODELOS):</strong>
               ${!os.desmembrada ? `
-                <button type="button" class="btn btn-xs" onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="background: #fef08a; color: #854d0e; border: 1.5px solid #facc15; font-weight: 800; font-size: 10.5px; padding: 2px 7px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="Repartir modelos entre costureiras">
-                  ✂️ Repartir Modelos
+                <button class="no-print btn btn-xs" type="button"  onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="background: #fef08a; color: #854d0e; border: 1.5px solid #facc15; font-weight: 800; font-size: 10.5px; padding: 2px 7px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="Repartir modelos entre costureiras">
+                  ✂️ Repartir Pedido
                 </button>
               ` : ''}
             </div>
@@ -15568,8 +15650,8 @@
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
             ${!os.desmembrada ? `
-              <button type="button" class="btn btn-xs" onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="background: #fef08a; color: #854d0e; border: 1.5px solid #facc15; font-weight: 800; font-size: 10.5px; padding: 3px 8px; border-radius: 4px; cursor: pointer;" title="Dividir produção desta OS entre costureiras">
-                ✂️ Dividir por Costureira
+              <button class="no-print btn btn-xs" type="button"  onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="background: #fef08a; color: #854d0e; border: 1.5px solid #facc15; font-weight: 800; font-size: 10.5px; padding: 3px 8px; border-radius: 4px; cursor: pointer;" title="Dividir produção desta OS entre costureiras">
+                ✂️ Repartir Pedido
               </button>
             ` : ''}
             <span style="color: #047857; font-weight: 800; font-size: 13px;" class="text-mono">TOTAL: ${os.quantidadeTotal} pçs</span>
@@ -15644,12 +15726,25 @@
         </ul>
       </div>
 
-      <!-- 3. Instruções para Costureira / Facção -->
-      <div style="margin-bottom: 12px;">
-        <strong style="color: #0f172a; display: block; margin-bottom: 2px; font-size: 11.5px;">3. INSTRUÇÕES PARA A COSTUREIRA / FACÇÃO:</strong>
-        <p style="color: #475569; font-size: 11px;">${os.instrucoesCostura || 'Costura reforçada de ombro a ombro e pesponto duplo nas cavas e barras.'}</p>
-      </div>
-
+      <!-- 3. Instruções do Setor / Costureira -->
+      ${(() => {
+        const sLow = (os.setorDestino || os.etapaAtual || "").toLowerCase();
+        const isCost = sLow.includes("costura") || (!os.setorDestino && !os.subOs);
+        if (isCost) {
+          return `
+            <div style="margin-bottom: 12px;">
+              <strong style="color: #0f172a; display: block; margin-bottom: 2px; font-size: 11.5px;">3. INSTRUÇÕES PARA A COSTUREIRA / FACÇÃO:</strong>
+              <p style="color: #475569; font-size: 11px;">${os.instrucoesCostura || "Costura reforçada de ombro a ombro e pesponto duplo nas cavas e barras."}</p>
+            </div>
+          `;
+        }
+        return `
+          <div style="margin-bottom: 12px;">
+            <strong style="color: #0f172a; display: block; margin-bottom: 2px; font-size: 11.5px;">3. INSTRUÇÕES TÉCNICAS DO SETOR (${os.setorDestino || "PRODUÇÃO INTERNA"}):</strong>
+            <p style="color: #475569; font-size: 11px;">Ordem destinada ao setor de ${os.setorDestino || "produção interna"}. Seguir rigorosamente as medidas da grade, especificações técnicas e tolerância industrial de 2mm.</p>
+          </div>
+        `;
+      })()}
       <!-- Assinaturas do Chão de Fábrica -->
       <div style="display: flex; justify-content: space-between; margin-top: 20px; padding-top: 10px; border-top: 1px dashed #cbd5e1; font-size: 10px;">
         <div style="text-align: center; width: 170px; border-top: 1px solid #000; padding-top: 3px;">
@@ -15666,24 +15761,34 @@
         ${emp.rodapeFicha || 'Ordem de Produção Oficial. Tolerância de corte de 2mm. Em caso de dúvidas, contate o encarregado.'}
       </div>
 
-      <!-- CANHOTO DESTACÁVEL DE CONTROLE DA COSTUREIRA / FACÇÃO -->
-      <div style="margin-top: 16px; border-top: 2px dashed #94a3b8; padding-top: 10px; font-size: 10.5px; color: #334155;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <strong style="font-size: 11px; color: #0f172a; text-transform: uppercase;">
-            ✂️ CANHOTO DE ACERTO DA COSTURA — CONTROLE DA COSTUREIRA & DA FÁBRICA
-          </strong>
-          <span class="text-mono" style="font-weight: 700; font-size: 11px;">OS #${os.id} • PEDIDO #${os.pedidoNumero}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 4px; padding: 8px 12px; font-size: 11px; flex-wrap: wrap; gap: 8px;">
-          <div><strong>Costureira / Facção:</strong> ${os.costureiraDesignada}</div>
-          <div><strong>Qtd Peças:</strong> ${qtdTotal} un ${itAtivo ? `(Mod ${modeloIdx + 1})` : ''}</div>
-          <div><strong>Valor Unitário MDO:</strong> ${formatarMoeda(valorCosturaUnitario)} / pç</div>
-          <div><strong>Total a Receber:</strong> <strong style="color: #15803d; font-size: 13.5px;">${formatarMoeda(totalPagarCostura)}</strong></div>
-          <div style="border-bottom: 1px solid #475569; width: 150px; text-align: center; font-size: 9px; color: #64748b; margin-top: 6px;">
-            Assinatura / Visto de Entrega
+      <!-- CANHOTO DESTACÁVEL DE CONTROLE DA FÁBRICA / SETOR -->
+      ${(() => {
+        const setorLower = (os.setorDestino || os.etapaAtual || "").toLowerCase();
+        const isCostura = setorLower.includes("costura") || (!os.setorDestino && !os.subOs);
+        return `
+          <div style="margin-top: 16px; border-top: 2px dashed #94a3b8; padding-top: 10px; font-size: 10.5px; color: #334155;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <strong style="font-size: 11px; color: #0f172a; text-transform: uppercase;">
+                ✂️ CANHOTO DE ACERTO & CONTROLE DO SETOR (${os.setorDestino || "OFICINA"}) — FÁBRICA
+              </strong>
+              <span class="text-mono" style="font-weight: 700; font-size: 11px;">OS #${os.id} • PEDIDO #${os.pedidoNumero}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 4px; padding: 8px 12px; font-size: 11px; flex-wrap: wrap; gap: 8px;">
+              <div><strong>Setor:</strong> <span style="color: #1e3a8a; font-weight: 700;">${os.setorDestino || "Fábrica"}</span> ${isCostura ? `&bull; <strong>Resp:</strong> ${os.costureiraDesignada}` : "" }</div>
+              <div><strong>Qtd Peças:</strong> ${qtdTotal} un ${itAtivo ? `(Mod ${modeloIdx + 1})` : ""}</div>
+              ${isCostura ? `
+                <div><strong>Valor Unitário MDO:</strong> ${formatarMoeda(valorCosturaUnitario)} / pç</div>
+                <div><strong>Total a Receber:</strong> <strong style="color: #15803d; font-size: 13.5px;">${formatarMoeda(totalPagarCostura)}</strong></div>
+              ` : `
+                <div style="color: #64748b; font-style: italic; font-weight: 600;">Setor Interno &bull; Controle de Fluxo</div>
+              `}
+              <div style="border-bottom: 1px solid #475569; width: 160px; text-align: center; font-size: 9px; color: #64748b; margin-top: 6px;">
+                Assinatura / Visto de Entrega
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        `;
+      })()}
     `;
   }
 
@@ -15693,12 +15798,20 @@
     const idStr = String(osId || '').trim();
     const numLimpo = idStr.replace(/\D/g, '');
 
-    let os = (db.ordensServico || []).find(o =>
-      o.id === idStr ||
-      (o.pedidoNumero != null && String(o.pedidoNumero) === idStr) ||
-      (numLimpo && o.pedidoNumero != null && String(o.pedidoNumero) === numLimpo) ||
-      (o.pedidoId && (o.pedidoId === idStr || o.pedidoId === `PED-${numLimpo}`))
-    );
+    // 1. Prioridade Máxima: correspondência exata do ID (essencial para Sub-OSs como OS-8401-A e OS-8401-B)
+    let os = (db.ordensServico || []).find(o => o.id === idStr);
+    // 2. Se não encontrou por ID exato, busca por pedidoNumero exato (apenas OS original)
+    if (!os) {
+      os = (db.ordensServico || []).find(o => !o.subOs && o.pedidoNumero != null && String(o.pedidoNumero) === idStr);
+    }
+    // 3. Fallback apenas se não for sub-OS com letra
+    if (!os && !idStr.includes("-A") && !idStr.includes("-B") && !idStr.includes("-C") && !idStr.includes("-D")) {
+      const numLimpo = idStr.replace(/\D/g, "");
+      os = (db.ordensServico || []).find(o =>
+        (!o.subOs && numLimpo && o.pedidoNumero != null && String(o.pedidoNumero) === numLimpo) ||
+        (!o.subOs && o.pedidoId && (o.pedidoId === idStr || o.pedidoId === `PED-${numLimpo}`))
+      );
+    }
 
     if (!os) {
       // Se a OS ainda nao existe em db.ordensServico, busca o pedido correspondente e gera a OS automaticamente
@@ -15743,7 +15856,7 @@
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
               ${(itensLista.length > 1 && !os.desmembrada) ? `
                 <button type="button" class="btn btn-secondary btn-sm" style="color: #854d0e; background: #fef08a; border-color: #facc15; font-weight: 800; display: inline-flex; align-items: center; gap: 5px;" onclick="window.ERP.abrirModalRepartirOS('${os.id}')" title="Repartir esta OS por modelo para diferentes costureiras com sigilo de valores">
-                  ✂️ Repartir Pedido em ${itensLista.length} Fichas (Sigilo de Valores)
+                  ✂️ Repartir Pedido
                 </button>
               ` : ''}
               ${os.subOs ? `
@@ -16113,12 +16226,20 @@
     const idStr = String(osId || '').trim();
     const numLimpo = idStr.replace(/\D/g, '');
 
-    let os = (db.ordensServico || []).find(o =>
-      o.id === idStr ||
-      (o.pedidoNumero != null && String(o.pedidoNumero) === idStr) ||
-      (numLimpo && o.pedidoNumero != null && String(o.pedidoNumero) === numLimpo) ||
-      (o.pedidoId && (o.pedidoId === idStr || o.pedidoId === `PED-${numLimpo}`))
-    );
+    // 1. Prioridade Máxima: correspondência exata do ID (essencial para Sub-OSs como OS-8401-A e OS-8401-B)
+    let os = (db.ordensServico || []).find(o => o.id === idStr);
+    // 2. Se não encontrou por ID exato, busca por pedidoNumero exato (apenas OS original)
+    if (!os) {
+      os = (db.ordensServico || []).find(o => !o.subOs && o.pedidoNumero != null && String(o.pedidoNumero) === idStr);
+    }
+    // 3. Fallback apenas se não for sub-OS com letra
+    if (!os && !idStr.includes("-A") && !idStr.includes("-B") && !idStr.includes("-C") && !idStr.includes("-D")) {
+      const numLimpo = idStr.replace(/\D/g, "");
+      os = (db.ordensServico || []).find(o =>
+        (!o.subOs && numLimpo && o.pedidoNumero != null && String(o.pedidoNumero) === numLimpo) ||
+        (!o.subOs && o.pedidoId && (o.pedidoId === idStr || o.pedidoId === `PED-${numLimpo}`))
+      );
+    }
 
     if (!os) {
       const ped = (db.pedidos || []).find(p =>
@@ -32160,6 +32281,7 @@
         letra: 'A',
         produtoNome: `${itemOrig.produtoNome || os.produto} (Lote A)`,
         grade: gradeA,
+        setorDestino: '4. Costura & Fechamento',
         costureiraId: '',
         costureiraNome: os.costureiraDesignada || '',
         valorCosturaPeca: itemOrig.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50,
@@ -32171,6 +32293,7 @@
         letra: 'B',
         produtoNome: `${itemOrig.produtoNome || os.produto} (Lote B)`,
         grade: gradeB,
+        setorDestino: '4. Costura & Fechamento',
         costureiraId: '',
         costureiraNome: os.costureiraDesignada || '',
         valorCosturaPeca: itemOrig.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50,
@@ -32182,6 +32305,7 @@
         letra: String.fromCharCode(65 + idx),
         produtoNome: it.produtoNome || `Modelo ${idx + 1}`,
         grade: it.grade || {},
+        setorDestino: it.setorDestino || '3. Costura & Fechamento',
         costureiraId: '',
         costureiraNome: os.costureiraDesignada || '',
         valorCosturaPeca: it.custoCostura || os.valorCosturaPeca || pedido.custoCostura || 7.50,
@@ -32195,6 +32319,14 @@
       ? db.costureiras
       : [{ id: 'COST-001', nome: os.costureiraDesignada || 'Costureira Padrão', valorCosturaPeca: 7.50 }];
 
+    const setoresFabricaDisponiveis = [
+      { id: 'corte', nome: '1. Mesa de Corte' },
+      { id: 'estamparia', nome: '2. Estamparia / DTF' },
+      { id: 'bordado', nome: '3. Bordado Computadorizado' },
+      { id: 'costura', nome: '4. Costura & Fechamento' },
+      { id: 'acabamento', nome: '5. Revisão & Acabamento' }
+    ];
+
     const htmlModal = `
       <div class="modal-overlay modal-active" id="modalRepartirOS" style="z-index: 99999; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px);">
         <div class="modal-content" style="max-width: 880px; width: 95%; max-height: 92vh; display: flex; flex-direction: column; background: #ffffff; border-radius: 8px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden;">
@@ -32203,7 +32335,7 @@
           <div style="background: #0f172a; color: #ffffff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #2563eb;">
             <div>
               <h3 style="margin: 0; font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px; letter-spacing: -0.3px;">
-                ✂️ Repartir Produção por Modelo &bull; OS ${os.id} (Pedido #${os.pedidoNumero})
+                ✂️ Repartir Pedido por Setor & Modelo &bull; OS ${os.id} (Pedido #${os.pedidoNumero})
               </h3>
               <span style="font-size: 11.5px; color: #94a3b8; margin-top: 3px; display: block;">
                 Cliente: <strong>${os.cliente}</strong> &bull; Total Consolidado: <strong>${os.quantidadeTotal} peças</strong> em <strong>${itensLista.length} modelos têxteis</strong>
@@ -32446,8 +32578,21 @@
 
             <div style="flex: 1.1; min-width: 220px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 10px 12px;">
               <span style="font-size: 10px; font-weight: 800; color: #166534; text-transform: uppercase; display: block; margin-bottom: 6px;">
-                🧵 Destino & Remuneração desta Peça:
+                🏭 Setor de Destino & Oficina:
               </span>
+
+              <div style="margin-bottom: 8px;">
+                <label style="font-size: 11px; font-weight: 700; color: #0f172a; display: block; margin-bottom: 2px;">
+                  Setor da Fábrica (Emissão da OS):
+                </label>
+                <select class="form-select sel-setor-repartir" data-lote="${lIdx}" style="font-size: 11.5px; padding: 5px 8px; height: auto; font-weight: 700; color: #1e3a8a; background: #f8fafc; border: 1.5px solid #93c5fd;">
+                  ${setoresFabricaDisponiveis.map(s => `
+                    <option value="${s.nome}" ${(lote.setorDestino === s.nome || (lote.setorDestino && lote.setorDestino.toLowerCase().includes(s.id)) || (!lote.setorDestino && s.id === "costura")) ? "selected" : ""}>
+                      📍 ${s.nome}
+                    </option>
+                  `).join('')}
+                </select>
+              </div>
               
               <div style="margin-bottom: 8px;">
                 <label style="font-size: 11px; font-weight: 700; color: #0f172a; display: block; margin-bottom: 2px;">
@@ -32495,6 +32640,16 @@
           if (lotesTrabalho[lIdx] && costObj) {
             lotesTrabalho[lIdx].costureiraId = costObj.id;
             lotesTrabalho[lIdx].costureiraNome = costObj.nome;
+          }
+        });
+      });
+
+      container.querySelectorAll('.sel-setor-repartir').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+          const lIdx = parseInt(e.target.getAttribute('data-lote'), 10);
+          const setorNome = e.target.value;
+          if (lotesTrabalho[lIdx]) {
+            lotesTrabalho[lIdx].setorDestino = setorNome;
           }
         });
       });
@@ -32579,10 +32734,12 @@
       lotesTrabalho.forEach((lote, idx) => {
         const letra = lote.letra || String.fromCharCode(65 + idx);
         const selCost = document.querySelector(`.sel-costureira-repartir[data-lote="${idx}"]`);
+        const selSetor = document.querySelector(`.sel-setor-repartir[data-lote="${idx}"]`);
         const inpVal = document.querySelector(`.inp-valor-repartir[data-lote="${idx}"]`);
 
         const costId = selCost ? selCost.value : (lote.costureiraId || '');
         const costObj = costureirasDisponiveis.find(c => c.id === costId) || costureirasDisponiveis[0] || { nome: os.costureiraDesignada };
+        const setorDestino = selSetor ? selSetor.value : (lote.setorDestino || '3. Costura & Fechamento');
         const valPeca = parseFloat(inpVal ? inpVal.value : lote.valorCosturaPeca) || 7.50;
         const totalPecasMod = lote.grade?.total || 0;
         const modNome = lote.produtoNome;
@@ -32594,12 +32751,13 @@
           id: `${os.id}-${letra}`,
           parentOsId: os.id,
           subOs: true,
+          setorDestino: setorDestino,
           modeloIndice: idx,
           modeloNome: modNome,
           pedidoNumero: os.pedidoNumero,
-          cliente: os.cliente,
+          cliente: os.cliente || (pedido && pedido.clienteNome) || (pedido && pedido.cliente) || "Cliente",
           produto: modNome,
-          itens: [Object.assign({}, itemOrig, { produtoNome: modNome, grade: lote.grade })],
+          itens: [Object.assign({}, itemOrig, { produtoNome: modNome, grade: lote.grade, setorDestino: setorDestino })],
           grade: lote.grade || {},
           quantidadeTotal: totalPecasMod,
           corTecido: corTec,
@@ -32607,7 +32765,7 @@
           mockupUrl: itMockup,
           tipoPedidoModalidade: os.tipoPedidoModalidade || 'padrao',
           jogadores: os.jogadores || [],
-          etapaAtual: os.etapaAtual || 'Quarentena',
+          etapaAtual: setorDestino.toLowerCase().includes("corte") ? "Corte" : (setorDestino.toLowerCase().includes("costura") ? "Costura" : (setorDestino.toLowerCase().includes("estamp") ? "Estamparia / DTF" : (setorDestino.toLowerCase().includes("bordad") ? "Bordado" : "Acabamento"))),
           costureiraDesignada: costObj.nome,
           costureiraId: costObj.id,
           valorCosturaPeca: valPeca,
@@ -32620,8 +32778,10 @@
           dtfLarguraRolo: os.dtfLarguraRolo || 58,
           tecidoConsumidoKg: ((itemOrig.consumoTecido || 0.28) * totalPecasMod).toFixed(1),
           artesAplicacao: (os.artesAplicacao || []),
-          instrucoesCorte: `Corte para ${totalPecasMod} peças de ${modNome} (Sub-OS ${letra} de ${lotesTrabalho.length}). Cor: ${corTec}.${obsCores ? ' ATENÇÃO: ' + obsCores : ''}`,
-          instrucoesCostura: `Costureira responsável: ${costObj.nome}. Fechamento para ${totalPecasMod} peças de ${modNome}. Remuneração acordada: ${formatarMoeda(valPeca)}/un (Total a Pagar: ${formatarMoeda(valPeca * totalPecasMod)}). Fechamento confidencial.`,
+          instrucoesCorte: `Corte para ${totalPecasMod} peças de ${modNome} (Sub-OS ${letra} de ${lotesTrabalho.length}). Destino: [${setorDestino}]. Cor: ${corTec}.${obsCores ? ' ATENÇÃO: ' + obsCores : ''}`,
+          instrucoesCostura: setorDestino.toLowerCase().includes('costura')
+            ? `Setor: ${setorDestino}. Costureira: ${costObj.nome}. Fechamento para ${totalPecasMod} peças de ${modNome}. Remuneração acordada: ${formatarMoeda(valPeca)}/un (Total a Pagar: ${formatarMoeda(valPeca * totalPecasMod)}). Fechamento confidencial.`
+            : `Ordem interna destinada a ${setorDestino}. Total de ${totalPecasMod} peças de ${modNome}. Seguir especificações de grade e tolerância industrial de 2mm.`,
           statusBordado: os.statusBordado || "Pendente",
           statusCostura: os.statusCostura || "Pendente",
           statusAcabamento: os.statusAcabamento || "Pendente"

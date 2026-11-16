@@ -871,6 +871,34 @@ with check (true);
       return { sucesso: false, erro: 'Por favor, informe seu e-mail e senha de acesso.' };
     }
 
+    // Login Teste Especial para Desenvolvimento Local (localhost)
+    const isLocalhostEnv = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    if (isLocalhostEnv && cleanEmail === 'admin@teste.com' && (senhaStr === '123456' || senhaStr === 'admin123')) {
+      const userTeste = {
+        id: 'tenant_teste_local',
+        tenant_id: 'tenant_teste_local',
+        email: cleanEmail,
+        user_metadata: {
+          company_name: 'Confecção Teste Local',
+          full_name: 'Administrador Teste',
+          phone: '(11) 99999-9999',
+          perfil: 'dono',
+          role: 'Dono / Diretor',
+          tenant_id: 'tenant_teste_local'
+        }
+      };
+      salvarEmpresaConfig({
+        nomeFantasia: 'Confecção Modelo Teste',
+        razaoSocial: 'Confecção Modelo Teste Ltda',
+        cnpj: '00.000.000/0001-99',
+        telefone: '(11) 99999-9999'
+      });
+      definirPerfilAtivo('dono');
+      definirUsuarioLogado(userTeste, null);
+      return { sucesso: true, user: userTeste, precisaTrocarSenha: false };
+    }
+
+
     // Camada 0 (BLINDAGEM BANCÁRIA): Autenticação via Gateway Serverless (/api/erp-security)
     // Nunca expõe hashes de senha nem lista outros tenants no navegador!
     try {
