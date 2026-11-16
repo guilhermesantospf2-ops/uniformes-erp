@@ -3672,7 +3672,18 @@
 
     // Nível de profundidade atual na pilha
     const nivel = modalPilha.length;
-    const baseZ = options.zIndex || (10000 + (nivel * 40));
+    let baseZ = options.zIndex;
+    if (!baseZ) {
+      let maxZ = 10000 + (nivel * 50);
+      const modaisAbertos = document.querySelectorAll('.modal-overlay, .modal-active, #modalRepartirOS, [id^="modal"]');
+      modaisAbertos.forEach(m => {
+        const z = parseInt(window.getComputedStyle ? window.getComputedStyle(m).zIndex : m.style.zIndex, 10);
+        if (!isNaN(z) && z >= maxZ && z < 2000000) {
+          maxZ = z + 50;
+        }
+      });
+      baseZ = maxZ;
+    }
     modalEl.style.zIndex = baseZ;
 
     // Se for camada filha (sub-modal sobreposto a outro modal), destaca com backdrop escurecido
@@ -3738,7 +3749,9 @@
     let el = null;
 
     if (elementoEspecifico && elementoEspecifico instanceof HTMLElement) {
-      el = elementoEspecifico;
+      el = elementoEspecifico.classList && elementoEspecifico.classList.contains('modal-overlay')
+        ? elementoEspecifico
+        : (elementoEspecifico.closest ? (elementoEspecifico.closest('.modal-overlay') || elementoEspecifico) : elementoEspecifico);
       const idx = modalPilha.indexOf(el);
       if (idx !== -1) {
         modalPilha.splice(idx, 1);
@@ -25657,7 +25670,7 @@
     const setorPreDefinido = setorInicial || '1. Mesa de Corte';
 
     const modalEl = criarModalCamada(`
-      <div class="modal-overlay active" id="modalCadastrarPrestadorOverlay" style="z-index: 100050;">
+      <div class="modal-overlay active" id="modalCadastrarPrestadorOverlay" style="z-index: 100050 !important;">
         <div class="modal-box" style="max-width: 580px; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);">
           <div class="modal-header" style="background: linear-gradient(135deg, #1e3a8a, #0369a1); color: #ffffff; padding: 16px 20px;">
             <div>
@@ -25668,7 +25681,7 @@
                 Cadastro direto para chão de fábrica e emissão de OS (sem necessidade de e-mail ou senha)
               </div>
             </div>
-            <button class="modal-close" style="color: #ffffff;" onclick="window.ERP.fecharModal(this)">&times;</button>
+            <button class="modal-close" style="color: #ffffff;" onclick="const m = document.getElementById('modalCadastrarPrestadorOverlay'); if (m) m.remove(); if (typeof window.ERP.fecharModal === 'function') window.ERP.fecharModal(m);">&times;</button>
           </div>
 
           <div class="modal-body" style="padding: 20px; max-height: 80vh; overflow-y: auto;">
@@ -25731,14 +25744,17 @@
           </div>
 
           <div class="modal-footer" style="padding: 14px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
-            <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal(this)">Cancelar</button>
+            <button type="button" class="btn btn-secondary" id="btnCancelarCadPrestador" onclick="const m = document.getElementById('modalCadastrarPrestadorOverlay'); if (m) m.remove(); if (typeof window.ERP.fecharModal === 'function') window.ERP.fecharModal(m);">Cancelar</button>
             <button type="button" class="btn btn-primary" id="btnConfirmarSalvarPrestador" style="background: #0284c7; border-color: #0369a1; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
               <span>✓ Salvar Prestador no Sistema</span>
             </button>
           </div>
         </div>
       </div>
-    `);
+    `, { zIndex: 100050 });
+    if (modalEl) {
+      modalEl.style.setProperty('z-index', '100050', 'important');
+    }
 
     modalEl.querySelector('#btnConfirmarSalvarPrestador')?.addEventListener('click', () => {
       const nome = (modalEl.querySelector('#cadPrestNome')?.value || '').trim();
@@ -25789,7 +25805,9 @@
         window.ERP_CLOUD.sincronizarImediatoComNuvem(db);
       }
 
-      fecharModal(modalEl);
+      const mCad = document.getElementById('modalCadastrarPrestadorOverlay') || modalEl;
+      if (mCad) mCad.remove();
+      if (typeof fecharModal === 'function') fecharModal(mCad);
       mostrarToast(`✓ Prestador "${novoPrest.nome}" cadastrado com sucesso no setor ${setor}!`, 'green');
 
       if (typeof callback === 'function') {
@@ -25803,7 +25821,7 @@
     if (!modalContainer) return;
 
     const modalEl = criarModalCamada(`
-      <div class="modal-overlay active" id="modalCadastrarCostureiraFaccaoOverlay">
+      <div class="modal-overlay active" id="modalCadastrarCostureiraFaccaoOverlay" style="z-index: 100050 !important;">
         <div class="modal-box" style="max-width: 580px; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);">
           <div class="modal-header" style="background: linear-gradient(135deg, #065f46, #047857); color: #ffffff; padding: 16px 20px;">
             <div>
@@ -25876,7 +25894,8 @@
           </div>
         </div>
       </div>
-    `);
+    `, { zIndex: 100050 });
+    if (modalEl) modalEl.style.setProperty('z-index', '100050', 'important');
 
     modalEl.querySelector('#btnConfirmarSalvarCostureira')?.addEventListener('click', async () => {
       const nome = (modalEl.querySelector('#cadCostNome')?.value || '').trim();
