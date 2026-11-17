@@ -7320,6 +7320,18 @@
   }
   window.parseNumMoeda = parseNumMoeda;
 
+  function formatarMoedaDigitacao(el) {
+    if (!el) return;
+    const digits = String(el.value || '').replace(/\D/g, '');
+    if (!digits) {
+      el.value = '0,00';
+      return;
+    }
+    const n = parseInt(digits, 10) / 100;
+    el.value = n.toFixed(2).replace('.', ',');
+  }
+  window.formatarMoedaDigitacao = formatarMoedaDigitacao;
+
   // Lê um input numérico do DOM preservando 0 ou campo limpo ('') como 0!
   function lerInputNumDom(idOuEl, padraoSeInexistente = 0) {
     const el = typeof idOuEl === 'string' ? document.getElementById(idOuEl) : idOuEl;
@@ -8615,7 +8627,7 @@
                   <div style="display: flex; align-items: center; gap: 10px;">
                     <div style="position: relative;">
                       <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-weight: 800; font-size: 13px; color: #166534;">R$</span>
-                      <input type="text" inputmode="decimal" id="orcPrecoVendaTime" class="input-moeda-centavos" value="${formatarMoedaInput(itAtivo.precoVendaUnitario || 79.90)}" style="width: 125px; padding: 6px 10px 6px 32px; font-size: 14px; font-weight: 800; text-align: right; color: #166534; border: 1.5px solid #86efac; border-radius: 6px; background: #f0fdf4;" placeholder="0,00" title="Preço de venda cobrado por uniforme do time">
+                      <input type="text" inputmode="decimal" id="orcPrecoVendaTime" class="input-moeda-centavos" value="${formatarMoedaInput((itensOrcamento[0] && itensOrcamento[0].precoVendaUnitario) || 79.90)}" style="width: 125px; padding: 6px 10px 6px 32px; font-size: 14px; font-weight: 800; text-align: right; color: #166534; border: 1.5px solid #86efac; border-radius: 6px; background: #f0fdf4;" placeholder="0,00" title="Preço de venda cobrado por uniforme do time">
                     </div>
                     <div id="badgeSubtotalVendaTime" style="background: #14532d; color: #86efac; padding: 6px 12px; border-radius: 6px; font-weight: 800; font-size: 12.5px; white-space: nowrap;">
                       Total Venda: R$ 0,00
