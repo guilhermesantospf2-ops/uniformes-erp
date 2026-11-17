@@ -13227,9 +13227,18 @@
                     <input type="text" id="finValorTotalPedido" class="form-input text-mono" style="font-weight: 800; font-size: 14px;" value="${formatarMoeda(totalVenda)}" readonly>
                   </div>
 
-                  <div class="form-group" style="flex: 0.9;">
-                    <label class="form-label" style="color: #b91c1c;">Desconto (R$)</label>
-                    <input type="number" id="finValorDesconto" class="form-input text-mono" min="0" step="1.00" value="0.00" style="font-weight: 800; font-size: 14px; color: #b91c1c;">
+                  <div class="form-group" style="flex: 1.05;">
+                    <label class="form-label" style="color: #b91c1c; display: flex; justify-content: space-between; align-items: center;">
+                      <span>Desconto</span>
+                      <span id="lblDescontoEquivalente" style="font-size: 10px; font-weight: 700; color: #b91c1c;"></span>
+                    </label>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <select id="finTipoDesconto" class="form-select" style="width: 62px; padding: 8px 6px; font-weight: 800; font-size: 13px; color: #b91c1c; flex-shrink: 0;">
+                        <option value="valor">R$</option>
+                        <option value="perc">%</option>
+                      </select>
+                      <input type="number" id="finValorDesconto" class="form-input text-mono" min="0" step="1.00" value="0.00" style="font-weight: 800; font-size: 14px; color: #b91c1c;">
+                    </div>
                   </div>
 
                   <div class="form-group" style="flex: 0.75;">
@@ -13440,20 +13449,49 @@
       return 0.0;
     }
 
+    function calcularDescontoAvanco() {
+      const tipoDesc = document.getElementById('finTipoDesconto')?.value || 'valor';
+      const inpDesc = document.getElementById('finValorDesconto');
+      let raw = parseFloat(inpDesc?.value) || 0;
+      if (raw < 0) {
+        raw = 0;
+        if (inpDesc) inpDesc.value = '0.00';
+      }
+      let descontoReais = 0;
+      let descontoPerc = 0;
+      if (tipoDesc === 'perc') {
+        if (raw > 100) {
+          raw = 100;
+          if (inpDesc) inpDesc.value = '100';
+        }
+        descontoPerc = raw;
+        descontoReais = parseFloat(((totalVenda * descontoPerc) / 100).toFixed(2));
+      } else {
+        if (raw > totalVenda) {
+          raw = totalVenda;
+          if (inpDesc) inpDesc.value = totalVenda.toFixed(2);
+        }
+        descontoReais = raw;
+        descontoPerc = totalVenda > 0 ? (descontoReais / totalVenda) * 100 : 0;
+      }
+      return { tipoDesc, descontoReais, descontoPerc };
+    }
+
     function recalcularSaldoAvanco(origem) {
       if (!inpValorAvanco || !boxSaldoContainer) return;
-      const inpDescontoAvanco = document.getElementById('finValorDesconto');
       const inpTotalPedidoAvanco = document.getElementById('finValorTotalPedido');
-      let descontoVal = parseFloat(inpDescontoAvanco?.value) || 0;
-      if (descontoVal < 0) {
-        descontoVal = 0;
-        if (inpDescontoAvanco) inpDescontoAvanco.value = '0.00';
+      const lblDescEq = document.getElementById('lblDescontoEquivalente');
+      const { tipoDesc, descontoReais, descontoPerc } = calcularDescontoAvanco();
+      if (lblDescEq) {
+        if (descontoReais > 0) {
+          lblDescEq.textContent = tipoDesc === 'perc'
+            ? `(- ${formatarMoeda(descontoReais)})`
+            : `(${descontoPerc.toFixed(1)}%)`;
+        } else {
+          lblDescEq.textContent = '';
+        }
       }
-      if (descontoVal > totalVenda) {
-        descontoVal = totalVenda;
-        if (inpDescontoAvanco) inpDescontoAvanco.value = totalVenda.toFixed(2);
-      }
-      const totalLiquido = Math.max(0, totalVenda - descontoVal);
+      const totalLiquido = Math.max(0, totalVenda - descontoReais);
       if (inpTotalPedidoAvanco) {
         inpTotalPedidoAvanco.value = formatarMoeda(totalLiquido);
       }
@@ -13756,9 +13794,29 @@
     });
 
     const inpDescontoInit = document.getElementById('finValorDesconto');
+    const selTipoDescontoInit = document.getElementById('finTipoDesconto');
     if (inpDescontoInit) {
       inpDescontoInit.addEventListener('input', () => recalcularSaldoAvanco('perc'));
       inpDescontoInit.addEventListener('change', () => recalcularSaldoAvanco('perc'));
+    }
+    if (selTipoDescontoInit && inpDescontoInit) {
+      selTipoDescontoInit.addEventListener('change', () => {
+        const atual = parseFloat(inpDescontoInit.value) || 0;
+        if (selTipoDescontoInit.value === 'perc') {
+          inpDescontoInit.max = '100';
+          inpDescontoInit.step = '1';
+          if (atual > 0 && totalVenda > 0) {
+            inpDescontoInit.value = Math.min(100, (atual / totalVenda) * 100).toFixed(2);
+          }
+        } else {
+          inpDescontoInit.removeAttribute('max');
+          inpDescontoInit.step = '1.00';
+          if (atual > 0 && totalVenda > 0) {
+            inpDescontoInit.value = ((totalVenda * Math.min(100, atual)) / 100).toFixed(2);
+          }
+        }
+        recalcularSaldoAvanco('perc');
+      });
     }
 
     recalcularSaldoAvanco('perc');
@@ -13944,10 +14002,7 @@
       const prodIdFinal = dadosBase.prod ? dadosBase.prod.id : dadosBase.produtoId;
       const gradeFinal = dadosBase.grade;
       const precoUnitFinal = dadosBase.precoVendaUnitario || dadosBase.precoUnitarioVenda;
-      const inpDescontoFinal = document.getElementById('finValorDesconto');
-      let valorDescontoFinal = parseFloat(inpDescontoFinal?.value) || 0;
-      if (valorDescontoFinal < 0) valorDescontoFinal = 0;
-      if (valorDescontoFinal > totalVenda) valorDescontoFinal = totalVenda;
+      const { descontoReais: valorDescontoFinal } = calcularDescontoAvanco();
       const totalVendaFinal = Math.max(0, totalVenda - valorDescontoFinal);
       const custoTotalFinal = dadosBase.custoTotal || dadosBase.custoTotalEstimado;
       const lucroBrutoBase = dadosBase.lucroLiquido || dadosBase.lucroLiquidoEstimado;
