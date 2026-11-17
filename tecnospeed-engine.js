@@ -12,6 +12,7 @@
   
   // Empresa Padrão / Cliente Oficial Prime Uniformes (PACIFIC WAVE COMPANY LTDA)
   const PRIME_COMPANY_ID = 'b8ac27d9851944a8baa5ad0c134d08f9';
+  const INNOVACTION_COMPANY_ID = '01a1ea53f3f8763c8c24f3e9eee295fc';
   const TEXFY_COMPANY_ID = 'd71ac805e1324f43a6ed2800e9a82f47';
 
   const URL_ACCOUNTS = 'https://api.nfe.io';
@@ -67,10 +68,11 @@
     obterCompanyId(empresa, configFiscal) {
       const cnpj = String((empresa && empresa.cnpj) || '').replace(/\D/g, '');
       if (cnpj === '59441843000176') return PRIME_COMPANY_ID;
+      if (cnpj === '55172417000123') return INNOVACTION_COMPANY_ID;
       const empId = empresa && empresa.nfeioCompanyId ? String(empresa.nfeioCompanyId).trim() : '';
-      if (empId && empId !== PRIME_COMPANY_ID) return empId;
+      if (empId && empId !== PRIME_COMPANY_ID && empId !== INNOVACTION_COMPANY_ID) return empId;
       const cfgId = configFiscal && configFiscal.nfeioCompanyId ? String(configFiscal.nfeioCompanyId).trim() : '';
-      if (cfgId && cfgId !== PRIME_COMPANY_ID) return cfgId;
+      if (cfgId && cfgId !== PRIME_COMPANY_ID && cfgId !== INNOVACTION_COMPANY_ID) return cfgId;
       return null;
     },
 
@@ -146,6 +148,16 @@
           sucesso: true,
           companyId: PRIME_COMPANY_ID,
           mensagem: '✓ Prime Uniformes (PACIFIC WAVE) validada com Certificado Digital A1 ativo até 2027!'
+        };
+      }
+
+      // Se for a Innovaction Textil (Lion Uniformes) já cadastrada e homologada
+      if (cnpjClean === '55172417000123') {
+        empresa.nfeioCompanyId = INNOVACTION_COMPANY_ID;
+        return {
+          sucesso: true,
+          companyId: INNOVACTION_COMPANY_ID,
+          mensagem: '✓ Innovaction Textil (Lion Uniformes) validada com Certificado Digital A1 ativo até 26/05/2027!'
         };
       }
 
@@ -303,6 +315,7 @@
       const companyId = this.obterCompanyId(emp, cfg);
       const issuerCnpj = String(emp.cnpj || '').replace(/\D/g, '');
       const isPrime = issuerCnpj === '59441843000176';
+      const isInnovaction = issuerCnpj === '55172417000123';
       if (!companyId) {
         return {
           sucesso: false,
@@ -311,7 +324,7 @@
           mensagem: 'Emissão bloqueada: esta empresa ainda não possui vínculo fiscal próprio na NFe.io.'
         };
       }
-      const ambiente = (nfe.ambiente === 'producao' || cfg.ambiente === 'producao' || isPrime) ? 'Production' : 'Test';
+      const ambiente = (nfe.ambiente === 'producao' || cfg.ambiente === 'producao' || isPrime || isInnovaction) ? 'Production' : 'Test';
       const payload = this.montarPayloadNfe(nfe, emp, cfg);
 
       try {

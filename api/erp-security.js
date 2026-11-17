@@ -1221,6 +1221,8 @@ module.exports = async function handler(req, res) {
 
     const PRIME_NFEIO_COMPANY_ID = 'b8ac27d9851944a8baa5ad0c134d08f9';
     const PRIME_CNPJ_DIGITS = '59441843000176';
+    const INNOVACTION_NFEIO_COMPANY_ID = '01a1ea53f3f8763c8c24f3e9eee295fc';
+    const INNOVACTION_CNPJ_DIGITS = '55172417000123';
     function resolverCompanyIdSeguro(payloadBody) {
       const cid = (payloadBody.companyId || '').trim();
       const issuerCnpj = String(payloadBody.issuerCnpj || '').replace(/\D/g, '');
@@ -1229,6 +1231,9 @@ module.exports = async function handler(req, res) {
       }
       if (cid === PRIME_NFEIO_COMPANY_ID && issuerCnpj && issuerCnpj !== PRIME_CNPJ_DIGITS) {
         return { erro: 'Bloqueio de segurança: este CNPJ não pode operar no Company ID da Prime Uniformes.' };
+      }
+      if (cid === INNOVACTION_NFEIO_COMPANY_ID && issuerCnpj && issuerCnpj !== INNOVACTION_CNPJ_DIGITS) {
+        return { erro: 'Bloqueio de segurança: este CNPJ não pode operar no Company ID da Innovaction Textil.' };
       }
       return { companyId: cid };
     }
