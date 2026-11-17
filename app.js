@@ -33863,7 +33863,7 @@
     abrirModalMockup3x4,
     obterCustosPrevistosPedido,
     abrirModalFechamentoPrevistoRealizadoPedido,
-    cancelarEntradaEstoque,
+    cancelarEntradaEstoque: (...args) => (typeof excluirMovimentacaoEstoque === 'function' ? excluirMovimentacaoEstoque(...args) : undefined),
     alternarOrdenacaoPedidos: () => { if (typeof alternarOrdenacaoPedidos === 'function') return alternarOrdenacaoPedidos(); },
     toggleGradePedidoTabela: (id, btn) => { if (typeof alternarGradePedidoTabela === 'function') return alternarGradePedidoTabela(id, btn); },
     toggleTodasGradesTabela: (btn) => { if (typeof alternarTodasGradesTabela === 'function') return alternarTodasGradesTabela(btn); },
