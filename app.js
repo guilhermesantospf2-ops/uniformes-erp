@@ -8049,6 +8049,17 @@
       itensOrcamento.forEach(itemClone => {
         delete itemClone.custosCustomizadosPorTamanho;
         delete itemClone.custoUnitarioCustomizadoPonderado;
+        const precoFallback = parseFloat(itemClone.precoVendaUnitario) || parseFloat(orcamentoExistente.precoUnitarioVenda) || 0;
+        if (!itemClone.precosPorTamanho || typeof itemClone.precosPorTamanho !== 'object') {
+          itemClone.precosPorTamanho = {};
+        }
+        if (precoFallback > 0) {
+          TODOS_CAMPOS_GRADE.forEach(c => {
+            if (itemClone.precosPorTamanho[c.chave] == null || isNaN(itemClone.precosPorTamanho[c.chave]) || parseFloat(itemClone.precosPorTamanho[c.chave]) <= 0) {
+              itemClone.precosPorTamanho[c.chave] = precoFallback;
+            }
+          });
+        }
       });
     } else if (isEdicao) {
       // Migração de orçamento legado para modelo estruturado
@@ -11776,9 +11787,9 @@
           for (const c of TODOS_CAMPOS_GRADE) {
             const qtdTam = parseInt(gradeMod[c.chave] || 0, 10);
             if (qtdTam > 0) {
-              const pTam = (precosMod[c.chave] != null && !isNaN(precosMod[c.chave]))
+              const pTam = (precosMod[c.chave] != null && !isNaN(precosMod[c.chave]) && parseFloat(precosMod[c.chave]) > 0)
                 ? parseFloat(precosMod[c.chave])
-                : 0;
+                : (parseFloat(itemMod.precoVendaUnitario) || 0);
 
               if (pTam <= 0) {
                 if (itemAtivoIndex !== i && typeof selecionarModeloAtivo === 'function') {
