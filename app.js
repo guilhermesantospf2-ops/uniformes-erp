@@ -14709,7 +14709,7 @@
           ` : `
             <table style="margin-bottom: 12px; width: 100%; max-width: 680px; border-collapse: collapse; font-size: 11px; border: 1.5px solid #cbd5e1; border-radius: 4px; overflow: hidden;">
               <thead>
-                <tr style="background: #0f172a; color: #ffffff;">
+                <tr style="background: #e2e8f0; color: #0f172a; border-bottom: 2px solid #0f172a; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
                   <th style="padding: 6px 8px; text-align: left; font-size: 11px; width: 120px;">Tamanho</th>
                   ${tamsDet.map(s => `<th style="text-align: center; padding: 6px 8px; font-size: 11px;">${s.tam}</th>`).join('')}
                   <th style="text-align: center; padding: 6px 10px; background: #1e293b; color: #38bdf8; font-size: 11px;">TOTAL</th>
@@ -14750,7 +14750,7 @@
           </div>
           <table style="width: 100%; border-collapse: collapse; font-size: 10.5px; text-align: left;">
             <thead>
-              <tr style="background: #0f172a; color: #ffffff;">
+              <tr style="background: #e2e8f0; color: #0f172a; border-bottom: 2px solid #0f172a; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
                 <th style="padding: 4px 6px; width: 6%; text-align: center;">#</th>
                 <th style="padding: 4px 6px; width: 44%;">Nome na Camisa</th>
                 <th style="padding: 4px 6px; width: 14%; text-align: center;">Número</th>
@@ -15844,7 +15844,7 @@
           </div>
           <table style="width: 100%; border-collapse: collapse; font-size: 10.5px; text-align: left;">
             <thead>
-              <tr style="background: #0f172a; color: #ffffff;">
+              <tr style="background: #e2e8f0; color: #0f172a; border-bottom: 2px solid #0f172a; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
                 <th style="padding: 4px 6px; width: 5%; text-align: center;">#</th>
                 <th style="padding: 4px 6px; width: 42%;">Nome na Camisa</th>
                 <th style="padding: 4px 6px; width: 13%; text-align: center;">Número</th>
