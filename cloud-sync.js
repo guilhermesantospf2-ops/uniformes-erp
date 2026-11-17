@@ -1479,6 +1479,7 @@ with check (true);
       bancoLimpoInit.nestingFila = [];
       bancoLimpoInit.notasFiscais = [];
       bancoLimpoInit.compras = [];
+      bancoLimpoInit.prestadores = [];
 
       const resp = await fetch('/api/erp-security', {
         method: 'POST',
@@ -1619,6 +1620,7 @@ with check (true);
     bancoLimpo.nestingFila = [];
     bancoLimpo.notasFiscais = [];
     bancoLimpo.compras = [];
+    bancoLimpo.prestadores = [];
     bancoLimpo.empresa = empNova;
 
     // 6. Grava imediatamente o novo tenant no Supabase PostgreSQL
@@ -1834,6 +1836,7 @@ with check (true);
         bancoLimpo.nestingFila = [];
         bancoLimpo.notasFiscais = [];
         bancoLimpo.compras = [];
+        bancoLimpo.prestadores = [];
         bancoLimpo.empresa = empNova;
 
         salvarEmpresaConfig(empNova);
@@ -2060,6 +2063,7 @@ with check (true);
     base.despesasFixas = fundirColecaoPorId(local.despesasFixas, remoto.despesasFixas, 'id');
     base.compras = fundirColecaoPorId(local.compras, remoto.compras, 'id');
     base.costureiras = fundirColecaoPorId(local.costureiras, remoto.costureiras, 'id');
+    base.prestadores = fundirColecaoPorId(local.prestadores, remoto.prestadores, 'id');
     base.equipe = fundirColecaoPorId(local.equipe, remoto.equipe, 'id');
     const excluidosProdSet = new Set([
       ...(Array.isArray(local.produtosExcluidosIds) ? local.produtosExcluidosIds : []),

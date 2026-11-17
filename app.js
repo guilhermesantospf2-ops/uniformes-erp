@@ -199,7 +199,7 @@
     // 1. Preservação Intocável de Coleções Operacionais do Cliente
     const colecoes = [
       'pedidos', 'clientes', 'ordensServico', 'lancamentosFinanceiros',
-      'despesasFixas', 'compras', 'equipe', 'costureiras', 'nestingFila',
+      'despesasFixas', 'compras', 'equipe', 'costureiras', 'prestadores', 'nestingFila',
       'notasFiscais', 'historicoEstoque', 'quarentena',
       'centrosCusto', 'equipamentosDepreciacao'
     ];
@@ -505,6 +505,7 @@
       if (!Array.isArray(db.ordensServico)) db.ordensServico = [];
       if (!Array.isArray(db.lancamentosFinanceiros)) db.lancamentosFinanceiros = [];
       if (!Array.isArray(db.notasFiscais)) db.notasFiscais = [];
+      if (!Array.isArray(db.prestadores)) db.prestadores = [];
 
       // Dados cadastrais oficiais da Prime Uniformes (Pacific Wave Company Ltda)
       if (!db.empresa || !db.empresa.cnpj) {
@@ -13134,9 +13135,9 @@
                 </div>
 
                 <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
-                  <input type="checkbox" id="chkSinalCompensado" class="quarentena-checkbox" checked>
+                  <input type="checkbox" id="chkSinalCompensado" class="quarentena-checkbox">
                   <label for="chkSinalCompensado" style="font-size: 11.5px; font-weight: 700; cursor: pointer; color: var(--text-primary);">
-                    Confirmar sinal já recebido e lançar entrada imediata no Fluxo de Caixa (Financeiro)
+                    Pagamento já caiu na conta agora (se desmarcado, fica como "Aguardando Pagamento" e não marca como Quitado)
                   </label>
                 </div>
               </div>
@@ -13325,7 +13326,7 @@
         if (badgeEntrada) badgeEntrada.innerHTML = '<span class="status-pill status-gray" style="font-size:9.5px;">SEM ENTRADA (0%)</span>';
         if (chkSinalComp) { chkSinalComp.checked = false; chkSinalComp.disabled = true; }
       } else if (valEntrada >= totalVenda) {
-        if (badgeEntrada) badgeEntrada.innerHTML = '<span class="status-pill status-green" style="font-size:9.5px;">100% QUITADO À VISTA</span>';
+        if (badgeEntrada) badgeEntrada.innerHTML = (chkSinalComp && chkSinalComp.checked) ? '<span class="status-pill status-green" style="font-size:9.5px;">100% PAGO À VISTA</span>' : '<span class="status-pill status-blue" style="font-size:9.5px;">À VISTA (AGUARDANDO PAGAMENTO)</span>';
         if (chkSinalComp) chkSinalComp.disabled = false;
       } else {
         if (badgeEntrada) badgeEntrada.innerHTML = '<span class="status-pill status-blue" style="font-size:9.5px;">ENTRADA PARCIAL</span>';
@@ -13845,14 +13846,21 @@
       const corFinal = (dadosBase.corPrincipal || dadosBase.corTecido || 'Azul Marinho').trim();
       const obsCoresFinal = (dadosBase.observacoesCoresDetalhes || '').trim();
 
-      // Monta texto detalhado das condições comerciais
+      // Monta texto detalhado das condições comerciais (nunca diz "Quitado" se ainda não foi recebido)
       let condicaoComercialTexto = '';
       if (isQuitadoNaEntrada) {
-        condicaoComercialTexto = `100% Quitado à Vista (${formaPagamentoEntrada})`;
+        condicaoComercialTexto = `100% Pago à Vista (${formaPagamentoEntrada})`;
+      } else if (valorSinalRecebido >= totalVendaFinal && !sinalCompensado) {
+        condicaoComercialTexto = `À Vista via ${formaPagamentoEntrada} (Aguardando Pagamento)`;
       } else if (valorEfetivoPago > 0) {
         condicaoComercialTexto = `Entrada ${formatarMoeda(valorEfetivoPago)} (${formaPagamentoEntrada}) + Saldo ${formatarMoeda(saldoRestante)} (${parcelasSaldoQtd}x ${formaPagamentoSaldo})`;
+      } else if (valorSinalRecebido > 0 && !sinalCompensado) {
+        const saldoPrevisto = Math.max(0, totalVendaFinal - valorSinalRecebido);
+        condicaoComercialTexto = `Entrada ${formatarMoeda(valorSinalRecebido)} (${formaPagamentoEntrada} a pagar) + Saldo ${formatarMoeda(saldoPrevisto)} (${parcelasSaldoQtd}x ${formaPagamentoSaldo})`;
+      } else if (parcelasSaldoQtd === 1) {
+        condicaoComercialTexto = `Sem Entrada • ${formatarMoeda(saldoRestante)} via ${formaPagamentoSaldo} (na entrega / vencimento)`;
       } else {
-        condicaoComercialTexto = `Sem Entrada • Saldo Faturado ${formatarMoeda(saldoRestante)} (${parcelasSaldoQtd}x ${formaPagamentoSaldo})`;
+        condicaoComercialTexto = `Sem Entrada • ${parcelasSaldoQtd}x via ${formaPagamentoSaldo} (${formatarMoeda(saldoRestante)})`;
       }
 
       // Cria ou atualiza pedido oficial
@@ -14684,9 +14692,23 @@
               <span class="text-mono" style="font-weight: 700;">${p.itens.length} itens (${p.grade?.total || 0} pçs)</span>
             </div>
           `}
+          ${(parseFloat(p.desconto || p.valorDesconto || 0) > 0) ? `
+            <div style="display: flex; justify-content: space-between; font-size: 11.5px; color: #b91c1c; font-weight: 700;">
+              <span>Desconto Aplicado:</span>
+              <span class="text-mono">- ${formatarMoeda(p.desconto || p.valorDesconto)}</span>
+            </div>
+          ` : ``}
           <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 800; border-top: 1px solid #cbd5e1; padding-top: 4px;">
             <span>VALOR TOTAL:</span>
             <span class="text-mono" style="color: #0f172a;">${formatarMoeda(p.valorTotalVenda)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 11.5px; color: ${(p.valorSinalPago > 0) ? '#047857' : '#64748b'}; font-weight: 700; margin-top: 2px;">
+            <span>Entrada / Sinal Recebido:</span>
+            <span class="text-mono">${p.valorSinalPago > 0 ? formatarMoeda(p.valorSinalPago) : 'R$ 0,00'}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; color: ${((p.saldoPendente ?? p.valorTotalVenda) > 0) ? '#b45309' : '#047857'}; background: ${((p.saldoPendente ?? p.valorTotalVenda) > 0) ? '#fffbeb' : '#ecfdf5'}; padding: 4px 6px; border-radius: 4px; border: 1px solid ${((p.saldoPendente ?? p.valorTotalVenda) > 0) ? '#fde68a' : '#a7f3d0'};">
+            <span>${((p.saldoPendente ?? p.valorTotalVenda) > 0) ? 'SALDO A PAGAR:' : 'SALDO RESTANTE:'}</span>
+            <span class="text-mono">${formatarMoeda(p.saldoPendente != null ? p.saldoPendente : Math.max(0, (p.valorTotalVenda || 0) - (p.valorSinalPago || 0)))}</span>
           </div>
         </div>
       </div>
@@ -14694,7 +14716,7 @@
       <!-- Condições Comerciais & Pagamento PIX -->
       <div style="padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 10.5px; color: #475569; line-height: 1.45;">
         <strong style="color: #0f172a;">CONDIÇÕES GERAIS DE FORNECIMENTO:</strong><br>
-        • Pagamento: ${emp.rodapeProposta || '50% de sinal na aprovação do pedido e 50% restante na retirada/entrega.'}<br>
+        • Pagamento: ${p.condicaoPagamento || emp.rodapeProposta || '50% de sinal na aprovação do pedido e 50% restante na retirada/entrega.'}<br>
         • Chave PIX: <strong>${emp.chavePix || 'A combinar'}</strong> (${emp.tipoChavePix || 'PIX'} - Favorecido: ${emp.nomeFantasia || emp.razaoSocial})<br>
         • Prazo de Entrega: Prometido para <strong>${dataPrev}</strong> (${prazoDias} dias úteis após confirmação de sinal e artes).<br>
         • Validade desta proposta: 15 dias corridos a partir da data de emissão.
@@ -25495,9 +25517,14 @@
                         ${p.valorMedioPorPeca > 0 ? formatarMoeda(p.valorMedioPorPeca) + ' / pç' : '<span style="color: #94a3b8; font-weight: 400;">Setor Interno</span>'}
                       </td>
                       <td style="text-align: right;">
-                        <button type="button" class="btn btn-red btn-xs btn-excluir-prestador" data-id="${p.id}" data-nome="${p.nome}">
-                          Excluir
-                        </button>
+                        <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                          <button type="button" class="btn btn-secondary btn-xs btn-editar-prestador" data-id="${p.id}" data-nome="${p.nome}" style="font-weight: 700; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd;">
+                            Editar
+                          </button>
+                          <button type="button" class="btn btn-red btn-xs btn-excluir-prestador" data-id="${p.id}" data-nome="${p.nome}">
+                            Excluir
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   `;
@@ -25519,6 +25546,17 @@
       abrirModalCadastrarPrestadorServico(null, () => renderizarEquipe());
     });
 
+    document.querySelectorAll('.btn-editar-prestador').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const prest = (db.prestadores || []).find(p => p.id === id) ||
+                      (db.costureiras || []).find(c => c.id === id);
+        if (prest) {
+          abrirModalCadastrarPrestadorServico(prest.setor, () => renderizarEquipe(), prest);
+        }
+      });
+    });
+
     document.querySelectorAll('.btn-excluir-prestador').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
@@ -25526,11 +25564,17 @@
         if (confirm(`Deseja realmente remover o prestador "${nome}" do sistema?`)) {
           if (Array.isArray(db.prestadores)) {
             db.prestadores = db.prestadores.filter(p => p.id !== id && p.nome !== nome);
+            try {
+              localStorage.setItem('texfy_prestadores_seguro', JSON.stringify(db.prestadores));
+            } catch (eSec) {}
           }
           if (Array.isArray(db.costureiras)) {
             db.costureiras = db.costureiras.filter(c => c.id !== id && c.nome !== nome);
           }
           salvarEstado(true);
+          if (window.ERP_CLOUD && typeof window.ERP_CLOUD.sincronizarImediatoComNuvem === 'function') {
+            window.ERP_CLOUD.sincronizarImediatoComNuvem(db);
+          }
           renderizarEquipe();
           mostrarToast(`Prestador "${nome}" removido.`, 'green');
         }
@@ -25579,6 +25623,21 @@
    * Cobre Corte, Estamparia/DTF, Bordado, Costura e Revisão/Acabamento
    */
   function obterListaPrestadoresDisponiveis() {
+    // 🛡️ BLINDAGEM DE PERSISTÊNCIA: Recupera backup dedicado local caso a memória tenha sido limpa
+    if (!Array.isArray(db.prestadores) || db.prestadores.length === 0) {
+      try {
+        const bkpSeguro = localStorage.getItem('texfy_prestadores_seguro');
+        if (bkpSeguro) {
+          const arr = JSON.parse(bkpSeguro);
+          if (Array.isArray(arr) && arr.length > 0) {
+            db.prestadores = arr;
+          }
+        }
+      } catch (eSeg) {
+        console.warn('Aviso ao ler backup seguro de prestadores:', eSeg);
+      }
+    }
+
     const lista = [];
     const nomesAdicionados = new Set();
 
@@ -25664,7 +25723,7 @@
    * Modal Simplificado e Sem Burocracia para Cadastrar Prestadores de Serviço / Responsáveis de Setor
    * Igual ao cadastro de costureira: sem e-mail, sem login, sem senha!
    */
-  function abrirModalCadastrarPrestadorServico(setorInicial = null, callback = null) {
+  function abrirModalCadastrarPrestadorServico(setorInicial = null, callback = null, prestadorEdicao = null) {
     if (!modalContainer) return;
 
     const setorPreDefinido = setorInicial || '1. Mesa de Corte';
@@ -25675,7 +25734,7 @@
           <div class="modal-header" style="background: linear-gradient(135deg, #1e3a8a, #0369a1); color: #ffffff; padding: 16px 20px;">
             <div>
               <div class="modal-title" style="color: #ffffff; font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
-                <span>🤝</span> Cadastrar Prestador de Serviço / Responsável de Setor
+                <span>🤝</span> ${prestadorEdicao ? 'Editar' : 'Cadastrar'} Prestador de Serviço / Responsável de Setor
               </div>
               <div style="font-size: 11.5px; color: #bae6fd; margin-top: 2px;">
                 Cadastro direto para chão de fábrica e emissão de OS (sem necessidade de e-mail ou senha)
@@ -25692,11 +25751,11 @@
             <div class="form-row" style="margin-bottom: 12px;">
               <div class="form-group" style="flex: 2; margin: 0;">
                 <label class="form-label" style="font-weight: 700;">Nome do Prestador / Responsável / Oficina *</label>
-                <input type="text" id="cadPrestNome" class="form-input" placeholder="Ex: Carlos Corte, Bordados Alfa, Josiani Facção..." style="font-weight: 700;">
+                <input type="text" id="cadPrestNome" class="form-input" placeholder="Ex: Carlos Corte, Bordados Alfa, Josiani Facção..." style="font-weight: 700;" value="${(prestadorEdicao && prestadorEdicao.nome) ? prestadorEdicao.nome : ''}">
               </div>
               <div class="form-group" style="flex: 1.2; margin: 0;">
                 <label class="form-label" style="font-weight: 700;">WhatsApp / Telefone</label>
-                <input type="text" id="cadPrestTel" class="form-input text-mono" placeholder="(11) 99999-9999">
+                <input type="text" id="cadPrestTel" class="form-input text-mono" placeholder="(11) 99999-9999" value="${(prestadorEdicao && prestadorEdicao.telefone) ? prestadorEdicao.telefone : ''}">
               </div>
             </div>
 
@@ -25724,22 +25783,22 @@
             <div class="form-row" style="margin-bottom: 12px;">
               <div class="form-group" style="flex: 1.2; margin: 0;">
                 <label class="form-label" style="font-weight: 700;">Especialidade / Função:</label>
-                <input type="text" id="cadPrestEsp" class="form-input" placeholder="Ex: Corte Industrial, Silk DTF, Matrizes, Fechamento...">
+                <input type="text" id="cadPrestEsp" class="form-input" placeholder="Ex: Corte Industrial, Silk DTF, Matrizes, Fechamento..." value="${(prestadorEdicao && prestadorEdicao.especialidade) ? prestadorEdicao.especialidade : ''}">
               </div>
               <div class="form-group" style="flex: 1; margin: 0;">
                 <label class="form-label" style="font-weight: 700;">Valor MDO / Peça (R$ - opcional):</label>
-                <input type="number" id="cadPrestValorPeca" class="form-input text-mono" value="0.00" step="0.50" min="0" style="font-weight: 800; color: #15803d;">
+                <input type="number" id="cadPrestValorPeca" class="form-input text-mono" value="${(prestadorEdicao && prestadorEdicao.valorMedioPorPeca != null) ? prestadorEdicao.valorMedioPorPeca : '0.00'}" step="0.50" min="0" style="font-weight: 800; color: #15803d;">
               </div>
             </div>
 
             <div class="form-group" style="margin-bottom: 12px;">
               <label class="form-label">Endereço / Bairro (Opcional - Coleta/Entrega de Peças):</label>
-              <input type="text" id="cadPrestEnd" class="form-input" placeholder="Ex: Rua das Fábricas, 120 - Galpão 3">
+              <input type="text" id="cadPrestEnd" class="form-input" placeholder="Ex: Rua das Fábricas, 120 - Galpão 3" value="${(prestadorEdicao && prestadorEdicao.endereco) ? prestadorEdicao.endereco : ''}">
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">
               <label class="form-label">Observações / Maquinário Disponível:</label>
-              <input type="text" id="cadPrestObs" class="form-input" placeholder="Ex: Máquina de bordado 4 cabeças, serra fita, prensa térmica 40x50...">
+              <input type="text" id="cadPrestObs" class="form-input" placeholder="Ex: Máquina de bordado 4 cabeças, serra fita, prensa térmica 40x50..." value="${(prestadorEdicao && prestadorEdicao.observacoes) ? prestadorEdicao.observacoes : ''}">
             </div>
           </div>
 
@@ -25772,8 +25831,9 @@
         return;
       }
 
+      const idPrest = (prestadorEdicao && prestadorEdicao.id) ? prestadorEdicao.id : ('PREST-' + Date.now().toString().slice(-6));
       const novoPrest = {
-        id: 'PREST-' + Date.now().toString().slice(-6),
+        id: idPrest,
         nome: nome,
         responsavel: nome,
         telefone: tel,
@@ -25787,11 +25847,35 @@
         endereco: end,
         observacoes: obs,
         status: 'Ativo',
-        criadoEm: new Date().toISOString()
+        criadoEm: (prestadorEdicao && prestadorEdicao.criadoEm) ? prestadorEdicao.criadoEm : new Date().toISOString(),
+        atualizadoEm: new Date().toISOString()
       };
 
       if (!Array.isArray(db.prestadores)) db.prestadores = [];
-      db.prestadores.unshift(novoPrest);
+      const idxExistente = db.prestadores.findIndex(p => p.id === idPrest || (p.nome && p.nome.trim().toLowerCase() === nome.toLowerCase()));
+      if (idxExistente !== -1) {
+        db.prestadores[idxExistente] = Object.assign({}, db.prestadores[idxExistente], novoPrest);
+      } else {
+        db.prestadores.unshift(novoPrest);
+      }
+
+      // Se for Costura, também mantém sincronia com db.costureiras
+      if (setor.toLowerCase().includes('costura')) {
+        if (!Array.isArray(db.costureiras)) db.costureiras = [];
+        const idxCost = db.costureiras.findIndex(c => c.id === idPrest || (c.nome && c.nome.trim().toLowerCase() === nome.toLowerCase()));
+        if (idxCost !== -1) {
+          db.costureiras[idxCost] = Object.assign({}, db.costureiras[idxCost], novoPrest);
+        } else {
+          db.costureiras.unshift(novoPrest);
+        }
+      }
+
+      // 🛡️ BACKUP DEDICADO DE SEGURANÇA: Salva imediatamente na chave isolada do localStorage
+      try {
+        localStorage.setItem('texfy_prestadores_seguro', JSON.stringify(db.prestadores));
+      } catch (eSec) {
+        console.warn('Aviso ao salvar backup de segurança:', eSec);
+      }
 
       // Se for Costura, também mantém sincronia com db.costureiras
       if (setor.toLowerCase().includes('costura')) {
