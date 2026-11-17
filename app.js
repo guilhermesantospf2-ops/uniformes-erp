@@ -1328,6 +1328,7 @@
     configurarCliqueGlobalMockups();
     configurarFechamentoModaisGlobal();
     inicializarBarraRolagemFixa();
+    inicializarScrollFluidoModais();
     inicializarSidebarToggle();
 
     if (isDemo) {
@@ -2316,6 +2317,52 @@
   // BARRA DE ROLAGEM HORIZONTAL FIXA FLUTUANTE (SISTEMA GERAL)
   // Permite rolar lateralmente qualquer tabela sem descer até o fim da página
   // ==========================================================================
+  function inicializarScrollFluidoModais() {
+    if (window.__erpScrollFluidoModaisAtivo) return;
+    window.__erpScrollFluidoModaisAtivo = true;
+
+    document.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || !e.deltaY || Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
+      const target = e.target && e.target.nodeType === 1 ? e.target : e.target?.parentElement;
+      if (!target || !target.closest) return;
+
+      const overlay = target.closest('.modal-overlay.active');
+      if (!overlay) return;
+
+      const modalBody = overlay.querySelector('.modal-body');
+      if (!modalBody || modalBody.scrollHeight <= modalBody.clientHeight + 1) return;
+
+      // Se o cursor está dentro de um elemento interno que ainda pode rolar nessa direção, deixa rolar normalmente
+      let el = target;
+      while (el && el !== modalBody && el !== overlay) {
+        if (el.scrollHeight > el.clientHeight + 1) {
+          const st = window.getComputedStyle(el);
+          if (st.overflowY === 'auto' || st.overflowY === 'scroll') {
+            const canScroll = e.deltaY > 0
+              ? (el.scrollTop + el.clientHeight < el.scrollHeight - 1)
+              : (el.scrollTop > 1);
+            if (canScroll) return;
+          }
+        }
+        el = el.parentElement;
+      }
+
+      // Caso o cursor esteja no cabeçalho, rodapé, fora do corpo ou o container interno já chegou ao fim:
+      // redireciona a rolagem diretamente para o corpo do modal sem travar
+      const insideBody = modalBody.contains(target);
+      const bodyCanScroll = e.deltaY > 0
+        ? (modalBody.scrollTop + modalBody.clientHeight < modalBody.scrollHeight - 1)
+        : (modalBody.scrollTop > 1);
+
+      if (!insideBody || el !== target) {
+        if (bodyCanScroll) {
+          modalBody.scrollTop += e.deltaY;
+          e.preventDefault();
+        }
+      }
+    }, { passive: false });
+  }
+
   function inicializarBarraRolagemFixa() {
     let floatingBar = document.getElementById('erpFloatingHorizontalScrollbar');
     let floatingInner = document.getElementById('erpFloatingHorizontalScrollbarInner');
