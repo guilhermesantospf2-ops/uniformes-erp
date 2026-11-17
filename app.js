@@ -13210,12 +13210,17 @@
                 </div>
 
                 <div class="form-row">
-                  <div class="form-group" style="flex: 1.1;">
+                  <div class="form-group" style="flex: 1.0;">
                     <label class="form-label">Total Pedido (R$)</label>
                     <input type="text" id="finValorTotalPedido" class="form-input text-mono" style="font-weight: 800; font-size: 14px;" value="${formatarMoeda(totalVenda)}" readonly>
                   </div>
 
-                  <div class="form-group" style="flex: 0.8;">
+                  <div class="form-group" style="flex: 0.9;">
+                    <label class="form-label" style="color: #b91c1c;">Desconto (R$)</label>
+                    <input type="number" id="finValorDesconto" class="form-input text-mono" min="0" step="1.00" value="0.00" style="font-weight: 800; font-size: 14px; color: #b91c1c;">
+                  </div>
+
+                  <div class="form-group" style="flex: 0.75;">
                     <label class="form-label">Entrada (%)</label>
                     <div style="display: flex; align-items: center; gap: 4px;">
                       <input type="number" id="finPercEntrada" class="form-input text-mono" min="0" max="100" step="5" value="50" style="font-weight: 700; font-size: 14px;">
@@ -13425,6 +13430,22 @@
 
     function recalcularSaldoAvanco(origem) {
       if (!inpValorAvanco || !boxSaldoContainer) return;
+      const inpDescontoAvanco = document.getElementById('finValorDesconto');
+      const inpTotalPedidoAvanco = document.getElementById('finValorTotalPedido');
+      let descontoVal = parseFloat(inpDescontoAvanco?.value) || 0;
+      if (descontoVal < 0) {
+        descontoVal = 0;
+        if (inpDescontoAvanco) inpDescontoAvanco.value = '0.00';
+      }
+      if (descontoVal > totalVenda) {
+        descontoVal = totalVenda;
+        if (inpDescontoAvanco) inpDescontoAvanco.value = totalVenda.toFixed(2);
+      }
+      const totalLiquido = Math.max(0, totalVenda - descontoVal);
+      if (inpTotalPedidoAvanco) {
+        inpTotalPedidoAvanco.value = formatarMoeda(totalLiquido);
+      }
+
       let valEntrada = parseFloat(inpValorAvanco.value) || 0;
       if (valEntrada < 0) valEntrada = 0;
 
@@ -13432,21 +13453,21 @@
         let p = parseFloat(inpPercAvanco.value) || 0;
         if (p < 0) p = 0;
         if (p > 100) p = 100;
-        valEntrada = (totalVenda * p) / 100;
+        valEntrada = (totalLiquido * p) / 100;
         inpValorAvanco.value = valEntrada.toFixed(2);
       } else if (origem === 'valor' && inpPercAvanco) {
-        if (valEntrada > totalVenda) valEntrada = totalVenda;
-        const p = totalVenda > 0 ? (valEntrada / totalVenda) * 100 : 0;
+        if (valEntrada > totalLiquido) valEntrada = totalLiquido;
+        const p = totalLiquido > 0 ? (valEntrada / totalLiquido) * 100 : 0;
         inpPercAvanco.value = p.toFixed(0);
       }
 
-      const remanescente = Math.max(0, totalVenda - valEntrada);
+      const remanescente = Math.max(0, totalLiquido - valEntrada);
 
       // Atualiza Status da Entrada
       if (valEntrada <= 0) {
         if (badgeEntrada) badgeEntrada.innerHTML = '<span class="status-pill status-gray" style="font-size:9.5px;">SEM ENTRADA (0%)</span>';
         if (chkSinalComp) { chkSinalComp.checked = false; chkSinalComp.disabled = true; }
-      } else if (valEntrada >= totalVenda) {
+      } else if (valEntrada >= totalLiquido) {
         if (badgeEntrada) badgeEntrada.innerHTML = (chkSinalComp && chkSinalComp.checked) ? '<span class="status-pill status-green" style="font-size:9.5px;">100% PAGO À VISTA</span>' : '<span class="status-pill status-blue" style="font-size:9.5px;">À VISTA (AGUARDANDO PAGAMENTO)</span>';
         if (chkSinalComp) chkSinalComp.disabled = false;
       } else {
@@ -13722,6 +13743,12 @@
       });
     });
 
+    const inpDescontoInit = document.getElementById('finValorDesconto');
+    if (inpDescontoInit) {
+      inpDescontoInit.addEventListener('input', () => recalcularSaldoAvanco('perc'));
+      inpDescontoInit.addEventListener('change', () => recalcularSaldoAvanco('perc'));
+    }
+
     recalcularSaldoAvanco('perc');
 
     // Upload / Troca do Mockup Oficial em Alta Definição A4 (1200x1600 WebP) direto na entrada do pedido
@@ -13905,10 +13932,17 @@
       const prodIdFinal = dadosBase.prod ? dadosBase.prod.id : dadosBase.produtoId;
       const gradeFinal = dadosBase.grade;
       const precoUnitFinal = dadosBase.precoVendaUnitario || dadosBase.precoUnitarioVenda;
-      const totalVendaFinal = totalVenda;
+      const inpDescontoFinal = document.getElementById('finValorDesconto');
+      let valorDescontoFinal = parseFloat(inpDescontoFinal?.value) || 0;
+      if (valorDescontoFinal < 0) valorDescontoFinal = 0;
+      if (valorDescontoFinal > totalVenda) valorDescontoFinal = totalVenda;
+      const totalVendaFinal = Math.max(0, totalVenda - valorDescontoFinal);
       const custoTotalFinal = dadosBase.custoTotal || dadosBase.custoTotalEstimado;
-      const lucroFinal = dadosBase.lucroLiquido || dadosBase.lucroLiquidoEstimado;
-      const margemFinal = dadosBase.margem || dadosBase.margemLucroPercentual;
+      const lucroBrutoBase = dadosBase.lucroLiquido || dadosBase.lucroLiquidoEstimado;
+      const lucroFinal = (typeof custoTotalFinal === 'number' && !Number.isNaN(custoTotalFinal))
+        ? Math.max(0, totalVendaFinal - custoTotalFinal)
+        : Math.max(0, (lucroBrutoBase || 0) - valorDescontoFinal);
+      const margemFinal = totalVendaFinal > 0 ? ((lucroFinal / totalVendaFinal) * 100) : 0;
 
       const maxNum = (db.pedidos || []).reduce((max, p) => Math.max(max, parseInt(p.numero, 10) || 0), 100);
       const novoNum = dadosBase.numero || (maxNum >= 100 ? maxNum + 1 : 101);
@@ -14020,6 +14054,9 @@
         tipoPedidoModalidade: dadosBase.tipoPedidoModalidade || 'padrao',
         jogadores: Array.isArray(dadosBase.jogadores) ? JSON.parse(JSON.stringify(dadosBase.jogadores)) : [],
         precoUnitarioVenda: precoUnitFinal,
+        valorBrutoVenda: totalVenda,
+        desconto: valorDescontoFinal,
+        valorDesconto: valorDescontoFinal,
         valorTotalVenda: totalVendaFinal,
         custoTotalEstimado: custoTotalFinal,
         custoTecidoTotal: (dadosBase.itens && dadosBase.itens.length > 0)
