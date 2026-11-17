@@ -8599,6 +8599,30 @@
                   </div>
                 </div>
 
+                <!-- Bloco de Preço de Venda do Uniforme de Futebol / Time -->
+                <div id="blocoPrecoVendaTime" style="background: #ffffff; border: 1.5px solid #86efac; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 20px;">⚽💰</span>
+                    <div>
+                      <label for="orcPrecoVendaTime" style="font-size: 12px; font-weight: 800; color: #166534; display: block; margin-bottom: 2px;">
+                        Preço de Venda do Uniforme / Jogo (R$ por Atleta) *
+                      </label>
+                      <span style="font-size: 10.5px; color: #15803d;">
+                        Valor unitário cobrado por cada uniforme/jogo de atleta da relação (quantidade × valor = faturamento total)
+                      </span>
+                    </div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="position: relative;">
+                      <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-weight: 800; font-size: 13px; color: #166534;">R$</span>
+                      <input type="text" inputmode="decimal" id="orcPrecoVendaTime" class="input-moeda-centavos" value="${formatarMoedaInput(itAtivo.precoVendaUnitario || 79.90)}" style="width: 125px; padding: 6px 10px 6px 32px; font-size: 14px; font-weight: 800; text-align: right; color: #166534; border: 1.5px solid #86efac; border-radius: 6px; background: #f0fdf4;" placeholder="0,00" title="Preço de venda cobrado por uniforme do time">
+                    </div>
+                    <div id="badgeSubtotalVendaTime" style="background: #14532d; color: #86efac; padding: 6px 12px; border-radius: 6px; font-weight: 800; font-size: 12.5px; white-space: nowrap;">
+                      Total Venda: R$ 0,00
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Resumo Visual em Badges em Tempo Real -->
                 <div id="resumoGradeTimeLive" style="margin-bottom: 8px;">
                   <!-- Preenchido via atualizarResumoGradeTimeLive() -->
@@ -8942,6 +8966,17 @@
         if (inpTotal) inpTotal.value = contagem.total;
         const inpTotalNum = document.getElementById('gradeTotalNum');
         if (inpTotalNum) inpTotalNum.value = contagem.total;
+
+        // Sincroniza o preço de venda do uniforme do time para todos os tamanhos
+        const inpPrecoTime = document.getElementById('orcPrecoVendaTime');
+        const precoTime = parseNumMoeda(inpPrecoTime?.value, (it.precoVendaUnitario || 79.90));
+        if (precoTime > 0) {
+          it.precoVendaUnitario = precoTime;
+          it.precosPorTamanho = it.precosPorTamanho || {};
+          TODOS_CAMPOS_GRADE.forEach(c => {
+            it.precosPorTamanho[c.chave] = precoTime;
+          });
+        }
       } else {
         // No modo Padrão / Corporativo, lê dos inputs manuais da grade
         const novaGrade = {};
@@ -9605,6 +9640,13 @@
       const inpTotalNum = document.getElementById('gradeTotalNum');
       if (inpTotalNum) inpTotalNum.value = g.total || 0;
 
+      // Popula o preço de venda do time se estiver na modalidade time
+      const inpPrecoTime = document.getElementById('orcPrecoVendaTime');
+      if (inpPrecoTime) {
+        inpPrecoTime.value = formatarMoedaInput(it.precoVendaUnitario || 79.90);
+        if (typeof atualizarResumoGradeTimeLive === 'function') atualizarResumoGradeTimeLive();
+      }
+
       if (typeof atualizarEstadoVisualTamanhos === 'function') {
         atualizarEstadoVisualTamanhos(true);
       }
@@ -10250,7 +10292,7 @@
       mostrarToast(`Modelo #${novoNum} adicionado ao pedido! Configure suas especificações.`, 'green');
     });
 
-    // Mudança de modelo textil no select
+    // Mudança de modelo textil no select (com alternância automática de Camisa vs Calça e Auto-preenchimento de Preços)
     document.getElementById('orcProdutoSelect')?.addEventListener('change', () => {
       const it = itensOrcamento[itemAtivoIndex];
       if (!it) return;
@@ -10277,6 +10319,39 @@
         if (inpCostura) inpCostura.value = formatarMoedaInput(it.custoCostura);
         const inpAv = document.getElementById('inputCustoAviamento');
         if (inpAv) inpAv.value = formatarMoedaInput(it.custoAviamento);
+
+        // --- 1. DETECÇÃO INTELIGENTE: CAMISA (ALFABÉTICA) VS CALÇA / BERMUDA (NUMÉRICA) ---
+        const nomeECat = ((prod.nome || '') + ' ' + (prod.categoria || '')).toLowerCase();
+        const isCalcaOuBermuda = prod.tipoGradePadrao === 'numerica' || /(cal[çc]a|bermuda|short|sarja|brim|rip stop|jeans)/i.test(nomeECat);
+        if (isCalcaOuBermuda) {
+          const btnNum = document.getElementById('btnModoGradeNumerica');
+          if (btnNum) btnNum.click();
+        } else {
+          const btnAlfa = document.getElementById('btnModoGradeAlfabetica');
+          if (btnAlfa) btnAlfa.click();
+        }
+
+        // --- 2. AUTO-PREENCHIMENTO DOS PREÇOS DE VENDA CADASTRADOS NO PRODUTO ---
+        const precoBaseProd = parseFloat(prod.precoVendaBase) || parseFloat(it.precoVendaUnitario) || 58.00;
+        it.precoVendaUnitario = precoBaseProd;
+        if (!it.precosPorTamanho) it.precosPorTamanho = {};
+        TODOS_CAMPOS_GRADE.forEach(c => {
+          const precoTam = (prod.precosPorTamanho && prod.precosPorTamanho[c.chave] != null && !isNaN(prod.precosPorTamanho[c.chave]))
+            ? parseFloat(prod.precosPorTamanho[c.chave])
+            : precoBaseProd;
+          it.precosPorTamanho[c.chave] = precoTam;
+          const inpPreco = document.getElementById('precoGrade_' + c.chave);
+          if (inpPreco) {
+            inpPreco.value = formatarMoedaInput(precoTam);
+          }
+        });
+
+        // Se estiver na modalidade time, preenche o preço do time também
+        const inpPrecoTime = document.getElementById('orcPrecoVendaTime');
+        if (inpPrecoTime) {
+          inpPrecoTime.value = formatarMoedaInput(precoBaseProd);
+          if (typeof atualizarResumoGradeTimeLive === 'function') atualizarResumoGradeTimeLive();
+        }
 
         if (!it.mockupUploadPersonalizado) {
           const cliId = document.getElementById('orcClienteSelect')?.value;
@@ -11561,51 +11636,71 @@
         return null;
       }
 
-      // Validação: Preço de venda obrigatório para todos os tamanhos com quantidade preenchida
-      for (let i = 0; i < itensOrcamento.length; i++) {
-        const itemMod = itensOrcamento[i];
-        const gradeMod = itemMod.grade || {};
-        const precosMod = itemMod.precosPorTamanho || {};
+      // Validação: Preço de venda obrigatório
+      if (modalidadePedido === 'time') {
+        const itTime = itensOrcamento[itemAtivoIndex];
+        const pTime = parseNumMoeda(document.getElementById('orcPrecoVendaTime')?.value, itTime?.precoVendaUnitario || 0);
+        if (pTime <= 0) {
+          const inpPrecoTime = document.getElementById('orcPrecoVendaTime');
+          if (inpPrecoTime) {
+            inpPrecoTime.focus();
+            inpPrecoTime.select();
+            inpPrecoTime.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.45)';
+          }
+          mostrarToast('Por favor, informe o preço de venda por atleta do uniforme de time!', 'red');
+          return null;
+        }
+        if (itTime) {
+          itTime.precoVendaUnitario = pTime;
+          itTime.precosPorTamanho = itTime.precosPorTamanho || {};
+          TODOS_CAMPOS_GRADE.forEach(c => { itTime.precosPorTamanho[c.chave] = pTime; });
+        }
+      } else {
+        for (let i = 0; i < itensOrcamento.length; i++) {
+          const itemMod = itensOrcamento[i];
+          const gradeMod = itemMod.grade || {};
+          const precosMod = itemMod.precosPorTamanho || {};
 
-        for (const c of TODOS_CAMPOS_GRADE) {
-          const qtdTam = parseInt(gradeMod[c.chave] || 0, 10);
-          if (qtdTam > 0) {
-            const pTam = (precosMod[c.chave] != null && !isNaN(precosMod[c.chave]))
-              ? parseFloat(precosMod[c.chave])
-              : 0;
+          for (const c of TODOS_CAMPOS_GRADE) {
+            const qtdTam = parseInt(gradeMod[c.chave] || 0, 10);
+            if (qtdTam > 0) {
+              const pTam = (precosMod[c.chave] != null && !isNaN(precosMod[c.chave]))
+                ? parseFloat(precosMod[c.chave])
+                : 0;
 
-            if (pTam <= 0) {
-              if (itemAtivoIndex !== i && typeof selecionarModeloAtivo === 'function') {
-                selecionarModeloAtivo(i);
-              }
-              const inpInvalido = document.getElementById('precoGrade_' + c.chave);
-              if (inpInvalido) {
-                // Se o input estiver dentro de uma seção extra que está recolhida, abre-a
-                const elSecao = inpInvalido.closest('.secao-grade-extra-card');
-                if (elSecao && elSecao.style.display === 'none') {
-                  elSecao.style.display = 'block';
-                  const secaoKey = elSecao.id.replace('secaoGrade_', '');
-                  const btnTog = document.getElementById(`btnToggle_${secaoKey}`);
-                  if (btnTog) {
-                    btnTog.style.boxShadow = '0 0 0 2px currentColor';
-                    btnTog.style.fontWeight = '800';
+              if (pTam <= 0) {
+                if (itemAtivoIndex !== i && typeof selecionarModeloAtivo === 'function') {
+                  selecionarModeloAtivo(i);
+                }
+                const inpInvalido = document.getElementById('precoGrade_' + c.chave);
+                if (inpInvalido) {
+                  // Se o input estiver dentro de uma seção extra que está recolhida, abre-a
+                  const elSecao = inpInvalido.closest('.secao-grade-extra-card');
+                  if (elSecao && elSecao.style.display === 'none') {
+                    elSecao.style.display = 'block';
+                    const secaoKey = elSecao.id.replace('secaoGrade_', '');
+                    const btnTog = document.getElementById(`btnToggle_${secaoKey}`);
+                    if (btnTog) {
+                      btnTog.style.boxShadow = '0 0 0 2px currentColor';
+                      btnTog.style.fontWeight = '800';
+                    }
                   }
-                }
-                // Se estiver no container numérico que estiver oculto
-                const containerNum = document.getElementById('boxGradeTableInputNumerica');
-                if (containerNum && containerNum.contains(inpInvalido) && containerNum.style.display === 'none') {
-                  const btnModoNum = document.getElementById('btnModoGradeNumerica');
-                  if (btnModoNum) btnModoNum.click();
-                }
+                  // Se estiver no container numérico que estiver oculto
+                  const containerNum = document.getElementById('boxGradeTableInputNumerica');
+                  if (containerNum && containerNum.contains(inpInvalido) && containerNum.style.display === 'none') {
+                    const btnModoNum = document.getElementById('btnModoGradeNumerica');
+                    if (btnModoNum) btnModoNum.click();
+                  }
 
-                inpInvalido.classList.add('campo-invalido-obrigatorio');
-                inpInvalido.focus();
-                inpInvalido.select();
-                const col = inpInvalido.closest('.grade-col');
-                if (col) col.classList.add('incompleto-alerta');
+                  inpInvalido.classList.add('campo-invalido-obrigatorio');
+                  inpInvalido.focus();
+                  inpInvalido.select();
+                  const col = inpInvalido.closest('.grade-col');
+                  if (col) col.classList.add('incompleto-alerta');
+                }
+                mostrarToast(`Por favor, informe o preço de venda para o tamanho ${c.rotulo} (Modelo ${i + 1})!`, 'red');
+                return null;
               }
-              mostrarToast(`Por favor, informe o preço de venda para o tamanho ${c.rotulo} (Modelo ${i + 1})!`, 'red');
-              return null;
             }
           }
         }
@@ -12164,6 +12259,22 @@
       if (e.target.checked) alternarModalidadePedido('time');
     });
 
+    // Input do Preço de Venda do Uniforme de Futebol / Time
+    document.getElementById('orcPrecoVendaTime')?.addEventListener('input', (e) => {
+      formatarMoedaDigitacao(e.target);
+      const it = itensOrcamento[itemAtivoIndex];
+      if (it) {
+        const p = parseNumMoeda(e.target.value, 0);
+        it.precoVendaUnitario = p;
+        if (!it.precosPorTamanho) it.precosPorTamanho = {};
+        TODOS_CAMPOS_GRADE.forEach(c => {
+          it.precosPorTamanho[c.chave] = p;
+        });
+      }
+      atualizarResumoGradeTimeLive();
+      recalcularBenchmarkModal();
+    });
+
     function atualizarResumoGradeTimeLive() {
       const elResumo = document.getElementById('resumoGradeTimeLive');
       if (!elResumo) return;
@@ -12223,6 +12334,16 @@
           </div>
         </div>
       `;
+
+      // Atualiza o subtotal de faturamento do time em tempo real
+      const inpPrecoTime = document.getElementById('orcPrecoVendaTime');
+      const itTime = itensOrcamento[itemAtivoIndex];
+      const precoUnitTime = parseNumMoeda(inpPrecoTime?.value, (itTime?.precoVendaUnitario || 79.90));
+      const badgeVenda = document.getElementById('badgeSubtotalVendaTime');
+      if (badgeVenda) {
+        const subtotal = totalPecas * precoUnitTime;
+        badgeVenda.innerHTML = `Total Venda: <strong style="color: #ffffff; font-size: 13.5px;">${formatarMoeda(subtotal)}</strong> <span style="font-size: 10px; color: #86efac; font-weight: normal;">(${totalPecas} atletas × ${formatarMoeda(precoUnitTime)})</span>`;
+      }
     }
 
     function sincronizarGradeComListaJogadores() {
@@ -18874,6 +18995,9 @@
                         <button class="btn btn-sm btn-dar-baixa-item" data-id="${item.id}" style="background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; font-weight: 700; padding: 4px 9px; border-radius: 4px; cursor: pointer;" title="Dar baixa física neste insumo">
                           - Baixa
                         </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.excluirInsumoEstoque('${item.id}')" style="background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; font-weight: 700; padding: 4px 8px; border-radius: 4px; cursor: pointer;" title="Apagar este insumo do catálogo de estoque">
+                          🗑️
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -18941,11 +19065,9 @@
                     ${mov.responsavel || 'Sistema'}
                   </td>
                   <td style="text-align: right; white-space: nowrap;">
-                    ${mov.tipo === 'Entrada' && !mov.estornado ? `
-                      <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.cancelarEntradaEstoque('${mov.id}')" style="color: #dc2626; border-color: #fca5a5; font-weight: 700; padding: 2px 8px;" title="Cancelar esta entrada de estoque e estornar compras/caixa">
-                        🚫 Cancelar Entrada
-                      </button>
-                    ` : (mov.estornado ? '<span class="status-pill status-gray" style="font-size: 9px; font-weight: 800;">ESTORNADA</span>' : '<span style="color: #94a3b8; font-size: 11px;">—</span>')}
+                    <button type="button" class="btn btn-secondary btn-xs" onclick="window.ERP.excluirMovimentacaoEstoque('${mov.id}')" style="color: #dc2626; border-color: #fca5a5; background: #fff5f5; font-weight: 700; padding: 3px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;" title="Apagar este lançamento do estoque e reverter o saldo e financeiro">
+                      🗑️ Apagar Lançamento
+                    </button>
                   </td>
                 </tr>
               `).join('')}
@@ -19593,10 +19715,10 @@
 
 
   /**
-   * CANCELAR / ESTORNAR ENTRADA DE ESTOQUE
-   * Reverte o saldo físico, cancela a compra e remove a saída do caixa sem deixar resíduos
+   * EXCLUIR / APAGAR MOVIMENTAÇÃO DE ESTOQUE FEITA ERRADO (ENTRADA OU BAIXA)
+   * Expura o lançamento do histórico, reverte o saldo físico e remove despesas do financeiro e compras
    */
-  function cancelarEntradaEstoque(movId) {
+  function excluirMovimentacaoEstoque(movId) {
     if (!db || !Array.isArray(db.historicoEstoque)) return;
     const mov = db.historicoEstoque.find(h => h.id === movId);
     if (!mov) {
@@ -19604,41 +19726,33 @@
       return;
     }
 
-    if (mov.tipo !== 'Entrada') {
-      mostrarToast('Apenas entradas de estoque podem ser canceladas por esta opção.', 'yellow');
-      return;
-    }
-
     const desc = mov.itemDescricao || 'Insumo';
-    const qtd = mov.quantidade || 0;
+    const qtd = Number(mov.quantidade) || 0;
     const unid = mov.unidade || 'kg';
+    const tipo = mov.tipo || 'Entrada';
     const val = formatarMoeda(mov.valorTotal || 0);
 
-    if (!confirm(`⚠️ DESEJA REALMENTE CANCELAR ESTA ENTRADA?\n\n• Item: ${desc}\n• Quantidade: ${qtd} ${unid}\n• Valor Total: ${val}\n\nO saldo será subtraído do estoque e os lançamentos em Compras e no Financeiro serão estornados automaticamente.`)) {
+    if (!confirm(`⚠️ DESEJA REALMENTE APAGAR ESTE LANÇAMENTO DE ESTOQUE FEITO ERRADO?\n\n• Tipo: ${tipo.toUpperCase()}\n• Item: ${desc}\n• Quantidade: ${qtd} ${unid}\n• Valor: ${val}\n\nO lançamento será apagado do sistema, o saldo físico será revertido e os lançamentos no financeiro serão expurgados sem deixar resíduos.`)) {
       return;
     }
 
     // 1. Reverte o saldo físico do item no estoque
     const itemEst = (db.estoque || []).find(e => e.id === mov.itemId || e.codigo === mov.itemCodigo || e.descricao === mov.itemDescricao);
     if (itemEst) {
-      itemEst.saldoAtual = Math.max(0, parseFloat(((Number(itemEst.saldoAtual) || 0) - Number(qtd)).toFixed(2)));
+      const saldoAtual = Number(itemEst.saldoAtual) || 0;
+      if (tipo === 'Entrada') {
+        // Se era Entrada, retira o saldo que entrou por engano
+        itemEst.saldoAtual = Math.max(0, parseFloat((saldoAtual - qtd).toFixed(2)));
+      } else if (tipo === 'Baixa' || tipo === 'Saida') {
+        // Se era Baixa, devolve o saldo que foi baixado por engano
+        itemEst.saldoAtual = parseFloat((saldoAtual + qtd).toFixed(2));
+      }
     }
 
-    // 2. Remove / estorna de db.compras
-    if (Array.isArray(db.compras)) {
-      db.compras = db.compras.filter(c => {
-        if (c.itens && (c.itens.includes(desc) || desc.includes(c.itens))) {
-          if (Math.abs((Number(c.valorTotal) || 0) - (Number(mov.valorTotal) || 0)) < 0.05) {
-            return false;
-          }
-        }
-        return true;
-      });
-    }
-
-    // 3. Remove / estorna de db.lancamentosFinanceiros
+    // 2. Remove do financeiro (db.lancamentosFinanceiros)
     if (Array.isArray(db.lancamentosFinanceiros)) {
       db.lancamentosFinanceiros = db.lancamentosFinanceiros.filter(l => {
+        if (l.estoqueMovId === mov.id || l.id === mov.lancamentoFinanceiroId) return false;
         if (l.descricao && (l.descricao.includes(desc) || desc.includes(l.descricao.replace('Compra de Insumos: ', '')))) {
           if (Math.abs((Number(l.valor) || 0) - (Number(mov.valorTotal) || 0)) < 0.05) {
             return false;
@@ -19648,33 +19762,49 @@
       });
     }
 
-    // 4. Marca o histórico como cancelado/estornado
-    mov.estornado = true;
-    mov.observacoes = (mov.observacoes ? mov.observacoes + ' | ' : '') + 'ENTRADA CANCELADA / ESTORNADA PELO USUÁRIO';
+    // 3. Remove de db.compras
+    if (Array.isArray(db.compras)) {
+      db.compras = db.compras.filter(c => {
+        if (c.estoqueMovId === mov.id || c.id === mov.compraId) return false;
+        if (c.itens && (c.itens.includes(desc) || desc.includes(c.itens))) {
+          if (Math.abs((Number(c.valorTotal) || 0) - (Number(mov.valorTotal) || 0)) < 0.05) {
+            return false;
+          }
+        }
+        return true;
+      });
+    }
 
-    // Registra contra-lançamento de estorno no histórico
-    db.historicoEstoque.unshift({
-      id: `EST-CAN-${Date.now().toString().slice(-6)}`,
-      tipo: 'Baixa',
-      itemId: mov.itemId,
-      itemCodigo: mov.itemCodigo,
-      itemDescricao: mov.itemDescricao,
-      quantidade: qtd,
-      unidade: unid,
-      custoUnitario: mov.custoUnitario,
-      valorTotal: mov.valorTotal,
-      saldoAnterior: itemEst ? itemEst.saldoAtual + qtd : qtd,
-      novoSaldo: itemEst ? itemEst.saldoAtual : 0,
-      motivo: `Estorno / Cancelamento da Entrada ${mov.id}`,
-      data: new Date().toISOString(),
-      responsavel: 'Almoxarifado'
-    });
+    // 4. Remove completamente do histórico de estoque
+    db.historicoEstoque = db.historicoEstoque.filter(h => h.id !== movId && h.id !== `EST-CAN-${movId}`);
 
-    salvarEstado();
+    salvarEstado(true);
     renderizarEstoque();
-    mostrarToast(`✓ Entrada de ${qtd} ${unid} cancelada com sucesso! Saldo e financeiro estornados.`, 'green');
+    if (typeof renderizarFinanceiro === 'function') renderizarFinanceiro();
+    mostrarToast(`✓ Lançamento de estoque apagado com sucesso! Saldo e financeiro recalculados.`, 'green');
   }
-  window.ERP.cancelarEntradaEstoque = cancelarEntradaEstoque;
+  window.ERP.excluirMovimentacaoEstoque = excluirMovimentacaoEstoque;
+  window.ERP.cancelarEntradaEstoque = excluirMovimentacaoEstoque;
+
+  /**
+   * EXCLUIR INSUMO DO ESTOQUE
+   * Remove o item do estoque físico e histórico associado
+   */
+  function excluirInsumoEstoque(itemId) {
+    if (!db || !Array.isArray(db.estoque)) return;
+    const item = db.estoque.find(e => e.id === itemId);
+    if (!item) return;
+
+    if (!confirm(`⚠️ DESEJA REALMENTE EXCLUIR O INSUMO "${item.descricao}" DO ESTOQUE?\n\n• Saldo Atual: ${item.saldoAtual || 0} ${item.unidade || 'kg'}\n\nEsta ação removerá o insumo do cadastro do estoque.`)) {
+      return;
+    }
+
+    db.estoque = db.estoque.filter(e => e.id !== itemId);
+    salvarEstado(true);
+    renderizarEstoque();
+    mostrarToast(`✓ Insumo "${item.descricao}" excluído do estoque com sucesso.`, 'green');
+  }
+  window.ERP.excluirInsumoEstoque = excluirInsumoEstoque;
 
 
   /**
@@ -20248,6 +20378,7 @@
                   <div><strong>Malha/Tecido:</strong> <span style="color: #1e40af; font-weight: 600;">${prod.tipoMalhaPadrao}</span></div>
                   <div><strong>Consumo Base M:</strong> <span class="text-mono" style="font-weight: 800; color: #047857;">${rotuloBase}</span></div>
                   <div><strong>Mão de Obra Costura:</strong> <span class="text-mono" style="font-weight: 700; color: var(--text-primary);">${formatarMoeda(prod.custoMaoDeObraBase)}</span></div>
+                  <div><strong>Preço Venda Sugerido:</strong> <span class="text-mono" style="font-weight: 800; color: #1e40af;">${formatarMoeda(prod.precoVendaBase || 59.90)}</span> <span style="font-size: 10px; color: #64748b; font-weight: 700;">(${prod.tipoGradePadrao === 'numerica' ? '34-60' : 'PP-GG'})</span></div>
                 </div>
 
                 <!-- Resumo dos Consumos por Tamanho em Gramas/Metros -->
@@ -20389,6 +20520,173 @@
     });
   }
 
+  /**
+   * Renderiza a Grade de Preço de Venda da Modelagem por Tamanho
+   * Permite cadastrar os valores uma única vez para que o sistema puxe automaticamente nos pedidos
+   */
+  function gerarHtmlGradePrecosVendaForm(precosPorTamanho = {}, precoVendaBase = 59.90, tipoGrade = 'alfabetica', prefix = 'cadmod') {
+    const pBase = (typeof precoVendaBase === 'number' && precoVendaBase > 0) ? precoVendaBase : 59.90;
+    const precos = precosPorTamanho || {};
+
+    const tamanhosAlfa = [
+      { chave: 'pp', rotulo: 'PP' },
+      { chave: 'p', rotulo: 'P' },
+      { chave: 'm', rotulo: 'M' },
+      { chave: 'g', rotulo: 'G' },
+      { chave: 'gg', rotulo: 'GG' },
+      { chave: 'xg', rotulo: 'XG' },
+      { chave: 'g1', rotulo: 'G1' },
+      { chave: 'g2', rotulo: 'G2' },
+      { chave: 'bl_p', rotulo: 'BL-P' },
+      { chave: 'bl_m', rotulo: 'BL-M' },
+      { chave: 'bl_g', rotulo: 'BL-G' },
+      { chave: 'bl_gg', rotulo: 'BL-GG' }
+    ];
+
+    const tamanhosNum = [
+      { chave: 'num34', rotulo: '34' },
+      { chave: 'num36', rotulo: '36' },
+      { chave: 'num38', rotulo: '38' },
+      { chave: 'num40', rotulo: '40' },
+      { chave: 'num42', rotulo: '42' },
+      { chave: 'num44', rotulo: '44' },
+      { chave: 'num46', rotulo: '46' },
+      { chave: 'num48', rotulo: '48' },
+      { chave: 'num50', rotulo: '50' },
+      { chave: 'num52', rotulo: '52' },
+      { chave: 'num54', rotulo: '54' },
+      { chave: 'num56', rotulo: '56' },
+      { chave: 'num58', rotulo: '58' },
+      { chave: 'num60', rotulo: '60' }
+    ];
+
+    return `
+      <div style="background: #f8fafc; border: 1.5px solid #94a3b8; border-radius: 8px; padding: 12px; margin-top: 14px; margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 16px;">🏷️</span>
+              <strong style="font-size: 13px; color: #1e293b;">Preço de Venda Padrão da Modelagem (Auto-Preenchimento nos Pedidos)</strong>
+            </div>
+            <span style="font-size: 11px; color: #64748b;">
+              Defina os valores aqui uma única vez. Ao selecionar esta modelagem ao cadastrar pedidos, os preços serão puxados automaticamente!
+            </span>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="font-size: 11.5px; font-weight: 700; color: #334155; margin: 0;">Grade Padrão:</label>
+            <div style="display: flex; gap: 4px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px;">
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #1e40af; cursor: pointer; padding: 2px 6px; border-radius: 4px; margin: 0;">
+                <input type="radio" name="${prefix}_tipoGradePadrao" value="alfabetica" ${tipoGrade !== 'numerica' ? 'checked' : ''} class="${prefix}-radio-grade">
+                🔤 Camisas (PP ao GG)
+              </label>
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #047857; cursor: pointer; padding: 2px 6px; border-radius: 4px; margin: 0;">
+                <input type="radio" name="${prefix}_tipoGradePadrao" value="numerica" ${tipoGrade === 'numerica' ? 'checked' : ''} class="${prefix}-radio-grade">
+                🔢 Calças / Bermudas (34 ao 60)
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px; background: #ffffff; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <label for="${prefix}PrecoVendaBase" style="font-size: 11.5px; font-weight: 800; color: #1e293b; margin: 0;">
+              Preço de Venda Base (R$):
+            </label>
+            <div style="position: relative;">
+              <span style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-weight: 800; font-size: 12px; color: #64748b;">R$</span>
+              <input type="text" inputmode="decimal" id="${prefix}PrecoVendaBase" class="form-input input-moeda-centavos ${prefix}-preco-base-input" value="${formatarMoedaInput(pBase)}" style="width: 105px; padding: 4px 6px 4px 26px; font-size: 13px; font-weight: 800; text-align: right; color: #1e40af;" placeholder="0,00">
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-secondary btn-sm" id="${prefix}BtnReplicarPrecos" style="font-size: 11px; padding: 4px 10px; font-weight: 700; color: #1e40af; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
+            ⚡ Aplicar Preço Base em Todos os Tamanhos
+          </button>
+          <span style="font-size: 10.5px; color: #64748b; font-style: italic;">(Ou personalize valores maiores para tamanhos especiais abaixo)</span>
+        </div>
+
+        <!-- Grade Alfabética de Preços -->
+        <div id="${prefix}ContainerPrecosAlfa" style="display: ${tipoGrade !== 'numerica' ? 'block' : 'none'};">
+          <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #475569; margin-bottom: 4px;">Tabela de Preço por Tamanho (Grade Camisas / Polos / Uniformes):</div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 6px;">
+            ${tamanhosAlfa.map(t => {
+              const val = (precos[t.chave] != null && !isNaN(precos[t.chave]) && precos[t.chave] > 0) ? precos[t.chave] : pBase;
+              return `
+                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 5px; padding: 4px; text-align: center;">
+                  <div style="font-size: 10.5px; font-weight: 800; color: #1e40af; margin-bottom: 2px;">${t.rotulo}</div>
+                  <input type="text" inputmode="decimal" class="form-input ${prefix}-inp-preco-tam input-moeda-centavos" data-chave="${t.chave}" value="${formatarMoedaInput(val)}" style="padding: 2px 4px; font-size: 11px; text-align: center; font-weight: 700; width: 100%;">
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Grade Numérica de Preços -->
+        <div id="${prefix}ContainerPrecosNum" style="display: ${tipoGrade === 'numerica' ? 'block' : 'none'};">
+          <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #047857; margin-bottom: 4px;">Tabela de Preço por Tamanho (Grade Calças / Bermudas / Numérica):</div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 6px;">
+            ${tamanhosNum.map(t => {
+              const val = (precos[t.chave] != null && !isNaN(precos[t.chave]) && precos[t.chave] > 0) ? precos[t.chave] : pBase;
+              return `
+                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 5px; padding: 4px; text-align: center;">
+                  <div style="font-size: 10.5px; font-weight: 800; color: #047857; margin-bottom: 2px;">${t.rotulo}</div>
+                  <input type="text" inputmode="decimal" class="form-input ${prefix}-inp-preco-tam input-moeda-centavos" data-chave="${t.chave}" value="${formatarMoedaInput(val)}" style="padding: 2px 4px; font-size: 11px; text-align: center; font-weight: 700; width: 100%;">
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function configurarEventosGradePrecosForm(modalEl, prefix) {
+    if (!modalEl) return;
+
+    modalEl.querySelectorAll(`input[name="${prefix}_tipoGradePadrao"]`).forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        const isNum = e.target.value === 'numerica';
+        const cAlfa = modalEl.querySelector(`#${prefix}ContainerPrecosAlfa`);
+        const cNum = modalEl.querySelector(`#${prefix}ContainerPrecosNum`);
+        if (cAlfa) cAlfa.style.display = isNum ? 'none' : 'block';
+        if (cNum) cNum.style.display = isNum ? 'block' : 'none';
+      });
+    });
+
+    const btnRep = modalEl.querySelector(`#${prefix}BtnReplicarPrecos`);
+    if (btnRep) {
+      btnRep.addEventListener('click', () => {
+        const inpBase = modalEl.querySelector(`#${prefix}PrecoVendaBase`);
+        const valBase = parseNumMoeda(inpBase?.value, 59.90);
+        modalEl.querySelectorAll(`.${prefix}-inp-preco-tam`).forEach(inp => {
+          inp.value = formatarMoedaInput(valBase);
+        });
+        mostrarToast(`✓ Preço de ${formatarMoeda(valBase)} aplicado em todos os tamanhos da modelagem!`, 'green');
+      });
+    }
+
+    modalEl.querySelectorAll('.input-moeda-centavos').forEach(inp => {
+      inp.addEventListener('input', (e) => formatarMoedaDigitacao(e.target));
+    });
+  }
+
+  function extrairPrecosGradeForm(modalEl, prefix) {
+    if (!modalEl) return { precoBase: 59.90, tipoGrade: 'alfabetica', precosPorTamanho: {} };
+    const inpBase = modalEl.querySelector(`#${prefix}PrecoVendaBase`);
+    const precoBase = parseNumMoeda(inpBase?.value, 59.90);
+    const radioNum = modalEl.querySelector(`input[name="${prefix}_tipoGradePadrao"][value="numerica"]`);
+    const tipoGrade = (radioNum && radioNum.checked) ? 'numerica' : 'alfabetica';
+
+    const precosPorTamanho = {};
+    modalEl.querySelectorAll(`.${prefix}-inp-preco-tam`).forEach(inp => {
+      const ch = inp.getAttribute('data-chave');
+      const val = parseNumMoeda(inp.value, precoBase);
+      if (ch) precosPorTamanho[ch] = val;
+    });
+
+    return { precoBase, tipoGrade, precosPorTamanho };
+  }
+
   function abrirModalEditarModelo(prod, callback) {
     if (!modalContainer || !prod) return;
     garantirConsumosPorTamanhoProduto(prod);
@@ -20464,6 +20762,11 @@
               ${gerarHtmlGradeConsumosTamanhoForm(prod.consumosPorTamanho, baseM, isMetrosInicial, 'editmod')}
             </div>
 
+            <!-- Grade de Preços de Venda por Tamanho (Auto-preenchimento nos pedidos) -->
+            <div id="containerGradePrecosEditMod">
+              ${gerarHtmlGradePrecosVendaForm(prod.precosPorTamanho, prod.precoVendaBase || 59.90, prod.tipoGradePadrao || 'alfabetica', 'editmod')}
+            </div>
+
             <!-- Aviamentos Fixos da Modelagem -->
             <div id="containerAviamentosEditMod">
               ${gerarHtmlEditorAviamentosFixos(prod.aviamentosPadrao, 'editmod')}
@@ -20486,6 +20789,7 @@
 
     configurarEventosGradeConsumosForm(modalEl, 'editmod', isMetrosInicial);
     configurarEventosAviamentosForm(modalEl, 'editmod');
+    configurarEventosGradePrecosForm(modalEl, 'editmod');
 
     // Mudança de unidade (kg vs metro)
     document.getElementById('editModUnidade')?.addEventListener('change', () => {
@@ -20539,6 +20843,11 @@
       prod.custoMaoDeObraBase = parseFloat(document.getElementById('editModCostura')?.value || 7.50);
       prod.consumosPorTamanho = consumosValidados;
       prod.consumoMalhaKgPorPeca = consumosValidados['m'] || (isM ? 0.75 : 0.28);
+
+      const precosInfoEdit = extrairPrecosGradeForm(modalEl, 'editmod');
+      prod.tipoGradePadrao = precosInfoEdit.tipoGrade;
+      prod.precoVendaBase = precosInfoEdit.precoBase;
+      prod.precosPorTamanho = precosInfoEdit.precosPorTamanho;
       prod.aviamentosPadrao = extrairAviamentosForm(modalEl, 'editmod');
 
       salvarEstado();
@@ -20628,6 +20937,11 @@
               ${gerarHtmlGradeConsumosTamanhoForm(mapaPadrao, baseMPadraoKg, false, 'cadmod')}
             </div>
 
+            <!-- Grade de Preços de Venda por Tamanho (Auto-preenchimento nos pedidos) -->
+            <div id="containerGradePrecosCadMod">
+              ${gerarHtmlGradePrecosVendaForm({}, 59.90, 'alfabetica', 'cadmod')}
+            </div>
+
             <!-- Aviamentos Fixos da Modelagem -->
             <div id="containerAviamentosCadMod">
               ${gerarHtmlEditorAviamentosFixos([{ nome: "Aviamentos Básicos", qtd: 1, custoUnitario: 2.00 }], 'cadmod')}
@@ -20649,6 +20963,19 @@
 
     configurarEventosGradeConsumosForm(modalEl, 'cadmod', false);
     configurarEventosAviamentosForm(modalEl, 'cadmod');
+    configurarEventosGradePrecosForm(modalEl, 'cadmod');
+
+    // Ao digitar calça ou bermuda no nome da nova modelagem, alterna automaticamente para grade numérica
+    document.getElementById('cadModNome')?.addEventListener('input', (e) => {
+      const v = (e.target.value || '').toLowerCase();
+      if (/(cal[çc]a|bermuda|short|brim|sarja|rip stop|jeans)/i.test(v)) {
+        const rNum = modalEl.querySelector('input[name="cadmod_tipoGradePadrao"][value="numerica"]');
+        if (rNum && !rNum.checked) {
+          rNum.checked = true;
+          rNum.dispatchEvent(new Event('change'));
+        }
+      }
+    });
 
     // Mudança de unidade
     document.getElementById('cadModUnidade')?.addEventListener('change', () => {
@@ -20691,6 +21018,7 @@
 
       const consumoM = consumosValidados['m'] || (isM ? 0.75 : 0.28);
 
+      const precosInfoCad = extrairPrecosGradeForm(modalEl, 'cadmod');
       const novoMod = {
         id: `PROD-${Math.floor(100 + db.produtosBase.length + 1)}`,
         codigo: document.getElementById('cadModCodigo')?.value.trim() || 'MOD-01',
@@ -20701,7 +21029,10 @@
         consumoMalhaKgPorPeca: consumoM,
         consumosPorTamanho: consumosValidados,
         custoMaoDeObraBase: lerInputNumDom('cadModCostura', 8.00),
-        aviamentosPadrao: extrairAviamentosForm(modalEl, 'cadmod')
+        aviamentosPadrao: extrairAviamentosForm(modalEl, 'cadmod'),
+        tipoGradePadrao: precosInfoCad.tipoGrade,
+        precoVendaBase: precosInfoCad.precoBase,
+        precosPorTamanho: precosInfoCad.precosPorTamanho
       };
 
       db.produtosBase.unshift(novoMod);
