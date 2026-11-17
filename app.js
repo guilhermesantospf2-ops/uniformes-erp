@@ -8886,6 +8886,22 @@
             <div class="resumo-geral-pedido-box" id="boxResumoGeralConsolidado">
               <!-- Calculado dinamicamente via recalcularBenchmarkModal -->
             </div>
+
+            <!-- 4.5 DESCONTO COMERCIAL DO ORÇAMENTO (OPCIONAL - PUXADO NA ENTRADA DO PEDIDO) -->
+            <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: var(--radius-sm); padding: 10px 14px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <label style="font-size: 12px; font-weight: 800; color: #b91c1c; margin: 0;">🏷️ Desconto Comercial na Proposta / Orçamento (Opcional)</label>
+                <span style="font-size: 10.5px; color: #7f1d1d;">Será exibido na Proposta Comercial do cliente e puxado automaticamente ao dar entrada no pedido.</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <select id="orcTipoDesconto" class="form-select" style="width: 64px; padding: 6px 6px; font-weight: 800; font-size: 13px; color: #b91c1c; border-color: #fca5a5;">
+                  <option value="valor" ${(isEdicao && orcamentoExistente.tipoDesconto === 'perc') ? '' : 'selected'}>R$</option>
+                  <option value="perc" ${(isEdicao && orcamentoExistente.tipoDesconto === 'perc') ? 'selected' : ''}>%</option>
+                </select>
+                <input type="number" id="orcValorDesconto" class="form-input text-mono" min="0" step="${(isEdicao && orcamentoExistente.tipoDesconto === 'perc') ? '1' : '1.00'}" ${(isEdicao && orcamentoExistente.tipoDesconto === 'perc') ? 'max="100"' : ''} value="${isEdicao ? Number(orcamentoExistente.tipoDesconto === 'perc' ? (orcamentoExistente.valorDescontoInput ?? orcamentoExistente.valorDescontoPerc ?? 0) : (orcamentoExistente.valorDesconto ?? orcamentoExistente.desconto ?? 0)).toFixed(2) : '0.00'}" style="width: 115px; font-weight: 800; font-size: 14px; color: #b91c1c; border-color: #fca5a5; text-align: right;">
+                <span id="orcDescontoResumoLive" style="font-size: 12px; font-weight: 800; color: #991b1b; min-width: 160px;"></span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -11147,6 +11163,43 @@
     }
 
     // Recálculo Completo: Engenharia Têxtil, Viabilidade e Totais Consolidados do Pedido
+    function obterDescontoOrcamentoModal(faturamentoBruto) {
+      const tipo = document.getElementById('orcTipoDesconto')?.value || 'valor';
+      const inp = document.getElementById('orcValorDesconto');
+      let raw = parseFloat(inp?.value) || 0;
+      if (raw < 0) {
+        raw = 0;
+        if (inp) inp.value = '0.00';
+      }
+      let descontoReais = 0;
+      let descontoPerc = 0;
+      if (tipo === 'perc') {
+        if (raw > 100) {
+          raw = 100;
+          if (inp) inp.value = '100';
+        }
+        descontoPerc = raw;
+        descontoReais = parseFloat(((faturamentoBruto * descontoPerc) / 100).toFixed(2));
+      } else {
+        if (faturamentoBruto > 0 && raw > faturamentoBruto) {
+          raw = faturamentoBruto;
+          if (inp) inp.value = faturamentoBruto.toFixed(2);
+        }
+        descontoReais = raw;
+        descontoPerc = faturamentoBruto > 0 ? (descontoReais / faturamentoBruto) * 100 : 0;
+      }
+      const lbl = document.getElementById('orcDescontoResumoLive');
+      if (lbl) {
+        if (descontoReais > 0) {
+          const liquido = Math.max(0, faturamentoBruto - descontoReais);
+          lbl.textContent = `- ${formatarMoeda(descontoReais)} (${descontoPerc.toFixed(1)}%) → Total: ${formatarMoeda(liquido)}`;
+        } else {
+          lbl.textContent = '';
+        }
+      }
+      return { tipo, raw, descontoReais, descontoPerc };
+    }
+
     function recalcularBenchmarkModal() {
       sincronizarItemAtivoDoDOM();
 
@@ -11766,8 +11819,10 @@
         return s + ((it.precoVendaUnitario || 0) * (it.grade?.total || 0));
       }, 0);
       const custoTotalGeral = itensOrcamento.reduce((s, it) => s + ((it.custoUnitarioProducao || 0) * (it.grade?.total || 0)), 0);
-      const lucroTotalGeral = faturamentoTotalGeral - custoTotalGeral;
-      const margemMediaGeral = faturamentoTotalGeral > 0 ? (lucroTotalGeral / faturamentoTotalGeral) * 100 : 0;
+      const descOrcInfo = obterDescontoOrcamentoModal(faturamentoTotalGeral);
+      const faturamentoLiquidoGeral = Math.max(0, faturamentoTotalGeral - descOrcInfo.descontoReais);
+      const lucroTotalGeral = faturamentoLiquidoGeral - custoTotalGeral;
+      const margemMediaGeral = faturamentoLiquidoGeral > 0 ? (lucroTotalGeral / faturamentoLiquidoGeral) * 100 : 0;
 
       // Resumo de produtos e personalizações
       const produtoNomeGeral = itensOrcamento.length === 1
@@ -11819,7 +11874,13 @@
         observacoesCoresDetalhes: obsCoresGeral,
         grade: gradeConsolidada,
         precoVendaUnitario: totalPecasGeral > 0 ? (faturamentoTotalGeral / totalPecasGeral) : 58.00,
-        valorTotal: faturamentoTotalGeral,
+        valorBrutoVenda: faturamentoTotalGeral,
+        desconto: descOrcInfo.descontoReais,
+        valorDesconto: descOrcInfo.descontoReais,
+        tipoDesconto: descOrcInfo.tipo,
+        valorDescontoInput: descOrcInfo.raw,
+        valorDescontoPerc: descOrcInfo.descontoPerc,
+        valorTotal: faturamentoLiquidoGeral,
         custoTotal: custoTotalGeral,
         custoUnitario: totalPecasGeral > 0 ? (custoTotalGeral / totalPecasGeral) : 0,
         custoTecidoPorPeca: totalPecasGeral > 0
@@ -12660,6 +12721,12 @@
         orcamentoExistente.tipoPersonalizacao = dadosOrcamento.tipoPersonalizacao;
         orcamentoExistente.grade = dadosOrcamento.grade;
         orcamentoExistente.precoUnitarioVenda = dadosOrcamento.precoVendaUnitario;
+        orcamentoExistente.valorBrutoVenda = dadosOrcamento.valorBrutoVenda || dadosOrcamento.valorTotal;
+        orcamentoExistente.desconto = dadosOrcamento.desconto || 0;
+        orcamentoExistente.valorDesconto = dadosOrcamento.valorDesconto || 0;
+        orcamentoExistente.tipoDesconto = dadosOrcamento.tipoDesconto || 'valor';
+        orcamentoExistente.valorDescontoInput = dadosOrcamento.valorDescontoInput || 0;
+        orcamentoExistente.valorDescontoPerc = dadosOrcamento.valorDescontoPerc || 0;
         orcamentoExistente.valorTotalVenda = dadosOrcamento.valorTotal;
         orcamentoExistente.custoTotalEstimado = dadosOrcamento.custoTotal;
         orcamentoExistente.custoTecidoPorPeca = dadosOrcamento.custoTecidoPorPeca;
@@ -12741,6 +12808,12 @@
         orcamentoExistente.tipoPersonalizacao = dadosOrcamento.tipoPersonalizacao;
         orcamentoExistente.grade = dadosOrcamento.grade;
         orcamentoExistente.precoUnitarioVenda = dadosOrcamento.precoVendaUnitario;
+        orcamentoExistente.valorBrutoVenda = dadosOrcamento.valorBrutoVenda || dadosOrcamento.valorTotal;
+        orcamentoExistente.desconto = dadosOrcamento.desconto || 0;
+        orcamentoExistente.valorDesconto = dadosOrcamento.valorDesconto || 0;
+        orcamentoExistente.tipoDesconto = dadosOrcamento.tipoDesconto || 'valor';
+        orcamentoExistente.valorDescontoInput = dadosOrcamento.valorDescontoInput || 0;
+        orcamentoExistente.valorDescontoPerc = dadosOrcamento.valorDescontoPerc || 0;
         orcamentoExistente.valorTotalVenda = dadosOrcamento.valorTotal;
         orcamentoExistente.custoTotalEstimado = dadosOrcamento.custoTotal;
         orcamentoExistente.custoTecidoPorPeca = dadosOrcamento.custoTecidoPorPeca;
@@ -12794,6 +12867,34 @@
       renderizarTabelaJogadoresModal();
     }
     recalcularBenchmarkModal();
+
+    const inpOrcDesc = document.getElementById('orcValorDesconto');
+    const selOrcTipoDesc = document.getElementById('orcTipoDesconto');
+    const atualizarLiveDescontoOrc = () => {
+      const brutoTotal = itensOrcamento.reduce((s, it) => s + (Number(it.valorTotalVenda) || ((it.precoVendaUnitario || 0) * (it.grade?.total || 0))), 0);
+      obterDescontoOrcamentoModal(brutoTotal);
+    };
+    if (inpOrcDesc) {
+      inpOrcDesc.addEventListener('input', atualizarLiveDescontoOrc);
+      inpOrcDesc.addEventListener('change', atualizarLiveDescontoOrc);
+    }
+    if (selOrcTipoDesc && inpOrcDesc) {
+      selOrcTipoDesc.addEventListener('change', () => {
+        const brutoTotal = itensOrcamento.reduce((s, it) => s + (Number(it.valorTotalVenda) || ((it.precoVendaUnitario || 0) * (it.grade?.total || 0))), 0);
+        const atual = parseFloat(inpOrcDesc.value) || 0;
+        if (selOrcTipoDesc.value === 'perc') {
+          inpOrcDesc.max = '100';
+          inpOrcDesc.step = '1';
+          if (atual > 0 && brutoTotal > 0) inpOrcDesc.value = Math.min(100, (atual / brutoTotal) * 100).toFixed(2);
+        } else {
+          inpOrcDesc.removeAttribute('max');
+          inpOrcDesc.step = '1.00';
+          if (atual > 0 && brutoTotal > 0) inpOrcDesc.value = ((brutoTotal * Math.min(100, atual)) / 100).toFixed(2);
+        }
+        atualizarLiveDescontoOrc();
+      });
+    }
+    atualizarLiveDescontoOrc();
 
     // Se for novo orçamento, carrega automaticamente o padrão do cliente inicial se existir
     if (!isEdicao) {
@@ -12858,6 +12959,12 @@
       artesAnexadas: [],
       grade: dados.grade,
       precoUnitarioVenda: dados.precoVendaUnitario,
+      valorBrutoVenda: dados.valorBrutoVenda || dados.valorTotal,
+      desconto: dados.desconto || 0,
+      valorDesconto: dados.valorDesconto || 0,
+      tipoDesconto: dados.tipoDesconto || 'valor',
+      valorDescontoInput: dados.valorDescontoInput || 0,
+      valorDescontoPerc: dados.valorDescontoPerc || 0,
       valorTotalVenda: dados.valorTotal,
       custoTotalEstimado: dados.custoTotal,
       custoTecidoPorPeca: dados.custoTecidoPorPeca,
@@ -12966,8 +13073,13 @@
 
     let mockupDataUrl = dadosBase.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(dadosBase.prod ? dadosBase.prod.nome : dadosBase.produtoNome, "#1e3a8a", "#ffffff", (dadosBase.cliente ? dadosBase.cliente.nomeFantasia : dadosBase.clienteNome).substring(0, 6));
 
-    const totalVenda = dadosBase.valorTotal || dadosBase.valorTotalVenda;
-    const sinalSugerido = totalVenda * 0.5;
+    const descontoInicialReais = parseFloat(dadosBase.valorDesconto || dadosBase.desconto || 0) || 0;
+    const tipoDescontoInicial = dadosBase.tipoDesconto === 'perc' ? 'perc' : 'valor';
+    const valorDescontoInputInicial = tipoDescontoInicial === 'perc'
+      ? (parseFloat(dadosBase.valorDescontoInput ?? dadosBase.valorDescontoPerc ?? 0) || 0)
+      : descontoInicialReais;
+    const totalVenda = dadosBase.valorBrutoVenda || ((dadosBase.valorTotal || dadosBase.valorTotalVenda || 0) + descontoInicialReais);
+    const sinalSugerido = Math.max(0, totalVenda - descontoInicialReais) * 0.5;
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active" id="modalAvancarPedidoOverlay">
@@ -13234,10 +13346,10 @@
                     </label>
                     <div style="display: flex; align-items: center; gap: 4px;">
                       <select id="finTipoDesconto" class="form-select" style="width: 62px; padding: 8px 6px; font-weight: 800; font-size: 13px; color: #b91c1c; flex-shrink: 0;">
-                        <option value="valor">R$</option>
-                        <option value="perc">%</option>
+                        <option value="valor" ${tipoDescontoInicial !== 'perc' ? 'selected' : ''}>R$</option>
+                        <option value="perc" ${tipoDescontoInicial === 'perc' ? 'selected' : ''}>%</option>
                       </select>
-                      <input type="number" id="finValorDesconto" class="form-input text-mono" min="0" step="1.00" value="0.00" style="font-weight: 800; font-size: 14px; color: #b91c1c;">
+                      <input type="number" id="finValorDesconto" class="form-input text-mono" min="0" step="${tipoDescontoInicial === 'perc' ? '1' : '1.00'}" ${tipoDescontoInicial === 'perc' ? 'max="100"' : ''} value="${valorDescontoInputInicial.toFixed(2)}" style="font-weight: 800; font-size: 14px; color: #b91c1c;">
                     </div>
                   </div>
 
@@ -14124,6 +14236,9 @@
         valorBrutoVenda: totalVenda,
         desconto: valorDescontoFinal,
         valorDesconto: valorDescontoFinal,
+        tipoDesconto: document.getElementById('finTipoDesconto')?.value || 'valor',
+        valorDescontoInput: parseFloat(document.getElementById('finValorDesconto')?.value) || 0,
+        valorDescontoPerc: totalVenda > 0 ? ((valorDescontoFinal / totalVenda) * 100) : 0,
         valorTotalVenda: totalVendaFinal,
         custoTotalEstimado: custoTotalFinal,
         custoTecidoTotal: (dadosBase.itens && dadosBase.itens.length > 0)
