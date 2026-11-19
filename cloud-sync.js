@@ -739,6 +739,7 @@ with check (true);
   }
 
   function obterUsuarioLogado() {
+    if (isModoDemo()) return null;
     if (usuarioAutenticado) return usuarioAutenticado;
     try {
       // 1. Busca em sessionStorage (sessão da aba ativa)
@@ -816,12 +817,23 @@ with check (true);
   }
 
   function atualizarVisuaisUsuarioLogado() {
-    const user = obterUsuarioLogado();
     const avatarEl = document.getElementById('sidebarUserAvatar');
-    const nameEl = document.getElementById('sidebarUserName');
+    const nameEl = document.getElementById('sidebarUserRole') ? document.getElementById('sidebarUserName') : null;
     const roleEl = document.getElementById('sidebarUserRole');
     const headerNome = document.getElementById('headerEmpresaNome');
     const roleBadgeText = document.getElementById('navbarUserRoleText');
+
+    if (isModoDemo()) {
+      if (avatarEl) avatarEl.textContent = 'DEMO';
+      if (nameEl) nameEl.textContent = 'Showroom';
+      if (roleEl) roleEl.textContent = 'Modo Demonstração';
+      if (roleBadgeText) roleBadgeText.textContent = '👑 Dono / Diretor (Demo)';
+      if (headerNome) headerNome.textContent = 'Texfy Indústria Têxtil';
+      atualizarVisuaisPerfil(PERFIS_PERMISSOES.dono);
+      return;
+    }
+
+    const user = obterUsuarioLogado();
 
     if (user) {
       const meta = user.user_metadata || {};
