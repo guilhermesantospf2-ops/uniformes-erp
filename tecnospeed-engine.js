@@ -202,6 +202,19 @@
         }
       ];
 
+      const valorDescontoTotal = Number(nfe.totais?.valorDesconto ?? nfe.valorDesconto ?? 0) || 0;
+      const valorFreteTotal = Number(nfe.totais?.valorFrete ?? nfe.valorFrete ?? 0) || 0;
+
+      // Soma bruta dos itens para rateio exato nos centavos
+      const somaBrutaItens = rawItems.reduce((s, it) => {
+        const qtd = Number(it.quantidade) || 1;
+        const vUnit = Number(it.valorUnitario) || 0;
+        return s + Number((qtd * vUnit).toFixed(2));
+      }, 0);
+
+      let descAcumulado = 0;
+      let freteAcumulado = 0;
+
       const items = rawItems.map((it, idx) => {
         const qtd = Number(it.quantidade) || 1;
         const vUnit = Number(it.valorUnitario) || 0;
@@ -216,9 +229,31 @@
           ncmLimpo = '62034200';
         }
 
-        const vAproxTribItem = Number((vTotal * 0.1345).toFixed(2)); // Alíquota IBPT vestuário confecção
+        // Rateio proporcional do desconto e frete (último item absorve diferença de centavos)
+        let itemDesc = Number(it.desconto ?? it.valorDesconto ?? 0) || 0;
+        if (itemDesc <= 0 && valorDescontoTotal > 0 && somaBrutaItens > 0) {
+          if (idx === rawItems.length - 1) {
+            itemDesc = Number(Math.max(0, valorDescontoTotal - descAcumulado).toFixed(2));
+          } else {
+            itemDesc = Number(((vTotal / somaBrutaItens) * valorDescontoTotal).toFixed(2));
+          }
+        }
+        descAcumulado = Number((descAcumulado + itemDesc).toFixed(2));
 
-        return {
+        let itemFrete = Number(it.frete ?? it.valorFrete ?? 0) || 0;
+        if (itemFrete <= 0 && valorFreteTotal > 0 && somaBrutaItens > 0) {
+          if (idx === rawItems.length - 1) {
+            itemFrete = Number(Math.max(0, valorFreteTotal - freteAcumulado).toFixed(2));
+          } else {
+            itemFrete = Number(((vTotal / somaBrutaItens) * valorFreteTotal).toFixed(2));
+          }
+        }
+        freteAcumulado = Number((freteAcumulado + itemFrete).toFixed(2));
+
+        const vLiquidoItem = Math.max(0, vTotal - itemDesc + itemFrete);
+        const vAproxTribItem = Number((vLiquidoItem * 0.1345).toFixed(2)); // Alíquota IBPT vestuário confecção
+
+        const itemPayload = {
           code: it.codigo || `MOD-${String(idx + 1).padStart(3, '0')}`,
           description: it.descricao || it.produtoNome || 'calça brim 3 bolsos elástico total',
           cfop: Number(String(it.cfop || cfopPadrao).replace(/\D/g, '')) || 5101,
@@ -242,10 +277,17 @@
             }
           }
         };
+        if (itemDesc > 0) itemPayload.discountAmount = itemDesc;
+        if (itemFrete > 0) itemPayload.freightAmount = itemFrete;
+        return itemPayload;
       });
 
-      const valorTotalNota = items.reduce((s, it) => s + it.totalAmount, 0);
+      const somaProdutos = items.reduce((s, it) => s + it.totalAmount, 0);
+      const somaDescontos = items.reduce((s, it) => s + (it.discountAmount || 0), 0);
+      const somaFretes = items.reduce((s, it) => s + (it.freightAmount || 0), 0);
+      const valorTotalNota = Math.max(0, Number((somaProdutos - somaDescontos + somaFretes).toFixed(2)));
       const valorTotalTribAprox = items.reduce((s, it) => s + (it.tax?.totalTax || 0), 0);
+      const qtdTotalPecas = items.reduce((s, it) => s + (Number(it.quantity) || 0), 0) || 1;
 
       // Forma de pagamento
       let paymentMethod = 'InstantPayment'; // PIX
@@ -253,9 +295,94 @@
       if (meio === '01') paymentMethod = 'InCash';
       else if (meio === '03' || meio === '04') paymentMethod = 'CreditCard';
       else if (meio === '15') paymentMethod = 'Boleto';
+      else if (meio === '14') paymentMethod = 'TradeBill';
+      else if (meio === '16') paymentMethod = 'BankDeposit';
+      else if (meio === '99') paymentMethod = 'Others';
+
+      const parcelasLista = Array.isArray(nfe.parcelas) ? nfe.parcelas.filter(p => Number(p.valor) > 0) : [];
+      const isAPrazo = parcelasLista.length > 0 && (parcelasLista.length > 1 || Boolean(nfe.fatura?.aPrazo) || meio === '15' || meio === '14');
+
+      // Cobrança / Fatura & Duplicatas (cobr / fat / dup)
+      const faturaObj = nfe.fatura || {};
+      const pedRef = nfe.pedidoNumero || '101';
+      const faturaNumero = String(faturaObj.numero || nfe.numero || pedRef);
+      const duplicatesPayload = parcelasLista.map((parc, pIdx) => {
+        let vencIso = '';
+        const vRaw = String(parc.vencimento || '').trim();
+        if (/^\d{4}-\d{2}-\d{2}/.test(vRaw)) {
+          vencIso = `${vRaw.slice(0, 10)}T00:00:00Z`;
+        } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(vRaw)) {
+          const [dd, mm, yyyy] = vRaw.split('/');
+          vencIso = `${yyyy}-${mm}-${dd}T00:00:00Z`;
+        } else {
+          vencIso = new Date(Date.now() + ((pIdx + 1) * 30 * 86400000)).toISOString().slice(0, 10) + 'T00:00:00Z';
+        }
+        return {
+          duplicateNumber: String(parc.numero || `${faturaNumero}-${String(pIdx + 1).padStart(2, '0')}`),
+          expirationOn: vencIso,
+          amount: Number(Number(parc.valor || 0).toFixed(2))
+        };
+      });
+
+      const billingPayload = (faturaObj.numero || duplicatesPayload.length > 0 || somaDescontos > 0)
+        ? {
+            bill: {
+              number: faturaNumero,
+              originalAmount: Number(somaProdutos.toFixed(2)),
+              discountAmount: Number(somaDescontos.toFixed(2)),
+              netAmount: valorTotalNota
+            },
+            ...(duplicatesPayload.length > 0 ? { duplicates: duplicatesPayload } : {})
+          }
+        : undefined;
+
+      // Transporte, Transportadora & Volumes (evita "A GRANEL" padrão da SEFAZ/NFE.io)
+      const tr = nfe.transporte || {};
+      const modStr = String(tr.modalidade ?? '9');
+      let freightModality = 'Free';
+      if (modStr === '0') freightModality = 'ByIssuer';
+      else if (modStr === '1') freightModality = 'ByReceiver';
+      else if (modStr === '2') freightModality = 'ByThirdParty';
+      else if (modStr === '3') freightModality = 'OwnByIssuer';
+      else if (modStr === '4') freightModality = 'OwnByReceiver';
+
+      const trNome = String(tr.transportadoraNome || '').trim();
+      const trDoc = String(tr.transportadoraCnpj || '').replace(/\D/g, '');
+      const trIe = String(tr.transportadoraIe || '').replace(/\D/g, '');
+      const isRetiradaGenerica = !trNome || /RETIRADA NO LOCAL|ENTREGA PRÓPRIA|O PRÓPRIO/i.test(trNome);
+
+      const transportPayload = {
+        freightModality,
+        volume: {
+          volumeQuantity: Number(tr.volumesQtd) || 1,
+          species: String(tr.volumesEspecie || 'CAIXAS').trim().toUpperCase() || 'CAIXAS',
+          ...(tr.volumesMarca ? { brand: String(tr.volumesMarca).trim().toUpperCase() } : {}),
+          ...(tr.volumesNumeracao ? { volumeNumeration: String(tr.volumesNumeracao).trim() } : {}),
+          grossWeight: Number((Number(tr.pesoBruto) || (qtdTotalPecas * 0.28)).toFixed(3)),
+          netWeight: Number((Number(tr.pesoLiquido) || (qtdTotalPecas * 0.28)).toFixed(3))
+        }
+      };
+
+      if (!isRetiradaGenerica || trDoc.length >= 11) {
+        transportPayload.transportGroup = {
+          name: trNome || 'TRANSPORTADORA',
+          ...(trDoc ? { federalTaxNumber: trDoc } : {}),
+          ...(trIe ? { stateTaxNumber: trIe } : {}),
+          ...(tr.transportadoraEndereco ? { fullAddress: String(tr.transportadoraEndereco).trim() } : {}),
+          ...(tr.transportadoraCidade ? { cityName: String(tr.transportadoraCidade).trim() } : {}),
+          ...(tr.transportadoraUf ? { state: String(tr.transportadoraUf).trim().toUpperCase() } : {})
+        };
+      }
+
+      if (tr.placa && String(tr.placa).trim().length >= 6) {
+        transportPayload.transportVehicle = {
+          plate: String(tr.placa).replace(/[^A-Za-z0-9]/g, '').toUpperCase(),
+          ...(tr.placaUf ? { state: String(tr.placaUf).trim().toUpperCase() } : {}),
+          ...(tr.antt ? { rntc: String(tr.antt).trim() } : {})
+        };
+      }
 
       // Dados Adicionais / Informações Complementares oficiais (Simples Nacional + IBPT + Pedido)
-      const pedRef = nfe.pedidoNumero || '101';
       const infCplPadrao = `Inf. Contribuinte: I-DOCUMENTO EMITIDO POR ME OU EPP OPTANTE PELO SIMPLES NACIONAL. II-NAO GERA DIREITO A CREDITO FISCAL DE ICMS, DE ISS E DE IPI - LC 123/2006. Valor Aproximado dos Tributos: Fed: R$ ${valorTotalTribAprox.toFixed(2).replace('.', ',')}, Est: R$ 0,00, Mun: R$ 0,00 / Fonte: IBPT empresometro.com.br. Ordem de Producao / Pedido de Venda: #${pedRef}. NF-e emitida e autorizada pelo emissor Texfy ERP Textil. Ref. Pedido #${pedRef}`;
 
       return {
@@ -269,9 +396,22 @@
           taxpayer: nfe.informacoesComplementares || infCplPadrao,
           fisco: 'DOCUMENTO EMITIDO POR ME OU EPP OPTANTE PELO SIMPLES NACIONAL'
         },
-        transport: {
-          freightModality: 'Free'
-        },
+        transport: transportPayload,
+        ...(nfe.localEntrega?.diferente ? {
+          deliveryAddress: {
+            street: nfe.localEntrega.logradouro || end.logradouro || 'Rua Principal',
+            number: nfe.localEntrega.numero || 'S/N',
+            district: nfe.localEntrega.bairro || 'Centro',
+            city: {
+              code: String(this.obterCodigoIbge(nfe.localEntrega.cidade, nfe.localEntrega.uf) || end.ibge || 4208203),
+              name: nfe.localEntrega.cidade || end.cidade || 'Itajaí'
+            },
+            state: (nfe.localEntrega.uf || end.uf || emp.uf || 'SC').toUpperCase(),
+            postalCode: String(nfe.localEntrega.cep || end.cep || '').replace(/\D/g, ''),
+            country: 'Brasil'
+          }
+        } : {}),
+        ...(billingPayload ? { billing: billingPayload } : {}),
         buyer: {
           type: isCpf ? 'NaturalPerson' : 'LegalEntity',
           name: cli.nome || cli.razaoSocial || 'Consumidor Final',
@@ -298,8 +438,8 @@
             paymentDetail: [
               {
                 method: paymentMethod,
-                paymentType: 'InCash',
-                amount: Number(valorTotalNota.toFixed(2))
+                paymentType: isAPrazo ? 'InTerms' : 'InCash',
+                amount: valorTotalNota
               }
             ]
           }

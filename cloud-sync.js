@@ -48,7 +48,7 @@
       podeVerDRE: true,
       podeVerCustosMargem: true,
       podeVerConfiguracoes: true,
-      abasPermitidas: ["abertura", "pedidos", "os", "nesting", "estoque", "produtos", "financeiro", "dre", "compras", "clientes", "quarentena", "equipe", "nfe", "empresa"]
+      abasPermitidas: ["abertura", "pedidos", "os", "nesting", "estoque", "produtos", "financeiro", "dre", "compras", "clientes", "quarentena", "equipe", "envios", "nfe", "empresa"]
     },
     vendedor: {
       id: "vendedor",
@@ -70,7 +70,7 @@
       podeVerDRE: false,
       podeVerCustosMargem: false,
       podeVerConfiguracoes: false,
-      abasPermitidas: ["pedidos", "os", "nesting", "estoque", "quarentena"]
+      abasPermitidas: ["pedidos", "os", "nesting", "estoque", "quarentena", "envios"]
     }
   };
 

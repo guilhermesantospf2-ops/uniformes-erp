@@ -3627,6 +3627,9 @@
       case 'equipe':
         renderizarEquipe();
         break;
+      case 'envios':
+        renderizarEnvios();
+        break;
       case 'nfe':
         renderizarNotasFiscais();
         break;
@@ -3661,6 +3664,13 @@
     if (badgePedidos) {
       const qtdProducao = db.pedidos.filter(p => p.status === 'Em Producao').length;
       badgePedidos.textContent = qtdProducao;
+    }
+
+    const badgeEnvios = document.getElementById('badgeEnvios');
+    if (badgeEnvios) {
+      const qtdEnviosPendentes = (db.pedidos || []).filter(p => p.status !== 'Cancelado' && p.etapaProducao === 'Expedicao' && p.envioStatus !== 'Entregue').length;
+      badgeEnvios.textContent = qtdEnviosPendentes;
+      badgeEnvios.className = qtdEnviosPendentes > 0 ? 'menu-badge badge-blue' : 'menu-badge badge-gray';
     }
 
     // Sincroniza visualização do plano e etiquetas PRO
@@ -6946,9 +6956,10 @@
         db.lancamentosFinanceiros = db.lancamentosFinanceiros.filter(l => l.id !== idLanPrej);
       }
 
-      // 3. Atualiza Etapa e Conclusão do Pedido
+      // 3. Atualiza Etapa e Conclusão do Pedido (sincronizado com Envios & Etiquetas)
       p.status = 'Finalizado';
       p.etapaProducao = 'Entregue ao Cliente';
+      p.envioStatus = 'Entregue';
       p.dataConclusaoMs = Date.now();
       p.dataConclusao = hojeIso;
       p.ultimaModificacaoMs = Date.now();
@@ -27433,9 +27444,34 @@
     const isCliCnpj = cliDoc.length > 11;
     const dataHoraIso = nfe.dataEmissaoIso || new Date().toISOString();
 
-    const itensXml = (nfe.itens || []).map((it, idx) => {
+    const valorDescontoXml = Number(nfe.totais?.valorDesconto || 0);
+    const valorFreteXml = Number(nfe.totais?.valorFrete || 0);
+    const rawItensXml = nfe.itens || [];
+    const somaBrutaXml = rawItensXml.reduce((s, it) => s + Number((it.quantidade * it.valorUnitario).toFixed(2)), 0);
+    let descXmlAcum = 0;
+    let freteXmlAcum = 0;
+
+    const itensXml = rawItensXml.map((it, idx) => {
       const nItem = idx + 1;
-      const vProd = (it.quantidade * it.valorUnitario).toFixed(2);
+      const vProdNum = Number((it.quantidade * it.valorUnitario).toFixed(2));
+      const vProd = vProdNum.toFixed(2);
+      let vDescItem = Number(it.desconto || it.valorDesconto || 0);
+      if (vDescItem <= 0 && valorDescontoXml > 0 && somaBrutaXml > 0) {
+        vDescItem = idx === rawItensXml.length - 1
+          ? Number(Math.max(0, valorDescontoXml - descXmlAcum).toFixed(2))
+          : Number(((vProdNum / somaBrutaXml) * valorDescontoXml).toFixed(2));
+      }
+      descXmlAcum = Number((descXmlAcum + vDescItem).toFixed(2));
+
+      let vFreteItem = Number(it.frete || it.valorFrete || 0);
+      if (vFreteItem <= 0 && valorFreteXml > 0 && somaBrutaXml > 0) {
+        vFreteItem = idx === rawItensXml.length - 1
+          ? Number(Math.max(0, valorFreteXml - freteXmlAcum).toFixed(2))
+          : Number(((vProdNum / somaBrutaXml) * valorFreteXml).toFixed(2));
+      }
+      freteXmlAcum = Number((freteXmlAcum + vFreteItem).toFixed(2));
+
+      const vLiqItem = Math.max(0, vProdNum - vDescItem + vFreteItem);
       return `
       <det nItem="${nItem}">
         <prod>
@@ -27452,10 +27488,12 @@
           <uTrib>${it.unidade || 'UN'}</uTrib>
           <qTrib>${it.quantidade.toFixed(4)}</qTrib>
           <vUnTrib>${it.valorUnitario.toFixed(4)}</vUnTrib>
+          ${vFreteItem > 0 ? `<vFrete>${vFreteItem.toFixed(2)}</vFrete>` : ''}
+          ${vDescItem > 0 ? `<vDesc>${vDescItem.toFixed(2)}</vDesc>` : ''}
           <indTot>1</indTot>
         </prod>
         <imposto>
-          <vTotTrib>${(it.quantidade * it.valorUnitario * 0.1345).toFixed(2)}</vTotTrib>
+          <vTotTrib>${(vLiqItem * 0.1345).toFixed(2)}</vTotTrib>
           <ICMS>
             <ICMSSN102>
               <orig>0</orig>
@@ -27471,7 +27509,7 @@
             <COFINSNT>
               <CST>07</CST>
             </COFINSNT>
-          </PIS>
+          </COFINS>
         </imposto>
       </det>`;
     }).join('\n');
@@ -27567,10 +27605,49 @@
       </total>
       <transp>
         <modFrete>${nfe.transporte?.modalidade || '9'}</modFrete>
+        ${(nfe.transporte?.transportadoraNome && !/RETIRADA NO LOCAL|ENTREGA PRÓPRIA|O PRÓPRIO/i.test(nfe.transporte.transportadoraNome)) ? `
+        <transporta>
+          ${String(nfe.transporte.transportadoraCnpj || '').replace(/\D/g, '').length === 14 ? `<CNPJ>${String(nfe.transporte.transportadoraCnpj).replace(/\D/g, '')}</CNPJ>` : (String(nfe.transporte.transportadoraCnpj || '').replace(/\D/g, '').length === 11 ? `<CPF>${String(nfe.transporte.transportadoraCnpj).replace(/\D/g, '')}</CPF>` : '')}
+          <xNome><![CDATA[${nfe.transporte.transportadoraNome}]]></xNome>
+          ${nfe.transporte.transportadoraIe ? `<IE>${String(nfe.transporte.transportadoraIe).replace(/\D/g, '')}</IE>` : ''}
+          ${nfe.transporte.transportadoraEndereco ? `<xEnder><![CDATA[${nfe.transporte.transportadoraEndereco}]]></xEnder>` : ''}
+          ${nfe.transporte.transportadoraCidade ? `<xMun><![CDATA[${nfe.transporte.transportadoraCidade}]]></xMun>` : ''}
+          ${nfe.transporte.transportadoraUf ? `<UF>${nfe.transporte.transportadoraUf.toUpperCase()}</UF>` : ''}
+        </transporta>` : ''}
+        ${nfe.transporte?.placa ? `
+        <veicTransp>
+          <placa>${String(nfe.transporte.placa).replace(/[^A-Za-z0-9]/g, '').toUpperCase()}</placa>
+          <UF>${(nfe.transporte.placaUf || emp.uf || 'SP').toUpperCase()}</UF>
+          ${nfe.transporte.antt ? `<RNTC>${nfe.transporte.antt}</RNTC>` : ''}
+        </veicTransp>` : ''}
+        <vol>
+          <qVol>${Number(nfe.transporte?.volumesQtd) || 1}</qVol>
+          <esp><![CDATA[${(nfe.transporte?.volumesEspecie || 'CAIXAS').toUpperCase()}]]></esp>
+          ${nfe.transporte?.volumesMarca ? `<marca><![CDATA[${nfe.transporte.volumesMarca.toUpperCase()}]]></marca>` : ''}
+          ${nfe.transporte?.volumesNumeracao ? `<nVol>${nfe.transporte.volumesNumeracao}</nVol>` : ''}
+          <pesoL>${(Number(nfe.transporte?.pesoLiquido) || ((nfe.itens || []).reduce((a, it) => a + (Number(it.quantidade) || 0), 0) * 0.28)).toFixed(3)}</pesoL>
+          <pesoB>${(Number(nfe.transporte?.pesoBruto) || ((nfe.itens || []).reduce((a, it) => a + (Number(it.quantidade) || 0), 0) * 0.28)).toFixed(3)}</pesoB>
+        </vol>
       </transp>
+      ${(nfe.fatura?.numero || (Array.isArray(nfe.parcelas) && nfe.parcelas.length > 0)) ? `
+      <cobr>
+        <fat>
+          <nFat>${nfe.fatura?.numero || nfe.numero}</nFat>
+          <vOrig>${(nfe.totais?.valorProdutos || 0).toFixed(2)}</vOrig>
+          <vDesc>${(nfe.totais?.valorDesconto || 0).toFixed(2)}</vDesc>
+          <vLiq>${(nfe.totais?.valorTotal || 0).toFixed(2)}</vLiq>
+        </fat>
+        ${(nfe.parcelas || []).map((pc, idxP) => `
+        <dup>
+          <nDup>${pc.numero || String(idxP + 1).padStart(3, '0')}</nDup>
+          <dVenc>${String(pc.vencimento || '').slice(0, 10)}</dVenc>
+          <vDup>${Number(pc.valor || 0).toFixed(2)}</vDup>
+        </dup>`).join('')}
+      </cobr>` : ''}
       <pag>
         <detPag>
-          <tPag>${nfe.formaPagamentoCodigo || '17'}</tPag>
+          <indPag>${(Array.isArray(nfe.parcelas) && nfe.parcelas.length > 0) ? '1' : '0'}</indPag>
+          <tPag>${nfe.meioPagamento || nfe.formaPagamentoCodigo || '17'}</tPag>
           <vPag>${(nfe.totais?.valorTotal || 0).toFixed(2)}</vPag>
         </detPag>
       </pag>
@@ -27674,7 +27751,9 @@
     };
 
     const valorProdutosCalc = itens.reduce((s, it) => s + (it.valorTotal || 0), 0);
-    const valorTotalCalc = Number(tot.valorTotal || valorProdutosCalc);
+    const valorDescontoCalc = Number(tot.valorDesconto || 0);
+    const valorFreteCalc = Number(tot.valorFrete || 0);
+    const valorTotalCalc = tot.valorTotal != null ? Number(tot.valorTotal) : Math.max(0, valorProdutosCalc - valorDescontoCalc + valorFreteCalc);
 
     // Datas formatadas
     const dataEmissaoRaw = nfe.dataEmissao || new Date().toLocaleDateString('pt-BR');
@@ -27892,7 +27971,7 @@
         <div class="danfe-grid-row">
           <div class="danfe-box" style="flex: 7;">
             <span class="danfe-box-lbl">NOME / RAZÃO SOCIAL</span>
-            <span class="danfe-box-val">${destNome.toUpperCase()}</span>
+            <span class="danfe-box-val">${((nfe.localEntrega?.diferente && nfe.localEntrega.destinatario) ? nfe.localEntrega.destinatario : destNome).toUpperCase()}</span>
           </div>
           <div class="danfe-box" style="flex: 3;">
             <span class="danfe-box-lbl">CNPJ / CPF</span>
@@ -27907,26 +27986,26 @@
         <div class="danfe-grid-row">
           <div class="danfe-box" style="flex: 6;">
             <span class="danfe-box-lbl">ENDEREÇO</span>
-            <span class="danfe-box-val">${destEnd.toUpperCase()}</span>
+            <span class="danfe-box-val">${(nfe.localEntrega?.diferente ? `${nfe.localEntrega.logradouro || ''}${nfe.localEntrega.numero ? ', ' + nfe.localEntrega.numero : ''}` : destEnd).toUpperCase()}</span>
           </div>
           <div class="danfe-box" style="flex: 3;">
             <span class="danfe-box-lbl">BAIRRO / DISTRITO</span>
-            <span class="danfe-box-val">${destBairro.toUpperCase()}</span>
+            <span class="danfe-box-val">${(nfe.localEntrega?.diferente ? (nfe.localEntrega.bairro || '-') : destBairro).toUpperCase()}</span>
           </div>
           <div class="danfe-box" style="flex: 3;">
             <span class="danfe-box-lbl">CEP</span>
-            <span class="danfe-box-val text-mono">${destCep}</span>
+            <span class="danfe-box-val text-mono">${nfe.localEntrega?.diferente ? (nfe.localEntrega.cep || '-') : destCep}</span>
           </div>
         </div>
 
         <div class="danfe-grid-row">
           <div class="danfe-box" style="flex: 4;">
             <span class="danfe-box-lbl">MUNICÍPIO</span>
-            <span class="danfe-box-val">${destMun.toUpperCase()}</span>
+            <span class="danfe-box-val">${(nfe.localEntrega?.diferente ? (nfe.localEntrega.cidade || '-') : destMun).toUpperCase()}</span>
           </div>
           <div class="danfe-box" style="flex: 1;">
             <span class="danfe-box-lbl">UF</span>
-            <span class="danfe-box-val text-mono" style="text-align: center;">${destUf.toUpperCase()}</span>
+            <span class="danfe-box-val text-mono" style="text-align: center;">${(nfe.localEntrega?.diferente ? (nfe.localEntrega.uf || '-') : destUf).toUpperCase()}</span>
           </div>
           <div class="danfe-box" style="flex: 4;">
             <span class="danfe-box-lbl">FONE / FAX</span>
@@ -27935,6 +28014,33 @@
           <div class="danfe-box" style="flex: 3;">
             <span class="danfe-box-lbl">INSC. EST.</span>
             <span class="danfe-box-val text-mono">${destIe}</span>
+          </div>
+        </div>
+
+        <!-- 6.5 FATURA / DUPLICATA -->
+        <div class="danfe-secao-titulo">FATURA / DUPLICATA</div>
+        <div class="danfe-grid-row">
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">Nº FATURA</span>
+            <span class="danfe-box-val text-mono">${nfe.fatura?.numero || numLimpo}</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">VALOR ORIGINAL</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block;">${formatarDecimais(valorProdutosCalc)}</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">VALOR DESCONTO</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block;">${formatarDecimais(valorDescontoCalc)}</span>
+          </div>
+          <div class="danfe-box" style="flex: 2;">
+            <span class="danfe-box-lbl">VALOR LÍQUIDO</span>
+            <span class="danfe-box-val text-mono" style="text-align: right; display: block; font-weight: 800;">${formatarDecimais(valorTotalCalc)}</span>
+          </div>
+          <div class="danfe-box" style="flex: 6;">
+            <span class="danfe-box-lbl">PARCELAS / DUPLICATAS</span>
+            <span class="danfe-box-val text-mono" style="font-size: 9px;">${(Array.isArray(nfe.parcelas) && nfe.parcelas.length > 0)
+              ? nfe.parcelas.map((pc, i) => `${pc.numero || String(i + 1).padStart(3, '0')} | Venc: ${pc.vencimento ? String(pc.vencimento).split('-').reverse().join('/') : '-'} | R$ ${formatarDecimais(pc.valor || 0)}`).join(' • ')
+              : `À VISTA (${formatarDecimais(valorTotalCalc)})`}</span>
           </div>
         </div>
 
@@ -28023,69 +28129,69 @@
           </div>
           <div class="danfe-box" style="flex: 2.5;">
             <span class="danfe-box-lbl">FRETE POR CONTA</span>
-            <span class="danfe-box-val">${nfe.transporte?.modalidade === '0' ? '0-Emitente' : (nfe.transporte?.modalidade === '1' ? '1-Destinatário' : '9-Sem Transporte')}</span>
+            <span class="danfe-box-val">${nfe.transporte?.modalidade === '0' ? '0-Emitente' : (nfe.transporte?.modalidade === '1' ? '1-Destinatário' : (nfe.transporte?.modalidade === '2' ? '2-Terceiros' : '9-Sem Transporte'))}</span>
           </div>
           <div class="danfe-box" style="flex: 1.5;">
             <span class="danfe-box-lbl">CÓDIGO ANTT</span>
-            <span class="danfe-box-val text-mono">-</span>
+            <span class="danfe-box-val text-mono">${nfe.transporte?.antt || '-'}</span>
           </div>
           <div class="danfe-box" style="flex: 1.5;">
             <span class="danfe-box-lbl">PLACA DO VEÍCULO</span>
-            <span class="danfe-box-val text-mono">-</span>
+            <span class="danfe-box-val text-mono">${nfe.transporte?.placa || '-'}</span>
           </div>
           <div class="danfe-box" style="flex: 1;">
             <span class="danfe-box-lbl">UF</span>
-            <span class="danfe-box-val text-mono" style="text-align: center;">-</span>
+            <span class="danfe-box-val text-mono" style="text-align: center;">${nfe.transporte?.placaUf || '-'}</span>
           </div>
           <div class="danfe-box" style="flex: 2.5;">
             <span class="danfe-box-lbl">CNPJ / CPF</span>
-            <span class="danfe-box-val text-mono">-</span>
+            <span class="danfe-box-val text-mono">${nfe.transporte?.transportadoraCnpj || '-'}</span>
           </div>
         </div>
 
         <div class="danfe-grid-row">
           <div class="danfe-box" style="flex: 6;">
             <span class="danfe-box-lbl">ENDEREÇO</span>
-            <span class="danfe-box-val">-</span>
+            <span class="danfe-box-val">${nfe.transporte?.transportadoraEndereco || '-'}</span>
           </div>
           <div class="danfe-box" style="flex: 4;">
             <span class="danfe-box-lbl">MUNICÍPIO</span>
-            <span class="danfe-box-val">-</span>
+            <span class="danfe-box-val">${nfe.transporte?.transportadoraCidade || '-'}</span>
           </div>
           <div class="danfe-box" style="flex: 1;">
             <span class="danfe-box-lbl">UF</span>
-            <span class="danfe-box-val text-mono" style="text-align: center;">-</span>
+            <span class="danfe-box-val text-mono" style="text-align: center;">${nfe.transporte?.transportadoraUf || '-'}</span>
           </div>
           <div class="danfe-box" style="flex: 3;">
             <span class="danfe-box-lbl">INSCRIÇÃO ESTADUAL</span>
-            <span class="danfe-box-val text-mono">-</span>
+            <span class="danfe-box-val text-mono">${nfe.transporte?.transportadoraIe || '-'}</span>
           </div>
         </div>
 
         <div class="danfe-grid-row">
           <div class="danfe-box" style="flex: 2;">
             <span class="danfe-box-lbl">QUANTIDADE</span>
-            <span class="danfe-box-val text-mono" style="text-align: center;">${itens.reduce((acc, it) => acc + (parseFloat(it.quantidade) || 0), 0) || 1}</span>
+            <span class="danfe-box-val text-mono" style="text-align: center;">${nfe.transporte?.volumesQtd || 1}</span>
           </div>
           <div class="danfe-box" style="flex: 2;">
             <span class="danfe-box-lbl">ESPÉCIE</span>
-            <span class="danfe-box-val">VOLUMES</span>
+            <span class="danfe-box-val">${(nfe.transporte?.volumesEspecie || 'CAIXAS').toUpperCase()}</span>
           </div>
           <div class="danfe-box" style="flex: 2;">
             <span class="danfe-box-lbl">MARCA</span>
-            <span class="danfe-box-val">-</span>
+            <span class="danfe-box-val">${nfe.transporte?.volumesMarca || '-'}</span>
           </div>
           <div class="danfe-box" style="flex: 2;">
             <span class="danfe-box-lbl">NUMERAÇÃO</span>
-            <span class="danfe-box-val text-mono">-</span>
+            <span class="danfe-box-val text-mono">${nfe.transporte?.volumesNumeracao || '-'}</span>
           </div>
           <div class="danfe-box" style="flex: 2;">
             <span class="danfe-box-lbl">PESO BRUTO</span>
-            <span class="danfe-box-val text-mono" style="text-align: right;">${(itens.reduce((acc, it) => acc + (parseFloat(it.quantidade) || 0), 0) * 0.28).toFixed(3)}</span>
+            <span class="danfe-box-val text-mono" style="text-align: right;">${(Number(nfe.transporte?.pesoBruto) || (itens.reduce((acc, it) => acc + (parseFloat(it.quantidade) || 0), 0) * 0.28)).toFixed(3)}</span>
           </div>
           <div class="danfe-box" style="flex: 2;">
             <span class="danfe-box-lbl">PESO LÍQUIDO</span>
-            <span class="danfe-box-val text-mono" style="text-align: right;">${(itens.reduce((acc, it) => acc + (parseFloat(it.quantidade) || 0), 0) * 0.28).toFixed(3)}</span>
+            <span class="danfe-box-val text-mono" style="text-align: right;">${(Number(nfe.transporte?.pesoLiquido) || (itens.reduce((acc, it) => acc + (parseFloat(it.quantidade) || 0), 0) * 0.28)).toFixed(3)}</span>
           </div>
         </div>
 
@@ -29467,8 +29573,61 @@
       }
     }
 
+    function mapearMeioPagamentoSefaz(formaStr) {
+      const s = String(formaStr || '').toLowerCase();
+      if (s.includes('dinheiro')) return '01';
+      if (s.includes('crédito') || s.includes('credito')) return '03';
+      if (s.includes('débito') || s.includes('debito')) return '04';
+      if (s.includes('boleto')) return '15';
+      if (s.includes('duplicata') || s.includes('fatur')) return '14';
+      if (s.includes('transfer') || s.includes('ted') || s.includes('doc')) return '16';
+      if (s.includes('pix')) return '17';
+      return '17';
+    }
+
+    function extrairDadosComplementaresPedido(p) {
+      const desc = Number(p?.valorDesconto ?? p?.desconto ?? 0) || 0;
+      const frete = Number(p?.valorFrete ?? p?.frete ?? 0) || 0;
+      const meio = mapearMeioPagamentoSefaz(p?.pagamentoDetalhes?.formaPagamento || p?.formaPagamento);
+      const rawParc = Array.isArray(p?.pagamentoDetalhes?.parcelas) && p.pagamentoDetalhes.parcelas.length > 0
+        ? p.pagamentoDetalhes.parcelas
+        : (Array.isArray(p?.parcelas) ? p.parcelas : []);
+      const fatNum = p?.numero ? String(p.numero) : String(obterProximoNumeroNfe());
+      const parcelas = rawParc.map((pc, idx) => ({
+        numero: String(pc.numero || `${fatNum}-${String(idx + 1).padStart(2, '0')}`),
+        vencimento: String(pc.vencimento || pc.dataVencimento || new Date(Date.now() + (idx + 1) * 30 * 86400000).toISOString().slice(0, 10)).slice(0, 10),
+        valor: Number(pc.valor ?? pc.valorParcela ?? 0) || 0
+      }));
+      const tr = p?.transporte || {};
+      return {
+        desconto: desc,
+        frete: frete,
+        meioPagamento: meio,
+        faturaNumero: fatNum,
+        parcelas,
+        modalidadeFrete: String(tr.modalidade ?? p?.modalidadeFrete ?? (tr.transportadoraNome || p?.transportadoraNome ? '0' : '9')),
+        transportadoraNome: tr.transportadoraNome || p?.transportadoraNome || p?.transportadora || '',
+        transportadoraCnpj: tr.transportadoraCnpj || p?.transportadoraCnpj || '',
+        transportadoraIe: tr.transportadoraIe || p?.transportadoraIe || '',
+        transportadoraEndereco: tr.transportadoraEndereco || p?.transportadoraEndereco || '',
+        transportadoraCidade: tr.transportadoraCidade || p?.transportadoraCidade || '',
+        transportadoraUf: tr.transportadoraUf || p?.transportadoraUf || '',
+        placa: tr.placa || '',
+        placaUf: tr.placaUf || '',
+        antt: tr.antt || '',
+        volumesQtd: Number(tr.volumesQtd ?? p?.volumesQtd ?? 1) || 1,
+        volumesEspecie: tr.volumesEspecie || p?.volumesEspecie || 'CAIXAS',
+        volumesMarca: tr.volumesMarca || '',
+        volumesNumeracao: tr.volumesNumeracao || '',
+        pesoBruto: tr.pesoBruto || '',
+        pesoLiquido: tr.pesoLiquido || ''
+      };
+    }
+
     sincronizarNumeracaoAoVivoComSefaz();
     let itensAtuais = extrairItensDoPedido(pedidoSelecionado, clienteEndereco.uf);
+    let dadosComplAtuais = extrairDadosComplementaresPedido(pedidoSelecionado);
+    let parcelasAtuais = JSON.parse(JSON.stringify(dadosComplAtuais.parcelas || []));
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
@@ -29612,14 +29771,137 @@
               </div>
             </div>
 
-            <!-- Etapa 4: Resumo dos Totais & Impostos -->
+            <!-- Etapa 4: Desconto, Frete, Fatura & Parcelas -->
+            <div style="background: #ffffff; border: 1px solid var(--border-medium); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div style="font-size: 12px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
+                  4. Desconto, Frete & Fatura / Parcelas (Cobrança)
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnAdicionarParcelaNfe" style="font-size: 11px; padding: 4px 8px;">
+                  + Adicionar Parcela
+                </button>
+              </div>
+              <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1.4fr 1fr; gap: 10px; margin-bottom: 10px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Desconto (R$)</label>
+                  <input type="number" step="0.01" min="0" id="emitNfeDesconto" class="form-input text-mono font-bold" value="${Number(dadosComplAtuais.desconto || 0).toFixed(2)}" style="color: #b91c1c;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Frete (R$)</label>
+                  <input type="number" step="0.01" min="0" id="emitNfeFrete" class="form-input text-mono" value="${Number(dadosComplAtuais.frete || 0).toFixed(2)}">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Meio de Pagamento</label>
+                  <select id="emitNfeMeioPagamento" class="form-select">
+                    <option value="17" ${dadosComplAtuais.meioPagamento === '17' ? 'selected' : ''}>17 - PIX</option>
+                    <option value="15" ${dadosComplAtuais.meioPagamento === '15' ? 'selected' : ''}>15 - Boleto Bancário</option>
+                    <option value="14" ${dadosComplAtuais.meioPagamento === '14' ? 'selected' : ''}>14 - Duplicata Mercantil</option>
+                    <option value="03" ${dadosComplAtuais.meioPagamento === '03' ? 'selected' : ''}>03 - Cartão de Crédito</option>
+                    <option value="04" ${dadosComplAtuais.meioPagamento === '04' ? 'selected' : ''}>04 - Cartão de Débito</option>
+                    <option value="01" ${dadosComplAtuais.meioPagamento === '01' ? 'selected' : ''}>01 - Dinheiro</option>
+                    <option value="16" ${dadosComplAtuais.meioPagamento === '16' ? 'selected' : ''}>16 - Depósito / Transferência</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Nº Fatura</label>
+                  <input type="text" id="emitNfeFaturaNumero" class="form-input text-mono" value="${dadosComplAtuais.faturaNumero || ''}" placeholder="Nº Fatura">
+                </div>
+              </div>
+              <div id="listaParcelasNfe" style="display: flex; flex-direction: column; gap: 6px;"></div>
+            </div>
+
+            <!-- Etapa 5: Transportadora & Volumes Transportados -->
+            <div style="background: #ffffff; border: 1px solid var(--border-medium); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+              <div style="font-size: 12px; font-weight: 800; color: #0f172a; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                5. Transportadora & Volumes Transportados
+              </div>
+              <div class="form-row" style="display: grid; grid-template-columns: 1.4fr 2fr 1.2fr 1fr; gap: 8px; margin-bottom: 8px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Modalidade do Frete</label>
+                  <select id="emitNfeModalidadeFrete" class="form-select">
+                    <option value="9" ${dadosComplAtuais.modalidadeFrete === '9' ? 'selected' : ''}>9 - Sem Transporte / Retirada</option>
+                    <option value="0" ${dadosComplAtuais.modalidadeFrete === '0' ? 'selected' : ''}>0 - Por Conta do Emitente (CIF)</option>
+                    <option value="1" ${dadosComplAtuais.modalidadeFrete === '1' ? 'selected' : ''}>1 - Por Conta do Destinatário (FOB)</option>
+                    <option value="2" ${dadosComplAtuais.modalidadeFrete === '2' ? 'selected' : ''}>2 - Por Conta de Terceiros</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Transportadora (Razão Social)</label>
+                  <input type="text" id="emitNfeTranspNome" class="form-input" value="${dadosComplAtuais.transportadoraNome || ''}" placeholder="Ex: Jadlog, Correios, Braspress...">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">CNPJ / CPF Transp.</label>
+                  <input type="text" id="emitNfeTranspCnpj" class="form-input text-mono" value="${dadosComplAtuais.transportadoraCnpj || ''}" placeholder="00.000.000/0000-00">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">IE Transp.</label>
+                  <input type="text" id="emitNfeTranspIe" class="form-input text-mono" value="${dadosComplAtuais.transportadoraIe || ''}" placeholder="IE">
+                </div>
+              </div>
+              <div class="form-row" style="display: grid; grid-template-columns: 2fr 1.2fr 0.5fr 1fr 0.6fr 0.8fr; gap: 8px; margin-bottom: 8px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Endereço Transp.</label>
+                  <input type="text" id="emitNfeTranspEnd" class="form-input" value="${dadosComplAtuais.transportadoraEndereco || ''}" placeholder="Rua / Av.">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Município Transp.</label>
+                  <input type="text" id="emitNfeTranspCidade" class="form-input" value="${dadosComplAtuais.transportadoraCidade || ''}" placeholder="Cidade">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">UF</label>
+                  <input type="text" maxlength="2" id="emitNfeTranspUf" class="form-input text-mono" value="${dadosComplAtuais.transportadoraUf || ''}" style="text-transform: uppercase;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Placa Veículo</label>
+                  <input type="text" id="emitNfeTranspPlaca" class="form-input text-mono" value="${dadosComplAtuais.placa || ''}" placeholder="ABC1D23">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">UF Placa</label>
+                  <input type="text" maxlength="2" id="emitNfeTranspPlacaUf" class="form-input text-mono" value="${dadosComplAtuais.placaUf || ''}" style="text-transform: uppercase;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">ANTT</label>
+                  <input type="text" id="emitNfeTranspAntt" class="form-input text-mono" value="${dadosComplAtuais.antt || ''}" placeholder="RNTC">
+                </div>
+              </div>
+              <div class="form-row" style="display: grid; grid-template-columns: 0.8fr 1.2fr 1fr 1fr 1fr 1fr; gap: 8px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Qtd Volumes</label>
+                  <input type="number" min="1" step="1" id="emitNfeVolQtd" class="form-input text-mono" value="${dadosComplAtuais.volumesQtd || 1}">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Espécie</label>
+                  <input type="text" id="emitNfeVolEspecie" class="form-input" value="${dadosComplAtuais.volumesEspecie || 'CAIXAS'}" placeholder="CAIXAS / PACOTES">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Marca</label>
+                  <input type="text" id="emitNfeVolMarca" class="form-input" value="${dadosComplAtuais.volumesMarca || ''}" placeholder="Opcional">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Numeração</label>
+                  <input type="text" id="emitNfeVolNum" class="form-input text-mono" value="${dadosComplAtuais.volumesNumeracao || ''}" placeholder="Opcional">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Peso Bruto (kg)</label>
+                  <input type="number" step="0.001" min="0" id="emitNfePesoBruto" class="form-input text-mono" value="${dadosComplAtuais.pesoBruto || ''}" placeholder="Auto">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Peso Líquido (kg)</label>
+                  <input type="number" step="0.001" min="0" id="emitNfePesoLiquido" class="form-input text-mono" value="${dadosComplAtuais.pesoLiquido || ''}" placeholder="Auto">
+                </div>
+              </div>
+            </div>
+
+            <!-- Etapa 6: Resumo dos Totais & Impostos -->
             <div style="background: #f1f5f9; border: 1px solid var(--border-medium); border-radius: 8px; padding: 12px 14px;">
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
                 <div>
                   <span style="font-size: 11px; color: var(--text-gray-500); display: block;">Regime Simples Nacional (Alíquota ${cfg.aliquotaSimplesNacional || 4.5}%)</span>
                   <div style="font-size: 12px; color: #0f172a;">
-                    Imposto Estimado Simples: <strong id="lblImpostoEstimadoNfe" class="text-mono" style="color: #0369a1;">R$ 0,00</strong> • 
-                    Tributos Aprox. IBPT (13,45%): <strong id="lblIbptNfe" class="text-mono" style="color: #475569;">R$ 0,00</strong>
+                    Produtos: <strong id="lblSubtotalProdutosNfe" class="text-mono">R$ 0,00</strong> • 
+                    Desconto: <strong id="lblDescontoResumoNfe" class="text-mono" style="color: #b91c1c;">- R$ 0,00</strong> • 
+                    Imposto Simples: <strong id="lblImpostoEstimadoNfe" class="text-mono" style="color: #0369a1;">R$ 0,00</strong> • 
+                    IBPT (13,45%): <strong id="lblIbptNfe" class="text-mono" style="color: #475569;">R$ 0,00</strong>
                   </div>
                 </div>
 
@@ -29700,17 +29982,82 @@
       configurarEventosTabelaItens();
     }
 
+    const listaParcelasEl = modalEl.querySelector('#listaParcelasNfe');
+
+    function renderizarParcelasNfe() {
+      if (!listaParcelasEl) return;
+      if (!parcelasAtuais || parcelasAtuais.length === 0) {
+        listaParcelasEl.innerHTML = '<div style="font-size: 11px; color: #64748b;">Nenhuma parcela cadastrada (emissão à vista). Clique em <strong>+ Adicionar Parcela</strong> se desejar preencher Fatura / Duplicatas na DANFE.</div>';
+        return;
+      }
+      listaParcelasEl.innerHTML = parcelasAtuais.map((pc, idx) => `
+        <div class="parcela-nfe-row" data-pidx="${idx}" style="display: grid; grid-template-columns: 1fr 1.2fr 1fr 28px; gap: 8px; align-items: center;">
+          <input type="text" class="form-input parc-num text-mono" value="${pc.numero || String(idx + 1).padStart(3, '0')}" placeholder="Nº Dup" style="font-size: 11px; padding: 4px 6px;">
+          <input type="date" class="form-input parc-venc text-mono" value="${String(pc.vencimento || '').slice(0, 10)}" style="font-size: 11px; padding: 4px 6px;">
+          <input type="number" step="0.01" min="0" class="form-input parc-val text-mono text-right" value="${Number(pc.valor || 0).toFixed(2)}" style="font-size: 11px; padding: 4px 6px;">
+          <button type="button" class="btn-rem-parc" data-pidx="${idx}" style="background: transparent; border: none; color: #ef4444; cursor: pointer; font-weight: bold; font-size: 15px;">&times;</button>
+        </div>
+      `).join('');
+
+      listaParcelasEl.querySelectorAll('.parc-num').forEach(inp => inp.addEventListener('input', (e) => {
+        const i = parseInt(e.target.closest('.parcela-nfe-row').getAttribute('data-pidx'), 10);
+        if (parcelasAtuais[i]) parcelasAtuais[i].numero = e.target.value.trim();
+      }));
+      listaParcelasEl.querySelectorAll('.parc-venc').forEach(inp => inp.addEventListener('change', (e) => {
+        const i = parseInt(e.target.closest('.parcela-nfe-row').getAttribute('data-pidx'), 10);
+        if (parcelasAtuais[i]) parcelasAtuais[i].vencimento = e.target.value;
+      }));
+      listaParcelasEl.querySelectorAll('.parc-val').forEach(inp => inp.addEventListener('input', (e) => {
+        const i = parseInt(e.target.closest('.parcela-nfe-row').getAttribute('data-pidx'), 10);
+        if (parcelasAtuais[i]) parcelasAtuais[i].valor = parseFloat(e.target.value) || 0;
+      }));
+      listaParcelasEl.querySelectorAll('.btn-rem-parc').forEach(btn => btn.addEventListener('click', () => {
+        const i = parseInt(btn.getAttribute('data-pidx'), 10);
+        parcelasAtuais.splice(i, 1);
+        renderizarParcelasNfe();
+      }));
+    }
+
+    modalEl.querySelector('#btnAdicionarParcelaNfe')?.addEventListener('click', () => {
+      const subtotal = itensAtuais.reduce((s, it) => s + (Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0), 0);
+      const desc = parseFloat(modalEl.querySelector('#emitNfeDesconto')?.value) || 0;
+      const frete = parseFloat(modalEl.querySelector('#emitNfeFrete')?.value) || 0;
+      const liq = Math.max(0, subtotal - desc + frete);
+      const fatNum = modalEl.querySelector('#emitNfeFaturaNumero')?.value.trim() || String(obterProximoNumeroNfe());
+      const proxIdx = parcelasAtuais.length + 1;
+      const vencDefault = new Date(Date.now() + proxIdx * 30 * 86400000).toISOString().slice(0, 10);
+      const valSugerido = parcelasAtuais.length === 0 ? liq : 0;
+      parcelasAtuais.push({
+        numero: `${fatNum}-${String(proxIdx).padStart(2, '0')}`,
+        vencimento: vencDefault,
+        valor: Number(valSugerido.toFixed(2))
+      });
+      renderizarParcelasNfe();
+    });
+
+    modalEl.querySelector('#emitNfeDesconto')?.addEventListener('input', () => recalcularTotais());
+    modalEl.querySelector('#emitNfeFrete')?.addEventListener('input', () => recalcularTotais());
+    renderizarParcelasNfe();
+
     function recalcularTotais() {
       let subtotal = 0;
       itensAtuais.forEach(it => {
         subtotal += (Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0);
       });
+      const desconto = parseFloat(modalEl.querySelector('#emitNfeDesconto')?.value) || 0;
+      const frete = parseFloat(modalEl.querySelector('#emitNfeFrete')?.value) || 0;
+      const totalLiquido = Math.max(0, subtotal - desconto + frete);
 
       const aliq = Number(cfg.aliquotaSimplesNacional) || 4.5;
-      const vlrImposto = subtotal * (aliq / 100);
-      const vlrIbpt = subtotal * 0.1345;
+      const vlrImposto = totalLiquido * (aliq / 100);
+      const vlrIbpt = totalLiquido * 0.1345;
 
-      lblTotalNota.textContent = formatarMoeda(subtotal);
+      const lblSub = modalEl.querySelector('#lblSubtotalProdutosNfe');
+      const lblDesc = modalEl.querySelector('#lblDescontoResumoNfe');
+      if (lblSub) lblSub.textContent = formatarMoeda(subtotal);
+      if (lblDesc) lblDesc.textContent = '- ' + formatarMoeda(desconto);
+
+      lblTotalNota.textContent = formatarMoeda(totalLiquido);
       lblImpostoSimples.textContent = formatarMoeda(vlrImposto);
       lblIbpt.textContent = formatarMoeda(vlrIbpt);
     }
@@ -29946,10 +30293,34 @@
 
         const ufAtualizada = modalEl.querySelector('#emitNfeCliUf')?.value || 'SP';
         itensAtuais = extrairItensDoPedido(p, ufAtualizada);
+        dadosComplAtuais = extrairDadosComplementaresPedido(p);
       } else {
         const ufAtualizada = modalEl.querySelector('#emitNfeCliUf')?.value || 'SP';
         itensAtuais = extrairItensDoPedido(null, ufAtualizada);
+        dadosComplAtuais = extrairDadosComplementaresPedido(null);
       }
+      parcelasAtuais = JSON.parse(JSON.stringify(dadosComplAtuais.parcelas || []));
+      if (modalEl.querySelector('#emitNfeDesconto')) modalEl.querySelector('#emitNfeDesconto').value = Number(dadosComplAtuais.desconto || 0).toFixed(2);
+      if (modalEl.querySelector('#emitNfeFrete')) modalEl.querySelector('#emitNfeFrete').value = Number(dadosComplAtuais.frete || 0).toFixed(2);
+      if (modalEl.querySelector('#emitNfeMeioPagamento')) modalEl.querySelector('#emitNfeMeioPagamento').value = dadosComplAtuais.meioPagamento || '17';
+      if (modalEl.querySelector('#emitNfeFaturaNumero')) modalEl.querySelector('#emitNfeFaturaNumero').value = dadosComplAtuais.faturaNumero || '';
+      if (modalEl.querySelector('#emitNfeModalidadeFrete')) modalEl.querySelector('#emitNfeModalidadeFrete').value = dadosComplAtuais.modalidadeFrete || '9';
+      if (modalEl.querySelector('#emitNfeTranspNome')) modalEl.querySelector('#emitNfeTranspNome').value = dadosComplAtuais.transportadoraNome || '';
+      if (modalEl.querySelector('#emitNfeTranspCnpj')) modalEl.querySelector('#emitNfeTranspCnpj').value = dadosComplAtuais.transportadoraCnpj || '';
+      if (modalEl.querySelector('#emitNfeTranspIe')) modalEl.querySelector('#emitNfeTranspIe').value = dadosComplAtuais.transportadoraIe || '';
+      if (modalEl.querySelector('#emitNfeTranspEnd')) modalEl.querySelector('#emitNfeTranspEnd').value = dadosComplAtuais.transportadoraEndereco || '';
+      if (modalEl.querySelector('#emitNfeTranspCidade')) modalEl.querySelector('#emitNfeTranspCidade').value = dadosComplAtuais.transportadoraCidade || '';
+      if (modalEl.querySelector('#emitNfeTranspUf')) modalEl.querySelector('#emitNfeTranspUf').value = dadosComplAtuais.transportadoraUf || '';
+      if (modalEl.querySelector('#emitNfeTranspPlaca')) modalEl.querySelector('#emitNfeTranspPlaca').value = dadosComplAtuais.placa || '';
+      if (modalEl.querySelector('#emitNfeTranspPlacaUf')) modalEl.querySelector('#emitNfeTranspPlacaUf').value = dadosComplAtuais.placaUf || '';
+      if (modalEl.querySelector('#emitNfeTranspAntt')) modalEl.querySelector('#emitNfeTranspAntt').value = dadosComplAtuais.antt || '';
+      if (modalEl.querySelector('#emitNfeVolQtd')) modalEl.querySelector('#emitNfeVolQtd').value = dadosComplAtuais.volumesQtd || 1;
+      if (modalEl.querySelector('#emitNfeVolEspecie')) modalEl.querySelector('#emitNfeVolEspecie').value = dadosComplAtuais.volumesEspecie || 'CAIXAS';
+      if (modalEl.querySelector('#emitNfeVolMarca')) modalEl.querySelector('#emitNfeVolMarca').value = dadosComplAtuais.volumesMarca || '';
+      if (modalEl.querySelector('#emitNfeVolNum')) modalEl.querySelector('#emitNfeVolNum').value = dadosComplAtuais.volumesNumeracao || '';
+      if (modalEl.querySelector('#emitNfePesoBruto')) modalEl.querySelector('#emitNfePesoBruto').value = dadosComplAtuais.pesoBruto || '';
+      if (modalEl.querySelector('#emitNfePesoLiquido')) modalEl.querySelector('#emitNfePesoLiquido').value = dadosComplAtuais.pesoLiquido || '';
+      renderizarParcelasNfe();
       renderizarLinhasTabelaItens();
       atualizarCfopConformeUf();
     });
@@ -29992,7 +30363,16 @@
         const dataIso = dataAgora.toISOString();
 
         let subtotal = 0;
-        itensAtuais.forEach(it => subtotal += (it.quantidade * it.valorUnitario));
+        itensAtuais.forEach(it => subtotal += (Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0));
+        const descontoNota = parseFloat(modalEl.querySelector('#emitNfeDesconto')?.value) || 0;
+        const freteNota = parseFloat(modalEl.querySelector('#emitNfeFrete')?.value) || 0;
+        const totalNotaLiquido = Math.max(0, Number((subtotal - descontoNota + freteNota).toFixed(2)));
+        const meioPagSelecionado = modalEl.querySelector('#emitNfeMeioPagamento')?.value || '17';
+        const faturaNumeroVal = modalEl.querySelector('#emitNfeFaturaNumero')?.value.trim() || String(numNfe);
+        const transpNomeVal = modalEl.querySelector('#emitNfeTranspNome')?.value.trim() || '';
+        const modFreteVal = modalEl.querySelector('#emitNfeModalidadeFrete')?.value || (transpNomeVal ? '0' : '9');
+        const volQtdVal = parseInt(modalEl.querySelector('#emitNfeVolQtd')?.value, 10) || 1;
+        const volEspecieVal = (modalEl.querySelector('#emitNfeVolEspecie')?.value.trim() || 'CAIXAS').toUpperCase();
 
         const chaveObj = gerarChaveAcessoNfe(
           modalEl.querySelector('#emitNfeCliUf').value || 'SP',
@@ -30025,6 +30405,7 @@
           cfop: itensAtuais[0]?.cfop || '5101',
           pedidoId: pedidoVinculadoId,
           pedidoNumero: pedObj ? pedObj.numero : null,
+          localEntrega: (pedObj && pedObj.enderecoEntrega?.diferente) ? JSON.parse(JSON.stringify(pedObj.enderecoEntrega)) : null,
           aliquotaSimples: cfg.aliquotaSimplesNacional || 4.5,
           cliente: {
             nome: cliNome,
@@ -30044,17 +30425,40 @@
             }
           },
           itens: JSON.parse(JSON.stringify(itensAtuais)),
+          meioPagamento: meioPagSelecionado,
+          formaPagamentoCodigo: meioPagSelecionado,
+          fatura: {
+            numero: faturaNumeroVal,
+            valorOriginal: subtotal,
+            valorDesconto: descontoNota,
+            valorLiquido: totalNotaLiquido
+          },
+          parcelas: JSON.parse(JSON.stringify(parcelasAtuais || [])),
           totais: {
             valorProdutos: subtotal,
-            valorFrete: 0,
-            valorDesconto: 0,
-            valorTotal: subtotal,
-            valorImpostosSimples: subtotal * ((cfg.aliquotaSimplesNacional || 4.5) / 100),
-            valorImpostosAproximados: subtotal * 0.1345
+            valorFrete: freteNota,
+            valorDesconto: descontoNota,
+            valorTotal: totalNotaLiquido,
+            valorImpostosSimples: totalNotaLiquido * ((cfg.aliquotaSimplesNacional || 4.5) / 100),
+            valorImpostosAproximados: totalNotaLiquido * 0.1345
           },
           transporte: {
-            modalidade: '9',
-            transportadoraNome: 'RETIRADA NO LOCAL / ENTREGA PRÓPRIA'
+            modalidade: modFreteVal,
+            transportadoraNome: transpNomeVal || 'RETIRADA NO LOCAL / ENTREGA PRÓPRIA',
+            transportadoraCnpj: modalEl.querySelector('#emitNfeTranspCnpj')?.value.trim() || '',
+            transportadoraIe: modalEl.querySelector('#emitNfeTranspIe')?.value.trim() || '',
+            transportadoraEndereco: modalEl.querySelector('#emitNfeTranspEnd')?.value.trim() || '',
+            transportadoraCidade: modalEl.querySelector('#emitNfeTranspCidade')?.value.trim() || '',
+            transportadoraUf: (modalEl.querySelector('#emitNfeTranspUf')?.value.trim() || '').toUpperCase(),
+            placa: modalEl.querySelector('#emitNfeTranspPlaca')?.value.trim().toUpperCase() || '',
+            placaUf: (modalEl.querySelector('#emitNfeTranspPlacaUf')?.value.trim() || '').toUpperCase(),
+            antt: modalEl.querySelector('#emitNfeTranspAntt')?.value.trim() || '',
+            volumesQtd: volQtdVal,
+            volumesEspecie: volEspecieVal,
+            volumesMarca: modalEl.querySelector('#emitNfeVolMarca')?.value.trim().toUpperCase() || '',
+            volumesNumeracao: modalEl.querySelector('#emitNfeVolNum')?.value.trim() || '',
+            pesoBruto: parseFloat(modalEl.querySelector('#emitNfePesoBruto')?.value) || 0,
+            pesoLiquido: parseFloat(modalEl.querySelector('#emitNfePesoLiquido')?.value) || 0
           },
           informacoesComplementares: `NF-e emitida e autorizada pelo emissor Texfy ERP Têxtil. ${pedObj ? `Ref. Pedido #${pedObj.numero}` : ''}`
         };
@@ -30226,6 +30630,975 @@
         alert('Erro de conexão ao enviar para a SEFAZ: ' + err.message);
       }
     }
+  }
+
+  function obterTransportadorasDb() {
+    if (!Array.isArray(db.transportadoras) || db.transportadoras.length === 0) {
+      db.transportadoras = [
+        {
+          id: 'tr_correios',
+          nome: 'EMPRESA BRASILEIRA DE CORREIOS E TELEGRAFOS',
+          cnpj: '34028316000103',
+          ie: 'ISENTO',
+          endereco: 'SBN Quadra 1 Bloco A',
+          cidade: 'Brasília',
+          uf: 'DF',
+          modalidadePadrao: '0'
+        },
+        {
+          id: 'tr_jadlog',
+          nome: 'JADLOG LOGISTICA S.A.',
+          cnpj: '04884082000135',
+          ie: '149493280115',
+          endereco: 'Av. Jornalista Paulo Zingg, 810',
+          cidade: 'São Paulo',
+          uf: 'SP',
+          modalidadePadrao: '0'
+        },
+        {
+          id: 'tr_braspress',
+          nome: 'BRASPRESS TRANSPORTES URGENTES LTDA',
+          cnpj: '48740351000165',
+          ie: '112456789110',
+          endereco: 'Rua Coronel Marques Ribeiro, 225',
+          cidade: 'Guarulhos',
+          uf: 'SP',
+          modalidadePadrao: '1'
+        },
+        {
+          id: 'tr_motoboy',
+          nome: 'ENTREGA PROPRIA / MOTOBOY DA FABRICA',
+          cnpj: '',
+          ie: '',
+          endereco: '',
+          cidade: db.empresa?.cidade || 'São Paulo',
+          uf: db.empresa?.uf || 'SP',
+          modalidadePadrao: '3'
+        }
+      ];
+    }
+    return db.transportadoras;
+  }
+
+  let filtroEnviosStatus = 'todos';
+  let filtroEnviosBusca = '';
+  let enviosSelecionadosIds = new Set();
+
+  // Homologação Financeiro + NF-e + Pedidos ao alterar envio/frete/status
+  function sincronizarEnvioComFinanceiroENfe(p) {
+    if (!p) return;
+    if (!Array.isArray(db.despesasFixas)) db.despesasFixas = [];
+    if (!Array.isArray(db.lancamentosFinanceiros)) db.lancamentosFinanceiros = [];
+
+    const idDesp = 'desp_frete_' + p.id;
+    const idLan = 'lan_frete_' + p.id;
+    const valorFrete = Number(p.valorFrete || 0);
+    const mod = String(p.transporte?.modalidade || '9');
+    const freteCusteadoFabrica = valorFrete > 0 && (mod === '0' || mod === '3');
+    const hojeIso = new Date().toISOString().slice(0, 10);
+    const transpNome = p.transporte?.transportadoraNome || 'Transportadora';
+    const jaDespachado = p.envioStatus === 'Despachado' || p.envioStatus === 'Entregue';
+
+    if (freteCusteadoFabrica) {
+      const despEx = db.despesasFixas.find(d => d.id === idDesp);
+      if (!despEx) {
+        db.despesasFixas.push({
+          id: idDesp,
+          pedidoNumero: p.numero,
+          pedidoId: p.id,
+          origemAutomatica: true,
+          origem: `Expedição / Frete (Pedido #${p.numero})`,
+          tipoCusto: 'Variável',
+          descricao: `Frete Envio Pedido #${p.numero} (${transpNome})`,
+          categoria: 'Logística & Frete',
+          centroCusto: 'CC-03',
+          fornecedorFavorecido: transpNome,
+          valor: valorFrete,
+          valorMensal: valorFrete,
+          dataVencimento: hojeIso,
+          recorrencia: 'Única',
+          formaPagamentoPrevista: 'Frete / Logística',
+          status: jaDespachado ? 'Pago' : 'Pendente'
+        });
+      } else {
+        despEx.valor = valorFrete;
+        despEx.valorMensal = valorFrete;
+        despEx.fornecedorFavorecido = transpNome;
+        despEx.descricao = `Frete Envio Pedido #${p.numero} (${transpNome})`;
+        if (jaDespachado) despEx.status = 'Pago';
+      }
+
+      const lanEx = db.lancamentosFinanceiros.find(l => l.id === idLan);
+      if (!lanEx) {
+        db.lancamentosFinanceiros.push({
+          id: idLan,
+          despesaId: idDesp,
+          pedidoId: p.id,
+          tipo: 'Saida',
+          descricao: `Frete Envio Pedido #${p.numero} (${transpNome})`,
+          categoria: 'Logística & Frete',
+          centroCusto: 'CC-03',
+          valor: valorFrete,
+          data: hojeIso,
+          status: jaDespachado ? 'Pago' : 'Pendente',
+          origem: 'Envios & Etiquetas'
+        });
+      } else {
+        lanEx.valor = valorFrete;
+        lanEx.descricao = `Frete Envio Pedido #${p.numero} (${transpNome})`;
+        if (jaDespachado) lanEx.status = 'Pago';
+      }
+    } else {
+      db.despesasFixas = db.despesasFixas.filter(d => !(d.id === idDesp && d.status !== 'Pago'));
+      db.lancamentosFinanceiros = db.lancamentosFinanceiros.filter(l => !(l.id === idLan && l.status !== 'Pago'));
+    }
+
+    // Sincroniza transporte e frete na NF-e vinculada (se existir e não cancelada)
+    const nfeVinc = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada');
+    if (nfeVinc) {
+      nfeVinc.transporte = JSON.parse(JSON.stringify(p.transporte || nfeVinc.transporte || {}));
+      nfeVinc.localEntrega = p.enderecoEntrega?.diferente ? JSON.parse(JSON.stringify(p.enderecoEntrega)) : null;
+      nfeVinc.codigoRastreio = p.codigoRastreio || nfeVinc.codigoRastreio || '';
+      if (!nfeVinc.totais) nfeVinc.totais = {};
+      nfeVinc.totais.valorFrete = valorFrete;
+    }
+  }
+
+  function atualizarStatusEnvioPedido(pedidoId, novoStatus) {
+    const p = (db.pedidos || []).find(x => x.id === pedidoId);
+    if (!p) return;
+    const hojeIso = new Date().toISOString().slice(0, 10);
+    p.envioStatus = novoStatus;
+    p.ultimaModificacaoMs = Date.now();
+
+    if (novoStatus === 'Despachado') {
+      p.dataDespacho = hojeIso;
+      if (p.status === 'Finalizado' || p.etapaProducao === 'Entregue ao Cliente' || p.etapaProducao === 'Entregue') {
+        p.status = 'Em Producao';
+        p.etapaProducao = 'Expedicao';
+      }
+    } else if (novoStatus === 'Entregue') {
+      p.status = 'Finalizado';
+      p.etapaProducao = 'Entregue ao Cliente';
+      p.dataConclusaoMs = Date.now();
+      p.dataConclusao = hojeIso;
+    } else {
+      if (p.status === 'Finalizado' || p.etapaProducao === 'Entregue ao Cliente' || p.etapaProducao === 'Entregue') {
+        p.status = 'Em Producao';
+        p.etapaProducao = 'Expedicao';
+      }
+    }
+
+    const os = (db.ordensServico || []).find(o => o.pedidoNumero === p.numero);
+    if (os) {
+      os.etapaAtual = p.etapaProducao;
+      os.ultimaModificacaoMs = Date.now();
+    }
+
+    sincronizarEnvioComFinanceiroENfe(p);
+    salvarEstado(true);
+    atualizarBadges();
+    mostrarToast(`Pedido #${p.numero} atualizado para "${novoStatus}" (Pedidos, Financeiro e NF-e sincronizados)!`, 'green');
+    if (document.querySelector('.menu-item.active')?.getAttribute('data-aba') === 'envios') renderizarEnvios();
+  }
+
+  function renderizarEnvios() {
+    if (!contentArea) return;
+    const transportadoras = obterTransportadorasDb();
+    const isPedidoEntregue = (p) => p.etapaProducao === 'Entregue ao Cliente' || p.etapaProducao === 'Entregue' || p.status === 'Finalizado';
+    const pedidosValidos = (db.pedidos || []).filter(p => {
+      if (p.status === 'Cancelado') return false;
+      if (p.etapaProducao === 'Expedicao') return true;
+      if (isPedidoEntregue(p)) {
+        if (!p.envioStatus) p.envioStatus = 'Entregue';
+        return true;
+      }
+      return false;
+    });
+
+    const qtdAguardando = pedidosValidos.filter(p => !isPedidoEntregue(p) && (!p.envioStatus || p.envioStatus === 'Aguardando')).length;
+    const qtdEtiqueta = pedidosValidos.filter(p => !isPedidoEntregue(p) && p.envioStatus === 'Etiqueta Gerada').length;
+    const qtdTransito = pedidosValidos.filter(p => !isPedidoEntregue(p) && p.envioStatus === 'Despachado').length;
+    const qtdEntregue = pedidosValidos.filter(p => isPedidoEntregue(p) || p.envioStatus === 'Entregue').length;
+    const qtdExpedicaoAtivos = pedidosValidos.filter(p => p.etapaProducao === 'Expedicao' && p.envioStatus !== 'Entregue').length;
+
+    const filtrados = pedidosValidos.filter(p => {
+      const st = isPedidoEntregue(p) ? 'Entregue' : (p.envioStatus || 'Aguardando');
+      if (filtroEnviosStatus === 'todos') {
+        if (st === 'Entregue') return false; // Por padrão em "Em Expedição", oculta os já entregues (que ficam na aba Entregue)
+      } else if (st !== filtroEnviosStatus) {
+        return false;
+      }
+      if (filtroEnviosBusca.trim()) {
+        const q = filtroEnviosBusca.toLowerCase();
+        const matchNum = String(p.numero || '').toLowerCase().includes(q);
+        const matchCli = String(p.clienteNome || '').toLowerCase().includes(q);
+        const matchTr = String(p.transporte?.transportadoraNome || '').toLowerCase().includes(q);
+        const matchRast = String(p.codigoRastreio || '').toLowerCase().includes(q);
+        if (!matchNum && !matchCli && !matchTr && !matchRast) return false;
+      }
+      return true;
+    });
+
+    const labelMod = (mod) => {
+      if (mod === '0') return '0 - Emitente (CIF)';
+      if (mod === '1') return '1 - Destinatário (FOB)';
+      if (mod === '2') return '2 - Terceiros';
+      if (mod === '3') return '3 - Próprio Emitente';
+      return '9 - Sem Transporte';
+    };
+
+    const qtdSel = Array.from(enviosSelecionadosIds).filter(id => filtrados.some(p => p.id === id)).length;
+
+    contentArea.innerHTML = `
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 18px;">
+        <div>
+          <h1 class="page-title" style="display: flex; align-items: center; gap: 8px;">
+            <span>🚚</span> Envios, Transportadoras & Etiquetas (Expedição)
+          </h1>
+          <p class="page-subtitle">Apenas pedidos em <strong>Expedição / Pronto</strong> (ou já Entregues). Integrado com Pedidos, Financeiro (Frete) e NF-e.</p>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn-primary btn-sm" id="btnImprimirEtiquetasLote" ${qtdSel === 0 ? 'disabled' : ''} style="font-weight: 800; background: ${qtdSel > 0 ? '#047857' : '#94a3b8'}; border-color: ${qtdSel > 0 ? '#047857' : '#94a3b8'};">
+            🖨️ Imprimir Selecionadas na Mesma Folha (${qtdSel})
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btnGerenciarTransportadoras" style="font-weight: 700;">
+            🚛 Transportadoras (${transportadoras.length})
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="window.ERP.navegarPara('nfe')" style="font-weight: 700;">
+            📄 Notas Fiscais
+          </button>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 18px;">
+        <div class="kpi-card">
+          <div class="kpi-label">Aguardando Envio</div>
+          <div class="kpi-value" style="color: #475569;">${qtdAguardando}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Etiqueta Gerada</div>
+          <div class="kpi-value" style="color: #d97706;">${qtdEtiqueta}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Despachados</div>
+          <div class="kpi-value" style="color: #2563eb;">${qtdTransito}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Entregues</div>
+          <div class="kpi-value" style="color: #16a34a;">${qtdEntregue}</div>
+        </div>
+      </div>
+
+      <div class="card" style="padding: 14px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            ${['todos', 'Aguardando', 'Etiqueta Gerada', 'Despachado', 'Entregue'].map(st => `
+              <button type="button" class="btn btn-sm ${filtroEnviosStatus === st ? 'btn-primary' : 'btn-secondary'} btn-filtro-envio" data-st="${st}" style="font-size: 11px;">
+                ${st === 'todos' ? 'Em Expedição (' + qtdExpedicaoAtivos + ')' : (st === 'Entregue' ? 'Entregues (' + qtdEntregue + ')' : st)}
+              </button>
+            `).join('')}
+          </div>
+          <input type="text" id="inputBuscaEnvios" class="form-input" value="${filtroEnviosBusca}" placeholder="🔍 Buscar pedido, cliente, transportadora ou rastreio..." style="max-width: 320px; font-size: 12px;">
+        </div>
+      </div>
+
+      <div class="card" style="padding: 0; overflow: hidden;">
+        <div class="table-wrapper" style="margin: 0;">
+          <table class="erp-table">
+            <thead>
+              <tr>
+                <th style="width: 34px; text-align: center;">
+                  <input type="checkbox" id="chkTodosEnvios" ${filtrados.length > 0 && qtdSel === filtrados.length ? 'checked' : ''} title="Selecionar todos para impressão conjunta">
+                </th>
+                <th>Pedido</th>
+                <th>Cliente / Destino</th>
+                <th>Transportadora & Frete</th>
+                <th>Volumes / Peso</th>
+                <th>Etapa de Envio & Rastreio</th>
+                <th style="text-align: right;">Ações de Expedição</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filtrados.length === 0 ? `
+                <tr>
+                  <td colspan="7" style="text-align: center; padding: 36px; color: #64748b;">
+                    Nenhum pedido na etapa <strong>Oficina: 6. Expedição / Pronto</strong> no momento.<br><span style="font-size: 11.5px;">Quando marcar um pedido como <strong>Expedição / Pronto</strong> na aba Pedidos, ele aparece aqui automaticamente.</span>
+                  </td>
+                </tr>
+              ` : filtrados.map(p => {
+                const cli = (db.clientes || []).find(c => c.id === p.clienteId || c.nome === p.clienteNome) || {};
+                const tr = p.transporte || {};
+                const qtdPecas = Number(p.quantidadeTotal || p.grade?.total || (p.itens || []).reduce((s, i) => s + (Number(i.grade?.total || i.quantidade || 0)), 0) || 1);
+                const pesoEst = (qtdPecas * 0.28).toFixed(2);
+                const nfeVinc = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada');
+                const stEnvio = isPedidoEntregue(p) ? 'Entregue' : (p.envioStatus || 'Aguardando');
+                const marcado = enviosSelecionadosIds.has(p.id);
+                const corSel = stEnvio === 'Entregue' ? 'border-color:#16a34a;color:#166534;background:#dcfce7;' : (stEnvio === 'Despachado' ? 'border-color:#2563eb;color:#1e40af;background:#dbeafe;' : (stEnvio === 'Etiqueta Gerada' ? 'border-color:#d97706;color:#92400e;background:#fef3c7;' : ''));
+                return `
+                  <tr>
+                    <td style="text-align: center;">
+                      <input type="checkbox" class="chk-envio-item" data-id="${p.id}" ${marcado ? 'checked' : ''}>
+                    </td>
+                    <td>
+                      <strong class="text-mono">#${p.numero || '-'}</strong>
+                      <div style="font-size: 11px; color: #64748b;">${p.status || 'Pedido'}</div>
+                      ${nfeVinc ? `<span style="font-size: 10px; background: #ecfdf5; color: #047857; padding: 1px 6px; border-radius: 4px; font-weight: 700;">NF-e #${nfeVinc.numero}</span>` : ''}
+                    </td>
+                    <td>
+                      <strong>${p.clienteNome || 'Cliente'}</strong>
+                      ${p.enderecoEntrega?.diferente
+                        ? `<div style="font-size: 11px; color: #0369a1; font-weight: 700;">📍 ${p.enderecoEntrega.cidade || ''}/${p.enderecoEntrega.uf || ''} ${p.enderecoEntrega.cep ? '• CEP ' + p.enderecoEntrega.cep : ''} <span style="background:#e0f2fe;padding:0 4px;border-radius:3px;font-size:9.5px;">Outro destino</span></div>`
+                        : `<div style="font-size: 11px; color: #64748b;">${cli.cidade ? `${cli.cidade}/${cli.uf || ''}` : 'Endereço não cadastrado'} ${cli.cep ? `• CEP ${cli.cep}` : ''}</div>`
+                      }
+                    </td>
+                    <td>
+                      <div style="font-weight: 700; font-size: 12px; color: #0f172a;">${tr.transportadoraNome || '<span style="color:#94a3b8;">Não definida</span>'}</div>
+                      <div style="font-size: 11px; color: #64748b;">${labelMod(tr.modalidade || '9')} ${Number(p.valorFrete || 0) > 0 ? `• Frete: <strong>${formatarMoeda(p.valorFrete)}</strong>` : ''}</div>
+                    </td>
+                    <td>
+                      <div class="text-mono" style="font-size: 12px; font-weight: 700;">${tr.volumesQtd || 1}x ${(tr.volumesEspecie || 'CAIXAS').toUpperCase()}</div>
+                      <div style="font-size: 11px; color: #64748b;">${qtdPecas} pçs • ${tr.pesoBruto ? Number(tr.pesoBruto).toFixed(2) : pesoEst} kg</div>
+                    </td>
+                    <td>
+                      <select class="form-select select-status-envio-rapido" data-id="${p.id}" style="font-size: 11px; padding: 3px 6px; font-weight: 700; max-width: 145px; ${corSel}">
+                        <option value="Aguardando" ${stEnvio === 'Aguardando' ? 'selected' : ''}>⏳ Aguardando</option>
+                        <option value="Etiqueta Gerada" ${stEnvio === 'Etiqueta Gerada' ? 'selected' : ''}>🏷️ Etiqueta Gerada</option>
+                        <option value="Despachado" ${stEnvio === 'Despachado' ? 'selected' : ''}>🚚 Despachado</option>
+                        <option value="Entregue" ${stEnvio === 'Entregue' ? 'selected' : ''}>✅ Entregue</option>
+                      </select>
+                      <div class="text-mono" style="font-size: 11px; color: #475569; margin-top: 3px;">${p.codigoRastreio ? '🔎 ' + p.codigoRastreio : 'Sem rastreio'}</div>
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                      <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalConfigurarEnvio('${p.id}')" style="font-size: 11px; padding: 4px 8px;" title="Configurar Transportadora, Volumes e Rastreio">
+                        🚚 Transporte
+                      </button>
+                      <button type="button" class="btn btn-primary btn-sm" onclick="window.ERP.abrirModalEtiquetaEnvio('${p.id}')" style="font-size: 11px; padding: 4px 8px; background: #0f172a; border-color: #0f172a;" title="Gerar & Imprimir Etiqueta">
+                        🏷️ Etiqueta
+                      </button>
+                      ${nfeVinc
+                        ? `<button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.abrirVisualizadorDanfe('${nfeVinc.id}')" style="font-size: 11px; padding: 4px 8px; color: #047857; border-color: #10b981;">📄 DANFE</button>`
+                        : `<button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalEmitirNfe('${p.id}')" style="font-size: 11px; padding: 4px 8px; color: #0369a1; border-color: #38bdf8;">📄 Emitir NF-e</button>`
+                      }
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    contentArea.querySelectorAll('.btn-filtro-envio').forEach(btn => {
+      btn.addEventListener('click', () => {
+        filtroEnviosStatus = btn.getAttribute('data-st');
+        renderizarEnvios();
+      });
+    });
+    const inpBusca = contentArea.querySelector('#inputBuscaEnvios');
+    if (inpBusca) {
+      inpBusca.addEventListener('input', (e) => {
+        filtroEnviosBusca = e.target.value;
+        renderizarEnvios();
+        const novoInp = document.getElementById('inputBuscaEnvios');
+        if (novoInp) { novoInp.focus(); novoInp.setSelectionRange(filtroEnviosBusca.length, filtroEnviosBusca.length); }
+      });
+    }
+    contentArea.querySelector('#chkTodosEnvios')?.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        filtrados.forEach(p => enviosSelecionadosIds.add(p.id));
+      } else {
+        filtrados.forEach(p => enviosSelecionadosIds.delete(p.id));
+      }
+      renderizarEnvios();
+    });
+    contentArea.querySelectorAll('.chk-envio-item').forEach(chk => {
+      chk.addEventListener('change', (e) => {
+        const id = chk.getAttribute('data-id');
+        if (e.target.checked) enviosSelecionadosIds.add(id);
+        else enviosSelecionadosIds.delete(id);
+        renderizarEnvios();
+      });
+    });
+    contentArea.querySelectorAll('.select-status-envio-rapido').forEach(sel => {
+      sel.addEventListener('change', (e) => {
+        const id = sel.getAttribute('data-id');
+        atualizarStatusEnvioPedido(id, e.target.value);
+      });
+    });
+    contentArea.querySelector('#btnImprimirEtiquetasLote')?.addEventListener('click', () => {
+      const ids = Array.from(enviosSelecionadosIds).filter(id => filtrados.some(p => p.id === id));
+      if (ids.length > 0) abrirModalEtiquetasEmLote(ids);
+    });
+    contentArea.querySelector('#btnGerenciarTransportadoras')?.addEventListener('click', () => abrirModalTransportadoras());
+  }
+
+  function abrirModalTransportadoras(onAtualizarCallback = null) {
+    const lista = obterTransportadorasDb();
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 780px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column;">
+          <div class="modal-header" style="background: #0f172a; color: #fff;">
+            <div class="modal-title" style="color: #fff;">🚛 Cadastro de Transportadoras</div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()" style="color: #fff;">&times;</button>
+          </div>
+          <div class="modal-body" style="padding: 16px; overflow-y: auto; flex: 1;">
+            <div style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+              <div style="font-size: 12px; font-weight: 800; margin-bottom: 8px;">+ Nova Transportadora</div>
+              <div style="display: grid; grid-template-columns: 2fr 1.2fr 1fr; gap: 8px; margin-bottom: 8px;">
+                <input type="text" id="novaTrNome" class="form-input" placeholder="Razão Social / Nome *">
+                <input type="text" id="novaTrCnpj" class="form-input text-mono" placeholder="CNPJ / CPF">
+                <input type="text" id="novaTrIe" class="form-input text-mono" placeholder="Inscrição Estadual">
+              </div>
+              <div style="display: grid; grid-template-columns: 2fr 1.2fr 0.5fr 1fr; gap: 8px;">
+                <input type="text" id="novaTrEnd" class="form-input" placeholder="Endereço">
+                <input type="text" id="novaTrCidade" class="form-input" placeholder="Cidade">
+                <input type="text" id="novaTrUf" maxlength="2" class="form-input text-mono" placeholder="UF" style="text-transform: uppercase;">
+                <button type="button" class="btn btn-primary btn-sm" id="btnSalvarNovaTr">Salvar</button>
+              </div>
+            </div>
+            <table class="erp-table">
+              <thead>
+                <tr><th>Transportadora</th><th>CNPJ</th><th>Cidade/UF</th><th style="text-align:right;">Ação</th></tr>
+              </thead>
+              <tbody>
+                ${lista.map((t, i) => `
+                  <tr>
+                    <td><strong>${t.nome}</strong><div style="font-size:11px;color:#64748b;">${t.endereco || '-'}</div></td>
+                    <td class="text-mono">${t.cnpj || '-'}</td>
+                    <td>${t.cidade || '-'}/${t.uf || '-'}</td>
+                    <td style="text-align:right;"><button type="button" class="btn btn-secondary btn-sm btn-rem-tr" data-idx="${i}" style="color:#ef4444;">Remover</button></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `);
+    if (!modalEl) return;
+
+    modalEl.querySelector('#btnSalvarNovaTr')?.addEventListener('click', () => {
+      const nome = modalEl.querySelector('#novaTrNome').value.trim();
+      if (!nome) return alert('Informe a Razão Social / Nome da transportadora.');
+      db.transportadoras.push({
+        id: 'tr_' + Date.now(),
+        nome: nome.toUpperCase(),
+        cnpj: modalEl.querySelector('#novaTrCnpj').value.trim(),
+        ie: modalEl.querySelector('#novaTrIe').value.trim(),
+        endereco: modalEl.querySelector('#novaTrEnd').value.trim(),
+        cidade: modalEl.querySelector('#novaTrCidade').value.trim(),
+        uf: modalEl.querySelector('#novaTrUf').value.trim().toUpperCase(),
+        modalidadePadrao: '0'
+      });
+      salvarEstado(true);
+      if (typeof onAtualizarCallback === 'function') onAtualizarCallback(db.transportadoras);
+      fecharModal(modalEl);
+      abrirModalTransportadoras(onAtualizarCallback);
+      if (document.querySelector('.menu-item.active')?.getAttribute('data-aba') === 'envios') renderizarEnvios();
+    });
+
+    modalEl.querySelectorAll('.btn-rem-tr').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-idx'), 10);
+        db.transportadoras.splice(idx, 1);
+        salvarEstado(true);
+        fecharModal(modalEl);
+        abrirModalTransportadoras();
+      });
+    });
+  }
+
+  function abrirModalConfigurarEnvio(pedidoId) {
+    const p = (db.pedidos || []).find(x => x.id === pedidoId);
+    if (!p) return;
+    const transportadoras = obterTransportadorasDb();
+    const cli = (db.clientes || []).find(c => c.id === p.clienteId || c.nome === p.clienteNome) || {};
+    const ent = p.enderecoEntrega || {};
+    const tr = p.transporte || {};
+    const qtdPecas = Number(p.quantidadeTotal || p.grade?.total || (p.itens || []).reduce((s, i) => s + (Number(i.grade?.total || i.quantidade || 0)), 0) || 1);
+    const pesoSugerido = (qtdPecas * 0.28).toFixed(3);
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 760px; width: 95vw; max-height: 92vh; display: flex; flex-direction: column;">
+          <div class="modal-header" style="background: #0f172a; color: #fff;">
+            <div>
+              <div class="modal-title" style="color: #fff;">🚚 Configurar Envio & Volumes — Pedido #${p.numero}</div>
+              <span style="font-size: 11px; color: #94a3b8;">Cliente: ${p.clienteNome} • Os dados salvos aqui vão direto para a Etiqueta e NF-e</span>
+            </div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()" style="color: #fff;">&times;</button>
+          </div>
+          <div class="modal-body" style="padding: 16px; overflow-y: auto; flex: 1;">
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+              <div class="form-group" style="margin-bottom:0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <label class="form-label" style="margin-bottom:0;">Transportadora Cadastrada</label>
+                  <button type="button" id="btnAbrirCadastroTrNoModal" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 4px; font-size: 10.5px; font-weight: 800; padding: 1px 7px; cursor: pointer;">+ Cadastrar Nova</button>
+                </div>
+                <select id="envSelTransportadora" class="form-select font-bold">
+                  <option value="">-- Personalizada / Digitar abaixo --</option>
+                  ${transportadoras.map(t => `<option value="${t.id}" ${tr.transportadoraNome === t.nome ? 'selected' : ''}>${t.nome}</option>`).join('')}
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Modalidade do Frete (SEFAZ)</label>
+                <select id="envModalidade" class="form-select">
+                  <option value="0" ${(tr.modalidade || '9') === '0' ? 'selected' : ''}>0 - Emitente (CIF)</option>
+                  <option value="1" ${tr.modalidade === '1' ? 'selected' : ''}>1 - Destinatário (FOB)</option>
+                  <option value="2" ${tr.modalidade === '2' ? 'selected' : ''}>2 - Terceiros</option>
+                  <option value="3" ${tr.modalidade === '3' ? 'selected' : ''}>3 - Próprio Emitente</option>
+                  <option value="9" ${(tr.modalidade || '9') === '9' ? 'selected' : ''}>9 - Sem Transporte / Retirada</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Valor do Frete (R$)</label>
+                <input type="number" step="0.01" min="0" id="envValorFrete" class="form-input text-mono" value="${Number(p.valorFrete || 0).toFixed(2)}">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 2fr 1.2fr 1fr; gap: 10px; margin-bottom: 10px;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Razão Social Transportadora</label>
+                <input type="text" id="envTrNome" class="form-input" value="${tr.transportadoraNome || ''}" placeholder="Nome da transportadora">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">CNPJ / CPF</label>
+                <input type="text" id="envTrCnpj" class="form-input text-mono" value="${tr.transportadoraCnpj || ''}">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Inscrição Estadual</label>
+                <input type="text" id="envTrIe" class="form-input text-mono" value="${tr.transportadoraIe || ''}">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 2fr 1.2fr 0.5fr; gap: 10px; margin-bottom: 8px;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Endereço Transportadora</label>
+                <input type="text" id="envTrEnd" class="form-input" value="${tr.transportadoraEndereco || ''}">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Cidade</label>
+                <input type="text" id="envTrCidade" class="form-input" value="${tr.transportadoraCidade || ''}">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">UF</label>
+                <input type="text" maxlength="2" id="envTrUf" class="form-input text-mono" value="${tr.transportadoraUf || ''}" style="text-transform: uppercase;">
+              </div>
+            </div>
+            <div style="margin-bottom: 12px;">
+              <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: #0369a1; font-weight: 700; cursor: pointer;">
+                <input type="checkbox" id="chkSalvarTrNoCadastro">
+                💾 Salvar esta transportadora no cadastro para os próximos envios
+              </label>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid var(--border-medium); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+              <div style="font-size: 11.5px; font-weight: 800; margin-bottom: 8px;">📦 Volumes & Peso (Vai para NF-e e Etiqueta — nunca "A GRANEL")</div>
+              <div style="display: grid; grid-template-columns: 0.8fr 1.2fr 1fr 1fr 1fr 1fr; gap: 8px;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label">Qtd Vol.</label>
+                  <input type="number" min="1" step="1" id="envVolQtd" class="form-input text-mono font-bold" value="${tr.volumesQtd || 1}">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label">Espécie</label>
+                  <select id="envVolEspecie" class="form-select font-bold">
+                    ${['CAIXAS', 'PACOTES', 'SACOS', 'FARDOS', 'VOLUMES', 'UNIDADES'].map(esp => `<option value="${esp}" ${(tr.volumesEspecie || 'CAIXAS').toUpperCase() === esp ? 'selected' : ''}>${esp}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label">Marca</label>
+                  <input type="text" id="envVolMarca" class="form-input" value="${tr.volumesMarca || ''}" placeholder="Opcional">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label">Numeração</label>
+                  <input type="text" id="envVolNum" class="form-input text-mono" value="${tr.volumesNumeracao || ''}" placeholder="1/1">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label">Peso Bruto (kg)</label>
+                  <input type="number" step="0.001" min="0" id="envPesoBruto" class="form-input text-mono" value="${tr.pesoBruto || pesoSugerido}">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label">Peso Líq. (kg)</label>
+                  <input type="number" step="0.001" min="0" id="envPesoLiq" class="form-input text-mono" value="${tr.pesoLiquido || pesoSugerido}">
+                </div>
+              </div>
+            </div>
+
+            <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; color: #0369a1; cursor: pointer;">
+                  <input type="checkbox" id="chkEnderecoEntregaDiferente" ${ent.diferente ? 'checked' : ''}>
+                  📍 Usar endereço de entrega diferente do cadastro do cliente
+                </label>
+                <span style="font-size: 11px; color: #475569;">Cadastro: ${cli.cidade ? `${cli.endereco || ''}, ${cli.numero || 'S/N'} — ${cli.cidade}/${cli.uf || ''}` : 'Sem endereço no cadastro'}</span>
+              </div>
+              <div id="boxEnderecoEntregaDiferente" style="display: ${ent.diferente ? 'block' : 'none'}; margin-top: 10px;">
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px; margin-bottom: 8px;">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">Recebedor / Local de Entrega (Opcional)</label>
+                    <input type="text" id="envEntDest" class="form-input" value="${ent.destinatario || ''}" placeholder="${p.clienteNome || 'Nome do local/recebedor'}">
+                  </div>
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">CEP Destino *</label>
+                    <input type="text" id="envEntCep" class="form-input text-mono" value="${ent.cep || ''}" placeholder="00000-000">
+                  </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 2.5fr 0.8fr 1.5fr; gap: 8px; margin-bottom: 8px;">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">Logradouro / Rua *</label>
+                    <input type="text" id="envEntLgr" class="form-input" value="${ent.logradouro || ''}" placeholder="Rua / Av.">
+                  </div>
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">Número</label>
+                    <input type="text" id="envEntNum" class="form-input" value="${ent.numero || ''}" placeholder="S/N">
+                  </div>
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">Bairro</label>
+                    <input type="text" id="envEntBairro" class="form-input" value="${ent.bairro || ''}" placeholder="Bairro">
+                  </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 2fr 0.6fr; gap: 8px;">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">Cidade *</label>
+                    <input type="text" id="envEntCidade" class="form-input" value="${ent.cidade || ''}" placeholder="Cidade">
+                  </div>
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">UF *</label>
+                    <input type="text" maxlength="2" id="envEntUf" class="form-input text-mono" value="${ent.uf || ''}" style="text-transform: uppercase;" placeholder="SP">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 10px;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Código de Rastreio</label>
+                <input type="text" id="envRastreio" class="form-input text-mono" value="${p.codigoRastreio || ''}" placeholder="Ex: BR123456789BR">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Status do Envio</label>
+                <select id="envStatus" class="form-select font-bold">
+                  ${['Aguardando', 'Etiqueta Gerada', 'Despachado', 'Entregue'].map(st => `<option value="${st}" ${(p.envioStatus || 'Aguardando') === st ? 'selected' : ''}>${st}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" onclick="window.ERP.fecharModal()">Cancelar</button>
+            <button class="btn btn-primary btn-sm" id="btnSalvarEnvioPedido" style="font-weight: 800;">💾 Salvar Transporte & Volumes</button>
+          </div>
+        </div>
+      </div>
+    `);
+    if (!modalEl) return;
+
+    modalEl.querySelector('#btnAbrirCadastroTrNoModal')?.addEventListener('click', () => {
+      abrirModalTransportadoras((novaLista) => {
+        const sel = modalEl.querySelector('#envSelTransportadora');
+        if (sel && Array.isArray(novaLista)) {
+          const valAtual = sel.value;
+          sel.innerHTML = '<option value="">-- Personalizada / Digitar abaixo --</option>' +
+            novaLista.map(t => `<option value="${t.id}">${t.nome}</option>`).join('');
+          if (valAtual && novaLista.some(t => t.id === valAtual)) {
+            sel.value = valAtual;
+          } else if (novaLista.length > 0) {
+            const ultima = novaLista[novaLista.length - 1];
+            sel.value = ultima.id;
+            sel.dispatchEvent(new Event('change'));
+          }
+        }
+      });
+    });
+
+    modalEl.querySelector('#envSelTransportadora')?.addEventListener('change', (e) => {
+      const t = transportadoras.find(x => x.id === e.target.value);
+      if (t) {
+        modalEl.querySelector('#envTrNome').value = t.nome || '';
+        modalEl.querySelector('#envTrCnpj').value = t.cnpj || '';
+        modalEl.querySelector('#envTrIe').value = t.ie || '';
+        modalEl.querySelector('#envTrEnd').value = t.endereco || '';
+        modalEl.querySelector('#envTrCidade').value = t.cidade || '';
+        modalEl.querySelector('#envTrUf').value = t.uf || '';
+        if (t.modalidadePadrao != null) modalEl.querySelector('#envModalidade').value = t.modalidadePadrao;
+      }
+    });
+
+    const chkEntDif = modalEl.querySelector('#chkEnderecoEntregaDiferente');
+    const boxEntDif = modalEl.querySelector('#boxEnderecoEntregaDiferente');
+    chkEntDif?.addEventListener('change', () => {
+      if (boxEntDif) boxEntDif.style.display = chkEntDif.checked ? 'block' : 'none';
+    });
+    modalEl.querySelector('#envEntCep')?.addEventListener('blur', async (e) => {
+      const cepLimpo = String(e.target.value || '').replace(/\D/g, '');
+      if (cepLimpo.length !== 8) return;
+      try {
+        const r = await fetch('https://viacep.com.br/ws/' + cepLimpo + '/json/');
+        const d = await r.json();
+        if (!d.erro) {
+          if (d.logradouro && !modalEl.querySelector('#envEntLgr').value) modalEl.querySelector('#envEntLgr').value = d.logradouro;
+          if (d.bairro && !modalEl.querySelector('#envEntBairro').value) modalEl.querySelector('#envEntBairro').value = d.bairro;
+          if (d.localidade) modalEl.querySelector('#envEntCidade').value = d.localidade;
+          if (d.uf) modalEl.querySelector('#envEntUf').value = d.uf;
+        }
+      } catch (_) {}
+    });
+
+    modalEl.querySelector('#btnSalvarEnvioPedido')?.addEventListener('click', () => {
+      if (chkEntDif?.checked) {
+        p.enderecoEntrega = {
+          diferente: true,
+          destinatario: modalEl.querySelector('#envEntDest').value.trim(),
+          cep: modalEl.querySelector('#envEntCep').value.trim(),
+          logradouro: modalEl.querySelector('#envEntLgr').value.trim(),
+          numero: modalEl.querySelector('#envEntNum').value.trim() || 'S/N',
+          bairro: modalEl.querySelector('#envEntBairro').value.trim(),
+          cidade: modalEl.querySelector('#envEntCidade').value.trim(),
+          uf: modalEl.querySelector('#envEntUf').value.trim().toUpperCase()
+        };
+      } else {
+        p.enderecoEntrega = null;
+      }
+      p.valorFrete = parseFloat(modalEl.querySelector('#envValorFrete').value) || 0;
+      p.codigoRastreio = modalEl.querySelector('#envRastreio').value.trim();
+      const novoStatus = modalEl.querySelector('#envStatus').value;
+      const nomeTr = modalEl.querySelector('#envTrNome').value.trim();
+      const salvarCad = modalEl.querySelector('#chkSalvarTrNoCadastro')?.checked;
+      if (salvarCad && nomeTr) {
+        const listaTr = obterTransportadorasDb();
+        const jaExiste = listaTr.find(t => t.nome.toUpperCase() === nomeTr.toUpperCase());
+        const dadosTr = {
+          id: jaExiste ? jaExiste.id : ('tr_' + Date.now()),
+          nome: nomeTr.toUpperCase(),
+          cnpj: modalEl.querySelector('#envTrCnpj').value.trim(),
+          ie: modalEl.querySelector('#envTrIe').value.trim(),
+          endereco: modalEl.querySelector('#envTrEnd').value.trim(),
+          cidade: modalEl.querySelector('#envTrCidade').value.trim(),
+          uf: modalEl.querySelector('#envTrUf').value.trim().toUpperCase(),
+          modalidadePadrao: modalEl.querySelector('#envModalidade').value
+        };
+        if (jaExiste) Object.assign(jaExiste, dadosTr);
+        else listaTr.push(dadosTr);
+      }
+
+      p.transporte = {
+        modalidade: modalEl.querySelector('#envModalidade').value,
+        transportadoraNome: modalEl.querySelector('#envTrNome').value.trim(),
+        transportadoraCnpj: modalEl.querySelector('#envTrCnpj').value.trim(),
+        transportadoraIe: modalEl.querySelector('#envTrIe').value.trim(),
+        transportadoraEndereco: modalEl.querySelector('#envTrEnd').value.trim(),
+        transportadoraCidade: modalEl.querySelector('#envTrCidade').value.trim(),
+        transportadoraUf: modalEl.querySelector('#envTrUf').value.trim().toUpperCase(),
+        volumesQtd: parseInt(modalEl.querySelector('#envVolQtd').value, 10) || 1,
+        volumesEspecie: modalEl.querySelector('#envVolEspecie').value || 'CAIXAS',
+        volumesMarca: modalEl.querySelector('#envVolMarca').value.trim().toUpperCase(),
+        volumesNumeracao: modalEl.querySelector('#envVolNum').value.trim(),
+        pesoBruto: parseFloat(modalEl.querySelector('#envPesoBruto').value) || 0,
+        pesoLiquido: parseFloat(modalEl.querySelector('#envPesoLiq').value) || 0
+      };
+      fecharModal(modalEl);
+      atualizarStatusEnvioPedido(p.id, novoStatus);
+    });
+  }
+
+  function gerarCardsEtiquetasPedidoHtml(p, emp) {
+    const cli = (db.clientes || []).find(c => c.id === p.clienteId || c.nome === p.clienteNome) || {};
+    const tr = p.transporte || {};
+    const volTotal = Math.max(1, parseInt(tr.volumesQtd || 1, 10));
+    const especie = (tr.volumesEspecie || 'CAIXAS').toUpperCase();
+    const nfeVinc = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada');
+    const codBarras = p.codigoRastreio || `PED${String(p.numero || p.id).replace(/\D/g, '').padStart(6, '0')}`;
+    const qtdPecas = Number(p.quantidadeTotal || p.grade?.total || (p.itens || []).reduce((s, i) => s + (Number(i.grade?.total || i.quantidade || 0)), 0) || 1);
+    const peso = Number(tr.pesoBruto || (qtdPecas * 0.28)).toFixed(2);
+
+    return Array.from({ length: volTotal }, (_, idx) => `
+      <div class="etiqueta-10x15" style="background: #ffffff; color: #0f172a; border: 1.8px solid #0f172a; border-radius: 5px; padding: 10px; font-family: Arial, sans-serif; break-inside: avoid; page-break-inside: avoid; box-sizing: border-box;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #0f172a; padding-bottom: 6px; margin-bottom: 7px;">
+          <div>
+            <div style="font-size: 11.5px; font-weight: 900; text-transform: uppercase;">${emp.nomeFantasia || emp.razaoSocial || 'CONFECÇÃO TEXFY'}</div>
+            <div style="font-size: 9px; color: #475569;">CNPJ: ${emp.cnpj || '-'} • ${emp.cidade || ''}/${emp.uf || ''}</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="background: #0f172a; color: #fff; padding: 2px 6px; font-size: 10px; font-weight: 900; border-radius: 3px;">VOL ${idx + 1}/${volTotal}</div>
+            <div style="font-size: 9px; font-weight: 700; margin-top: 2px;">${especie} • ${peso} kg</div>
+          </div>
+        </div>
+        <div style="background: #f8fafc; border: 1px solid #0f172a; border-radius: 4px; padding: 7px; margin-bottom: 7px;">
+          <div style="font-size: 8.5px; font-weight: 800; color: #475569; text-transform: uppercase;">${p.enderecoEntrega?.diferente ? 'DESTINATÁRIO / ENTREGA EM OUTRO ENDEREÇO' : 'DESTINATÁRIO'}</div>
+          <div style="font-size: 12px; font-weight: 900; margin: 1px 0;">${(p.enderecoEntrega?.diferente && p.enderecoEntrega.destinatario ? p.enderecoEntrega.destinatario : (p.clienteNome || 'CONSUMIDOR FINAL')).toUpperCase()}</div>
+          <div style="font-size: 10.5px; line-height: 1.3;">
+            ${p.enderecoEntrega?.diferente
+              ? `${p.enderecoEntrega.logradouro || 'Endereço não informado'}${p.enderecoEntrega.numero ? ', ' + p.enderecoEntrega.numero : ''}<br>${p.enderecoEntrega.bairro ? p.enderecoEntrega.bairro + ' — ' : ''}${p.enderecoEntrega.cidade || ''}/${p.enderecoEntrega.uf || ''} • <strong>CEP: ${p.enderecoEntrega.cep || '00000-000'}</strong>`
+              : `${cli.endereco || 'Endereço não informado'}${cli.numero ? ', ' + cli.numero : ''}<br>${cli.bairro ? cli.bairro + ' — ' : ''}${cli.cidade || ''}/${cli.uf || ''} • <strong>CEP: ${cli.cep || '00000-000'}</strong>`
+            }
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 9.5px; margin-bottom: 7px;">
+          <div style="border: 1px solid #cbd5e1; padding: 4px 5px; border-radius: 3px;">
+            <span style="font-size: 8px; color: #64748b; display: block;">TRANSPORTADORA</span>
+            <strong>${tr.transportadoraNome || 'ENTREGA PRÓPRIA'}</strong>
+          </div>
+          <div style="border: 1px solid #cbd5e1; padding: 4px 5px; border-radius: 3px;">
+            <span style="font-size: 8px; color: #64748b; display: block;">PEDIDO / NF-e</span>
+            <strong>#${p.numero || '-'} ${nfeVinc ? `• NF-e #${nfeVinc.numero}` : ''}</strong>
+          </div>
+        </div>
+        <div style="text-align: center; border-top: 1px dashed #94a3b8; padding-top: 5px;">
+          <div style="font-family: monospace; font-size: 12px; font-weight: 900; letter-spacing: 1.5px; margin-bottom: 3px;">${codBarras} (${qtdPecas} pçs)</div>
+          <div style="height: 20px; background: repeating-linear-gradient(90deg, #0f172a 0px, #0f172a 2px, transparent 2px, transparent 5px, #0f172a 5px, #0f172a 9px, transparent 9px, transparent 11px); width: 84%; margin: 0 auto;"></div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function abrirModalEtiquetasEmLote(pedidoIds) {
+    const pedidosAlvo = (db.pedidos || []).filter(p => pedidoIds.includes(p.id));
+    if (pedidosAlvo.length === 0) return;
+    const emp = obterEmpresaAtiva();
+    const cardsHtml = pedidosAlvo.map(p => gerarCardsEtiquetasPedidoHtml(p, emp)).join('');
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 860px; width: 95vw; max-height: 92vh; display: flex; flex-direction: column;">
+          <div class="modal-header" style="background: #0f172a; color: #fff;">
+            <div class="modal-title" style="color: #fff;">🖨️ Impressão Econômica em Lote — ${pedidosAlvo.length} Pedido(s) na Mesma Folha</div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()" style="color: #fff;">&times;</button>
+          </div>
+          <div class="modal-body" id="areaImpressaoEtiquetasLote" style="padding: 14px; overflow-y: auto; flex: 1; background: #e2e8f0;">
+            <div class="etiquetas-grid-a4" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; background: #fff; padding: 10px;">
+              ${cardsHtml}
+            </div>
+          </div>
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 11px; color: #64748b;">Layout 2 colunas (até 4 etiquetas por folha A4 para economizar papel/adesivo)</span>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-secondary btn-sm" onclick="window.ERP.fecharModal()">Fechar</button>
+              <button class="btn btn-primary btn-sm" id="btnImprimirEtiquetasLoteConfirmar" style="font-weight: 800; background: #047857; border-color: #047857;">
+                🖨️ Imprimir Folha Completa
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+    if (!modalEl) return;
+
+    let alterou = false;
+    pedidosAlvo.forEach(p => {
+      if (!p.envioStatus || p.envioStatus === 'Aguardando') {
+        p.envioStatus = 'Etiqueta Gerada';
+        alterou = true;
+      }
+    });
+    if (alterou) {
+      salvarEstado(true);
+      atualizarBadges();
+      if (document.querySelector('.menu-item.active')?.getAttribute('data-aba') === 'envios') renderizarEnvios();
+    }
+
+    modalEl.querySelector('#btnImprimirEtiquetasLoteConfirmar')?.addEventListener('click', () => {
+      const area = modalEl.querySelector('#areaImpressaoEtiquetasLote').innerHTML;
+      const win = window.open('', '_blank', 'width=880,height=720');
+      if (win) {
+        win.document.write(`<html><head><title>Etiquetas em Lote (${pedidosAlvo.length} pedidos)</title><style>@page{size:A4;margin:8mm;}body{margin:0;font-family:Arial,sans-serif;}.etiquetas-grid-a4{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}</style></head><body>${area}<script>window.onload=function(){window.print();}</script></body></html>`);
+        win.document.close();
+      }
+    });
+  }
+
+  function abrirModalEtiquetaEnvio(pedidoId) {
+    const p = (db.pedidos || []).find(x => x.id === pedidoId);
+    if (!p) return;
+    const emp = obterEmpresaAtiva();
+    const cli = (db.clientes || []).find(c => c.id === p.clienteId || c.nome === p.clienteNome) || {};
+    const tr = p.transporte || {};
+    const volTotal = Math.max(1, parseInt(tr.volumesQtd || 1, 10));
+    const especie = (tr.volumesEspecie || 'CAIXAS').toUpperCase();
+    const nfeVinc = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada');
+    const codBarras = p.codigoRastreio || `PED${String(p.numero || p.id).replace(/\D/g, '').padStart(6, '0')}`;
+    const qtdPecas = Number(p.quantidadeTotal || p.grade?.total || (p.itens || []).reduce((s, i) => s + (Number(i.grade?.total || i.quantidade || 0)), 0) || 1);
+    const peso = Number(tr.pesoBruto || (qtdPecas * 0.28)).toFixed(2);
+
+    const etiquetasHtml = Array.from({ length: volTotal }, (_, idx) => `
+      <div class="etiqueta-10x15" style="width: 380px; background: #ffffff; color: #0f172a; border: 2px solid #0f172a; border-radius: 6px; padding: 14px; font-family: Arial, sans-serif; page-break-after: always; margin: 0 auto 16px auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 10px;">
+          <div>
+            <div style="font-size: 13px; font-weight: 900; text-transform: uppercase;">${emp.nomeFantasia || emp.razaoSocial || 'CONFECÇÃO TEXFY'}</div>
+            <div style="font-size: 10px; color: #475569;">CNPJ: ${emp.cnpj || '-'} • ${emp.cidade || ''}/${emp.uf || ''}</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="background: #0f172a; color: #fff; padding: 3px 8px; font-size: 11px; font-weight: 900; border-radius: 4px;">VOL ${idx + 1}/${volTotal}</div>
+            <div style="font-size: 10px; font-weight: 700; margin-top: 2px;">${especie} • ${peso} kg</div>
+          </div>
+        </div>
+
+        <div style="background: #f8fafc; border: 1.5px solid #0f172a; border-radius: 4px; padding: 10px; margin-bottom: 10px;">
+          <div style="font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">DESTINATÁRIO</div>
+          <div style="font-size: 14px; font-weight: 900; margin: 2px 0;">${(p.clienteNome || 'CONSUMIDOR FINAL').toUpperCase()}</div>
+          <div style="font-size: 12px; line-height: 1.35;">
+            ${cli.endereco || 'Endereço não informado'}${cli.numero ? ', ' + cli.numero : ''}<br>
+            ${cli.bairro ? cli.bairro + ' — ' : ''}${cli.cidade || ''}/${cli.uf || ''}<br>
+            <strong style="font-size: 14px; letter-spacing: 0.5px;">CEP: ${cli.cep || '00000-000'}</strong>
+            ${cli.telefone ? ` • Tel: ${cli.telefone}` : ''}
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; margin-bottom: 10px;">
+          <div style="border: 1px solid #cbd5e1; padding: 6px; border-radius: 4px;">
+            <span style="font-size: 9px; color: #64748b; display: block;">TRANSPORTADORA</span>
+            <strong>${tr.transportadoraNome || 'ENTREGA PRÓPRIA / RETIRADA'}</strong>
+          </div>
+          <div style="border: 1px solid #cbd5e1; padding: 6px; border-radius: 4px;">
+            <span style="font-size: 9px; color: #64748b; display: block;">PEDIDO / NF-e</span>
+            <strong>Pedido #${p.numero || '-'} ${nfeVinc ? `• NF-e #${nfeVinc.numero}` : ''}</strong>
+          </div>
+        </div>
+
+        <div style="text-align: center; border-top: 1.5px dashed #94a3b8; padding-top: 8px;">
+          <div style="font-size: 10px; font-weight: 700; color: #475569;">RASTREIO / VOLUME (${qtdPecas} peças)</div>
+          <div style="font-family: monospace; font-size: 15px; font-weight: 900; letter-spacing: 2px; margin: 4px 0;">${codBarras}</div>
+          <div style="height: 26px; background: repeating-linear-gradient(90deg, #0f172a 0px, #0f172a 2px, transparent 2px, transparent 5px, #0f172a 5px, #0f172a 9px, transparent 9px, transparent 11px); width: 82%; margin: 0 auto;"></div>
+        </div>
+      </div>
+    `).join('');
+
+    const modalEl = criarModalCamada(`
+      <div class="modal-overlay active">
+        <div class="modal-box" style="max-width: 520px; width: 95vw; max-height: 92vh; display: flex; flex-direction: column;">
+          <div class="modal-header" style="background: #0f172a; color: #fff;">
+            <div class="modal-title" style="color: #fff;">🏷️ Etiqueta de Envio — Pedido #${p.numero} (${volTotal} vol.)</div>
+            <button class="modal-close" onclick="window.ERP.fecharModal()" style="color: #fff;">&times;</button>
+          </div>
+          <div class="modal-body" id="areaImpressaoEtiqueta" style="padding: 16px; overflow-y: auto; flex: 1; background: #e2e8f0;">
+            ${etiquetasHtml}
+          </div>
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+            <button class="btn btn-secondary btn-sm" onclick="window.ERP.fecharModal()">Fechar</button>
+            <button class="btn btn-primary btn-sm" id="btnImprimirEtiquetaEnvio" style="font-weight: 800; background: #0f172a; border-color: #0f172a;">
+              🖨️ Imprimir Etiqueta (10x15 / A4)
+            </button>
+          </div>
+        </div>
+      </div>
+    `);
+    if (!modalEl) return;
+
+    if (!p.envioStatus || p.envioStatus === 'Aguardando') {
+      p.envioStatus = 'Etiqueta Gerada';
+      salvarEstado(true);
+      atualizarBadges();
+      if (document.querySelector('.menu-item.active')?.getAttribute('data-aba') === 'envios') renderizarEnvios();
+    }
+
+    modalEl.querySelector('#btnImprimirEtiquetaEnvio')?.addEventListener('click', () => {
+      const area = modalEl.querySelector('#areaImpressaoEtiqueta').innerHTML;
+      const win = window.open('', '_blank', 'width=480,height=680');
+      if (win) {
+        win.document.write(`<html><head><title>Etiqueta Pedido #${p.numero}</title><style>body{margin:10px;font-family:Arial,sans-serif;}@media print{.etiqueta-10x15{border:2px solid #000 !important;margin:0 auto !important;}}</style></head><body>${area}<script>window.onload=function(){window.print();}</script></body></html>`);
+        win.document.close();
+      }
+    });
   }
 
   function renderizarNotasFiscais() {
@@ -34192,6 +35565,12 @@
     abrirModalDetalhesPlano,
     abrirModalUpgradePlanoPro,
     abrirModalRoteiroVendas,
+    renderizarEnvios,
+    abrirModalConfigurarEnvio,
+    abrirModalEtiquetaEnvio,
+    abrirModalEtiquetasEmLote,
+    abrirModalTransportadoras,
+    atualizarStatusEnvioPedido,
     abrirModalEmitirNfe,
     abrirVisualizadorDanfe,
     imprimirDanfeIsolada,
