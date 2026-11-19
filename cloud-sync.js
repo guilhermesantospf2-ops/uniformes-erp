@@ -16,25 +16,25 @@
            (window.location && window.location.pathname && (window.location.pathname.includes('/demo') || window.location.pathname.includes('demo.html')));
   }
 
-  // Configuração Padrão Inicial da Empresa (Prime Uniformes Oficial)
+  // Configuração Padrão Inicial Genérica (Sem dados de nenhum cliente real)
   const EMPRESA_PADRAO = {
-    razaoSocial: "PACIFIC WAVE COMPANY LTDA",
-    nomeFantasia: "Prime Uniformes",
-    cnpj: "59.441.843/0001-76",
-    inscricaoEstadual: "263.420.248",
-    telefone: "(47) 3224-1112",
-    email: "comercial@pacificwave.com.br",
-    chavePix: "59.441.843/0001-76",
-    tipoChavePix: "CNPJ",
-    endereco: "Rua Cingapura, 60",
-    complemento: "Lote 171",
-    bairro: "São Vicente",
-    cidade: "São Paulo",
+    razaoSocial: "Texfy Confecções e Uniformes Industriais Ltda",
+    nomeFantasia: "Texfy Indústria Têxtil",
+    cnpj: "34.582.910/0001-44",
+    inscricaoEstadual: "ISENTO",
+    telefone: "(19) 99999-0000",
+    email: "contato@texfy.com.br",
+    chavePix: "contato@texfy.com.br",
+    tipoChavePix: "Email",
+    endereco: "Av. Industrial Têxtil, 1000",
+    complemento: "Galpão 2",
+    bairro: "Distrito Industrial",
+    cidade: "Americana",
     uf: "SP",
-    cep: "88309-677",
+    cep: "13470-000",
     logoUrl: "assets/texfy-logo.svg?v=10.0.0",
-    rodapeProposta: "Proposta válida por 15 dias corridos. Condições padrão de fornecimento Prime Uniformes.",
-    rodapeFicha: "Ordem de Produção Oficial Prime Uniformes. Conferir grade e aviamentos antes do corte."
+    rodapeProposta: "Proposta válida por 15 dias corridos.",
+    rodapeFicha: "Ordem de Produção. Conferir grade e aviamentos antes do corte."
   };
 
   // Perfis de Acesso e Permissões

@@ -507,24 +507,21 @@
       if (!Array.isArray(db.notasFiscais)) db.notasFiscais = [];
       if (!Array.isArray(db.prestadores)) db.prestadores = [];
 
-      // Dados cadastrais oficiais da Prime Uniformes (Pacific Wave Company Ltda)
-      if (!db.empresa || !db.empresa.cnpj) {
+      // Dados iniciais isolados por conta (nunca vaza dados de outro cliente)
+      if (!db.empresa) {
         db.empresa = {
-          razaoSocial: "PACIFIC WAVE COMPANY LTDA",
-          nomeFantasia: "Prime Uniformes",
-          cnpj: "59.441.843/0001-76",
-          inscricaoEstadual: "263.420.248",
-          telefone: "(47) 3224-1112",
-          email: "comercial@pacificwave.com.br",
-          chavePix: "59.441.843/0001-76",
-          tipoChavePix: "CNPJ",
-          endereco: "Rua Cingapura, 60",
-          complemento: "Lote 171",
-          bairro: "São Vicente",
-          cidade: (db.empresa && db.empresa.cidade) ? db.empresa.cidade : "São Paulo",
-          uf: (db.empresa && db.empresa.uf) ? db.empresa.uf : "SP",
-          cep: "88309-677",
-          nfeioCompanyId: "b8ac27d9851944a8baa5ad0c134d08f9"
+          razaoSocial: isDemo ? "Texfy Confecções e Uniformes Industriais Ltda" : "Minha Confecção",
+          nomeFantasia: isDemo ? "Texfy Indústria Têxtil" : "Minha Confecção",
+          cnpj: isDemo ? "34.582.910/0001-44" : "",
+          inscricaoEstadual: "ISENTO",
+          telefone: isDemo ? "(19) 99999-0000" : "",
+          email: isDemo ? "contato@texfy.com.br" : "",
+          endereco: isDemo ? "Av. Industrial Têxtil, 1000" : "",
+          bairro: isDemo ? "Distrito Industrial" : "",
+          cidade: isDemo ? "Americana" : "",
+          uf: isDemo ? "SP" : "SP",
+          cep: isDemo ? "13470-000" : "",
+          nfeioCompanyId: ""
         };
       }
       if (!db.configFiscal) db.configFiscal = {};
@@ -27003,20 +27000,41 @@
 
   // Obtenção Blindada da Empresa Ativa (Multi-Tenant Nuvem)
   function obterEmpresaAtiva() {
-    const empPadraoPrime = {
-      razaoSocial: "PACIFIC WAVE COMPANY LTDA",
-      nomeFantasia: "Prime Uniformes",
-      cnpj: "59.441.843/0001-76",
-      inscricaoEstadual: "263.420.248",
-      telefone: "(47) 3224-1112",
-      email: "comercial@pacificwave.com.br",
-      endereco: "Rua Cingapura, 60",
-      complemento: "Lote 171",
-      bairro: "São Vicente",
-      cidade: (db && db.empresa && db.empresa.cidade) ? db.empresa.cidade : "São Paulo",
+    const empPadraoDemo = {
+      razaoSocial: "Texfy Confecções e Uniformes Industriais Ltda",
+      nomeFantasia: "Texfy Indústria Têxtil",
+      cnpj: "34.582.910/0001-44",
+      inscricaoEstadual: "ISENTO",
+      telefone: "(19) 99999-0000",
+      email: "contato@texfy.com.br",
+      endereco: "Av. Industrial Têxtil, 1000",
+      complemento: "Galpão 2",
+      bairro: "Distrito Industrial",
+      cidade: "Americana",
+      uf: "SP",
+      cep: "13470-000",
+      nfeioCompanyId: ""
+    };
+
+    if (isDemo) {
+      if (db) db.empresa = Object.assign({}, empPadraoDemo);
+      return empPadraoDemo;
+    }
+
+    const empPadraoConta = {
+      razaoSocial: (db && db.empresa && db.empresa.razaoSocial) ? db.empresa.razaoSocial : "Minha Confecção",
+      nomeFantasia: (db && db.empresa && db.empresa.nomeFantasia) ? db.empresa.nomeFantasia : "Minha Confecção",
+      cnpj: (db && db.empresa && db.empresa.cnpj) ? db.empresa.cnpj : "",
+      inscricaoEstadual: (db && db.empresa && db.empresa.inscricaoEstadual) ? db.empresa.inscricaoEstadual : "ISENTO",
+      telefone: (db && db.empresa && db.empresa.telefone) ? db.empresa.telefone : "",
+      email: (db && db.empresa && db.empresa.email) ? db.empresa.email : "",
+      endereco: (db && db.empresa && db.empresa.endereco) ? db.empresa.endereco : "",
+      complemento: (db && db.empresa && db.empresa.complemento) ? db.empresa.complemento : "",
+      bairro: (db && db.empresa && db.empresa.bairro) ? db.empresa.bairro : "",
+      cidade: (db && db.empresa && db.empresa.cidade) ? db.empresa.cidade : "",
       uf: (db && db.empresa && db.empresa.uf) ? db.empresa.uf : "SP",
-      cep: (db && db.empresa && db.empresa.cep) ? db.empresa.cep : "01001-000",
-      nfeioCompanyId: "b8ac27d9851944a8baa5ad0c134d08f9"
+      cep: (db && db.empresa && db.empresa.cep) ? db.empresa.cep : "",
+      nfeioCompanyId: (db && db.empresa && db.empresa.nfeioCompanyId) ? db.empresa.nfeioCompanyId : ""
     };
 
     let empCloud = null;
@@ -27048,8 +27066,8 @@
       return mergedDb;
     }
 
-    if (db) db.empresa = Object.assign({}, empPadraoPrime, db.empresa || {});
-    return empPadraoPrime;
+    if (db) db.empresa = Object.assign({}, empPadraoConta, db.empresa || {});
+    return empPadraoConta;
   }
 
   function reconciliarNotasFiscaisComSefaz(banco) {
@@ -28632,7 +28650,7 @@
     const nfe = (db.notasFiscais || []).find(n => n.id === nfeId);
     if (!nfe) return;
 
-    const empNome = db.empresa?.nomeFantasia || 'Prime Uniformes';
+    const empNome = db.empresa?.nomeFantasia || 'Texfy ERP Têxtil';
     const telNumeros = (nfe.cliente?.telefone || '').toString().replace(/\D/g, '');
     const chave44 = String(nfe.chaveAcesso || '').replace(/\D/g, '');
 

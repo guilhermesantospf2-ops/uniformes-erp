@@ -1,4 +1,4 @@
-const CACHE_NAME = 'texfy-erp-desktop-v10.0.7';
+const CACHE_NAME = 'texfy-erp-desktop-v10.0.8';
 
 const CORE_ASSETS = [
   '/',
