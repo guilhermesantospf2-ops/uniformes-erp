@@ -30802,6 +30802,26 @@
     if (document.querySelector('.menu-item.active')?.getAttribute('data-aba') === 'envios') renderizarEnvios();
   }
 
+  function isTransporteConfigurado(p) {
+    const tr = p?.transporte;
+    if (!tr) return false;
+    if (tr.configurado === true) return true;
+    const temNome = Boolean(tr.transportadoraNome && tr.transportadoraNome.trim().length > 0);
+    const temVol = Number(tr.volumesQtd) >= 1 && Boolean(tr.volumesEspecie);
+    return temNome && temVol;
+  }
+
+  function tentarEmitirNfeDoEnvio(pedidoId) {
+    const p = (db.pedidos || []).find(x => x.id === pedidoId);
+    if (!p) return;
+    if (!isTransporteConfigurado(p)) {
+      mostrarToast('⚠️ Passo 1 obrigatório: preencha e salve os dados de Transporte antes de emitir a NF-e!', 'yellow');
+      abrirModalConfigurarEnvio(pedidoId);
+      return;
+    }
+    abrirModalEmitirNfe(pedidoId);
+  }
+
   function renderizarEnvios() {
     if (!contentArea) return;
     const transportadoras = obterTransportadorasDb();
@@ -30970,16 +30990,23 @@
                       <div class="text-mono" style="font-size: 11px; color: #475569; margin-top: 3px;">${p.codigoRastreio ? '🔎 ' + p.codigoRastreio : 'Sem rastreio'}</div>
                     </td>
                     <td style="text-align: right; white-space: nowrap;">
-                      <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalConfigurarEnvio('${p.id}')" style="font-size: 11px; padding: 4px 8px;" title="Configurar Transportadora, Volumes e Rastreio">
-                        🚚 Transporte
-                      </button>
-                      <button type="button" class="btn btn-primary btn-sm" onclick="window.ERP.abrirModalEtiquetaEnvio('${p.id}')" style="font-size: 11px; padding: 4px 8px; background: #0f172a; border-color: #0f172a;" title="Gerar & Imprimir Etiqueta">
-                        🏷️ Etiqueta
-                      </button>
-                      ${nfeVinc
-                        ? `<button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.abrirVisualizadorDanfe('${nfeVinc.id}')" style="font-size: 11px; padding: 4px 8px; color: #047857; border-color: #10b981;">📄 DANFE</button>`
-                        : `<button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalEmitirNfe('${p.id}')" style="font-size: 11px; padding: 4px 8px; color: #0369a1; border-color: #38bdf8;">📄 Emitir NF-e</button>`
-                      }
+                      ${(() => {
+                        const transpOk = isTransporteConfigurado(p);
+                        return `
+                          <button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.abrirModalConfigurarEnvio('${p.id}')" style="font-size: 11px; padding: 4px 8px; ${transpOk ? 'border-color: #16a34a; color: #166534; background: #f0fdf4; font-weight: 700;' : 'border-color: #f59e0b; color: #92400e; background: #fffbeb; font-weight: 800;'}" title="${transpOk ? 'Transporte configurado (clique para editar)' : 'Passo 1 obrigatório: preencha os dados de transporte'}">
+                            ${transpOk ? '✅ 1. Transporte' : '🚚 1. Transporte *'}
+                          </button>
+                          <button type="button" class="btn btn-primary btn-sm" onclick="window.ERP.abrirModalEtiquetaEnvio('${p.id}')" style="font-size: 11px; padding: 4px 8px; ${transpOk ? 'background: #0f172a; border-color: #0f172a;' : 'background: #cbd5e1; border-color: #cbd5e1; color: #475569; cursor: not-allowed; opacity: 0.75;'}" title="${transpOk ? 'Passo 2: Gerar & Imprimir Etiqueta' : 'Bloqueado: preencha os dados de Transporte primeiro'}">
+                            ${transpOk ? '🏷️ 2. Etiqueta' : '🔒 2. Etiqueta'}
+                          </button>
+                          ${nfeVinc
+                            ? `<button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.abrirVisualizadorDanfe('${nfeVinc.id}')" style="font-size: 11px; padding: 4px 8px; color: #047857; border-color: #10b981;">📄 DANFE</button>`
+                            : `<button type="button" class="btn btn-secondary btn-sm" onclick="window.ERP.tentarEmitirNfeDoEnvio('${p.id}')" style="font-size: 11px; padding: 4px 8px; ${transpOk ? 'color: #0369a1; border-color: #38bdf8;' : 'color: #64748b; border-color: #cbd5e1; background: #f1f5f9; cursor: not-allowed; opacity: 0.75;'}" title="${transpOk ? 'Passo 3: Emitir NF-e' : 'Bloqueado: preencha os dados de Transporte primeiro'}">
+                                ${transpOk ? '📄 3. Emitir NF-e' : '🔒 3. NF-e'}
+                              </button>`
+                          }
+                        `;
+                      })()}
                     </td>
                   </tr>
                 `;
@@ -31363,7 +31390,27 @@
       p.valorFrete = parseFloat(modalEl.querySelector('#envValorFrete').value) || 0;
       p.codigoRastreio = modalEl.querySelector('#envRastreio').value.trim();
       const novoStatus = modalEl.querySelector('#envStatus').value;
+      const modFreteSel = modalEl.querySelector('#envModalidade').value;
       const nomeTr = modalEl.querySelector('#envTrNome').value.trim();
+      const volQtdNum = parseInt(modalEl.querySelector('#envVolQtd').value, 10) || 0;
+      const volEspStr = (modalEl.querySelector('#envVolEspecie').value || '').trim();
+      const pesoBrutoNum = parseFloat(modalEl.querySelector('#envPesoBruto').value) || 0;
+
+      if (modFreteSel !== '9' && !nomeTr) {
+        alert('Informe ou selecione a Transportadora antes de salvar.');
+        modalEl.querySelector('#envTrNome')?.focus();
+        return;
+      }
+      if (volQtdNum < 1 || !volEspStr) {
+        alert('Informe a Quantidade e a Espécie dos volumes (ex: 1 CAIXAS).');
+        return;
+      }
+      if (pesoBrutoNum <= 0) {
+        alert('Informe o Peso Bruto (kg) dos volumes.');
+        modalEl.querySelector('#envPesoBruto')?.focus();
+        return;
+      }
+      const nomeTrFinal = nomeTr || (modFreteSel === '9' ? 'RETIRADA NO LOCAL / ENTREGA PRÓPRIA' : '');
       const salvarCad = modalEl.querySelector('#chkSalvarTrNoCadastro')?.checked;
       if (salvarCad && nomeTr) {
         const listaTr = obterTransportadorasDb();
@@ -31383,8 +31430,9 @@
       }
 
       p.transporte = {
-        modalidade: modalEl.querySelector('#envModalidade').value,
-        transportadoraNome: modalEl.querySelector('#envTrNome').value.trim(),
+        configurado: true,
+        modalidade: modFreteSel,
+        transportadoraNome: nomeTrFinal,
         transportadoraCnpj: modalEl.querySelector('#envTrCnpj').value.trim(),
         transportadoraIe: modalEl.querySelector('#envTrIe').value.trim(),
         transportadoraEndereco: modalEl.querySelector('#envTrEnd').value.trim(),
@@ -31453,6 +31501,11 @@
   }
 
   function abrirModalEtiquetasEmLote(pedidoIds) {
+    const pedidosSemTransp = (db.pedidos || []).filter(p => pedidoIds.includes(p.id) && !isTransporteConfigurado(p));
+    if (pedidosSemTransp.length > 0) {
+      alert('Antes de imprimir etiquetas em lote, preencha os dados de Transporte dos pedidos: #' + pedidosSemTransp.map(x => x.numero).join(', #'));
+      return;
+    }
     const pedidosAlvo = (db.pedidos || []).filter(p => pedidoIds.includes(p.id));
     if (pedidosAlvo.length === 0) return;
     const emp = obterEmpresaAtiva();
@@ -31510,6 +31563,11 @@
   function abrirModalEtiquetaEnvio(pedidoId) {
     const p = (db.pedidos || []).find(x => x.id === pedidoId);
     if (!p) return;
+    if (!isTransporteConfigurado(p)) {
+      mostrarToast('⚠️ Passo 1 obrigatório: preencha e salve os dados de Transporte antes de gerar a Etiqueta!', 'yellow');
+      abrirModalConfigurarEnvio(pedidoId);
+      return;
+    }
     const emp = obterEmpresaAtiva();
     const cli = (db.clientes || []).find(c => c.id === p.clienteId || c.nome === p.clienteNome) || {};
     const tr = p.transporte || {};
@@ -35571,6 +35629,8 @@
     abrirModalEtiquetasEmLote,
     abrirModalTransportadoras,
     atualizarStatusEnvioPedido,
+    tentarEmitirNfeDoEnvio,
+    isTransporteConfigurado,
     abrirModalEmitirNfe,
     abrirVisualizadorDanfe,
     imprimirDanfeIsolada,
