@@ -16121,13 +16121,6 @@
                 `;
               }).join('')}
             </tbody>
-            <tfoot>
-              <tr style="background: #f1f5f9; font-weight: 800; border-top: 2px solid #94a3b8;">
-                <td colspan="4" style="padding: 6px 6px; text-align: right;">SOMA TOTAL DO CORTE:</td>
-                <td style="padding: 6px 6px;">${formatarGradeSelecionadaHtml(os.grade, 'badge-blue')}</td>
-                <td style="padding: 6px 6px; text-align: center; color: #047857; background: #e2e8f0; font-size: 12px;" class="text-mono">${os.quantidadeTotal} pçs</td>
-              </tr>
-            </tfoot>
           </table>
         </div>
         `;
