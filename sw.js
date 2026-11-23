@@ -1,4 +1,4 @@
-const CACHE_NAME = 'texfy-erp-desktop-v10.0.9';
+const CACHE_NAME = 'texfy-erp-desktop-v10.1.1';
 
 const CORE_ASSETS = [
   '/',
@@ -11,7 +11,7 @@ const CORE_ASSETS = [
   '/coleta',
   '/coleta.html',
   '/style.css?v=10.0.0',
-  '/app.js?v=10.0.0',
+  '/app.js?v=10.1.1',
   '/cloud-sync.js?v=10.0.0',
   '/nesting-engine.js?v=10.0.0',
   '/market-benchmark.js?v=10.0.0',

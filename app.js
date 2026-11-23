@@ -3593,6 +3593,9 @@
     switch (aba) {
       case 'abertura':
         renderizarAbertura();
+        if (window.ERP && typeof window.ERP.renderizarChecklistOnboarding === 'function') {
+          window.ERP.renderizarChecklistOnboarding();
+        }
         break;
       case 'pedidos':
         renderizarPedidos();
@@ -3626,6 +3629,16 @@
         break;
       case 'envios':
         renderizarEnvios();
+        break;
+      case 'faccoes':
+        if (window.ERP && typeof window.ERP.renderizarFaccoesMrp === 'function') {
+          window.ERP.renderizarFaccoesMrp();
+        }
+        break;
+      case 'gestao':
+        if (window.ERP && typeof window.ERP.renderizarGestaoContador === 'function') {
+          window.ERP.renderizarGestaoContador();
+        }
         break;
       case 'nfe':
         renderizarNotasFiscais();
@@ -11901,7 +11914,7 @@
       const resumoPersonalizacoes = itensOrcamento.map(it => {
         const apps = (it.aplicacoes && it.aplicacoes.length > 0)
           ? it.aplicacoes.map(a => `${a.local} (${a.tecnica})`).join(', ')
-          : 'Peça Lisa';
+          : 'Estampa conforme Mockup';
         return `${it.produtoNome.split(' ')[0]}: ${apps}`;
       }).join(' • ');
 
@@ -13134,7 +13147,7 @@
 
     const ehApenasPecaLisa = todasAplicacoes.length === 0 && (
       (dadosBase.tipoPersonalizacao && dadosBase.tipoPersonalizacao.toLowerCase().includes('lisa')) ||
-      (dadosBase.itens && dadosBase.itens.length > 0 && dadosBase.itens.every(it => !it.aplicacoes || it.aplicacoes.length === 0 || it.aplicacoes.every(a => a.tecnica === 'lisa')))
+      (dadosBase.itens && dadosBase.itens.length > 0 && dadosBase.itens.every(it => Array.isArray(it.aplicacoes) && it.aplicacoes.length > 0 && it.aplicacoes.every(a => a.tecnica === 'lisa')))
     );
 
     let mockupDataUrl = dadosBase.mockupUrl || window.ERP_MOCKUPS.gerarMockupSvg(dadosBase.prod ? dadosBase.prod.nome : dadosBase.produtoNome, "#1e3a8a", "#ffffff", (dadosBase.cliente ? dadosBase.cliente.nomeFantasia : dadosBase.clienteNome).substring(0, 6));
@@ -14290,7 +14303,7 @@
         tecidoEspecificacao: dadosBase.prod ? dadosBase.prod.tipoMalhaPadrao : "Conforme Ficha",
         tipoPersonalizacao: artesLista.length > 0
           ? artesLista.map(a => `${a.modeloNome ? `[${a.modeloNome.split(' ')[0]}] ` : ''}${a.local} (${a.tecnica})`).join(' + ')
-          : (dadosBase.tipoPersonalizacao || 'Peça Lisa'),
+          : (dadosBase.tipoPersonalizacao || 'Estampa conforme Mockup'),
         costureiraId: costureiraObj.id,
         costureiraNome: costureiraObj.nome,
         mockupUrl: mockupDataUrl,
@@ -14885,7 +14898,7 @@
             const itMockup = it.mockupUrl || p.mockupUrl || (window.ERP_MOCKUPS && typeof window.ERP_MOCKUPS.gerarMockupSvg === 'function' ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome || p.produtoNome || 'Uniforme', '#1e3a8a', '#ffffff', '') : '');
             const appsHtml = (it.aplicacoes && it.aplicacoes.length > 0)
               ? it.aplicacoes.map(a => `• <strong>${a.local}:</strong> ${a.tecnica}`).join('<br>')
-              : '<span style="color: #64748b; font-style: italic;">Peça Lisa</span>';
+              : '<span style="color: #0284c7; font-weight: 600;">Estampa conforme Mockup</span>';
             const tamsDet = extrairLinhasTamanhosComPreco(it);
             const temPrecosVar = tamsDet.length > 0 && tamsDet.some(t => Math.abs(t.precoUnit - tamsDet[0].precoUnit) > 0.009);
             const somaTamsExata = tamsDet.reduce((acc, t) => acc + (t.subtotal || 0), 0);
@@ -16041,11 +16054,24 @@
             ${formatarGradeSelecionadaHtml(itAtivo.grade, 'badge-blue')}
           </div>
         </div>
-      ` : ((itensLista.length > 1) ? `
+      ` : (() => {
+        const itensTabelaOs = (itensLista && itensLista.length > 0)
+          ? itensLista
+          : [{
+              produtoNome: os.produto || (pedido && pedido.produtoNome) || 'Uniforme',
+              tecidoEspecificacao: (pedido && pedido.tecidoEspecificacao) || '',
+              corPrincipal: corTec || 'A Definir',
+              corTecido: corTec || 'A Definir',
+              observacoesCoresDetalhes: obsCores || '',
+              aplicacoes: os.artesAplicacao || [],
+              grade: os.grade || {},
+              mockupUrl: os.mockupUrl || (pedido && pedido.mockupUrl) || ''
+            }];
+        return `
         <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 4px; padding: 10px; margin-bottom: 12px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <strong style="color: #0f172a; font-size: 11.5px;">GRADE OFICIAL DE CORTE POR MODELO (${itensLista.length} MODELOS):</strong>
+              <strong style="color: #0f172a; font-size: 11.5px;">GRADE OFICIAL DE CORTE POR MODELO (${itensTabelaOs.length} ${itensTabelaOs.length === 1 ? 'MODELO' : 'MODELOS'}):</strong>
               ${!os.desmembrada ? `
                 <button class="no-print btn btn-xs" type="button"  onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="background: #fef08a; color: #854d0e; border: 1.5px solid #facc15; font-weight: 800; font-size: 10.5px; padding: 2px 7px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="Repartir modelos entre costureiras">
                   ✂️ Repartir Pedido
@@ -16057,15 +16083,20 @@
           <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
             <thead>
               <tr style="background: #e2e8f0; color: #1e293b;">
-                <th style="padding: 5px 6px; text-align: center; width: 10%;">Mockup</th>
-                <th style="padding: 5px 6px; text-align: left; width: 28%;">Modelo / Especificação</th>
-                <th style="padding: 5px 6px; text-align: left; width: 22%;">Cor / Detalhes</th>
-                <th style="padding: 5px 6px; text-align: left; width: 28%;">Tamanhos para Corte</th>
-                <th style="padding: 5px 6px; text-align: center; width: 12%; background: #cbd5e1;">Total</th>
+                <th style="padding: 5px 6px; text-align: center; width: 9%;">Mockup</th>
+                <th style="padding: 5px 6px; text-align: left; width: 24%;">Modelo / Especificação</th>
+                <th style="padding: 5px 6px; text-align: left; width: 17%;">Cor / Detalhes</th>
+                <th style="padding: 5px 6px; text-align: left; width: 18%;">Personalização</th>
+                <th style="padding: 5px 6px; text-align: left; width: 22%;">Tamanhos para Corte</th>
+                <th style="padding: 5px 6px; text-align: center; width: 10%; background: #cbd5e1;">Total</th>
               </tr>
             </thead>
             <tbody>
-              ${itensLista.map((it, idx) => `
+              ${itensTabelaOs.map((it, idx) => {
+                const appsItemHtml = (it.aplicacoes && it.aplicacoes.length > 0)
+                  ? it.aplicacoes.map(a => `• <strong>${a.local}:</strong> ${a.tecnica || 'DTF'}`).join('<br>')
+                  : '<span style="color: #0284c7; font-weight: 600;">Estampa conforme Mockup</span>';
+                return `
                 <tr style="border-bottom: 1px solid #e2e8f0;">
                   <td style="padding: 4px; text-align: center; vertical-align: middle;">
                     <img src="${it.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(it.produtoNome || 'Uniforme', it.corPrincipal || '#1e3a8a', '#ffffff', (os.cliente || 'TEXFY').substring(0, 6)) : '')}" 
@@ -16082,39 +16113,25 @@
                     </label>
                   </td>
                   <td style="padding: 6px 6px;"><strong>${idx + 1}. ${it.produtoNome}</strong><br><span style="font-size: 10px; color: #64748b;">${it.tecidoEspecificacao || ''}</span></td>
-                  <td style="padding: 6px 6px;"><span style="color: #1e3a8a; font-weight: 700;">${it.corPrincipal || it.corTecido || 'A Definir'}</span>${it.observacoesCoresDetalhes ? `<br><span style="font-size: 9.5px; color: #b45309;">${it.observacoesCoresDetalhes}</span>` : ''}</td>
-                  <td style="padding: 6px 6px;">${formatarGradeSelecionadaHtml(it.grade, 'badge')}</td>
-                  <td style="padding: 6px 6px; text-align: center; font-weight: 800; background: #f1f5f9;" class="text-mono">${it.grade?.total || 0} pçs</td>
+                  <td style="padding: 6px 6px;"><span style="color: #1e3a8a; font-weight: 700;">${it.corPrincipal || it.corTecido || corTec || 'A Definir'}</span>${(it.observacoesCoresDetalhes || obsCores) ? `<br><span style="font-size: 9.5px; color: #b45309;">${it.observacoesCoresDetalhes || obsCores}</span>` : ''}</td>
+                  <td style="padding: 6px 6px; font-size: 10.5px;">${appsItemHtml}</td>
+                  <td style="padding: 6px 6px;">${formatarGradeSelecionadaHtml(it.grade || os.grade, 'badge')}</td>
+                  <td style="padding: 6px 6px; text-align: center; font-weight: 800; background: #f1f5f9;" class="text-mono">${it.grade?.total || os.quantidadeTotal || 0} pçs</td>
                 </tr>
-              `).join('')}
+                `;
+              }).join('')}
             </tbody>
             <tfoot>
               <tr style="background: #f1f5f9; font-weight: 800; border-top: 2px solid #94a3b8;">
-                <td colspan="3" style="padding: 6px 6px; text-align: right;">SOMA TOTAL DO CORTE:</td>
+                <td colspan="4" style="padding: 6px 6px; text-align: right;">SOMA TOTAL DO CORTE:</td>
                 <td style="padding: 6px 6px;">${formatarGradeSelecionadaHtml(os.grade, 'badge-blue')}</td>
                 <td style="padding: 6px 6px; text-align: center; color: #047857; background: #e2e8f0; font-size: 12px;" class="text-mono">${os.quantidadeTotal} pçs</td>
               </tr>
             </tfoot>
           </table>
         </div>
-      ` : `
-        <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px 12px; border-radius: 4px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-          <div>
-            <strong style="color: #0f172a; display: block; margin-bottom: 4px; font-size: 11px;">GRADE OFICIAL DE CORTE & FECHAMENTO (SELECIONADOS):</strong>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-              ${formatarGradeSelecionadaHtml(os.grade, 'badge')}
-            </div>
-          </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            ${!os.desmembrada ? `
-              <button class="no-print btn btn-xs" type="button"  onclick="window.ERP.abrirModalRepartirOS('${os.id}')" style="background: #fef08a; color: #854d0e; border: 1.5px solid #facc15; font-weight: 800; font-size: 10.5px; padding: 3px 8px; border-radius: 4px; cursor: pointer;" title="Dividir produção desta OS entre costureiras">
-                ✂️ Repartir Pedido
-              </button>
-            ` : ''}
-            <span style="color: #047857; font-weight: 800; font-size: 13px;" class="text-mono">TOTAL: ${os.quantidadeTotal} pçs</span>
-          </div>
-        </div>
-      `)}
+        `;
+      })()}
 
       <!-- Relação Oficial de Atletas / Uniforme de Time (se houver) -->
       ${(listaJogadores && listaJogadores.length > 0) ? `
@@ -34758,7 +34775,62 @@
 
   function abrirModalRepartirOS(osIdOuNum) {
     if (typeof fecharModal === 'function') fecharModal();
-    const os = (db.ordensServico || []).find(o => o.id === osIdOuNum || (o.pedidoNumero != null && o.pedidoNumero.toString() === osIdOuNum.toString()));
+    const idStr = String(osIdOuNum || '').trim();
+    const numLimpo = idStr.replace(/\D/g, '');
+    let os = (db.ordensServico || []).find(o =>
+      o.id === idStr ||
+      (o.pedidoNumero != null && String(o.pedidoNumero) === idStr) ||
+      (!o.subOs && numLimpo && o.pedidoNumero != null && String(o.pedidoNumero) === numLimpo) ||
+      (!o.subOs && o.pedidoId && (o.pedidoId === idStr || o.pedidoId === `PED-${numLimpo}`))
+    );
+    if (!os) {
+      const p = (db.pedidos || []).find(ped =>
+        ped.id === idStr ||
+        (ped.numero != null && String(ped.numero) === idStr) ||
+        (numLimpo && ped.numero != null && String(ped.numero) === numLimpo) ||
+        (numLimpo && ped.id === `PED-${numLimpo}`)
+      );
+      if (p) {
+        const corTec = p.corTecido || p.corPrincipal || 'A Definir';
+        const obsCores = p.observacoesCoresDetalhes || '';
+        const numPed = p.numero || numLimpo || Math.floor(100 + Math.random() * 900);
+        const totalPecas = p.grade?.total || (Array.isArray(p.itens) ? p.itens.reduce((acc, it) => acc + (it.grade?.total || 0), 0) : 0) || 1;
+        os = {
+          id: `OS-${numPed}`,
+          pedidoId: p.id || `PED-${numPed}`,
+          pedidoNumero: numPed,
+          cliente: p.clienteNome || p.cliente || 'Cliente',
+          produto: p.produtoNome || p.produto || (p.itens && p.itens[0]?.produtoNome) || 'Uniforme',
+          itens: Array.isArray(p.itens) && p.itens.length > 0 ? JSON.parse(JSON.stringify(p.itens)) : [],
+          corTecido: corTec,
+          observacoesCoresDetalhes: obsCores,
+          mockupUrl: p.mockupUrl || (p.itens && p.itens[0]?.mockupUrl) || '',
+          quantidadeTotal: totalPecas,
+          grade: p.grade || (p.itens && p.itens[0]?.grade) || { total: totalPecas },
+          tipoPedidoModalidade: p.tipoPedidoModalidade || 'padrao',
+          jogadores: Array.isArray(p.jogadores) ? JSON.parse(JSON.stringify(p.jogadores)) : [],
+          etapaAtual: p.etapaProducao || 'Corte',
+          costureiraDesignada: p.costureiraNome || 'Oficina Interna',
+          responsavelCorte: (db.empresa && db.empresa.encarregadoCortePadrao) ? db.empresa.encarregadoCortePadrao : 'A Definir',
+          dataEntradaCorte: p.dataCriacao || new Date().toISOString().split('T')[0],
+          prazoPedidoDias: p.prazoPedidoDias || 15,
+          prazoInternoDias: p.prazoInternoDias || 10,
+          dataPrevisaoEntrega: p.dataPrevisaoEntrega || (typeof calcularDataFuturaDiasUteis === 'function' ? calcularDataFuturaDiasUteis(15) : ''),
+          dataMetaInterna: p.dataMetaInterna || (typeof calcularDataFuturaDiasUteis === 'function' ? calcularDataFuturaDiasUteis(10) : ''),
+          dtfLarguraRolo: p.dtfLarguraRolo || 58,
+          tecidoConsumidoKg: (totalPecas * (parseFloat(p.consumoRealComPerda) || 0.28)).toFixed(1),
+          artesAplicacao: p.artesAnexadas || [],
+          instrucoesCorte: `Enfesto e corte padrão para ${totalPecas} peças. Cor: ${corTec}.${obsCores ? ' ATENÇÃO AOS DETALHES DE COR: ' + obsCores : ''}`,
+          instrucoesCostura: `Costura reforçada de ombro a ombro.${obsCores ? ' DETALHES DE CONFECÇÃO: ' + obsCores : ''}`,
+          statusBordado: 'Pendente',
+          statusCostura: 'Pendente',
+          statusAcabamento: 'Pendente'
+        };
+        if (!Array.isArray(db.ordensServico)) db.ordensServico = [];
+        db.ordensServico.unshift(os);
+        salvarEstado();
+      }
+    }
     if (!os) {
       mostrarToast('Ordem de Serviço não encontrada.', 'red');
       return;
@@ -34799,6 +34871,14 @@
       });
       return tAtivos.length > 0 ? tAtivos : ['UN'];
     }
+
+    const prestadoresDisponiveis = (typeof obterListaPrestadoresDisponiveis === 'function')
+      ? obterListaPrestadoresDisponiveis()
+      : (db.costureiras || [{ id: 'PREST-001', nome: os.costureiraDesignada || 'Responsável Padrão', valorCosturaPeca: 7.50 }]);
+
+    const costureirasDisponiveis = prestadoresDisponiveis.filter(p => (p.setor || '').toLowerCase().includes('costura')).length > 0
+      ? prestadoresDisponiveis.filter(p => (p.setor || '').toLowerCase().includes('costura'))
+      : prestadoresDisponiveis;
 
     // Inicialização flexível dos lotes de trabalho
     let lotesTrabalho = [];
@@ -34870,14 +34950,6 @@
     }
 
     fecharModalRepartir();
-
-    const prestadoresDisponiveis = (typeof obterListaPrestadoresDisponiveis === 'function')
-      ? obterListaPrestadoresDisponiveis()
-      : (db.costureiras || [{ id: 'PREST-001', nome: os.costureiraDesignada || 'Responsável Padrão', valorCosturaPeca: 7.50 }]);
-
-    const costureirasDisponiveis = prestadoresDisponiveis.filter(p => (p.setor || '').toLowerCase().includes('costura')).length > 0
-      ? prestadoresDisponiveis.filter(p => (p.setor || '').toLowerCase().includes('costura'))
-      : prestadoresDisponiveis;
 
     const setoresFabricaDisponiveis = [
       { id: 'corte', nome: '1. Mesa de Corte' },
@@ -34977,7 +35049,7 @@
       let totalValorGeral = 0;
 
       lotesTrabalho.forEach((lote, lIdx) => {
-        const itemModelo = itensLista[lote.modeloIndice || 0] || itensLista[0];
+        const itemModelo = itensLista[lote.modeloIndice || 0] || itensLista[0] || { produtoNome: os.produto || 'Uniforme', grade: os.grade || {}, corPrincipal: os.corTecido || 'A Definir', mockupUrl: os.mockupUrl || '' };
         const tAtivos = extrairTamanhosDoModelo(itemModelo);
         let totLote = 0;
 
@@ -35054,7 +35126,7 @@
 
       container.innerHTML = lotesTrabalho.map((lote, lIdx) => {
         const letra = lote.letra || gerarLetraLote(lIdx);
-        const itemModelo = itensLista[lote.modeloIndice || 0] || itensLista[0];
+        const itemModelo = itensLista[lote.modeloIndice || 0] || itensLista[0] || { produtoNome: os.produto || 'Uniforme', grade: os.grade || {}, corPrincipal: os.corTecido || 'A Definir', mockupUrl: os.mockupUrl || '' };
         const corTec = itemModelo.corPrincipal || itemModelo.corTecido || os.corTecido || 'A Definir';
         const mockSrc = lote.mockupUrl || itemModelo.mockupUrl || os.mockupUrl || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg(lote.produtoNome, '#1e3a8a', '#ffffff', (os.cliente || 'TEXFY').substring(0, 6)) : '');
         const totPecas = lote.grade?.total || 0;
@@ -35401,9 +35473,11 @@
         const costObj = respObj;
         const selSetor = document.querySelector(`.sel-setor-repartir[data-lote="${idx}"]`);
         const setorDestino = selSetor ? selSetor.value : (lote.setorDestino || '4. Costura & Fechamento');
-        const valPeca = parseFloat(inpVal ? inpVal.value : lote.valorCosturaPeca) || 7.50;
+        const inpVal = document.querySelector(`.inp-valor-repartir[data-lote="${idx}"]`);
+        const parsedVal = parseFloat(inpVal ? inpVal.value : lote.valorCosturaPeca);
+        const valPeca = Number.isFinite(parsedVal) ? parsedVal : 7.50;
         const totalPecasMod = lote.grade?.total || 0;
-        const itemModelo = itensLista[lote.modeloIndice || 0] || itensLista[0];
+        const itemModelo = itensLista[lote.modeloIndice || 0] || itensLista[0] || { produtoNome: os.produto || 'Uniforme', grade: os.grade || {}, corPrincipal: os.corTecido || 'A Definir', mockupUrl: os.mockupUrl || '' };
         const modNome = lote.produtoNome;
         const corTec = itemModelo.corPrincipal || itemModelo.corTecido || os.corTecido || 'A Definir';
         const obsCores = itemModelo.observacoesCoresDetalhes || os.observacoesCoresDetalhes || '';
@@ -35565,6 +35639,9 @@
     obterAbaAtiva: () => abaAtiva || 'abertura',
     formatarMoeda,
     mostrarToast,
+    salvarEstado,
+    atualizarBadges,
+    gerarXmlNfePadrao400,
     criarModalCamada,
     abrirModalCobrancaPix: (pedidoId, valor, tipo) => {
       if (window.PixEngine) {
