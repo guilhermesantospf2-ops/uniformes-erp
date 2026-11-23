@@ -15136,7 +15136,7 @@
       <div style="padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 10.5px; color: #475569; line-height: 1.45;">
         <strong style="color: #0f172a;">CONDIÇÕES GERAIS DE FORNECIMENTO:</strong><br>
         • Pagamento: ${p.condicaoPagamento || emp.rodapeProposta || '50% de sinal na aprovação do pedido e 50% restante na retirada/entrega.'}<br>
-        • Chave PIX: <strong>${emp.chavePix || 'A combinar'}</strong> (${emp.tipoChavePix || 'PIX'} - Favorecido: ${emp.nomeFantasia || emp.razaoSocial})<br>
+        • Chave PIX: <strong>${emp.chavePix || 'A combinar'}</strong>${emp.chavePix && emp.tipoChavePix ? ` (${emp.tipoChavePix})` : ''}<br>
         • Prazo de Entrega: Prometido para <strong>${dataPrev}</strong> (${prazoDias} dias úteis após confirmação de sinal e artes).<br>
         • Validade desta proposta: 15 dias corridos a partir da data de emissão.
       </div>
