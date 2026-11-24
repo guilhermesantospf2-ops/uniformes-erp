@@ -609,9 +609,20 @@
           };
         } else {
           const errFinal = resData?.erro || 'Erro ao processar na SEFAZ / NFE.io';
+          const d = resData?.dados || {};
+          const chaveErr = resData?.chaveAcesso || d.authorization?.accessKey || '';
+          let numErr = resData?.numero || d.number || null;
+          if (!numErr && chaveErr && chaveErr.length === 44) {
+            numErr = parseInt(chaveErr.substring(25, 34), 10);
+          }
           return {
             sucesso: false,
             simulado: false,
+            nfeioId: resData?.nfeioId || d.id || '',
+            numero: numErr || nfe.numero,
+            serie: resData?.serie || d.serie || nfe.serie || 1,
+            chaveAcesso: chaveErr,
+            eventos: resData?.eventos || d.lastEvents?.events || [],
             erro: errFinal,
             mensagem: `Falha na SEFAZ: ${errFinal}`
           };

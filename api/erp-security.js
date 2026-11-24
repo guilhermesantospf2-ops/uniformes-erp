@@ -1307,9 +1307,9 @@ module.exports = async function handler(req, res) {
 
         const invId = postData.id;
 
-        // Polling inteligente (até 3 tentativas de 2s) para aguardar o retorno síncrono/assíncrono da SEFAZ
+        // Polling inteligente (até 6 tentativas de 2.2s = ~13s) para aguardar o retorno da SEFAZ
         let invDetails = null;
-        for (let tent = 0; tent < 3; tent++) {
+        for (let tent = 0; tent < 6; tent++) {
           await new Promise(r => setTimeout(r, 2200));
           try {
             const getRes = await fetchFn(`https://api.nfse.io/v2/companies/${companyId}/productinvoices/${invId}?environment=${ambiente}`, {
@@ -1318,7 +1318,7 @@ module.exports = async function handler(req, res) {
             if (getRes.ok) {
               invDetails = await getRes.json();
               const st = invDetails.status;
-              if (st === 'Issued' || st === 'Authorized' || st === 'IssueFailed' || st === 'Cancelled' || invDetails.authorization?.accessKey) {
+              if (st === 'Issued' || st === 'Authorized' || st === 'IssueFailed' || st === 'Error' || st === 'Cancelled' || invDetails.authorization?.accessKey) {
                 break;
               }
               const hasFail = (invDetails.lastEvents?.events || []).some(e => e.type === 'AuthorizationWithFailed');
@@ -1335,22 +1335,41 @@ module.exports = async function handler(req, res) {
           protocolo = authEvent.data.protocolNumber;
         }
 
-        const failEvent = (details.lastEvents?.events || []).find(e => e.type === 'AuthorizationWithFailed');
-        if ((failEvent && failEvent.data?.message) || details.status === 'IssueFailed') {
-          return res.status(200).json({
-            sucesso: false,
-            erro: failEvent?.data?.message || 'Rejeição na validação da SEFAZ. Verifique os dados do destinatário e produtos.',
-            nfeioId: invId,
-            dados: details
-          });
-        }
-
         let numeroAutorizado = details.number || null;
         if (!numeroAutorizado && chaveAcesso && chaveAcesso.length === 44) {
           numeroAutorizado = parseInt(chaveAcesso.substring(25, 34), 10);
         }
         if (!numeroAutorizado && payload.number) {
           numeroAutorizado = parseInt(payload.number, 10);
+        }
+
+        const failEvent = (details.lastEvents?.events || []).find(e => e.type === 'AuthorizationWithFailed');
+        if ((failEvent && failEvent.data?.message) || details.status === 'IssueFailed' || details.status === 'Error') {
+          return res.status(200).json({
+            sucesso: false,
+            erro: failEvent?.data?.message || details.statusReason || 'Rejeição na validação da SEFAZ. Verifique os dados do destinatário e produtos.',
+            nfeioId: invId,
+            numero: numeroAutorizado,
+            serie: details.serie || 1,
+            chaveAcesso: chaveAcesso || '',
+            eventos: details.lastEvents?.events || [],
+            dados: details
+          });
+        }
+
+        // Nunca retorna sucesso se a SEFAZ ainda não autorizou de fato
+        const realmenteAutorizada = (details.status === 'Issued' || details.status === 'Authorized' || !!chaveAcesso || !!authEvent);
+        if (!realmenteAutorizada) {
+          return res.status(200).json({
+            sucesso: false,
+            erro: `A SEFAZ não confirmou autorização no prazo (Status: ${details.status || 'Processando'}). Confira o status na bancada de Notas Fiscais.`,
+            nfeioId: invId,
+            numero: numeroAutorizado,
+            serie: details.serie || 1,
+            chaveAcesso: chaveAcesso || '',
+            eventos: details.lastEvents?.events || [],
+            dados: details
+          });
         }
 
         // Resolve as URLs assinadas oficiais (PDF e XML)

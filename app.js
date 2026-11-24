@@ -27306,24 +27306,75 @@
           mudou = true;
         }
 
-        // Reconcilia status das notas retornadas pela SEFAZ
+        // Reconcilia status das notas retornadas pela SEFAZ (inclusive rejeitadas/falhas)
         if (Array.isArray(res.notasSefaz) && Array.isArray(db.notasFiscais)) {
           res.notasSefaz.forEach(inv => {
-            const nfLocal = db.notasFiscais.find(n => n.nfeioId === inv.id || (inv.number && Number(n.numero) === Number(inv.number)));
+            const failEv = (inv.lastEvents?.events || []).find(e => e.type === 'AuthorizationWithFailed');
+            const isFalhaSefaz = inv.status === 'IssueFailed' || inv.status === 'Error' || Boolean(failEv);
+            const msgFalha = failEv?.data?.message || inv.statusReason || 'Rejeição na SEFAZ';
+            const chaveInv = inv.authorization?.accessKey || '';
+            const numInv = parseInt(inv.number || (chaveInv.length === 44 ? chaveInv.substring(25, 34) : 0), 10) || 0;
+
+            let nfLocal = db.notasFiscais.find(n => (inv.id && n.nfeioId === inv.id) || (numInv > 0 && Number(n.numero) === numInv));
             if (nfLocal) {
+              if (inv.id && !nfLocal.nfeioId) {
+                nfLocal.nfeioId = inv.id;
+                mudou = true;
+              }
+              if (chaveInv && nfLocal.chaveAcesso !== chaveInv) {
+                nfLocal.chaveAcesso = chaveInv;
+                mudou = true;
+              }
               if (inv.status === 'Cancelled' && nfLocal.statusSefaz !== 'cancelada') {
                 nfLocal.statusSefaz = 'cancelada';
                 mudou = true;
-              } else if ((inv.status === 'Issued' || inv.status === 'Authorized') && nfLocal.statusSefaz !== 'cancelada') {
-                if (inv.number && nfLocal.numero !== Number(inv.number)) {
-                  nfLocal.numero = Number(inv.number);
+              } else if (isFalhaSefaz && nfLocal.statusSefaz !== 'cancelada' && nfLocal.statusSefaz !== 'inutilizada') {
+                if (nfLocal.statusSefaz !== 'rejeitada' || nfLocal.motivoRejeicao !== msgFalha) {
+                  nfLocal.statusSefaz = 'rejeitada';
+                  nfLocal.motivoRejeicao = msgFalha;
+                  nfLocal.eventosSefaz = inv.lastEvents?.events || [];
                   mudou = true;
                 }
-                if (inv.authorization?.accessKey && nfLocal.chaveAcesso !== inv.authorization.accessKey) {
-                  nfLocal.chaveAcesso = inv.authorization.accessKey;
+              } else if ((inv.status === 'Issued' || inv.status === 'Authorized') && nfLocal.statusSefaz !== 'cancelada') {
+                if (nfLocal.statusSefaz !== 'autorizada') {
+                  nfLocal.statusSefaz = 'autorizada';
+                  delete nfLocal.motivoRejeicao;
+                  mudou = true;
+                }
+                if (numInv > 0 && nfLocal.numero !== numInv) {
+                  nfLocal.numero = numInv;
                   mudou = true;
                 }
               }
+            } else if (numInv > 0 && (isFalhaSefaz || inv.status === 'Issued' || inv.status === 'Authorized' || inv.status === 'Cancelled')) {
+              const statusMapeado = inv.status === 'Cancelled' ? 'cancelada' : (isFalhaSefaz ? 'rejeitada' : 'autorizada');
+              db.notasFiscais.unshift({
+                id: `nfe_sync_${inv.id || numInv}`,
+                numero: numInv,
+                serie: String(inv.serie || 1),
+                modelo: '55',
+                nfeioId: inv.id || '',
+                chaveAcesso: chaveInv,
+                dataEmissao: inv.createdOn ? new Date(inv.createdOn).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR'),
+                statusSefaz: statusMapeado,
+                motivoRejeicao: isFalhaSefaz ? msgFalha : undefined,
+                eventosSefaz: inv.lastEvents?.events || [],
+                cfop: '5101',
+                cliente: {
+                  nome: inv.buyer?.name || 'Destinatário',
+                  documento: inv.buyer?.federalTaxNumber || '-',
+                  endereco: {
+                    cidade: inv.buyer?.address?.city?.name || '',
+                    uf: inv.buyer?.address?.state || ''
+                  }
+                },
+                totais: {
+                  valorTotal: Number(inv.totals?.icms?.invoiceAmount || inv.totalAmount || 0),
+                  valorImpostosSimples: 0
+                }
+              });
+              db.notasFiscais.sort((a, b) => (parseInt(b.numero, 10) || 0) - (parseInt(a.numero, 10) || 0));
+              mudou = true;
             }
           });
         }
@@ -27335,6 +27386,9 @@
 
         if (mudou) {
           salvarEstado(true);
+          if (document.getElementById('tbodyGestaoNfe') && typeof renderizarNotasFiscais === 'function') {
+            renderizarNotasFiscais(true);
+          }
         }
       }
     } catch (e) {
@@ -31746,9 +31800,11 @@
     });
   }
 
-  function renderizarNotasFiscais() {
+  function renderizarNotasFiscais(pularSync = false) {
     reconciliarNotasFiscaisComSefaz(db);
-    sincronizarNumeracaoAoVivoComSefaz();
+    if (!pularSync) {
+      sincronizarNumeracaoAoVivoComSefaz();
+    }
     pageTitleElem.textContent = 'Emissor & Gestor Fiscal NF-e (SEFAZ)';
     pageBreadcrumbElem.textContent = 'SISTEMA > NOTAS FISCAIS';
 
