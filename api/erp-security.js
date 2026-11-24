@@ -1285,11 +1285,25 @@ module.exports = async function handler(req, res) {
         }
       } catch (eEnrich) {}
 
-      // Garante duplicateNumber estritamente numérico (001, 002...) exigido pela SEFAZ 4.00
+      // Garante duplicateNumber estritamente numérico (001, 002...) e soma exata exigidos pela SEFAZ 4.00
       if (Array.isArray(payload.billing?.duplicates)) {
-        payload.billing.duplicates.forEach((dup, idx) => {
+        const dupsValidas = payload.billing.duplicates.filter(d => Number(d.amount) > 0);
+        dupsValidas.forEach((dup, idx) => {
           dup.duplicateNumber = String(idx + 1).padStart(3, '0');
+          dup.amount = Number(Number(dup.amount).toFixed(2));
         });
+        if (dupsValidas.length > 0 && payload.billing.bill?.netAmount > 0) {
+          const somaDups = dupsValidas.reduce((s, d) => s + d.amount, 0);
+          const diff = Number((Number(payload.billing.bill.netAmount) - somaDups).toFixed(2));
+          if (Math.abs(diff) > 0 && Math.abs(diff) <= 1.00) {
+            dupsValidas[dupsValidas.length - 1].amount = Number((dupsValidas[dupsValidas.length - 1].amount + diff).toFixed(2));
+          }
+        }
+        if (dupsValidas.length > 0) {
+          payload.billing.duplicates = dupsValidas;
+        } else {
+          delete payload.billing.duplicates;
+        }
       }
 
       const urlEnvio = `https://api.nfse.io/v2/companies/${companyId}/productinvoices?environment=${ambiente}`;
