@@ -15698,9 +15698,13 @@
     let htmlRemuneracaoCostura = '';
     if (os.subOs && os.valorCosturaPeca != null && !isNaN(os.valorCosturaPeca)) {
       valorCosturaUnitario = parseFloat(os.valorCosturaPeca);
-    } else 
-
-    if (itAtivo) {
+      totalPagarCostura = valorCosturaUnitario * qtdTotal;
+      htmlRemuneracaoCostura = `
+        <div style="font-size: 13px; font-weight: 800; color: #0f172a;">
+          <span style="color: #047857;">${formatarMoeda(valorCosturaUnitario)}</span> <span style="font-size: 11px; font-weight: 600; color: #64748b;">/ peça</span> &nbsp;&bull;&nbsp; Total a Pagar (${os.setorDestino || 'Setor'}): <strong style="color: #15803d; font-size: 14px;">${formatarMoeda(totalPagarCostura)}</strong> <span style="font-size: 11px; font-weight: 600; color: #64748b;">(${qtdTotal} pçs)</span>
+        </div>
+      `;
+    } else if (itAtivo) {
       valorCosturaUnitario = (itAtivo.custoCostura != null && !isNaN(itAtivo.custoCostura) && parseFloat(itAtivo.custoCostura) > 0)
         ? parseFloat(itAtivo.custoCostura)
         : (parseFloat(os.valorCosturaPeca) || parseFloat(pedido.custoCostura) || 7.50);
