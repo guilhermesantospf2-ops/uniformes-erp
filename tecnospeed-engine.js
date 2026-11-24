@@ -318,7 +318,7 @@
           vencIso = new Date(Date.now() + ((pIdx + 1) * 30 * 86400000)).toISOString().slice(0, 10) + 'T00:00:00Z';
         }
         return {
-          duplicateNumber: String(parc.numero || `${faturaNumero}-${String(pIdx + 1).padStart(2, '0')}`),
+          duplicateNumber: String(pIdx + 1).padStart(3, '0'),
           expirationOn: vencIso,
           amount: Number(Number(parc.valor || 0).toFixed(2))
         };
@@ -542,9 +542,17 @@
                 }
                 const failEvent = (invDetails.lastEvents?.events || []).find(e => e.type === 'AuthorizationWithFailed');
                 if (failEvent && failEvent.data?.message) {
+                  if (!numeroAutorizado && chaveAcesso && chaveAcesso.length === 44) {
+                    numeroAutorizado = parseInt(chaveAcesso.substring(25, 34), 10);
+                  }
                   return {
                     sucesso: false,
                     simulado: false,
+                    nfeioId: invId,
+                    numero: numeroAutorizado || nfe.numero,
+                    serie: serieAutorizada || nfe.serie || 1,
+                    chaveAcesso: chaveAcesso || nfe.chaveAcesso || '',
+                    eventos: invDetails.lastEvents?.events || [],
                     erro: failEvent.data.message,
                     mensagem: `Rejeição SEFAZ: ${failEvent.data.message}`
                   };

@@ -5299,7 +5299,7 @@
       const isQuarentena = p.status === 'Quarentena';
       const isOrcamento = p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento';
       const countdown = calcularContagemRegressivaPedido(p);
-      const nfExistente = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada');
+      const nfExistente = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada' && n.statusSefaz !== 'rejeitada' && n.statusSefaz !== 'inutilizada');
       const osVinculada = (db.ordensServico || []).find(o => !o.subOs && ((p.numero != null && String(o.pedidoNumero) === String(p.numero)) || o.pedidoId === p.id));
       const temReparticaoAtiva = Boolean(
         (osVinculada && osVinculada.desmembrada) ||
@@ -5658,7 +5658,7 @@
         const isQuarentena = p.status === 'Quarentena';
         const isOrcamento = p.tipoRegistro === 'Orcamento' || p.status === 'Orcamento';
         const countdown = calcularContagemRegressivaPedido(p);
-        const nfExistente = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada');
+        const nfExistente = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada' && n.statusSefaz !== 'rejeitada' && n.statusSefaz !== 'inutilizada');
         return `
                     <div class="kanban-card" draggable="true" data-id="${p.id}" title="Segure e arraste para mudar a etapa do pedido">
                       <div style="display: flex; gap: 8px; margin-bottom: 8px;">
@@ -27706,7 +27706,7 @@
         </fat>
         ${(nfe.parcelas || []).map((pc, idxP) => `
         <dup>
-          <nDup>${pc.numero || String(idxP + 1).padStart(3, '0')}</nDup>
+          <nDup>${String(idxP + 1).padStart(3, '0')}</nDup>
           <dVenc>${String(pc.vencimento || '').slice(0, 10)}</dVenc>
           <vDup>${Number(pc.valor || 0).toFixed(2)}</vDup>
         </dup>`).join('')}
@@ -29509,7 +29509,7 @@
 
     // Se o pedido já possui NF-e ativa emitida, abre direto a DANFE
     if (pedidoSelecionado) {
-      const nfExistente = (db.notasFiscais || []).find(n => (n.pedidoId === pedidoSelecionado.id || (pedidoSelecionado.numero != null && String(n.pedidoNumero) === String(pedidoSelecionado.numero))) && n.statusSefaz !== 'cancelada');
+      const nfExistente = (db.notasFiscais || []).find(n => (n.pedidoId === pedidoSelecionado.id || (pedidoSelecionado.numero != null && String(n.pedidoNumero) === String(pedidoSelecionado.numero))) && n.statusSefaz !== 'cancelada' && n.statusSefaz !== 'rejeitada' && n.statusSefaz !== 'inutilizada');
       if (nfExistente) {
         mostrarToast(`Este pedido já possui a NF-e #${nfExistente.numero} emitida. Abrindo DANFE...`, 'green');
         abrirVisualizadorDanfe(nfExistente.id);
@@ -30536,12 +30536,32 @@
         if (window.TecnoSpeedEngine) {
           const resTS = await window.TecnoSpeedEngine.emitirNfeTecnoSpeed(novaNfe, emp, cfg);
           if (resTS && !resTS.sucesso && !resTS.simulado) {
+            if (resTS.numero) novaNfe.numero = parseInt(resTS.numero, 10) || novaNfe.numero;
+            if (resTS.serie) novaNfe.serie = resTS.serie;
+            if (resTS.nfeioId) novaNfe.nfeioId = resTS.nfeioId;
+            if (resTS.chaveAcesso) novaNfe.chaveAcesso = resTS.chaveAcesso;
+            novaNfe.statusSefaz = 'rejeitada';
+            novaNfe.motivoRejeicao = resTS.erro || resTS.mensagem || 'Rejeição na SEFAZ';
+            novaNfe.eventosSefaz = Array.isArray(resTS.eventos) ? resTS.eventos : [];
+
+            if (!Array.isArray(db.notasFiscais)) db.notasFiscais = [];
+            db.notasFiscais.unshift(novaNfe);
+            const numRej = parseInt(novaNfe.numero, 10) || numNfe;
+            if (resTS.nfeioId || resTS.numero) {
+              db.configFiscal.proximoNumero = Math.max(numNfe + 1, numRej + 1, 46);
+            }
+            salvarEstado(true);
+            atualizarBadges();
+            if (typeof renderizarNotasFiscais === 'function' && document.getElementById('tbodyGestaoNfe')) {
+              renderizarNotasFiscais();
+            }
+
             btnTransmitir.disabled = false;
             btnTransmitir.innerHTML = `
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
               Emitir & Transmitir NF-e (SEFAZ)
             `;
-            return alert('Erro retornado pela SEFAZ:\n\n' + (resTS.erro || resTS.mensagem));
+            return alert('Erro retornado pela SEFAZ (registrado no histórico de Notas Fiscais como Rejeitada):\n\n' + novaNfe.motivoRejeicao);
           }
           if (resTS) {
             if (resTS.numero) novaNfe.numero = parseInt(resTS.numero, 10);
@@ -30821,7 +30841,7 @@
     }
 
     // Sincroniza transporte e frete na NF-e vinculada (se existir e não cancelada)
-    const nfeVinc = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada');
+    const nfeVinc = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada' && n.statusSefaz !== 'rejeitada' && n.statusSefaz !== 'inutilizada');
     if (nfeVinc) {
       nfeVinc.transporte = JSON.parse(JSON.stringify(p.transporte || nfeVinc.transporte || {}));
       nfeVinc.localEntrega = p.enderecoEntrega?.diferente ? JSON.parse(JSON.stringify(p.enderecoEntrega)) : null;
@@ -31018,7 +31038,7 @@
                 const tr = p.transporte || {};
                 const qtdPecas = Number(p.quantidadeTotal || p.grade?.total || (p.itens || []).reduce((s, i) => s + (Number(i.grade?.total || i.quantidade || 0)), 0) || 1);
                 const pesoEst = (qtdPecas * 0.28).toFixed(2);
-                const nfeVinc = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada');
+                const nfeVinc = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada' && n.statusSefaz !== 'rejeitada' && n.statusSefaz !== 'inutilizada');
                 const stEnvio = isPedidoEntregue(p) ? 'Entregue' : (p.envioStatus || 'Aguardando');
                 const marcado = enviosSelecionadosIds.has(p.id);
                 const corSel = stEnvio === 'Entregue' ? 'border-color:#16a34a;color:#166534;background:#dcfce7;' : (stEnvio === 'Despachado' ? 'border-color:#2563eb;color:#1e40af;background:#dbeafe;' : (stEnvio === 'Etiqueta Gerada' ? 'border-color:#d97706;color:#92400e;background:#fef3c7;' : ''));
@@ -31522,7 +31542,7 @@
     const tr = p.transporte || {};
     const volTotal = Math.max(1, parseInt(tr.volumesQtd || 1, 10));
     const especie = (tr.volumesEspecie || 'CAIXAS').toUpperCase();
-    const nfeVinc = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada');
+    const nfeVinc = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada' && n.statusSefaz !== 'rejeitada' && n.statusSefaz !== 'inutilizada');
     const codBarras = p.codigoRastreio || `PED${String(p.numero || p.id).replace(/\D/g, '').padStart(6, '0')}`;
     const qtdPecas = Number(p.quantidadeTotal || p.grade?.total || (p.itens || []).reduce((s, i) => s + (Number(i.grade?.total || i.quantidade || 0)), 0) || 1);
     const peso = Number(tr.pesoBruto || (qtdPecas * 0.28)).toFixed(2);
@@ -31640,7 +31660,7 @@
     const tr = p.transporte || {};
     const volTotal = Math.max(1, parseInt(tr.volumesQtd || 1, 10));
     const especie = (tr.volumesEspecie || 'CAIXAS').toUpperCase();
-    const nfeVinc = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada');
+    const nfeVinc = (db.notasFiscais || []).find(n => (n.pedidoId === p.id || (p.numero != null && String(n.pedidoNumero) === String(p.numero))) && n.statusSefaz !== 'cancelada' && n.statusSefaz !== 'rejeitada' && n.statusSefaz !== 'inutilizada');
     const codBarras = p.codigoRastreio || `PED${String(p.numero || p.id).replace(/\D/g, '').padStart(6, '0')}`;
     const qtdPecas = Number(p.quantidadeTotal || p.grade?.total || (p.itens || []).reduce((s, i) => s + (Number(i.grade?.total || i.quantidade || 0)), 0) || 1);
     const peso = Number(tr.pesoBruto || (qtdPecas * 0.28)).toFixed(2);
@@ -31737,8 +31757,8 @@
     const notas = db.notasFiscais || [];
 
     // Cálculos de KPI
-    const totalFaturado = notas.filter(n => n.statusSefaz !== 'cancelada').reduce((acc, n) => acc + (n.totais?.valorTotal || 0), 0);
-    const totalImpostos = notas.filter(n => n.statusSefaz !== 'cancelada').reduce((acc, n) => acc + (n.totais?.valorImpostosSimples || 0), 0);
+    const totalFaturado = notas.filter(n => n.statusSefaz !== 'cancelada' && n.statusSefaz !== 'rejeitada' && n.statusSefaz !== 'inutilizada').reduce((acc, n) => acc + (n.totais?.valorTotal || 0), 0);
+    const totalImpostos = notas.filter(n => n.statusSefaz !== 'cancelada' && n.statusSefaz !== 'rejeitada' && n.statusSefaz !== 'inutilizada').reduce((acc, n) => acc + (n.totais?.valorImpostosSimples || 0), 0);
     const qtdAutorizadas = notas.filter(n => n.statusSefaz === 'autorizada').length;
     const isProd = cfg.ambiente === 'producao';
 
@@ -31832,8 +31852,9 @@
           <tbody id="tbodyGestaoNfe">
             ${notas.length ? notas.map(nf => {
       const isCanc = nf.statusSefaz === 'cancelada';
+      const isRej = nf.statusSefaz === 'rejeitada';
       return `
-                <tr style="${isCanc ? 'background: #fff1f2; opacity: 0.85;' : ''}">
+                <tr style="${isCanc ? 'background: #fff1f2; opacity: 0.85;' : (isRej ? 'background: #fef2f2;' : '')}">
                   <td class="text-mono">
                     <strong style="font-size: 13px; color: var(--text-primary);">#${nf.numero}</strong>
                     <span style="font-size: 10px; color: var(--text-gray-500); display: block;">Série ${nf.serie}</span>
@@ -31845,6 +31866,7 @@
                   <td>
                     <strong>${nf.cliente?.nome || '-'}</strong>
                     <span style="font-size: 10px; color: var(--text-gray-500); display: block;">${nf.cliente?.endereco?.cidade || ''} / ${nf.cliente?.endereco?.uf || ''}</span>
+                    ${isRej && nf.motivoRejeicao ? `<span style="display: block; margin-top: 3px; font-size: 10.5px; color: #b91c1c; font-weight: 700; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 4px; padding: 2px 6px;">⚠️ ${nf.motivoRejeicao}</span>` : ''}
                   </td>
                   <td class="text-mono" style="font-size: 11px;">${nf.cliente?.documento || '-'}</td>
                   <td class="text-mono" style="font-size: 11px;">${nf.cfop || '5101'}</td>
@@ -31855,37 +31877,51 @@
                     ${formatarMoeda(nf.totais?.valorImpostosSimples || 0)}
                   </td>
                   <td style="text-align: center;">
-                    <span class="status-pill ${isCanc ? 'status-red' : 'status-green'}" style="font-size: 9px; font-weight: 800;">
-                      ${isCanc ? 'CANCELADA' : 'AUTORIZADA'}
+                    <span class="status-pill ${(isCanc || isRej) ? 'status-red' : 'status-green'}" style="font-size: 9px; font-weight: 800;">
+                      ${isCanc ? 'CANCELADA' : (isRej ? 'REJEITADA SEFAZ' : 'AUTORIZADA')}
                     </span>
                   </td>
                   <td>
-                    <div style="display: flex; gap: 4px; justify-content: center; align-items: center;">
-                      ${!nf.nfeioId ? `
-                        <button class="btn btn-primary btn-sm btn-sincronizar-nfeio" data-id="${nf.id}" title="Transmitir nota para a SEFAZ" style="background: #10b981; border-color: #10b981; font-weight: 700; font-size: 11px; padding: 4px 8px;">
-                          ⚡ Transmitir SEFAZ
+                    <div style="display: flex; gap: 4px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                      ${isRej ? `
+                        <button class="btn btn-primary btn-sm btn-reemitir-nfe-rejeitada" data-pedido-id="${nf.pedidoId || nf.pedidoNumero || ''}" title="Corrigir e tentar emitir novamente" style="background: #0284c7; border-color: #0284c7; font-weight: 700; font-size: 11px; padding: 4px 8px;">
+                          🔄 Reemitir
                         </button>
-                      ` : ''}
-                      <button class="btn btn-secondary btn-sm btn-ver-danfe" data-id="${nf.id}" title="Visualizar e Imprimir DANFE Oficial A4">
-                        📄 DANFE
-                      </button>
-                      <button class="btn btn-secondary btn-sm btn-copiar-chave-nfe" data-id="${nf.id}" title="Copiar Chave de Acesso (44 dígitos sem espaços)" style="font-weight: 700;">
-                        🔑 Chave
-                      </button>
-                      ${!isCanc ? `
-                        <button class="btn btn-secondary btn-sm btn-cce-nfe" data-id="${nf.id}" title="Emitir Carta de Correção Eletrônica (CC-e) na SEFAZ" style="color: #0284c7; font-weight: 700;">
-                          ✏️ CC-e
+                        ${nf.chaveAcesso ? `
+                          <button class="btn btn-secondary btn-sm btn-copiar-chave-nfe" data-id="${nf.id}" title="Copiar Chave de Acesso (44 dígitos)" style="font-weight: 700;">
+                            🔑 Chave
+                          </button>
+                        ` : ''}
+                        <button class="btn btn-secondary btn-sm btn-reverter-nfe" data-id="${nf.id}" title="Remover Registro Local" style="color: #dc2626; border-color: #fca5a5; font-weight: 700;">
+                          🗑️ Remover
                         </button>
-                      ` : ''}
-                      <button class="btn btn-secondary btn-sm btn-baixar-xml" data-id="${nf.id}" title="Download do Arquivo XML Padrão SEFAZ 4.00">
-                        XML
-                      </button>
-                      <button class="btn btn-secondary btn-sm btn-wpp-nfe" data-id="${nf.id}" title="Enviar link oficial no WhatsApp">
-                        📱
-                      </button>
-                      <button class="btn btn-secondary btn-sm btn-reverter-nfe" data-id="${nf.id}" title="${nf.nfeioId && !isCanc ? 'Cancelar Nota Fiscal Oficial na SEFAZ' : 'Remover Registro Local'}" style="color: #dc2626; border-color: #fca5a5; font-weight: 700;">
-                        ${nf.nfeioId && !isCanc ? '✕ Cancelar' : '🗑️ Remover'}
-                      </button>
+                      ` : `
+                        ${!nf.nfeioId ? `
+                          <button class="btn btn-primary btn-sm btn-sincronizar-nfeio" data-id="${nf.id}" title="Transmitir nota para a SEFAZ" style="background: #10b981; border-color: #10b981; font-weight: 700; font-size: 11px; padding: 4px 8px;">
+                            ⚡ Transmitir SEFAZ
+                          </button>
+                        ` : ''}
+                        <button class="btn btn-secondary btn-sm btn-ver-danfe" data-id="${nf.id}" title="Visualizar e Imprimir DANFE Oficial A4">
+                          📄 DANFE
+                        </button>
+                        <button class="btn btn-secondary btn-sm btn-copiar-chave-nfe" data-id="${nf.id}" title="Copiar Chave de Acesso (44 dígitos sem espaços)" style="font-weight: 700;">
+                          🔑 Chave
+                        </button>
+                        ${!isCanc ? `
+                          <button class="btn btn-secondary btn-sm btn-cce-nfe" data-id="${nf.id}" title="Emitir Carta de Correção Eletrônica (CC-e) na SEFAZ" style="color: #0284c7; font-weight: 700;">
+                            ✏️ CC-e
+                          </button>
+                        ` : ''}
+                        <button class="btn btn-secondary btn-sm btn-baixar-xml" data-id="${nf.id}" title="Download do Arquivo XML Padrão SEFAZ 4.00">
+                          XML
+                        </button>
+                        <button class="btn btn-secondary btn-sm btn-wpp-nfe" data-id="${nf.id}" title="Enviar link oficial no WhatsApp">
+                          📱
+                        </button>
+                        <button class="btn btn-secondary btn-sm btn-reverter-nfe" data-id="${nf.id}" title="${nf.nfeioId && !isCanc ? 'Cancelar Nota Fiscal Oficial na SEFAZ' : 'Remover Registro Local'}" style="color: #dc2626; border-color: #fca5a5; font-weight: 700;">
+                          ${nf.nfeioId && !isCanc ? '✕ Cancelar' : '🗑️ Remover'}
+                        </button>
+                      `}
                     </div>
                   </td>
                 </tr>
@@ -31933,6 +31969,13 @@
 
     contentArea.querySelectorAll('.btn-baixar-xml').forEach(btn => {
       btn.addEventListener('click', () => baixarArquivoXmlNfe(btn.getAttribute('data-id')));
+    });
+
+    contentArea.querySelectorAll('.btn-reemitir-nfe-rejeitada').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pedId = btn.getAttribute('data-pedido-id');
+        abrirModalEmitirNfe(pedId || null);
+      });
     });
 
     contentArea.querySelectorAll('.btn-reverter-nfe').forEach(btn => {
