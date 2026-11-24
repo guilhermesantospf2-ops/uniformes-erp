@@ -5089,7 +5089,10 @@
   /* ==========================================================================
      MÓDULO 2: PEDIDOS & ORÇAMENTOS (DUPLO FLUXO + BENCHMARK BRASIL + KANBAN)
      ========================================================================== */
-  function renderizarPedidos() {
+  function renderizarPedidos(pularSync = false) {
+    if (!pularSync && typeof sincronizarNumeracaoAoVivoComSefaz === 'function') {
+      sincronizarNumeracaoAoVivoComSefaz(false);
+    }
     pageTitleElem.textContent = 'Gestão Comercial, Orçamentos & Pedidos';
     pageBreadcrumbElem.textContent = 'SISTEMA > PEDIDOS & ORÇAMENTOS';
 
@@ -27291,9 +27294,12 @@
   }
 
   let _syncSefazEmAndamento = false;
-  async function sincronizarNumeracaoAoVivoComSefaz() {
+  let _ultimoSyncSefazMs = 0;
+  async function sincronizarNumeracaoAoVivoComSefaz(forcar = true) {
     if (_syncSefazEmAndamento || !window.TecnoSpeedEngine?.sincronizarEstadoSefaz) return;
+    if (!forcar && (Date.now() - _ultimoSyncSefazMs) < 30000) return;
     _syncSefazEmAndamento = true;
+    _ultimoSyncSefazMs = Date.now();
     try {
       const emp = (typeof obterEmpresaAtiva === 'function') ? obterEmpresaAtiva() : (db.empresa || {});
       const res = await window.TecnoSpeedEngine.sincronizarEstadoSefaz(emp, db.configFiscal);
@@ -27333,6 +27339,13 @@
                   nfLocal.statusSefaz = 'rejeitada';
                   nfLocal.motivoRejeicao = msgFalha;
                   nfLocal.eventosSefaz = inv.lastEvents?.events || [];
+                  (db.pedidos || []).forEach(ped => {
+                    if (ped.nfeId === nfLocal.id || (nfLocal.pedidoId && ped.id === nfLocal.pedidoId && ped.nfeNumero === nfLocal.numero)) {
+                      ped.notaFiscalEmitida = false;
+                      delete ped.nfeId;
+                      delete ped.nfeNumero;
+                    }
+                  });
                   mudou = true;
                 }
               } else if ((inv.status === 'Issued' || inv.status === 'Authorized') && nfLocal.statusSefaz !== 'cancelada') {
@@ -27388,6 +27401,8 @@
           salvarEstado(true);
           if (document.getElementById('tbodyGestaoNfe') && typeof renderizarNotasFiscais === 'function') {
             renderizarNotasFiscais(true);
+          } else if (document.getElementById('filtroPedidoBusca') && typeof renderizarPedidos === 'function') {
+            renderizarPedidos(true);
           }
         }
       }
