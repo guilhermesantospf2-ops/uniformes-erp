@@ -8169,10 +8169,10 @@
           <div class="modal-header">
             <div>
               <div class="modal-title">
-                ${isEdicao ? (orcamentoExistente.status !== 'Orcamento' ? `Editar Pedido #${orcamentoExistente.numero} (Retornará à Quarentena)` : `Editar Orçamento #${orcamentoExistente.numero} • Multimodelo & Renegociação`) : 'Novo Orçamento • Múltiplos Modelos & Estampas (DTF / Bordado)'}
+                ${isEdicao ? (orcamentoExistente.status !== 'Orcamento' ? `Editar Pedido #${orcamentoExistente.numero} • Edição & Pagamento` : `Editar Orçamento #${orcamentoExistente.numero} • Multimodelo & Renegociação`) : 'Novo Orçamento • Múltiplos Modelos & Estampas (DTF / Bordado)'}
               </div>
               <span style="font-size: 11px; color: var(--text-gray-500);">
-                ${isEdicao ? (orcamentoExistente.status !== 'Orcamento' ? `<strong style="color: #b45309;">⚠️ Atenção:</strong> Ao salvar a edição do Pedido #${orcamentoExistente.numero}, ele retornará <strong>obrigatoriamente para a Quarentena de Segurança</strong> para nova conferência técnica dos 5 pontos antes do corte.` : `Cliente: <strong>${orcamentoExistente.clienteNome}</strong> • Ajuste modelos, grade, bordado, DTF e preços negociados`) : 'Adicione múltiplos modelos (ex: Polo + Camiseta UV) e calcule várias estampas (Peito, Costas, Mangas) no mesmo pedido'}
+                ${isEdicao ? `Cliente: <strong>${orcamentoExistente.clienteNome}</strong> • Altere grade, preços, modelos ou pagamento sem perder o andamento` : 'Adicione múltiplos modelos (ex: Polo + Camiseta UV) e calcule várias estampas (Peito, Costas, Mangas) no mesmo pedido'}
               </span>
             </div>
             <button class="modal-close" onclick="window.ERP.fecharModal()">&times;</button>
@@ -8988,15 +8988,21 @@
         <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <button type="button" class="btn btn-secondary" onclick="window.ERP.fecharModal()">Cancelar</button>
           
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
             ${isEdicao ? `
-              <button type="button" class="btn btn-secondary" id="btnSalvarEdicaoOrcamento" style="font-weight: 700; background: #fffbeb; border-color: #fde68a; color: #b45309;">
+              ${orcamentoExistente.status !== 'Orcamento' ? `
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; padding: 5px 9px; border-radius: 6px; cursor: pointer; margin: 0;" title="Marque apenas se alterou medidas/tecidos e quiser devolver para conferência na Quarentena">
+                  <input type="checkbox" id="chkReenviarQuarentenaEdicao">
+                  Reenviar p/ Quarentena
+                </label>
+              ` : ''}
+              <button type="button" class="btn btn-secondary" id="btnSalvarEdicaoOrcamento" style="font-weight: 700; background: #eff6ff; border-color: #93c5fd; color: #1e40af;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                ${orcamentoExistente.status !== 'Orcamento' ? 'Salvar Edição e Reenviar p/ Quarentena' : 'Salvar Alterações do Orçamento'}
+                ${orcamentoExistente.status !== 'Orcamento' ? 'Salvar Alterações do Pedido' : 'Salvar Alterações do Orçamento'}
               </button>
               <button type="button" class="btn btn-primary" id="btnSalvarEAvancarPedido" style="font-weight: 800; background: var(--color-green); border-color: var(--color-green);">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                Salvar & Dar Entrada no Pedido
+                ${orcamentoExistente.status !== 'Orcamento' ? '💳 Salvar & Ajustar Pagamento' : 'Salvar & Dar Entrada no Pedido'}
               </button>
             ` : `
               <button type="button" class="btn btn-secondary" id="btnSalvarApenasOrcamento" style="font-weight: 700;">
@@ -9167,7 +9173,7 @@
         it.custoAviamento = lerInputNumDom('inputCustoAviamento', 4.80);
         it.custoCostura = lerInputNumDom('inputCustoCostura', 7.50);
       }
-      it.precoVendaUnitario = lerInputNumDom('inputPrecoPretendido', 58.00);
+      it.precoVendaUnitario = lerInputNumDom('inputPrecoPretendido', 0);
       it.margemDesejada = lerInputNumDom('inputMargemDesejada', 30.0);
       it.aliquotaImposto = lerInputNumDom('inputAliquotaImposto', 6.5);
 
@@ -9897,7 +9903,7 @@
 
       // Preço e Margem
       const inpPrec = document.getElementById('inputPrecoPretendido');
-      if (inpPrec) inpPrec.value = formatarMoedaInput(numOuPadrao(it.precoVendaUnitario, 58.00));
+      if (inpPrec) inpPrec.value = formatarMoedaInput(numOuPadrao(it.precoVendaUnitario, 0));
       const inpMD = document.getElementById('inputMargemDesejada');
       if (inpMD) inpMD.value = numOuPadrao(it.margemDesejada, 30.0).toFixed(0);
       const inpImp = document.getElementById('inputAliquotaImposto');
@@ -10439,7 +10445,7 @@
         }
 
         // --- 2. AUTO-PREENCHIMENTO DOS PREÇOS DE VENDA CADASTRADOS NO PRODUTO ---
-        const precoBaseProd = parseFloat(prod.precoVendaBase) || parseFloat(it.precoVendaUnitario) || 58.00;
+        const precoBaseProd = parseFloat(prod.precoVendaBase) || parseFloat(it.precoVendaUnitario) || 0;
         it.precoVendaUnitario = precoBaseProd;
         if (!it.precosPorTamanho) it.precosPorTamanho = {};
         TODOS_CAMPOS_GRADE.forEach(c => {
@@ -11952,7 +11958,7 @@
         corTecido: corPrincipalGeral,
         observacoesCoresDetalhes: obsCoresGeral,
         grade: gradeConsolidada,
-        precoVendaUnitario: totalPecasGeral > 0 ? (faturamentoTotalGeral / totalPecasGeral) : 58.00,
+        precoVendaUnitario: totalPecasGeral > 0 ? (faturamentoTotalGeral / totalPecasGeral) : 0,
         valorBrutoVenda: faturamentoTotalGeral,
         desconto: descOrcInfo.descontoReais,
         valorDesconto: descOrcInfo.descontoReais,
@@ -12835,7 +12841,8 @@
         orcamentoExistente.dataAtualizacao = new Date().toISOString().split('T')[0];
 
         const eraPedidoOficial = (orcamentoExistente.status !== 'Orcamento');
-        if (eraPedidoOficial) {
+        const deveReenviarQuarentena = eraPedidoOficial && (document.getElementById('chkReenviarQuarentenaEdicao')?.checked === true);
+        if (deveReenviarQuarentena) {
           orcamentoExistente.status = 'Quarentena';
           orcamentoExistente.etapaProducao = 'Quarentena';
           orcamentoExistente.etapaAtual = 'Quarentena';
@@ -12843,7 +12850,6 @@
           orcamentoExistente.dataQuarentenaReentrada = new Date().toISOString();
           orcamentoExistente.motivoQuarentena = 'Pedido reeditado após emissão. Requer nova conferência técnica e aprovação dos 5 pontos na Quarentena.';
 
-          // Atualiza a OS correspondente se existir
           const os = (db.ordensServico || []).find(o => o.pedidoId === orcamentoExistente.id || (o.pedidoNumero != null && o.pedidoNumero.toString() === orcamentoExistente.numero.toString()));
           if (os) {
             os.status = 'Quarentena';
@@ -12853,6 +12859,13 @@
             os.itens = orcamentoExistente.itens;
             os.desmembrada = false;
           }
+        } else if (eraPedidoOficial) {
+          const os = (db.ordensServico || []).find(o => !o.subOs && (o.pedidoId === orcamentoExistente.id || (o.pedidoNumero != null && o.pedidoNumero.toString() === orcamentoExistente.numero.toString())));
+          if (os && !os.desmembrada) {
+            os.grade = orcamentoExistente.grade;
+            os.quantidadeTotal = orcamentoExistente.grade?.total || orcamentoExistente.quantidadeTotal;
+            os.itens = orcamentoExistente.itens;
+          }
         }
 
         salvarEstado(true);
@@ -12860,11 +12873,13 @@
         fecharModal();
         renderizarPedidos();
 
-        if (eraPedidoOficial) {
-          mostrarToast(`🔒 Pedido #${orcamentoExistente.numero} atualizado e reenviado para a Quarentena de Segurança para nova conferência!`, 'orange');
+        if (deveReenviarQuarentena) {
+          mostrarToast(`🔒 Pedido #${orcamentoExistente.numero} atualizado e reenviado para a Quarentena de Segurança!`, 'orange');
           if (typeof abrirModalInspecaoQuarentena === 'function') {
             abrirModalInspecaoQuarentena(orcamentoExistente.id);
           }
+        } else if (eraPedidoOficial) {
+          mostrarToast(`✓ Pedido #${orcamentoExistente.numero} atualizado mantendo etapa e pagamento!`, 'green');
         } else {
           mostrarToast(`Orçamento #${orcamentoExistente.numero} atualizado com sucesso!`, 'green');
           abrirModalPropostaComercial(orcamentoExistente.id);
@@ -13158,7 +13173,21 @@
       ? (parseFloat(dadosBase.valorDescontoInput ?? dadosBase.valorDescontoPerc ?? 0) || 0)
       : descontoInicialReais;
     const totalVenda = dadosBase.valorBrutoVenda || ((dadosBase.valorTotal || dadosBase.valorTotalVenda || 0) + descontoInicialReais);
-    const sinalSugerido = Math.max(0, totalVenda - descontoInicialReais) * 0.5;
+    const totalLiquidoInit = Math.max(0, totalVenda - descontoInicialReais);
+    const pagPrev = dadosBase.pagamentoDetalhes || null;
+    const jaEraOficialAvanco = !!(dadosBase.id && dadosBase.status && dadosBase.status !== 'Orcamento');
+    const valorEntradaInicial = pagPrev
+      ? Math.min(totalLiquidoInit, Number(pagPrev.valorEntrada) || 0)
+      : totalLiquidoInit * 0.5;
+    const percEntradaInicial = pagPrev
+      ? (pagPrev.percEntrada != null ? Number(pagPrev.percEntrada) : (totalLiquidoInit > 0 ? Math.round((valorEntradaInicial / totalLiquidoInit) * 100) : 0))
+      : 50;
+    const formaEntradaInicial = pagPrev?.formaEntrada || 'PIX';
+    const taxaEntradaInicial = (pagPrev?.taxaEntradaPerc != null && !isNaN(pagPrev.taxaEntradaPerc)) ? Number(pagPrev.taxaEntradaPerc) : 0;
+    const sinalCompensadoInicial = pagPrev ? !!pagPrev.sinalCompensado : false;
+    const formaSaldoInicial = pagPrev?.formaSaldo || 'Cartão de Crédito';
+    const parcelasQtdInicial = parseInt(pagPrev?.parcelasQtd, 10) || 2;
+    const taxaSaldoInicial = (pagPrev?.taxaSaldoPerc != null && !isNaN(pagPrev.taxaSaldoPerc)) ? Number(pagPrev.taxaSaldoPerc) : 2.50;
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active" id="modalAvancarPedidoOverlay">
@@ -13239,7 +13268,7 @@
               <div class="inline-input-group">
                 <select id="selCostureiraAvanco" class="form-select">
                   ${(db.costureiras && db.costureiras.length > 0) ? db.costureiras.map(c => `
-                    <option value="${c.id}">${c.nome} • Resp: ${c.responsavel || c.nome} • Esp: ${c.especialidade || 'Costura'} (${c.status || 'Ativo'})</option>
+                    <option value="${c.id}" ${(dadosBase.costureiraId && c.id === dadosBase.costureiraId) ? 'selected' : ''}>${c.nome} • Resp: ${c.responsavel || c.nome} • Esp: ${c.especialidade || 'Costura'} (${c.status || 'Ativo'})</option>
                   `).join('') : `
                     <option value="" disabled selected>⚠️ Nenhuma costureira cadastrada - Cadastre no botão ao lado</option>
                   `}
@@ -13398,11 +13427,11 @@
               <!-- Atalhos rápidos de entrada -->
               <div style="display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
                 <span style="font-size: 11px; color: var(--text-gray-500); font-weight: 600;">Atalhos de Entrada:</span>
-                <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada" data-perc="0">0% (Sem Entrada)</button>
-                <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada" data-perc="30">30% Entrada</button>
-                <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada" data-perc="40">40% Entrada</button>
-                <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada active" data-perc="50" style="font-weight: 700; color: var(--color-green);">50% Entrada (Padrão)</button>
-                <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada" data-perc="100">100% (À Vista Total)</button>
+                <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada ${percEntradaInicial === 0 ? 'active' : ''}" data-perc="0">0% (Sem Entrada)</button>
+                <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada ${percEntradaInicial === 30 ? 'active' : ''}" data-perc="30">30% Entrada</button>
+                <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada ${percEntradaInicial === 40 ? 'active' : ''}" data-perc="40">40% Entrada</button>
+                <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada ${percEntradaInicial === 50 ? 'active' : ''}" data-perc="50" style="font-weight: 700; color: var(--color-green);">50% Entrada (Padrão)</button>
+                <button type="button" class="btn btn-secondary btn-sm btn-quick-entrada ${percEntradaInicial === 100 ? 'active' : ''}" data-perc="100">100% (À Vista Total)</button>
               </div>
 
               <!-- BLOCO 1: ENTRADA / SINAL INICIAL -->
@@ -13435,25 +13464,25 @@
                   <div class="form-group" style="flex: 0.75;">
                     <label class="form-label">Entrada (%)</label>
                     <div style="display: flex; align-items: center; gap: 4px;">
-                      <input type="number" id="finPercEntrada" class="form-input text-mono" min="0" max="100" step="5" value="50" style="font-weight: 700; font-size: 14px;">
+                      <input type="number" id="finPercEntrada" class="form-input text-mono" min="0" max="100" step="5" value="${percEntradaInicial.toFixed(0)}" style="font-weight: 700; font-size: 14px;">
                       <span style="font-size: 13px; font-weight: 700; color: var(--text-gray-500);">%</span>
                     </div>
                   </div>
 
                   <div class="form-group" style="flex: 1.2;">
                     <label class="form-label">Valor Entrada (R$)</label>
-                    <input type="number" id="finValorSinalRecebido" class="form-input text-mono" style="font-weight: 800; font-size: 14px; color: var(--color-green);" value="${sinalSugerido.toFixed(2)}" step="10.00">
+                    <input type="number" id="finValorSinalRecebido" class="form-input text-mono" style="font-weight: 800; font-size: 14px; color: var(--color-green);" value="${valorEntradaInicial.toFixed(2)}" step="10.00">
                   </div>
 
                   <div class="form-group" style="flex: 1.4;">
                     <label class="form-label">Forma de Pagto (Entrada)</label>
                     <select id="finFormaPagamentoSinal" class="form-select" style="font-size: 12px;">
-                      <option value="PIX">PIX (Banco da Confecção)</option>
-                      <option value="Dinheiro">Dinheiro em Espécie</option>
-                      <option value="Cartão de Débito">Cartão de Débito</option>
-                      <option value="Cartão de Crédito">Cartão de Crédito (1x)</option>
-                      <option value="TED/Transferência">TED / Transferência Bancária</option>
-                      <option value="Boleto à Vista">Boleto Bancário à Vista</option>
+                      <option value="PIX" ${formaEntradaInicial === 'PIX' ? 'selected' : ''}>PIX (Banco da Confecção)</option>
+                      <option value="Dinheiro" ${formaEntradaInicial === 'Dinheiro' ? 'selected' : ''}>Dinheiro em Espécie</option>
+                      <option value="Cartão de Débito" ${formaEntradaInicial === 'Cartão de Débito' ? 'selected' : ''}>Cartão de Débito</option>
+                      <option value="Cartão de Crédito" ${formaEntradaInicial === 'Cartão de Crédito' ? 'selected' : ''}>Cartão de Crédito (1x)</option>
+                      <option value="TED/Transferência" ${formaEntradaInicial === 'TED/Transferência' ? 'selected' : ''}>TED / Transferência Bancária</option>
+                      <option value="Boleto à Vista" ${formaEntradaInicial === 'Boleto à Vista' ? 'selected' : ''}>Boleto Bancário à Vista</option>
                     </select>
                   </div>
 
@@ -13465,7 +13494,7 @@
                       </button>
                     </div>
                     <div style="display: flex; align-items: center; gap: 4px;">
-                      <input type="number" id="finTaxaEntradaPerc" class="form-input text-mono" min="0" max="30" step="0.01" value="0.0" style="font-size: 13px; font-weight: 700;">
+                      <input type="number" id="finTaxaEntradaPerc" class="form-input text-mono" min="0" max="30" step="0.01" value="${taxaEntradaInicial.toFixed(2)}" style="font-size: 13px; font-weight: 700;">
                       <span style="font-size: 12px; font-weight: 700; color: var(--text-gray-500);">%</span>
                     </div>
                     <span id="labelValorTaxaEntrada" style="font-size: 10px; color: #dc2626; font-weight: 700; display: block; margin-top: 2px;">Custo: R$ 0,00</span>
@@ -13473,7 +13502,7 @@
                 </div>
 
                 <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
-                  <input type="checkbox" id="chkSinalCompensado" class="quarentena-checkbox">
+                  <input type="checkbox" id="chkSinalCompensado" class="quarentena-checkbox" ${sinalCompensadoInicial ? 'checked' : ''}>
                   <label for="chkSinalCompensado" style="font-size: 11.5px; font-weight: 700; cursor: pointer; color: var(--text-primary);">
                     Pagamento já caiu na conta agora (se desmarcado, fica como "Aguardando Pagamento" e não marca como Quitado)
                   </label>
@@ -13493,26 +13522,26 @@
                   <div class="form-group" style="flex: 1.5;">
                     <label class="form-label">Forma de Pagto do Saldo</label>
                     <select id="finFormaPagamentoSaldo" class="form-select" style="font-size: 12px;">
-                      <option value="Cartão de Crédito">Cartão de Crédito Parcelado</option>
-                      <option value="Boleto Bancário Faturado">Boleto Bancário Faturado</option>
-                      <option value="PIX na Entrega">PIX na Entrega</option>
-                      <option value="Dinheiro na Entrega">Dinheiro na Entrega</option>
-                      <option value="Cheque Pré-datado">Cheque Pré-datado</option>
-                      <option value="Carnê / Duplicata">Carnê / Duplicata da Fábrica</option>
+                      <option value="Cartão de Crédito" ${formaSaldoInicial === 'Cartão de Crédito' ? 'selected' : ''}>Cartão de Crédito Parcelado</option>
+                      <option value="Boleto Bancário Faturado" ${formaSaldoInicial === 'Boleto Bancário Faturado' ? 'selected' : ''}>Boleto Bancário Faturado</option>
+                      <option value="PIX na Entrega" ${formaSaldoInicial === 'PIX na Entrega' ? 'selected' : ''}>PIX na Entrega</option>
+                      <option value="Dinheiro na Entrega" ${formaSaldoInicial === 'Dinheiro na Entrega' ? 'selected' : ''}>Dinheiro na Entrega</option>
+                      <option value="Cheque Pré-datado" ${formaSaldoInicial === 'Cheque Pré-datado' ? 'selected' : ''}>Cheque Pré-datado</option>
+                      <option value="Carnê / Duplicata" ${formaSaldoInicial === 'Carnê / Duplicata' ? 'selected' : ''}>Carnê / Duplicata da Fábrica</option>
                     </select>
                   </div>
 
                   <div class="form-group" style="flex: 1.3;">
                     <label class="form-label">Parcelamento do Saldo</label>
                     <select id="finParcelasSaldoQtd" class="form-select" style="font-size: 12px; font-weight: 700;">
-                      <option value="1">1x (À Vista na Entrega)</option>
-                      <option value="2" selected>2x (30 / 60 dias)</option>
-                      <option value="3">3x (30 / 60 / 90 dias)</option>
-                      <option value="4">4x (30 / 60 / 90 / 120 dias)</option>
-                      <option value="5">5x (Mensal)</option>
-                      <option value="6">6x (Mensal)</option>
-                      <option value="10">10x (Mensal)</option>
-                      <option value="12">12x (Mensal)</option>
+                      <option value="1" ${parcelasQtdInicial === 1 ? 'selected' : ''}>1x (À Vista na Entrega)</option>
+                      <option value="2" ${parcelasQtdInicial === 2 ? 'selected' : ''}>2x (30 / 60 dias)</option>
+                      <option value="3" ${parcelasQtdInicial === 3 ? 'selected' : ''}>3x (30 / 60 / 90 dias)</option>
+                      <option value="4" ${parcelasQtdInicial === 4 ? 'selected' : ''}>4x (30 / 60 / 90 / 120 dias)</option>
+                      <option value="5" ${parcelasQtdInicial === 5 ? 'selected' : ''}>5x (Mensal)</option>
+                      <option value="6" ${parcelasQtdInicial === 6 ? 'selected' : ''}>6x (Mensal)</option>
+                      <option value="10" ${parcelasQtdInicial === 10 ? 'selected' : ''}>10x (Mensal)</option>
+                      <option value="12" ${parcelasQtdInicial === 12 ? 'selected' : ''}>12x (Mensal)</option>
                     </select>
                   </div>
 
@@ -13524,7 +13553,7 @@
                       </button>
                     </div>
                     <div style="display: flex; align-items: center; gap: 4px;">
-                      <input type="number" id="finTaxaSaldoPerc" class="form-input text-mono" min="0" max="30" step="0.01" value="2.50" style="font-size: 13px; font-weight: 700;">
+                      <input type="number" id="finTaxaSaldoPerc" class="form-input text-mono" min="0" max="30" step="0.01" value="${taxaSaldoInicial.toFixed(2)}" style="font-size: 13px; font-weight: 700;">
                       <span style="font-size: 12px; font-weight: 700; color: var(--text-gray-500);">%</span>
                     </div>
                     <span id="labelValorTaxaSaldo" style="font-size: 10px; color: #dc2626; font-weight: 700; display: block; margin-top: 2px;">Custo: R$ 0,00</span>
@@ -14010,7 +14039,10 @@
       });
     }
 
-    recalcularSaldoAvanco('perc');
+    if (pagPrev && Array.isArray(pagPrev.parcelas) && pagPrev.parcelas.length > 0) {
+      parcelasSaldoEditaveis = JSON.parse(JSON.stringify(pagPrev.parcelas));
+    }
+    recalcularSaldoAvanco(pagPrev ? 'valor' : 'perc');
 
     // Upload / Troca do Mockup Oficial em Alta Definição A4 (1200x1600 WebP) direto na entrada do pedido
     // Upload individual de mockup por modelo no avanço
@@ -14282,13 +14314,13 @@
         numero: novoNum,
         ultimaModificacaoMs: Date.now(),
         tipoRegistro: "Pedido",
-        dataCriacao: new Date().toISOString().split('T')[0],
+        dataCriacao: dadosBase.dataCriacao || new Date().toISOString().split('T')[0],
         clienteId: clienteIdFinal,
         clienteNome: clienteNomeFinal,
         clienteTelefone: clienteTelFinal,
-        status: "Quarentena", // Vai para quarentena para aprovação administrativa obrigatória
-        etapaProducao: "Aguardando Aprovação Técnica",
-        quarentenaAprovada: false,
+        status: jaEraOficialAvanco ? dadosBase.status : "Quarentena",
+        etapaProducao: jaEraOficialAvanco ? (dadosBase.etapaProducao || dadosBase.status) : "Aguardando Aprovação Técnica",
+        quarentenaAprovada: jaEraOficialAvanco ? (dadosBase.quarentenaAprovada !== false) : false,
         itens: (dadosBase.itens || []).map(item => {
           const corItem = item.corTecido || item.corPrincipal || dadosBase.corPrincipal || dadosBase.corTecido || 'Azul Marinho';
           return Object.assign({}, item, {
@@ -14364,20 +14396,22 @@
           valorLiquidoFabrica: valorLiquidoFabrica,
           parcelas: parcelasSaldo
         },
-        historicoPagamentos: valorEfetivoPago > 0 ? [{
-          id: `PAG-${Math.floor(1000 + Math.random() * 9000)}`,
-          data: new Date().toISOString().split('T')[0],
-          descricao: isQuitadoNaEntrada ? "Quitação Integral na Entrada" : `Entrada / Sinal Inicial (${percEntrada}%)`,
-          formaPagamento: formaPagamentoEntrada,
-          valor: valorEfetivoPago,
-          saldoRestante: saldoRestante
-        }] : [],
+        historicoPagamentos: (jaEraOficialAvanco && Array.isArray(dadosBase.historicoPagamentos) && dadosBase.historicoPagamentos.length > 0)
+          ? dadosBase.historicoPagamentos
+          : (valorEfetivoPago > 0 ? [{
+            id: `PAG-${Math.floor(1000 + Math.random() * 9000)}`,
+            data: new Date().toISOString().split('T')[0],
+            descricao: isQuitadoNaEntrada ? "Quitação Integral na Entrada" : `Entrada / Sinal Inicial (${percEntrada}%)`,
+            formaPagamento: formaPagamentoEntrada,
+            valor: valorEfetivoPago,
+            saldoRestante: saldoRestante
+          }] : []),
         dataPrevisaoEntrega: dadosBase.dataPrevisaoEntrega || calcularDataFuturaDiasUteis(dadosBase.prazoPedidoDias || 15),
         dataMetaInterna: dadosBase.dataMetaInterna || calcularDataFuturaDiasUteis(dadosBase.prazoInternoDias || 10),
         prazoPedidoDias: dadosBase.prazoPedidoDias || 15,
         prazoInternoDias: dadosBase.prazoInternoDias || 10,
         dtfLarguraRolo: dadosBase.dtfLarguraRolo || 58,
-        notaFiscalEmitida: false,
+        notaFiscalEmitida: jaEraOficialAvanco ? !!dadosBase.notaFiscalEmitida : false,
         vendedorResponsavel: "Marcos Paulo"
       };
 
@@ -16113,7 +16147,7 @@
                     </label>
                   </td>
                   <td style="padding: 6px 6px;"><strong>${idx + 1}. ${it.produtoNome}</strong><br><span style="font-size: 10px; color: #64748b;">${it.tecidoEspecificacao || ''}</span></td>
-                  <td style="padding: 6px 6px;"><span style="color: #1e3a8a; font-weight: 700;">${it.corPrincipal || it.corTecido || corTec || 'A Definir'}</span>${(it.observacoesCoresDetalhes || obsCores) ? `<br><span style="font-size: 9.5px; color: #b45309;">${it.observacoesCoresDetalhes || obsCores}</span>` : ''}</td>
+                  <td style="padding: 6px 6px;"><span style="color: #1e3a8a; font-weight: 700;">${it.corPrincipal || it.corTecido || corTec || 'A Definir'}</span>${(!os.subOs && itensTabelaOs.length > 1 && it.observacoesCoresDetalhes) ? `<br><span style="font-size: 9.5px; color: #b45309;">${it.observacoesCoresDetalhes}</span>` : ''}</td>
                   <td style="padding: 6px 6px; font-size: 10.5px;">${appsItemHtml}</td>
                   <td style="padding: 6px 6px;">${formatarGradeSelecionadaHtml(it.grade || os.grade, 'badge')}</td>
                   <td style="padding: 6px 6px; text-align: center; font-weight: 800; background: #f1f5f9;" class="text-mono">${it.grade?.total || os.quantidadeTotal || 0} pçs</td>
@@ -16171,6 +16205,7 @@
       </div>
 
       <!-- 2. Especificações de Estamparia / DTF (Bobina & Locais de Aplicação) -->
+      ${(os.subOs && (os.setorDestino || '').toLowerCase().includes('costura') && (!os.artesAplicacao || os.artesAplicacao.length === 0)) ? '' : `
       <div style="margin-bottom: 10px; background: #fafafa; border: 1px dashed #cbd5e1; padding: 8px 10px; border-radius: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
           <strong style="color: #0f172a; font-size: 11.5px;">2. ESPECIFICAÇÃO DE ESTAMPARIA & LOCAIS DE APLICAÇÃO:</strong>
@@ -16192,6 +16227,7 @@
           `}
         </ul>
       </div>
+      `}
 
       <!-- 3. Instruções do Setor / Costureira -->
       ${(() => {
@@ -35509,8 +35545,10 @@
           dataMetaInterna: os.dataMetaInterna,
           dtfLarguraRolo: os.dtfLarguraRolo || 58,
           tecidoConsumidoKg: ((itemModelo.consumoTecido || 0.28) * totalPecasMod).toFixed(1),
-          artesAplicacao: (os.artesAplicacao || []),
-          instrucoesCorte: `Corte para ${totalPecasMod} peças de ${modNome} (Sub-OS ${letra} de ${lotesTrabalho.length}). Destino: [${setorDestino}]. Cor: ${corTec}.${obsCores ? ' ATENÇÃO: ' + obsCores : ''}`,
+          artesAplicacao: (Array.isArray(itemModelo.aplicacoes) && itemModelo.aplicacoes.length > 0)
+            ? JSON.parse(JSON.stringify(itemModelo.aplicacoes))
+            : (os.artesAplicacao || []).filter(a => !a.modeloNome || a.modeloNome === itemModelo.produtoNome),
+          instrucoesCorte: `Corte para ${totalPecasMod} peças de ${modNome} (Sub-OS ${letra} de ${lotesTrabalho.length}). Destino: [${setorDestino}]. Cor: ${corTec}.`,
           instrucoesCostura: setorDestino.toLowerCase().includes('costura')
             ? `Setor: ${setorDestino}. Costureira: ${costObj.nome}. Fechamento para ${totalPecasMod} peças de ${modNome}. Remuneração acordada: ${formatarMoeda(valPeca)}/un (Total a Pagar: ${formatarMoeda(valPeca * totalPecasMod)}). Fechamento confidencial.`
             : `Ordem interna destinada a ${setorDestino}. Total de ${totalPecasMod} peças de ${modNome}. Seguir especificações de grade e tolerância industrial de 2mm.`,
