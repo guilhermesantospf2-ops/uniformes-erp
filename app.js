@@ -10433,9 +10433,8 @@
         const inpAv = document.getElementById('inputCustoAviamento');
         if (inpAv) inpAv.value = formatarMoedaInput(it.custoAviamento);
 
-        // --- 1. DETECÇÃO INTELIGENTE: CAMISA (ALFABÉTICA) VS CALÇA / BERMUDA (NUMÉRICA) ---
-        const nomeECat = ((prod.nome || '') + ' ' + (prod.categoria || '')).toLowerCase();
-        const isCalcaOuBermuda = prod.tipoGradePadrao === 'numerica' || /(cal[çc]a|bermuda|short|sarja|brim|rip stop|jeans)/i.test(nomeECat);
+        // --- 1. GRADE PADRÃO ALFABÉTICA (SÓ TROCA PARA NUMÉRICA SE EXPLICITAMENTE CONFIGURADO NO PRODUTO) ---
+        const isCalcaOuBermuda = prod.tipoGradePadrao === 'numerica';
         if (isCalcaOuBermuda) {
           const btnNum = document.getElementById('btnModoGradeNumerica');
           if (btnNum) btnNum.click();
