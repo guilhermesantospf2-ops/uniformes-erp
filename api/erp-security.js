@@ -1285,6 +1285,13 @@ module.exports = async function handler(req, res) {
         }
       } catch (eEnrich) {}
 
+      // Garante duplicateNumber estritamente numérico (001, 002...) exigido pela SEFAZ 4.00
+      if (Array.isArray(payload.billing?.duplicates)) {
+        payload.billing.duplicates.forEach((dup, idx) => {
+          dup.duplicateNumber = String(idx + 1).padStart(3, '0');
+        });
+      }
+
       const urlEnvio = `https://api.nfse.io/v2/companies/${companyId}/productinvoices?environment=${ambiente}`;
 
       try {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'texfy-erp-desktop-v10.1.9';
+const CACHE_NAME = 'texfy-erp-desktop-v10.1.10';
 
 const CORE_ASSETS = [
   '/',
@@ -11,7 +11,7 @@ const CORE_ASSETS = [
   '/coleta',
   '/coleta.html',
   '/style.css?v=10.0.0',
-  '/app.js?v=10.1.9',
+  '/app.js?v=10.1.10',
   '/cloud-sync.js?v=10.0.0',
   '/nesting-engine.js?v=10.0.0',
   '/market-benchmark.js?v=10.0.0',
@@ -21,7 +21,7 @@ const CORE_ASSETS = [
   '/pix-qrcode.min.js',
   '/infinitepay-engine.js?v=10.0.0',
   '/jszip.min.js',
-  '/tecnospeed-engine.js?v=10.0.0',
+  '/tecnospeed-engine.js?v=10.1.10',
   '/manifest.json',
   '/favicon.ico',
   '/assets/favicon.png',
