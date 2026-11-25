@@ -27127,6 +27127,17 @@
     if (!b) return;
     let houveAlteracao = false;
     if (!Array.isArray(b.notasFiscais)) b.notasFiscais = [];
+    // Remove registros locais de falha de validação JSON que nunca chegaram a gerar nota na NFE.io/SEFAZ
+    const qtdAntesLimpeza = b.notasFiscais.length;
+    b.notasFiscais = b.notasFiscais.filter(nf => {
+      if (nf.statusSefaz === 'rejeitada' && (!nf.nfeioId || /PaymentMethod|The body field is required/i.test(nf.motivoRejeicao || ''))) {
+        return false;
+      }
+      return true;
+    });
+    if (b.notasFiscais.length !== qtdAntesLimpeza) {
+      houveAlteracao = true;
+    }
     const notas = b.notasFiscais;
 
     notas.forEach(nf => {
@@ -27282,7 +27293,10 @@
 
     if (!b.configFiscal) b.configFiscal = {};
     const pisoMinimo = isContaPrimeUniformes ? 46 : 1;
-    const proximoEsperado = Math.max(parseInt(b.configFiscal.proximoNumero, 10) || 1, maiorNota + 1, pisoMinimo);
+    const limpouFantasma = b.notasFiscais.length !== qtdAntesLimpeza;
+    const proximoEsperado = limpouFantasma
+      ? Math.max(maiorNota + 1, pisoMinimo)
+      : Math.max(parseInt(b.configFiscal.proximoNumero, 10) || 1, maiorNota + 1, pisoMinimo);
     if (b.configFiscal.proximoNumero !== proximoEsperado) {
       b.configFiscal.proximoNumero = proximoEsperado;
       houveAlteracao = true;
@@ -27306,7 +27320,10 @@
       if (res && res.sucesso) {
         let mudou = false;
         if (!db.configFiscal) db.configFiscal = {};
-        const proxReal = Math.max(db.configFiscal.proximoNumero || 46, res.proximoNumeroSefaz || 46, 46);
+        const maiorLocalValida = (db.notasFiscais || [])
+          .filter(n => Boolean(n.nfeioId) || n.statusSefaz !== 'rejeitada')
+          .reduce((m, n) => Math.max(m, parseInt(n.numero, 10) || 0), 0);
+        const proxReal = Math.max(maiorLocalValida + 1, res.proximoNumeroSefaz || 46, 46);
         if (db.configFiscal.proximoNumero !== proxReal) {
           db.configFiscal.proximoNumero = proxReal;
           mudou = true;
@@ -30605,24 +30622,33 @@
         if (window.TecnoSpeedEngine) {
           const resTS = await window.TecnoSpeedEngine.emitirNfeTecnoSpeed(novaNfe, emp, cfg);
           if (resTS && !resTS.sucesso && !resTS.simulado) {
-            if (resTS.numero) novaNfe.numero = parseInt(resTS.numero, 10) || novaNfe.numero;
-            if (resTS.serie) novaNfe.serie = resTS.serie;
-            if (resTS.nfeioId) novaNfe.nfeioId = resTS.nfeioId;
-            if (resTS.chaveAcesso) novaNfe.chaveAcesso = resTS.chaveAcesso;
-            novaNfe.statusSefaz = 'rejeitada';
-            novaNfe.motivoRejeicao = resTS.erro || resTS.mensagem || 'Rejeição na SEFAZ';
-            novaNfe.eventosSefaz = Array.isArray(resTS.eventos) ? resTS.eventos : [];
+            const msgErroSefaz = resTS.erro || resTS.mensagem || 'Rejeição na SEFAZ';
+            // Só registra na bancada de Notas Fiscais e avança numeração se a nota realmente foi criada na NFE.io (possui nfeioId)
+            if (resTS.nfeioId) {
+              if (resTS.numero) novaNfe.numero = parseInt(resTS.numero, 10) || novaNfe.numero;
+              if (resTS.serie) novaNfe.serie = resTS.serie;
+              novaNfe.nfeioId = resTS.nfeioId;
+              if (resTS.chaveAcesso) novaNfe.chaveAcesso = resTS.chaveAcesso;
+              novaNfe.statusSefaz = 'rejeitada';
+              novaNfe.motivoRejeicao = msgErroSefaz;
+              novaNfe.eventosSefaz = Array.isArray(resTS.eventos) ? resTS.eventos : [];
 
-            if (!Array.isArray(db.notasFiscais)) db.notasFiscais = [];
-            db.notasFiscais.unshift(novaNfe);
-            const numRej = parseInt(novaNfe.numero, 10) || numNfe;
-            if (resTS.nfeioId || resTS.numero) {
-              db.configFiscal.proximoNumero = Math.max(numNfe + 1, numRej + 1, 46);
-            }
-            salvarEstado(true);
-            atualizarBadges();
-            if (typeof renderizarNotasFiscais === 'function' && document.getElementById('tbodyGestaoNfe')) {
-              renderizarNotasFiscais();
+              if (!Array.isArray(db.notasFiscais)) db.notasFiscais = [];
+              const jaExisteRej = db.notasFiscais.findIndex(n => n.nfeioId === resTS.nfeioId || (resTS.numero && Number(n.numero) === Number(resTS.numero)));
+              if (jaExisteRej >= 0) {
+                db.notasFiscais[jaExisteRej] = novaNfe;
+              } else {
+                db.notasFiscais.unshift(novaNfe);
+              }
+              if (resTS.numero) {
+                const numRej = parseInt(resTS.numero, 10) || numNfe;
+                db.configFiscal.proximoNumero = Math.max(numNfe + 1, numRej + 1, 46);
+              }
+              salvarEstado(true);
+              atualizarBadges();
+              if (typeof renderizarNotasFiscais === 'function' && document.getElementById('tbodyGestaoNfe')) {
+                renderizarNotasFiscais(true);
+              }
             }
 
             btnTransmitir.disabled = false;
@@ -30630,7 +30656,7 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
               Emitir & Transmitir NF-e (SEFAZ)
             `;
-            return alert('Erro retornado pela SEFAZ (registrado no histórico de Notas Fiscais como Rejeitada):\n\n' + novaNfe.motivoRejeicao);
+            return alert('Erro retornado pela SEFAZ:\n\n' + msgErroSefaz);
           }
           if (resTS) {
             if (resTS.numero) novaNfe.numero = parseInt(resTS.numero, 10);

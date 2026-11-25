@@ -289,14 +289,17 @@
       const valorTotalTribAprox = items.reduce((s, it) => s + (it.tax?.totalTax || 0), 0);
       const qtdTotalPecas = items.reduce((s, it) => s + (Number(it.quantity) || 0), 0) || 1;
 
-      // Forma de pagamento
-      let paymentMethod = 'InstantPayment'; // PIX
+      // Forma de pagamento (Enum oficial DFeTech.ProductInvoice.Domain.Models.PaymentMethod da NFE.io)
+      let paymentMethod = 'InstantPayment'; // 17 - PIX
       const meio = String(nfe.meioPagamento || '17');
-      if (meio === '01') paymentMethod = 'InCash';
-      else if (meio === '03' || meio === '04') paymentMethod = 'CreditCard';
-      else if (meio === '15') paymentMethod = 'Boleto';
+      if (meio === '01') paymentMethod = 'Cash';
+      else if (meio === '02') paymentMethod = 'Check';
+      else if (meio === '03') paymentMethod = 'CreditCard';
+      else if (meio === '04') paymentMethod = 'DebitCard';
+      else if (meio === '15') paymentMethod = 'BankBill';
       else if (meio === '14') paymentMethod = 'TradeBill';
       else if (meio === '16') paymentMethod = 'BankDeposit';
+      else if (meio === '90') paymentMethod = 'NoPayment';
       else if (meio === '99') paymentMethod = 'Others';
 
       const parcelasLista = Array.isArray(nfe.parcelas) ? nfe.parcelas.filter(p => Number(p.valor) > 0) : [];
@@ -619,7 +622,7 @@
             sucesso: false,
             simulado: false,
             nfeioId: resData?.nfeioId || d.id || '',
-            numero: numErr || nfe.numero,
+            numero: numErr || null,
             serie: resData?.serie || d.serie || nfe.serie || 1,
             chaveAcesso: chaveErr,
             eventos: resData?.eventos || d.lastEvents?.events || [],

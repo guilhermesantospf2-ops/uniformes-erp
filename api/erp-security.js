@@ -1285,6 +1285,40 @@ module.exports = async function handler(req, res) {
         }
       } catch (eEnrich) {}
 
+      // Normaliza enum PaymentMethod oficial da NFE.io (evita erro de desserialização C# para Boleto/Dinheiro)
+      if (Array.isArray(payload.payment)) {
+        const mapMethod = {
+          'Boleto': 'BankBill',
+          'BankSlip': 'BankBill',
+          '15': 'BankBill',
+          'InCash': 'Cash',
+          'Dinheiro': 'Cash',
+          '01': 'Cash',
+          '02': 'Check',
+          '03': 'CreditCard',
+          '04': 'DebitCard',
+          '14': 'TradeBill',
+          '16': 'BankDeposit',
+          '17': 'InstantPayment',
+          'PIX': 'InstantPayment',
+          '90': 'NoPayment',
+          '99': 'Others'
+        };
+        const validMethods = new Set(['Cash', 'Check', 'CreditCard', 'DebitCard', 'StoreCredit', 'FoodVouchers', 'MealVouchers', 'GiftVouchers', 'FuelVouchers', 'TradeBill', 'BankBill', 'BankDeposit', 'InstantPayment', 'WireTransfer', 'Cashback', 'NoPayment', 'Others']);
+        payload.payment.forEach(p => {
+          if (Array.isArray(p.paymentDetail)) {
+            p.paymentDetail.forEach(det => {
+              if (det.method && mapMethod[det.method]) {
+                det.method = mapMethod[det.method];
+              }
+              if (!det.method || !validMethods.has(det.method)) {
+                det.method = 'InstantPayment';
+              }
+            });
+          }
+        });
+      }
+
       // Garante duplicateNumber estritamente numérico (001, 002...) e soma exata exigidos pela SEFAZ 4.00
       if (Array.isArray(payload.billing?.duplicates)) {
         const dupsValidas = payload.billing.duplicates.filter(d => Number(d.amount) > 0);
