@@ -29741,15 +29741,36 @@
     function extrairDadosComplementaresPedido(p) {
       const desc = Number(p?.valorDesconto ?? p?.desconto ?? 0) || 0;
       const frete = Number(p?.valorFrete ?? p?.frete ?? 0) || 0;
-      const meio = mapearMeioPagamentoSefaz(p?.pagamentoDetalhes?.formaPagamento || p?.formaPagamento);
+      const formaPreferida = (p?.pagamentoDetalhes?.temSaldo && p?.pagamentoDetalhes?.formaSaldo)
+        ? p.pagamentoDetalhes.formaSaldo
+        : (p?.pagamentoDetalhes?.formaEntrada || p?.pagamentoDetalhes?.formaPagamento || p?.formaPagamento);
+      const meio = mapearMeioPagamentoSefaz(formaPreferida);
       const rawParc = Array.isArray(p?.pagamentoDetalhes?.parcelas) && p.pagamentoDetalhes.parcelas.length > 0
         ? p.pagamentoDetalhes.parcelas
         : (Array.isArray(p?.parcelas) ? p.parcelas : []);
       const fatNum = p?.numero ? String(p.numero) : String(obterProximoNumeroNfe());
-      const parcelas = rawParc.map((pc, idx) => ({
-        numero: String(pc.numero || `${fatNum}-${String(idx + 1).padStart(2, '0')}`),
-        vencimento: String(pc.vencimento || pc.dataVencimento || new Date(Date.now() + (idx + 1) * 30 * 86400000).toISOString().slice(0, 10)).slice(0, 10),
-        valor: Number(pc.valor ?? pc.valorParcela ?? 0) || 0
+      const listaParc = [];
+      const valEntradaPed = Number(p?.pagamentoDetalhes?.valorEntrada || 0);
+      const somaRawParc = rawParc.reduce((s, pc) => s + (Number(pc.valor ?? pc.valorParcela ?? 0) || 0), 0);
+      if (valEntradaPed > 0 && rawParc.length > 0) {
+        listaParc.push({
+          vencimento: new Date().toISOString().slice(0, 10),
+          valor: Number(valEntradaPed.toFixed(2))
+        });
+      }
+      rawParc.forEach((pc, idx) => {
+        const vParc = Number(pc.valor ?? pc.valorParcela ?? 0) || 0;
+        if (vParc > 0) {
+          listaParc.push({
+            vencimento: String(pc.vencimento || pc.dataVencimento || new Date(Date.now() + (idx + 1) * 30 * 86400000).toISOString().slice(0, 10)).slice(0, 10),
+            valor: Number(vParc.toFixed(2))
+          });
+        }
+      });
+      const parcelas = listaParc.map((pc, idx) => ({
+        numero: String(idx + 1).padStart(3, '0'),
+        vencimento: pc.vencimento,
+        valor: pc.valor
       }));
       const tr = p?.transporte || {};
       return {

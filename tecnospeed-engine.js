@@ -289,21 +289,22 @@
       const valorTotalTribAprox = items.reduce((s, it) => s + (it.tax?.totalTax || 0), 0);
       const qtdTotalPecas = items.reduce((s, it) => s + (Number(it.quantity) || 0), 0) || 1;
 
-      // Forma de pagamento (Enum oficial DFeTech.ProductInvoice.Domain.Models.PaymentMethod da NFE.io)
+      // Forma de pagamento (Enum oficial DFeTech.ProductInvoice.Domain.Models.PaymentMethod validado na NFE.io)
       let paymentMethod = 'InstantPayment'; // 17 - PIX
       const meio = String(nfe.meioPagamento || '17');
       if (meio === '01') paymentMethod = 'Cash';
-      else if (meio === '02') paymentMethod = 'Check';
+      else if (meio === '02') paymentMethod = 'Cheque';
       else if (meio === '03') paymentMethod = 'CreditCard';
       else if (meio === '04') paymentMethod = 'DebitCard';
+      else if (meio === '05' || meio === '14') paymentMethod = 'StoreCredit';
       else if (meio === '15') paymentMethod = 'BankBill';
-      else if (meio === '14') paymentMethod = 'TradeBill';
       else if (meio === '16') paymentMethod = 'BankDeposit';
-      else if (meio === '90') paymentMethod = 'NoPayment';
+      else if (meio === '18') paymentMethod = 'WireTransfer';
+      else if (meio === '90') paymentMethod = 'WithoutPayment';
       else if (meio === '99') paymentMethod = 'Others';
 
       const parcelasLista = Array.isArray(nfe.parcelas) ? nfe.parcelas.filter(p => Number(p.valor) > 0) : [];
-      const isAPrazo = parcelasLista.length > 0 && (parcelasLista.length > 1 || Boolean(nfe.fatura?.aPrazo) || meio === '15' || meio === '14');
+      const isAPrazo = parcelasLista.length > 0 && (parcelasLista.length > 1 || Boolean(nfe.fatura?.aPrazo) || meio === '15' || meio === '14' || meio === '05');
 
       // Cobrança / Fatura & Duplicatas (cobr / fat / dup)
       const faturaObj = nfe.fatura || {};
@@ -320,12 +321,34 @@
         } else {
           vencIso = new Date(Date.now() + ((pIdx + 1) * 30 * 86400000)).toISOString().slice(0, 10) + 'T00:00:00Z';
         }
+        const numDup = String(pIdx + 1).padStart(3, '0');
         return {
-          duplicateNumber: String(pIdx + 1).padStart(3, '0'),
+          number: numDup,
           expirationOn: vencIso,
           amount: Number(Number(parc.valor || 0).toFixed(2))
         };
       });
+
+      if (duplicatesPayload.length > 0 && valorTotalNota > 0) {
+        const somaDups = Number(duplicatesPayload.reduce((s, d) => s + d.amount, 0).toFixed(2));
+        const diff = Number((valorTotalNota - somaDups).toFixed(2));
+        if (Math.abs(diff) > 0) {
+          if (diff > 0 && diff >= 1.00) {
+            // Se faltou a parcela da entrada na lista de duplicatas, insere a entrada como 001 e renumera as demais
+            const hojeIso = new Date().toISOString().slice(0, 10) + 'T00:00:00Z';
+            duplicatesPayload.unshift({
+              number: '001',
+              expirationOn: hojeIso,
+              amount: diff
+            });
+            duplicatesPayload.forEach((d, i) => {
+              d.number = String(i + 1).padStart(3, '0');
+            });
+          } else {
+            duplicatesPayload[duplicatesPayload.length - 1].amount = Number((duplicatesPayload[duplicatesPayload.length - 1].amount + diff).toFixed(2));
+          }
+        }
+      }
 
       const billingPayload = (faturaObj.numero || duplicatesPayload.length > 0 || somaDescontos > 0)
         ? {
@@ -345,9 +368,9 @@
       let freightModality = 'Free';
       if (modStr === '0') freightModality = 'ByIssuer';
       else if (modStr === '1') freightModality = 'ByReceiver';
-      else if (modStr === '2') freightModality = 'ByThirdParty';
-      else if (modStr === '3') freightModality = 'OwnByIssuer';
-      else if (modStr === '4') freightModality = 'OwnByReceiver';
+      else if (modStr === '2') freightModality = 'ByThirdParties';
+      else if (modStr === '3') freightModality = 3;
+      else if (modStr === '4') freightModality = 4;
 
       const trNome = String(tr.transportadoraNome || '').trim();
       const trDoc = String(tr.transportadoraCnpj || '').replace(/\D/g, '');
@@ -441,7 +464,7 @@
             paymentDetail: [
               {
                 method: paymentMethod,
-                paymentType: isAPrazo ? 'InTerms' : 'InCash',
+                paymentType: isAPrazo ? 'Term' : 'InCash',
                 amount: valorTotalNota
               }
             ]

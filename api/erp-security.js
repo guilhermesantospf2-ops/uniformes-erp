@@ -1285,7 +1285,7 @@ module.exports = async function handler(req, res) {
         }
       } catch (eEnrich) {}
 
-      // Normaliza enum PaymentMethod oficial da NFE.io (evita erro de desserialização C# para Boleto/Dinheiro)
+      // Normaliza enums PaymentMethod, PaymentType e FreightModality oficiais da NFE.io (evita erro HTTP 400 de desserialização C#)
       if (Array.isArray(payload.payment)) {
         const mapMethod = {
           'Boleto': 'BankBill',
@@ -1294,18 +1294,26 @@ module.exports = async function handler(req, res) {
           'InCash': 'Cash',
           'Dinheiro': 'Cash',
           '01': 'Cash',
-          '02': 'Check',
+          'Check': 'Cheque',
+          '02': 'Cheque',
           '03': 'CreditCard',
           '04': 'DebitCard',
-          '14': 'TradeBill',
+          'TradeBill': 'StoreCredit',
+          '14': 'StoreCredit',
+          '05': 'StoreCredit',
           '16': 'BankDeposit',
           '17': 'InstantPayment',
           'PIX': 'InstantPayment',
-          '90': 'NoPayment',
+          '18': 'WireTransfer',
+          'NoPayment': 'WithoutPayment',
+          '90': 'WithoutPayment',
           '99': 'Others'
         };
-        const validMethods = new Set(['Cash', 'Check', 'CreditCard', 'DebitCard', 'StoreCredit', 'FoodVouchers', 'MealVouchers', 'GiftVouchers', 'FuelVouchers', 'TradeBill', 'BankBill', 'BankDeposit', 'InstantPayment', 'WireTransfer', 'Cashback', 'NoPayment', 'Others']);
+        const validMethods = new Set(['Cash', 'Cheque', 'CreditCard', 'DebitCard', 'StoreCredit', 'FoodVouchers', 'MealVouchers', 'GiftVouchers', 'FuelVouchers', 'BankBill', 'BankDeposit', 'InstantPayment', 'WireTransfer', 'Cashback', 'WithoutPayment', 'Others']);
         payload.payment.forEach(p => {
+          if (p.paymentType === 'InTerms' || p.paymentType === 'OnCredit' || p.paymentType === 'Installment') {
+            p.paymentType = 'Term';
+          }
           if (Array.isArray(p.paymentDetail)) {
             p.paymentDetail.forEach(det => {
               if (det.method && mapMethod[det.method]) {
@@ -1314,25 +1322,60 @@ module.exports = async function handler(req, res) {
               if (!det.method || !validMethods.has(det.method)) {
                 det.method = 'InstantPayment';
               }
+              if (det.paymentType === 'InTerms' || det.paymentType === 'OnCredit' || det.paymentType === 'Installment') {
+                det.paymentType = 'Term';
+              } else if (det.paymentType && det.paymentType !== 'InCash' && det.paymentType !== 'Term') {
+                det.paymentType = 'InCash';
+              }
             });
           }
         });
       }
 
-      // Garante duplicateNumber estritamente numérico (001, 002...) e soma exata exigidos pela SEFAZ 4.00
+      if (payload.transport && payload.transport.freightModality != null) {
+        const fmMap = {
+          'WithoutFreight': 'Free',
+          'ByRecipient': 'ByReceiver',
+          'ByThirdParty': 'ByThirdParties',
+          'OwnByIssuer': 3,
+          'OwnAccountByIssuer': 3,
+          'OwnByReceiver': 4,
+          'OwnAccountByRecipient': 4
+        };
+        if (fmMap[payload.transport.freightModality] !== undefined) {
+          payload.transport.freightModality = fmMap[payload.transport.freightModality];
+        }
+      }
+
+      // Garante billing.duplicates[].number estritamente numérico (001, 002...) e soma exata com bill.netAmount exigidos pela SEFAZ 4.00
       if (Array.isArray(payload.billing?.duplicates)) {
-        const dupsValidas = payload.billing.duplicates.filter(d => Number(d.amount) > 0);
-        dupsValidas.forEach((dup, idx) => {
-          dup.duplicateNumber = String(idx + 1).padStart(3, '0');
-          dup.amount = Number(Number(dup.amount).toFixed(2));
-        });
-        if (dupsValidas.length > 0 && payload.billing.bill?.netAmount > 0) {
-          const somaDups = dupsValidas.reduce((s, d) => s + d.amount, 0);
-          const diff = Number((Number(payload.billing.bill.netAmount) - somaDups).toFixed(2));
-          if (Math.abs(diff) > 0 && Math.abs(diff) <= 1.00) {
-            dupsValidas[dupsValidas.length - 1].amount = Number((dupsValidas[dupsValidas.length - 1].amount + diff).toFixed(2));
+        const dupsValidas = payload.billing.duplicates
+          .filter(d => Number(d.amount) > 0)
+          .map(d => ({
+            number: '001',
+            expirationOn: d.expirationOn || (new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10) + 'T00:00:00Z'),
+            amount: Number(Number(d.amount).toFixed(2))
+          }));
+        const netAmt = Number(payload.billing.bill?.netAmount) || 0;
+        if (dupsValidas.length > 0 && netAmt > 0) {
+          const somaDups = Number(dupsValidas.reduce((s, d) => s + d.amount, 0).toFixed(2));
+          const diff = Number((netAmt - somaDups).toFixed(2));
+          if (Math.abs(diff) > 0) {
+            if (diff >= 1.00) {
+              // Insere parcela da entrada como 001 para soma de <dup> bater 100% com <vLiq>
+              dupsValidas.unshift({
+                number: '001',
+                expirationOn: new Date().toISOString().slice(0, 10) + 'T00:00:00Z',
+                amount: diff
+              });
+            } else {
+              dupsValidas[dupsValidas.length - 1].amount = Number((dupsValidas[dupsValidas.length - 1].amount + diff).toFixed(2));
+            }
           }
         }
+        dupsValidas.forEach((dup, idx) => {
+          dup.number = String(idx + 1).padStart(3, '0');
+        });
         if (dupsValidas.length > 0) {
           payload.billing.duplicates = dupsValidas;
         } else {
