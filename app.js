@@ -5463,7 +5463,48 @@
                       `;
         })()}
                   </td>
-                  <td class="text-mono" style="white-space: nowrap !important; text-align: right; vertical-align: middle; min-width: 95px;">${formatarMoeda(p.precoUnitarioVenda)}</td>
+                  <td class="text-mono" style="white-space: nowrap !important; text-align: right; vertical-align: middle; min-width: 95px;">
+                    ${(() => {
+                      const listaItensPrec = (Array.isArray(p.itens) && p.itens.length > 0) ? p.itens : [p];
+                      if (listaItensPrec.length > 1) {
+                        return `<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end;">` +
+                          listaItensPrec.map((it, idxP) => {
+                            const gIt = it.grade || {};
+                            const prTam = it.precosPorTamanho || {};
+                            const pB = parseFloat(it.precoVendaUnitario) || parseFloat(it.precoUnitarioVenda) || parseFloat(p.precoUnitarioVenda) || 0;
+                            const tamsIt = typeof obterTamanhosSelecionadosGrade === 'function' ? obterTamanhosSelecionadosGrade(gIt) : [];
+                            const precosUnicos = Array.from(new Set(tamsIt.map(s => Number((prTam[s.chave] != null && parseFloat(prTam[s.chave]) > 0) ? parseFloat(prTam[s.chave]) : pB).toFixed(2)))).map(Number).filter(v => v > 0);
+                            const strPr = precosUnicos.length > 1 ? precosUnicos.map(v => formatarMoeda(v)).join(' / ') : formatarMoeda(precosUnicos[0] || pB);
+                            return `<span style="font-size:10.5px;display:block;"><span style="color:#64748b;">M${idxP + 1}:</span> <strong>${strPr}</strong></span>`;
+                          }).join('') +
+                          `</div>`;
+                      }
+                      const itUn = listaItensPrec[0] || p;
+                      const gUn = itUn.grade || p.grade || {};
+                      const prUn = itUn.precosPorTamanho || p.precosPorTamanho || {};
+                      const pBaseUn = parseFloat(itUn.precoVendaUnitario) || parseFloat(itUn.precoUnitarioVenda) || parseFloat(p.precoUnitarioVenda) || 0;
+                      const tamsUn = typeof obterTamanhosSelecionadosGrade === 'function' ? obterTamanhosSelecionadosGrade(gUn) : [];
+                      if (tamsUn.length > 0) {
+                        const mapGrp = new Map();
+                        tamsUn.forEach(s => {
+                          const v = (prUn[s.chave] != null && !isNaN(prUn[s.chave]) && parseFloat(prUn[s.chave]) > 0) ? parseFloat(prUn[s.chave]) : pBaseUn;
+                          const k = Number(v).toFixed(2);
+                          if (!mapGrp.has(k)) mapGrp.set(k, { preco: v, tams: [] });
+                          mapGrp.get(k).tams.push(s.tam);
+                        });
+                        const grps = Array.from(mapGrp.values());
+                        if (grps.length > 1) {
+                          return `<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end;">` +
+                            grps.map(g => `<span style="font-size:11px;display:block;"><strong>${formatarMoeda(g.preco)}</strong> <span style="color:#64748b;font-size:9.5px;">(${g.tams.join('/')})</span></span>`).join('') +
+                            `</div>`;
+                        }
+                        if (grps.length === 1 && grps[0].preco > 0) {
+                          return formatarMoeda(grps[0].preco);
+                        }
+                      }
+                      return formatarMoeda(p.precoUnitarioVenda);
+                    })()}
+                  </td>
                   <td class="text-mono" style="white-space: nowrap !important; text-align: right; vertical-align: middle; min-width: 105px;">
                     <strong style="font-size: 13.5px; color: var(--text-primary);">${formatarMoeda(p.valorTotalVenda)}</strong>
                   </td>
@@ -11632,25 +11673,33 @@
         }
       }
 
-      // Cálculo do Preço de Venda Ponderado pelos Preços por Tamanho (ex: PP/M = 39,90 vs G5 = 48,00)
+      // Cálculo dos Preços Reais por Tamanho (ex: P..GG = 52,00 e G1 = 57,00 — sem usar média artificial)
       let somaFaturamentoGrade = 0;
       let pecasComGrade = 0;
+      const gruposPrecoAtivo = new Map();
       if (itAtivo.grade) {
         Object.keys(itAtivo.grade).forEach(k => {
           if (k === 'total') return;
           const q = parseInt(itAtivo.grade[k], 10) || 0;
           if (q > 0) {
             pecasComGrade += q;
-            const pTam = (itAtivo.precosPorTamanho && itAtivo.precosPorTamanho[k] != null && !isNaN(itAtivo.precosPorTamanho[k]))
+            const pTam = (itAtivo.precosPorTamanho && itAtivo.precosPorTamanho[k] != null && !isNaN(itAtivo.precosPorTamanho[k]) && parseFloat(itAtivo.precosPorTamanho[k]) > 0)
               ? parseFloat(itAtivo.precosPorTamanho[k])
               : (parseFloat(itAtivo.precoVendaUnitario) || 0);
             somaFaturamentoGrade += (q * pTam);
+            if (pTam > 0) {
+              const kPr = Number(pTam).toFixed(2);
+              if (!gruposPrecoAtivo.has(kPr)) gruposPrecoAtivo.set(kPr, { preco: pTam, tams: [] });
+              gruposPrecoAtivo.get(kPr).tams.push(k.toUpperCase());
+            }
           }
         });
       }
 
+      const listaGruposPrecoAtivo = Array.from(gruposPrecoAtivo.values());
       if (pecasComGrade > 0 && somaFaturamentoGrade > 0) {
-        itAtivo.precoVendaUnitario = somaFaturamentoGrade / pecasComGrade;
+        // Mantém o preço base real do modelo (ex: 52,00) em vez de dividir criando dízima/média artificial
+        itAtivo.precoVendaUnitario = listaGruposPrecoAtivo.length > 0 ? listaGruposPrecoAtivo[0].preco : (somaFaturamentoGrade / pecasComGrade);
         itAtivo.valorTotalVenda = somaFaturamentoGrade;
       } else {
         itAtivo.precoVendaUnitario = pecasComGrade > 0 ? (somaFaturamentoGrade / pecasComGrade) : 0;
@@ -11695,9 +11744,11 @@
             </div>
 
             <div class="card" style="padding: 8px; margin: 0; background: #f8fafc; border: 1px solid var(--border-medium);">
-              <span style="font-size: 9.5px; color: var(--text-gray-500); text-transform: uppercase;">Preço Venda</span>
-              <div class="text-mono" style="font-size: 13.5px; font-weight: 800; color: #1e40af; margin-top: 1px;">
-                ${formatarMoeda(itAtivo.precoVendaUnitario)}
+              <span style="font-size: 9.5px; color: var(--text-gray-500); text-transform: uppercase;">Preço Venda (Peça)</span>
+              <div class="text-mono" style="font-size: ${listaGruposPrecoAtivo.length > 1 ? '11.5px' : '13.5px'}; font-weight: 800; color: #1e40af; margin-top: 1px;">
+                ${listaGruposPrecoAtivo.length > 1
+                  ? listaGruposPrecoAtivo.map(g => `${formatarMoeda(g.preco)} <small style="font-weight:600;color:#475569;">(${g.tams.join('/')})</small>`).join(' • ')
+                  : formatarMoeda(itAtivo.precoVendaUnitario)}
               </div>
               <span style="font-size: 9px; color: var(--text-gray-400);">Sugerido: ${formatarMoeda(viabilidade.precoSugeridoCalculado)}</span>
             </div>
@@ -11984,7 +12035,7 @@
         corTecido: corPrincipalGeral,
         observacoesCoresDetalhes: obsCoresGeral,
         grade: gradeConsolidada,
-        precoVendaUnitario: totalPecasGeral > 0 ? (faturamentoTotalGeral / totalPecasGeral) : 0,
+        precoVendaUnitario: parseFloat(itensOrcamento[0]?.precoVendaUnitario) || (totalPecasGeral > 0 ? (faturamentoTotalGeral / totalPecasGeral) : 0),
         valorBrutoVenda: faturamentoTotalGeral,
         desconto: descOrcInfo.descontoReais,
         valorDesconto: descOrcInfo.descontoReais,
@@ -32779,18 +32830,52 @@
         const cTec = it.corPrincipal || it.corTecido || (pedido ? pedido.corTecido : (os ? os.corTecido : 'A Definir'));
         const obs = it.observacoesCoresDetalhes || (pedido ? pedido.observacoesCoresDetalhes : (os ? os.observacoesCoresDetalhes : ''));
         const grd = it.grade || (pedido ? pedido.grade : (os ? os.grade : { total: 0 }));
+        const precosTam = it.precosPorTamanho || (itensLista.length === 1 && pedido ? pedido.precosPorTamanho : {}) || {};
+        const pBase = parseFloat(it.precoVendaUnitario) || parseFloat(it.precoUnitarioVenda) || (itensLista.length === 1 && pedido ? parseFloat(pedido.precoUnitarioVenda) : 0) || 0;
         const tec = (it.aplicacoes && it.aplicacoes.length > 0)
           ? it.aplicacoes.map(a => `${a.local} (${a.tecnica})`).join(', ')
           : (pedido ? pedido.tipoPersonalizacao : (os ? os.tipoPersonalizacao : 'Personalização Conforme Ficha'));
-        return { mSrc, pNome, cTec, obs, grd, tec };
+        return { mSrc, pNome, cTec, obs, grd, tec, precosTam, pBase };
       }
       const mSrc = (pedido ? pedido.mockupUrl : (os ? os.mockupUrl : mockupSrc)) || (window.ERP_MOCKUPS ? window.ERP_MOCKUPS.gerarMockupSvg("Polo", "#1e3a8a", "#ffffff", "TEXFY") : '');
       const pNome = (pedido ? pedido.produtoNome : (os ? os.produto : produtoNome));
       const cTec = (pedido ? pedido.corTecido : (os ? os.corTecido : 'A Definir'));
       const obs = (pedido ? pedido.observacoesCoresDetalhes : (os ? os.observacoesCoresDetalhes : ''));
       const grd = (pedido ? pedido.grade : (os ? os.grade : { total: 0 }));
+      const precosTam = (pedido ? pedido.precosPorTamanho : {}) || {};
+      const pBase = (pedido ? parseFloat(pedido.precoUnitarioVenda) : 0) || 0;
       const tec = (pedido ? pedido.tipoPersonalizacao : (os ? os.tipoPersonalizacao : 'Personalização Conforme Ficha'));
-      return { mSrc, pNome, cTec, obs, grd, tec };
+      return { mSrc, pNome, cTec, obs, grd, tec, precosTam, pBase };
+    }
+
+    function formatarGruposPrecoPorTamanhoHtml(grd, precosTam, pBase, modoCompacto = false) {
+      const tams = typeof obterTamanhosSelecionadosGrade === 'function' ? obterTamanhosSelecionadosGrade(grd || {}) : [];
+      if (!tams.length) {
+        return `<span class="text-mono">${formatarMoeda(pBase || 0)}</span>`;
+      }
+      const grupos = new Map();
+      tams.forEach(s => {
+        const pr = (precosTam && precosTam[s.chave] != null && !isNaN(precosTam[s.chave]) && parseFloat(precosTam[s.chave]) > 0)
+          ? parseFloat(precosTam[s.chave])
+          : (pBase || 0);
+        const k = Number(pr).toFixed(2);
+        if (!grupos.has(k)) grupos.set(k, { preco: pr, qtd: 0, tams: [] });
+        const g = grupos.get(k);
+        g.qtd += s.qtd;
+        g.tams.push(s.tam);
+      });
+      const listaGrupos = Array.from(grupos.values());
+      if (listaGrupos.length === 1) {
+        return `<span class="text-mono">${formatarMoeda(listaGrupos[0].preco)}</span>`;
+      }
+      if (modoCompacto) {
+        return `<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end;">` +
+          listaGrupos.map(g => `<span class="text-mono" style="font-size:11px;display:block;"><strong>${formatarMoeda(g.preco)}</strong> <span style="color:#64748b;font-size:10px;">(${g.tams.join('/')})</span></span>`).join('') +
+          `</div>`;
+      }
+      return `<div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">` +
+        listaGrupos.map(g => `<span class="text-mono" style="font-size:12px;"><strong>${formatarMoeda(g.preco)}/un</strong> <span style="color:#475569;font-size:11px;">(${g.qtd}x: ${g.tams.join(', ')})</span></span>`).join('') +
+        `</div>`;
     }
 
     const inicial = extrairDadosDoModeloAtivo(activeModelIndex);
@@ -32965,9 +33050,9 @@
                 ${valorTotal > 0 ? `
                   <div class="mockup-spec-card">
                     <div class="mockup-spec-title">Fechamento Comercial</div>
-                    <div class="mockup-spec-row">
-                      <span class="mockup-spec-label">Preço Médio Unitário:</span>
-                      <span class="mockup-spec-value text-mono">${formatarMoeda(precoUnit)}</span>
+                    <div class="mockup-spec-row" style="align-items: flex-start;">
+                      <span class="mockup-spec-label">Valor Unitário por Peça:</span>
+                      <span class="mockup-spec-value" id="valModeloPrecoUnitario">${formatarGruposPrecoPorTamanhoHtml(inicial.grd, inicial.precosTam, inicial.pBase || precoUnit, false)}</span>
                     </div>
                     <div class="mockup-spec-row">
                       <span class="mockup-spec-label">Valor Total do Pedido:</span>
@@ -33087,6 +33172,11 @@
             ${formatarGradeSelecionadaHtml(dadosMod.grd, 'badge')}
             <span class="text-mono text-green" style="font-weight: 800; font-size: 12px; margin-left: auto;">Total: ${dadosMod.grd?.total || 0} pçs</span>
           `;
+        }
+
+        const valPrecoUnit = document.getElementById('valModeloPrecoUnitario');
+        if (valPrecoUnit) {
+          valPrecoUnit.innerHTML = formatarGruposPrecoPorTamanhoHtml(dadosMod.grd, dadosMod.precosTam, dadosMod.pBase || precoUnit, false);
         }
       });
     });
