@@ -442,9 +442,22 @@
           type: isCpf ? 'NaturalPerson' : 'LegalEntity',
           name: cli.nome || cli.razaoSocial || 'Consumidor Final',
           federalTaxNumber: cnpjDest ? Number(cnpjDest) : 0,
-          ...((cli.ie && cli.ie.toUpperCase() !== 'ISENTO' && cli.ie.replace(/\D/g, '').length > 0)
-            ? { stateTaxNumber: cli.ie.replace(/\D/g, '') }
-            : (cnpjDest === '62007964000119' ? { stateTaxNumber: '264546407' } : {})),
+          ...((() => {
+            const ieLimpa = String(cli.ie || '').replace(/\D/g, '');
+            const ieEmitente = String(emp.inscricaoEstadual || emp.ie || '263420248').replace(/\D/g, '');
+            // Nunca envia a IE do próprio emitente como se fosse do destinatário
+            if (ieLimpa && ieLimpa === ieEmitente && cnpjDest !== String(emp.cnpj || '').replace(/\D/g, '')) {
+              if (cnpjDest === '37482413000160') return { stateTaxNumber: '260549100' };
+              if (cnpjDest === '62007964000119') return { stateTaxNumber: '264546407' };
+              return {};
+            }
+            if (cli.ie && cli.ie.toUpperCase() !== 'ISENTO' && ieLimpa.length > 0) {
+              return { stateTaxNumber: ieLimpa };
+            }
+            if (cnpjDest === '37482413000160') return { stateTaxNumber: '260549100' };
+            if (cnpjDest === '62007964000119') return { stateTaxNumber: '264546407' };
+            return {};
+          })()),
           address: {
             street: end.logradouro || 'Rua Principal',
             number: end.numero || 'S/N',

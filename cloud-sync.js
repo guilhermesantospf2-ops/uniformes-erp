@@ -1763,7 +1763,7 @@ with check (true);
             let dbFinal = resData.db;
             try {
               const chaveTenant = 'texfy_erp_tenant_' + tenantId;
-              const rawLocal = localStorage.getItem(chaveTenant);
+              const rawLocal = localStorage.getItem(chaveTenant) || localStorage.getItem('texfy_erp_prod_v8');
               if (rawLocal) {
                 const dbLocal = JSON.parse(rawLocal);
                 if (dbLocal && Array.isArray(dbLocal.pedidos)) {
@@ -1970,18 +1970,23 @@ with check (true);
     if (!Array.isArray(remotaLista)) remotaLista = [];
 
     const mapa = new Map();
+    const chavePorNumero = new Map();
 
     // 1. Carrega itens da nuvem
     remotaLista.forEach(item => {
       if (!item) return;
       const id = String(item[chaveId] || item.numero || item.id || JSON.stringify(item));
       mapa.set(id, item);
+      if (item.numero != null) chavePorNumero.set(String(item.numero), id);
     });
 
     // 2. Mescla itens locais de forma não-destrutiva
     localLista.forEach(item => {
       if (!item) return;
-      const id = String(item[chaveId] || item.numero || item.id || JSON.stringify(item));
+      let id = String(item[chaveId] || item.numero || item.id || JSON.stringify(item));
+      if (!mapa.has(id) && item.numero != null && chavePorNumero.has(String(item.numero))) {
+        id = chavePorNumero.get(String(item.numero));
+      }
       const existente = mapa.get(id);
       if (!existente) {
         // Pedido/item novo inserido neste dispositivo

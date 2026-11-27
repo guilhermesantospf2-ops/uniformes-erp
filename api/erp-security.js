@@ -826,7 +826,66 @@ module.exports = async function handler(req, res) {
         auth: empExistente.auth || empCliente.auth || null
       };
 
+      // BLINDAGEM DE FUSÃO NO SERVIDOR: Mescla coleções por ID/Número para que nenhuma aba ou dispositivo desatualizado apague pedidos, clientes, OS ou notas fiscais!
+      function fundirColecaoServidor(listaNuvem, listaCliente, chaveFallback = 'numero') {
+        if (!Array.isArray(listaNuvem) || listaNuvem.length === 0) return Array.isArray(listaCliente) ? listaCliente : [];
+        if (!Array.isArray(listaCliente)) return listaNuvem;
+        const excluidosSet = new Set([
+          ...(Array.isArray(dbExistente.registrosExcluidosIds) ? dbExistente.registrosExcluidosIds : []),
+          ...(Array.isArray(dbCliente.registrosExcluidosIds) ? dbCliente.registrosExcluidosIds : [])
+        ].map(x => String(x)));
+        const obterChave = (it) => {
+          if (!it || typeof it !== 'object') return null;
+          if (it.id) return String(it.id);
+          if (chaveFallback && it[chaveFallback] != null) return `${chaveFallback}:${it[chaveFallback]}`;
+          if (it.numero != null) return `num:${it.numero}`;
+          if (it.codigo) return `cod:${it.codigo}`;
+          return null;
+        };
+        const mapaCliente = new Map();
+        listaCliente.forEach(item => {
+          const k = obterChave(item);
+          if (k && !excluidosSet.has(k) && (!item.id || !excluidosSet.has(String(item.id)))) {
+            mapaCliente.set(k, item);
+          }
+        });
+        const resultado = [...listaCliente];
+        const numerosCliente = new Set(listaCliente.map(x => x && x.numero != null ? String(x.numero) : null).filter(Boolean));
+        const nfeioIdsCliente = new Set(listaCliente.map(x => x && x.nfeioId ? String(x.nfeioId) : null).filter(Boolean));
+        listaNuvem.forEach(itemNuvem => {
+          const k = obterChave(itemNuvem);
+          if (!k) return;
+          if (excluidosSet.has(k) || (itemNuvem.id && excluidosSet.has(String(itemNuvem.id)))) return;
+          if (itemNuvem.numero != null && excluidosSet.has(`num:${itemNuvem.numero}`)) return;
+          // Se não veio no snapshot do cliente e não foi explicitamente excluído, preserva o registro da nuvem!
+          const jaTemPorNumero = itemNuvem.numero != null && numerosCliente.has(String(itemNuvem.numero));
+          const jaTemPorNfeioId = itemNuvem.nfeioId && nfeioIdsCliente.has(String(itemNuvem.nfeioId));
+          if (!mapaCliente.has(k) && !jaTemPorNumero && !jaTemPorNfeioId) {
+            resultado.push(itemNuvem);
+          } else if (mapaCliente.has(k)) {
+            const itemCli = mapaCliente.get(k);
+            const tsNuvem = Number(itemNuvem.ultimaModificacaoMs || itemNuvem.updatedAtMs || 0);
+            const tsCli = Number(itemCli.ultimaModificacaoMs || itemCli.updatedAtMs || 0);
+            if (tsNuvem > tsCli && tsCli > 0) {
+              const idx = resultado.findIndex(r => obterChave(r) === k);
+              if (idx >= 0) resultado[idx] = { ...itemCli, ...itemNuvem };
+            }
+          }
+        });
+        return resultado;
+      }
+
       const dbFinal = { ...dbExistente, ...dbCliente };
+      dbFinal.registrosExcluidosIds = Array.from(new Set([
+        ...(Array.isArray(dbExistente.registrosExcluidosIds) ? dbExistente.registrosExcluidosIds : []),
+        ...(Array.isArray(dbCliente.registrosExcluidosIds) ? dbCliente.registrosExcluidosIds : [])
+      ])).slice(-1000);
+
+      ['pedidos', 'clientes', 'ordensServico', 'notasFiscais', 'lancamentosFinanceiros', 'despesasFixas', 'compras', 'costureiras', 'prestadores', 'historicoEstoque'].forEach(col => {
+        if (Array.isArray(dbExistente[col]) || Array.isArray(dbCliente[col])) {
+          dbFinal[col] = fundirColecaoServidor(dbExistente[col], dbCliente[col]);
+        }
+      });
 
       // Preserva os hashes de senha de cada funcionário na equipe
       if (Array.isArray(dbCliente.equipe)) {
@@ -1257,29 +1316,38 @@ module.exports = async function handler(req, res) {
 
       const fetchFn = global.fetch || require('node-fetch');
 
-      // Enriquecimento automático de Inscrição Estadual (IE) e Código IBGE via CNPJ.ws para evitar Rejeição 232 / IBGE inválido na SEFAZ
+      // Enriquecimento e validação automática de Inscrição Estadual (IE) e Código IBGE via CNPJ.ws para evitar Rejeição 232 / 234 (IE não vinculada ao CNPJ) na SEFAZ
       try {
         const cnpjLimpo = String(payload.buyer.federalTaxNumber || '').replace(/\D/g, '').padStart(14, '0');
+        const ieInformada = String(payload.buyer.stateTaxNumber || '').replace(/\D/g, '');
+        // Nunca permite que a própria IE da fábrica emitente (ex: 263420248 da Prime Uniformes) seja enviada como IE de outro CNPJ destinatário
+        if (ieInformada === '263420248' && cnpjLimpo !== PRIME_CNPJ_DIGITS) {
+          delete payload.buyer.stateTaxNumber;
+        }
         if (payload.buyer.type === 'LegalEntity' && cnpjLimpo.length === 14) {
-          const precisaIe = !payload.buyer.stateTaxNumber || payload.buyer.stateTaxNumber === 'ISENTO';
-          if (precisaIe || !payload.buyer.address?.city?.code) {
-            const cnpjRes = await fetchFn(`https://publica.cnpj.ws/cnpj/${cnpjLimpo}`);
-            if (cnpjRes.ok) {
-              const cnpjData = await cnpjRes.json();
-              const est = cnpjData.estabelecimento || {};
-              const ufDest = (payload.buyer.address?.state || est.estado?.sigla || 'SC').toUpperCase();
-              if (precisaIe && Array.isArray(est.inscricoes_estaduais) && est.inscricoes_estaduais.length > 0) {
-                const ieAtivaUf = est.inscricoes_estaduais.find(i => i.ativo && i.estado?.sigla?.toUpperCase() === ufDest)
-                               || est.inscricoes_estaduais.find(i => i.ativo)
-                               || est.inscricoes_estaduais[0];
-                if (ieAtivaUf && ieAtivaUf.inscricao_estadual) {
-                  payload.buyer.stateTaxNumber = String(ieAtivaUf.inscricao_estadual).replace(/\D/g, '');
-                }
+          const cnpjRes = await fetchFn(`https://publica.cnpj.ws/cnpj/${cnpjLimpo}`);
+          if (cnpjRes.ok) {
+            const cnpjData = await cnpjRes.json();
+            const est = cnpjData.estabelecimento || {};
+            const ufDest = (payload.buyer.address?.state || est.estado?.sigla || 'SC').toUpperCase();
+            const iesLista = Array.isArray(est.inscricoes_estaduais) ? est.inscricoes_estaduais : [];
+            const ieAtivaUf = iesLista.find(i => i.ativo && i.estado?.sigla?.toUpperCase() === ufDest)
+                           || iesLista.find(i => i.ativo)
+                           || null;
+            if (ieAtivaUf && ieAtivaUf.inscricao_estadual) {
+              const ieOficialCnpj = String(ieAtivaUf.inscricao_estadual).replace(/\D/g, '');
+              const ieAtualBuyer = String(payload.buyer.stateTaxNumber || '').replace(/\D/g, '');
+              const ieAtualEhValidaDoCnpj = ieAtualBuyer && iesLista.some(i => i.ativo && String(i.inscricao_estadual || '').replace(/\D/g, '') === ieAtualBuyer);
+              if (!ieAtualEhValidaDoCnpj) {
+                payload.buyer.stateTaxNumber = ieOficialCnpj;
               }
-              if (est.cidade?.ibge_id && payload.buyer.address?.city) {
-                payload.buyer.address.city.code = String(est.cidade.ibge_id);
-                if (est.cidade.nome) payload.buyer.address.city.name = est.cidade.nome;
-              }
+            } else if (iesLista.length === 0 || !iesLista.some(i => i.ativo)) {
+              // Se o CNPJ destinatário não possui nenhuma IE ativa na SEFAZ, remove IE inválida para evitar Rejeição 234
+              delete payload.buyer.stateTaxNumber;
+            }
+            if (est.cidade?.ibge_id && payload.buyer.address?.city) {
+              payload.buyer.address.city.code = String(est.cidade.ibge_id);
+              if (est.cidade.nome) payload.buyer.address.city.name = est.cidade.nome;
             }
           }
         }

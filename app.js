@@ -2936,6 +2936,29 @@
       } catch (e) { }
     }
 
+    // 6. Enriquecimento de Inscrição Estadual (IE) e Código IBGE via publica.cnpj.ws para evitar Rejeição 232 / 234 na SEFAZ
+    try {
+      const cIe = new AbortController();
+      const tIe = setTimeout(() => cIe.abort(), 4500);
+      const rIe = await fetch(`https://publica.cnpj.ws/cnpj/${limpo}`, { signal: cIe.signal });
+      clearTimeout(tIe);
+      if (rIe.ok) {
+        const dIe = await rIe.json();
+        const estIe = dIe.estabelecimento || {};
+        const ufAlvo = (resultado.uf || estIe.estado?.sigla || 'SC').toUpperCase();
+        const listaIes = Array.isArray(estIe.inscricoes_estaduais) ? estIe.inscricoes_estaduais : [];
+        const ieAtiva = listaIes.find(i => i.ativo && i.estado?.sigla?.toUpperCase() === ufAlvo) || listaIes.find(i => i.ativo) || null;
+        if (ieAtiva && ieAtiva.inscricao_estadual) {
+          resultado.ie = String(ieAtiva.inscricao_estadual).replace(/\D/g, '');
+        } else {
+          resultado.ie = 'Isento';
+        }
+        if (estIe.cidade?.ibge_id) {
+          resultado.ibge = String(estIe.cidade.ibge_id);
+        }
+      }
+    } catch (eIe) { }
+
     return resultado;
   }
 
@@ -9435,6 +9458,7 @@
       } catch (e) {
         return textoOriginal;
       }
+
       return resultado;
     }
 
@@ -25431,6 +25455,7 @@
         if (inpFantasia) inpFantasia.value = data.nomeFantasia || data.razaoSocial || '';
         if (inpCnpj) inpCnpj.value = data.cnpjFormatado;
         if (inputCnpjBusca) inputCnpjBusca.value = data.cnpjFormatado;
+        if (inpIe && data.ie) inpIe.value = data.ie;
         if (inpContato && data.contatoSugerido) inpContato.value = data.contatoSugerido;
         if (inpCep) inpCep.value = data.cep || '';
         if (inpEndereco) inpEndereco.value = data.endereco || '';
@@ -25557,10 +25582,20 @@
       const ocultarDanfeVal = Boolean(chkOcultarFantasia?.checked);
 
       if (clienteParaEditar) {
+        const nomeAntigoFantasia = clienteParaEditar.nomeFantasia;
+        const nomeAntigoRazao = clienteParaEditar.razaoSocial;
         clienteParaEditar.razaoSocial = razao;
         clienteParaEditar.nomeFantasia = fantasia || razao;
+        clienteParaEditar.nome = fantasia || razao;
         clienteParaEditar.cnpj = cnpjFinal;
-        clienteParaEditar.ie = inpIe?.value.trim() || 'Isento';
+        clienteParaEditar.documento = cnpjFinal;
+        const ieEmitLimpa = String(db.empresa?.inscricaoEstadual || db.empresa?.ie || '263420248').replace(/\D/g, '');
+        let ieEditVal = inpIe?.value.trim() || 'Isento';
+        if (ieEditVal.replace(/\D/g, '') === ieEmitLimpa && cnpjFinal.replace(/\D/g, '') !== String(db.empresa?.cnpj || '').replace(/\D/g, '')) {
+          ieEditVal = 'Isento';
+        }
+        clienteParaEditar.ie = ieEditVal;
+        clienteParaEditar.inscricaoEstadual = ieEditVal;
         clienteParaEditar.contatoNome = contatoFinal;
         clienteParaEditar.telefone = tel;
         clienteParaEditar.email = emailFinal;
@@ -25572,6 +25607,15 @@
         clienteParaEditar.ramoAtividade = ramo;
         clienteParaEditar.tipoPessoa = tipoCadastro;
         clienteParaEditar.ocultarFantasiaDanfe = ocultarDanfeVal;
+        clienteParaEditar.ultimaModificacaoMs = Date.now();
+
+        // Mantém pedidos existentes vinculados ao cliente editado
+        (db.pedidos || []).forEach(ped => {
+          if (ped.clienteId === clienteParaEditar.id || (ped.clienteNome && (ped.clienteNome === nomeAntigoFantasia || ped.clienteNome === nomeAntigoRazao))) {
+            ped.clienteId = clienteParaEditar.id;
+            ped.clienteNome = clienteParaEditar.nomeFantasia || clienteParaEditar.razaoSocial;
+          }
+        });
 
         salvarEstado(true);
         fecharModal(modalEl);
@@ -25618,7 +25662,12 @@
     const cli = db.clientes.find(c => c.id === clienteId);
     if (!cli || !modalContainer) return;
 
-    const pedidosCli = db.pedidos.filter(p => p.clienteId === cli.id || p.clienteNome === cli.nomeFantasia);
+    const pedidosCli = db.pedidos.filter(p =>
+      p.clienteId === cli.id ||
+      p.clienteNome === cli.nomeFantasia ||
+      p.clienteNome === cli.razaoSocial ||
+      p.clienteNome === cli.nome
+    );
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
@@ -27127,6 +27176,78 @@
     if (!b) return;
     let houveAlteracao = false;
     if (!Array.isArray(b.notasFiscais)) b.notasFiscais = [];
+
+    // 0. AUTO-RECUPERAÇÃO DE SNAPSHOTS LOCAIS (CAIXA PRETA ANTI-PERDA):
+    // Se por qualquer falha de aba/rede algum pedido, cliente ou OS que existia nos últimos snapshots sumiu da memória, restaura imediatamente!
+    try {
+      const tIdSnap = (window.ERP_CLOUD && typeof window.ERP_CLOUD.obterTenantId === 'function') ? window.ERP_CLOUD.obterTenantId() : 'master';
+      const chavesSnaps = [
+        'texfy_snapshots_' + (tIdSnap || 'master'),
+        'texfy_snapshots_master',
+        'texfy_snapshots_null'
+      ];
+      const excluidosSet = new Set(Array.isArray(b.registrosExcluidosIds) ? b.registrosExcluidosIds.map(x => String(x)) : []);
+      if (!Array.isArray(b.pedidos)) b.pedidos = [];
+      if (!Array.isArray(b.clientes)) b.clientes = [];
+      if (!Array.isArray(b.ordensServico)) b.ordensServico = [];
+
+      const pedidosAtuaisIds = new Set(b.pedidos.map(p => String(p.id || '')));
+      const pedidosAtuaisNums = new Set(b.pedidos.map(p => String(p.numero ?? '')));
+      const clientesAtuaisIds = new Set(b.clientes.map(c => String(c.id || '')));
+      const clientesAtuaisCnpjs = new Set(b.clientes.map(c => String(c.cnpj || c.documento || '').replace(/\D/g, '')).filter(Boolean));
+      const osAtuaisIds = new Set(b.ordensServico.map(o => String(o.id || '')));
+
+      chavesSnaps.forEach(ch => {
+        const rawSnap = localStorage.getItem(ch);
+        if (!rawSnap) return;
+        const snaps = JSON.parse(rawSnap);
+        if (!Array.isArray(snaps)) return;
+        snaps.forEach(snap => {
+          const dbSnap = snap && snap.db;
+          if (!dbSnap) return;
+          if (Array.isArray(dbSnap.pedidos)) {
+            dbSnap.pedidos.forEach(pSnap => {
+              if (!pSnap || (!pSnap.id && pSnap.numero == null)) return;
+              const idStr = String(pSnap.id || `PED-${pSnap.numero}`);
+              const numStr = String(pSnap.numero ?? '');
+              if (excluidosSet.has(idStr) || (numStr && excluidosSet.has(`num:${numStr}`))) return;
+              if (!pedidosAtuaisIds.has(idStr) && (!numStr || !pedidosAtuaisNums.has(numStr))) {
+                b.pedidos.push(pSnap);
+                pedidosAtuaisIds.add(idStr);
+                if (numStr) pedidosAtuaisNums.add(numStr);
+                houveAlteracao = true;
+              }
+            });
+          }
+          if (Array.isArray(dbSnap.clientes)) {
+            dbSnap.clientes.forEach(cSnap => {
+              if (!cSnap || !cSnap.id) return;
+              const idStr = String(cSnap.id);
+              const docStr = String(cSnap.cnpj || cSnap.documento || '').replace(/\D/g, '');
+              if (excluidosSet.has(idStr)) return;
+              if (!clientesAtuaisIds.has(idStr) && (!docStr || !clientesAtuaisCnpjs.has(docStr))) {
+                b.clientes.push(cSnap);
+                clientesAtuaisIds.add(idStr);
+                if (docStr) clientesAtuaisCnpjs.add(docStr);
+                houveAlteracao = true;
+              }
+            });
+          }
+          if (Array.isArray(dbSnap.ordensServico)) {
+            dbSnap.ordensServico.forEach(oSnap => {
+              if (!oSnap || !oSnap.id) return;
+              const idStr = String(oSnap.id);
+              if (excluidosSet.has(idStr)) return;
+              if (!osAtuaisIds.has(idStr)) {
+                b.ordensServico.push(oSnap);
+                osAtuaisIds.add(idStr);
+                houveAlteracao = true;
+              }
+            });
+          }
+        });
+      });
+    } catch (eSnapRec) {}
     // Remove registros locais de falha de validação JSON que nunca chegaram a gerar nota na NFE.io/SEFAZ
     const qtdAntesLimpeza = b.notasFiscais.length;
     b.notasFiscais = b.notasFiscais.filter(nf => {
@@ -27281,6 +27402,208 @@
         cliBase.inscricaoEstadual = '264546407';
         cliBase.ibge = '4208203';
         houveAlteracao = true;
+      }
+
+      // 4c. Garante que o cliente Agile Truck (CNPJ 37.482.413/0001-60) esteja com a IE real ativa da SEFAZ/SC (260549100) e nunca com a IE da própria Prime (263420248)
+      let cliAgile = (b.clientes || []).find(c =>
+        String(c.documento || c.cnpj || '').replace(/\D/g, '') === '37482413000160' ||
+        (c.nomeFantasia || c.nome || c.razaoSocial || '').toLowerCase().includes('agile truck')
+      );
+      if (!cliAgile) {
+        cliAgile = {
+          id: 'CLI-AGILETRUCK',
+          nome: 'Agile Truck',
+          nomeFantasia: 'Agile Truck',
+          razaoSocial: 'AGILE TRUCK LTDA',
+          cnpj: '37.482.413/0001-60',
+          documento: '37.482.413/0001-60',
+          ie: '260549100',
+          inscricaoEstadual: '260549100',
+          ibge: '4208203',
+          contatoNome: 'Agile Truck',
+          cargoContato: 'Responsável',
+          telefone: '4799234791',
+          email: 'contabilidade@ritmocon.com.br',
+          endereco: 'Rua Francisco Reis, nº 970, (Bloco C)',
+          bairro: 'Cordeiros',
+          cidade: 'Itajaí',
+          uf: 'SC',
+          cep: '88311-735',
+          ramoAtividade: 'Transporte & Logística',
+          tipoPessoa: 'PJ',
+          totalPedidosFeitos: 1,
+          faturamentoAcumulado: 1590.00,
+          dataUltimaCompra: '2026-11-26'
+        };
+        if (!Array.isArray(b.clientes)) b.clientes = [];
+        b.clientes.unshift(cliAgile);
+        houveAlteracao = true;
+      } else {
+        const ieAgileLimpa = String(cliAgile.ie || cliAgile.inscricaoEstadual || '').replace(/\D/g, '');
+        if (ieAgileLimpa !== '260549100') {
+          cliAgile.ie = '260549100';
+          cliAgile.inscricaoEstadual = '260549100';
+          cliAgile.ibge = '4208203';
+          houveAlteracao = true;
+        }
+        if (!cliAgile.cnpj || String(cliAgile.cnpj).replace(/\D/g, '') !== '37482413000160') {
+          cliAgile.cnpj = '37.482.413/0001-60';
+          cliAgile.documento = '37.482.413/0001-60';
+          houveAlteracao = true;
+        }
+      }
+
+      // 4d. Restaura automaticamente o Pedido #115 (Agile Truck - R$ 1.590,00 - 30x Camisa Polo Tradicional Piquet Preto Reativo)
+      // caso tenha desaparecido durante sincronização após a tentativa da NF-e #53
+      const excluidosPrime = new Set(Array.isArray(b.registrosExcluidosIds) ? b.registrosExcluidosIds.map(x => String(x)) : []);
+      const ped115Existe = (b.pedidos || []).some(p => String(p.numero) === '115' || p.id === 'PED-115');
+      if (!ped115Existe && !excluidosPrime.has('PED-115') && !excluidosPrime.has('num:115')) {
+        const grade115 = { pp: 0, p: 6, m: 6, g: 6, gg: 6, xg: 0, g1: 6, g2: 0, g3: 0, g4: 0, g5: 0, total: 30 };
+        const precosTam115 = { pp: 52, p: 52, m: 52, g: 52, gg: 52, xg: 57, g1: 57, g2: 57, g3: 57, g4: 57, g5: 57 };
+        const item115 = {
+          id: 'ITEM-115-1',
+          produtoId: 'PROD-001',
+          produtoNome: 'Camisa Polo Tradicional Piquet',
+          tipoMalhaPadrao: 'Malha Piquet PA (50% Algodão / 50% Poliéster)',
+          corTecido: 'Preto Reativo',
+          corPrincipal: 'Preto Reativo',
+          observacoesCoresDetalhes: '',
+          grade: grade115,
+          precosPorTamanho: precosTam115,
+          precoVendaUnitario: 52.00,
+          valorTotalVenda: 1590.00,
+          valorSubtotal: 1590.00,
+          custoTecidoKg: 48.50,
+          consumoTecido: 0.28,
+          margemErroTecido: 8.0,
+          custoAviamento: 4.80,
+          custoEstampaTotal: 5.50,
+          custoCostura: 7.50,
+          custoUnitarioProducao: 32.47,
+          custoTotalProducao: 974.10,
+          lucroTotal: 615.90,
+          margemReal: 38.74
+        };
+        const ped115Restaurado = {
+          id: 'PED-115',
+          numero: 115,
+          ultimaModificacaoMs: Date.now(),
+          tipoRegistro: 'Pedido',
+          dataCriacao: '2026-11-26',
+          clienteId: cliAgile.id || 'CLI-AGILETRUCK',
+          clienteNome: cliAgile.nomeFantasia || cliAgile.nome || 'Agile Truck',
+          clienteTelefone: cliAgile.telefone || '4799234791',
+          status: 'Em Producao',
+          etapaProducao: 'Expedicao',
+          quarentenaAprovada: true,
+          itens: [item115],
+          produtoId: 'PROD-001',
+          produtoNome: 'Camisa Polo Tradicional Piquet',
+          corTecido: 'Preto Reativo',
+          corPrincipal: 'Preto Reativo',
+          tecidoEspecificacao: 'Malha Piquet PA (50% Algodão / 50% Poliéster)',
+          tipoPersonalizacao: 'Estampa/Bordado Conforme Pedido',
+          grade: grade115,
+          precosPorTamanho: precosTam115,
+          quantidadeTotal: 30,
+          precoUnitarioVenda: 52.00,
+          valorBrutoVenda: 1590.00,
+          desconto: 0,
+          valorDesconto: 0,
+          valorTotalVenda: 1590.00,
+          custoTotalEstimado: 974.10,
+          lucroLiquidoEstimado: 615.90,
+          margemLucroPercentual: 38.74,
+          condicaoPagamento: 'Sem Entrada • R$ 1.590,00 via Boleto Bancário Faturado (na entrega / vencimento)',
+          sinalPago: false,
+          valorSinalPago: 0,
+          saldoPendente: 1590.00,
+          pagamentoDetalhes: {
+            temEntrada: false,
+            valorEntrada: 0,
+            percEntrada: 0,
+            formaEntrada: 'Boleto Bancário Faturado',
+            sinalCompensado: false,
+            temSaldo: true,
+            valorSaldo: 1590.00,
+            formaSaldo: 'Boleto Bancário Faturado',
+            parcelasQtd: 1,
+            parcelas: [
+              {
+                id: 'PARC-115-1',
+                numero: 1,
+                totalParcelas: 1,
+                valor: 1590.00,
+                dataVencimento: '2026-12-11',
+                formaPagamento: 'Boleto Bancário Faturado',
+                status: 'Pendente'
+              }
+            ]
+          },
+          transporte: {
+            modalidade: '9',
+            transportadoraNome: 'RETIRADA NO LOCAL / ENTREGA PRÓPRIA',
+            volumesQtd: 1,
+            volumesEspecie: 'CAIXAS',
+            pesoLiquido: 7.000,
+            pesoBruto: 7.500
+          },
+          dataPrevisaoEntrega: '2026-12-11',
+          dataMetaInterna: '2026-12-04',
+          prazoPedidoDias: 15,
+          prazoInternoDias: 10,
+          notaFiscalEmitida: false
+        };
+        if (!Array.isArray(b.pedidos)) b.pedidos = [];
+        b.pedidos.unshift(ped115Restaurado);
+        houveAlteracao = true;
+
+        const os115Existe = (b.ordensServico || []).some(o => String(o.pedidoNumero) === '115');
+        if (!os115Existe) {
+          if (!Array.isArray(b.ordensServico)) b.ordensServico = [];
+          b.ordensServico.unshift({
+            id: 'OS-115',
+            pedidoId: 'PED-115',
+            pedidoNumero: 115,
+            cliente: ped115Restaurado.clienteNome,
+            produto: 'Camisa Polo Tradicional Piquet',
+            itens: [item115],
+            corTecido: 'Preto Reativo',
+            quantidadeTotal: 30,
+            grade: grade115,
+            etapaAtual: 'Expedicao',
+            costureiraDesignada: (b.costureiras && b.costureiras[0]?.nome) || 'Oficina Interna',
+            costureiraId: (b.costureiras && b.costureiras[0]?.id) || 'COST-01',
+            valorCosturaPeca: 7.50,
+            consumoTecido: 0.28,
+            tecidoConsumidoKg: '9.1',
+            dataEntradaCorte: '2026-11-26',
+            dataPrevisaoEntrega: '2026-12-11',
+            dataMetaInterna: '2026-12-04',
+            statusBordado: 'Concluido',
+            statusCostura: 'Concluido',
+            statusAcabamento: 'Concluido'
+          });
+        }
+      }
+
+      // Se a NF-e #53 estiver como rejeitada, garante que o Pedido #115 esteja desbloqueado para reemissão e com a IE 260549100 corrigida
+      const nf53 = notas.find(n => Number(n.numero) === 53 || n.nfeioId === '01a219d2f3ec78168d527c4de78ac926');
+      if (nf53) {
+        if (nf53.cliente && String(nf53.cliente.documento || '').replace(/\D/g, '') === '37482413000160') {
+          nf53.cliente.ie = '260549100';
+        }
+        if (!nf53.pedidoId) nf53.pedidoId = 'PED-115';
+        if (!nf53.pedidoNumero) nf53.pedidoNumero = 115;
+        if (nf53.statusSefaz === 'rejeitada') {
+          const p115 = (b.pedidos || []).find(p => String(p.numero) === '115' || p.id === 'PED-115');
+          if (p115 && (p115.notaFiscalEmitida || p115.nfeNumero === 53)) {
+            p115.notaFiscalEmitida = false;
+            delete p115.nfeId;
+            delete p115.nfeNumero;
+            houveAlteracao = true;
+          }
+        }
       }
     }
 
@@ -29710,10 +30033,30 @@
     let clienteEndereco = { logradouro: '', numero: 'S/N', bairro: 'Centro', cidade: '', uf: (emp.uf || 'SC'), cep: '' };
 
     if (pedidoSelecionado && clienteNome) {
-      const cliDb = (db.clientes || []).find(c => c.nome === clienteNome || c.id === pedidoSelecionado?.clienteId);
+      const nomeAlvo = (clienteNome || '').trim().toLowerCase();
+      const cliDb = (db.clientes || []).find(c =>
+        (pedidoSelecionado.clienteId && c.id === pedidoSelecionado.clienteId) ||
+        (nomeAlvo && (
+          (c.nome || '').trim().toLowerCase() === nomeAlvo ||
+          (c.nomeFantasia || '').trim().toLowerCase() === nomeAlvo ||
+          (c.razaoSocial || '').trim().toLowerCase() === nomeAlvo
+        ))
+      );
       if (cliDb) {
         clienteDoc = cliDb.documento || cliDb.cnpj || cliDb.cpf || '';
-        clienteIe = cliDb.ie || cliDb.inscricaoEstadual || (String(clienteDoc).replace(/\D/g, '') === '62007964000119' ? '264546407' : 'ISENTO');
+        const docLimpo = String(clienteDoc).replace(/\D/g, '');
+        const ieEmitenteLimpa = String(emp.inscricaoEstadual || emp.ie || '263420248').replace(/\D/g, '');
+        let ieCand = String(cliDb.ie || cliDb.inscricaoEstadual || '').trim();
+        // Nunca permite usar a IE da própria fábrica emitente como IE do cliente destinatário
+        if (ieCand && ieCand.replace(/\D/g, '') === ieEmitenteLimpa && docLimpo !== String(emp.cnpj || '').replace(/\D/g, '')) {
+          ieCand = '';
+        }
+        if (!ieCand || ieCand.toUpperCase() === 'ISENTO') {
+          if (docLimpo === '62007964000119') ieCand = '264546407';
+          else if (docLimpo === '37482413000160') ieCand = '260549100';
+          else ieCand = 'ISENTO';
+        }
+        clienteIe = ieCand;
         clienteTel = cliDb.telefone || clienteTel;
         clienteEmail = cliDb.email || '';
         clienteIbge = cliDb.ibge || '';
@@ -29867,11 +30210,11 @@
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
                   <label class="form-label">CNPJ ou CPF *</label>
-                  <input type="text" id="emitNfeCliDoc" class="form-input text-mono" value="${clienteDoc}" placeholder="00.000.000/0000-00">
+                  <input type="text" id="emitNfeCliDoc" name="nfe_dest_doc_no_autofill" autocomplete="off" class="form-input text-mono" value="${clienteDoc}" placeholder="00.000.000/0000-00">
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
                   <label class="form-label">Inscrição Estadual</label>
-                  <input type="text" id="emitNfeCliIe" class="form-input text-mono" value="${clienteIe}" placeholder="ISENTO ou Número">
+                  <input type="text" id="emitNfeCliIe" name="nfe_dest_ie_no_autofill" autocomplete="off" class="form-input text-mono" value="${clienteIe}" placeholder="ISENTO ou Número">
                 </div>
               </div>
 
@@ -30348,14 +30691,23 @@
       });
     }
 
-    // Enriquecimento automático de Inscrição Estadual (IE), Endereço e Código IBGE via CNPJ.ws
+    // Enriquecimento e validação automática de Inscrição Estadual (IE), Endereço e Código IBGE via CNPJ.ws (evita Rejeição 232 / 234 - IE não vinculada ao CNPJ)
     async function enriquecerDestinatarioPorCnpj(docRaw, forcar = false) {
       const cnpjLimpo = String(docRaw || '').replace(/\D/g, '');
       if (cnpjLimpo.length !== 14) return;
 
+      const inpIe = modalEl.querySelector('#emitNfeCliIe');
+      const ieEmitenteLimpa = String(emp.inscricaoEstadual || emp.ie || '263420248').replace(/\D/g, '');
+      // Se o campo de IE do destinatário contiver a IE da própria fábrica emitente (ex: 263420248 por autofill), limpa imediatamente
+      if (inpIe && inpIe.value.replace(/\D/g, '') === ieEmitenteLimpa && cnpjLimpo !== String(emp.cnpj || '').replace(/\D/g, '')) {
+        inpIe.value = '';
+      }
+
       if (cnpjLimpo === '62007964000119') {
-        const ieEl = modalEl.querySelector('#emitNfeCliIe');
-        if (ieEl && (!ieEl.value || ieEl.value === 'ISENTO')) ieEl.value = '264546407';
+        if (inpIe) inpIe.value = '264546407';
+        clienteIbge = '4208203';
+      } else if (cnpjLimpo === '37482413000160') {
+        if (inpIe) inpIe.value = '260549100';
         clienteIbge = '4208203';
       }
 
@@ -30371,14 +30723,23 @@
           inpNome.value = data.razao_social;
         }
 
-        const inpIe = modalEl.querySelector('#emitNfeCliIe');
-        if (inpIe && (!inpIe.value.trim() || inpIe.value.trim().toUpperCase() === 'ISENTO' || forcar)) {
-          if (Array.isArray(est.inscricoes_estaduais) && est.inscricoes_estaduais.length > 0) {
-            const ieAtiva = est.inscricoes_estaduais.find(i => i.ativo && i.estado?.sigla?.toUpperCase() === ufSigla)
-              || est.inscricoes_estaduais.find(i => i.ativo)
-              || est.inscricoes_estaduais[0];
-            if (ieAtiva && ieAtiva.inscricao_estadual) {
-              inpIe.value = String(ieAtiva.inscricao_estadual).replace(/\D/g, '');
+        if (inpIe) {
+          const ies = Array.isArray(est.inscricoes_estaduais) ? est.inscricoes_estaduais : [];
+          const ieAtiva = ies.find(i => i.ativo && i.estado?.sigla?.toUpperCase() === ufSigla)
+            || ies.find(i => i.ativo)
+            || null;
+          if (ieAtiva && ieAtiva.inscricao_estadual) {
+            const ieOficial = String(ieAtiva.inscricao_estadual).replace(/\D/g, '');
+            const ieAtualDigits = inpIe.value.replace(/\D/g, '');
+            const ieAtualPertenceAoCnpj = ieAtualDigits && ies.some(i => i.ativo && String(i.inscricao_estadual || '').replace(/\D/g, '') === ieAtualDigits);
+            // Se a IE estiver vazia, ISENTO, ou NÃO pertencer a este CNPJ (ex: autofill 263420248), substitui pela IE oficial do CNPJ!
+            if (!ieAtualPertenceAoCnpj || !inpIe.value.trim() || inpIe.value.trim().toUpperCase() === 'ISENTO' || forcar) {
+              inpIe.value = ieOficial;
+            }
+          } else if (ies.length === 0 || !ies.some(i => i.ativo)) {
+            // Se o CNPJ não possui nenhuma IE ativa na SEFAZ, define como ISENTO para não gerar Rejeição 234
+            if (inpIe.value.replace(/\D/g, '').length > 0) {
+              inpIe.value = 'ISENTO';
             }
           }
         }
@@ -30446,12 +30807,31 @@
         modalEl.querySelector('#emitNfeCliNome').value = p.clienteNome || '';
         modalEl.querySelector('#emitNfeCliTel').value = p.clienteTelefone || '';
 
-        // Busca cadastro completo do cliente
-        const cliCad = (db.clientes || []).find(c => c.nome === p.clienteNome || c.id === p.clienteId);
+        // Busca cadastro completo do cliente (por ID, nome, nomeFantasia ou razaoSocial)
+        const nomeAlvoSel = (p.clienteNome || '').trim().toLowerCase();
+        const cliCad = (db.clientes || []).find(c =>
+          (p.clienteId && c.id === p.clienteId) ||
+          (nomeAlvoSel && (
+            (c.nome || '').trim().toLowerCase() === nomeAlvoSel ||
+            (c.nomeFantasia || '').trim().toLowerCase() === nomeAlvoSel ||
+            (c.razaoSocial || '').trim().toLowerCase() === nomeAlvoSel
+          ))
+        );
         if (cliCad) {
           const docCad = cliCad.documento || cliCad.cnpj || cliCad.cpf || '';
+          const docDigits = String(docCad).replace(/\D/g, '');
+          const ieEmitenteLimpa = String(emp.inscricaoEstadual || emp.ie || '263420248').replace(/\D/g, '');
+          let ieCad = String(cliCad.ie || cliCad.inscricaoEstadual || '').trim();
+          if (ieCad && ieCad.replace(/\D/g, '') === ieEmitenteLimpa && docDigits !== String(emp.cnpj || '').replace(/\D/g, '')) {
+            ieCad = '';
+          }
+          if (!ieCad || ieCad.toUpperCase() === 'ISENTO') {
+            if (docDigits === '62007964000119') ieCad = '264546407';
+            else if (docDigits === '37482413000160') ieCad = '260549100';
+            else ieCad = 'ISENTO';
+          }
           modalEl.querySelector('#emitNfeCliDoc').value = docCad;
-          modalEl.querySelector('#emitNfeCliIe').value = cliCad.ie || cliCad.inscricaoEstadual || (String(docCad).replace(/\D/g, '') === '62007964000119' ? '264546407' : 'ISENTO');
+          modalEl.querySelector('#emitNfeCliIe').value = ieCad;
           modalEl.querySelector('#emitNfeCliEmail').value = cliCad.email || '';
           if (cliCad.endereco) modalEl.querySelector('#emitNfeCliLgr').value = cliCad.endereco;
           if (cliCad.numero) modalEl.querySelector('#emitNfeCliNum').value = cliCad.numero;
@@ -30531,6 +30911,11 @@
       `;
 
       try {
+        // Validação de última hora antes de transmitir: garante que a IE do destinatário seja a IE oficial do CNPJ na SEFAZ e nunca a IE da própria fábrica emitente
+        const cnpjValFinal = cliDoc.replace(/\D/g, '');
+        if (cnpjValFinal.length === 14) {
+          await enriquecerDestinatarioPorCnpj(cnpjValFinal, false);
+        }
         const numNfe = obterProximoNumeroNfe();
         const dataAgora = new Date();
         const dataFormatada = dataAgora.toLocaleDateString('pt-BR') + ' ' + dataAgora.toLocaleTimeString('pt-BR');
@@ -30788,9 +31173,14 @@
     const nfe = notas.find(n => n.id === nfeId || String(n.numero) === String(nfeId));
     if (!nfe) return mostrarToast('Nota Fiscal não encontrada.', 'red');
 
-    // Se for Base Mecanica Pesada, garante a IE correta de SC
-    if (nfe.cliente && (nfe.cliente.documento || '').replace(/\D/g, '') === '62007964000119') {
-      nfe.cliente.ie = '264546407';
+    // Se for Base Mecanica Pesada ou Agile Truck, garante a IE correta de SC
+    if (nfe.cliente) {
+      const docReenvio = (nfe.cliente.documento || '').replace(/\D/g, '');
+      if (docReenvio === '62007964000119') {
+        nfe.cliente.ie = '264546407';
+      } else if (docReenvio === '37482413000160') {
+        nfe.cliente.ie = '260549100';
+      }
     }
 
     const emp = (typeof obterEmpresaAtiva === 'function') ? obterEmpresaAtiva() : (db.empresa || {});
