@@ -27866,6 +27866,9 @@
       db.configFiscal.ambiente = 'producao';
       db.configFiscal.tecnospeedAmbiente = 'producao';
       if (!db.configFiscal.aliquotaSimplesNacional) db.configFiscal.aliquotaSimplesNacional = 4.5;
+      if (db.configFiscal.ocultarFantasiaDanfePadrao === undefined) {
+        db.configFiscal.ocultarFantasiaDanfePadrao = true;
+      }
     }
 
     obterProximoNumeroNfe();
@@ -28199,10 +28202,15 @@
   }
 
   function gerarDanfeHtml(nfe, empresa) {
-    const emp = empresa || db.empresa || {};
+    const emp = (typeof obterEmpresaAtiva === 'function') ? obterEmpresaAtiva() : (empresa || db.empresa || {});
+    const cfgFiscal = (db && db.configFiscal) ? db.configFiscal : {};
+    const isPrimeEmit = String(emp.cnpj || '').replace(/\D/g, '') === '59441843000176';
     const cli = nfe.cliente || {};
     const clienteDb = (db.clientes || []).find(c => (c.id && c.id === cli.id) || (c.cnpj && cli.cnpj && String(c.cnpj).replace(/\D/g, '') === String(cli.cnpj).replace(/\D/g, ''))) || {};
-    const ocultarFantasia = Boolean(nfe.ocultarFantasiaDanfe ?? cli.ocultarFantasiaDanfe ?? clienteDb.ocultarFantasiaDanfe);
+    const padraoEmpresaOcultar = cfgFiscal.ocultarFantasiaDanfePadrao !== undefined
+      ? Boolean(cfgFiscal.ocultarFantasiaDanfePadrao)
+      : (emp.ocultarFantasiaDanfePadrao !== undefined ? Boolean(emp.ocultarFantasiaDanfePadrao) : isPrimeEmit);
+    const ocultarFantasia = Boolean(nfe.ocultarFantasiaDanfe ?? cli.ocultarFantasiaDanfe ?? clienteDb.ocultarFantasiaDanfe ?? padraoEmpresaOcultar);
     const tot = nfe.totais || {};
     const rawItens = nfe.itens || [];
     const isCancelada = nfe.statusSefaz === 'cancelada';
@@ -29201,9 +29209,11 @@
       }
     } catch (e) {}
 
-    // Baixa/abre o PDF da DANFE para anexar no WhatsApp
+    // Abre o DANFE com a Logo oficial da confecção (e sem o Nome Fantasia, se configurado) para salvar/anexar no WhatsApp, igual ao botão Imprimir DANFE
     try {
-      if (pdfUrl) {
+      if (typeof imprimirDanfeIsolada === 'function') {
+        imprimirDanfeIsolada(nfe.id);
+      } else if (pdfUrl) {
         const aPdf = document.createElement('a');
         aPdf.href = pdfUrl;
         aPdf.download = `DANFE_NFe_${nfe.numero}.pdf`;
@@ -29212,17 +29222,12 @@
         document.body.appendChild(aPdf);
         aPdf.click();
         document.body.removeChild(aPdf);
-      } else if (typeof imprimirDanfeIsolada === 'function') {
-        imprimirDanfeIsolada(nfe.id);
       }
     } catch (e) {}
 
     const blocosArquivos = [];
-    if (pdfUrl) blocosArquivos.push(`📄 *DANFE (PDF):*\n${pdfUrl}`);
-    if (xmlUrl) blocosArquivos.push(`🧾 *Arquivo XML:*\n${xmlUrl}`);
-    const textoArquivos = blocosArquivos.length > 0
-      ? `\n\n${blocosArquivos.join('\n\n')}`
-      : `\n\n📎 Seguem em anexo o *PDF (DANFE)* e o *XML* oficial da sua Nota Fiscal.`;
+    if (xmlUrl) blocosArquivos.push(`🧾 *Arquivo XML Oficial:*\n${xmlUrl}`);
+    const textoArquivos = `\n\n📎 Seguem em anexo o *PDF (DANFE)* e o *XML* oficial da sua Nota Fiscal.${blocosArquivos.length > 0 ? '\n\n' + blocosArquivos.join('\n\n') : ''}`;
 
     const mensagem = `Olá, *${nfe.cliente?.nome || 'Cliente'}*!\n\nAqui é da equipe da *${empNome}*.\n\nSua *Nota Fiscal Eletrônica (NF-e Modelo 55)* foi emitida e autorizada com sucesso pela SEFAZ!\n\n📄 *NF-e Nº:* #${nfe.numero} (Série ${nfe.serie})\n💰 *Valor Total:* ${formatarMoeda(nfe.totais?.valorTotal || 0)}\n📅 *Data de Emissão:* ${nfe.dataEmissao}\n\n🔑 *Chave de Acesso (44 dígitos):*\n\`${chave44}\`${textoArquivos}\n\nQualquer dúvida estamos à disposição!`;
 
@@ -29235,9 +29240,15 @@
     if (!nfe || !modalContainer) return;
 
     const isCancelada = nfe.statusSefaz === 'cancelada';
+    const empAtiva = (typeof obterEmpresaAtiva === 'function') ? obterEmpresaAtiva() : (db.empresa || {});
+    const cfgFiscal = (db && db.configFiscal) ? db.configFiscal : {};
+    const isPrimeEmit = String(empAtiva.cnpj || '').replace(/\D/g, '') === '59441843000176';
+    const padraoEmpresaOcultar = cfgFiscal.ocultarFantasiaDanfePadrao !== undefined
+      ? Boolean(cfgFiscal.ocultarFantasiaDanfePadrao)
+      : (empAtiva.ocultarFantasiaDanfePadrao !== undefined ? Boolean(empAtiva.ocultarFantasiaDanfePadrao) : isPrimeEmit);
     const cli = nfe.cliente || {};
     const clienteDb = (db.clientes || []).find(c => (c.id && c.id === cli.id) || (c.cnpj && cli.cnpj && String(c.cnpj).replace(/\D/g, '') === String(cli.cnpj).replace(/\D/g, ''))) || {};
-    let ocultarFantasiaAtual = Boolean(nfe.ocultarFantasiaDanfe ?? cli.ocultarFantasiaDanfe ?? clienteDb.ocultarFantasiaDanfe);
+    let ocultarFantasiaAtual = Boolean(nfe.ocultarFantasiaDanfe ?? cli.ocultarFantasiaDanfe ?? clienteDb.ocultarFantasiaDanfe ?? padraoEmpresaOcultar);
 
     const modalEl = criarModalCamada(`
       <div class="modal-overlay active">
@@ -29319,6 +29330,9 @@
       nfe.ocultarFantasiaDanfe = ocultarFantasiaAtual;
       if (cli) cli.ocultarFantasiaDanfe = ocultarFantasiaAtual;
       if (clienteDb) clienteDb.ocultarFantasiaDanfe = ocultarFantasiaAtual;
+      if (!db.configFiscal) db.configFiscal = {};
+      db.configFiscal.ocultarFantasiaDanfePadrao = ocultarFantasiaAtual;
+      if (db.empresa) db.empresa.ocultarFantasiaDanfePadrao = ocultarFantasiaAtual;
 
       // Re-renderiza folha DANFE dinamicamente no visualizador
       const sheetBox = modalEl.querySelector('.danfe-sheet-shadow');
@@ -29749,6 +29763,19 @@
               </div>
             </div>
 
+            <!-- Identidade Visual no Cabeçalho da DANFE (Configuração Individual desta Confecção) -->
+            <div style="background: rgba(3, 105, 161, 0.08); border: 1.5px solid rgba(2, 132, 199, 0.28); border-radius: 8px; padding: 12px 14px; margin-bottom: 12px;">
+              <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; margin: 0;">
+                <input type="checkbox" id="cfgFiscalOcultarFantasiaDanfe" ${Boolean(cfg.ocultarFantasiaDanfePadrao ?? emp.ocultarFantasiaDanfePadrao ?? (String(emp.cnpj || '').replace(/\D/g, '') === '59441843000176')) ? 'checked' : ''} style="accent-color: #0284c7; width: 17px; height: 17px; margin-top: 2px;">
+                <div>
+                  <span style="font-size: 12px; font-weight: 800; color: #0369a1; display: block;">🏷️ Exibir Apenas Razão Social + Logo na DANFE (Ocultar Nome Fantasia na Nota Fiscal)</span>
+                  <span style="font-size: 10.5px; color: #475569; display: block; margin-top: 2px; line-height: 1.35;">
+                    Configuração exclusiva desta confecção (somente na Nota Fiscal): mantém o símbolo/logo ao lado e a Razão Social (<strong>${emp.razaoSocial || 'Razão Social'}</strong>), ocultando a linha do nome fantasia (<strong>${emp.nomeFantasia || 'Nome Fantasia'}</strong>) embaixo da Razão Social em todas as DANFEs desta fábrica, sem alterar o nome do sistema nem afetar outras confecções.
+                  </span>
+                </div>
+              </label>
+            </div>
+
             <!-- Integração com Escritório de Contabilidade (Automático) -->
             <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 12px 14px; margin-top: 14px;">
               <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
@@ -29911,6 +29938,11 @@
       cfg.aliquotaSimplesNacional = parseFloat(modalEl.querySelector('#cfgFiscalAliquota').value) || 6.5;
       cfg.cfopEstadualPadrao = modalEl.querySelector('#cfgFiscalCfopEstadual').value.trim() || '5101';
       cfg.cfopInterestadualPadrao = modalEl.querySelector('#cfgFiscalCfopInter').value.trim() || '6101';
+      const chkOcultarDanfeCfg = modalEl.querySelector('#cfgFiscalOcultarFantasiaDanfe');
+      if (chkOcultarDanfeCfg) {
+        cfg.ocultarFantasiaDanfePadrao = Boolean(chkOcultarDanfeCfg.checked);
+        if (db.empresa) db.empresa.ocultarFantasiaDanfePadrao = cfg.ocultarFantasiaDanfePadrao;
+      }
       if (modalEl.querySelector('#cfgFiscalEmailContador')) {
         cfg.emailContador = modalEl.querySelector('#cfgFiscalEmailContador').value.trim();
       }
