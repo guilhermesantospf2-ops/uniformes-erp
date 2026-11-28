@@ -688,6 +688,19 @@
           });
         }
 
+        // Auto-cura e preservação de Mockup entre raiz do pedido e itens:
+        if (p.mockupUrl && Array.isArray(p.itens) && p.itens.length > 0) {
+          p.itens.forEach(it => {
+            if (it && !it.mockupUrl) {
+              it.mockupUrl = p.mockupUrl;
+              it.mockupUploadPersonalizado = true;
+            }
+          });
+        } else if (!p.mockupUrl && Array.isArray(p.itens) && p.itens.length > 0 && p.itens[0]?.mockupUrl) {
+          p.mockupUrl = p.itens[0].mockupUrl;
+          p.mockupUploadPersonalizado = true;
+        }
+
         // Reconciliação e Auto-cura de integridade da Grade:
         // Se o pedido possui modelos configurados em p.itens, a grade consolidada (p.grade)
         // e a quantidadeTotal DEVEM refletir rigorosamente a soma das grades de cada item.
@@ -749,6 +762,13 @@
         const ped = mapaPedidos[String(os.pedidoNumero)];
         if (ped && (!os.mockupUrl || os.mockupUrl === '__REF_MOCKUP_PEDIDO__')) {
           os.mockupUrl = ped.mockupUrl;
+        } else if (ped && !ped.mockupUrl && os.mockupUrl && os.mockupUrl !== '__REF_MOCKUP_PEDIDO__') {
+          ped.mockupUrl = os.mockupUrl;
+          ped.mockupUploadPersonalizado = true;
+          if (Array.isArray(ped.itens) && ped.itens[0] && !ped.itens[0].mockupUrl) {
+            ped.itens[0].mockupUrl = os.mockupUrl;
+            ped.itens[0].mockupUploadPersonalizado = true;
+          }
         }
         if (ped && (!os.itens || !Array.isArray(os.itens) || os.itens.length === 0) && Array.isArray(ped.itens) && ped.itens.length > 0) {
           os.itens = JSON.parse(JSON.stringify(ped.itens));
@@ -8134,9 +8154,16 @@
     let itensOrcamento = [];
     if (isEdicao && orcamentoExistente.itens && Array.isArray(orcamentoExistente.itens) && orcamentoExistente.itens.length > 0) {
       itensOrcamento = JSON.parse(JSON.stringify(orcamentoExistente.itens));
-      itensOrcamento.forEach(itemClone => {
+      itensOrcamento.forEach((itemClone, idx) => {
         delete itemClone.custosCustomizadosPorTamanho;
         delete itemClone.custoUnitarioCustomizadoPonderado;
+        // Preserva o Mockup do pedido no item caso o item individual esteja sem URL
+        if (!itemClone.mockupUrl && (orcamentoExistente.mockupUrl || (idx === 0 && orcamentoExistente.itens[0]?.mockupUrl))) {
+          itemClone.mockupUrl = orcamentoExistente.mockupUrl || orcamentoExistente.itens[0]?.mockupUrl;
+        }
+        if (itemClone.mockupUrl && (itemClone.mockupUrl.startsWith('data:image/') || itemClone.mockupUrl.startsWith('http') || itemClone.mockupUrl.length > 100)) {
+          itemClone.mockupUploadPersonalizado = true;
+        }
         const precoFallback = parseFloat(itemClone.precoVendaUnitario) || parseFloat(orcamentoExistente.precoUnitarioVenda) || 0;
         if (!itemClone.precosPorTamanho || typeof itemClone.precosPorTamanho !== 'object') {
           itemClone.precosPorTamanho = {};
@@ -9783,7 +9810,7 @@
         configurarEventosSeletorCores('orc', (corNome, corHex) => {
           it.corTecido = corNome;
           it.corPrincipal = corNome;
-          if (!it.mockupUploadPersonalizado) {
+          if (!it.mockupUploadPersonalizado && (!it.mockupUrl || !it.mockupUrl.startsWith('data:image/'))) {
             const cliId = document.getElementById('orcClienteSelect')?.value;
             const cli = (db.clientes || []).find(c => c.id === cliId) || (db.clientes && db.clientes[0]);
             const sigla = (cli ? (cli.nomeFantasia || cli.nome || "TEXFY") : "TEXFY").toString().substring(0, 6);
@@ -12062,7 +12089,7 @@
         dataMetaInterna: dataMetaInterna,
         dtfLarguraRolo: itensOrcamento[0].aplicacoes?.find(a => a.tecnica === 'DTF')?.dtfLarguraRolo || 58,
         tipoPersonalizacao: resumoPersonalizacoes,
-        mockupUrl: itensOrcamento[0].mockupUrl,
+        mockupUrl: itensOrcamento[0]?.mockupUrl || (orcamentoExistente && orcamentoExistente.mockupUrl) || '',
         tipoPedidoModalidade: modalidadePedido,
         jogadores: JSON.parse(JSON.stringify(listaJogadoresTime)),
         unidadeTecido: itensOrcamento[0]?.unidadeTecido || 'kg',
@@ -12912,6 +12939,8 @@
         orcamentoExistente.consumoTotalTecido = dadosOrcamento.consumoTotalTecido || 0;
         if (dadosOrcamento.mockupUrl) {
           orcamentoExistente.mockupUrl = dadosOrcamento.mockupUrl;
+        } else if (itensOrcamento[0]?.mockupUrl) {
+          orcamentoExistente.mockupUrl = itensOrcamento[0].mockupUrl;
         }
         const jaPago = Number(orcamentoExistente.valorSinalPago) || 0;
         orcamentoExistente.saldoPendente = Math.max(0, dadosOrcamento.valorTotal - jaPago);
@@ -13008,6 +13037,8 @@
         orcamentoExistente.consumoTotalTecido = dadosOrcamento.consumoTotalTecido || 0;
         if (dadosOrcamento.mockupUrl) {
           orcamentoExistente.mockupUrl = dadosOrcamento.mockupUrl;
+        } else if (itensOrcamento[0]?.mockupUrl) {
+          orcamentoExistente.mockupUrl = itensOrcamento[0].mockupUrl;
         }
         orcamentoExistente.dataAtualizacao = new Date().toISOString().split('T')[0];
 
@@ -14160,6 +14191,11 @@
         if (base64Otimizado) {
           mockupDataUrl = base64Otimizado;
           dadosBase.mockupUrl = base64Otimizado;
+          dadosBase.mockupUploadPersonalizado = true;
+          if (Array.isArray(dadosBase.itens) && dadosBase.itens.length > 0) {
+            dadosBase.itens[0].mockupUrl = base64Otimizado;
+            dadosBase.itens[0].mockupUploadPersonalizado = true;
+          }
           const prev = document.getElementById('previewMockupAvanco');
           if (prev) prev.src = base64Otimizado;
           mostrarToast('✓ Mockup Oficial anexado em alta definição para OS e Folha A4!', 'green');
@@ -14398,11 +14434,14 @@
         status: jaEraOficialAvanco ? dadosBase.status : "Quarentena",
         etapaProducao: jaEraOficialAvanco ? (dadosBase.etapaProducao || dadosBase.status) : "Aguardando Aprovação Técnica",
         quarentenaAprovada: jaEraOficialAvanco ? (dadosBase.quarentenaAprovada !== false) : false,
-        itens: (dadosBase.itens || []).map(item => {
+        itens: (dadosBase.itens || []).map((item, idx) => {
           const corItem = item.corTecido || item.corPrincipal || dadosBase.corPrincipal || dadosBase.corTecido || 'Azul Marinho';
+          const mockItem = item.mockupUrl || (idx === 0 ? mockupDataUrl : '') || dadosBase.mockupUrl || '';
           return Object.assign({}, item, {
             corTecido: corItem,
-            corPrincipal: corItem
+            corPrincipal: corItem,
+            mockupUrl: mockItem,
+            mockupUploadPersonalizado: !!mockItem
           });
         }),
         produtoId: prodIdFinal,
@@ -27638,25 +27677,83 @@
         }
       }
 
-      // Se a NF-e #53 estiver como rejeitada, garante que o Pedido #115 esteja desbloqueado para reemissão e com a IE 260549100 corrigida
-      const nf53 = notas.find(n => Number(n.numero) === 53 || n.nfeioId === '01a219d2f3ec78168d527c4de78ac926');
-      if (nf53) {
-        if (nf53.cliente && String(nf53.cliente.documento || '').replace(/\D/g, '') === '37482413000160') {
-          nf53.cliente.ie = '260549100';
+      // Reconciliação do Pedido #115 (Agile Truck) com sua Nota Fiscal (seja #53 ou emitida com outro número)
+      const nfAgile = notas.find(n =>
+        (n.cliente && String(n.cliente.documento || '').replace(/\D/g, '') === '37482413000160') ||
+        (n.cliente && (n.cliente.nome || '').toLowerCase().includes('agile')) ||
+        n.pedidoId === 'PED-115' || String(n.pedidoNumero) === '115' ||
+        Number(n.numero) === 53 || n.nfeioId === '01a219d2f3ec78168d527c4de78ac926'
+      );
+      if (nfAgile) {
+        if (nfAgile.cliente && String(nfAgile.cliente.documento || '').replace(/\D/g, '') === '37482413000160') {
+          nfAgile.cliente.ie = '260549100';
         }
-        if (!nf53.pedidoId) nf53.pedidoId = 'PED-115';
-        if (!nf53.pedidoNumero) nf53.pedidoNumero = 115;
-        if (nf53.statusSefaz === 'rejeitada') {
-          const p115 = (b.pedidos || []).find(p => String(p.numero) === '115' || p.id === 'PED-115');
-          if (p115 && (p115.notaFiscalEmitida || p115.nfeNumero === 53)) {
+        if (!nfAgile.pedidoId) nfAgile.pedidoId = 'PED-115';
+        if (!nfAgile.pedidoNumero) nfAgile.pedidoNumero = 115;
+        const p115 = (b.pedidos || []).find(p => String(p.numero) === '115' || p.id === 'PED-115');
+        if (nfAgile.statusSefaz === 'rejeitada') {
+          if (p115 && (p115.notaFiscalEmitida || p115.nfeNumero === nfAgile.numero)) {
             p115.notaFiscalEmitida = false;
             delete p115.nfeId;
             delete p115.nfeNumero;
             houveAlteracao = true;
           }
+        } else if (nfAgile.statusSefaz === 'autorizada') {
+          if (p115 && (!p115.notaFiscalEmitida || p115.nfeNumero !== nfAgile.numero)) {
+            p115.notaFiscalEmitida = true;
+            p115.nfeNumero = nfAgile.numero;
+            p115.nfeId = nfAgile.id;
+            houveAlteracao = true;
+          }
+          if ((!nfAgile.itens || !Array.isArray(nfAgile.itens) || nfAgile.itens.length === 0) && p115 && Array.isArray(p115.itens) && p115.itens.length > 0) {
+            nfAgile.itens = p115.itens.map(it => ({
+              codigo: it.codigo || it.produtoId || 'MOD-001',
+              descricao: it.produtoNome || 'Camisa Polo Tradicional Piquet',
+              ncm: it.ncm || '6105.10.00',
+              cfop: it.cfop || '5101',
+              csosn: it.csosn || '102',
+              unidade: it.unidade || 'UN',
+              quantidade: it.grade?.total || 30,
+              valorUnitario: it.precoVendaUnitario || 52.00,
+              valorTotal: it.valorTotalVenda || 1590.00,
+              grade: it.grade
+            }));
+            houveAlteracao = true;
+          }
         }
       }
     }
+
+    // Reconciliação Geral Bidirecional: toda nota autorizada vinculada a um pedido
+    // garante o status de emitida no pedido e recupera produtos se a nota perdeu os itens
+    notas.forEach(nf => {
+      if (nf.statusSefaz === 'autorizada') {
+        const ped = (b.pedidos || []).find(p => p.id === nf.pedidoId || (nf.pedidoNumero != null && String(p.numero) === String(nf.pedidoNumero)));
+        if (ped) {
+          if (!ped.notaFiscalEmitida || ped.nfeNumero !== nf.numero) {
+            ped.notaFiscalEmitida = true;
+            ped.nfeNumero = nf.numero;
+            ped.nfeId = nf.id;
+            houveAlteracao = true;
+          }
+          if ((!nf.itens || !Array.isArray(nf.itens) || nf.itens.length === 0) && Array.isArray(ped.itens) && ped.itens.length > 0) {
+            nf.itens = ped.itens.map((it, idx) => ({
+              codigo: it.codigo || it.produtoId || `MOD-00${idx + 1}`,
+              descricao: it.produtoNome || it.descricao || 'Produto Têxtil',
+              ncm: it.ncm || '6105.10.00',
+              cfop: it.cfop || '5101',
+              csosn: it.csosn || '102',
+              unidade: it.unidade || 'UN',
+              quantidade: it.grade?.total || it.quantidade || 1,
+              valorUnitario: it.precoVendaUnitario || it.valorUnitario || 0,
+              valorTotal: it.valorTotalVenda || it.valorTotal || 0,
+              grade: it.grade
+            }));
+            houveAlteracao = true;
+          }
+        }
+      }
+    });
 
     // 5. Garante que a numeração seguinte no ERP seja sempre MAIOR que qualquer nota emitida
     let maiorNota = 0;
@@ -27749,14 +27846,67 @@
                   nfLocal.numero = numInv;
                   mudou = true;
                 }
+                const pedLocal = (db.pedidos || []).find(p => p.id === nfLocal.pedidoId || (nfLocal.pedidoNumero != null && String(p.numero) === String(nfLocal.pedidoNumero)));
+                if (pedLocal && (!pedLocal.notaFiscalEmitida || pedLocal.nfeNumero !== nfLocal.numero)) {
+                  pedLocal.notaFiscalEmitida = true;
+                  pedLocal.nfeNumero = nfLocal.numero;
+                  pedLocal.nfeId = nfLocal.id;
+                  mudou = true;
+                }
+                if (pedLocal && (!nfLocal.itens || !Array.isArray(nfLocal.itens) || nfLocal.itens.length === 0) && Array.isArray(pedLocal.itens) && pedLocal.itens.length > 0) {
+                  nfLocal.itens = pedLocal.itens.map((it, idx) => ({
+                    codigo: it.codigo || it.produtoId || `MOD-00${idx + 1}`,
+                    descricao: it.produtoNome || it.descricao || 'Produto Têxtil',
+                    ncm: it.ncm || '6105.10.00',
+                    cfop: '5101',
+                    csosn: '102',
+                    unidade: 'UN',
+                    quantidade: it.grade?.total || it.quantidade || 1,
+                    valorUnitario: it.precoVendaUnitario || 0,
+                    valorTotal: it.valorTotalVenda || 0,
+                    grade: it.grade
+                  }));
+                  mudou = true;
+                }
               }
             } else if (numInv > 0 && (isFalhaSefaz || inv.status === 'Issued' || inv.status === 'Authorized' || inv.status === 'Cancelled')) {
               const statusMapeado = inv.status === 'Cancelled' ? 'cancelada' : (isFalhaSefaz ? 'rejeitada' : 'autorizada');
+              const cnpjDest = String(inv.buyer?.federalTaxNumber || '').replace(/\D/g, '');
+              const pedMatch = (db.pedidos || []).find(p => {
+                if (numInv > 0 && (p.nfeNumero === numInv || p.nfeId === inv.id)) return true;
+                if (cnpjDest && p.clienteCnpj && String(p.clienteCnpj).replace(/\D/g, '') === cnpjDest) return true;
+                if (cnpjDest && p.clienteId) {
+                  const c = (db.clientes || []).find(cli => cli.id === p.clienteId);
+                  if (c && String(c.documento || c.cnpj || '').replace(/\D/g, '') === cnpjDest) return true;
+                }
+                return false;
+              });
+              const itensSync = (pedMatch && Array.isArray(pedMatch.itens) && pedMatch.itens.length > 0)
+                ? pedMatch.itens.map((it, idx) => ({
+                    codigo: it.codigo || it.produtoId || `MOD-00${idx + 1}`,
+                    descricao: it.produtoNome || it.descricao || 'Produto Têxtil',
+                    ncm: it.ncm || '6105.10.00',
+                    cfop: '5101',
+                    csosn: '102',
+                    unidade: 'UN',
+                    quantidade: it.grade?.total || it.quantidade || 1,
+                    valorUnitario: it.precoVendaUnitario || 0,
+                    valorTotal: it.valorTotalVenda || 0,
+                    grade: it.grade
+                  }))
+                : [];
+              if (pedMatch && statusMapeado === 'autorizada') {
+                pedMatch.notaFiscalEmitida = true;
+                pedMatch.nfeNumero = numInv;
+                pedMatch.nfeId = `nfe_sync_${inv.id || numInv}`;
+              }
               db.notasFiscais.unshift({
                 id: `nfe_sync_${inv.id || numInv}`,
                 numero: numInv,
                 serie: String(inv.serie || 1),
                 modelo: '55',
+                pedidoId: pedMatch ? pedMatch.id : undefined,
+                pedidoNumero: pedMatch ? pedMatch.numero : undefined,
                 nfeioId: inv.id || '',
                 chaveAcesso: chaveInv,
                 dataEmissao: inv.createdOn ? new Date(inv.createdOn).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR'),
@@ -27764,6 +27914,7 @@
                 motivoRejeicao: isFalhaSefaz ? msgFalha : undefined,
                 eventosSefaz: inv.lastEvents?.events || [],
                 cfop: '5101',
+                itens: itensSync,
                 cliente: {
                   nome: inv.buyer?.name || 'Destinatário',
                   documento: inv.buyer?.federalTaxNumber || '-',
