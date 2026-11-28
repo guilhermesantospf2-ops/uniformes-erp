@@ -1,4 +1,4 @@
-const CACHE_NAME = 'texfy-erp-desktop-v10.1.16';
+const CACHE_NAME = 'texfy-erp-desktop-v10.1.17';
 
 const CORE_ASSETS = [
   '/',
@@ -11,12 +11,12 @@ const CORE_ASSETS = [
   '/coleta',
   '/coleta.html',
   '/style.css?v=10.0.0',
-  '/app.js?v=10.1.16',
+  '/app.js?v=10.1.17',
   '/cloud-sync.js?v=10.1.13',
   '/nesting-engine.js?v=10.0.0',
   '/market-benchmark.js?v=10.0.0',
   '/mock-data.js?v=10.0.0',
-  '/pwa-install.js?v=10.1.16',
+  '/pwa-install.js?v=10.1.17',
   '/pix-engine.js?v=10.0.0',
   '/pix-qrcode.min.js',
   '/infinitepay-engine.js?v=10.0.0',
